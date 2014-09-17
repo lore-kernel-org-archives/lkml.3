@@ -1,117 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaIQQg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:36:57 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51478 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870AbaIQQgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:36:54 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140909000429.GB5835@vmdeb7>
-References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com> <1409937247-2525-4-git-send-email-coproscefalo@gmail.com> <20140906024253.GB11389@vmdeb7> <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com> <20140909000429.GB5835@vmdeb7>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Wed, 17 Sep 2014 17:36:31 +0100
-To: Darren Hart <dvhart@infradead.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-iio@vger.kernel.org
-Message-ID: <10ee37dc-4645-48c4-9155-89b60b38f4cf@email.android.com>
+	id S1756221AbaIQQhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:37:24 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:44140 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756171AbaIQQhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:37:20 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        scottwood@freescale.com
+Subject: [PATCH v3 13/21] powerpc/8xx: Use PAGE size related consts
+Message-Id: <20140917163659.AC8AF1AB03E@localhost.localdomain>
+Date: Wed, 17 Sep 2014 18:36:59 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For PAGE size related operations, use PAGE size consts in order to be able to
+use different page size in the futur.
 
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-On September 9, 2014 1:04:30 AM GMT+01:00, Darren Hart <dvhart@infradead.org> wrote:
->On Fri, Sep 05, 2014 at 11:04:18PM -0600, Azael Avalos wrote:
->> Hi there,
->> 
->> 2014-09-05 20:42 GMT-06:00 Darren Hart <dvhart@infradead.org>:
->> > On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
->> >> The accelerometer sensor is very sensitive, and having userspace
->> >> poll the sysfs position entry is not very battery friendly.
->> >>
->> >> This patch removes the sysfs entry and instead, it creates an
->> >> input polled device (joystick) for the built-in accelerometer.
->> >
->> > Hrm, while sysfs details can change across kernel versions, usually
->due to
->> > driver core changes, we try to keep them as consistent as possible
->so as not to
->> > break userspace.
->> >
->> > That said, if we are going to try and come up with a better model
->for
->> > representing an accelerometer, wouldn't treating it as an IIO
->device be the more
->> > logical approach?
->> 
->> Yes of course, but the actual accelerometer device (sensor?) is not
->> really exposed,
->> only certain "functions" it provides, and they are divided across two
->> different ACPI devices,
->> TOS620A exposes the protection, and the TOS1900 (and et. al.) only
->> exposes the axes.
->
->As I understand it, IIO defines an interface to a device, a standard
->sysfs set
->of properties. I should think we could provide the appropriate
->callbacks even
->for a partially implemented (or a pair of) accelerometer.
->
->Jonathan, what are your thoughts here. Is such a "device" (ACPI
->accessors to
->axis and threshold) a candidate for IIO, or is this input polled device
->more
->appropriate?
-Absolutely fine in IIO.
+---
+Changes in v2:
+- None
 
-Sorry I took so long to reply. Read the title and expected more detailed issue so queued
- it up for when I had more time. Oops.
+Changes in v3:
+- None
 
-Only slight gotcha is that there is some debate over the iio timer trigger
- configuration interface which would be equivalent of a polled input device.
+ arch/powerpc/kernel/head_8xx.S |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
-Hence it hasn't merged yet.
-Comes down to how these are instantiated. Lars-Peter Clausen is planning a configfs
- proposal rather than how we do the user space trigger creation currently.
-
-A user space trigger would work but then you loose lack of hitting sysfs files.
-
->
->> 
->> I see your point in breaking userspace, but given the fact that it
->was
->> recently introduced,
->> I didn't thought it was already "adopted", that's why I decided to
->> remove the sysfs entry.
->
->Looks like since 3.15 if I read the log correctly. That is fairly
->recent and
->this is not one of the "defined interfaces" in the sysfs documentation.
->
->Greg, can you weigh in here - does this change count as "breaking
->userspace", or
->is this more inline with the scheduler knobs in /proc/sched_debug which
->can
->change from version to version.
->
->> 
->> Then we might as well keep the sysfs entry and have the input polled
->> device as well.
->
->Let's see what Greg has to say. If he isn't bothered by the change, I
->won't push
->the issue.
-
+diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+index 0f571f5..dcaee9f 100644
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -292,9 +292,9 @@ InstructionTLBMiss:
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+ 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
+ #ifdef CONFIG_8xx_CPU15
+-	addi	r11, r10, 0x1000
++	addi	r11, r10, PAGE_SIZE
+ 	tlbie	r11
+-	addi	r11, r10, -0x1000
++	addi	r11, r10, -PAGE_SIZE
+ 	tlbie	r11
+ #endif
+ 
+@@ -313,7 +313,8 @@ InstructionTLBMiss:
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:
+ #endif
+-	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	/* Extract level 1 index */
++	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	beq	2f		/* If zero, don't try to find a pte */
+@@ -325,7 +326,8 @@ InstructionTLBMiss:
+ 	DO_8xx_CPU6(0x2b80, r3)
+ 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
+ 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
+-	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	/* Extract level 2 index */
++	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r10, r10, r11	/* Get the pte */
+ 
+ #ifdef CONFIG_SWAP
+@@ -385,7 +387,8 @@ DataStoreTLBMiss:
+ 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:
+-	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	/* Extract level 1 index */
++	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	beq	2f		/* If zero, don't try to find a pte */
+@@ -394,8 +397,8 @@ DataStoreTLBMiss:
+ 	 */
+ 	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
+ 	/* Extract level 2 index */
+-	rlwinm	r10, r10, 22, 20, 29
+-	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
++	rlwinm	r10, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
++	rlwimi	r10, r11, 0, 0, 32 - PAGE_SHIFT - 1	/* Add level 2 base */
+ 	lwz	r10, 0(r10)	/* Get the pte */
+ 
+ 	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+@@ -526,18 +529,20 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	beq-	3f		/* Branch if user space */
+ 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+-3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
++	/* Extract level 1 index */
++3:	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+ 	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
+ 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
+-	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	/* Extract level 2 index */
++	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r11, r10, r11	/* Get the pte */
+ #ifdef CONFIG_8xx_CPU6
+ 	lwz	r3, 8(r0)	/* restore r3 from memory */
+ #endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	mfspr	r10, SPRN_SRR0
+-	rlwimi	r11, r10, 0, 20, 31
++	rlwimi	r11, r10, 0, 32 - PAGE_SHIFT, 31
+ 	lwz	r11,0(r11)
+ /* Check if it really is a dcbx instruction. */
+ /* dcbt and dcbtst does not generate DTLB Misses/Errors,
+@@ -913,12 +918,13 @@ set_dec_cpu6:
+ 	.globl	sdata
+ sdata:
+ 	.globl	empty_zero_page
++	.align	PAGE_SHIFT
+ empty_zero_page:
+-	.space	4096
++	.space	PAGE_SIZE
+ 
+ 	.globl	swapper_pg_dir
+ swapper_pg_dir:
+-	.space	4096
++	.space	PGD_TABLE_SIZE
+ 
+ /* Room for two PTE table poiners, usually the kernel and current user
+  * pointer to their respective root page table (pgdir).
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+1.7.1
+
