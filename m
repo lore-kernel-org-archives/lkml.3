@@ -1,69 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130AbaIQSZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:25:47 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41069 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755966AbaIQSZp (ORCPT
+	id S1756058AbaIQS2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:28:24 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:38848 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755703AbaIQS2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:25:45 -0400
-Date: Wed, 17 Sep 2014 11:25:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Clark Williams <clark.williams@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: unify boost and kthread priorities
-Message-ID: <20140917182540.GG4723@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140915100524.2cd80d2e@sluggy>
- <20140916204156.GP4723@linux.vnet.ibm.com>
- <1410972543.31130.87.camel@x220>
- <20140917171717.GC4723@linux.vnet.ibm.com>
- <1410975957.31130.93.camel@x220>
+	Wed, 17 Sep 2014 14:28:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410975957.31130.93.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091718-9332-0000-0000-0000020C9070
+In-Reply-To: <1410959280-29662-2-git-send-email-zyw@rock-chips.com>
+References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
+	<1410959280-29662-2-git-send-email-zyw@rock-chips.com>
+Date: Wed, 17 Sep 2014 11:28:22 -0700
+X-Google-Sender-Auth: 6YvjxUDPDShSPWE1J2EI3gXwkLI
+Message-ID: <CAD=FV=XpwK+HzybKMck8KJ6VDYt3h5LHXtkU=RCa4DUX0t-MGg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] regulator: st-pwm: get voltage and duty table from dts
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 07:45:57PM +0200, Paul Bolle wrote:
-> On Wed, 2014-09-17 at 10:17 -0700, Paul E. McKenney wrote:
-> > On Wed, Sep 17, 2014 at 06:49:03PM +0200, Paul Bolle wrote:
-> > > There's a reference to CONFIG_RCU_BOOST_PRIO in
-> > > tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt. It needs
-> > > updating too, doesn't it?
-> > 
-> > Good catch!
-> > 
-> > Also the one in tools/testing/selftests/rcutorture/configs/rcu/TREE03.
-> 
-> >From my local perl monstrosity:
-> 	# ...  and Paul McKenney's rcutorture stuff (v3.14-rc+)
-> 	if ($blob->[1] =~ /tools\/testing\/selftests\/rcutorture\/configs\/.*/) {
-> 
-> Ie, I've made that script ignore all references to Kconfig macros below
-> tools/testing/selftest/rcutorture/configs. Is that too crude?
+Chris,
 
-It would not hurt to check the files that appear in the CFLIST files:
+On Wed, Sep 17, 2014 at 6:07 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+> Get voltage & duty table from device tree might be better, other platforms can also use this
+> driver without any modify.
+>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 
-	tools/testing/selftests/rcutorture/configs/lock/CFLIST
-	tools/testing/selftests/rcutorture/configs/rcu/CFLIST
+Why didn't you CC Lee Jones on your patches?  He's the author of the
+driver and should certainly be involved in reviewing your patches.
 
-These files drive the torture-test kernel configurations.
+CCed him now.
 
-That said, yes, there are sometimes some obsolete or deprecated
-Kconfig parameters in these files because some systems need them.
 
-							Thanx, Paul
+>  drivers/regulator/Kconfig  |    1 -
+>  drivers/regulator/st-pwm.c |   80 +++++++++++++++++++++++---------------------
+>  2 files changed, 42 insertions(+), 39 deletions(-)
+>
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index fb32bab..06a9632 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -495,7 +495,6 @@ config REGULATOR_S5M8767
+>
+>  config REGULATOR_ST_PWM
+>         tristate "STMicroelectronics PWM voltage regulator"
+> -       depends on ARCH_STI
 
-> > Fixed both, thank you!
-> 
-> 
-> Paul Bolle
-> 
+Seems like you should add some wording saying that this driver is also
+useful for other PWM-based voltage regulators.
 
+
+>         help
+>          This driver supports ST's PWM controlled voltage regulators.
+>
+> diff --git a/drivers/regulator/st-pwm.c b/drivers/regulator/st-pwm.c
+> index 5ea78df..877381b 100644
+> --- a/drivers/regulator/st-pwm.c
+> +++ b/drivers/regulator/st-pwm.c
+> @@ -20,16 +20,11 @@
+>  #include <linux/of_device.h>
+>  #include <linux/pwm.h>
+>
+> -#define ST_PWM_REG_PERIOD 8448
+> -
+> -struct st_pwm_regulator_pdata {
+> -       const struct regulator_desc *desc;
+> -       struct st_pwm_voltages *duty_cycle_table;
+> -};
+> -
+>  struct st_pwm_regulator_data {
+> -       const struct st_pwm_regulator_pdata *pdata;
+> +       struct regulator_desc *desc;
+> +       struct st_pwm_voltages *duty_cycle_table;
+>         struct pwm_device *pwm;
+> +       int pwm_reg_period;
+>         bool enabled;
+>         int state;
+>  };
+> @@ -53,10 +48,10 @@ static int st_pwm_regulator_set_voltage_sel(struct regulator_dev *dev,
+>         int dutycycle;
+>         int ret;
+>
+> -       dutycycle = (ST_PWM_REG_PERIOD / 100) *
+> -               drvdata->pdata->duty_cycle_table[selector].dutycycle;
+> +       dutycycle = (drvdata->pwm_reg_period / 100) *
+> +                   drvdata->duty_cycle_table[selector].dutycycle;
+>
+> -       ret = pwm_config(drvdata->pwm, dutycycle, ST_PWM_REG_PERIOD);
+> +       ret = pwm_config(drvdata->pwm, dutycycle, drvdata->pwm_reg_period);
+>         if (ret) {
+>                 dev_err(&dev->dev, "Failed to configure PWM\n");
+>                 return ret;
+> @@ -84,7 +79,7 @@ static int st_pwm_regulator_list_voltage(struct regulator_dev *dev,
+>         if (selector >= dev->desc->n_voltages)
+>                 return -EINVAL;
+>
+> -       return drvdata->pdata->duty_cycle_table[selector].uV;
+> +       return drvdata->duty_cycle_table[selector].uV;
+>  }
+>
+>  static struct regulator_ops st_pwm_regulator_voltage_ops = {
+> @@ -94,32 +89,16 @@ static struct regulator_ops st_pwm_regulator_voltage_ops = {
+>         .map_voltage     = regulator_map_voltage_iterate,
+>  };
+>
+> -static struct st_pwm_voltages b2105_duty_cycle_table[] = {
+> -       { .uV = 1114000, .dutycycle = 0,  },
+> -       { .uV = 1095000, .dutycycle = 10, },
+> -       { .uV = 1076000, .dutycycle = 20, },
+> -       { .uV = 1056000, .dutycycle = 30, },
+> -       { .uV = 1036000, .dutycycle = 40, },
+> -       { .uV = 1016000, .dutycycle = 50, },
+> -       /* WARNING: Values above 50% duty-cycle cause boot failures. */
+
+I wonder if this warning should be transferred to the device tree (if
+it's generally a problem for anyone using the b2105)?
+
+
+> -};
+> -
+> -static const struct regulator_desc b2105_desc = {
+> +static struct regulator_desc b2105_desc = {
+>         .name           = "b2105-pwm-regulator",
+>         .ops            = &st_pwm_regulator_voltage_ops,
+>         .type           = REGULATOR_VOLTAGE,
+>         .owner          = THIS_MODULE,
+> -       .n_voltages     = ARRAY_SIZE(b2105_duty_cycle_table),
+>         .supply_name    = "pwm",
+>  };
+>
+> -static const struct st_pwm_regulator_pdata b2105_info = {
+> -       .desc             = &b2105_desc,
+> -       .duty_cycle_table = b2105_duty_cycle_table,
+> -};
+> -
+>  static const struct of_device_id st_pwm_of_match[] = {
+> -       { .compatible = "st,b2105-pwm-regulator", .data = &b2105_info, },
+> +       { .compatible = "st,b2105-pwm-regulator" },
+>         { },
+>  };
+>  MODULE_DEVICE_TABLE(of, st_pwm_of_match);
+> @@ -127,10 +106,11 @@ MODULE_DEVICE_TABLE(of, st_pwm_of_match);
+>  static int st_pwm_regulator_probe(struct platform_device *pdev)
+>  {
+>         struct st_pwm_regulator_data *drvdata;
+> +       struct property *prop;
+>         struct regulator_dev *regulator;
+>         struct regulator_config config = { };
+>         struct device_node *np = pdev->dev.of_node;
+> -       const struct of_device_id *of_match;
+> +       int length, ret;
+>
+>         if (!np) {
+>                 dev_err(&pdev->dev, "Device Tree node missing\n");
+> @@ -141,12 +121,36 @@ static int st_pwm_regulator_probe(struct platform_device *pdev)
+>         if (!drvdata)
+>                 return -ENOMEM;
+>
+> -       of_match = of_match_device(st_pwm_of_match, &pdev->dev);
+> -       if (!of_match) {
+> -               dev_err(&pdev->dev, "failed to match of device\n");
+> -               return -ENODEV;
+> +       drvdata->desc = &b2105_desc;
+> +
+> +       /* determine the number of voltage-table */
+> +       prop = of_find_property(np, "voltage-table", &length);
+> +       if (!prop)
+> +               return -EINVAL;
+> +
+> +       drvdata->desc->n_voltages = length / sizeof(*drvdata->duty_cycle_table);
+> +
+> +       /* read voltage table from DT property */
+> +       if (length > 0) {
+> +               size_t size = sizeof(*drvdata->duty_cycle_table) *
+> +                             drvdata->desc->n_voltages;
+> +
+> +               drvdata->duty_cycle_table = devm_kzalloc(&pdev->dev,
+> +                                                        size, GFP_KERNEL);
+> +               if (!drvdata->duty_cycle_table)
+> +                       return -ENOMEM;
+> +
+> +               ret = of_property_read_u32_array(np, "voltage-table",
+> +                               (u32 *)drvdata->duty_cycle_table,
+> +                               length / sizeof(u32));
+> +               if (ret < 0)
+> +                       return ret;
+>         }
+> -       drvdata->pdata = of_match->data;
+> +
+> +       ret = of_property_read_u32(np, "pwm-reg-period",
+> +                                  &drvdata->pwm_reg_period);
+> +       if (ret)
+> +               return -EINVAL;
+>
+>         config.init_data = of_get_regulator_init_data(&pdev->dev, np);
+>         if (!config.init_data)
+> @@ -163,10 +167,10 @@ static int st_pwm_regulator_probe(struct platform_device *pdev)
+>         }
+>
+>         regulator = devm_regulator_register(&pdev->dev,
+> -                                           drvdata->pdata->desc, &config);
+> +                                           drvdata->desc, &config);
+>         if (IS_ERR(regulator)) {
+>                 dev_err(&pdev->dev, "Failed to register regulator %s\n",
+> -                       drvdata->pdata->desc->name);
+> +                       drvdata->desc->name);
+>                 return PTR_ERR(regulator);
+>         }
+
+-Doug
