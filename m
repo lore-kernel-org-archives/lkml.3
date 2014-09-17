@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaIQMTw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:19:52 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:38929 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639AbaIQMTu (ORCPT
+	id S1755470AbaIQMUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:20:55 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45802 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754904AbaIQMUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:19:50 -0400
+	Wed, 17 Sep 2014 08:20:53 -0400
+Message-ID: <54197C99.8030601@hurleysoftware.com>
+Date: Wed, 17 Sep 2014 08:20:41 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iE07b=juik2Ms4WEzzBw0FxPnAgbxtdqVGBBYZQ7fk5zA@mail.gmail.com>
-References: <1410857409-24767-1-git-send-email-gautam.vivek@samsung.com>
-	<CAD=FV=U4rPsfGkTcSY3OYHPgCFOccaHTjG1qC6WAekOEV09Q7A@mail.gmail.com>
-	<01ce01cfd270$3b3d31b0$b1b79510$@kernel.org>
-	<CAFp+6iE07b=juik2Ms4WEzzBw0FxPnAgbxtdqVGBBYZQ7fk5zA@mail.gmail.com>
-Date: Wed, 17 Sep 2014 17:49:49 +0530
-X-Google-Sender-Auth: _HnnHZXXQfp6N17VffEGYtXgJB8
-Message-ID: <CAFp+6iFCe_dagT55U=PLQYFkZEAC=UAwu4WEBngbBE+DPh1DGg@mail.gmail.com>
-Subject: Re: [PATCH RESEND] ARM: DTS: correct the capability string for mmc0
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Kukjin Kim <kgene@kernel.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kevin Hilman <khilman@linaro.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de> <5411967A.6090406@hurleysoftware.com> <54119AAA.9080907@linutronix.de> <5411B33F.10405@hurleysoftware.com> <54171B85.5060209@linutronix.de> <54186B89.8050505@linutronix.de>
+In-Reply-To: <54186B89.8050505@linutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 5:43 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Hi Kukjin,
->
->
-> On Wed, Sep 17, 2014 at 5:39 PM, Kukjin Kim <kgene@kernel.org> wrote:
->> Doug Anderson wrote:
->>>
->>> Vivek,
->>>
->> Hi,
+On 09/16/2014 12:55 PM, Sebastian Andrzej Siewior wrote:
+> On 09/15/2014 07:01 PM, Sebastian Andrzej Siewior wrote:
+>> On 09/11/2014 04:35 PM, Peter Hurley wrote:
+>>> I do need to find out if omap hardware sets UART_MSR_DCTS when auto CTS
+>>> is on. Would you mind running the debug patch below with HW flow control on?
 >>
->>> On Tue, Sep 16, 2014 at 1:50 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->>> > From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>> >
->>> > MMC capability for HS200 is parsed in mmc/core/host.c as
->>> > dts string "mmc-hs200-1_8v".
->>> >
->>> > This patch corrects the dts string for Exynos5420 based peach-pit
->>> > and Exynos5800 based peach-pi boards.
->>> >
->>> > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>
->> In this case, Vivek's sign is required here.
->
-> Ok, i will resend it with my Signed-off.
->
->>
->>> > ---
->>> >
->>> > Hi Kukjin,
->>> >
->>> > As commented by Doug earlier for this patch, the two patches required
->>> >   -- mmc: dw_mmc: Make sure we don't get stuck when we get an error
->>> >   -- mmc: dw_mmc: change to use recommended reset procedure
->>> > are now merged in upstream.
->>> > So you can go ahead and pick this change.
->>> >
->>> >  arch/arm/boot/dts/exynos5420-peach-pit.dts |    2 +-
->>> >  arch/arm/boot/dts/exynos5800-peach-pi.dts  |    2 +-
->>> >  2 files changed, 2 insertions(+), 2 deletions(-)
->>>
->>> Reviewed-by: Doug Anderson <dianders@chromium.org>
->>
->> Thanks, I will take this patch once Vivek replies his sign on this patch.
+>> I didn't forget about this. However I told minicom to use hardware flow
+>> control (and I see the driver set the HW bit) but I haven't seen that
+>> uart_handle_cts_change() has been invoked at all. I'm going to check
+>> two other boards and report then.
+> 
+> No, I don't get into this at all function.
 
-As suggested, giving  my signed-off here:
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Ok, good to know. Thanks for testing that.
 
+> So I connected my am335x-evm
+> with beagle board xm because both of them have an old fashion UART
+> connector (instead those uart-to-usb). Both configured with HW-Flow and
+> I haven't seen the function invoked but I saw "port->icount.overrun"
+> being incremented. This shouldn't happen. So I am a little puzzled here…
 
+Yeah, that's weird. Do you have a break-out box to confirm that RTS/CTS are
+being driven?
 
+Regards,
+Peter Hurley
 
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
