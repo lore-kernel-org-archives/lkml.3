@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaIQM0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:26:49 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:40000 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199AbaIQM0s (ORCPT
+	id S1755497AbaIQM2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:28:04 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:42917 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061AbaIQM2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:26:48 -0400
-Date: Wed, 17 Sep 2014 14:26:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] x86: iosf: Make debugfs addition a separate config
- option
-Message-ID: <20140917122643.GC2704@gmail.com>
-References: <1409175640-32426-1-git-send-email-david.e.box@linux.intel.com>
- <1410924386-16977-4-git-send-email-david.e.box@linux.intel.com>
+	Wed, 17 Sep 2014 08:28:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410924386-16977-4-git-send-email-david.e.box@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410821984-11160-1-git-send-email-bobby.prani@gmail.com>
+References: <1410821984-11160-1-git-send-email-bobby.prani@gmail.com>
+Date: Wed, 17 Sep 2014 14:28:00 +0200
+Message-ID: <CANq1E4Q_KfDamkCMatGFYCQ0VPfc6tbd7sWT_z_qDeboiNzgNw@mail.gmail.com>
+Subject: Re: [PATCH] selftests/memfd: Run test on all architectures
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Phong Tran <tranmanphong@gmail.com>,
+        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-* David E. Box <david.e.box@linux.intel.com> wrote:
+On Tue, Sep 16, 2014 at 12:59 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> Remove the dependence on x86 to run the memfd test. Verfied on 32-bit powerpc.
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Now that most archs have __NR_memfd_create, this is:
+
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+Thanks
+David
+
 > ---
->  arch/x86/Kconfig           | 6 ++++++
->  arch/x86/kernel/iosf_mbi.c | 8 ++++++--
->  2 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 2db4b1d..3afcac3 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -494,6 +494,12 @@ config IOSF_MBI
->  	  You should say Y if you are running a kernel on one of these
->  	  platforms.
->  
-> +config IOSF_MBI_DEBUG
-> +	bool "Enable debugfs access to IOSF"
-> +	depends on IOSF_MBI && DEBUG_FS
-> +	---help---
-> +	  Select this option to enable iosf sideband debugging through debugfs.
-
-Please also mention where the debug info is.
-
-> -/********************** debugfs begin ****************************/
-> +#if (IS_ENABLED(CONFIG_IOSF_MBI_DEBUG))
->  static u32	dbg_mdr;
->  static u32	dbg_mcr;
->  static u32	dbg_mcrx;
-> @@ -257,7 +257,7 @@ static void iosf_sideband_debug_init(void)
->  cleanup:
->  	debugfs_remove_recursive(d);
->  }
-> -/********************** debugfs end ****************************/
-> +#endif /* CONFIG_IOSF_MBI_DEBUG */
->  
->  static int iosf_mbi_probe(struct pci_dev *pdev,
->  			  const struct pci_device_id *unused)
-> @@ -290,13 +290,17 @@ static struct pci_driver iosf_mbi_pci_driver = {
->  
->  static int __init iosf_mbi_init(void)
->  {
-> +#if IS_ENABLED(CONFIG_IOSF_MBI_DEBUG)
->  	iosf_sideband_debug_init();
-> +#endif
->  	return pci_register_driver(&iosf_mbi_pci_driver);
->  }
->  
->  static void __exit iosf_mbi_exit(void)
->  {
-> +#if IS_ENABLED(CONFIG_IOSF_MBI_DEBUG)
->  	debugfs_remove_recursive(iosf_dbg);
-> +#endif
-
-The last two #ifdefs are pretty ugly, please make dummy !DEBUG 
-versions of those methods, so that the regular code is not 
-uglified with debugging details.
-
-Also, because COFIG_IOSF_MBI_DEBUG is a bool, using:
-
-	#ifdef CONFIG_IOSF_MBI_DEBUG
-
-should be enough in general.
-
-Thanks,
-
-	Ingo
+>  tools/testing/selftests/memfd/Makefile | 21 ---------------------
+>  1 file changed, 21 deletions(-)
+>
+> diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
+> index ad4ab01..b80cd10 100644
+> --- a/tools/testing/selftests/memfd/Makefile
+> +++ b/tools/testing/selftests/memfd/Makefile
+> @@ -1,38 +1,17 @@
+> -uname_M := $(shell uname -m 2>/dev/null || echo not)
+> -ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
+> -ifeq ($(ARCH),i386)
+> -       ARCH := x86
+> -endif
+> -ifeq ($(ARCH),x86_64)
+> -       ARCH := x86
+> -endif
+> -
+>  CFLAGS += -D_FILE_OFFSET_BITS=64
+> -CFLAGS += -I../../../../arch/x86/include/generated/uapi/
+> -CFLAGS += -I../../../../arch/x86/include/uapi/
+>  CFLAGS += -I../../../../include/uapi/
+>  CFLAGS += -I../../../../include/
+>
+>  all:
+> -ifeq ($(ARCH),x86)
+>         gcc $(CFLAGS) memfd_test.c -o memfd_test
+> -else
+> -       echo "Not an x86 target, can't build memfd selftest"
+> -endif
+>
+>  run_tests: all
+> -ifeq ($(ARCH),x86)
+>         gcc $(CFLAGS) memfd_test.c -o memfd_test
+> -endif
+>         @./memfd_test || echo "memfd_test: [FAIL]"
+>
+>  build_fuse:
+> -ifeq ($(ARCH),x86)
+>         gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
+>         gcc $(CFLAGS) fuse_test.c -o fuse_test
+> -else
+> -       echo "Not an x86 target, can't build memfd selftest"
+> -endif
+>
+>  run_fuse: build_fuse
+>         @./run_fuse_test.sh || echo "fuse_test: [FAIL]"
+> --
+> 2.1.0
+>
