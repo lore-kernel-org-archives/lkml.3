@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597AbaIQNI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:08:26 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:53751 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755243AbaIQNIY (ORCPT
+	id S1755434AbaIQNKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:10:40 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36856 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754831AbaIQNKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:08:24 -0400
-From: Chris Zhong <zyw@rock-chips.com>
-To: dianders@chromium.org, heiko@sntech.de
-Cc: huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] dt-bindings: add devicetree bindings for st-pwm regulator
-Date: Wed, 17 Sep 2014 21:08:00 +0800
-Message-Id: <1410959280-29662-3-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
-References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
+	Wed, 17 Sep 2014 09:10:38 -0400
+Date: Wed, 17 Sep 2014 06:10:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
+ and expedited grace periods
+Message-ID: <20140917131013.GU4723@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140828194745.GA3761@linux.vnet.ibm.com>
+ <5419342E.60602@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5419342E.60602@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091713-1344-0000-0000-0000044564CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the st-pwm regulator
+On Wed, Sep 17, 2014 at 03:11:42PM +0800, Lan Tianyu wrote:
+> On 2014年08月29日 03:47, Paul E. McKenney wrote:
+> > Currently, the expedited grace-period primitives do get_online_cpus().
+> > This greatly simplifies their implementation, but means that calls to
+> > them holding locks that are acquired by CPU-hotplug notifiers (to say
+> > nothing of calls to these primitives from CPU-hotplug notifiers) can
+> > deadlock.  But this is starting to become inconvenient:
+> > https://lkml.org/lkml/2014/8/5/754
+> > 
+> > This commit avoids the deadlock and retains the simplicity by creating
+> > a try_get_online_cpus(), which returns false if the get_online_cpus()
+> > reference count could not immediately be incremented.  If a call to
+> > try_get_online_cpus() returns true, the expedited primitives operate
+> > as before.  If a call returns false, the expedited primitives fall back
+> > to normal grace-period operations.  This falling back of course results
+> > in increased grace-period latency, but only during times when CPU
+> > hotplug operations are actually in flight.  The effect should therefore
+> > be negligible during normal operation.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Josh Triplett <josh@joshtriplett.org>
+> > Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> > Cc: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> Hi Paul:
+> 	What's the status of the patch? Will you push it? Thanks.
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+By default, it would go into 3.19.  Do you need it earlier?
 
----
-
- .../devicetree/bindings/regulator/st-pwm.txt       |   35 ++++++++++++++++++++
- 1 file changed, 35 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/st-pwm.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/st-pwm.txt b/Documentation/devicetree/bindings/regulator/st-pwm.txt
-new file mode 100644
-index 0000000..38fec1d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/st-pwm.txt
-@@ -0,0 +1,35 @@
-+st pwm regulator bindings
-+
-+Required properties:
-+  - compatible: "pwm-regulator"
-+  - pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-+  - voltage-table: voltage and duty table, include 2 merbers in each set of
-+    brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-+  - pwm-reg-period: duration (in nanoseconds) of one cycle
-+
-+Any property defined as part of the core regulator binding defined in
-+regulator.txt can also be used.
-+
-+Example:
-+	pwm_regulator {
-+                compatible = "st,b2105-pwm-regulator;
-+                pwms = <&pwm1 0 1000000 0>;
-+
-+		voltage-table = <1114000 0>,
-+				<1095000 10>,
-+				<1076000 20>,
-+				<1056000 30>,
-+				<1036000 40>,
-+				<1016000 50>;
-+
-+		pwm-reg-period = <8448>;
-+		regulators {
-+			vdd_logic: pwm-regulator {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1016000>;
-+				regulator-max-microvolt = <1114000>;
-+				regulator-name = "vdd_logic";
-+			};
-+		};
-+	};
--- 
-1.7.9.5
+							Thanx, Paul
 
