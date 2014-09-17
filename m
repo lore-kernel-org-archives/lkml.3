@@ -1,139 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045AbaIQVJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:09:04 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:36507 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756841AbaIQVJC (ORCPT
+	id S1756928AbaIQVQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:16:38 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:33507 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756625AbaIQVQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:09:02 -0400
+	Wed, 17 Sep 2014 17:16:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswdABb5GVR5LCtmPGdsb2JhbABhgw2DWIUHrTgGlhiFagQCAYEXFwEGAQEBATg3hAQBAQQnExwjEAgDDgoJJQ8FJQMHGhOIPcAUGBiFcYluB4RLAQSdC4wzizGBVSsvgkoBAQE
+Date: Thu, 18 Sep 2014 07:16:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Aaron Tomlin <atomlin@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, bmr@redhat.com, jcastillo@redhat.com,
+        mguzik@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] fs: Use a seperate wq for do_sync_work() to avoid a
+ potential deadlock
+Message-ID: <20140917211613.GU4322@dastard>
+References: <1410953942-32144-1-git-send-email-atomlin@redhat.com>
+ <20140917182202.GE19308@redhat.com>
+ <20140917204634.GB25400@atomlin.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL1qeaFt5ZBauD38WMPB7WLkOqkTgtfO-gLKo3of7C_V-53eLA@mail.gmail.com>
-References: <1410825087-5497-1-git-send-email-abrestic@chromium.org>
-	<1410825087-5497-22-git-send-email-abrestic@chromium.org>
-	<54195975.1010209@imgtec.com>
-	<CAL1qeaFt5ZBauD38WMPB7WLkOqkTgtfO-gLKo3of7C_V-53eLA@mail.gmail.com>
-Date: Wed, 17 Sep 2014 14:09:00 -0700
-X-Google-Sender-Auth: RmMubSXw5zTdEhF-IH7GR6meBoI
-Message-ID: <CAL1qeaEikmx3bsqNz1bvkhmyPU=GNuSGyMRQvcgxHYb2yj-aog@mail.gmail.com>
-Subject: Re: [PATCH 21/24] irqchip: mips-gic: Support local interrupts
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140917204634.GB25400@atomlin.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 10:40 AM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
-> On Wed, Sep 17, 2014 at 2:50 AM, Qais Yousef <qais.yousef@imgtec.com> wrote:
->> On 09/16/2014 12:51 AM, Andrew Bresticker wrote:
->>>
->>> The MIPS GIC supports 7 local interrupts, 2 of which are the GIC
->>> local watchdog and count/compare timer.  The remainder are CPU
->>> interrupts which may optionally be re-routed through the GIC.
->>> GIC hardware IRQs 0-6 are now used for local interrupts while
->>> hardware IRQs 7+ are used for external (shared) interrupts.
->>>
->>> Note that the 5 CPU interrupts may not be re-routable through
->>> the GIC.  In that case mapping will fail and the vectors reported
->>> in C0_IntCtl should be used instead.  gic_get_c0_compare_int() and
->>> gic_get_c0_perfcount_int() will return the correct IRQ number to
->>> use for the C0 timer and perfcounter interrupts based on the
->>> routability of those interrupts through the GIC.
->>>
->>> Malta, SEAD-3, and the GIC clockevent driver have been updated
->>> to use local interrupts and the R4K clockevent driver has been
->>> updated to poll for C0 timer interrupts through the GIC when
->>> the GIC is present.
->>>
->>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->
->>> diff --git a/arch/mips/include/asm/mips-boards/maltaint.h
->>> b/arch/mips/include/asm/mips-boards/maltaint.h
->>> index bdd6f39..38b06a0 100644
->>> --- a/arch/mips/include/asm/mips-boards/maltaint.h
->>> +++ b/arch/mips/include/asm/mips-boards/maltaint.h
->>> @@ -10,6 +10,8 @@
->>>   #ifndef _MIPS_MALTAINT_H
->>>   #define _MIPS_MALTAINT_H
->>>   +#include <asm/gic.h>
->>> +
->>
->>
->> nit: I think gic.h should be split to driver/irqchip/irq-mips-gic.h for
->> private definitions and include/linux/irqchip/irq-mips-gic.h for
->> exported/public definitions.
->
-> Yup, I was planning on doing this in the next series :).  Malta and
-> the clockevent/clocksource driver need to get cleaned up first though,
-> so that they don't have to use the private register definitions.
->
->>> diff --git a/drivers/irqchip/irq-mips-gic.c
->>> b/drivers/irqchip/irq-mips-gic.c
->>> index 6682a4e..3abe310 100644
->>> --- a/drivers/irqchip/irq-mips-gic.c
->>> +++ b/drivers/irqchip/irq-mips-gic.c
->
->>> @@ -95,12 +96,39 @@ cycle_t gic_read_compare(void)
->>>   }
->>>   #endif
->>>   +static bool gic_local_irq_is_routable(int intr)
->>> +{
->>> +       u32 vpe_ctl;
->>> +
->>> +       /* All local interrupts are routable in EIC mode. */
->>> +       if (cpu_has_veic)
->>> +               return true;
->>> +
->>> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_CTL), vpe_ctl);
->>> +       switch (intr) {
->>> +       case GIC_LOCAL_INT_TIMER:
->>> +               return vpe_ctl & GIC_VPE_CTL_TIMER_RTBL_MSK;
->>> +       case GIC_LOCAL_INT_PERFCTR:
->>> +               return vpe_ctl & GIC_VPE_CTL_PERFCNT_RTBL_MSK;
->>> +       case GIC_LOCAL_INT_FDC:
->>> +               return vpe_ctl & GIC_VPE_CTL_FDC_RTBL_MSK;
->>> +       case GIC_LOCAL_INT_SWINT0:
->>> +       case GIC_LOCAL_INT_SWINT1:
->>> +               /*
->>> +                * SWINT{0,1} are not routable in non-EIC mode, regardless
->>> +                * of the setting of SWINT_ROUTABLE.
->>> +                */
->>> +               return false;
->>
->>
->> Hmm AFAIK they are routable. Actually from hard reset they're automatically
->> routed to vpe0 pin 0 which caught me a number of times when trying to use
->> software interrupt on hardware that has GIC. When setting software interrupt
->> I was seeing pin 0 going high too and thought it's a hardware bug for a
->> while.
->
-> Interesting, the interAptiv User's Manual I have, in section 9.4.7.1,
-> says: "Note that Software Interrupts from the VPE are routed
-> internally by the CPU in vectored interrupt mode, and are only routed
-> through the GIC when the GIC is in EIC mode, regardless of the
-> GIC_VPEi_CTL register."  IIRC, there's a similar statement in the
-> proAptiv manual as well.  I didn't play with the SWINT bits myself, so
-> I wouldn't be surprised if that's wrong :).
->
->> I think all local interrupts should be masked at GIC initialisation except
->> for timer interrupt. I was preparing a set of patches for GIC but you beat
->> me into it :)
->
-> If SWINT gets routed both through the GIC and directly to the CPU,
-> then that's probably the best thing to do.  I suspect we'll also want
-> to leave the performance counter interrupt unmasked too, since,
-> unfortunately, both the HW perf event driver and oprofile do not use
-> the percpu IRQ API.
+On Wed, Sep 17, 2014 at 09:46:35PM +0100, Aaron Tomlin wrote:
+> On Wed, Sep 17, 2014 at 08:22:02PM +0200, Oleg Nesterov wrote:
+> > On 09/17, Aaron Tomlin wrote:
+> > >
+> > > Since do_sync_work() is a deferred function it can block indefinitely by
+> > > design. At present do_sync_work() is added to the global system_wq.
+> > > As such a deadlock is theoretically possible between sys_unmount() and
+> > > sync_filesystems():
+> > >
+> > >   * The current work fn on the system_wq (do_sync_work()) is blocked
+> > >     waiting to aquire a sb's s_umount for reading.
+> > >
+> > >   * The "umount" task is the current owner of the s_umount in
+> > >     question but is waiting for do_sync_work() to continue.
+> > >     Thus we hit a deadlock situation.
+> > >
+> > I can't comment the patches in this area, but I am just curious...
+> > 
+> > Could you explain this deadlock in more details? I simply can't understand
+> > what "waiting for do_sync_work()" actually means.
+> 
+> Hopefully this helps:
+> 
+> 	           "umount"                                      "events/1"
+> 
+> sys_umount					    sysrq_handle_sync
+>   deactivate_super(sb)				      emergency_sync
+>   {						    	schedule_work(work)
+>     ...						    	  queue_work(system_wq, work)
+>     down_write(&s->s_umount)			    	    do_sync_work(work)
+>     ...						      	      sync_filesystems(0)
+>     kill_block_super(s)				    		...
+>       generic_shutdown_super(sb)		    		down_read(&sb->s_umount)
+>       // sop->put_super(sb)
+>       ext4_put_super(sb)
+> 	invalidate_bdev(sb->s_bdev)
+> 	  lru_add_drain_all()
+> 	    for_each_online_cpu(cpu) {
+> 	      schedule_work_on(cpu, work)
+> 		queue_work_on(cpu, system_wq, work)
+> 		...
+> 	    }
+>   }
+> 
+>   - Both lru_add_drain and do_sync_work work items are added to
+>     the same global system_wq
+> 
+>   - The current work fn on the system_wq is do_sync_work and is
+>     blocked waiting to aquire an sb's s_umount for reading
+> 
+>   - The umount task is the current owner of the s_umount in
+>     question but is waiting for do_sync_work to continue.
+>     Thus we hit a deadlock situation.
 
-Instead of leaving those two unmasked, perhaps the better thing to do
-is to have a separate irq_chip which masks/unmasks on all VPEs.
+What kernel did you see this deadlock on?
+
+I don't see a deadlock here on a mainline kernel. The emergency sync
+work blocks, the new work gets queued, and the workqueue
+infrastructure simply pulls another kworker thread from the pool and
+runs the new work. IOWs, I can't see how this would deadlock unless
+the system_wq kworker pool has been fully depleted it's defined
+per-cpu concurrency depth. If the kworker thread pool is depleted
+then you have bigger problems than emergency sync not
+deadlocking....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
