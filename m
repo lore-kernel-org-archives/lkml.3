@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300AbaIQVlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:41:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29676 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570AbaIQVlH (ORCPT
+	id S1757025AbaIQVm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:42:27 -0400
+Received: from mx6-phx2.redhat.com ([209.132.183.39]:40044 "EHLO
+	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339AbaIQVm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:41:07 -0400
-Date: Thu, 18 Sep 2014 00:40:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Ragnar B. Johannsson" <ragnar@igo.is>
-Cc: gregkh@linuxfoundation.org, gdonald@gmail.com, himangi774@gmail.com,
-        joe@perches.com, joelpelaez@gmail.com, arnd@arndb.de,
-        jmmahler@gmail.com, peter.p.waskiewicz.jr@intel.com,
-        antoine@schweitzer-chaput.fr, anarey@gmail.com, c@24.io,
-        rickard_strandqvist@spectrumdigital.se, teobaluta@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] staging: rtl8192u: Move ieee80211_crypto_*
- declarations to ieee80211/ieee80211.h
-Message-ID: <20140917214027.GM17875@mwanda>
-References: <1410989043-53752-1-git-send-email-ragnar@igo.is>
+	Wed, 17 Sep 2014 17:42:26 -0400
+Date: Wed, 17 Sep 2014 17:41:54 -0400 (EDT)
+From: Rodrigo Freire <rfreire@redhat.com>
+To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Cc: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
+        linux-mtd@lists.infradead.org, Felix Fietkau <nbd@openwrt.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Herton Krzesinski <hkrzesin@redhat.com>
+Message-ID: <86761077.40163293.1410990114756.JavaMail.zimbra@redhat.com>
+In-Reply-To: <CAAEAJfDAG8KrPKqVC5NujGnbSyxmrAtFcLvhScYsNm8RT59Gnw@mail.gmail.com>
+References: <371358190.34795877.1410204429882.JavaMail.zimbra@redhat.com> <1444809468.34812041.1410206680931.JavaMail.zimbra@redhat.com> <20140909170231.GA14429@logfs.org> <1807144344.40128259.1410985683342.JavaMail.zimbra@redhat.com> <CAAEAJfDAG8KrPKqVC5NujGnbSyxmrAtFcLvhScYsNm8RT59Gnw@mail.gmail.com>
+Subject: Re: [PATCH V2] mtd: block2mtd: Present block2mtd timely on boot
+ time
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410989043-53752-1-git-send-email-ragnar@igo.is>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
+Thread-Topic: block2mtd: Present block2mtd timely on boot time
+Thread-Index: 6qicDHlKJWvry4cc69nQjrTl2gOawA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 09:24:03PM +0000, Ragnar B. Johannsson wrote:
+Holas Ezequiel,
 
-> diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-> index bdad3a2..d56c3aac 100644
-> --- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-> +++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-> @@ -2445,6 +2445,15 @@ extern void ieee80211_tkip_null(void);
->  extern void ieee80211_wep_null(void);
->  extern void ieee80211_ccmp_null(void);
->  
-> +extern int ieee80211_crypto_init(void);
-> +extern void ieee80211_crypto_deinit(void);
-> +extern int ieee80211_crypto_tkip_init(void);
-> +extern void ieee80211_crypto_tkip_exit(void);
-> +extern int ieee80211_crypto_ccmp_init(void);
-> +extern void ieee80211_crypto_ccmp_exit(void);
-> +extern int ieee80211_crypto_wep_init(void);
-> +extern void ieee80211_crypto_wep_exit(void);
-> +
+----- Original Message ----- 
+From: "Ezequiel Garcia" <ezequiel@vanguardiasur.com.ar> 
+> On 17 September 2014 21:28, Rodrigo Freire <rfreire@redhat.com> wrote: 
+> 
+> Using block2mtd sounds a bit unusual. I see that you are trying to get 
+> a more robust fs.... have you tried using f2fs instead of jffs2? 
 
-We don't normally put the extern here.  I don't think it adds anything
-to the readability.  Let's remove it.
+I see that it is still marked as Experimental as of latest (3.17-RC5)
+kernel. But will take a look in the future, thanks for pointing.
 
-regards,
-dan carpenter
 
+> > Currently, a block MTD device is not presented to the system on time, in 
+> > order to start mounting the filesystems. This patch ensures that block2mtd 
+> > is presented at the right time, so filesystems can be mounted on boot time. 
+> 
+> It worries me a bit to add such a long delay to the boot. If for some 
+> reason the SD is not working, then the kernel will wait (by default) 3 
+> seconds now? 
+
+Not really; see the decision path:
+IF block2mtd is not a module (is builtin), AND
+   IF there is a valid block2mtd= clause on kernel cmdline, AND
+      IF the device specified device on block2mtd= clause is still not present
+      THEN wait *up to* 3 seconds (or seconds=n if specified on block2mtd=
+           cmdline) to the device to show up. If the device shows up earlier,
+           the device is created and boot proceeds.
+      ELSE Fail to create the block2mtd device.
+ELSE keep booting the kernel normally, without any further delays.
+
+Best regards,
+
+- RF.
