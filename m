@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaIQHP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 03:15:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55485 "EHLO mga09.intel.com"
+	id S1754108AbaIQHQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 03:16:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51708 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776AbaIQHP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 03:15:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
-   d="scan'208";a="574277023"
-Message-ID: <5419342E.60602@intel.com>
-Date: Wed, 17 Sep 2014 15:11:42 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751506AbaIQHQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 03:16:50 -0400
+Message-ID: <54193542.6080101@redhat.com>
+Date: Wed, 17 Sep 2014 09:16:18 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
-In-Reply-To: <20140828194745.GA3761@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v11 net-next 12/12] bpf: mini eBPF library, test stubs
+ and verifier testsuite
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <1410325808-3657-13-git-send-email-ast@plumgrid.com> <54103776.3080706@redhat.com> <CAMEtUuzEQu30WiYprRcDBogJxxrDeNhvn=kF+z8cVvhR-vjTQg@mail.gmail.com>
+In-Reply-To: <CAMEtUuzEQu30WiYprRcDBogJxxrDeNhvn=kF+z8cVvhR-vjTQg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年08月29日 03:47, Paul E. McKenney wrote:
-> Currently, the expedited grace-period primitives do get_online_cpus().
-> This greatly simplifies their implementation, but means that calls to
-> them holding locks that are acquired by CPU-hotplug notifiers (to say
-> nothing of calls to these primitives from CPU-hotplug notifiers) can
-> deadlock.  But this is starting to become inconvenient:
-> https://lkml.org/lkml/2014/8/5/754
-> 
-> This commit avoids the deadlock and retains the simplicity by creating
-> a try_get_online_cpus(), which returns false if the get_online_cpus()
-> reference count could not immediately be incremented.  If a call to
-> try_get_online_cpus() returns true, the expedited primitives operate
-> as before.  If a call returns false, the expedited primitives fall back
-> to normal grace-period operations.  This falling back of course results
-> in increased grace-period latency, but only during times when CPU
-> hotplug operations are actually in flight.  The effect should therefore
-> be negligible during normal operation.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Lan Tianyu <tianyu.lan@intel.com>
+On 09/10/2014 08:08 PM, Alexei Starovoitov wrote:
+> On Wed, Sep 10, 2014 at 4:35 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>>
+>> Since we already have an extensive BPF test suite, that is, lib/test_bpf.c,
+>> which currently also does sanity checks for the classic BPF verifier, is
+>> there a reason these verifier test cases cannot be extended/integrated there
+>> as well but have to go to kernel/bpf/test_stub.c resp.
+>> samples/bpf/test_verifier.c ?
+>> I don't like that we put testing code into kernel/bpf/ whereas we already
+>> have a BPF test infrastructure in the kernel elsewhere.
+>
+> yes. there is a reason. Verifier needs to be tested from user space,
+> since it works on fds. Process local map_fd are part of the eBPF
+> programs. Therefore one is testing things from kernel and
+> another from userspace. We definitely need both.
+> Currently there is no use case to call verifier from inside
+> the kernel. I'm not sure there will be one. Verifier's main
+> purpose is to check user supplied programs and provide
+> humans an understandable error messages of what
+> is 'unsafe' in particular program.
+> Eventually we will integrate this verifier messages with
+> program compilation. Like, the user would write a program
+> in C then invoke a wrapper of compiler and verifier, which
+> will point to lines in C code which are doing something
+> wrong like loops or out of bounds access. Currently verifier
+> complains about particular 'unsafe' instruction, but
+> humans have hard time correlating asm to C.
 
-Hi Paul:
-	What's the status of the patch? Will you push it? Thanks.
-
--- 
-Best regards
-Tianyu Lan
+That actually still doesn't answer my question why the test stub
+cannot live in lib/test_bpf where we have our actual testing
+framework for eBPF/BPF, also since you exactly only build test_stub.c
+when TEST_BPF is enabled which is the Kconfig for lib/test_bpf.
