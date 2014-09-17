@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaIQMUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:20:55 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45802 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754904AbaIQMUx (ORCPT
+	id S1755231AbaIQMYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:24:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55152 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbaIQMYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:20:53 -0400
-Message-ID: <54197C99.8030601@hurleysoftware.com>
-Date: Wed, 17 Sep 2014 08:20:41 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 17 Sep 2014 08:24:31 -0400
+Date: Wed, 17 Sep 2014 14:24:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Martin Kelly <martin@martingkelly.com>
+Cc: x86@kernel.org, mingo@redhat.com, vishwesh.m.rudramuni@intel.com,
+        joe@perches.com, hpa@linux.intel.com, aubrey.li@linux.intel.com,
+        linux-kernel@vger.kernel.org, Martin Kelly <martkell@amazon.com>
+Subject: Re: [PATCH v2] x86/pmc_atom: Fix warning when CONFIG_DEBUG_FS=n
+Message-ID: <20140917122427.GB2704@gmail.com>
+References: <1410914975-23285-1-git-send-email-martin@martingkelly.com>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de> <5411967A.6090406@hurleysoftware.com> <54119AAA.9080907@linutronix.de> <5411B33F.10405@hurleysoftware.com> <54171B85.5060209@linutronix.de> <54186B89.8050505@linutronix.de>
-In-Reply-To: <54186B89.8050505@linutronix.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410914975-23285-1-git-send-email-martin@martingkelly.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 12:55 PM, Sebastian Andrzej Siewior wrote:
-> On 09/15/2014 07:01 PM, Sebastian Andrzej Siewior wrote:
->> On 09/11/2014 04:35 PM, Peter Hurley wrote:
->>> I do need to find out if omap hardware sets UART_MSR_DCTS when auto CTS
->>> is on. Would you mind running the debug patch below with HW flow control on?
->>
->> I didn't forget about this. However I told minicom to use hardware flow
->> control (and I see the driver set the HW bit) but I haven't seen that
->> uart_handle_cts_change() has been invoked at all. I'm going to check
->> two other boards and report then.
+
+* Martin Kelly <martin@martingkelly.com> wrote:
+
+> When compiling with CONFIG_DEBUG_FS=n, gcc emits an unused variable
+> warning for pmc_atom.c because "ret" is used only within the
+> CONFIG_DEBUG_FS block. This patch adds a dummy #ifdef for
+> pmc_dbgfs_register when CONFIG_DEBUG_FS=n to simplify the code and
+> remove the warning.
 > 
-> No, I don't get into this at all function.
+> Signed-off-by: Martin Kelly <martkell@amazon.com>
+> ---
+> Changes in v2:
+>   - Implemented Ingo Molnar's suggestion to #ifdef the function rather
+>     than the lines.
+> ---
+>  arch/x86/kernel/pmc_atom.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+> index 0c424a6..d06527a 100644
+> --- a/arch/x86/kernel/pmc_atom.c
+> +++ b/arch/x86/kernel/pmc_atom.c
+> @@ -235,6 +235,11 @@ err:
+>  	pmc_dbgfs_unregister(pmc);
+>  	return -ENODEV;
+>  }
+> +#else
+> +static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
+> +{
+> +	return 0;
+> +}
+>  #endif /* CONFIG_DEBUG_FS */
 
-Ok, good to know. Thanks for testing that.
+Ok, that part is good.
 
-> So I connected my am335x-evm
-> with beagle board xm because both of them have an old fashion UART
-> connector (instead those uart-to-usb). Both configured with HW-Flow and
-> I haven't seen the function invoked but I saw "port->icount.overrun"
-> being incremented. This shouldn't happen. So I am a little puzzled here…
+>  
+>  static int pmc_setup_dev(struct pci_dev *pdev)
+> @@ -262,13 +267,11 @@ static int pmc_setup_dev(struct pci_dev *pdev)
+>  	/* PMC hardware registers setup */
+>  	pmc_hw_reg_setup(pmc);
+>  
+> -#ifdef CONFIG_DEBUG_FS
+>  	ret = pmc_dbgfs_register(pmc, pdev);
+>  	if (ret) {
+>  		iounmap(pmc->regmap);
+>  		return ret;
+>  	}
+> -#endif /* CONFIG_DEBUG_FS */
+>  	return 0;
+>  }
 
-Yeah, that's weird. Do you have a break-out box to confirm that RTS/CTS are
-being driven?
+Just to paint the bike shed a bit, this could be further 
+simplified to something like:
 
-Regards,
-Peter Hurley
+	...
 
+  	ret = pmc_dbgfs_register(pmc, pdev);
+  	if (ret)
+  		iounmap(pmc->regmap);
+
+  	return ret;
+
+and then your patch will be perfect! :-)
+
+Thanks,
+
+	Ingo
