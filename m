@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916AbaIQVsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:48:24 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:43316 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755787AbaIQVsW (ORCPT
+	id S1757371AbaIQVu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:50:27 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:42768 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756514AbaIQVsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:48:22 -0400
+	Wed, 17 Sep 2014 17:48:24 -0400
 From: Frans Klaver <fransklaver@gmail.com>
 To: Darren Hart <dvhart@infradead.org>
 Cc: Frans Klaver <fransklaver@gmail.com>,
@@ -15,44 +15,132 @@ Cc: Frans Klaver <fransklaver@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         acpi4asus-user@lists.sourceforge.net,
         platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/9] eeepc cleanup
-Date: Wed, 17 Sep 2014 23:47:18 +0200
-Message-Id: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
+Subject: [PATCH 2/9] eeepc-laptop: change sysfs function names to API expectations
+Date: Wed, 17 Sep 2014 23:47:20 +0200
+Message-Id: <1410990447-3210-3-git-send-email-fransklaver@gmail.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
+References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the second installment cleaning up some things in the eeepc laptop
-driver.
+The eeepc-laptop driver follows the function naming convention
+<action>_<attrname>(), while the sysfs macros are built around the
+convention <attrname>_<action>(). Rename the sysfs functions to the
+convention used by sysfs. This makes it easier to use the available API
+later on.
 
-This depends on "eeepc-laptop: simplify parse_arg()".
+Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+---
+ drivers/platform/x86/eeepc-laptop.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-For those interested, I keep a copy based on Darren's testing branch on
-github:
-
-	https://github.com/fransklaver/linux.git tags/eeepc_cleanup_v2
-
-v1..v2:
-  - squash coding style fixes
-  - drop patch moving to file permission macros, in favor of
-  - move towards better sysfs api usage
-  - drop changes to existing sysfs return values
-
-Frans Klaver (9):
-  eeepc-laptop: clean up coding style
-  eeepc-laptop: change sysfs function names to API expectations
-  eeepc-laptop: use DEVICE_ATTR* to instantiate device_attributes
-  eeepc-laptop: pull out ACPI_STORE_FUNC and ACPI_SHOW_FUNC macros
-  eeepc-laptop: tell sysfs that the disp attribute is write-only
-  eeepc-laptop: pull out SENSOR_STORE_FUNC and SENSOR_SHOW_FUNC macros
-  eeepc-laptop: make fan1_input really read-only
-  eeepc-laptop: check proper return values in get_cpufv
-  eeepc-laptop: store_cpufv: return error if set_acpi fails
-
- drivers/platform/x86/eeepc-laptop.c | 117 ++++++++++++++++++------------------
- 1 file changed, 59 insertions(+), 58 deletions(-)
-
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index 653999e..0094449 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -296,13 +296,13 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
+ }
+ 
+ #define EEEPC_CREATE_DEVICE_ATTR(_name, _mode, _cm)			\
+-	static ssize_t show_##_name(struct device *dev,			\
++	static ssize_t _name##_show(struct device *dev,			\
+ 				    struct device_attribute *attr,	\
+ 				    char *buf)				\
+ 	{								\
+ 		return show_sys_acpi(dev, _cm, buf);			\
+ 	}								\
+-	static ssize_t store_##_name(struct device *dev,		\
++	static ssize_t _name##_store(struct device *dev,		\
+ 				     struct device_attribute *attr,	\
+ 				     const char *buf, size_t count)	\
+ 	{								\
+@@ -312,8 +312,8 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
+ 		.attr = {						\
+ 			.name = __stringify(_name),			\
+ 			.mode = _mode },				\
+-		.show   = show_##_name,					\
+-		.store  = store_##_name,				\
++		.show   = _name##_show,					\
++		.store  = _name##_store,				\
+ 	}
+ 
+ EEEPC_CREATE_DEVICE_ATTR(camera, 0644, CM_ASL_CAMERA);
+@@ -335,7 +335,7 @@ static int get_cpufv(struct eeepc_laptop *eeepc, struct eeepc_cpufv *c)
+ 	return 0;
+ }
+ 
+-static ssize_t show_available_cpufv(struct device *dev,
++static ssize_t available_cpufv_show(struct device *dev,
+ 				    struct device_attribute *attr,
+ 				    char *buf)
+ {
+@@ -352,7 +352,7 @@ static ssize_t show_available_cpufv(struct device *dev,
+ 	return len;
+ }
+ 
+-static ssize_t show_cpufv(struct device *dev,
++static ssize_t cpufv_show(struct device *dev,
+ 			  struct device_attribute *attr,
+ 			  char *buf)
+ {
+@@ -364,7 +364,7 @@ static ssize_t show_cpufv(struct device *dev,
+ 	return sprintf(buf, "%#x\n", (c.num << 8) | c.cur);
+ }
+ 
+-static ssize_t store_cpufv(struct device *dev,
++static ssize_t cpufv_store(struct device *dev,
+ 			   struct device_attribute *attr,
+ 			   const char *buf, size_t count)
+ {
+@@ -385,7 +385,7 @@ static ssize_t store_cpufv(struct device *dev,
+ 	return count;
+ }
+ 
+-static ssize_t show_cpufv_disabled(struct device *dev,
++static ssize_t cpufv_disabled_show(struct device *dev,
+ 			  struct device_attribute *attr,
+ 			  char *buf)
+ {
+@@ -394,7 +394,7 @@ static ssize_t show_cpufv_disabled(struct device *dev,
+ 	return sprintf(buf, "%d\n", eeepc->cpufv_disabled);
+ }
+ 
+-static ssize_t store_cpufv_disabled(struct device *dev,
++static ssize_t cpufv_disabled_store(struct device *dev,
+ 			   struct device_attribute *attr,
+ 			   const char *buf, size_t count)
+ {
+@@ -424,23 +424,23 @@ static struct device_attribute dev_attr_cpufv = {
+ 	.attr = {
+ 		.name = "cpufv",
+ 		.mode = 0644 },
+-	.show   = show_cpufv,
+-	.store  = store_cpufv
++	.show   = cpufv_show,
++	.store  = cpufv_store
+ };
+ 
+ static struct device_attribute dev_attr_available_cpufv = {
+ 	.attr = {
+ 		.name = "available_cpufv",
+ 		.mode = 0444 },
+-	.show   = show_available_cpufv
++	.show   = available_cpufv_show
+ };
+ 
+ static struct device_attribute dev_attr_cpufv_disabled = {
+ 	.attr = {
+ 		.name = "cpufv_disabled",
+ 		.mode = 0644 },
+-	.show   = show_cpufv_disabled,
+-	.store  = store_cpufv_disabled
++	.show   = cpufv_disabled_show,
++	.store  = cpufv_disabled_store
+ };
+ 
+ 
 -- 
 2.1.0
 
