@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706AbaIQTu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:50:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62227 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756006AbaIQTu0 (ORCPT
+	id S1756734AbaIQTvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:51:37 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55011 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756231AbaIQTvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:50:26 -0400
-Date: Wed, 17 Sep 2014 20:50:22 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: "heiko@sntech.de" <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>,
+	Wed, 17 Sep 2014 15:51:36 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] Documentation: dt-bindings: add dt binding info
- for rk3288-smp
-Message-ID: <20140917195022.GF7983@leverpostej>
-References: <1410864271-9277-1-git-send-email-kever.yang@rock-chips.com>
- <1410864271-9277-2-git-send-email-kever.yang@rock-chips.com>
- <20140916185439.GF14191@leverpostej>
- <5418DFFC.5030808@rock-chips.com>
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+Date: Wed, 17 Sep 2014 22:11:13 +0200
+Message-ID: <1628662.T2ReQ4irMm@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140917192259.GA18980@srcf.ucam.org>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <4416582.iOjLNrLDZE@vostro.rjw.lan> <20140917192259.GA18980@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5418DFFC.5030808@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 02:12:28AM +0100, Kever Yang wrote:
-> Hi Mark,
+On Wednesday, September 17, 2014 08:22:59 PM Matthew Garrett wrote:
+> On Wed, Sep 17, 2014 at 09:37:42PM +0200, Rafael J. Wysocki wrote:
 > 
->      Thanks for your comment.
-> On 09/17/2014 02:54 AM, Mark Rutland wrote:
-> > On Tue, Sep 16, 2014 at 11:44:28AM +0100, Kever Yang wrote:
-> >> This add documentation for rk3288 smp dt binding
-> >>
-> >> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> >> ---
-> >>
-> >> Changes in v2:
-> >> - add documentation
-> >>
-> >>   Documentation/devicetree/bindings/arm/cpus.txt | 1 +
-> >>   1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> >> index 298e2f6..4b46233 100644
-> >> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> >> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> >> @@ -195,6 +195,7 @@ nodes to be present and contain the properties described below.
-> >>   			    "qcom,kpss-acc-v1"
-> >>   			    "qcom,kpss-acc-v2"
-> >>   			    "rockchip,rk3066-smp"
-> >> +			    "rockchip,rk3288-smp"
-> > How do these differ?
-> rk3066 and rk3288 smp bring up code is quite different, so I need a new 
-> node "rockchip,rk3288-smp"
-> other than "rockchip,rk3066-smp".
+> > There are no implied IP issues with using the information there I know of and
+> > if there's any fine print anywhere that may suggest so, please let me know.
+> 
+> Using the information should be fine, but my understanding of the UEFI 
+> forum rules is that any submissions to UEFI specs must be from UEFI 
+> forum members - there are concerns around accidentally including 
+> patented material.
 
-The code being different is a Linux detail. What is different in the HW
-that necessitates the code being different?
+The documents in question are not regarded as UEFI specs, however.  They
+are just hosted by UEFI.
 
-> > What does "rockchip,rk3288-smp" mean exactly?
-> The driver who using this node is in 2/3 of this patchset, it goes to 
-> linux-arm-kernel list and linux-rockchip
-> list, I'm not sure if you have get that, maybe I need a RESEND?
+> The easy way around this is just for the bindings to 
+> be managed outside UEFI.
 
-Documentaiton and drivers are different things. A binding is a contract,
-and for that contract to be meaningful it needs to be described.
+Again, there's a difference between UEFI material and the UEFI hosting
+something (but not maintaining it).
 
-> > Presumably other nodes / properties are required?
-> Base on linux-next, I think only "rockchip,rk3288-smp" is new node to my 
-> driver.
+In principle, the bindings could be hosted by UEFI, but maintained by
+community members.
 
-But presumably there are other resources that you require (e.g. a system
-controller, perhaps a specific portion of sram). I can't just put
-"rockchip,rk3288-smp" into an otherwise empty DT and get SMP support, I
-would assume.
+Rafael
 
-Mark.
