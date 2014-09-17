@@ -1,91 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650AbaIQR5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:57:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55216 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756524AbaIQR5d (ORCPT
+	id S1756664AbaIQR7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:59:14 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:46287 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756412AbaIQR7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:57:33 -0400
-Date: Wed, 17 Sep 2014 19:57:27 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 9/9] mfd: syscon: add Atmel GPBR DT bindings
- documention
-Message-ID: <20140917195727.1c75a062@bbrezillon>
-In-Reply-To: <20140917163405.GM30918@lee--X1>
-References: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1410441525-25258-10-git-send-email-boris.brezillon@free-electrons.com>
-	<20140917163405.GM30918@lee--X1>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 17 Sep 2014 13:59:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140916195255.GN12361@n2100.arm.linux.org.uk>
+References: <1410872360-27029-1-git-send-email-k.kozlowski@samsung.com>
+	<1410872360-27029-4-git-send-email-k.kozlowski@samsung.com>
+	<CAPDyKFrNYxSx3KwOLg0Bgw2TCtsC2-1YXjo1kSms2ie_b8sNww@mail.gmail.com>
+	<20140916195255.GN12361@n2100.arm.linux.org.uk>
+Date: Wed, 17 Sep 2014 19:59:11 +0200
+Message-ID: <CAPDyKFrbC6Qh1mENctZQo1y3Mb3w3fSE8X3iYnChrmxhUpBXkQ@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On 16 September 2014 21:52, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Sep 16, 2014 at 08:25:25PM +0200, Ulf Hansson wrote:
+>> On 16 September 2014 14:59, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+>> > The AMBA bus driver defines runtime Power Management functions which
+>> > disable and unprepare AMBA bus clock. This is problematic for runtime PM
+>> > because unpreparing a clock might sleep so it is not interrupt safe.
+>> >
+>> > However some drivers may want to implement runtime PM functions in
+>> > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+>> > bus driver should only disable/enable the clock in runtime suspend and
+>> > resume callbacks.
+>> >
+>> > Detect the device driver behavior after calling its probe function and
+>> > store it. During runtime suspend/resume deal with clocks according to
+>> > stored value.
+>> >
+>> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> > ---
+>> >  drivers/amba/bus.c       | 29 +++++++++++++++++++++++++----
+>> >  include/linux/amba/bus.h |  1 +
+>> >  2 files changed, 26 insertions(+), 4 deletions(-)
+>> >
+>> > diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+>> > index 3cf61a127ee5..e8fd5706954f 100644
+>> > --- a/drivers/amba/bus.c
+>> > +++ b/drivers/amba/bus.c
+>> > @@ -94,8 +94,18 @@ static int amba_pm_runtime_suspend(struct device *dev)
+>> >         struct amba_device *pcdev = to_amba_device(dev);
+>> >         int ret = pm_generic_runtime_suspend(dev);
+>> >
+>> > -       if (ret == 0 && dev->driver)
+>> > -               clk_disable_unprepare(pcdev->pclk);
+>> > +       if (ret == 0 && dev->driver) {
+>> > +               /*
+>> > +                * Drivers should not change pm_runtime_irq_safe()
+>> > +                * after probe.
+>> > +                */
+>> > +               WARN_ON(pcdev->irq_safe != pm_runtime_is_irq_safe(dev));
+>>
+>> Do we really need a WARN_ON here. Driver shouldn't update their
+>> irq_safe value dynamically, right!?
+>
+> The driver shouldn't update it dynamically, and this makes sure *that*
+> is enforced since we end up depending on that property.  Hence the
+> check is sensible (and I even suggested it.)
 
-On Wed, 17 Sep 2014 09:34:05 -0700
-Lee Jones <lee.jones@linaro.org> wrote:
+The WARN_ON could be nice to have, but I think this is a task for PM
+core to handle.
 
-> On Thu, 11 Sep 2014, Boris BREZILLON wrote:
-> 
-> > The GPBR block provides a set of battery-backed registers that can be used
-> > to save data which need to be kept when the system is powered down and
-> > VDD-core is maintained by an external battery.
-> > 
-> > A typical usage is the RTT block (when used as an RTC) which needs one of
-> > those registers to save the current time.
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/atmel,gpbr.txt | 15 +++++++++++++++
-> >  1 file changed, 15 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-> > new file mode 100644
-> > index 0000000..a285695
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-> > @@ -0,0 +1,15 @@
-> > +* Device tree bindings for Atmel GPBR (General Purpose Backup Registers)
-> > +
-> > +The GPBR are a set of battery-backed registers.
-> > +
-> > +Required properties:
-> > +- compatible:		"atmel,at91sam9260-gpbr", "syscon"
-> > +- reg:			contains offset/length value of the GPBR memory
-> > +			region.
-> > +
-> > +Example:
-> > +
-> > +gpbr: gpbr@fffffd50 {
-> 
-> Is something referencing this node via phandle?  If not, please remove
-> the label.
+Copying flags shouldn't be needed for each an every instance of a
+driver/bus that manage irq_safe devices. That's my main point.
 
-Yes, the rtt device is referencing it in its atmel,rtt-rtc-time-reg
-property (see patch 8 of this series).
+>
+>> > +
+>> > +               if (pcdev->irq_safe)
+>> > +                       clk_disable(pcdev->pclk);
+>>
+>> Since the irq_safe flag, could be considered as a special case, an
+>> option for these cases - could be to leave the clock to be entirely
+>> handled from the driver's runtime PM callback instead.
+>
+> Too many sub-clauses to make much sense of that statement.
 
-Best Regards,
+Sorry, agree. :-)
 
-Boris
+>
+> I don't want drivers messing around with this stuff.  This is the /bus/
+> clock, not a device specific clock.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+For irq_safe devices, driver's will need to handle the
+clk_prepare|unprepare during system PM anyway. That's the reason to
+why I suggested this.
+
+On the other hand I agree with you, it's a bus clock...
+
+Kind regards
+Uffe
