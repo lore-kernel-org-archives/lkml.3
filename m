@@ -1,129 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856AbaIQUmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:42:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:11868 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755801AbaIQUmN (ORCPT
+	id S1756864AbaIQUsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:48:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54513 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756472AbaIQUsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:42:13 -0400
-Date: Wed, 17 Sep 2014 16:42:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: bug on ftrace with v3.17-rc5
-Message-ID: <20140917164211.41f87ae6@gandalf.local.home>
-In-Reply-To: <20140917172211.GD8140@saruman.home>
-References: <20140917172211.GD8140@saruman.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 17 Sep 2014 16:48:20 -0400
+Date: Wed, 17 Sep 2014 13:47:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.10.55
+Message-ID: <20140917204731.GA8837@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014 12:22:11 -0500
-Felipe Balbi <balbi@ti.com> wrote:
 
-> Hi,
-> 
-> I just triggered a bug with trace by using tail on the trace file:
-> 
-> # tail trace
-> [ 2940.039229] Unable to handle kernel paging request at virtual address 814efa9e
-> [ 2940.046904] pgd = ec3dc000
-> [ 2940.049737] [814efa9e] *pgd=00000000
-> [ 2940.053552] Internal error: Oops: 5 [#1] SMP ARM
-> [ 2940.058379] Modules linked in: usb_f_acm u_serial g_serial usb_f_uac2 libcomposite configfs xhci_hcd dwc3 udc_core matrix_keypad dwc3_omap lis3lv02d_i2c lis3lv02d input_polldev [last unloaded: g_audio]
-> [ 2940.077238] CPU: 0 PID: 3020 Comm: tail Tainted: G        W
-> 3.17.0-rc5-dirty #1097
-> [ 2940.085596] task: ed1b1040 ti: ed07c000 task.ti: ed07c000
-> [ 2940.091258] PC is at strnlen+0x18/0x68
-> [ 2940.095177] LR is at 0xfffffffe
-> [ 2940.098454] pc : [<c0356df8>]    lr : [<fffffffe>]    psr: a0000013
-> [ 2940.098454] sp : ed07ddb0  ip : ed07ddc0  fp : ed07ddbc
-> [ 2940.110445] r10: c070ff70  r9 : ed07de70  r8 : 00000000
-> [ 2940.115906] r7 : 814efa9e  r6 : ffffffff  r5 : ed4b6087  r4 : ed4b50c7
-> [ 2940.122726] r3 : 00000000  r2 : 814efa9e  r1 : ffffffff  r0 : 814efa9e
-> [ 2940.129546] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM Segment user
-> [ 2940.137000] Control: 10c5387d  Table: ac3dc059  DAC: 00000015
-> [ 2940.143006] Process tail (pid: 3020, stack limit = 0xed07c248)
-> [ 2940.149098] Stack: (0xed07ddb0 to 0xed07e000)
-> [ 2940.153660] dda0:                                     ed07dde4 ed07ddc0 c0359628 c0356dec
-> [ 2940.162203] ddc0: 00000000 ed4b50c7 bf03ae9c ed4b6087 bf03ae9e 00000002 ed07de3c ed07dde8
-> [ 2940.170740] dde0: c035ab50 c0359600 ffffffff ffffffff ff0a0000 ffffffff ed07de30 ed4b5088
-> [ 2940.179275] de00: ed4b50c7 00000fc0 ff0a0004 ffffffff ed4b5088 ed4b5088 00000000 00001000
-> [ 2940.187810] de20: 00001008 00000fc0 ed4b5088 00000000 ed07de68 ed07de40 c00f1e64 c035a9c4
-> [ 2940.196341] de40: bf03dae0 ed07de70 ed4b4000 ec25b280 ed4b4000 ec25b280 bf03dae0 ed07de9c
-> [ 2940.204886] de60: ed07de78 bf033324 c00f1e0c bf03ae9c 814efa9e ed428bc0 814eca3e 00000000
-> [ 2940.213428] de80: 814eba3e ed4b4000 03bd1201 c0c34790 ed07ded4 ed07dea0 c00edc0c bf0332d0
-> [ 2940.221994] dea0: 000002c7 ed07df10 ed07decc ed07deb8 ed4b4000 0000209c ec278ac0 00000000
-> [ 2940.230536] dec0: 00002000 ec0db340 ed07def4 ed07ded8 c00ee7ec c00eda90 c00ee7b0 ec278ac0
-> [ 2940.239075] dee0: ed4b4000 000002d5 ed07df44 ed07def8 c018b8d0 c00ee7bc c0166d3c ec278af0
-> [ 2940.247621] df00: 0001f090 ed07df78 000002c7 00000000 000002c8 00000000 00000000 ec0db340
-> [ 2940.256173] df20: 0001f090 ed07df78 ec0db340 00002000 0001f090 00000000 ed07df74 ed07df48
-> [ 2940.264729] df40: c0166e98 c018b5f4 00000001 c018535c 000168c1 00000000 ec0db340 ec0db340
-> [ 2940.273284] df60: 00002000 0001f090 ed07dfa4 ed07df78 c01675c4 c0166e0c 000168c1 00000000
-> [ 2940.281829] df80: 00002000 0000000a 0001f090 00000003 c000f064 ed07c000 00000000 ed07dfa8
-> [ 2940.290365] dfa0: c000ede0 c0167584 00002000 0000000a 00000003 0001f090 00002000 00000000
-> [ 2940.298909] dfc0: 00002000 0000000a 0001f090 00000003 7fffe000 0001e1e0 00002004 0000002f
-> [ 2940.307445] dfe0: 00000000 beed38ec 000104c8 b6e6397c 40000010 00000003 00000000 00000000
-> [ 2940.315992] [<c0356df8>] (strnlen) from [<c0359628>] (string.isra.8+0x34/0xe8)
-> [ 2940.323534] [<c0359628>] (string.isra.8) from [<c035ab50>] (vsnprintf+0x198/0x3fc)
-> [ 2940.331461] [<c035ab50>] (vsnprintf) from [<c00f1e64>] (trace_seq_printf+0x68/0x94)
-> [ 2940.339494] [<c00f1e64>] (trace_seq_printf) from [<bf033324>] (ftrace_raw_output_dwc3_log_request+0x60/0x78 [dwc3])
-> [ 2940.350424] [<bf033324>] (ftrace_raw_output_dwc3_log_request [dwc3]) from [<c00edc0c>] (print_trace_line+0x188/0x418)
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This shows it bugging with your tracepoint "dwc3_log_request".
+I'm announcing the release of the 3.10.55 kernel.
 
-+DECLARE_EVENT_CLASS(dwc3_log_request,
-+ TP_PROTO(struct dwc3_request *req),
-+ TP_ARGS(req),
-+ TP_STRUCT__entry(
-+ __field(struct dwc3_request *, req)
-+ ),
-+ TP_fast_assign(
-+ __entry->req = req;
-+ ),
-+ TP_printk("%s: req %p length %u/%u ==> %d",
-+ __entry->req->dep->name, __entry->req,
-+ __entry->req->request.actual, __entry->req->request.length,
-+ __entry->req->request.status
-+ )
-+);
+All users of the 3.10 kernel series must upgrade.
 
-(Bah, cut and paste from the git web page doesn't format nicely)
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-Anyway, I take issues with that: __entry->req->request.length,
-and all the other "__entry->req->*"
+thanks,
 
-Basically, you saved a pointer in the buffer called "req" and than you
-dereference it when you are printing. Does that pointer still exist?
+greg k-h
 
-If whatever you assigned "req" to gets freed, you can not dereference
-it from the buffer! If you need to save the length and other fields, you
-need to do it in the fast assign.
+------------
 
--- Steve
+ Makefile                                                  |    2=20
+ arch/mips/cavium-octeon/setup.c                           |   18=20
+ arch/mips/include/asm/reg.h                               |  260 +++++++++=
+-----
+ arch/mips/include/asm/thread_info.h                       |    2=20
+ arch/mips/kernel/binfmt_elfo32.c                          |   32 -
+ arch/mips/kernel/irq-gic.c                                |    6=20
+ arch/mips/kernel/ptrace.c                                 |    3=20
+ arch/mips/kernel/scall32-o32.S                            |    2=20
+ arch/mips/kernel/scall64-64.S                             |    2=20
+ arch/mips/kernel/scall64-n32.S                            |    2=20
+ arch/mips/kernel/scall64-o32.S                            |    2=20
+ arch/mips/kernel/unaligned.c                              |    1=20
+ arch/mips/mm/c-r4k.c                                      |    5=20
+ arch/mips/mm/tlbex.c                                      |    1=20
+ arch/openrisc/kernel/entry.S                              |   59 +--
+ arch/openrisc/kernel/signal.c                             |  198 +++++-----
+ arch/powerpc/include/asm/pte-hash64-64k.h                 |   32 +
+ arch/powerpc/mm/numa.c                                    |    2=20
+ arch/powerpc/platforms/pseries/hotplug-memory.c           |    2=20
+ block/blk-cgroup.c                                        |    7=20
+ drivers/acpi/acpica/utcopy.c                              |    6=20
+ drivers/acpi/processor_idle.c                             |    4=20
+ drivers/acpi/scan.c                                       |   15=20
+ drivers/char/tpm/tpm.c                                    |   69 ++-
+ drivers/char/tpm/tpm.h                                    |    3=20
+ drivers/char/tpm/tpm_tis.c                                |   31 +
+ drivers/firmware/efi/vars.c                               |    8=20
+ drivers/infiniband/core/iwcm.c                            |   27 +
+ drivers/infiniband/ulp/srp/ib_srp.c                       |   38 +-
+ drivers/iommu/amd_iommu.c                                 |   10=20
+ drivers/md/raid1.c                                        |    8=20
+ drivers/md/raid10.c                                       |   11=20
+ drivers/md/raid5.c                                        |    2=20
+ drivers/media/media-device.c                              |    2=20
+ drivers/media/tuners/xc4000.c                             |   20 -
+ drivers/media/tuners/xc5000.c                             |   22 -
+ drivers/media/usb/au0828/au0828-video.c                   |   34 -
+ drivers/mfd/omap-usb-host.c                               |    2=20
+ drivers/mtd/ftl.c                                         |    1=20
+ drivers/mtd/nand/omap2.c                                  |    2=20
+ drivers/regulator/arizona-ldo1.c                          |    2=20
+ drivers/scsi/bfa/bfa_ioc.h                                |    2=20
+ drivers/scsi/storvsc_drv.c                                |   19 +
+ drivers/spi/spi-omap2-mcspi.c                             |   14=20
+ drivers/spi/spi-orion.c                                   |   10=20
+ fs/cifs/cifsglob.h                                        |    5=20
+ fs/cifs/file.c                                            |    4=20
+ fs/cifs/inode.c                                           |    6=20
+ fs/cifs/readdir.c                                         |    4=20
+ fs/cifs/smb2file.c                                        |    2=20
+ fs/cifs/smb2inode.c                                       |    2=20
+ fs/cifs/smb2maperror.c                                    |    2=20
+ fs/cifs/smb2ops.c                                         |    2=20
+ fs/cifs/smb2pdu.c                                         |    5=20
+ fs/dcache.c                                               |    5=20
+ fs/namei.c                                                |    4=20
+ fs/namespace.c                                            |   59 ++-
+ fs/proc/array.c                                           |   11=20
+ fs/xfs/xfs_aops.c                                         |   61 +++
+ fs/xfs/xfs_dquot.c                                        |    3=20
+ fs/xfs/xfs_file.c                                         |   21 +
+ fs/xfs/xfs_qm.c                                           |    8=20
+ include/linux/capability.h                                |    5=20
+ include/linux/ceph/messenger.h                            |    2=20
+ include/linux/mount.h                                     |    9=20
+ kernel/audit.c                                            |    2=20
+ kernel/capability.c                                       |    4=20
+ kernel/smp.c                                              |    2=20
+ kernel/trace/ring_buffer.c                                |   31 -
+ net/bluetooth/l2cap_sock.c                                |    3=20
+ net/bluetooth/rfcomm/core.c                               |    7=20
+ net/bluetooth/rfcomm/sock.c                               |    3=20
+ net/bluetooth/sco.c                                       |    6=20
+ net/ceph/auth_x.c                                         |  256 +++++++--=
+----
+ net/ceph/messenger.c                                      |    8=20
+ net/ceph/mon_client.c                                     |   16=20
+ security/commoncap.c                                      |    3=20
+ sound/soc/codecs/max98090.c                               |    2=20
+ sound/soc/codecs/wm_adsp.c                                |    2=20
+ sound/soc/pxa/pxa-ssp.c                                   |    4=20
+ sound/soc/samsung/i2s.c                                   |   16=20
+ sound/soc/soc-pcm.c                                       |    1=20
+ tools/testing/selftests/Makefile                          |    1=20
+ tools/testing/selftests/mount/Makefile                    |   17=20
+ tools/testing/selftests/mount/unprivileged-remount-test.c |  242 +++++++++=
+++++
+ 85 files changed, 1276 insertions(+), 570 deletions(-)
+
+Aaro Koskinen (1):
+      MIPS: OCTEON: make get_system_type() thread-safe
+
+Al Viro (1):
+      dcache.c: get rid of pointless macros
+
+Alex Smith (1):
+      MIPS: asm/reg.h: Make 32- and 64-bit definitions available at the sam=
+e time
+
+Andrey Utkin (1):
+      powerpc/mm/numa: Fix break placement
+
+Aneesh Kumar K.V (1):
+      powerpc/mm: Use read barrier when creating real_pte
+
+Bart Van Assche (1):
+      IB/srp: Fix deadlock between host removal and multipathd
+
+Ben Hutchings (1):
+      bfa: Fix undefined bit shift on big-endian architectures with 32-bit =
+DMA address
+
+Chris Mason (1):
+      xfs: don't zero partial page cache pages during O_DIRECT writes
+
+Daniel Mack (1):
+      ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
+
+Dave Chinner (3):
+      xfs: quotacheck leaves dquot buffers without verifiers
+      xfs: don't dirty buffers beyond EOF
+      xfs: don't zero partial page cache pages during O_DIRECT writes
+
+David E. Box (1):
+      ACPICA: Utilities: Fix memory leak in acpi_ut_copy_iobject_to_iobject
+
+Eric Paris (1):
+      CAPABILITIES: remove undefined caps from all processes
+
+Eric W. Biederman (5):
+      mnt: Only change user settable mount flags in remount
+      mnt: Move the test for MNT_LOCK_READONLY from change_mount_flags into=
+ do_remount
+      mnt: Correct permission checks in do_remount
+      mnt: Change the default remount atime from relatime to the existing v=
+alue
+      mnt: Add tests for unprivileged remount cases that have found to be f=
+aulty
+
+Gavin Shan (1):
+      powerpc/pseries: Failure on removing device node
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.55
+
+Guenter Roeck (1):
+      firmware: Do not use WARN_ON(!spin_is_locked())
+
+Huacai Chen (2):
+      MIPS: tlbex: Fix a missing statement for HUGETLB
+      MIPS: Remove BUG_ON(!is_fpu_owner()) in do_ade()
+
+Ilya Dryomov (4):
+      libceph: set last_piece in ceph_msg_data_pages_cursor_init() correctly
+      libceph: add process_one_ticket() helper
+      libceph: do not hard code max auth ticket len
+      libceph: rename ceph_msg::front_max to front_alloc_len
+
+Jarkko Nikula (1):
+      ASoC: max98090: Fix missing free_irq
+
+Jarkko Sakkinen (1):
+      tpm: missing tpm_chip_put in tpm_get_random()
+
+Jason Gunthorpe (1):
+      tpm: Provide a generic means to override the chip returned timeouts
+
+Jeffrey Deans (1):
+      MIPS: GIC: Prevent array overrun
+
+Jiri Kosina (1):
+      ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
+
+Joerg Roedel (1):
+      iommu/amd: Fix cleanup_domain for mass device removal
+
+Jonas Bonn (1):
+      openrisc: Rework signal handling
+
+K. Y. Srinivasan (2):
+      Drivers: scsi: storvsc: Implement a eh_timed_out handler
+      drivers: scsi: storvsc: Correctly handle TEST_UNIT_READY failure
+
+Kevin Hao (1):
+      mtd/ftl: fix the double free of the buffers allocated in build_maps()
+
+Lan Tianyu (1):
+      ACPI: Run fixed event device notifications in process context
+
+Linus Torvalds (1):
+      vfs: fix bad hashing of dentries
+
+Mark A. Greer (1):
+      spi: omap2-mcspi: Configure hardware when slave driver changes mode
+
+Markos Chandras (1):
+      MIPS: asm: thread_info: Add _TIF_SECCOMP flag
+
+Mauro Carvalho Chehab (3):
+      media: xc5000: Fix get_frequency()
+      media: xc4000: Fix get_frequency()
+      media: au0828: Only alt setting logic when needed
+
+Michael Welling (1):
+      mfd: omap-usb-host: Fix improper mask use.
+
+NeilBrown (4):
+      md/raid6: avoid data corruption during recovery of double-degraded RA=
+ID6
+      md/raid10: fix memory leak when reshaping a RAID10.
+      md/raid10: Fix memory leak when raid10 reshape completes.
+      md/raid1,raid10: always abort recover on write error.
+
+Nikesh Oswal (1):
+      regulator: arizona-ldo1: remove bypass functionality
+
+Paul Burton (1):
+      MIPS: Prevent user from setting FCSR cause bits
+
+Pavel Shilovsky (5):
+      CIFS: Fix STATUS_CANNOT_DELETE error mapping for SMB2
+      CIFS: Fix async reading on reconnects
+      CIFS: Fix wrong directory attributes after rename
+      CIFS: Fix wrong filename length for SMB2
+      CIFS: Fix wrong restart readdir for SMB1
+
+Praveen Diwakar (1):
+      ASoC: wm_adsp: Add missing MODULE_LICENSE
+
+Qiao Zhou (1):
+      ASoC: pcm: fix dpcm_path_put in dpcm runtime update
+
+Ralf Baechle (2):
+      MIPS: Cleanup flags in syscall flags handlers.
+      MIPS: Fix accessing to per-cpu data when flushing the cache
+
+Roger Quadros (1):
+      mtd: nand: omap: Fix 1-bit Hamming code scheme, omap_calculate_ecc()
+
+Sage Weil (1):
+      libceph: gracefully handle large reply messages from the mon
+
+Salva Peir=F3 (1):
+      media: media-device: Remove duplicated memset() in media_enum_entitie=
+s()
+
+Sasha Levin (1):
+      kernel/smp.c:on_each_cpu_cond(): fix warning in fallback path
+
+Steve French (1):
+      CIFS: Possible null ptr deref in SMB2_tcon
+
+Steve Wise (1):
+      RDMA/iwcm: Use a default listen backlog if needed
+
+Steven Rostedt (Red Hat) (2):
+      ring-buffer: Always reset iterator to reader page
+      ring-buffer: Up rb_iter_peek() loop count to 3
+
+Sylwester Nawrocki (1):
+      ASoC: samsung: Correct I2S DAI suspend/resume ops
+
+Tejun Heo (1):
+      blkcg: don't call into policy draining if root_blkg is already gone
+
+Thomas Petazzoni (1):
+      spi: orion: fix incorrect handling of cell-index DT property
+
+Vignesh Raman (1):
+      Bluetooth: Avoid use of session socket after the session gets freed
+
+Vladimir Davydov (1):
+      Bluetooth: never linger on process exit
 
 
+--envbJBWh7q8WU6mo
+Content-Type: application/pgp-signature
 
-> [ 2940.361507] [<c00edc0c>] (print_trace_line) from [<c00ee7ec>] (s_show+0x3c/0x12c)
-> [ 2940.369330] [<c00ee7ec>] (s_show) from [<c018b8d0>] (seq_read+0x2e8/0x4a0)
-> [ 2940.376519] [<c018b8d0>] (seq_read) from [<c0166e98>] (vfs_read+0x98/0x158)
-> [ 2940.383796] [<c0166e98>] (vfs_read) from [<c01675c4>] (SyS_read+0x4c/0xa0)
-> [ 2940.390981] [<c01675c4>] (SyS_read) from [<c000ede0>] (ret_fast_syscall+0x0/0x48)
-> [ 2940.398792] Code: e24cb004 e3510000 e241e001 0a000011 (e5d01000) 
-> [ 2940.406980] ---[ end trace d8b38370fbb531f3 ]---
-> 
-> This is basically v3.17-rc5 with some USB patches I'm testing for v3.18,
-> including a patch where I added tracepoints to dwc3 [1]
-> 
-> [1] https://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git/commit/?h=next&id=2c4cbe6e5a9c71408b496e00a78ea9284e98af16
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJUGfNjAAoJEDjbvchgkmk+USMQAM7Kt4Mfj3m1tblV8sVlJqnP
+O67+8imeJOdXgfajuhUeYxEGosGxZ1dKcr3VPs0M+4NClUNsv7orKhY6J0dgtEch
+6cFTbBnKxg7A1VgM3Jzm/hwfrHzdjmWQWhHab1/RD0o6fyS/5b5RxlLIpSf6ks3K
+UPTx69IEDqH2pHM5XLX+EQDE1erQAEHwBQldu6OLC2kCiQFnl/JC9M7aXIpV4UVa
+yu07uh9jvaDGrDY5Xd/4NnySfRJj7TPfW1Y8GlT0CPiOKkwGvNwa+XvwSqNPnW05
+1VG/Fu96AfCO0hPucCoIW3+13myqbM/+OdLoWIBmQ/RnfyqzIzLf24UsJrPzE+R4
+35cUzoki939ng5htsGem4xtOoALTsFZBQgwLgW3dSQZq4o/oEHxHelcj7ibCnKyU
+yEQApxeaPnifhzpgS8mev7qAQTDj6n9OhKbaVVZjaVHQzFobhxBWPOZmM6zadqmP
+LIXEgAMnBV4zcYWfkO5Z4KsxpGZnaZuFUVyno4DKZe2WcBAry1zTACre8FagPITy
+z+2xGEOD88SFIuRoyQkami8nBRlJBju6UU6naK4Xa+9lI5wZMqyw6yJWwziJR+yR
+xLvb2qJRHF4OJr+8v3n9AoaQ/cxRq8kMlFr7BoRbCTJA7EDPCWt+qtDp0VG1ow6n
+Aal04OXImmOcxWx+uujV
+=aSAv
+-----END PGP SIGNATURE-----
+
+--envbJBWh7q8WU6mo--
