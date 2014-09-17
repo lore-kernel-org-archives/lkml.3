@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628AbaIQN4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:56:14 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:45391 "EHLO kanga.kvack.org"
+	id S1755506AbaIQN6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:58:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22327 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755287AbaIQN4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:56:13 -0400
-Date: Wed, 17 Sep 2014 09:56:11 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Milosz Tanski <milosz@adfin.com>, Jeff Moyer <jmoyer@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
-Message-ID: <20140917135611.GT24821@kvack.org>
-References: <cover.1410810247.git.milosz@adfin.com> <c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com> <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com> <CANP1eJF3Kxj+yOndLLS749bEy6=MmSJ1iBpPn6JPbKN3h3q87g@mail.gmail.com> <20140916214254.GK4322@dastard> <20140917122448.GR24821@kvack.org> <20140917134702.GB10720@thunk.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917134702.GB10720@thunk.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1754831AbaIQN57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 09:57:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,540,1406617200"; 
+   d="scan'208";a="478131206"
+From: Loic Poulain <loic.poulain@intel.com>
+To: linus.walleij@linaro.org, heikki.krogerus@linux.intel.com,
+        mika.westerberg@intel.com, mathias.nyman@linux.intel.com,
+        samuel.ortiz@intel.com
+Cc: linux-kernel@vger.kernel.org, Loic Poulain <loic.poulain@intel.com>
+Subject: [PATCHv2] pinctrl: baytrail: Clear DIRECT_IRQ bit
+Date: Wed, 17 Sep 2014 15:47:01 +0200
+Message-Id: <1410961621-15231-1-git-send-email-loic.poulain@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 09:47:02AM -0400, Theodore Ts'o wrote:
-...
-> % git version
-> git version 2.1.0
-> 
-> Perhaps you and other people are using your own scripts, and not using
-> git send-email?
+Direct Irq En bit can be initialized to a bad value.
+This bit has to be cleared for io access mode.
 
-That would be because none of my systems have git 2.1.0 on them.  Fedora 
-(and EPEL) appear to still be back on git 1.9.3 which does not have git 
-send-email.  Until that command is more widely propagated, I expect we'll 
-see people making this mistake every once in a while.
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+---
+ v2: Apply over ff998356b644ebe723127bd9eec6040b59a4a4f6 + add Warning
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+ drivers/pinctrl/pinctrl-baytrail.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 701a646..77db3db 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -230,10 +230,13 @@ static int byt_irq_type(struct irq_data *d, unsigned type)
+ 	spin_lock_irqsave(&vg->lock, flags);
+ 	value = readl(reg);
+
++	WARN(value & BYT_DIRECT_IRQ_EN, "Clearing direct_irq_en bit");
++
+ 	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
+ 	 * are used to indicate high and low level triggering
+ 	 */
+-	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
++	value &= ~(BYT_DIRECT_IRQ_EN | BYT_TRIG_POS | BYT_TRIG_NEG |
++		   BYT_TRIG_LVL);
+
+ 	switch (type) {
+ 	case IRQ_TYPE_LEVEL_HIGH:
+--
+1.8.3.2
+
