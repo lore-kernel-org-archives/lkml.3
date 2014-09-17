@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbaIQLbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 07:31:16 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:47574 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048AbaIQLbO (ORCPT
+	id S1755015AbaIQLfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 07:35:09 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56067 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244AbaIQLfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 07:31:14 -0400
-Date: Wed, 17 Sep 2014 19:30:35 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: behanw@converseincode.com, agk@redhat.com, clm@fb.com, davem@davemloft.net,
-        dm-devel@redhat.com, fabf@skynet.be, jbacik@fb.com, snitzer@redhat.com,
-        tadeusz.struk@intel.com, akpm@linux-foundation.org,
-        bruce.w.allan@intel.com, james.l.morris@oracle.com,
-        john.griffin@intel.com, linux-btrfs@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
-        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
-        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH v3 01/12] crypto: LLVMLinux: Add macro to remove use of
- VLAIS in crypto code
-Message-ID: <20140917113035.GB2129@gondor.apana.org.au>
-References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
- <1410766234-1634-2-git-send-email-behanw@converseincode.com>
- <20140917092212.GA1213@gondor.apana.org.au>
- <54196D5C.6040104@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54196D5C.6040104@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Sep 2014 07:35:07 -0400
+X-Original-SENDERIP: 10.186.119.199
+X-Original-MAILFROM: chanho.min@lge.com
+From: Chanho Min <chanho.min@lge.com>
+To: Russell King <linux@arm.linux.org.uk>, Stephen Boyd <sboyd@codeaurora.org>,
+        Michael Opdenacker <michael@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jongsung Kim <neidhard.kim@lge.com>, Chanho Min <chanho.min@lge.com>
+Subject: [PATCH v2] ARM: timer-sp: ensure interrupt is cleared at sp804_of_init
+Date: Wed, 17 Sep 2014 20:34:46 +0900
+Message-Id: <1410953686-15072-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 02:15:40PM +0300, Dmitry Kasatkin wrote:
-> On 17/09/14 12:22, Herbert Xu wrote:
-> > On Mon, Sep 15, 2014 at 12:30:23AM -0700, behanw@converseincode.com wrote:
-> >> From: Behan Webster <behanw@converseincode.com>
-> >>
-> >> Add a macro which replaces the use of a Variable Length Array In Struct (VLAIS)
-> >> with a C99 compliant equivalent. This macro instead allocates the appropriate
-> >> amount of memory using an char array.
-> >>
-> >> The new code can be compiled with both gcc and clang.
-> >>
-> >> struct shash_desc contains a flexible array member member ctx declared with
-> >> CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-> >> of the array declared after struct shash_desc with long long.
-> >>
-> >> No trailing padding is required because it is not a struct type that can
-> >> be used in an array.
-> >>
-> >> The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-> >> as would be the case for a struct containing a member with
-> >> CRYPTO_MINALIGN_ATTR.
-> >>
-> >> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> > Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-> >
-> > Thanks,
-> 
-> Just in case.
-> I would still follow advice from "Michał Mirosław" to use shash##__desc[]
+sp804 may not be added to the tick device if the higher device is
+already registered. In this case, If pending interrupt is existed
+(usually It will be passed from the boot loader), inetrrupt is occured
+without event_handler then it cause kernel panic. So Interrupts
+should be cleared before clockevent is registered.
 
-Oh yes of course.  My ack is more about the approach.
+Changes since v1:
+ - Move to sp804_of_init
+ - Clear TIMER2 interrupt
+ - Update commit log
 
-Cheers,
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ arch/arm/common/timer-sp.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
+index fd6bff0..e3cc08e 100644
+--- a/arch/arm/common/timer-sp.c
++++ b/arch/arm/common/timer-sp.c
+@@ -226,6 +226,10 @@ static void __init sp804_of_init(struct device_node *np)
+ 	writel(0, base + TIMER_CTRL);
+ 	writel(0, base + TIMER_2_BASE + TIMER_CTRL);
+ 
++	/* Ensure interrupt is cleared */
++	writel(1, base + TIMER_INTCLR);
++	writel(1, base + TIMER_2_BASE + TIMER_INTCLR);
++
+ 	if (initialized || !of_device_is_available(np))
+ 		goto err;
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.9.5
+
