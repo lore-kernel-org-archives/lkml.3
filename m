@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746AbaIQTBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:01:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53495 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207AbaIQTBh (ORCPT
+	id S1756765AbaIQTBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:01:52 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39414 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730AbaIQTBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:01:37 -0400
-Date: Wed, 17 Sep 2014 12:00:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v4 04/11] drivers: base: support cpu cache information
- interface to userspace via sysfs
-Message-ID: <20140917190048.GA4063@kroah.com>
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
- <1409763617-17074-5-git-send-email-sudeep.holla@arm.com>
- <5419C3F6.4050607@arm.com>
+	Wed, 17 Sep 2014 15:01:50 -0400
+Message-ID: <5419DA91.8090409@gmail.com>
+Date: Wed, 17 Sep 2014 12:01:37 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5419C3F6.4050607@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: linux-kernel@vger.kernel.org
+CC: tglx@linutronix.de, jason@lakedaemon.net
+Subject: Re: [PATCH v3] genirq: warn on inconstent flags and flow handler
+References: <1409164725-25901-1-git-send-email-f.fainelli@gmail.com>
+In-Reply-To: <1409164725-25901-1-git-send-email-f.fainelli@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 06:25:10PM +0100, Sudeep Holla wrote:
-> Hi Greg,
+On 08/27/2014 11:38 AM, Florian Fainelli wrote:
+> It is currently possible for a generic irq chip driver to set IRQ_LEVEL
+> and have its irq flow handler be handle_edge_irq. Setting IRQ_LEVEL in
+> such a case does not make sense, and will actually prevent e.g: the
+> software resend logic from kicking, and potential other problems too.
 > 
-> On 03/09/14 18:00, Sudeep Holla wrote:
-> >From: Sudeep Holla <sudeep.holla@arm.com>
-> >
-> >This patch adds initial support for providing processor cache information
-> >to userspace through sysfs interface. This is based on already existing
-> >implementations(x86, ia64, s390 and powerpc) and hence the interface is
-> >intended to be fully compatible.
-> >
-> >The main purpose of this generic support is to avoid further code
-> >duplication to support new architectures and also to unify all the existing
-> >different implementations.
-> >
-> >This implementation maintains the hierarchy of cache objects which reflects
-> >the system's cache topology. Cache devices are instantiated as needed as
-> >CPUs come online. The cache information is replicated per-cpu even if they are
-> >shared. A per-cpu array of cache information maintained is used mainly for
-> >sysfs-related book keeping.
-> >
-> >It also implements the shared_cpu_map attribute, which is essential for
-> >enabling both kernel and user-space to discover the system's overall cache
-> >topology.
-> >
-> >This patch also add the missing ABI documentation for the cacheinfo sysfs
-> >interface already, which is well defined and widely used.
-> >
+> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+
+Thomas, do you need me to resubmit this patch? It still applies cleanly
+on top of irq/core db985cbd67c45f875ef43cb5febfaa8cbd203c27 ("Merge tag
+'irqchip-core-3.18' of git://git.infradead.org/users/jcooper/linux into
+irq/core").
+
+Thanks!
+
+> ---
+> Changes in v3:
+> - replaced BUG_ON() with WARN_ON(), essentially making it similar to v1
 > 
-> Can you review the first 4 patches in this series please ?
+> Changes in v2:
+> - replaced WARN_ON() with BUG_ON()
+> 
+>  kernel/irq/chip.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index a2b28a2fd7b1..939ae1283ec9 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -749,8 +749,13 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+>  		irqd_set(&desc->irq_data, IRQD_PER_CPU);
+>  	if (irq_settings_can_move_pcntxt(desc))
+>  		irqd_set(&desc->irq_data, IRQD_MOVE_PCNTXT);
+> -	if (irq_settings_is_level(desc))
+> +	if (irq_settings_is_level(desc)) {
+> +		/* Setting IRQD_LEVEL does not make sense on non-level
+> +		 * sensitive interrupts
+> +		 */
+> +		WARN_ON(desc->handle_irq != handle_level_irq);
+>  		irqd_set(&desc->irq_data, IRQD_LEVEL);
+> +	}
+>  
+>  	irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
+>  
+> 
 
-It's in my todo queue, which is really long at the moment due to me
-going to conferences (at one right now...)  Will be working on this
-soon, thanks for your patience.
-
-greg k-h
