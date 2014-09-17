@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaIQQhU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:37:20 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:44086 "EHLO mailhub1.si.c-s.fr"
+	id S1756300AbaIQQne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:43:34 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:44134 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755682AbaIQQhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:37:11 -0400
+	id S1756080AbaIQQhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:37:19 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v3 01/21] powerpc/8xx: Declare SPRG2 as a SCRATCH register
-Message-Id: <20140917163657.1D9A71AB023@localhost.localdomain>
-Date: Wed, 17 Sep 2014 18:36:57 +0200 (CEST)
+Subject: [PATCH v3 12/21] powerpc/8xx: Don't use MD_TWC for walk
+Message-Id: <20140917163659.815C81AB03B@localhost.localdomain>
+Date: Wed, 17 Sep 2014 18:36:59 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since coming 469d62be9263b92f2c3329540cbb1c076111f4f3, SPRG2 is used as a
-scratch register just like SPRG0 and SPRG1. So Declare it as such and fix
-the comment which is not valid anymore since that commit.
+MD_TWC can only be used properly with 4k pages.
+So lets calculate level 2 table index by ourselves.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
 Changes in v2:
-- None
+- No need to save r11 in cr, we can do without modifying r11 in DataStoreTLBMiss
 
 Changes in v3:
 - None
 
- arch/powerpc/include/asm/reg.h |    3 ++-
- arch/powerpc/kernel/head_8xx.S |   10 +++++-----
- 2 files changed, 7 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |   28 ++++++++++++----------------
+ 1 files changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
-index cb9c174..b6a7d62 100644
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -888,7 +888,7 @@
-  * 32-bit 8xx:
-  *	- SPRG0 scratch for exception vectors
-  *	- SPRG1 scratch for exception vectors
-- *	- SPRG2 apparently unused but initialized
-+ *	- SPRG2 scratch for exception vectors
-  *
-  */
- #ifdef CONFIG_PPC64
-@@ -994,6 +994,7 @@
- #ifdef CONFIG_8xx
- #define SPRN_SPRG_SCRATCH0	SPRN_SPRG0
- #define SPRN_SPRG_SCRATCH1	SPRN_SPRG1
-+#define SPRN_SPRG_SCRATCH2	SPRN_SPRG2
- #endif
- 
- 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 55d12fb..1329c5a 100644
+index ad15070..0f571f5 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -301,7 +301,7 @@ InstructionTLBMiss:
- 	stw	r11, 4(r0)
- #else
- 	mtspr	SPRN_DAR, r10
--	mtspr	SPRN_SPRG2, r11
-+	mtspr	SPRN_SPRG_SCRATCH2, r11
+@@ -297,8 +297,6 @@ InstructionTLBMiss:
+ 	addi	r11, r10, -0x1000
+ 	tlbie	r11
  #endif
- 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
- #ifdef CONFIG_8xx_CPU15
-@@ -363,7 +363,7 @@ InstructionTLBMiss:
- 	mfspr	r10, SPRN_DAR
- 	mtcr	r10
- 	mtspr	SPRN_DAR, r11	/* Tag DAR */
--	mfspr	r11, SPRN_SPRG2
-+	mfspr	r11, SPRN_SPRG_SCRATCH2
- #else
- 	lwz	r11, 0(r0)
- 	mtcr	r11
-@@ -386,7 +386,7 @@ InstructionTLBMiss:
- 	mtcr	r10
- 	li	r11, 0x00f0
- 	mtspr	SPRN_DAR, r11	/* Tag DAR */
--	mfspr	r11, SPRN_SPRG2
-+	mfspr	r11, SPRN_SPRG_SCRATCH2
- #else
- 	lwz	r11, 0(r0)
- 	mtcr	r11
-@@ -409,7 +409,7 @@ DataStoreTLBMiss:
- 	stw	r11, 4(r0)
- #else
- 	mtspr	SPRN_DAR, r10
--	mtspr	SPRN_SPRG2, r11
-+	mtspr	SPRN_SPRG_SCRATCH2, r11
- #endif
- 	mfspr	r10, SPRN_M_TWB	/* Get level 1 table entry address */
+-	DO_8xx_CPU6(0x3780, r3)
+-	mtspr	SPRN_MD_EPN, r10	/* Have to use MD_EPN for walk, MI_EPN can't */
  
-@@ -487,7 +487,7 @@ DataStoreTLBMiss:
- 	mfspr	r10, SPRN_DAR
- 	mtcr	r10
- 	mtspr	SPRN_DAR, r11	/* Tag DAR */
--	mfspr	r11, SPRN_SPRG2
-+	mfspr	r11, SPRN_SPRG_SCRATCH2
- #else
- 	mtspr	SPRN_DAR, r11	/* Tag DAR */
- 	lwz	r11, 0(r0)
+ 	/* If we are faulting a kernel address, we have to use the
+ 	 * kernel page tables.
+@@ -326,10 +324,9 @@ InstructionTLBMiss:
+ 	ori	r11,r11,1		/* Set valid bit */
+ 	DO_8xx_CPU6(0x2b80, r3)
+ 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
+-	DO_8xx_CPU6(0x3b80, r3)
+-	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+-	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
+-	lwz	r10, 0(r11)	/* Get the pte */
++	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
++	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	lwzx	r10, r10, r11	/* Get the pte */
+ 
+ #ifdef CONFIG_SWAP
+ 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
+@@ -395,12 +392,13 @@ DataStoreTLBMiss:
+ 
+ 	/* We have a pte table, so load fetch the pte from the table.
+ 	 */
+-	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+-	DO_8xx_CPU6(0x3b80, r3)
+-	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+-	mfspr	r10, SPRN_MD_TWC	/* ....and get the pte address */
++	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
++	/* Extract level 2 index */
++	rlwinm	r10, r10, 22, 20, 29
++	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
+ 	lwz	r10, 0(r10)	/* Get the pte */
+ 
++	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+ 	/* Insert the Guarded flag into the TWC from the Linux PTE.
+ 	 * It is bit 27 of both the Linux PTE and the TWC (at least
+ 	 * I got that right :-).  It will be better when we can put
+@@ -524,18 +522,16 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	/* fetch instruction from memory. */
+ 	mfspr	r10, SPRN_SRR0
+ 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
+-	DO_8xx_CPU6(0x3780, r3)
+-	mtspr	SPRN_MD_EPN, r10
+ 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
+ 	beq-	3f		/* Branch if user space */
+ 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
+ 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+ 3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
+ 	lwzx	r11, r10, r11	/* Get the level 1 entry */
+-	DO_8xx_CPU6(0x3b80, r3)
+-	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
+-	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
+-	lwz	r11, 0(r11)	/* Get the pte */
++	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
++	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
++	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
++	lwzx	r11, r10, r11	/* Get the pte */
+ #ifdef CONFIG_8xx_CPU6
+ 	lwz	r3, 8(r0)	/* restore r3 from memory */
+ #endif
 -- 
 1.7.1
 
