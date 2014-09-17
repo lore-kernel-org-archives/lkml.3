@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaIQEzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 00:55:17 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:41800 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750985AbaIQEzP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 00:55:15 -0400
-From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Fabio Estevam <festevam@gmail.com>
-Cc: "matwey@sai.msu.ru" <matwey@sai.msu.ru>, Jingoo Han <jg1.han@samsung.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "matwey.kornilov@gmail.com" <matwey.kornilov@gmail.com>
-Date: Wed, 17 Sep 2014 12:54:51 +0800
-Subject: RE: [PATCH] Export functions from pcie-designware
-Thread-Topic: [PATCH] Export functions from pcie-designware
-Thread-Index: Ac/SB11VfZpxpTKVRQCReWAVNzO1YgAKOnFQ
-Message-ID: <2CC2A0A4A178534D93D5159BF3BCB661ABCD7BCF19@EAPEX1MAIL1.st.com>
-References: <1409401476-5002-1-git-send-email-matwey@sai.msu.ru>
- <CAOMZO5DzNo3Y6=R4mA=h0+RjWoM6UBCqXxqeEqUM4iu5RjrBEA@mail.gmail.com>
- <20140916233841.GJ5050@google.com>
-In-Reply-To: <20140916233841.GJ5050@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-17_02:2014-09-16,2014-09-17,1970-01-01 signatures=0
+	id S1751594AbaIQEzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 00:55:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33377 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaIQEzh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 00:55:37 -0400
+Date: Wed, 17 Sep 2014 00:55:32 -0400 (EDT)
+Message-Id: <20140917.005532.2054822778882237895.davem@davemloft.net>
+To: hock.leong.kweh@intel.com
+Cc: peppe.cavallaro@st.com, rayagond@vayavyalabs.com, vbridgers2013@gmail.com,
+        srinivas.kandagatla@st.com, wens@csie.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, boon.leong.ong@intel.com
+Subject: Re: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B7E9DCA@PGSMSX102.gar.corp.intel.com>
+References: <F54AEECA5E2B9541821D670476DAE19C2B7E99A7@PGSMSX102.gar.corp.intel.com>
+	<20140916.150037.1715537913178712290.davem@davemloft.net>
+	<F54AEECA5E2B9541821D670476DAE19C2B7E9DCA@PGSMSX102.gar.corp.intel.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 16 Sep 2014 21:55:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bjorn,
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+Date: Wed, 17 Sep 2014 02:41:39 +0000
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Wednesday, September 17, 2014 5:09 AM
-> To: Fabio Estevam
-> Cc: matwey@sai.msu.ru; Mohit KUMAR DCG; Jingoo Han; linux-
-> pci@vger.kernel.org; linux-kernel; matwey.kornilov@gmail.com
-> Subject: Re: [PATCH] Export functions from pcie-designware
-> 
-> On Sat, Aug 30, 2014 at 10:07:30AM -0300, Fabio Estevam wrote:
-> > On Sat, Aug 30, 2014 at 9:24 AM,  <matwey@sai.msu.ru> wrote:
-> > > From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-> > >
-> > > pcie-spear13xx when built as module requires the functions from pcie-
-> designware.
-> > > Export them properly.
-> 
-> I don't know how valuable pcie-spear13xx as a module is.  No other host
-> drivers are supported as a module.  Maybe we should just change pcie-
-> spear13xx from tristate to bool?
-> 
--  Sachin's patch is already doing this:
-http://www.spinics.net/lists/linux-pci/msg33665.html
+> Thanks for the pointer. I did a quickly checking on the class number to see if
+> I could use it for differentiation the ports number. Whereas I found them 
+> both have the same class number as well. Below shows the "lspci" dump to 
+> all the PCI devices on Quark X1000 Galileo board (Ethernet controllers are
+> 00:14.6 and 00:14.7). Very unfortunately we are unlikely to use the class 
+> number as well as pci_device_id for the differentiation.
+ ...
+> 00:14.6 "Class 0200" "8086" "0937" "8086" "0937"
+> 00:14.7 "Class 0200" "8086" "0937" "8086" "0937"
 
-You acknowledge it to apply for v3.17 but somehow it has been left out.
+Are you kidding me?  It's a perfect way to identify this device, it
+properly uses PCI_CLASS_NETWORK_ETHERNET (0x0200) in both cases and
+this will not match any other function on this PCI device at all.
 
-Regards
-Mohit
-
+Please do as I suggested and use the PCI class for the differentiation
+and matching during probing.
