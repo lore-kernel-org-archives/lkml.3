@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898AbaIQLIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 07:08:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48133 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754119AbaIQLIp (ORCPT
+	id S1755244AbaIQLJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 07:09:24 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:46695 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbaIQLJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 07:08:45 -0400
-Message-ID: <1410952107.3040.97.camel@decadent.org.uk>
-Subject: Re: [PATCH 3.13 104/187] Revert "selinux: fix the default socket
- labeling in sock_graft()"
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Paul Moore <pmoore@redhat.com>
-Date: Wed, 17 Sep 2014 12:08:27 +0100
-In-Reply-To: <1410818997-9432-105-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-	 <1410818997-9432-105-git-send-email-kamal@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-vJMJ3qq7BF1rs71OsNQv"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:cde6:1b3a:bf85:5ca0
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 17 Sep 2014 07:09:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410538794.8852.35.camel@AMDC723>
+References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
+	<CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
+	<1410453908.8852.9.camel@AMDC723>
+	<CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
+	<1410538794.8852.35.camel@AMDC723>
+Date: Wed, 17 Sep 2014 13:09:18 +0200
+X-Google-Sender-Auth: h7Zwx74l6L6HUgWjrIjAJFpPmtQ
+Message-ID: <CAMuHMdUCNCfXJt8eP++Qzx108gujcavJJYZPL7hiYwOPtC96fw@mail.gmail.com>
+Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct generic_pm_domain-s
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Maciej Matraszek <m.matraszek@samsung.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Maciej,
 
---=-vJMJ3qq7BF1rs71OsNQv
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 12, 2014 at 6:19 PM, Maciej Matraszek
+<m.matraszek@samsung.com> wrote:
+>> > (though 'runtime status' alignment seems odd).
+>>
+>> What's wrong with it?
+>
+> Nothing big, just for such short device names it doesn't look aesthetic to me :).
 
-On Mon, 2014-09-15 at 15:08 -0700, Kamal Mostafa wrote:
-> 3.13.11.7 -stable review patch.  If anyone has any objections, please let=
- me know.
->=20
-> ------------------
->=20
-> From: Paul Moore <pmoore@redhat.com>
->=20
-> commit 2873ead7e46694910ac49c3a8ee0f54956f96e0c upstream.
->=20
-> This reverts commit 4da6daf4d3df5a977e4623963f141a627fd2efce.
-[...]
+In legacy mode, using platform code (without DT), the device names are
+longer :-)
 
-Which is earlier in this series (72).  Shouldn't you drop them both?
+BTW, the list of slaves is indented by two more spaces than the column title:
 
-Ben.
+    domain                      status         slaves
+a4s                             on               a3sp, a3sm, a3sg
 
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
+This is also the case in V2.
 
---=-vJMJ3qq7BF1rs71OsNQv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Gr{oetje,eeting}s,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+                        Geert
 
-iQIVAwUAVBlrtOe/yOyVhhEJAQr9uQ/9HyCQxqOuqbB+kBnJmjaWiZkf31Z+8kth
-49UcwDKWel1OZJlM8SGXsROqwM+xts71aIlrBxNJhJIiJOgeMjmngXYxrU+2n1jm
-wMVE4TMIkw+kxfTSoGzhH/Cgh7akpKWcvUhJ/dYAwn3Zl/bzclEtU+yYGyRct5mY
-FkZgSRLdA3+zFRUDlXiEBUmE0vX7F/OPU2YI1p+/ZUVQGdpRaXZxKi6uUyBKTXn3
-3eabCYb4q29ORT+Ig5QzTmz/UPx308G8WOrI8VW9fukX4QEbdlq6ffVE6cPmLnyq
-HnxKukwNc1rkz2owDUVtV4vKbhI/dy4dGb7WjYtpcOfuyGrskRVcOZXECVMj2Bgy
-6kS0yJM22Nas5Yte4hY32LRCwcFF+kegKhlmXnM5DeVkL3ytAd6N3Ob9v1Ib9kOO
-pnhXB95pIz7Gc0fx1GTa26VweA5EmalDoamxvjtbmUfM22o38GUyANBKknqQjTno
-s5uc8N0tFzgYCaoe6ZJMNtF1v8mc0pEUQSC/DjNXJ3Rls0teCHz2ocXe3JvgYwjY
-3FBB8pUwN/MZVDKtwV8IzCUmaX1rJkjpJdLJJnEpMJyATgkA1Mh5cLQZqpGomttq
-TBTdgN/9Aptly2IVLN1csuYlIGT1maN9AZF2gp+gDNfLbxRChUe/UjAX/pHaIKct
-UeRWurfE1R8=
-=5lEN
------END PGP SIGNATURE-----
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
---=-vJMJ3qq7BF1rs71OsNQv--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
