@@ -1,116 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201AbaIQRBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:01:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54473 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615AbaIQRBK (ORCPT
+	id S1756215AbaIQRB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:01:57 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:36468 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755731AbaIQRB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:01:10 -0400
-Date: Wed, 17 Sep 2014 12:01:04 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Sebastian Reichel <sre@kernel.org>, Lee Jones <lee.jones@linaro.org>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/2] Documentation: devicetree: mfd: twl4030-power:
- Use the standard 'ti,system-power-controller' to mark power control
-Message-ID: <20140917170104.GA26864@kahuna>
-References: <1410957252-764-1-git-send-email-nm@ti.com>
- <1410957252-764-2-git-send-email-nm@ti.com>
- <20140917154400.GE30918@lee--X1>
- <20140917165529.GA24699@earth.universe>
+	Wed, 17 Sep 2014 13:01:56 -0400
+Date: Wed, 17 Sep 2014 10:01:50 -0700
+From: Graeme Gregory <graeme.gregory@linaro.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: suravee.suthikulpanit@amd.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, linux-arm-kernel@lists.infradead.org,
+        linux-apci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        astone@redhat.com, hanjun.guo@linaro.org, rjw@rjwysocki.net,
+        marc.zyngier@arm.com, mark.rutland@arm.com, Sudeep.Holla@arm.com,
+        olof@lixom.net, grant.likely@linaro.org, arnd@arndb.de,
+        jason@lakedaemon.net
+Subject: Re: [PATCH 4/4] [RFC PATCH for Juno 2/2] tty: SBSA compatible UART
+Message-ID: <20140917170150.GB2464@xora-yoga-13>
+References: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1410828446-28502-5-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140917114029.190eb8f9@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140917165529.GA24699@earth.universe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140917114029.190eb8f9@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18:55-20140917, Sebastian Reichel wrote:
-> On Wed, Sep 17, 2014 at 08:44:00AM -0700, Lee Jones wrote:
-> > On Wed, 17 Sep 2014, Nishanth Menon wrote:
-> > > ti,system-power-controller is more or less the standard way of
-> > > indicating that the PMIC is the system wide power controller and hence
-> > > may be used to switch off the system. Almost ALL TI PMIC drivers and
-> > > many Maxim PMIC drivers follow the same style.
-> > > 
-> > > So support 'ti,system-power-controller' in addition to the usual
-> > > 'ti,use_poweroff' to indicate that the PMIC instance has control for
-> > > switching off the system.
-> > > 
-> > > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > > ---
-> > > 
-> > > V2: picked up documentation suggestion from Sebastien
-> > 
-> > It would be good to get Sebastian's Ack.
+On Wed, Sep 17, 2014 at 11:40:29AM +0100, One Thousand Gnomes wrote:
 > 
-> Acked-By: Sebastian Reichel <sre@kernel.org>
-
-Thanks.
+> Firstly provide some useful information about the hardware. It's no good
+> wavng your arms at a document that requires agreeing to a giant ARM T&C
+> to get access to. Most of don't work for ARM and we'd have to get our own
+> corporate legal to approve the legal garbage involved.
 > 
-> [...]
+> Secondly explain why you can't use PL011 given that it already supports
+> non DMA accesses. What would it take to tweak it further for this ?
 > 
-> > > +- ti,system-power-controller: This indicates that TWL4030 is the
-> > > +  power supply master of the system. With this flag, the chip will
-> > > +  initiates an ACTIVE-to-OFF or SLEEP-to-OFF transition when the
-> > > +  system poweroffs.
 > 
-> One minor thing: While the documentation is updated you may want to
-> fix the typo "will initiates" to "will initiate" (or just drop the
-> "will").
 
-Updated v3 patch with your ack and correction to drop "will" below. I
-will assume I wont need to repost the following update. Do let me know
-if you'd like me to.
+As the original author of this driver it is only meant for internal use
+inside Linaro. It only ever reached the level of "good enough" for
+internal testing.
 
----8<---
->From ae3bcfc74080b14f9fd0178f6526bf8f34a8c865 Mon Sep 17 00:00:00 2001
-From: Nishanth Menon <nm@ti.com>
-Date: Wed, 3 Sep 2014 13:55:02 -0500
-Subject: [PATCH V3 1/2 ] Documentation: devicetree: mfd: twl4030-power: Use the
- standard 'ti,system-power-controller' to mark power control
+There is a discussion on a more complete driver in this thread.
 
-ti,system-power-controller is more or less the standard way of
-indicating that the PMIC is the system wide power controller and hence
-may be used to switch off the system. Almost ALL TI PMIC drivers and
-many Maxim PMIC drivers follow the same style.
+http://www.spinics.net/lists/arm-kernel/msg358083.html
 
-So support 'ti,system-power-controller' in addition to the usual
-'ti,use_poweroff' to indicate that the PMIC instance has control for
-switching off the system.
+Graeme
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Acked-By: Sebastian Reichel <sre@kernel.org>
----
- .../devicetree/bindings/mfd/twl4030-power.txt      |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/mfd/twl4030-power.txt b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
-index b9ee7b9..15a63e6 100644
---- a/Documentation/devicetree/bindings/mfd/twl4030-power.txt
-+++ b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
-@@ -23,8 +23,13 @@ down during off-idle. Note that this does not work on all boards
- depending on how the external oscillator is wired.
- 
- Optional properties:
--- ti,use_poweroff: With this flag, the chip will initiates an ACTIVE-to-OFF or
--		   SLEEP-to-OFF transition when the system poweroffs.
-+
-+- ti,system-power-controller: This indicates that TWL4030 is the
-+  power supply master of the system. With this flag, the chip
-+  initiates an ACTIVE-to-OFF or SLEEP-to-OFF transition when the
-+  system poweroffs.
-+
-+- ti,use_poweroff: Deprecated name for ti,system-power-controller
- 
- Example:
- &i2c1 {
--- 
-1.7.9.5
--- 
-Regards,
-Nishanth Menon
+> > +static void sbsa_tty_do_write(const char *buf, unsigned count)
+> > +{
+> > +	unsigned long irq_flags;
+> > +	struct sbsa_tty *qtty = sbsa_tty;
+> > +	void __iomem *base = qtty->base;
+> > +	unsigned n;
+> > +
+> > +	spin_lock_irqsave(&qtty->lock, irq_flags);
+> > +	for (n = 0; n < count; n++) {
+> > +		while (readw(base + UART01x_FR) & UART01x_FR_TXFF)
+> > +			mdelay(10);
+> > +		writew(buf[n], base + UART01x_DR);
+> 
+> serious - you are going to sit and spin in kernel space with interrupts
+> off for an indefinite period ?
+> 
+> No. Even if your hardware is so completely brain dead and broken that it
+> hasn't got an interrupt for 'write room' that's not acceptable. You need
+> error handling and some kind of sensible timer based solution.
+> 
+> To put it simply. You have a queue (or you should - your driver is broken
+> in that respect too), you have a baud rate, you have a bit time. From
+> that you can compute sensible wakeup points to try and refill the
+> hardware FIFO. Assuming the hardware fifo is not tiny you don't even have
+> to be that good an aim.
+> 
+> It's acceptable for the printk console code to spin, if you think getting
+> the message out on a failure or error outweighs the pain. It's not
+> acceptable for the tty layer.
+> 
+> > +static void sbsauart_fifo_to_tty(struct sbsa_tty *qtty)
+> > +{
+> > +	void __iomem *base = qtty->base;
+> > +	unsigned int flag, max_count = 32;
+> > +	u16 status, ch;
+> > +
+> > +	while (max_count--) {
+> > +		status = readw(base + UART01x_FR);
+> > +		if (status & UART01x_FR_RXFE)
+> > +			break;
+> > +
+> > +		/* Take chars from the FIFO and update status */
+> > +		ch = readw(base + UART01x_DR);
+> > +		flag = TTY_NORMAL;
+> > +
+> > +		if (ch & UART011_DR_BE)
+> > +			flag = TTY_BREAK;
+> > +		else if (ch & UART011_DR_PE)
+> > +			flag = TTY_PARITY;
+> > +		else if (ch & UART011_DR_FE)
+> > +			flag = TTY_FRAME;
+> > +		else if (ch & UART011_DR_OE)
+> > +			flag = TTY_OVERRUN;
+> > +
+> > +		ch &= SBSAUART_CHAR_MASK;
+> > +
+> > +		tty_insert_flip_char(&qtty->port, ch, flag);
+> 
+> If its a console you ought to support the sysrq interfaces.
+> 
+> > +static int sbsa_tty_write_room(struct tty_struct *tty)
+> > +{
+> > +	return 32;
+> > +}
+> 
+> You can't do this. You need a proper queue and queueing mechanism or
+> you'll break in some situations (aside from sitting spinning in your
+> write code trashing your system performance entirely). We have a kfifo
+> object in the kernel which is really trivial to use and should do what
+> you need without any effort.
+> 
+> > +
+> > +static void sbsa_tty_console_write(struct console *co, const char *b,
+> > +								unsigned count)
+> > +{
+> > +	sbsa_tty_do_write(b, count);
+> > +
+> > +	if(b[count - 1] == '\n');
+> > +		sbsa_tty_do_write("\r", 1);
+> 
+> I would expect \r\n to be the order ?
+> 
+> > +static struct tty_port_operations sbsa_port_ops = {
+> > +};
+> 
+> No power management ?
+> 
+> > +
+> > +static const struct tty_operations sbsa_tty_ops = {
+> > +	.open = sbsa_tty_open,
+> > +	.close = sbsa_tty_close,
+> > +	.hangup = sbsa_tty_hangup,
+> > +	.write = sbsa_tty_write,
+> > +	.write_room = sbsa_tty_write_room,
+> 
+> No termios handling ?
+> 
+> > +static int sbsa_tty_probe(struct platform_device *pdev)
+> > +{
+> > +	struct sbsa_tty *qtty;
+> > +	int ret = -EINVAL;
+> > +	int i;
+> > +	struct resource *r;
+> > +	struct device *ttydev;
+> > +	void __iomem *base;
+> > +	u32 irq;
+> > +
+> > +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	if (r == NULL)
+> > +		return -EINVAL;
+> > +
+> > +	base = ioremap(r->start, r->end - r->start);
+> > +	if (base == NULL)
+> > +		pr_err("sbsa_tty: unable to remap base\n");
+> 
+> So you are then going to continue and randomly crash  ???
+> 
+> Also you've got a device so use dev_err() and friends on it
+> 
+> > +	if (pdev->id > 0)
+> > +		goto err_unmap;
+> 
+> Why not test this before you do all the mapping ??
+> 
+> 
+> It's clean code, it's easy to understand it just doesn't seem to be very
+> complete ?
+> 
+> Alan
