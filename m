@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059AbaIQESS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 00:18:18 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50853 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaIQESQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 00:18:16 -0400
-Message-ID: <54190B83.1040503@roeck-us.net>
-Date: Tue, 16 Sep 2014 21:18:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751194AbaIQEuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 00:50:24 -0400
+Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:1489
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750900AbaIQEuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 00:50:22 -0400
+X-Greylist: delayed 8886 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Sep 2014 00:50:22 EDT
+Date: Wed, 17 Sep 2014 12:50:02 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Robin Gong <b38343@freescale.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <kernel@pengutronix.de>, <sre@kernel.org>, <dbaryshkov@gmail.com>,
+        <dwmw2@infradead.org>, <grant.likely@linaro.org>,
+        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/3] ARM: dts: imx6: add pm_power_off support for
+ i.mx6 chips
+Message-ID: <20140917045001.GG4796@dragon>
+References: <1410511739-31122-1-git-send-email-b38343@freescale.com>
+ <1410511739-31122-2-git-send-email-b38343@freescale.com>
+ <20140917021044.GD4796@dragon> <20140917034514.GF27452@Robin-OptiPlex-780>
 MIME-Version: 1.0
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        herrmann.der.user@googlemail.com, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-CC: boris.ostrovsky@oracle.com
-Subject: Re: [PATCH V2 2/2] hwmon, fam15h_power: Add support for two more
- processors
-References: <1410897496-2600-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-In-Reply-To: <1410897496-2600-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.54190B88.0043,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140917034514.GF27452@Robin-OptiPlex-780>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(199003)(189002)(105606002)(54356999)(4396001)(81342003)(83322001)(85306004)(99396002)(46102003)(77982003)(83072002)(97756001)(74662003)(50466002)(86362001)(110136001)(79102003)(84676001)(74502003)(92726001)(50986999)(80022003)(87936001)(97736003)(6806004)(81542003)(33656002)(93886004)(85852003)(107046002)(76482002)(83506001)(20776003)(92566001)(104016003)(68736004)(23726002)(57986006)(95666004)(102836001)(90102001)(26826002)(64706001)(21056001)(106466001)(46406003)(44976005)(31966008)(76176999)(47776003)(33716001)(558084003);DIR:OUT;SFP:1102;SCL:1;SRVR:SN2PR03MB046;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0337AFFE9A
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 12:58 PM, Aravind Gopalakrishnan wrote:
-> Fam16h,M30h(Mullins) and Fam15hM30h(Kaveri) processors can
-> report 'power_crit' value. So, adding their respective device ids.
->
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+On Wed, Sep 17, 2014 at 11:45:15AM +0800, Robin Gong wrote:
+> > BTW, the commit log of the driver patch [[PATCH v2 2/3] ] should be
+> > improved.
+> > 
+> > Shawn
+> >
+> You mean the above info need added into commit log ,right?
 
-Applied.
+Yes, that's what I mean.
 
-Thanks,
-Guenter
-
-
+Shawn
