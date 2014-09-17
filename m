@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551AbaIQF3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 01:29:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36004 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaIQF3p (ORCPT
+	id S1751622AbaIQFen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 01:34:43 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:59403 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaIQFel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 01:29:45 -0400
-Message-ID: <54191C41.3080003@huawei.com>
-Date: Wed, 17 Sep 2014 13:29:37 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 17 Sep 2014 01:34:41 -0400
 MIME-Version: 1.0
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>
-Subject: Re: Kernel crash in cgroup_pidlist_destroy_work_fn()
-References: <CAM_iQpVNzx1r8x-bP5CoiCX8PFk15JYHw_XfpYvJGgdkFHj8Gw@mail.gmail.com>
-In-Reply-To: <CAM_iQpVNzx1r8x-bP5CoiCX8PFk15JYHw_XfpYvJGgdkFHj8Gw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CALCETrWj8Pj8d8YjybvOKG-=xmy-XGFo9cGQ9qn0V4t9Oj+dOw@mail.gmail.com>
+References: <1410912351-31273-1-git-send-email-rlarocque@google.com>
+ <CALCETrXtYV5xKkTxothuqNb7ra80Be7ZXJ-hDnC6p-bfEPZ=Lw@mail.gmail.com>
+ <CABgu+=NC1ZMQkV0J2c9-MD1+TAmTjDm4ACZASPnfX2Fwiu5rMQ@mail.gmail.com> <CALCETrWj8Pj8d8YjybvOKG-=xmy-XGFo9cGQ9qn0V4t9Oj+dOw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 16 Sep 2014 22:34:18 -0700
+Message-ID: <CALCETrU0=_9voz1bxbLom=y7qnk7RN7U5Bd2s+Dk_QQN2yYVfw@mail.gmail.com>
+Subject: Re: [PATCH] x86/vdso: Add prctl to set per-process VDSO load
+To: Richard Larocque <rlarocque@google.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Filipe Brandenburger <filbranden@google.com>,
+        Michael Davidson <md@google.com>, Greg Thelen <gthelen@google.com>,
+        X86 ML <x86@kernel.org>, Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/17 7:56, Cong Wang wrote:
-> Hi, Tejun
-> 
-> 
-> We saw some kernel null pointer dereference in
-> cgroup_pidlist_destroy_work_fn(), more precisely at
-> __mutex_lock_slowpath(), on 3.14. I can show you the full stack trace
-> on request.
-> 
+On Tue, Sep 16, 2014 at 10:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Sep 16, 2014 at 6:18 PM, Richard Larocque <rlarocque@google.com> wrote:
+>> On Tue, Sep 16, 2014 at 5:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> I think that the patch should instead tweak the vvar mapping to tell
+> the vdso not to use rdtsc.  It should be based on this:
+>
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/vsyscall
+>
+> and I'll talk to hpa tomorrow about about getting that, or something
+> like it, into the tip tree.  In particular, you'll need this:
+>
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vsyscall&id=0cc410a05cb95e073ebfe099c9e03cef48d2be0f
 
-Yes, please.
+Crud.  Now that I've said that, I realize that this won't work right
+if rdtscp is off.  I'll drop that patch.
 
-> Looking at the code, it seems flush_workqueue() doesn't care about new
-> incoming works, it only processes currently pending ones, if this is
-> correct, then we could have the following race condition:
-> 
-> cgroup_pidlist_destroy_all():
->         //...
->         mutex_lock(&cgrp->pidlist_mutex);
->         list_for_each_entry_safe(l, tmp_l, &cgrp->pidlists, links)
->                 mod_delayed_work(cgroup_pidlist_destroy_wq,
-> &l->destroy_dwork, 0);
->         mutex_unlock(&cgrp->pidlist_mutex);
-> 
->         // <--- another process calls cgroup_pidlist_start() here
-> since mutex is released
-> 
->         flush_workqueue(cgroup_pidlist_destroy_wq); // <--- another
-> process adds new pidlist and queue work in pararell
->         BUG_ON(!list_empty(&cgrp->pidlists)); // <--- This check is
-> passed, list_add() could happen after this
-> 
+I don't think that this changes the conclusion.  It should be possible
+to swap out the vvar page to keep the vdso working even without rdtsc
+available.
 
-Did you confirm this is what happened when the bug was triggered?
+--Andy
 
-I don't think the race condition you described exists. In 3.14 kernel,
-cgroup_diput() won't be called if there is any thread running
-cgroup_pidlist_start(). This is guaranteed by vfs.
+>
+> Also, this kind of inheritable restriction may end up requiring
+> no_new_privs or CAP_SYS_ADMIN to be secure.
+>
+> --Andy
 
-But newer kernels are different. Looks like the bug exists in those
-kernels.
 
-> 
-> Therefore, the newly added pidlist will point to a freed cgroup, and
-> when it is freed in the delayed work we will crash.
-> 
-> The attached patch (compile test ONLY) could be a possible fix, since
-> it will check and hold a refcount on this cgroup in
-> cgroup_pidlist_start(). But I could very easily miss something here
-> since there are many cgroup changes after 3.14 and I don't follow
-> cgroup development.
-> 
-> What do you think?
-> 
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
