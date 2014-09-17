@@ -1,138 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaIQOIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 10:08:06 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:42290 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbaIQOIF (ORCPT
+	id S1755613AbaIQOIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 10:08:55 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:34323 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405AbaIQOIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 10:08:05 -0400
-X-IronPort-AV: E=Sophos;i="5.04,540,1406592000"; 
-   d="scan'208";a="173292427"
-Message-ID: <54199589.9040703@citrix.com>
-Date: Wed, 17 Sep 2014 15:07:05 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 17 Sep 2014 10:08:53 -0400
+Message-ID: <541995F3.6010307@hp.com>
+Date: Wed, 17 Sep 2014 10:08:51 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH V2 3/3] xen: eliminate scalability issues
- from initial mapping setup
-References: <1410927157-15069-1-git-send-email-jgross@suse.com> <1410927157-15069-4-git-send-email-jgross@suse.com>
-In-Reply-To: <1410927157-15069-4-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
+        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: Re: [PATCH v2] perf mem: improves DSO long names search speed with
+ RB tree
+References: <1410894499-27609-1-git-send-email-Waiman.Long@hp.com> <1410894499-27609-2-git-send-email-Waiman.Long@hp.com> <5419288C.5010403@intel.com>
+In-Reply-To: <5419288C.5010403@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/09/14 05:12, Juergen Gross wrote:
-> Direct Xen to place the initial P->M table outside of the initial
-> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
-> restriction on the size of the initial mapping limits the amount
-> of memory a domain can be handed initially.
-> 
-> As the initial P->M table is copied rather early during boot to
-> domain private memory and it's initial virtual mapping is dropped,
-> the easiest way to avoid virtual address conflicts with other
-> addresses in the kernel is to use a user address area for the
-> virtual address of the initial P->M table. This allows us to just
-> throw away the page tables of the initial mapping after the copy
-> without having to care about address invalidation.
+On 09/17/2014 02:22 AM, Adrian Hunter wrote:
+> On 09/16/2014 10:08 PM, Waiman Long wrote:
+>> With workload that spawns and destroys many threads and processes,
+>> it was found that perf-mem could took a long time to post-process
+>> the perf data after the target workload had completed its operation.
+>> The performance bottleneck was found to be searching and insertion
+>> of the new DSO structures (thousands of them in this case).
+>>
+>> In a dual-socket Ivy-Bridge E7-4890 v2 machine (30-core, 60-thread),
+>> the perf profile below shows what perf was doing after the profiled
+>> AIM7 shared workload completed:
+>>
+>> -     83.94%  perf  libc-2.11.3.so     [.] __strcmp_sse42
+>>     - __strcmp_sse42
+>>        - 99.82% map__new
+>>             machine__process_mmap_event
+>>             perf_session_deliver_event
+>>             perf_session__process_event
+>>             __perf_session__process_events
+>>             cmd_record
+>>             cmd_mem
+>>             run_builtin
+>>             main
+>>             __libc_start_main
+>> -     13.17%  perf  perf               [.] __dsos__findnew
+>>       __dsos__findnew
+>>       map__new
+>>       machine__process_mmap_event
+>>       perf_session_deliver_event
+>>       perf_session__process_event
+>>       __perf_session__process_events
+>>       cmd_record
+>>       cmd_mem
+>>       run_builtin
+>>       main
+>>       __libc_start_main
+>>
+>> So about 97% of CPU times were spent in the map__new() function
+>> trying to insert new DSO entry into the DSO linked list. The whole
+>> post-processing step took about 9 minutes.
+>>
+>> The DSO structures are currently searched linearly. So the total
+>> processing time will be proportional to n^2.
+>>
+>> To overcome this performance problem, the DSO code is modified to
+>> also put the DSO structures in a RB tree sorted by its long name
+>> in additional to being in a simple linked list. With this change,
+>> the processing time will become proportional to n*log(n) which will
+>> be much quicker for large n. However, the short name will still
+>> be searched using the old linear searching method which is slow.
+>> With that patch in place, the same perf-mem post-processing step took
+>> less than 30 seconds to complete.
+>>
+>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>> ---
+>>   tools/perf/util/dso.c |   87 ++++++++++++++++++++++++++++++++++++++++++++++--
+>>   tools/perf/util/dso.h |    1 +
+>>   2 files changed, 84 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+>> index 819f104..fccb2f0 100644
+>> --- a/tools/perf/util/dso.c
+>> +++ b/tools/perf/util/dso.c
+>> @@ -611,17 +611,93 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
+>>   	return dso;
+>>   }
+>>
+>> +/*
+>> + * RB root of DSOs sorted by the long name
+>> + */
+>> +static struct rb_root dso__longname_root = { NULL };
+> Global variable!
+>
+> Why not just change the lists to rbtrees i.e.
 
-This needs an additional paragraph like:
+The DSOs can be searched either by its short name or its long name. The 
+patch enables long name search with RB tree. The short name search is 
+still using the linked list as the sort order will be different from the 
+long name.
 
-  "This does not increase the amount of memory the guest can use.  This
-is still limited to 512 GiB by the 3-level p2m."
+I think I can remove the linked list and do the short name search 
+linearly by scanning from the leftmost to the rightmost in the RBtree. 
+In that way, we can remove the redundant list head field in the DSO 
+structure.
 
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1198,6 +1198,76 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
-[...]
-> +/*
-> + * Since it is well isolated we can (and since it is perhaps large we should)
-> + * also free the page tables mapping the initial P->M table.
-> + */
-> +static void __init xen_cleanmfnmap(unsigned long vaddr)
-> +{
-> +	unsigned long va = vaddr & PMD_MASK;
-> +	unsigned long pa;
-> +	pgd_t *pgd = pgd_offset_k(va);
-> +	pud_t *pud_page = pud_offset(pgd, 0);
-> +	pud_t *pud;
-> +	pmd_t *pmd;
-> +	pte_t *pte;
-> +	unsigned int i;
-> +
-> +	set_pgd(pgd, __pgd(0));
-> +	do {
-> +		pud = pud_page + pud_index(va);
-> +		if (pud_none(*pud)) {
-> +			va += PUD_SIZE;
-> +		} else if (pud_large(*pud)) {
-> +			pa = pud_val(*pud) & PHYSICAL_PAGE_MASK;
-> +			xen_free_ro_pages(pa, PUD_SIZE);
-> +			va += PUD_SIZE;
+Cheers,
+Longman
 
-Are you missing a ClearPagePinned(..) here?
-
-> +		} else {
-> +			pmd = pmd_offset(pud, va);
-> +			if (pmd_large(*pmd)) {
-> +				pa = pmd_val(*pmd) & PHYSICAL_PAGE_MASK;
-> +				xen_free_ro_pages(pa, PMD_SIZE);
-> +			} else if (!pmd_none(*pmd)) {
-> +				pte = pte_offset_kernel(pmd, va);
-> +				for (i = 0; i < PTRS_PER_PTE; ++i) {
-> +					if (pte_none(pte[i]))
-> +						break;
-> +					pa = pte_pfn(pte[i]) << PAGE_SHIFT;
-> +					xen_free_ro_pages(pa, PAGE_SIZE);
-> +				}
-
-> +				pa = __pa(pte) & PHYSICAL_PAGE_MASK;
-> +				ClearPagePinned(virt_to_page(__va(pa)));
-> +				xen_free_ro_pages(pa, PAGE_SIZE);
-
-Put this into a helper function?  It's used here...
-
-> +			}
-> +			va += PMD_SIZE;
-> +			if (pmd_index(va))
-> +				continue;
-> +			pa = __pa(pmd) & PHYSICAL_PAGE_MASK;
-> +			ClearPagePinned(virt_to_page(__va(pa)));
-> +			xen_free_ro_pages(pa, PAGE_SIZE);
-
-...and here...
-
-> +		}
-> +
-> +	} while (pud_index(va) || pmd_index(va));
-> +	pa = __pa(pud_page) & PHYSICAL_PAGE_MASK;
-> +	ClearPagePinned(virt_to_page(__va(pa)));
-> +	xen_free_ro_pages(pa, PAGE_SIZE);
-
-... and here.
-
-> @@ -1529,6 +1604,22 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
->  #else /* CONFIG_X86_64 */
->  static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
->  {
-> +	unsigned long pfn;
-> +
-> +	if (xen_feature(XENFEAT_writable_page_tables) ||
-> +	    xen_feature(XENFEAT_auto_translated_physmap) ||
-> +	    xen_start_info->mfn_list >= __START_KERNEL_map)
-> +		return pte;
-> +
-> +	/*
-> +	 * Pages belonging to the initial p2m list mapped outside the default
-> +	 * address range must be mapped read-only.
-
-Why?  I didn't think was anything special about these MFNs.
-
-David
