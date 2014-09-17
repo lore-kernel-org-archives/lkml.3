@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaIQJ0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:26:18 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:48890 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244AbaIQJ0P (ORCPT
+	id S1755188AbaIQJ0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:26:53 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:22284 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854AbaIQJ0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:26:15 -0400
-Message-ID: <541953AF.7000201@huawei.com>
-Date: Wed, 17 Sep 2014 17:26:07 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>
-Subject: Re: Kernel crash in cgroup_pidlist_destroy_work_fn()
-References: <CAM_iQpVNzx1r8x-bP5CoiCX8PFk15JYHw_XfpYvJGgdkFHj8Gw@mail.gmail.com> <54191C41.3080003@huawei.com>
-In-Reply-To: <54191C41.3080003@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.541953B5.0028,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7409216bdbd3d5d6309c132121ba567c
+	Wed, 17 Sep 2014 05:26:51 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-7c-541953d8d746
+From: Chao Yu <chao2.yu@samsung.com>
+To: sage@inktank.com
+Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ceph: remove redundant code for max file size verification
+Date: Wed, 17 Sep 2014 17:26:06 +0800
+Message-id: <00fd01cfd259$81ef7530$85ce5f90$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/SWVtad6da1ZOOROy5OloXhLLm5Q==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jAd2bwZIhBkc3sll8uDmJyeLyrjls
+	FrtPdLE6MHscalzB7vF5k1wAUxSXTUpqTmZZapG+XQJXxqGdqxkL5gpW3Jl7kbGB8RVvFyMH
+	h4SAicTstcpdjJxAppjEhXvr2boYuTiEBBYxSrT/74dyfjBKNH3dwQhSxSagIrG84z8TiC0i
+	ICLxaflBFhCbWcBG4vnhB2A1wgLeEv9PTQWLswioSsw5uoYZxOYVsJR4/fMuE4QtKPFj8j2o
+	Xi2J9TuPM0HY8hKb17xlhrhIQWLH2deMIIeKCOhJ/HpTBFEiLrHxyC2WCYwCs5BMmoVk0iwk
+	k2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhon0ntYFzZYHGIUYCDUYmHd8Nl
+	iRAh1sSy4srcQ4wSHMxKIrw1AZIhQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5ak
+	ZqemFqQWwWSZODilGhgDNER9OGWjVRMeR7+1KC2ybi8oc+WKYJIOvOO+tyz08Ib/Sap8wg+v
+	bZn5cVnB7WsRJav5zm31fjXjXVJcSNDTiMKQLZpvlzeXmkd/s9uce/5zge7ppVNus0/TXZtx
+	667p98kBy9iu3P4uetVn97n57GbBtyJ/Ru6Kf/Aw4KrSMeXsa8ulG/mVWIozEg21mIuKEwFs
+	XPSsVgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/17 13:29, Li Zefan wrote:
-> On 2014/9/17 7:56, Cong Wang wrote:
->> Hi, Tejun
->>
->>
->> We saw some kernel null pointer dereference in
->> cgroup_pidlist_destroy_work_fn(), more precisely at
->> __mutex_lock_slowpath(), on 3.14. I can show you the full stack trace
->> on request.
->>
-> 
-> Yes, please.
-> 
->> Looking at the code, it seems flush_workqueue() doesn't care about new
->> incoming works, it only processes currently pending ones, if this is
->> correct, then we could have the following race condition:
->>
->> cgroup_pidlist_destroy_all():
->>         //...
->>         mutex_lock(&cgrp->pidlist_mutex);
->>         list_for_each_entry_safe(l, tmp_l, &cgrp->pidlists, links)
->>                 mod_delayed_work(cgroup_pidlist_destroy_wq,
->> &l->destroy_dwork, 0);
->>         mutex_unlock(&cgrp->pidlist_mutex);
->>
->>         // <--- another process calls cgroup_pidlist_start() here
->> since mutex is released
->>
->>         flush_workqueue(cgroup_pidlist_destroy_wq); // <--- another
->> process adds new pidlist and queue work in pararell
->>         BUG_ON(!list_empty(&cgrp->pidlists)); // <--- This check is
->> passed, list_add() could happen after this
->>
-> 
-> Did you confirm this is what happened when the bug was triggered?
-> 
-> I don't think the race condition you described exists. In 3.14 kernel,
-> cgroup_diput() won't be called if there is any thread running
-> cgroup_pidlist_start(). This is guaranteed by vfs.
-> 
-> But newer kernels are different. Looks like the bug exists in those
-> kernels.
-> 
+Both ceph_update_writeable_page and ceph_setattr will verify file size
+with max size ceph supported.
+There are two caller for ceph_update_writeable_page, ceph_write_begin and
+ceph_page_mkwrite. For ceph_write_begin, we have already verified the size in
+generic_write_checks of ceph_write_iter; for ceph_page_mkwrite, we have no
+chance to change file size when mmap. Likewise we have already verified the size
+in inode_change_ok when we call ceph_setattr.
+So let's remove the redundant code for max file size verification.
 
-Newer kernels should be also fine.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/ceph/addr.c  | 9 ---------
+ fs/ceph/inode.c | 6 ------
+ 2 files changed, 15 deletions(-)
 
-If cgroup_pidlist_destroy_all() is called, it means kernfs has already
-removed the tasks file, and even if you still have it opened, when
-you try to read it, it will immediately return an errno.
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 90b3954..18c06bb 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -1076,12 +1076,6 @@ retry_locked:
+ 	/* past end of file? */
+ 	i_size = inode->i_size;   /* caller holds i_mutex */
+ 
+-	if (i_size + len > inode->i_sb->s_maxbytes) {
+-		/* file is too big */
+-		r = -EINVAL;
+-		goto fail;
+-	}
+-
+ 	if (page_off >= i_size ||
+ 	    (pos_in_page == 0 && (pos+len) >= i_size &&
+ 	     end_in_page - pos_in_page != PAGE_CACHE_SIZE)) {
+@@ -1099,9 +1093,6 @@ retry_locked:
+ 	if (r < 0)
+ 		goto fail_nosnap;
+ 	goto retry_locked;
+-
+-fail:
+-	up_read(&mdsc->snap_rwsem);
+ fail_nosnap:
+ 	unlock_page(page);
+ 	return r;
+diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+index 04c89c2..25c242e 100644
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -1813,10 +1813,6 @@ int ceph_setattr(struct dentry *dentry, struct iattr *attr)
+ 	if (ia_valid & ATTR_SIZE) {
+ 		dout("setattr %p size %lld -> %lld\n", inode,
+ 		     inode->i_size, attr->ia_size);
+-		if (attr->ia_size > inode->i_sb->s_maxbytes) {
+-			err = -EINVAL;
+-			goto out;
+-		}
+ 		if ((issued & CEPH_CAP_FILE_EXCL) &&
+ 		    attr->ia_size > inode->i_size) {
+ 			inode->i_size = attr->ia_size;
+@@ -1896,8 +1892,6 @@ int ceph_setattr(struct dentry *dentry, struct iattr *attr)
+ 	if (mask & CEPH_SETATTR_SIZE)
+ 		__ceph_do_pending_vmtruncate(inode);
+ 	return err;
+-out:
+-	spin_unlock(&ci->i_ceph_lock);
+ out_put:
+ 	ceph_mdsc_put_request(req);
+ 	return err;
+-- 
+2.0.1.474.g72c7794
 
-                                fd = open(cgrp/tasks)
-cgroup_rmdir(cgrp)
-  cgroup_destroy_locked(c)
-    kernfs_remove()
-  ...
-css_free_work_fn()
-  cgroup_pidlist_destroy_all()
-                               read(fd of cgrp/tasks)
-                                 return -ENODEV
-
-So cgroup_pidlist_destroy_all() won't race with cgroup_pidlist_start().
 
