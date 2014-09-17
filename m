@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015AbaIQQre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:47:34 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:55967 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaIQQrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:47:32 -0400
-Message-ID: <1410972450.2447.25.camel@j-VirtualBox>
-Subject: Re: [PATCH v3] locking/rwsem: Avoid double checking before try
- acquiring write lock
-From: Jason Low <jason.low2@hp.com>
-To: Davidlohr Bueso <dbueso@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, jason.low2@hp.com
-Date: Wed, 17 Sep 2014 09:47:30 -0700
-In-Reply-To: <1410946476.9389.32.camel@linux-t7sj.site>
-References: <1410913017.2447.22.camel@j-VirtualBox>
-	 <1410946476.9389.32.camel@linux-t7sj.site>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756199AbaIQQsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:48:54 -0400
+Received: from verein.lst.de ([213.95.11.211]:39910 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755859AbaIQQsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:48:53 -0400
+Date: Wed, 17 Sep 2014 18:48:50 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Ming Lei <ming.lei@canoical.com>
+Subject: Re: [PATCH 2/2] blk-mq: remove unnecessary blk_clear_rq_complete()
+Message-ID: <20140917164850.GB18472@lst.de>
+References: <1410947278-15733-1-git-send-email-ming.lei@canonical.com> <1410947278-15733-3-git-send-email-ming.lei@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410947278-15733-3-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-17 at 11:34 +0200, Davidlohr Bueso wrote:
-> On Tue, 2014-09-16 at 17:16 -0700, Jason Low wrote:
-> > Commit 9b0fc9c09f1b checks for if there are known active lockers
-> > in order to avoid write trylocking using expensive cmpxchg() when
-> > it likely wouldn't get the lock.
+On Wed, Sep 17, 2014 at 05:47:58PM +0800, Ming Lei wrote:
+> From: Ming Lei <ming.lei@canoical.com>
 > 
-> Ah, I remember you had this one in your queue for some time :)
+> This patch removes two unnecessary blk_clear_rq_complete(),
+> the REQ_ATOM_COMPLETE flag is cleared inside blk_mq_start_request(),
+> so:
 > 
-> > However, a subsequent patch was added such that we directly
-> > check for sem->count == RWSEM_WAITING_BIAS right before trying
-> > that cmpxchg(). Thus, commit 9b0fc9c09f1b now just adds overhead.
-> > This patch modifies it so that we only do a check for if
-> > count == RWSEM_WAITING_BIAS.
-> > 
-> > Also, add a comment on why we do an "extra check" of count
-> > before the cmpxchg().
-> 
-> heh, so people don't try to remove the "redundant" check!
+> 	- The blk_clear_rq_complete() in blk_flush_restore_request()
+> 	needn't because the request will be freed later, and clearing
+> 	it here may open a small race window with timeout.
 
-Right, I've already seen at least 1 such patch  :)
+This one is defintively correct, blk_mq_end_io should take care of this.
 
-> > Cc: Peter Hurley <peter@hurleysoftware.com>
-> > Cc: Tim Chen <tim.c.chen@linux.intel.com>
-> 
-> Acked-by: Davidlohr Bueso <dave@stgolabs.net>
+> 	- The blk_clear_rq_complete() in blk_mq_requeue_request() isn't
+> 	necessary too, even though REQ_ATOM_STARTED is cleared in
+> 	__blk_mq_requeue_request(), in theory it still may cause a small
+> 	race window with timeout since the two clear_bit() may be
+> 	reordered.
 
-Thanks!
+Why yo you think it's not nessecary?  The request is not in the drivers
+hand at this point, so it should not be marked started.  Maybe I'm missing
+something, but this sounds like it could very likely cause regressions.
 
