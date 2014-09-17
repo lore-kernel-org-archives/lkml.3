@@ -1,153 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509AbaIQN22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:28:28 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52649 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854AbaIQN21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:28:27 -0400
-From: Roman Pen <r.peniaev@gmail.com>
-Cc: Roman Pen <r.peniaev@gmail.com>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [v2 PATCH 1/1] init: fix race between rootfs mount and firmware loading
-Date: Wed, 17 Sep 2014 22:28:15 +0900
-Message-Id: <1410960495-9198-1-git-send-email-r.peniaev@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <CACZ9PQXJzoczS7gN5UCFygTHrLW5Rtjew5BF-txfL=cryE331w@mail.gmail.com>
-References: <CACZ9PQXJzoczS7gN5UCFygTHrLW5Rtjew5BF-txfL=cryE331w@mail.gmail.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1755491AbaIQNad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:30:33 -0400
+Received: from mout.gmx.net ([212.227.15.19]:50827 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754720AbaIQNac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 09:30:32 -0400
+From: Marc Dietrich <marvin24@gmx.de>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: kernel BUG at fs/dcache.c (3.17-rc4/5)
+Date: Wed, 17 Sep 2014 15:30:24 +0200
+Message-ID: <1658831.xKpFJcpMRg@fb07-iapwap2>
+User-Agent: KMail/4.13.3 (Linux/3.17.0-rc5-12.gfc9498b-desktop+; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <CAHQdGtSN-_Te1UJxt7x52oUTG9BBaTpsDFpEzjWUs7HiKGS4Ng@mail.gmail.com>
+References: <36181213.M9hWk1po2a@fb07-iapwap2> <CAHQdGtSN-_Te1UJxt7x52oUTG9BBaTpsDFpEzjWUs7HiKGS4Ng@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart9601145.NSePqdTMle"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:ZiELVDLcpxnRQYzjecWeiHsIG6AMdo8Vx4XBzP+aPVhucbDoLrh
+ xmZO6NScd6um8nrWCiPWhf7aauuAGzmjkxjTflLIluTrWWl338ce4KQYL/FkHLxRM9jm7qO
+ jFg4tQR8ELwxV3MeKgejDeSFGDb/eI4XAQXN4Ow+dZFdFr3Hh6hT57rz6NvKhCxE0taxG0j
+ vPI5M++yjc9TYTnNC/sCg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The thing is that built-in modules are being inited before
-rootfs mount.  Some of the modules can request firmware loading
-from another thread using async 'request_firmware_nowait' call
-on inition, so we can catch this kind of race:
-   rootfs does not exist yet, but we are going to open and load
-   firmware file requesting it from the kernel thread.
 
-Solution is simple: before any rootfs access firmware loader
-must wait for rootfs mount.
+--nextPart9601145.NSePqdTMle
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="UTF-8"
 
-There are few questions which remain unanswered, but in this
-patch I do not want to complicate things and want to fix exactly
-the race.  So here are the questions:
+Hi Trond,
 
-1. can 'request_firmware' (sync variant) be called on module inition
-   directly, without any threads? if can, that means firmware will
-   never be loaded for the driver at first try in case of built-in
-   module, because rootfs will be mounted only at the end of kernel
-   init sequence.
+Am Mittwoch, 17. September 2014, 09:21:05 schrieb Trond Myklebust:
+> On Wed, Sep 17, 2014 at 9:05 AM, Marc Dietrich <marvin24@gmx.de> wrote:
+> > Hi,
+> >
+> > I get this roughly once in a week. Hard to reproduce.
+> >
+> > Sep 17 14:44:21 fb07-iapwap2 kernel: ------------[ cut here ]------------
+> > Sep 17 14:44:21 fb07-iapwap2 kernel: kernel BUG at fs/dcache.c:1619!
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: invalid opcode: 0000 [#1] PREEMPT SMP
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) loop fuse af_packet bnep bluetooth
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  snd_seq_device sr_mod kvm_amd kvm pcspkr firewire_ohci firewire_core crc_itu_t serio_raw edac_core cdr
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: CPU: 2 PID: 25065 Comm: plasma-desktop Tainted: G           O   3.17.0-rc5-12.gfc9498b-desktop+ #9
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: Hardware name: System manufacturer System Product Name/M4A785TD-V EVO, BIOS 2105    07/23/2010
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: task: ffff880045030210 ti: ffff8800b2d58000 task.ti: ffff8800b2d58000
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: RIP: 0010:[<ffffffff811cfd48>]  [<ffffffff811cfd48>] d_instantiate+0x68/0x70
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: RSP: 0018:ffff8800b2d5ba48  EFLAGS: 00010286
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: RAX: 0000000000080007 RBX: ffff88002e4e10d8 RCX: 0000000000000000
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: RDX: 0000000000000008 RSI: 0000000000000000 RDI: ffff88002e4e10d8
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: RBP: ffff8800b2d5bae8 R08: 0000000000000000 R09: 0000000000000000
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: R10: 0000000000000546 R11: 0000000000000000 R12: ffff8800d9e65800
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: R13: ffff8800d9e65800 R14: ffff88009fe6c718 R15: ffff880100d73c00
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: FS:  00007f8a581ae780(0000) GS:ffff88011fc80000(0000) knlGS:00000000f5101b40
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: CR2: 00007f8a2e6ff6a0 CR3: 0000000045d96000 CR4: 00000000000007e0
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: Stack:
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  ffffffffc0acc1c0 ffff8800ce2e9060 0000000100000000 ffff880000008000
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  ffff8800fffffffe ffff8800b2d5ba90 ffffffffc0adfece ffff88006d58baa0
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  0000000000000000 ffff88006d58bb28 ffff8800ce2e9000 0000000000008000
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: Call Trace:
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0acc1c0>] ? _nfs4_open_and_get_state+0x220/0x3f0 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0adfece>] ? nfs4_get_open_state+0x6e/0x190 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0adffb3>] ? nfs4_get_open_state+0x153/0x190 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0acf323>] nfs4_do_open+0x1b3/0x5b0 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0acf7f7>] nfs4_atomic_open+0xd7/0x100 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0ae2b96>] nfs4_file_open+0xc6/0x1d0 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0ae2ad0>] ? nfs4_file_fsync+0xa0/0xa0 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b5052>] do_dentry_open+0x1d2/0x320
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b536c>] finish_open+0x2c/0x50
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811c782c>] do_last+0xc0c/0x1250
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811c7f26>] path_openat+0xb6/0x680
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff81152439>] ? do_writepages+0x19/0x30
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0ae337e>] ? nfs4_have_delegation+0xe/0x10 [nfsv4]
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811c8ce5>] do_filp_open+0x35/0xa0
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811d58cf>] ? __alloc_fd+0x9f/0x130
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b6ba7>] do_sys_open+0x127/0x220
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b6cb9>] SyS_open+0x19/0x20
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff8162316d>] system_call_fastpath+0x1a/0x1f
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: Code: 29 45 00 48 89 de 4c 89 e7 e8 45 98 0d 00 5b 41 5c 41 5d 5d c3 66 0f 1f 44 00 00 31 f6 e8 a1 fe f
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: RIP  [<ffffffff811cfd48>] d_instantiate+0x68/0x70
+> > Sep 17 14:44:22 fb07-iapwap2 kernel:  RSP <ffff8800b2d5ba48>
+> > Sep 17 14:44:22 fb07-iapwap2 kernel: ---[ end trace ff4ccb4b65178939 ]---
+> >
+> > Full log of blocked tasks attached.
+> >
+> > Marc
+> 
+> Does the following commit fix it?
+> http://git.linux-nfs.org/?p=trondmy/linux-nfs.git;a=commit;h=f39c01047994e66e7f3d89ddb4c6141f23349d8d
 
-2. in case of separated '/lib' mount point we still have the problem:
-   firmware will be loaded only on further tries, but the first attempt
-   will always fail, because '/lib' mount point does not exist.  Seems
-   to me this can't be simply fixed, and firmware_request logic needs
-   some refactoring.
+I will tell you in a week or two I guess.
 
-Probably, there are other good questions which I do not see because
-of shallow understanding of init and firmware loading sequences.
+Thanks so far!
 
-Signed-off-by: Roman Pen <r.peniaev@gmail.com>
-Cc: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org
----
- drivers/base/firmware_class.c |  6 ++++++
- include/linux/init.h          |  1 +
- init/main.c                   | 29 +++++++++++++++++++++++++++--
- 3 files changed, 34 insertions(+), 2 deletions(-)
+Marc
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index bf42430..450c4ae 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -29,6 +29,7 @@
- #include <linux/syscore_ops.h>
- #include <linux/reboot.h>
- #include <linux/security.h>
-+#include <linux/init.h>
- 
- #include <generated/utsrelease.h>
- 
-@@ -324,6 +325,11 @@ static int fw_get_filesystem_firmware(struct device *device,
- 	int rc = -ENOENT;
- 	char *path = __getname();
- 
-+	/* Before any file access we have to wait for rootfs.
-+	   In case of built-in module we can race with kernel init
-+	   thread, which has not mounted rootfs yet */
-+	wait_for_rootfs();
-+
- 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
- 		struct file *file;
- 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index 2df8e8d..83233ae 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -152,6 +152,7 @@ void setup_arch(char **);
- void prepare_namespace(void);
- void __init load_default_modules(void);
- int __init init_rootfs(void);
-+void wait_for_rootfs(void);
- 
- extern void (*late_time_init)(void);
- 
-diff --git a/init/main.c b/init/main.c
-index bb1aed9..65d5568 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -973,6 +973,29 @@ static int __ref kernel_init(void *unused)
- 	      "See Linux Documentation/init.txt for guidance.");
- }
- 
-+static DECLARE_WAIT_QUEUE_HEAD(rootfs_waitq);
-+static bool rootfs_mounted;
-+
-+void wait_for_rootfs(void)
-+{
-+	/* Avoid waiting for ourselves */
-+	if (is_global_init(current))
-+		pr_warn("init: it is not a good idea to wait for the rootfs mount from the init task\n");
-+	else
-+		wait_event(rootfs_waitq, rootfs_mounted);
-+}
-+EXPORT_SYMBOL(wait_for_rootfs);
-+
-+static inline void wake_up_rootfs_waiters(void)
-+{
-+	rootfs_mounted = true;
-+	/* wake_up guarantees write memory barrier if and only if
-+	   there is a task to be woken up, it is not always true
-+	   for our case. */
-+	smp_wmb();
-+	wake_up_all(&rootfs_waitq);
-+}
-+
- static noinline void __init kernel_init_freeable(void)
- {
- 	/*
-@@ -1025,9 +1048,11 @@ static noinline void __init kernel_init_freeable(void)
- 
- 	/*
- 	 * Ok, we have completed the initial bootup, and
--	 * we're essentially up and running. Get rid of the
--	 * initmem segments and start the user-mode stuff..
-+	 * we're essentially up and running.  Wake up the
-+	 * rootfs mount waiters, get rid of the initmem
-+	 * segments, and start the user-mode stuff..
- 	 */
-+	wake_up_rootfs_waiters();
- 
- 	/* rootfs is available now, try loading default modules */
- 	load_default_modules();
--- 
-2.0.0
+
+--nextPart9601145.NSePqdTMle
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQEcBAABAgAGBQJUGYzwAAoJEKyeR39HFBtolXUH/1oyYityqSdPRefvxZevWf2H
+Q8YShOhJB3AAoYI3k4kQHkDiYmxTxIjOm9EFDdwT0KACf6CSn/asHarTu70c5Tuq
+KoO56OX6NTAzg7lkjVVQ1IQVUtbpQ5FEPVgAws+zj51oZXbT8aeMxv9rrSLP74eY
+3wluzDunZ505HgoLMoZ8vFiDgdIfLsxRbeBDatjsdQqR36IZoz3VtRCTTazyL2ZW
+5ADLPd891iIVb9149H/HVuqmNhF+QaJ/6ofW7HfR7CKrVjMM/W3prmdafGNmgxMy
+51zP0pFrMpy6w/r1ek/NpE2zRRh5EIeau6zsfxxlSTWutFR7wg0b2jYwz93N4mM=
+=wBLb
+-----END PGP SIGNATURE-----
+
+--nextPart9601145.NSePqdTMle--
 
