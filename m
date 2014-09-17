@@ -1,139 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaIQHqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 03:46:00 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:54524 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaIQHp7 (ORCPT
+	id S1754321AbaIQHq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 03:46:27 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:34692 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbaIQHqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 03:45:59 -0400
+	Wed, 17 Sep 2014 03:46:25 -0400
 MIME-Version: 1.0
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Date: Wed, 17 Sep 2014 09:45:42 +0200
-X-Google-Sender-Auth: jMZvSeJ8zObCRZ0asCBkAqBaPng
-Message-ID: <CAL8zT=g6ibhGpAJtSaGPNeGmm0kwyjAb=JWgYMHp37P8XAFFCQ@mail.gmail.com>
-Subject: SGTL5000 on i.MX6 in I2S master mode
-To: linux-arm-kernel@lists.infradead.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
+	<1386546869-31900-3-git-send-email-yinghai@kernel.org>
+	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
+	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
+	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
+	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
+	<52A8BAC5.70006@canonical.com>
+	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+	<52D01D82.5070202@canonical.com>
+	<CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
+	<54189BCE.2010206@canonical.com>
+	<CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
+Date: Wed, 17 Sep 2014 00:46:24 -0700
+X-Google-Sender-Auth: k36n6QQA48KL3eL0nld1Va-Hl_U
+Message-ID: <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+From: Yinghai Lu <yinghai@kernel.org>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=90e6ba614fec911ff305033e1010
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--90e6ba614fec911ff305033e1010
+Content-Type: text/plain; charset=UTF-8
 
-I have a custom i.MX6 board, and have a sgtl5000 connected on it. I
-would like to have it used in master mode (it is used only for audio
-capture) but I get a "pcm_read:2031: read error: Input/output error"
-when using arecord.
-I am wondering if I forgot something in my DT or if I need to do
-something else :
+On Tue, Sep 16, 2014 at 3:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
+> <joseph.salisbury@canonical.com> wrote:
+>>
+>> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
+>> is similar to the original bug[1] we discussed.
+>>
+>> Just wondering if there have been any additional ideas on realloc since
+>> this was last discussed?
+>>
+>> [0] http://pad.lv/1363313
+>
+> So the resource realloc do work as expected. but LSI firmware has some
+> problem again?
+>
+> We may need to add command after the reset the bridge resource.
 
-    sound {
-        compatible = "fsl,imx6q-vbx3-sgtl5000",
-                 "fsl,imx-audio-sgtl5000";
-        model = "imx6q-vbx3-sgtl5000";
-        ssi-controller = <&ssi1>;
-        audio-codec = <&codec>;
-        audio-routing =
-            "LINE_IN", "Line In Jack";
-        mux-int-port = <1>;
-        mux-ext-port = <5>;
-    };
+Can you try attached patch?
 
-&audmux {
-    pinctrl-names = "default";
-    pinctrl-0 = <&pinctrl_audmux>;
-    status = "okay";
-};
+Thanks
 
-&i2c2 {
-    clock-frequency = <100000>;
-    pinctrl-names = "default";
-    pinctrl-0 = <&pinctrl_i2c2>;
-    status = "okay";
+Yinghai
 
-    codec: sgtl5000@0a {
-        compatible = "fsl,sgtl5000";
-        reg = <0x0a>;
-        clocks = <&clks 201>;
-        VDDA-supply = <&vgen6_reg>;
-        VDDIO-supply = <&vgen6_reg>;
-        sysclk = <24000000>;
-    };
-};
+--90e6ba614fec911ff305033e1010
+Content-Type: text/x-patch; charset=US-ASCII; name="reset_lsi_pci_devices.patch"
+Content-Disposition: attachment; filename="reset_lsi_pci_devices.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i06d7jpq0
 
-&iomuxc {
-    pinctrl-names = "default";
-    pinctrl-0 = <&pinctrl_hog>;
-
-    imx6qdl-vbx3 {
-        pinctrl_audmux: audmuxgrp {
-            fsl,pins = <
-                MX6QDL_PAD_DISP0_DAT13__AUD5_RXFS        0x130b0
-                MX6QDL_PAD_DISP0_DAT14__AUD5_RXC        0x130b0
-                MX6QDL_PAD_DISP0_DAT16__AUD5_TXC        0x130b0
-                MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS        0x130b0
-                MX6QDL_PAD_DISP0_DAT19__AUD5_RXD        0x130b0
-            >;
-        };
-};
-
-&ssi1 {
-    status = "okay";
-    codec-handle = <&codec>;
-    fsl,mode = "i2s-master";
-    fsl,ssi-asynchronous;
-};
-
-FYI, AUD5_TXC is wirely connected to AUD5_RXC and AUD5_TXFS is
-connected to AUD5_RXFS.
-
-Here is the dmesg part :
-[    6.026803] sgtl5000 1-000a: sgtl5000 revision 0x11
-[    6.129380] imx-sgtl5000 sound: snd_soc_register_card failed (-517)
-[    6.248849] platform sound: Driver imx-sgtl5000 requests probe deferral
-[    6.311643] sgtl5000 1-000a: Using internal LDO instead of VDDD
-[    6.393196] imx-sgtl5000 sound: sgtl5000 <-> 2028000.ssi mapping ok
-
-And the user space commands :
-$> arecord -l
-**** List of CAPTURE Hardware Devices ****
-card 0: imx6qvbx3sgtl50 [imx6q-vbx3-sgtl5000], device 0: HiFi sgtl5000-0 []
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-
-$> arecord -v -V stereo -fdat -D hw:0,0 somefile.wav
-Recording WAVE 'somefile.wav' : Signed 16 bit Little Endian, Rate
-48000 Hz, Stereo
-Hardware PCM card 0 'imx6q-vbx3-sgtl5000' device 0 subdevice 0
-Its setup is:
-  stream       : CAPTURE
-  access       : RW_INTERLEAVED
-  format       : S16_LE
-  subformat    : STD
-  channels     : 2
-  rate         : 48000
-  exact rate   : 48000 (48000/1)
-  msbits       : 16
-  buffer_size  : 16384
-  period_size  : 4096
-  period_time  : 85333
-  tstamp_mode  : NONE
-  period_step  : 1
-  avail_min    : 4096
-  period_event : 0
-  start_threshold  : 1
-  stop_threshold   : 16384
-  silence_threshold: 0
-  silence_size : 0
-  boundary     : 1073741824
-  appl_ptr     : 0
-  hw_ptr       : 0
-arecord: pcm_read:2031: read error: Input/output error
-
-The kernel is 3.17-rc5.
-
-Thanks for reading all this, and for any advice :).
-JM
+LS0tCiBkcml2ZXJzL3BjaS9zZXR1cC1idXMuYyB8ICAgMTYgKysrKysrKysrKysrKysrKwogMSBm
+aWxlIGNoYW5nZWQsIDE2IGluc2VydGlvbnMoKykKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9w
+Y2kvc2V0dXAtYnVzLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kv
+c2V0dXAtYnVzLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9zZXR1cC1idXMuYwpAQCAtMTYx
+NSw2ICsxNjE1LDIyIEBAIGFnYWluOgogCQkJCQkJIGZhaWxfcmVzLT5mbGFncyAmIHR5cGVfbWFz
+aywKIAkJCQkJCSByZWxfdHlwZSk7CiAKKwkvKiByZXNldCBMU0kgZGV2aWNlICovCisJbGlzdF9m
+b3JfZWFjaF9lbnRyeShmYWlsX3JlcywgJmZhaWxfaGVhZCwgbGlzdCkgeworCQlzdHJ1Y3QgcGNp
+X2RldiAqcGRldjsKKwkJc3RydWN0IHBjaV9idXMgKnBidXMgPSBmYWlsX3Jlcy0+ZGV2LT5idXM7
+CisKKwkJaWYgKHBjaV9pc19yb290X2J1cyhwYnVzKSB8fCAhcGJ1cy0+c2VsZikKKwkJCWNvbnRp
+bnVlOworCisJCS8qIExTSSBkZXZpY2UgZmlybXdhcmUgaXMgbm90IGhhcHB5IHdpdGggY2hhbmdp
+bmcgQkFSIHZhbHVlICovCisJCWxpc3RfZm9yX2VhY2hfZW50cnkocGRldiwgJnBidXMtPmRldmlj
+ZXMsIGJ1c19saXN0KQorCQkJaWYgKHBkZXYtPnZlbmRvciA9PSBQQ0lfVkVORE9SX0lEX0xTSV9M
+T0dJQykgeworCQkJCXBjaV9yZXNldF9zZWNvbmRhcnlfYnVzKHBidXMtPnNlbGYpOworCQkJCWJy
+ZWFrOworCQkJfQorCX0KKwogCS8qIHJlc3RvcmUgc2l6ZSBhbmQgZmxhZ3MgKi8KIAlsaXN0X2Zv
+cl9lYWNoX2VudHJ5KGZhaWxfcmVzLCAmZmFpbF9oZWFkLCBsaXN0KSB7CiAJCXN0cnVjdCByZXNv
+dXJjZSAqcmVzID0gZmFpbF9yZXMtPnJlczsK
+--90e6ba614fec911ff305033e1010--
