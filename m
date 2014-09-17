@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199AbaIQQsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:48:54 -0400
-Received: from verein.lst.de ([213.95.11.211]:39910 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755859AbaIQQsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:48:53 -0400
-Date: Wed, 17 Sep 2014 18:48:50 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Ming Lei <ming.lei@canoical.com>
-Subject: Re: [PATCH 2/2] blk-mq: remove unnecessary blk_clear_rq_complete()
-Message-ID: <20140917164850.GB18472@lst.de>
-References: <1410947278-15733-1-git-send-email-ming.lei@canonical.com> <1410947278-15733-3-git-send-email-ming.lei@canonical.com>
+	id S1756228AbaIQQs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:48:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59180 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756193AbaIQQsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:48:55 -0400
+Date: Wed, 17 Sep 2014 17:48:50 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v4 01/18] ARM64: Move the init of cpu_logical_map(0)
+ before unflatten_device_tree()
+Message-ID: <20140917164850.GB7983@leverpostej>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-2-git-send-email-hanjun.guo@linaro.org>
+ <20140915061632.GA26649@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410947278-15733-3-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140915061632.GA26649@localhost>
+Thread-Topic: [PATCH v4 01/18] ARM64: Move the init of cpu_logical_map(0)
+ before unflatten_device_tree()
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 05:47:58PM +0800, Ming Lei wrote:
-> From: Ming Lei <ming.lei@canoical.com>
+On Mon, Sep 15, 2014 at 07:16:32AM +0100, Olof Johansson wrote:
+> On Fri, Sep 12, 2014 at 09:59:59PM +0800, Hanjun Guo wrote:
+> > It always make sense to initialize CPU0's logical map entry from the
+> > hardware values, so move the initialization of cpu_logical_map(0)
+> > before unflatten_device_tree() which is needed by ACPI code later.
+> > 
+> > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 > 
-> This patch removes two unnecessary blk_clear_rq_complete(),
-> the REQ_ATOM_COMPLETE flag is cleared inside blk_mq_start_request(),
-> so:
+> Acked-by: Olof Johansson <olof@lixom.net>
 > 
-> 	- The blk_clear_rq_complete() in blk_flush_restore_request()
-> 	needn't because the request will be freed later, and clearing
-> 	it here may open a small race window with timeout.
+> With or without needs for ACPI, I don't think there's any reason for
+> this code to not go in now.
 
-This one is defintively correct, blk_mq_end_io should take care of this.
+I can see this being of use to psci_init() where I'd like to check
+MIGRATE_INFO_TYPE and MIGRATE_INFO_UP_CPU early on for systems with PSCI
+0.2+. So moving it at least that early sounds good to me.
 
-> 	- The blk_clear_rq_complete() in blk_mq_requeue_request() isn't
-> 	necessary too, even though REQ_ATOM_STARTED is cleared in
-> 	__blk_mq_requeue_request(), in theory it still may cause a small
-> 	race window with timeout since the two clear_bit() may be
-> 	reordered.
+Acked-by: Mark Rutland <mark.rutland@arm.com>
 
-Why yo you think it's not nessecary?  The request is not in the drivers
-hand at this point, so it should not be marked started.  Maybe I'm missing
-something, but this sounds like it could very likely cause regressions.
-
+Mark.
