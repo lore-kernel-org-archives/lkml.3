@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240AbaIQTOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:14:41 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:53320 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802AbaIQTOj (ORCPT
+	id S1756355AbaIQTSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:18:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61727 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755802AbaIQTSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:14:39 -0400
-X-Auth-Info: /DTum/wXE7T1fXVItjBN0hNLOnPt7FlcjpqiPI4k0dE=
-From: Marek Vasut <marex@denx.de>
-To: Yao Yuan <yao.yuan@freescale.com>
-Subject: Re: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
-Date: Wed, 17 Sep 2014 21:14:36 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "LW@karo-electronics.de" <LW@karo-electronics.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-References: <1407923215-3749-1-git-send-email-yao.yuan@freescale.com> <201409162017.06439.marex@denx.de> <1410965416759.91038@freescale.com>
-In-Reply-To: <1410965416759.91038@freescale.com>
+	Wed, 17 Sep 2014 15:18:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+Date: Wed, 17 Sep 2014 21:37:42 +0200
+Message-ID: <4416582.iOjLNrLDZE@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140917014410.GC31214@srcf.ucam.org>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org> <20140917014410.GC31214@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409172114.36617.marex@denx.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 17, 2014 at 04:50:34 PM, Yao Yuan wrote:
-[...]
-> > > > Would that mean that the "crashed" DMA would be running until the
-> > > > next transmission is scheduled ?
-> > > 
-> > > [Yuan Yao] No, In fact any DMA timeout will result the failure of I2C
-> > > transmission and then it will turn to report the exception and wait
-> > > for next transmission.
-> > 
-> > Can you tell when the next transmission will happen? What if I issue a
-> > single transmission and that one fails ? Will the DMA run until who knows
-> > when ?
+On Wednesday, September 17, 2014 02:44:10 AM Matthew Garrett wrote:
+> On Fri, Sep 12, 2014 at 10:00:16PM +0800, Hanjun Guo wrote:
 > 
-> [Yuan Yao]
-> Sorry for my unclear description. In fact, During the DMA transmission  if
-> an error happened or time out, DMA will stop at once and be disabled.
-> I just continue to route the TX and RX request to signal the DMA
-> controller. Because the DMA is disabled, it will ignore those signals.
-> 
-> In a word, I just want to block the I2C TX, RX and interrupt signal when
-> DMA mode failed until the next I2C transmission start.
+> > +Common _DSD bindings should be submitted to ASWG to be included in the
+> > +document :-
+> > +
+> > +http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
 
-So the I2C block is in error state until you clean it up upon next transmission?
+Well, the intention here is different.
 
-> In fact, the bit "I2CR_DMAEN" is a switch which decide whether I2C route
-> the TX, RX and interrupt signal to DMA controller.
-> 
-> > > The only thing I worried about is I2C may still receive some feedbacks
-> > > after DMA timeout. In this case the feedbacks may lead to abnormal
-> > > state in PIO mode.But it will be ignored in DMA model.
-> > > That's why I tend to delay force-disable DMA until the next
-> > > transmission begin. Could you please give me some suggestion?
-> > 
-> > No, this design just seems flawed to me. You should stop the DMA
-> > immediatelly if there is an error to avoid wasting resources and prevent
-> > possible other adverse effects.
-> 
-> [Yuan Yao]
-> Yes, I have stopped the DMA immediately. However I keep the I2C DMA
-> single route.
-> 
-> I don't have the exact evidence to prove that my design is acceptable.
-> So if you are sure it's flawed, I will change it in the next version(V8).
+The linked document is supposed to define the format of data to be returned
+by _DSD and the one at:
 
-I'm just trying to understand it.
+http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
 
-Best regards,
-Marek Vasut
+does it specifically for the UUID associated with the DT bindings format.
+
+There are no implied IP issues with using the information there I know of and
+if there's any fine print anywhere that may suggest so, please let me know.
+
+That said, those documents are not intended to be libraries of actual bindings.
+
+A common place for the binding and a process for submitting/accepting them is
+needed, but we are yet to agree on how to do that.
+
+Rafael
+
