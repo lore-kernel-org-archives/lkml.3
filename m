@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149AbaIQK4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:56:48 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47898 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118AbaIQK4q (ORCPT
+	id S1754590AbaIQLDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 07:03:11 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:56904 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbaIQLDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:56:46 -0400
-Message-ID: <541968D8.2060609@ahsoftware.de>
-Date: Wed, 17 Sep 2014 12:56:24 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 17 Sep 2014 07:03:08 -0400
+Date: Wed, 17 Sep 2014 12:02:02 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
+        sjg@chromium.org, laurent.pinchart+renesas@ideasonboard.com,
+        u.kleine-koenig@pengutronix.de, boris.brezillon@free-electrons.com,
+        maxime.coquelin@st.com, max.schwarz@online.de, schwidefsky@de.ibm.com,
+        iivanov@mm-sol.com, jacob.jun.pan@linux.intel.com,
+        soren.brinkmann@xilinx.com, bjorn.andersson@sonymobile.com,
+        andrew@lunn.ch, skuribay@pobox.com, christian.ruppert@abilis.com,
+        Romain.Baeriswyl@abilis.com, mika.westerberg@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c-designware: Intel BayTrail PMIC I2C bus support
+Message-ID: <20140917120202.3b9058ae@alan.etchedpixels.co.uk>
+In-Reply-To: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
+References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Robin Gong <b38343@freescale.com>
-CC: shawn.guo@freescale.com, kernel@pengutronix.de, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fugang.duan@freescale.com
-Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on i.mx6dl
-References: <1410327012-31185-1-git-send-email-b38343@freescale.com> <5416D26A.4080707@ahsoftware.de> <20140916035204.GB20800@Robin-OptiPlex-780> <541805E3.6080003@ahsoftware.de> <20140917085106.GB6369@Robin-OptiPlex-780>
-In-Reply-To: <20140917085106.GB6369@Robin-OptiPlex-780>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.09.2014 10:51, schrieb Robin Gong:
-> On Tue, Sep 16, 2014 at 11:41:55AM +0200, Alexander Holler wrote:
->> Am 16.09.2014 05:52, schrieb Robin Gong:
->>> On Mon, Sep 15, 2014 at 01:50:02PM +0200, Alexander Holler wrote:
->>>> Am 10.09.2014 07:30, schrieb Robin Gong:
->>>>> There is one weird data in rxfifo after one full rx/tx transfer
->>>>> done sometimes. It looks a design issue and hard to workaround
->>>>> totally, so disable dma functhion here. And will re-enable it
->>>>> once the root cause found.
->>>>
->>>> Hmm, I experience problems with DMA too but on uart3. I'm using the same
->>>> workaround for the uart (I've just commented out the dma entries in the DT).
->>>> The problem manifests itself here such, that brcm_patchram_plus
->>>> hangs while uploading the firmware to a BCM4330 connected at uart3
->>>> (reproducible).
+On Fri, 12 Sep 2014 10:36:07 -0700
+"David E. Box" <david.e.box@linux.intel.com> wrote:
 
-(...)
+> +#if IS_ENABLED(CONFIG_I2C_SHARED_CONTROLLER)
+> +extern int i2c_acquire_ownership(struct device *dev);
+> +extern int i2c_release_ownership(struct device *dev);
+> +#endif
 
-> Yes, we just have fixed the BT issue over high speed UART last month. Suggest
-> you trying our patches based on v3.10.
+You can just have the prototypes anyway - no need for more ifdefs than
+required
 
-Thanks for the pointer. Will look if I will find these patches.
 
-Regards,
+> +#if IS_ENABLED(CONFIG_I2C_SHARED_CONTROLLER)
+> +int i2c_shared_controller_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+> +	int num)
+> +{
+> +	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
+> +	int err;
+> +
+> +	if (dev->shared_host) {
+> +		err = dev->acquire_ownership(dev->dev);
+> +		if (!err) {
+> +			err = i2c_dw_xfer(adap, msgs, num);
+> +			dev->release_ownership(dev->dev);
+> +		} else
+> +			dev_WARN(dev->dev, "couldnt acquire ownership\n");
+> +
+> +		return err;
+> +	} else
+> +		return i2c_dw_xfer(adap, msgs, num);
+> +}
+> +
+> +static struct i2c_algorithm i2c_sc_algo = {
+> +	.master_xfer	= i2c_shared_controller_xfer,
+> +	.functionality	= i2c_dw_func,
+> +};
+> +#endif
 
-Alexander Holler
+I think this might be a lot cleaner if you put these pieces as functions
+into i2c-designware-sem.c or a similar file and made the methods NULL
+functions in the header in the case it's not supported ? Most of the
+ifdeffery would then vanish into the extra file and keep the core code
+cleaner ?
 
+
+Alan
