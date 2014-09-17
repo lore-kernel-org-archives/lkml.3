@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054AbaIQSUv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:20:51 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:60341 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807AbaIQSUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:20:49 -0400
+	id S1755818AbaIQSYl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:24:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48932 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401AbaIQSYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 14:24:39 -0400
+Date: Wed, 17 Sep 2014 20:22:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Aaron Tomlin <atomlin@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, bmr@redhat.com, jcastillo@redhat.com,
+        mguzik@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] fs: Use a seperate wq for do_sync_work() to avoid
+	a potential deadlock
+Message-ID: <20140917182202.GE19308@redhat.com>
+References: <1410953942-32144-1-git-send-email-atomlin@redhat.com>
 MIME-Version: 1.0
-From: Steve French <smfrench@gmail.com>
-Date: Wed, 17 Sep 2014 13:20:28 -0500
-Message-ID: <CAH2r5mvTP1oGNoetuSkPdirBb1UDH6fiNCVjs_gJNKeJ1Dz5sA@mail.gmail.com>
-Subject: match_token weird behavior
-To: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410953942-32144-1-git-send-email-atomlin@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Noticing something very strange with match_token.   I had five strings
-I need to compare a version string (protocol dialect eg. "2.1" or
-"3.0") against, to find which it matches (if any), but adding one to
-the list (now checking for one of six strings instead of five) causes
-the error case to always default to element 3 (in my example looks as
-if it matched to the 2.1 string) instead of the error case.
+On 09/17, Aaron Tomlin wrote:
+>
+> Since do_sync_work() is a deferred function it can block indefinitely by
+> design. At present do_sync_work() is added to the global system_wq.
+> As such a deadlock is theoretically possible between sys_unmount() and
+> sync_filesystems():
+>
+>   * The current work fn on the system_wq (do_sync_work()) is blocked
+>     waiting to aquire a sb's s_umount for reading.
+>
+>   * The "umount" task is the current owner of the s_umount in
+>     question but is waiting for do_sync_work() to continue.
+>     Thus we hit a deadlock situation.
+>
+I can't comment the patches in this area, but I am just curious...
 
-enum smb_version {
-    Smb_1 = 1,
-    Smb_20,
-    Smb_21,
-    Smb_30,
-    Smb_302,
-};
+Could you explain this deadlock in more details? I simply can't understand
+what "waiting for do_sync_work()" actually means.
 
-static const match_table_t cifs_smb_version_tokens = {
-    { Smb_1, SMB1_VERSION_STRING },
-    { Smb_20, SMB20_VERSION_STRING},
-    { Smb_21, SMB21_VERSION_STRING },
-    { Smb_30, SMB30_VERSION_STRING },
-    { Smb_302, SMB302_VERSION_STRING },
-};
+> This patch introduces a separate workqueue for do_sync_work() to avoid a
+> the described deadlock.
 
+The subject and the changelog do not match the patch, it doesn't add/use
+another workqueue.
 
-When I add one entry to the lists above (going from 5 to 6 elements),
-and then add one additional case for it to the switch statement, an
-attempt to provide an unrecognized string (e.g. if I specify an illegal
-dialect string like "9" instead of "3.0" or "2.1" etc) will now match the
-third element (Smb_21) instead of "default" in the code snippet below.
-Is match_token broken? Can match token only handle tables with 5
-elements or fewer? Is there a replacement for it for this kind of thing
-(matching a string versus which from among a list of valid strings)
-other than match_token?  Is match_token just broken?
+Oleg.
 
-    substring_t args[MAX_OPT_ARGS];
-
-    switch (match_token(value, cifs_smb_version_tokens, args)) {
-    case Smb_1:
-        vol->ops = &smb1_operations;
-        vol->vals = &smb1_values;
-        break;
-    case Smb_20:
-        vol->ops = &smb20_operations;
-        vol->vals = &smb20_values;
-        break;
-    case Smb_21:
-        vol->ops = &smb21_operations;
-        vol->vals = &smb21_values;
-        break;
-    case Smb_30:
-        vol->ops = &smb30_operations;
-        vol->vals = &smb30_values;
-        break;
-    case Smb_302:
-        vol->ops = &smb30_operations; /* currently identical with 3.0 */
-        vol->vals = &smb302_values;
-        break;
-    default:
-        cifs_dbg(VFS, "Unknown vers= option specified: %s\n", value);
-        return 1;
-
--- 
-Thanks,
-
-Steve
