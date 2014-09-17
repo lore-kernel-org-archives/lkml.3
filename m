@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142AbaIQRAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:00:35 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:50741 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740AbaIQRAd convert rfc822-to-8bit (ORCPT
+	id S1756201AbaIQRBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:01:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54473 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615AbaIQRBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:00:33 -0400
+	Wed, 17 Sep 2014 13:01:10 -0400
+Date: Wed, 17 Sep 2014 12:01:04 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Sebastian Reichel <sre@kernel.org>, Lee Jones <lee.jones@linaro.org>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/2] Documentation: devicetree: mfd: twl4030-power:
+ Use the standard 'ti,system-power-controller' to mark power control
+Message-ID: <20140917170104.GA26864@kahuna>
+References: <1410957252-764-1-git-send-email-nm@ti.com>
+ <1410957252-764-2-git-send-email-nm@ti.com>
+ <20140917154400.GE30918@lee--X1>
+ <20140917165529.GA24699@earth.universe>
 MIME-Version: 1.0
-In-Reply-To: <20140917114214.GB30733@minantech.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-	<20140917102635.GA30733@minantech.com>
-	<20140917112713.GB1273@potion.brq.redhat.com>
-	<20140917114214.GB30733@minantech.com>
-Date: Wed, 17 Sep 2014 10:00:32 -0700
-Message-ID: <CAJu=L58O147YQJyODD8MFtdvQ6+TSG6gi6qGySgH3EigP32MrQ@mail.gmail.com>
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: Gleb Natapov <gleb@kernel.org>
-Cc: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140917165529.GA24699@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 4:42 AM, Gleb Natapov <gleb@kernel.org> wrote:
-> On Wed, Sep 17, 2014 at 01:27:14PM +0200, Radim Krčmář wrote:
->> 2014-09-17 13:26+0300, Gleb Natapov:
->> > For async_pf_execute() you do not need to even retry. Next guest's page fault
->> > will retry it for you.
->>
->> Wouldn't that be a waste of vmentries?
-> This is how it will work with or without this second gup. Page is not
-> mapped into a shadow page table on this path, it happens on a next fault.
+On 18:55-20140917, Sebastian Reichel wrote:
+> On Wed, Sep 17, 2014 at 08:44:00AM -0700, Lee Jones wrote:
+> > On Wed, 17 Sep 2014, Nishanth Menon wrote:
+> > > ti,system-power-controller is more or less the standard way of
+> > > indicating that the PMIC is the system wide power controller and hence
+> > > may be used to switch off the system. Almost ALL TI PMIC drivers and
+> > > many Maxim PMIC drivers follow the same style.
+> > > 
+> > > So support 'ti,system-power-controller' in addition to the usual
+> > > 'ti,use_poweroff' to indicate that the PMIC instance has control for
+> > > switching off the system.
+> > > 
+> > > Signed-off-by: Nishanth Menon <nm@ti.com>
+> > > ---
+> > > 
+> > > V2: picked up documentation suggestion from Sebastien
+> > 
+> > It would be good to get Sebastian's Ack.
+> 
+> Acked-By: Sebastian Reichel <sre@kernel.org>
 
-The point is that the gup in the async pf completion from the work
-queue will not relinquish the mmap semaphore. And it most definitely
-should, given that we are likely looking at swap/filemap.
+Thanks.
+> 
+> [...]
+> 
+> > > +- ti,system-power-controller: This indicates that TWL4030 is the
+> > > +  power supply master of the system. With this flag, the chip will
+> > > +  initiates an ACTIVE-to-OFF or SLEEP-to-OFF transition when the
+> > > +  system poweroffs.
+> 
+> One minor thing: While the documentation is updated you may want to
+> fix the typo "will initiates" to "will initiate" (or just drop the
+> "will").
 
-Andres
+Updated v3 patch with your ack and correction to drop "will" below. I
+will assume I wont need to repost the following update. Do let me know
+if you'd like me to.
 
->
-> --
->                         Gleb.
+---8<---
+>From ae3bcfc74080b14f9fd0178f6526bf8f34a8c865 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Wed, 3 Sep 2014 13:55:02 -0500
+Subject: [PATCH V3 1/2 ] Documentation: devicetree: mfd: twl4030-power: Use the
+ standard 'ti,system-power-controller' to mark power control
 
+ti,system-power-controller is more or less the standard way of
+indicating that the PMIC is the system wide power controller and hence
+may be used to switch off the system. Almost ALL TI PMIC drivers and
+many Maxim PMIC drivers follow the same style.
 
+So support 'ti,system-power-controller' in addition to the usual
+'ti,use_poweroff' to indicate that the PMIC instance has control for
+switching off the system.
 
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-By: Sebastian Reichel <sre@kernel.org>
+---
+ .../devicetree/bindings/mfd/twl4030-power.txt      |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mfd/twl4030-power.txt b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
+index b9ee7b9..15a63e6 100644
+--- a/Documentation/devicetree/bindings/mfd/twl4030-power.txt
++++ b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
+@@ -23,8 +23,13 @@ down during off-idle. Note that this does not work on all boards
+ depending on how the external oscillator is wired.
+ 
+ Optional properties:
+-- ti,use_poweroff: With this flag, the chip will initiates an ACTIVE-to-OFF or
+-		   SLEEP-to-OFF transition when the system poweroffs.
++
++- ti,system-power-controller: This indicates that TWL4030 is the
++  power supply master of the system. With this flag, the chip
++  initiates an ACTIVE-to-OFF or SLEEP-to-OFF transition when the
++  system poweroffs.
++
++- ti,use_poweroff: Deprecated name for ti,system-power-controller
+ 
+ Example:
+ &i2c1 {
 -- 
-Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
+1.7.9.5
+-- 
+Regards,
+Nishanth Menon
