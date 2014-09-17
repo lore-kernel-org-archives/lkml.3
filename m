@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbaIQKqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:46:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58113 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753854AbaIQKqD (ORCPT
+	id S1754895AbaIQKtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 06:49:33 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:56863 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854AbaIQKtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:46:03 -0400
-X-Sasl-enc: PAsuavP3xs+SB6Kg5AyiG+fypMPvzpeZZZMtCCpYarBM 1410950762
-Date: Wed, 17 Sep 2014 07:45:50 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Jan van den Berg <janvdberg@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: thinkpad_acpi.c: fixed spacing coding style issue
-Message-ID: <20140917104550.GB8594@khazad-dum.debian.net>
-References: <1410904868-10406-1-git-send-email-janvdberg@gmail.com>
- <20140916221236.GB12780@vmdeb7>
+	Wed, 17 Sep 2014 06:49:32 -0400
+Date: Wed, 17 Sep 2014 11:49:16 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, peter@hurleysoftware.com
+Subject: Re: [PATCH 0/9 linux-next] drivers/gpu/drm: use container_of where
+ possible
+Message-ID: <20140917114916.1c0928c2@alan.etchedpixels.co.uk>
+In-Reply-To: <1669797975.16695.1410804954304.open-xchange@webmail.nmp.skynet.be>
+References: <1410712823-29137-1-git-send-email-fabf@skynet.be>
+	<20140915001356.2e05d782@alan.etchedpixels.co.uk>
+	<1669797975.16695.1410804954304.open-xchange@webmail.nmp.skynet.be>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916221236.GB12780@vmdeb7>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014, Darren Hart wrote:
-> On Wed, Sep 17, 2014 at 12:01:08AM +0200, Jan van den Berg wrote:
-> > Fixed 22 similar coding style issues: "ERROR: spaces required around that '?'"
-> > 
-> > Signed-off-by: Jan van den Berg <janvdberg@gmail.com>
-> 
-> Queued, thanks.
+> What if someone doesn't know about that intention one day and inserts
+> some field in the structure at the "wrong place" ?
 
-I usually refuse "fix whitespace" patches because git blame is not smart
-enough to skip such commits.    They effectively pollute history for zero
-gain.
+Then we have code review. Also they are much more likely to simply change
+the code elsewhere and break it. Nobody afaik ever got this wrong, while
+the litany of other broken patches and bugs introduced into the same code
+is lagre.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+The goal of the kernel is not to be foolproof to developer incompetence -
+that's a battle you can't win until you replace driver developers with
+software systems.
+
+Alan
