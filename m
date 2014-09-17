@@ -1,61 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435AbaIQRg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:36:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39835 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756409AbaIQRg1 (ORCPT
+	id S1756293AbaIQRkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:40:06 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:58346 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982AbaIQRkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:36:27 -0400
-Date: Wed, 17 Sep 2014 13:36:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Petr Mladek <pmladek@suse.cz>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] usb: hub: rename khubd to hub_wq in documentation
- and comments
-In-Reply-To: <1410967150-25240-5-git-send-email-pmladek@suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1409171333310.1579-100000@iolanthe.rowland.org>
+	Wed, 17 Sep 2014 13:40:04 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <54195975.1010209@imgtec.com>
+References: <1410825087-5497-1-git-send-email-abrestic@chromium.org>
+	<1410825087-5497-22-git-send-email-abrestic@chromium.org>
+	<54195975.1010209@imgtec.com>
+Date: Wed, 17 Sep 2014 10:40:02 -0700
+X-Google-Sender-Auth: 23Y8LOLMb5TtCUbOUG-4AZ-IQ8c
+Message-ID: <CAL1qeaFt5ZBauD38WMPB7WLkOqkTgtfO-gLKo3of7C_V-53eLA@mail.gmail.com>
+Subject: Re: [PATCH 21/24] irqchip: mips-gic: Support local interrupts
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Qais Yousef <qais.yousef@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014, Petr Mladek wrote:
+On Wed, Sep 17, 2014 at 2:50 AM, Qais Yousef <qais.yousef@imgtec.com> wrote:
+> On 09/16/2014 12:51 AM, Andrew Bresticker wrote:
+>>
+>> The MIPS GIC supports 7 local interrupts, 2 of which are the GIC
+>> local watchdog and count/compare timer.  The remainder are CPU
+>> interrupts which may optionally be re-routed through the GIC.
+>> GIC hardware IRQs 0-6 are now used for local interrupts while
+>> hardware IRQs 7+ are used for external (shared) interrupts.
+>>
+>> Note that the 5 CPU interrupts may not be re-routable through
+>> the GIC.  In that case mapping will fail and the vectors reported
+>> in C0_IntCtl should be used instead.  gic_get_c0_compare_int() and
+>> gic_get_c0_perfcount_int() will return the correct IRQ number to
+>> use for the C0 timer and perfcounter interrupts based on the
+>> routability of those interrupts through the GIC.
+>>
+>> Malta, SEAD-3, and the GIC clockevent driver have been updated
+>> to use local interrupts and the R4K clockevent driver has been
+>> updated to poll for C0 timer interrupts through the GIC when
+>> the GIC is present.
+>>
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 
-> USB hub has started to use a workqueue instead of kthread. Let's update
-> the documentation and comments here and there.
-> 
-> This patch mostly just replaces "khubd" with "hub_wq". There are only few
-> exceptions where the whole sentence was updated. These more complicated
-> changes can be found in the following files:
-> 
-> 	   Documentation/usb/hotplug.txt
-> 	   drivers/net/usb/usbnet.c
-> 	   drivers/usb/core/hcd.c
-> 	   drivers/usb/host/ohci-hcd.c
-> 	   drivers/usb/host/xhci.c
+>> diff --git a/arch/mips/include/asm/mips-boards/maltaint.h
+>> b/arch/mips/include/asm/mips-boards/maltaint.h
+>> index bdd6f39..38b06a0 100644
+>> --- a/arch/mips/include/asm/mips-boards/maltaint.h
+>> +++ b/arch/mips/include/asm/mips-boards/maltaint.h
+>> @@ -10,6 +10,8 @@
+>>   #ifndef _MIPS_MALTAINT_H
+>>   #define _MIPS_MALTAINT_H
+>>   +#include <asm/gic.h>
+>> +
+>
+>
+> nit: I think gic.h should be split to driver/irqchip/irq-mips-gic.h for
+> private definitions and include/linux/irqchip/irq-mips-gic.h for
+> exported/public definitions.
 
-Okay, here's a real issue.
+Yup, I was planning on doing this in the next series :).  Malta and
+the clockevent/clocksource driver need to get cleaned up first though,
+so that they don't have to use the private register definitions.
 
-> @@ -2042,7 +2042,7 @@ static void choose_devnum(struct usb_device *udev)
->  	int		devnum;
->  	struct usb_bus	*bus = udev->bus;
->  
-> -	/* If khubd ever becomes multithreaded, this will need a lock */
-> +	/* If hub_wq ever becomes multithreaded, this will need a lock */
->  	if (udev->wusb) {
->  		devnum = udev->portnum + 1;
->  		BUG_ON(test_bit(devnum, bus->devmap.devicemap));
+>> diff --git a/drivers/irqchip/irq-mips-gic.c
+>> b/drivers/irqchip/irq-mips-gic.c
+>> index 6682a4e..3abe310 100644
+>> --- a/drivers/irqchip/irq-mips-gic.c
+>> +++ b/drivers/irqchip/irq-mips-gic.c
 
-You probably didn't notice when changing this comment.  But in fact,
-workqueues _are_ multithreaded.  Therefore you need to add a lock to 
-this routine.
+>> @@ -95,12 +96,39 @@ cycle_t gic_read_compare(void)
+>>   }
+>>   #endif
+>>   +static bool gic_local_irq_is_routable(int intr)
+>> +{
+>> +       u32 vpe_ctl;
+>> +
+>> +       /* All local interrupts are routable in EIC mode. */
+>> +       if (cpu_has_veic)
+>> +               return true;
+>> +
+>> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_CTL), vpe_ctl);
+>> +       switch (intr) {
+>> +       case GIC_LOCAL_INT_TIMER:
+>> +               return vpe_ctl & GIC_VPE_CTL_TIMER_RTBL_MSK;
+>> +       case GIC_LOCAL_INT_PERFCTR:
+>> +               return vpe_ctl & GIC_VPE_CTL_PERFCNT_RTBL_MSK;
+>> +       case GIC_LOCAL_INT_FDC:
+>> +               return vpe_ctl & GIC_VPE_CTL_FDC_RTBL_MSK;
+>> +       case GIC_LOCAL_INT_SWINT0:
+>> +       case GIC_LOCAL_INT_SWINT1:
+>> +               /*
+>> +                * SWINT{0,1} are not routable in non-EIC mode, regardless
+>> +                * of the setting of SWINT_ROUTABLE.
+>> +                */
+>> +               return false;
+>
+>
+> Hmm AFAIK they are routable. Actually from hard reset they're automatically
+> routed to vpe0 pin 0 which caught me a number of times when trying to use
+> software interrupt on hardware that has GIC. When setting software interrupt
+> I was seeing pin 0 going high too and thought it's a hardware bug for a
+> while.
 
-Still, apart from these relatively minor issues, the series looks good.
+Interesting, the interAptiv User's Manual I have, in section 9.4.7.1,
+says: "Note that Software Interrupts from the VPE are routed
+internally by the CPU in vectored interrupt mode, and are only routed
+through the GIC when the GIC is in EIC mode, regardless of the
+GIC_VPEi_CTL register."  IIRC, there's a similar statement in the
+proAptiv manual as well.  I didn't play with the SWINT bits myself, so
+I wouldn't be surprised if that's wrong :).
 
-Alan Stern
+> I think all local interrupts should be masked at GIC initialisation except
+> for timer interrupt. I was preparing a set of patches for GIC but you beat
+> me into it :)
 
+If SWINT gets routed both through the GIC and directly to the CPU,
+then that's probably the best thing to do.  I suspect we'll also want
+to leave the performance counter interrupt unmasked too, since,
+unfortunately, both the HW perf event driver and oprofile do not use
+the percpu IRQ API.
+
+>> @@ -341,12 +342,54 @@ static struct irq_chip gic_edge_irq_controller = {
+>>   #endif
+>>   };
+>>   +static unsigned int gic_get_local_int(void)
+>> +{
+>> +       unsigned long pending, masked;
+>> +
+>> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_PEND), pending);
+>> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_MASK), masked);
+>> +
+>> +       bitmap_and(&pending, &pending, &masked, GIC_NUM_LOCAL_INTRS);
+>> +
+>> +       return find_first_bit(&pending, GIC_NUM_LOCAL_INTRS);
+>> +}
+>> +
+>> +static void gic_mask_local_irq(struct irq_data *d)
+>> +{
+>> +       int intr = GIC_HWIRQ_TO_LOCAL(d->hwirq);
+>> +
+>> +       GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_RMASK), 1 << intr);
+>> +}
+>> +
+>> +static void gic_unmask_local_irq(struct irq_data *d)
+>> +{
+>> +       int intr = GIC_HWIRQ_TO_LOCAL(d->hwirq);
+>> +
+>> +       GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK), 1 << intr);
+>> +}
+>> +
+>> +static struct irq_chip gic_local_irq_controller = {
+>> +       .name                   =       "MIPS GIC Local",
+>> +       .irq_ack                =       gic_mask_local_irq,
+>> +       .irq_mask               =       gic_mask_local_irq,
+>> +       .irq_mask_ack           =       gic_mask_local_irq,
+>> +       .irq_unmask             =       gic_unmask_local_irq,
+>> +       .irq_eoi                =       gic_unmask_local_irq,
+>> +};
+>> +
+>
+>
+> again I don't think irq_ack, irq_mask_ack and irq_eoi are needed.
+
+Yup, will do.
