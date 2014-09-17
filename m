@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaIQFZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 01:25:53 -0400
-Received: from mail-bn1on0062.outbound.protection.outlook.com ([157.56.110.62]:4893
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750985AbaIQFZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 01:25:51 -0400
-Date: Wed, 17 Sep 2014 07:25:38 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751551AbaIQF3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 01:29:46 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36004 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaIQF3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 01:29:45 -0400
+Message-ID: <54191C41.3080003@huawei.com>
+Date: Wed, 17 Sep 2014 13:29:37 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: DT: Fix GEM register area size
-References: <1410880118-3494-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1410880118-3494-1-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="ESTdmtD3a2MFV6gPfPgvbaeuiGDLSTAQr"
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20950.003
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <c52d905f-06e1-41a5-b79d-42c512f0ac27@BL2FFO11FD035.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(479174003)(24454002)(164054003)(199003)(189002)(377454003)(51704005)(99396002)(1496007)(568964001)(76176999)(92726001)(85852003)(19580405001)(50986999)(71186001)(86362001)(70736001)(83322001)(65956001)(31696002)(90102001)(65806001)(79102003)(87936001)(77982003)(95666004)(31966008)(46102003)(74662003)(107046002)(104016003)(19580395003)(21056001)(74316001)(64126003)(20776003)(81342003)(92566001)(44976005)(106466001)(85306004)(512944002)(81542003)(74502003)(54356999)(83506001)(76482002)(84326002)(83072002)(80022003)(64706001)(6806004)(4396001)(65826006)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB027;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0337AFFE9A
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>
+Subject: Re: Kernel crash in cgroup_pidlist_destroy_work_fn()
+References: <CAM_iQpVNzx1r8x-bP5CoiCX8PFk15JYHw_XfpYvJGgdkFHj8Gw@mail.gmail.com>
+In-Reply-To: <CAM_iQpVNzx1r8x-bP5CoiCX8PFk15JYHw_XfpYvJGgdkFHj8Gw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ESTdmtD3a2MFV6gPfPgvbaeuiGDLSTAQr
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 2014/9/17 7:56, Cong Wang wrote:
+> Hi, Tejun
+> 
+> 
+> We saw some kernel null pointer dereference in
+> cgroup_pidlist_destroy_work_fn(), more precisely at
+> __mutex_lock_slowpath(), on 3.14. I can show you the full stack trace
+> on request.
+> 
 
-On 09/16/2014 05:08 PM, Soren Brinkmann wrote:
-> The size of the GEM's register area is only 0x1000 bytes.
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  arch/arm/boot/dts/zynq-7000.dtsi | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-=
-7000.dtsi
-> index 6cc83d4c6c76..3eb12f25e669 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -190,7 +190,7 @@
-> =20
->  		gem0: ethernet@e000b000 {
->  			compatible =3D "cdns,gem";
-> -			reg =3D <0xe000b000 0x4000>;
-> +			reg =3D <0xe000b000 0x1000>;
->  			status =3D "disabled";
->  			interrupts =3D <0 22 4>;
->  			clocks =3D <&clkc 30>, <&clkc 30>, <&clkc 13>;
-> @@ -199,7 +199,7 @@
-> =20
->  		gem1: ethernet@e000c000 {
->  			compatible =3D "cdns,gem";
-> -			reg =3D <0xe000c000 0x4000>;
-> +			reg =3D <0xe000c000 0x1000>;
->  			status =3D "disabled";
->  			interrupts =3D <0 45 4>;
->  			clocks =3D <&clkc 31>, <&clkc 31>, <&clkc 14>;
->=20
+Yes, please.
 
-Applied.
+> Looking at the code, it seems flush_workqueue() doesn't care about new
+> incoming works, it only processes currently pending ones, if this is
+> correct, then we could have the following race condition:
+> 
+> cgroup_pidlist_destroy_all():
+>         //...
+>         mutex_lock(&cgrp->pidlist_mutex);
+>         list_for_each_entry_safe(l, tmp_l, &cgrp->pidlists, links)
+>                 mod_delayed_work(cgroup_pidlist_destroy_wq,
+> &l->destroy_dwork, 0);
+>         mutex_unlock(&cgrp->pidlist_mutex);
+> 
+>         // <--- another process calls cgroup_pidlist_start() here
+> since mutex is released
+> 
+>         flush_workqueue(cgroup_pidlist_destroy_wq); // <--- another
+> process adds new pidlist and queue work in pararell
+>         BUG_ON(!list_empty(&cgrp->pidlists)); // <--- This check is
+> passed, list_add() could happen after this
+> 
 
-Thanks,
-Michal
+Did you confirm this is what happened when the bug was triggered?
 
+I don't think the race condition you described exists. In 3.14 kernel,
+cgroup_diput() won't be called if there is any thread running
+cgroup_pidlist_start(). This is guaranteed by vfs.
 
---ESTdmtD3a2MFV6gPfPgvbaeuiGDLSTAQr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+But newer kernels are different. Looks like the bug exists in those
+kernels.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> 
+> Therefore, the newly added pidlist will point to a freed cgroup, and
+> when it is freed in the delayed work we will crash.
+> 
+> The attached patch (compile test ONLY) could be a possible fix, since
+> it will check and hold a refcount on this cgroup in
+> cgroup_pidlist_start(). But I could very easily miss something here
+> since there are many cgroup changes after 3.14 and I don't follow
+> cgroup development.
+> 
+> What do you think?
+> 
 
-iEYEARECAAYFAlQZG1IACgkQykllyylKDCFh7gCdHCCO/jlu8XvQpvbqXDx3wGVN
-fT4Aniomht/A/AdDAHpZx4rJwXy2DOHk
-=7eGI
------END PGP SIGNATURE-----
-
---ESTdmtD3a2MFV6gPfPgvbaeuiGDLSTAQr--
