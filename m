@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaIQGHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 02:07:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53917 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaIQGHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 02:07:24 -0400
-Date: Wed, 17 Sep 2014 08:06:49 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robin Gong <b38343@freescale.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        kernel@pengutronix.de, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, grant.likely@linaro.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] ARM: dts: imx6: add pm_power_off support for
- i.mx6 chips
-Message-ID: <20140917060649.GJ4992@pengutronix.de>
-References: <1410511739-31122-1-git-send-email-b38343@freescale.com>
- <1410511739-31122-2-git-send-email-b38343@freescale.com>
- <20140917021044.GD4796@dragon>
- <20140917034514.GF27452@Robin-OptiPlex-780>
+	id S1751608AbaIQGRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 02:17:15 -0400
+Received: from ozlabs.org ([103.22.144.67]:44151 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384AbaIQGRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 02:17:12 -0400
+Date: Wed, 17 Sep 2014 16:16:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: linux-next: manual merge of the usb-gadget tree with the vfs tree
+Message-ID: <20140917161658.2e4eb3f1@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917034514.GF27452@Robin-OptiPlex-780>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:05:14 up 6 days, 22:52, 42 users,  load average: 0.00, 0.05, 0.09
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8G_xRFuK7qZHFIHrB9T/Myr"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 11:45:15AM +0800, Robin Gong wrote:
-> On Wed, Sep 17, 2014 at 10:10:45AM +0800, Shawn Guo wrote:
-> > On Fri, Sep 12, 2014 at 04:48:57PM +0800, Robin Gong wrote:
-> > > All chips of i.mx6 can be powered off by programming SNVS.
-> > > For example :
-> > > On i.mx6q-sabresd board, PMIC_ON_REQ connect with external
-> > > pmic ON/OFF pin, that will cause the whole PMIC powered off
-> > > except VSNVS. And system can restart once PMIC_ON_REQ goes
-> > > high by push POWRER key.
-> > 
-> > What's the behavior for those boards on which PMIC_ON_REQ isn't
-> > connected to anywhere?
-> >
-> System can't be powered off if not connect PMIC_ON_REQ. Although all of our
-> reference design for i.mx6 chips are connecting  PMIC_ON_REQ with external
-> PMIC, we need consider others may not use external PMIC. I'll add the info
-> into commit log or Kconfig.
+--Sig_/8G_xRFuK7qZHFIHrB9T/Myr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-You should add the information to the dtsi file in form of a
-status = "disabled" property so that boards that actually have the
-feature can enable it.
+Hi Felipe,
 
-Sascha
+Today's linux-next merge of the usb-gadget tree got a conflict in
+drivers/usb/gadget/function/f_fs.c between commit 8322215aa91c ("f_fs:
+saner API for ffs_sb_create_file()") from the vfs tree and commit
+1b0bf88fd8b8 ("usb: gadget: f_fs: virtual endpoint address mapping")
+from the usb-gadget tree.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/gadget/function/f_fs.c
+index 4726e278e557,4ad11e03cf54..000000000000
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@@ -1529,11 -1557,13 +1552,14 @@@ static int ffs_epfiles_create(struct ff
+  		epfile->ffs =3D ffs;
+  		mutex_init(&epfile->mutex);
+  		init_waitqueue_head(&epfile->wait);
+- 		sprintf(epfiles->name, "ep%u",  i);
++ 		if (ffs->user_flags & FUNCTIONFS_VIRTUAL_ADDR)
++ 			sprintf(epfiles->name, "ep%02x", ffs->eps_addrmap[i]);
++ 		else
++ 			sprintf(epfiles->name, "ep%u", i);
+ -		if (!unlikely(ffs_sb_create_file(ffs->sb, epfiles->name, epfile,
+ -						 &ffs_epfile_operations,
+ -						 &epfile->dentry))) {
+ +		epfile->dentry =3D ffs_sb_create_file(ffs->sb, epfiles->name,
+ +						 epfile,
+ +						 &ffs_epfile_operations);
+ +		if (unlikely(!epfile->dentry)) {
+  			ffs_epfiles_destroy(epfiles, i - 1);
+  			return -ENOMEM;
+  		}
+
+--Sig_/8G_xRFuK7qZHFIHrB9T/Myr
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUGSdeAAoJEMDTa8Ir7ZwVxGQP/0TTQ2tNMqYUF21vlVsuNBBU
+1Un+dVvl0Q2ZHH/2Tnb68wKm6y0tFtLvukMc3yr4enByC5LtrYzGsRmWpzuPvRly
+p40VlVB0vpauuwaNeqSMz8QMmfcbL3tw2zN57WHRkguLqlw0kQA0XOewYAhR6FB/
+NYYIN/OckDS16TtsL1580eL81+HRSXUBMfbQpI7iicD6S4fJFVzUKVw9yiUB+wvU
+XYUlbsEtuZJyBuKQLfPStR1/caJmY9aooZBDHS2Rd99DlIGKDr90mN6fnDwlyHBn
+sRT20+OHL94uwe9e5G/9U0YnFJXrJbwTmNJyxVCkN/ylsVcactqODloVF90WyXcQ
+QtdE8zDSKyvbdlgw9xcY4CwkLEuQ7Lkz7Y15KzsX3whGvb49BtfMpzvQcZ7q7WIr
+sPJrBCQnEBX+zibzamssg0TVSbN4879FVdhOSfVhfXekP8nF9uJ8rs1jr08BowOm
+4IOX7OHfX3cef7X5QtD2TpKdqJ5FUHtgVmfZPPhTmDd5+ZuOGh6u7oz8Gnv96N0I
+E6YPDlt6akLDExLjhMXviT3erlZ0Q+2a9HqGHGG5frqAXeoCnmlmn7oXMnl5XE56
+10dJAAJd4Mr8XgIKMz8y9gvnEiuRUtA83XYTBP7xnwxgpXl57EdmK9TDT/Y9qi/Z
+zo+8/VA909wsZapC1O1t
+=QGi4
+-----END PGP SIGNATURE-----
+
+--Sig_/8G_xRFuK7qZHFIHrB9T/Myr--
