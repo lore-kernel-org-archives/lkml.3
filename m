@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaIQM3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:29:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51939 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754653AbaIQM3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:29:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,540,1406617200"; 
-   d="scan'208";a="478113981"
-From: Loic Poulain <loic.poulain@intel.com>
-To: mathias.nyman@linux.intel.com, heikki.krogerus@linux.intel.com,
-        mika.westerberg@intel.com, samuel.ortiz@intel.com
-Cc: linux-kernel@vger.kernel.org, Loic Poulain <loic.poulain@intel.com>
-Subject: [PATCH] pinctrl: baytrail: Clear DIRECT_IRQ bit
-Date: Wed, 17 Sep 2014 14:30:35 +0200
-Message-Id: <1410957035-13965-1-git-send-email-loic.poulain@intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1755467AbaIQMbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:31:07 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:60968 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692AbaIQMbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 08:31:06 -0400
+Date: Wed, 17 Sep 2014 14:31:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] x86: iosf: Move Kconfig to proper submenu
+Message-ID: <20140917123100.GD2704@gmail.com>
+References: <1409175640-32426-1-git-send-email-david.e.box@linux.intel.com>
+ <1410924386-16977-3-git-send-email-david.e.box@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410924386-16977-3-git-send-email-david.e.box@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Direct Irq En bit can be initialized to a bad value.
-This bit has to be cleared for io access mode.
 
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
----
- drivers/pinctrl/pinctrl-baytrail.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+* David E. Box <david.e.box@linux.intel.com> wrote:
 
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index 975572e..94902f7 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -44,6 +44,7 @@
- 
- /* BYT_CONF0_REG register bits */
- #define BYT_IODEN		BIT(31)
-+#define BYT_DIRECT_IRQ		BIT(27)
- #define BYT_TRIG_NEG		BIT(26)
- #define BYT_TRIG_POS		BIT(25)
- #define BYT_TRIG_LVL		BIT(24)
-@@ -232,7 +233,7 @@ static int byt_irq_type(struct irq_data *d, unsigned type)
- 	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
- 	 * are used to indicate high and low level triggering
- 	 */
--	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
-+	value &= ~(BYT_DIRECT_IRQ | BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
- 
- 	switch (type) {
- 	case IRQ_TYPE_LEVEL_HIGH:
--- 
-1.8.3.2
+> Moves Kconfig option to "Processor type and features" menu from main
+> configuration menu.
+> 
+> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+> ---
+>  arch/x86/Kconfig | 29 ++++++++++++++---------------
+>  1 file changed, 14 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index bcbb57d..2db4b1d 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -480,6 +480,20 @@ config X86_INTEL_LPSS
+>  	  things like clock tree (common clock framework) and pincontrol
+>  	  which are needed by the LPSS peripheral drivers.
+>  
+> +config IOSF_MBI
+> +	tristate "Intel System On Chip IOSF Sideband support"
+> +	depends on PCI
+> +	---help---
+> +	  Enables sideband access to mailbox registers on SoC's. The sideband is
+> +	  available on the following platforms. This list is not meant to be
+> +	  exclusive.
+> +	   - BayTrail
+> +	   - Braswell
+> +	   - Quark
+> +
+> +	  You should say Y if you are running a kernel on one of these
+> +	  platforms.
 
+What this help text does not tell us is why such sideband access 
+is useful, why the user should enable it.
+
+Thanks,
+
+	Ingo
