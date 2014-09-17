@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025AbaIQVm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:42:27 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:40044 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339AbaIQVm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:42:26 -0400
-Date: Wed, 17 Sep 2014 17:41:54 -0400 (EDT)
-From: Rodrigo Freire <rfreire@redhat.com>
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Cc: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
-        linux-mtd@lists.infradead.org, Felix Fietkau <nbd@openwrt.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Herton Krzesinski <hkrzesin@redhat.com>
-Message-ID: <86761077.40163293.1410990114756.JavaMail.zimbra@redhat.com>
-In-Reply-To: <CAAEAJfDAG8KrPKqVC5NujGnbSyxmrAtFcLvhScYsNm8RT59Gnw@mail.gmail.com>
-References: <371358190.34795877.1410204429882.JavaMail.zimbra@redhat.com> <1444809468.34812041.1410206680931.JavaMail.zimbra@redhat.com> <20140909170231.GA14429@logfs.org> <1807144344.40128259.1410985683342.JavaMail.zimbra@redhat.com> <CAAEAJfDAG8KrPKqVC5NujGnbSyxmrAtFcLvhScYsNm8RT59Gnw@mail.gmail.com>
-Subject: Re: [PATCH V2] mtd: block2mtd: Present block2mtd timely on boot
- time
+	id S1756917AbaIQVor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756115AbaIQVoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 17:44:46 -0400
+Date: Wed, 17 Sep 2014 23:42:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Aaron Tomlin <atomlin@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, bmr@redhat.com, jcastillo@redhat.com,
+        mguzik@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] fs: Use a seperate wq for do_sync_work() to avoid
+	a potential deadlock
+Message-ID: <20140917214209.GA30415@redhat.com>
+References: <1410953942-32144-1-git-send-email-atomlin@redhat.com> <20140917182202.GE19308@redhat.com> <20140917204634.GB25400@atomlin.usersys.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: block2mtd: Present block2mtd timely on boot time
-Thread-Index: 6qicDHlKJWvry4cc69nQjrTl2gOawA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140917204634.GB25400@atomlin.usersys.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Holas Ezequiel,
-
------ Original Message ----- 
-From: "Ezequiel Garcia" <ezequiel@vanguardiasur.com.ar> 
-> On 17 September 2014 21:28, Rodrigo Freire <rfreire@redhat.com> wrote: 
+On 09/17, Aaron Tomlin wrote:
+>
+> On Wed, Sep 17, 2014 at 08:22:02PM +0200, Oleg Nesterov wrote:
+> > On 09/17, Aaron Tomlin wrote:
+> > >
+> > > Since do_sync_work() is a deferred function it can block indefinitely by
+> > > design. At present do_sync_work() is added to the global system_wq.
+> > > As such a deadlock is theoretically possible between sys_unmount() and
+> > > sync_filesystems():
+> > >
+> > >   * The current work fn on the system_wq (do_sync_work()) is blocked
+> > >     waiting to aquire a sb's s_umount for reading.
+> > >
+> > >   * The "umount" task is the current owner of the s_umount in
+> > >     question but is waiting for do_sync_work() to continue.
+> > >     Thus we hit a deadlock situation.
+> > >
+> > I can't comment the patches in this area, but I am just curious...
+> > 
+> > Could you explain this deadlock in more details? I simply can't understand
+> > what "waiting for do_sync_work()" actually means.
 > 
-> Using block2mtd sounds a bit unusual. I see that you are trying to get 
-> a more robust fs.... have you tried using f2fs instead of jffs2? 
-
-I see that it is still marked as Experimental as of latest (3.17-RC5)
-kernel. But will take a look in the future, thanks for pointing.
-
-
-> > Currently, a block MTD device is not presented to the system on time, in 
-> > order to start mounting the filesystems. This patch ensures that block2mtd 
-> > is presented at the right time, so filesystems can be mounted on boot time. 
+> Hopefully this helps:
 > 
-> It worries me a bit to add such a long delay to the boot. If for some 
-> reason the SD is not working, then the kernel will wait (by default) 3 
-> seconds now? 
+> 	           "umount"                                      "events/1"
+> 
+> sys_umount					    sysrq_handle_sync
+>   deactivate_super(sb)				      emergency_sync
+>   {						    	schedule_work(work)
+>     ...						    	  queue_work(system_wq, work)
+>     down_write(&s->s_umount)			    	    do_sync_work(work)
+>     ...						      	      sync_filesystems(0)
+>     kill_block_super(s)				    		...
+>       generic_shutdown_super(sb)		    		down_read(&sb->s_umount)
+>       // sop->put_super(sb)
+>       ext4_put_super(sb)
+> 	invalidate_bdev(sb->s_bdev)
+> 	  lru_add_drain_all()
+> 	    for_each_online_cpu(cpu) {
+> 	      schedule_work_on(cpu, work)
+> 		queue_work_on(cpu, system_wq, work)
+> 		...
+> 	    }
+>   }
+> 
+>   - Both lru_add_drain and do_sync_work work items are added to
+>     the same global system_wq
 
-Not really; see the decision path:
-IF block2mtd is not a module (is builtin), AND
-   IF there is a valid block2mtd= clause on kernel cmdline, AND
-      IF the device specified device on block2mtd= clause is still not present
-      THEN wait *up to* 3 seconds (or seconds=n if specified on block2mtd=
-           cmdline) to the device to show up. If the device shows up earlier,
-           the device is created and boot proceeds.
-      ELSE Fail to create the block2mtd device.
-ELSE keep booting the kernel normally, without any further delays.
+Aha. Perhaps you hit this bug under the older kernel?
 
-Best regards,
+"same workqueue" doesn't mean "same worker thread" today, every CPU can
+run up to ->max_active works. And for system_wq uses max_active = 256.
 
-- RF.
+>   - The current work fn on the system_wq is do_sync_work and is
+>     blocked waiting to aquire an sb's s_umount for reading
+
+OK,
+
+>   - The umount task is the current owner of the s_umount in
+>     question but is waiting for do_sync_work to continue.
+>     Thus we hit a deadlock situation.
+
+I don't this this can happen, another worker threaf from worker_pool can
+handle this work.
+
+Oleg.
+
