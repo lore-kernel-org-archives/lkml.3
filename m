@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627AbaIQXkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 19:40:43 -0400
-Received: from www.xora.org.uk ([80.68.91.202]:58877 "EHLO
-	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaIQXkm (ORCPT
+	id S1755538AbaIQXpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 19:45:45 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:38007 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871AbaIQXpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 19:40:42 -0400
-Date: Wed, 17 Sep 2014 16:40:36 -0700
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
-Message-ID: <20140917234036.GC2464@xora-yoga-13>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <20140917014410.GC31214@srcf.ucam.org>
- <20140917160508.GA2464@xora-yoga-13>
- <201409180122.10631.arnd@arndb.de>
+	Wed, 17 Sep 2014 19:45:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201409180122.10631.arnd@arndb.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAMEtUuzhcmZiYZL8TR008or8uaefDBrEKDjqA-tOrRLEZsm95A@mail.gmail.com>
+References: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
+	<1410914370-29883-8-git-send-email-ast@plumgrid.com>
+	<54192F66.8020200@redhat.com>
+	<CAMEtUuxK68ZoJ-izjLoygv0f+rLtPmMLUUq1=BJ+_ZBGfynkdA@mail.gmail.com>
+	<5419BED8.5020309@redhat.com>
+	<5419DE51.1060904@redhat.com>
+	<CAMEtUuzhcmZiYZL8TR008or8uaefDBrEKDjqA-tOrRLEZsm95A@mail.gmail.com>
+Date: Wed, 17 Sep 2014 16:45:42 -0700
+Message-ID: <CAMEtUuw0aDPpQhd13ssk2PDLffBJNeef9jicOnhQLH6KtJ8gsQ@mail.gmail.com>
+Subject: Re: [PATCH v13 net-next 07/11] bpf: verifier (add ability to receive
+ verification log)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 01:22:10AM +0200, Arnd Bergmann wrote:
-> On Wednesday 17 September 2014, Graeme Gregory wrote:
-> > It sounds like from the discussions in other threads that ARM64 should
-> > be following x86 and re-using DT bindings here. In which case there is
-> > not need to submit things to UEFI organisation.
-> > 
-> > What I got a little lost in has there been a formal decision about DT
-> > bindings in _DSD?
-> 
-> I think this is a discussion that still needs to happen: either we should
-> recommend everyone to use _DSD in favor of the alternatives, or we
-> should prohibit the use of _DSD. I have heard arguments both ways, but
-> hopefully we can find an easy answer.
-> 
+On Wed, Sep 17, 2014 at 12:37 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>
+>> Hm, thinking out loudly ... perhaps this could be made a library problem.
+>> Such that the library which wraps the syscall needs to be aware of a
+>> marker where the initial version ends, and if the application doesn't
+>> make use of any of the new features, it would just pass in the length up
+>> to the marker as size attribute into the syscall. Similarly, if new
+>> features are always added to the end of a structure and the library
+>> truncates the overall-length after the last used member we might have
+>> a chance to load something on older kernels, haven't tried that though.
+>
+> that's a 3rd option. I think it's cleaner than 2nd, since it solves it
+> completely from user space.
+> It can even be smarter than that. If this syscall wrapper library
+> sees that newer features are used and it can workaround them:
+> it can chop size and pass older fields into the older kernel
+> and when it returns, do a workaround based on newer fields.
 
-This discussion is just not going to happen until people at @redhat.com
-and people who have currently announced/released hardware are actually
-willing to start talking about it.
+the more I think about 'new user space + old kernel' problem,
+the more certain I am that kernel should not try to help
+user space, since most of the time it's not going to be enough,
+but additional code in kernel would need to be maintained.
 
-Id love to be able to put my foot down and ban the use of _DSD for
-servers but I suspect that will not happen.
-
-Graeme
-
+syscall commands and size of bpf_attr is the least of problems.
+New map_type and prog_type will be added, new helper
+functions will be available to programs.
+One would think that md5 of uapi/linux/bpf.h would be
+enough to say that user app is compatible... In reality,
+it's not. The 'state pruning' verifier optimization I've talked
+about will not change a single bit in bpf.h, but it will be
+able to recognize more programs as safe.
+A program developed on a new kernel with more
+advanced verifier will load just fine on new kernel, but
+this valid program will not load on old kernel, only because
+verifier is not smart enough. Now we would need a version
+of verifier exposed all the way to user space?!
+imo that's too much. I think for eBPF infra kernel
+should only guarantee backwards compatibility
+(old user space must work with new kernel) and that's it.
+That's what this patch is trying to do.
+Thoughts?
