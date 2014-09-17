@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680AbaIQSxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:53:34 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46321 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344AbaIQSw0 (ORCPT
+	id S1756732AbaIQSyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:54:22 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:57414 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756299AbaIQSwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:52:26 -0400
+	Wed, 17 Sep 2014 14:52:24 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
         Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
@@ -14,49 +14,68 @@ To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
 Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v3 05/10] perf: add PMU_EVENT_ATTR_STRING() helper
-Date: Wed, 17 Sep 2014 11:51:58 -0700
-Message-Id: <1410979923-7722-6-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v3 03/10] perf: provide sysfs_show for struct perf_pmu_events_attr
+Date: Wed, 17 Sep 2014 11:51:56 -0700
+Message-Id: <1410979923-7722-4-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410979923-7722-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1410979923-7722-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091718-1542-0000-0000-000004E3CB3A
+x-cbid: 14091718-1344-0000-0000-00000447DC80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Helper for constructing static struct perf_pmu_events_attr s.
+(struct perf_pmu_events_attr) is defined in include/linux/perf_event.h,
+but the only "show" for it is in x86 and contains x86 specific stuff.
+
+Make a generic one for those of us who are just using the event_str.
 
 CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- include/linux/perf_event.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/perf_event.h |    3 +++
+ kernel/events/core.c       |    8 ++++++++
+ 2 files changed, 11 insertions(+)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index cef4a56..32190c5 100644
+index 707617a..cef4a56 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -891,6 +891,13 @@ static struct perf_pmu_events_attr _var = {				\
- 	.id   =  _id,							\
+@@ -882,6 +882,9 @@ struct perf_pmu_events_attr {
+ 	const char *event_str;
  };
  
-+#define PMU_EVENT_ATTR_STRING(_name, _var, _value)			\
-+static struct perf_pmu_events_attr _var = {				\
-+	.attr = __ATTR(_name, 0444, perf_event_sysfs_show, NULL),	\
-+	.event_str = _value,						\
-+};
++ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
++			      char *page);
 +
+ #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
+ static struct perf_pmu_events_attr _var = {				\
+ 	.attr = __ATTR(_name, 0444, _show, NULL),			\
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f9c1ed0..cf1a423 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -8100,6 +8100,14 @@ void __init perf_event_init(void)
+ 		     != 1024);
+ }
+ 
++ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
++			      char *page)
++{
++	struct perf_pmu_events_attr *pmu_attr =
++		container_of(attr, struct perf_pmu_events_attr, attr);
++	return sprintf(page, "%s\n", pmu_attr->event_str);
++}
 +
- #define PMU_FORMAT_ATTR(_name, _format)					\
- static ssize_t								\
- _name##_show(struct device *dev,					\
+ static int __init perf_event_sysfs_init(void)
+ {
+ 	struct pmu *pmu;
 -- 
 1.7.9.5
 
