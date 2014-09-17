@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282AbaIQQtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:49:10 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:56616 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756178AbaIQQtF (ORCPT
+	id S1756367AbaIQQtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:49:17 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48192 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201AbaIQQtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:49:05 -0400
-Message-ID: <1410972543.31130.87.camel@x220>
-Subject: Re: [PATCH] rcu: unify boost and kthread priorities
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Clark Williams <clark.williams@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Sep 2014 18:49:03 +0200
-In-Reply-To: <20140916204156.GP4723@linux.vnet.ibm.com>
-References: <20140915100524.2cd80d2e@sluggy>
-	 <20140916204156.GP4723@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Sep 2014 16:49:03.0530 (UTC) FILETIME=[49B188A0:01CFD297]
-X-RcptDomain: vger.kernel.org
+	Wed, 17 Sep 2014 12:49:13 -0400
+Date: Wed, 17 Sep 2014 09:49:06 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
+Message-ID: <20140917164906.GK7960@sirena.org.uk>
+References: <2443447.AFyh6VXdN9@diego>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kJESre7KIk3SwaPI"
+Content-Disposition: inline
+In-Reply-To: <2443447.AFyh6VXdN9@diego>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 70.35.38.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: fan53555: fix wrong cast in probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
 
-On Tue, 2014-09-16 at 13:41 -0700, Paul E. McKenney wrote:
-> rcu: unify boost and kthread priorities
-> 
-> Rename CONFIG_RCU_BOOST_PRIO to CONFIG_RCU_KTHREAD_PRIO and use this
-> value for both the per-CPU kthreads (rcuc/N) and the rcu boosting
-> threads (rcub/n).
-> 
-> Also, create the module_parameter rcutree.kthread_prio to be used on
-> the kernel command line at boot to set a new value (rcutree.kthread_prio=N).
-> 
-> Signed-off-by: Clark Williams <clark.williams@gmail.com>
-> [ paulmck: Ported to rcu/dev. ]
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+--kJESre7KIk3SwaPI
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This landed in today's linux-next (ie, next-20140917) as commit
-04a96e05bda6 ("rcu: unify boost and kthread priorities").
+On Wed, Sep 17, 2014 at 01:21:48PM +0200, Heiko St=FCbner wrote:
+> The vendor-id gathered from the dt match-data was cast to int but assigned
+> to an unsigned long, producing warnings on at least sparc, like
 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->[...]
-> diff --git a/init/Kconfig b/init/Kconfig
->[...]
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
->[...]
+Applied, thanks.
 
-There's a reference to CONFIG_RCU_BOOST_PRIO in
-tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt. It needs
-updating too, doesn't it?
+--kJESre7KIk3SwaPI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Paul Bolle
+iQEcBAEBAgAGBQJUGbuBAAoJECTWi3JdVIfQ2kIH/0bep5+zjjZ42pd+oApwbdmk
+bOTIyLQuxji0VFvs54rH7G0l1HbiWM1w0JklDS1XEh6jkDxGtaCP0j5fAvX1BRwe
+9nLIvVPZaQ/2m4R8/eqI/8z3V92Zd03RKd68VTd73xB6vevh57t0UnCR23z95Gsi
+4tT3RNcJNJQoekI6ikZ2JZGu+mO1Jo8EeJ3wZ/D4Xk3xED7seV1FHzaKR0LEPpF5
+XHELFYEXkPRu4ley7ui5jKjcmGCXW0OAy/xKuJDWCeOB6/38odmHrA2+98BpmcEW
+XLykieXRwNTbx3CKpjfbiWna3kcU6ZxXp5SFmRcllFYBwkY2Ckd6YTj6zz0VsGc=
+=N4iG
+-----END PGP SIGNATURE-----
 
+--kJESre7KIk3SwaPI--
