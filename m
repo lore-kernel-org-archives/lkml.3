@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259AbaIQRYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:24:19 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:47371 "EHLO tetsuo.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755232AbaIQRYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:24:18 -0400
-Date: Wed, 17 Sep 2014 10:24:17 -0700
-From: Zach Brown <zab@zabbo.net>
-To: "Theodore Ts'o" <tytso@mit.edu>, Milosz Tanski <milosz@adfin.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 2/7] Define new syscalls readv2,preadv2,writev2,pwritev2
-Message-ID: <20140917172417.GD20887@lenny.home.zabbo.net>
-References: <cover.1410810247.git.milosz@adfin.com>
- <057d758976db2fcce58e394abaa0d55e48cdeec1.1410810247.git.milosz@adfin.com>
- <20140917154327.GA12190@thunk.org>
- <CANP1eJFQv51E7yfXw70ONxkjhOVatV6ERwgaY6Srv9-6VcDrjQ@mail.gmail.com>
- <20140917165930.GA24887@thunk.org>
+	id S1756273AbaIQRZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:25:22 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:52785 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052AbaIQRZT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 13:25:19 -0400
+Message-ID: <5419C3F6.4050607@arm.com>
+Date: Wed, 17 Sep 2014 18:25:10 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917165930.GA24887@thunk.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Sudeep Holla <Sudeep.Holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH v4 04/11] drivers: base: support cpu cache information
+ interface to userspace via sysfs
+References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-5-git-send-email-sudeep.holla@arm.com>
+In-Reply-To: <1409763617-17074-5-git-send-email-sudeep.holla@arm.com>
+X-OriginalArrivalTime: 17 Sep 2014 17:25:16.0058 (UTC) FILETIME=[589EFFA0:01CFD29C]
+X-MC-Unique: 114091718251601301
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 12:59:30PM -0400, Theodore Ts'o wrote:
-> On Wed, Sep 17, 2014 at 12:05:23PM -0400, Milosz Tanski wrote:
-> > Theodore,
-> > 
-> > I might be missing understanding something, but... I already omitted
-> > read2 and write2 which can be implemented in userspace by libc (as you
-> > pointed out). In the case of readv vs. preadv there's an extra
-> > positional argument (file offset) and preadv version doesn't change
-> > the file location. I didn't want to overload the meaning of preadv2 to
-> > take a special negative offset value that uses the current file
-> > position but also changes the file position.
-> 
-> off_t has to be signed, so having a magic negative value doesn't
-> bother me that much.  Or you could use a flag bitvalue which means to
-> use the fd's offset and to ignore the positional value.  (More
-> bike-shedding :-)
+Hi Greg,
 
-splice has already set the precedent for an optionally specified offset
-that falls back to the files's position.
+On 03/09/14 18:00, Sudeep Holla wrote:
+> From: Sudeep Holla <sudeep.holla@arm.com>
+>
+> This patch adds initial support for providing processor cache information
+> to userspace through sysfs interface. This is based on already existing
+> implementations(x86, ia64, s390 and powerpc) and hence the interface is
+> intended to be fully compatible.
+>
+> The main purpose of this generic support is to avoid further code
+> duplication to support new architectures and also to unify all the existing
+> different implementations.
+>
+> This implementation maintains the hierarchy of cache objects which reflects
+> the system's cache topology. Cache devices are instantiated as needed as
+> CPUs come online. The cache information is replicated per-cpu even if they are
+> shared. A per-cpu array of cache information maintained is used mainly for
+> sysfs-related book keeping.
+>
+> It also implements the shared_cpu_map attribute, which is essential for
+> enabling both kernel and user-space to discover the system's overall cache
+> topology.
+>
+> This patch also add the missing ABI documentation for the cacheinfo sysfs
+> interface already, which is well defined and widely used.
+>
 
-static long do_splice(struct file *in, loff_t __user *off_in,
-                      struct file *out, loff_t __user *off_out,
-                      size_t len, unsigned int flags)
-{
-...
-                if (off_out) {
-                        if (copy_from_user(&offset, off_out, sizeof(loff_t)))
-                                return -EFAULT;
-                } else {
-                        offset = out->f_pos;
-                }
+Can you review the first 4 patches in this series please ?
 
-...
-                if (!off_out)
-                        out->f_pos = offset;
-                else if (copy_to_user(off_out, &offset, sizeof(loff_t)))
-                        ret = -EFAULT;
+Regards,
+Sudeep
 
-It's nice and simple and lets you update the user's offset.
-
-> So the suggestion was one of trying to (probably fruitlessly) trying
-> to stem the expnoential increase in read/write system calls.  :-)
-
-I support this windmill tilting :). 
-
-- z
