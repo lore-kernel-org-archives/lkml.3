@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135AbaIQW0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 18:26:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60720 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815AbaIQW0G (ORCPT
+	id S1757169AbaIQW1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 18:27:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47302 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756526AbaIQW1s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 18:26:06 -0400
-Date: Thu, 18 Sep 2014 00:25:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-Message-ID: <20140917222553.GD2848@worktop.localdomain>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
- <20140911161517.GA3190@worktop.ger.corp.intel.com>
- <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
- <20140914194156.GC2832@worktop.localdomain>
- <20140915114229.GB3037@worktop.localdomain>
- <CAKfTPtDHSWs8xumOSfWkyucAtkBvvbJkOVTQkoYXYCBpmHrMZg@mail.gmail.com>
-MIME-Version: 1.0
+	Wed, 17 Sep 2014 18:27:48 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtDHSWs8xumOSfWkyucAtkBvvbJkOVTQkoYXYCBpmHrMZg@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v4] scsi: ufs: add support of generic PHY framework in Qualcomm MSM chips
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <000001cfd294$18e4e300$4aaea900$@codeaurora.org>
+Date: Wed, 17 Sep 2014 15:27:43 -0700
+Cc: James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
+        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
+        noag@codeaurora.org, draviv@codeaurora.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Vinayak Holikatti <vinholikatti@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Raviv Shvili <rshvili@codeaurora.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Sahitya Tummala <stummala@codeaurora.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7CC13860-9AEB-4A97-9D12-DC0A8E8F27C0@codeaurora.org>
+References: <1410970929-25544-1-git-send-email-ygardi@codeaurora.org> <000001cfd294$18e4e300$4aaea900$@codeaurora.org>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 12:14:54AM +0200, Vincent Guittot wrote:
-> On 15 September 2014 13:42, Peter Zijlstra <peterz@infradead.org> wrote:
 
-> > OK, I've reconsidered _again_, I still don't get it.
-> >
-> > So fundamentally I think its wrong to scale with the capacity; it just
-> > doesn't make any sense. Consider big.little stuff, their CPUs are
-> > inherently asymmetric in capacity, but that doesn't matter one whit for
-> > utilization numbers. If a core is fully consumed its fully consumed, no
-> > matter how much work it can or can not do.
-> >
-> >
-> > So the only thing that needs correcting is the fact that these
-> > statistics are based on clock_task and some of that time can end up in
-> > other scheduling classes, at which point we'll never get 100% even
-> > though we're 'saturated'. But correcting for that using capacity doesn't
-> > 'work'.
+On Sep 17, 2014, at 9:26 AM, Yaniv Gardi <ygardi@codeaurora.org> wrote:
+
+> This change depends on draviv [PATCH v3] series of 16 changes that was
+> already uploaded.
+> Soon draviv will uploaded again as [PATCH v4] that contain 17 patches, and
+> this change will be dependent on this serie,
 > 
-> I'm not sure to catch your last point because the capacity is the only
-> figures that take into account the "time" consumed by other classes.
-> Have you got in mind another way to take into account the other
-> classes ?
+> Thanks,
+> Yaniv
+> 
+> -----Original Message-----
+> From: Yaniv Gardi [mailto:ygardi@codeaurora.org] 
+> Sent: Wednesday, September 17, 2014 7:22 PM
+> To: James.Bottomley@HansenPartnership.com; hch@infradead.org
+> Cc: linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org;
+> linux-arm-msm@vger.kernel.org; santoshsy@gmail.com;
+> linux-scsi-owner@vger.kernel.org; subhashj@codeaurora.org;
+> ygardi@codeaurora.org; noag@codeaurora.org; draviv@codeaurora.org; Rob
+> Herring; Pawel Moll; Mark Rutland; Ian Campbell; Kumar Gala; Kishon Vijay
+> Abraham I; Vinayak Holikatti; James E.J. Bottomley; Grant Likely; Raviv
+> Shvili; Sujit Reddy Thumma; Christoph Hellwig; Sahitya Tummala; open
+> list:OPEN FIRMWARE AND...
+> Subject: [PATCH v4] scsi: ufs: add support of generic PHY framework in
+> Qualcomm MSM chips
+> 
+> In this change we add support to the generic PHY framework.
+> Two UFS phys are implemented:
+> qmp-20nm and qmp-28nm.
+> 
+> Also, the files in this change implement the UFS HW (controller & PHY)
+> specific behavior in Qualcomm chips.
+> Relocation of a few header files is needed in order to expose routines
+> and data structures between PHY driver and UFS driver
+> 
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+> ---
+> .../devicetree/bindings/phy/qcom-ufs-phy.txt       |  37 +
+> drivers/phy/Makefile                               |   3 +
+> drivers/phy/phy-qcom-ufs-qmp-20nm.c                | 259 ++++++
+> drivers/phy/phy-qcom-ufs-qmp-20nm.h                | 216 +++++
+> drivers/phy/phy-qcom-ufs-qmp-28nm.c                | 342 ++++++++
+> drivers/phy/phy-qcom-ufs-qmp-28nm.h                | 738 ++++++++++++++++++
+> drivers/phy/phy-qcom-ufs.c                         | 661 ++++++++++++++++
+> drivers/scsi/ufs/Kconfig                           |  12 +
+> drivers/scsi/ufs/Makefile                          |   1 +
+> drivers/scsi/ufs/ufs-qcom.c                        | 866
+> +++++++++++++++++++++
+> drivers/scsi/ufs/ufs.h                             | 491 ------------
+> drivers/scsi/ufs/ufshcd-pci.c                      |   2 +-
+> drivers/scsi/ufs/ufshcd-pltfrm.c                   |   2 +-
+> drivers/scsi/ufs/ufshcd.c                          |  14 +-
+> drivers/scsi/ufs/ufshcd.h                          | 595 --------------
+> drivers/scsi/ufs/unipro.h                          | 207 -----
+> include/linux/phy/phy-qcom-ufs.h                   | 202 +++++
+> include/linux/scsi/ufs/ufs-qcom.h                  | 156 ++++
+> include/linux/scsi/ufs/ufs.h                       | 491 ++++++++++++
+> include/linux/scsi/ufs/ufshcd.h                    | 635 +++++++++++++++
+> include/linux/scsi/ufs/unipro.h                    | 207 +++++
+> 21 files changed, 4840 insertions(+), 1297 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/phy/qcom-ufs-phy.txt
+> create mode 100644 drivers/phy/phy-qcom-ufs-qmp-20nm.c
+> create mode 100644 drivers/phy/phy-qcom-ufs-qmp-20nm.h
+> create mode 100644 drivers/phy/phy-qcom-ufs-qmp-28nm.c
+> create mode 100644 drivers/phy/phy-qcom-ufs-qmp-28nm.h
+> create mode 100644 drivers/phy/phy-qcom-ufs.c
+> create mode 100644 drivers/scsi/ufs/ufs-qcom.c
+> delete mode 100644 drivers/scsi/ufs/ufs.h
+> delete mode 100644 drivers/scsi/ufs/ufshcd.h
+> delete mode 100644 drivers/scsi/ufs/unipro.h
+> create mode 100644 include/linux/phy/phy-qcom-ufs.h
+> create mode 100644 include/linux/scsi/ufs/ufs-qcom.h
+> create mode 100644 include/linux/scsi/ufs/ufs.h
+> create mode 100644 include/linux/scsi/ufs/ufshcd.h
+> create mode 100644 include/linux/scsi/ufs/unipro.h
 
-So that was the entire point of stuffing capacity in? Note that that
-point was not at all clear.
+Can you split this into multiple patches.  At least one that just moves the headers around without any other changes.  Than another that introduces the PHY code.  Will make it far easier to review.
 
-This is very much like 'all we have is a hammer, and therefore
-everything is a nail'. The rt fraction is a 'small' part of what the
-capacity is.
+- k
 
-> So we have cpu_capacity that is the capacity that can be currently
-> used by cfs class
-> We have cfs.usage_load_avg that is the sum of running time of cfs
-> tasks on the CPU and reflect the % of usage of this CPU by CFS tasks
-> We have to use the same metrics to compare available capacity for CFS
-> and current cfs usage
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
--ENOPARSE
-
-> Now we have to use the same unit so we can either weight the
-> cpu_capacity_orig with the cfs.usage_load_avg and compare it with
-> cpu_capacity
-> or with divide cpu_capacity by cpu_capacity_orig and scale it into the
-> SCHED_LOAD_SCALE range. Is It what you are proposing ?
-
-I'm so not getting it; orig vs capacity still includes
-arch_scale_freq_capacity(), so that is not enough to isolate the rt
-fraction.
