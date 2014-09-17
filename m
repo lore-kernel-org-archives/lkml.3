@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543AbaIQNpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:45:20 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:45904 "EHLO SMTP.CITRIX.COM"
+	id S1755577AbaIQNpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:45:41 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:34335 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957AbaIQNpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:45:16 -0400
-X-IronPort-AV: E=Sophos;i="5.04,540,1406592000"; 
-   d="scan'208";a="172413805"
-Message-ID: <54199065.1020200@citrix.com>
-Date: Wed, 17 Sep 2014 14:45:09 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1755436AbaIQNpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 09:45:38 -0400
+Message-ID: <5419906F.1060605@kapsi.fi>
+Date: Wed, 17 Sep 2014 16:45:19 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH V2 2/3] xen: eliminate scalability issues
- from initrd handling
-References: <1410927157-15069-1-git-send-email-jgross@suse.com> <1410927157-15069-3-git-send-email-jgross@suse.com>
-In-Reply-To: <1410927157-15069-3-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Andrew Bresticker <abrestic@chromium.org>
+CC: Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Tegra xHCI support
+References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>	<CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>	<CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>	<CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>	<CAL1qeaEk_r5XAKvvJfwXN9+Wi9EjC_2MgBfoP92TK=F+Ou9QTA@mail.gmail.com>	<CAAObsKAwgfx1g2p7PQP+=HudvAHHpcPi47gEH6BrxEgLu6w2VQ@mail.gmail.com>	<CAL1qeaEC9O8-jgjGC44cFctoZPpp4dRVfQ=mhSb_2on7GgiU0w@mail.gmail.com>	<54172B3F.9030901@wwwdotorg.org>	<CAL1qeaEK=C4j+G5CA_91xJNe25d=-y47EyZAYnaMh46fNYVDAw@mail.gmail.com>	<54185698.7020600@wwwdotorg.org> <CAL1qeaGf6JSuq=ekZY7Pp2zSAB0+0S9fZ70xWpct2MJ=pTSmug@mail.gmail.com> <5418BC5C.5020108@wwwdotorg.org>
+In-Reply-To: <5418BC5C.5020108@wwwdotorg.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/09/14 05:12, Juergen Gross wrote:
-> Size restrictions native kernels wouldn't have resulted from the initrd
-> getting mapped into the initial mapping. The kernel doesn't really need
-> the initrd to be mapped, so use infrastructure available in Xen to avoid
-> the mapping and hence the restriction.
-> 
-> Signed-off-by: Juergen Gross <jgross@suse.com>
-> ---
->  arch/x86/xen/enlighten.c | 11 +++++++++--
->  arch/x86/xen/xen-head.S  |  1 +
->  2 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index c0cb11f..8fd075f 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1519,6 +1519,7 @@ static void __init xen_pvh_early_guest_init(void)
->  asmlinkage __visible void __init xen_start_kernel(void)
->  {
->  	struct physdev_set_iopl set_iopl;
-> +	unsigned long initrd_start = 0;
->  	int rc;
->  
->  	if (!xen_start_info)
-> @@ -1667,10 +1668,16 @@ asmlinkage __visible void __init xen_start_kernel(void)
->  	new_cpu_data.x86_capability[0] = cpuid_edx(1);
->  #endif
->  
-> +	if (xen_start_info->mod_start)
-> +		initrd_start = __pa(xen_start_info->mod_start);
-> +#ifdef CONFIG_BLK_DEV_INITRD
-> +	if (xen_start_info->flags & SIF_MOD_START_PFN)
-> +		initrd_start = PFN_PHYS(xen_start_info->mod_start);
-> +#endif
+On 09/17/2014 01:40 AM, Stephen Warren wrote:
+> That's a huge time-sink, unless I work out NFS root,
+> which probably isn't properly or easily supported by any distro.
 
-Why the #ifdef?
+FWIW, this is how I've been working, and it hasn't been /that/ difficult 
+to get working. The Tegra side is trivial, just append something like
 
-I'll fix this up to be:
+ip=dhcp root=/dev/nfs 
+nfsroot=host_ip:/your/nfsroot,v3,rsize=8192,wsize=8192,timeo=15
 
-   if (xen_start_info->mod_start) {
-       if (xen_start_info->flags & SIF_MOD_START_PFN)
-           initrd_start = PFN_PHYS_(xen_start_info->mod_start);
-       else
-           initrd_start = __pa(xen_start_info->mod_start);
-   }
+(Granted, I had to do a bit of mucking around before finding this 
+working incantation..)
 
-Unless you object.
+to the kernel boot arguments. I've used Ubuntu 12.04, 13.10 and Arch 
+Linux on my Jetson in this way. The more annoying part is the nfs host 
+machine, but there are guides for that. Anyway, I've had both Ubuntu 
+12.04 and Arch working as hosts without problems.
 
-David
+Mikko
+
