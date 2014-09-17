@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664AbaIQR7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:59:14 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:46287 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412AbaIQR7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:59:12 -0400
+	id S1756405AbaIQSC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:02:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755391AbaIQSC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 14:02:26 -0400
+Date: Wed, 17 Sep 2014 19:59:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roman Peniaev <r.peniaev@gmail.com>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] init: fix race between rootfs mount and firmware
+	loading
+Message-ID: <20140917175944.GD19308@redhat.com>
+References: <1410792308-21577-1-git-send-email-r.peniaev@gmail.com> <20140915163935.GB22768@redhat.com> <CACZ9PQXJzoczS7gN5UCFygTHrLW5Rtjew5BF-txfL=cryE331w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140916195255.GN12361@n2100.arm.linux.org.uk>
-References: <1410872360-27029-1-git-send-email-k.kozlowski@samsung.com>
-	<1410872360-27029-4-git-send-email-k.kozlowski@samsung.com>
-	<CAPDyKFrNYxSx3KwOLg0Bgw2TCtsC2-1YXjo1kSms2ie_b8sNww@mail.gmail.com>
-	<20140916195255.GN12361@n2100.arm.linux.org.uk>
-Date: Wed, 17 Sep 2014 19:59:11 +0200
-Message-ID: <CAPDyKFrbC6Qh1mENctZQo1y3Mb3w3fSE8X3iYnChrmxhUpBXkQ@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACZ9PQXJzoczS7gN5UCFygTHrLW5Rtjew5BF-txfL=cryE331w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 September 2014 21:52, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Sep 16, 2014 at 08:25:25PM +0200, Ulf Hansson wrote:
->> On 16 September 2014 14:59, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
->> > The AMBA bus driver defines runtime Power Management functions which
->> > disable and unprepare AMBA bus clock. This is problematic for runtime PM
->> > because unpreparing a clock might sleep so it is not interrupt safe.
->> >
->> > However some drivers may want to implement runtime PM functions in
->> > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
->> > bus driver should only disable/enable the clock in runtime suspend and
->> > resume callbacks.
->> >
->> > Detect the device driver behavior after calling its probe function and
->> > store it. During runtime suspend/resume deal with clocks according to
->> > stored value.
->> >
->> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->> > ---
->> >  drivers/amba/bus.c       | 29 +++++++++++++++++++++++++----
->> >  include/linux/amba/bus.h |  1 +
->> >  2 files changed, 26 insertions(+), 4 deletions(-)
->> >
->> > diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
->> > index 3cf61a127ee5..e8fd5706954f 100644
->> > --- a/drivers/amba/bus.c
->> > +++ b/drivers/amba/bus.c
->> > @@ -94,8 +94,18 @@ static int amba_pm_runtime_suspend(struct device *dev)
->> >         struct amba_device *pcdev = to_amba_device(dev);
->> >         int ret = pm_generic_runtime_suspend(dev);
->> >
->> > -       if (ret == 0 && dev->driver)
->> > -               clk_disable_unprepare(pcdev->pclk);
->> > +       if (ret == 0 && dev->driver) {
->> > +               /*
->> > +                * Drivers should not change pm_runtime_irq_safe()
->> > +                * after probe.
->> > +                */
->> > +               WARN_ON(pcdev->irq_safe != pm_runtime_is_irq_safe(dev));
->>
->> Do we really need a WARN_ON here. Driver shouldn't update their
->> irq_safe value dynamically, right!?
+On 09/17, Roman Peniaev wrote:
 >
-> The driver shouldn't update it dynamically, and this makes sure *that*
-> is enforced since we end up depending on that property.  Hence the
-> check is sensible (and I even suggested it.)
-
-The WARN_ON could be nice to have, but I think this is a task for PM
-core to handle.
-
-Copying flags shouldn't be needed for each an every instance of a
-driver/bus that manage irq_safe devices. That's my main point.
-
+> On Tue, Sep 16, 2014 at 1:39 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 09/15, Roman Pen wrote:
+> >>
+> >
+> > Otherwise wait_for_rootfs() can return only once, the next call will block
+> > forever. And perhaps it would be better to use another primitive, even if
+> > UINT_MAX/2 should be enough.
 >
->> > +
->> > +               if (pcdev->irq_safe)
->> > +                       clk_disable(pcdev->pclk);
->>
->> Since the irq_safe flag, could be considered as a special case, an
->> option for these cases - could be to leave the clock to be entirely
->> handled from the driver's runtime PM callback instead.
->
-> Too many sub-clauses to make much sense of that statement.
+> And why do you think completion is not good for this?
+> Seems it is impossible to have so many threads on early init, which wait
+> for rootfs.
 
-Sorry, agree. :-)
+Yes, but it is not only called during init? Suppose that a user does
+insmod + rmmod in a loop, and the driver calls request_firmware(). This
+will hang after UINT_MAX/2 iterations. Sure, this can't happen in practice,
+but still this doesn't look good imho.
 
->
-> I don't want drivers messing around with this stuff.  This is the /bus/
-> clock, not a device specific clock.
+Oleg.
 
-For irq_safe devices, driver's will need to handle the
-clk_prepare|unprepare during system PM anyway. That's the reason to
-why I suggested this.
-
-On the other hand I agree with you, it's a bus clock...
-
-Kind regards
-Uffe
