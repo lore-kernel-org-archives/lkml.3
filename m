@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981AbaIQVW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:22:27 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48099 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756698AbaIQVWZ (ORCPT
+	id S1757037AbaIQVWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:22:46 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62464 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756779AbaIQVWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:22:25 -0400
-Date: Wed, 17 Sep 2014 14:22:20 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Subject: Re: [PATCH 2/2] dt-bindings: add devicetree bindings for st-pwm
- regulator
-Message-ID: <20140917212220.GQ30918@lee--X1>
-References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
- <1410959280-29662-3-git-send-email-zyw@rock-chips.com>
- <CAD=FV=WCQ4oU1O9JcZ9SuwWJ7g+GLsUiE=wmQQoWvL41o24eWg@mail.gmail.com>
+	Wed, 17 Sep 2014 17:22:44 -0400
+Date: Thu, 18 Sep 2014 06:22:38 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Petr Mladek <pmladek@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] usb: hub: rename khubd to hub_wq in documentation
+ and comments
+Message-ID: <20140917212238.GB15795@mtj.dyndns.org>
+References: <1410967150-25240-5-git-send-email-pmladek@suse.cz>
+ <Pine.LNX.4.44L0.1409171333310.1579-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=WCQ4oU1O9JcZ9SuwWJ7g+GLsUiE=wmQQoWvL41o24eWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1409171333310.1579-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014, Doug Anderson wrote:
-> On Wed, Sep 17, 2014 at 6:08 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> > Document the st-pwm regulator
-> >
-> > Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> >
-> > ---
-> >
-> >  .../devicetree/bindings/regulator/st-pwm.txt       |   35 ++++++++++++++++++++
-> >  1 file changed, 35 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/regulator/st-pwm.txt
-> >
-> > diff --git a/Documentation/devicetree/bindings/regulator/st-pwm.txt b/Documentation/devicetree/bindings/regulator/st-pwm.txt
-> > new file mode 100644
-> > index 0000000..38fec1d
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/regulator/st-pwm.txt
-> > @@ -0,0 +1,35 @@
-> > +st pwm regulator bindings
-> > +
-> > +Required properties:
-> > +  - compatible: "pwm-regulator"
-> 
-> This compatible string doesn't include "st,b2105-pwm-regulator".
-> 
-> Should be something like:
-> 
->   - compatible: Should be "pwm-regulator" to get voltage table / regulator
->     period from the device tree.  Deprecated: if "st,b2105-pwm-regulator" then
->     voltage table and regulator will be handled by the driver.
-> 
-> Assuming that everyone is OK calling "st,b2105-pwm-regulator" the
-> deprecated way of doing things.
+Hello, Alan, Petr.
 
-It's okay not to deprecate "st,b2105-pwm-regulator" as there have
-never been any users.  The only DTS file with a reference to it is in
-my local repo.  Just rename it.
+On Wed, Sep 17, 2014 at 01:36:26PM -0400, Alan Stern wrote:
+> > -	/* If khubd ever becomes multithreaded, this will need a lock */
+> > +	/* If hub_wq ever becomes multithreaded, this will need a lock */
+> >  	if (udev->wusb) {
+> >  		devnum = udev->portnum + 1;
+> >  		BUG_ON(test_bit(devnum, bus->devmap.devicemap));
+> 
+> You probably didn't notice when changing this comment.  But in fact,
+> workqueues _are_ multithreaded.  Therefore you need to add a lock to 
+> this routine.
+
+Haven't read the code but if this function is called from a single
+work_struct, workqueue guarantees that there's only single thread of
+execution at any given time.  A work item is never executed
+concurrently no matter what.
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
