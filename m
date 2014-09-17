@@ -1,57 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaIQIa6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:30:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53804 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826AbaIQIa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:30:56 -0400
-Date: Wed, 17 Sep 2014 10:30:53 +0200
-From: Joerg Roedel <jroedel@suse.de>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Upinder Malhi <umalhi@cisco.com>
-Subject: Re: [PATCH 11/12] IB/usnic: Convert to use new iommu_capable() API
- function
-Message-ID: <20140917083053.GD2533@suse.de>
-References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
- <1409914384-21191-12-git-send-email-joro@8bytes.org>
+	id S1755079AbaIQIb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:31:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42537 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561AbaIQIbZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:31:25 -0400
+Message-ID: <541946D8.1080209@gmail.com>
+Date: Wed, 17 Sep 2014 17:31:20 +0900
+From: taeung <treeze.taeung@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409914384-21191-12-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
+CC: Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH] modified error code when perf_session__new() fail
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Fri, Sep 05, 2014 at 12:53:03PM +0200, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
-> 
-> Cc: Upinder Malhi <umalhi@cisco.com>
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/infiniband/hw/usnic/usnic_uiom.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/infiniband/hw/usnic/usnic_uiom.c b/drivers/infiniband/hw/usnic/usnic_uiom.c
-> index 801a1d6..417de1f 100644
-> --- a/drivers/infiniband/hw/usnic/usnic_uiom.c
-> +++ b/drivers/infiniband/hw/usnic/usnic_uiom.c
-> @@ -507,7 +507,7 @@ int usnic_uiom_attach_dev_to_pd(struct usnic_uiom_pd *pd, struct device *dev)
->  	if (err)
->  		goto out_free_dev;
->  
-> -	if (!iommu_domain_has_cap(pd->domain, IOMMU_CAP_CACHE_COHERENCY)) {
-> +	if (!iommu_capable(dev->bus, IOMMU_CAP_CACHE_COHERENCY)) {
->  		usnic_err("IOMMU of %s does not support cache coherency\n",
->  				dev_name(dev));
->  		err = -EINVAL;
+I modified error code for the requirement as below.
 
-Any objections against this? I would like to apply this series to the
-iommu tree.
+Author: taeung <treeze.taeung@gmail.com>
+Date:   Sat Sep 13 16:22:53 2014 +0900
+
+      modified error code when perf_session__new() fail
+
+         Because perf_session__new() could fail
+         for more reasons than just ENOMEM,
+         I modified error code(ENOMEM or EINVAL)
+         into -1.
 
 
-	Joerg
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 1ec429f..81c9fda 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -199,7 +199,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+
+      session = perf_session__new(&file, false, &ann->tool);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      machines__set_symbol_filter(&session->machines, 
+symbol__annotate_init);
+
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 9a5a035..3363dce 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -683,7 +683,7 @@ static int __cmd_diff(void)
+          d->session = perf_session__new(&d->file, false, &tool);
+          if (!d->session) {
+              pr_err("Failed to open %s\n", d->file.path);
+-            ret = -ENOMEM;
++            ret = -1;
+              goto out_delete;
+          }
+
+diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
+index 66e12f5..0f93f85 100644
+--- a/tools/perf/builtin-evlist.c
++++ b/tools/perf/builtin-evlist.c
+@@ -28,7 +28,7 @@ static int __cmd_evlist(const char *file_name, struct 
+perf_attr_details *details
+
+      session = perf_session__new(&file, 0, NULL);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      evlist__for_each(session->evlist, pos)
+          perf_evsel__fprintf(pos, details, stdout);
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 9a02807..8dbdd13 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -359,7 +359,7 @@ static int __cmd_inject(struct perf_inject *inject)
+
+      session = perf_session__new(&file, true, &inject->tool);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      if (inject->build_ids) {
+          inject->tool.sample = perf_event__inject_buildid;
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index bef3376..b518f4b 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -422,7 +422,7 @@ static int __cmd_kmem(void)
+
+      session = perf_session__new(&file, false, &perf_kmem);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      if (perf_session__create_kernel_maps(session) < 0)
+          goto out_delete;
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 43367eb..828e706 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1060,7 +1060,7 @@ static int read_events(struct perf_kvm_stat *kvm)
+          .comm            = perf_event__process_comm,
+          .ordered_samples    = true,
+      };
+-    struct perf_data_file file = {
++    struct perf_data_file file = {
+          .path = kvm->file_name,
+          .mode = PERF_DATA_MODE_READ,
+      };
+@@ -1069,7 +1069,7 @@ static int read_events(struct perf_kvm_stat *kvm)
+      kvm->session = perf_session__new(&file, false, &kvm->tool);
+      if (!kvm->session) {
+          pr_err("Initializing perf session failed\n");
+-        return -EINVAL;
++        return -1;
+      }
+
+      if (!perf_session__has_traces(kvm->session, "kvm record"))
+@@ -1369,7 +1369,7 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+       */
+      kvm->session = perf_session__new(&file, false, &kvm->tool);
+      if (kvm->session == NULL) {
+-        err = -ENOMEM;
++        err = -1;
+          goto out;
+      }
+      kvm->session->evlist = kvm->evlist;
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 6148afc..49f1e30 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -862,7 +862,7 @@ static int __cmd_report(bool display_info)
+      session = perf_session__new(&file, false, &eops);
+      if (!session) {
+          pr_err("Initializing perf session failed\n");
+-        return -ENOMEM;
++        return -1;
+      }
+
+      if (!perf_session__has_traces(session, "lock record"))
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+index 4a1a6c9..75976ce 100644
+--- a/tools/perf/builtin-mem.c
++++ b/tools/perf/builtin-mem.c
+@@ -124,7 +124,7 @@ static int report_raw_events(struct perf_mem *mem)
+                               &mem->tool);
+
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      if (mem->cpu_list) {
+          ret = perf_session__cpu_bitmap(session, mem->cpu_list,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 21d830b..1a7abac 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -712,7 +712,7 @@ int cmd_report(int argc, const char **argv, const 
+char *prefix __maybe_unused)
+  repeat:
+      session = perf_session__new(&file, false, &report.tool);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      report.session = session;
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index f57035b..77cef60 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1725,7 +1725,7 @@ int cmd_script(int argc, const char **argv, const 
+char *prefix __maybe_unused)
+
+      session = perf_session__new(&file, false, &script.tool);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      if (header || header_only) {
+          perf_session__fprintf_info(session, stdout, show_full_info);
+diff --git a/tools/perf/builtin-timechart.c 
+b/tools/perf/builtin-timechart.c
+index 2f1a522..dc9a465 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -1605,7 +1605,7 @@ static int __cmd_timechart(struct timechart 
+*tchart, const char *output_name)
+      int ret = -EINVAL;
+
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      (void)perf_header__process_sections(&session->header,
+                          perf_data_file__fd(session->file),
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 377971d..8217b5d 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -911,7 +911,7 @@ static int __cmd_top(struct perf_top *top)
+
+      top->session = perf_session__new(NULL, false, NULL);
+      if (top->session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      machines__set_symbol_filter(&top->session->machines, symbol_filter);
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index a6c3752..9e23293 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2220,7 +2220,7 @@ static int trace__replay(struct trace *trace)
+
+      session = perf_session__new(&file, false, &trace->tool);
+      if (session == NULL)
+-        return -ENOMEM;
++        return -1;
+
+      trace->host = &session->machines.host;
+
+Thanks,
+-- 
+taeung
