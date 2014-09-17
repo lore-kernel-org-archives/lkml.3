@@ -1,92 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaIQOH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 10:07:28 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49575 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755215AbaIQOH0 (ORCPT
+	id S1755578AbaIQOIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 10:08:06 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:42290 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215AbaIQOIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 10:07:26 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+9TmN6w1siK1iY3Csom1l97krH4WyA23I=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 266DA5E4F46
-Date: Wed, 17 Sep 2014 10:07:11 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/24] MIPS GIC cleanup, part 1
-Message-ID: <20140917140711.GB16945@titan.lakedaemon.net>
-References: <1410825087-5497-1-git-send-email-abrestic@chromium.org>
+	Wed, 17 Sep 2014 10:08:05 -0400
+X-IronPort-AV: E=Sophos;i="5.04,540,1406592000"; 
+   d="scan'208";a="173292427"
+Message-ID: <54199589.9040703@citrix.com>
+Date: Wed, 17 Sep 2014 15:07:05 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410825087-5497-1-git-send-email-abrestic@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH V2 3/3] xen: eliminate scalability issues
+ from initial mapping setup
+References: <1410927157-15069-1-git-send-email-jgross@suse.com> <1410927157-15069-4-git-send-email-jgross@suse.com>
+In-Reply-To: <1410927157-15069-4-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
-
-First, great work!
-
-On Mon, Sep 15, 2014 at 04:51:03PM -0700, Andrew Bresticker wrote:
-> The current MIPS GIC driver and the platform code using it are rather
-> ugly and could use a good cleanup before adding device-tree support [0].
-> This major issues addressed in this series are converting the GIC (and
-> platforms using it) to use IRQ domains and properly mapping interrupts
-> through the GIC instead of using it transparently.  For part 2 I plan
-> on: updating the driver to use proper iomem accessors, cleaning up and
-> moving the GIC clocksource driver to drivers/clocksource/, adding DT
-> support, and possibly converting the GIC driver to use generic irqchip.
+On 17/09/14 05:12, Juergen Gross wrote:
+> Direct Xen to place the initial P->M table outside of the initial
+> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
+> restriction on the size of the initial mapping limits the amount
+> of memory a domain can be handed initially.
 > 
-> Patches 1-16 are cleanups for the existing GIC driver and prepare platforms
-> using it for the switch to IRQ domains and using the GIC in a non-transparent
-> way.
-> 
-> Patches 17-24 convert the GIC driver to use IRQ domains and updates the
-> platforms using it to properly map GIC interrupts instead of using the static
-> routing tables to make the GIC appear transparent.
-> 
-> I've tested this series on Malta and, with additional patches, on the
-> DT-enabled Danube platform.  Unfortunately I do not have SEAD-3 hardware,
-> so that has only been compile tested.  Compile tested on all other affected
-> architectures (ath79, ralink, lantiq).
-> 
-> [0] https://lkml.org/lkml/2014/9/5/542
-> 
-> Andrew Bresticker (24):
-...
->   MIPS: Move GIC to drivers/irqchip/
->   irqchip: mips-gic: Implement generic irq_ack/irq_eoi callbacks
->   irqchip: mips-gic: Implement irq_set_type callback
->   irqchip: mips-gic: Fix gic_set_affinity() return value
->   irqchip: mips-gic: Use IRQ domains
->   irqchip: mips-gic: Stop using per-platform mapping tables
->   irqchip: mips-gic: Probe for number of external interrupts
->   irqchip: mips-gic: Use separate edge/level irq_chips
->   irqchip: mips-gic: Support local interrupts
->   irqchip: mips-gic: Remove unnecessary globals
-...
->  drivers/irqchip/Kconfig                            |   4 +
->  drivers/irqchip/Makefile                           |   1 +
->  drivers/irqchip/irq-mips-gic.c                     | 597 +++++++++++++++++++++
+> As the initial P->M table is copied rather early during boot to
+> domain private memory and it's initial virtual mapping is dropped,
+> the easiest way to avoid virtual address conflicts with other
+> addresses in the kernel is to use a user address area for the
+> virtual address of the initial P->M table. This allows us to just
+> throw away the page tables of the initial mapping after the copy
+> without having to care about address invalidation.
 
-It would be too much of a pia to have this go through irqchip, so
+This needs an additional paragraph like:
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+  "This does not increase the amount of memory the guest can use.  This
+is still limited to 512 GiB by the 3-level p2m."
 
-Please make sure to add the Tested-by's, etc before merging through
-mips.
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1198,6 +1198,76 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
+[...]
+> +/*
+> + * Since it is well isolated we can (and since it is perhaps large we should)
+> + * also free the page tables mapping the initial P->M table.
+> + */
+> +static void __init xen_cleanmfnmap(unsigned long vaddr)
+> +{
+> +	unsigned long va = vaddr & PMD_MASK;
+> +	unsigned long pa;
+> +	pgd_t *pgd = pgd_offset_k(va);
+> +	pud_t *pud_page = pud_offset(pgd, 0);
+> +	pud_t *pud;
+> +	pmd_t *pmd;
+> +	pte_t *pte;
+> +	unsigned int i;
+> +
+> +	set_pgd(pgd, __pgd(0));
+> +	do {
+> +		pud = pud_page + pud_index(va);
+> +		if (pud_none(*pud)) {
+> +			va += PUD_SIZE;
+> +		} else if (pud_large(*pud)) {
+> +			pa = pud_val(*pud) & PHYSICAL_PAGE_MASK;
+> +			xen_free_ro_pages(pa, PUD_SIZE);
+> +			va += PUD_SIZE;
 
-thx,
+Are you missing a ClearPagePinned(..) here?
 
-Jason.
+> +		} else {
+> +			pmd = pmd_offset(pud, va);
+> +			if (pmd_large(*pmd)) {
+> +				pa = pmd_val(*pmd) & PHYSICAL_PAGE_MASK;
+> +				xen_free_ro_pages(pa, PMD_SIZE);
+> +			} else if (!pmd_none(*pmd)) {
+> +				pte = pte_offset_kernel(pmd, va);
+> +				for (i = 0; i < PTRS_PER_PTE; ++i) {
+> +					if (pte_none(pte[i]))
+> +						break;
+> +					pa = pte_pfn(pte[i]) << PAGE_SHIFT;
+> +					xen_free_ro_pages(pa, PAGE_SIZE);
+> +				}
+
+> +				pa = __pa(pte) & PHYSICAL_PAGE_MASK;
+> +				ClearPagePinned(virt_to_page(__va(pa)));
+> +				xen_free_ro_pages(pa, PAGE_SIZE);
+
+Put this into a helper function?  It's used here...
+
+> +			}
+> +			va += PMD_SIZE;
+> +			if (pmd_index(va))
+> +				continue;
+> +			pa = __pa(pmd) & PHYSICAL_PAGE_MASK;
+> +			ClearPagePinned(virt_to_page(__va(pa)));
+> +			xen_free_ro_pages(pa, PAGE_SIZE);
+
+...and here...
+
+> +		}
+> +
+> +	} while (pud_index(va) || pmd_index(va));
+> +	pa = __pa(pud_page) & PHYSICAL_PAGE_MASK;
+> +	ClearPagePinned(virt_to_page(__va(pa)));
+> +	xen_free_ro_pages(pa, PAGE_SIZE);
+
+... and here.
+
+> @@ -1529,6 +1604,22 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+>  #else /* CONFIG_X86_64 */
+>  static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+>  {
+> +	unsigned long pfn;
+> +
+> +	if (xen_feature(XENFEAT_writable_page_tables) ||
+> +	    xen_feature(XENFEAT_auto_translated_physmap) ||
+> +	    xen_start_info->mfn_list >= __START_KERNEL_map)
+> +		return pte;
+> +
+> +	/*
+> +	 * Pages belonging to the initial p2m list mapped outside the default
+> +	 * address range must be mapped read-only.
+
+Why?  I didn't think was anything special about these MFNs.
+
+David
