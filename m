@@ -1,274 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314AbaIQWWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 18:22:24 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:35328 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756977AbaIQWU7 (ORCPT
+	id S1757103AbaIQWZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 18:25:25 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:54115 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755726AbaIQWZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 18:20:59 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC v2 1/5] Prepare for adding a new readv/writev with user flags.
-Date: Wed, 17 Sep 2014 22:20:46 +0000
-Message-Id: <c30cfc996b4ab21dfc9e28886d6de68b4ca287df.1410983999.git.milosz@adfin.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1410983998.git.milosz@adfin.com>
-References: <cover.1410810247.git.milosz@adfin.com>
- <cover.1410983998.git.milosz@adfin.com>
-In-Reply-To: <cover.1410983998.git.milosz@adfin.com>
-References: <cover.1410983998.git.milosz@adfin.com>
+	Wed, 17 Sep 2014 18:25:23 -0400
+Date: Wed, 17 Sep 2014 15:25:19 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: ssbi: promote the driver to subsys level
+Message-ID: <20140917222519.GV30918@lee--X1>
+References: <1410915594-15599-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <20140917160305.GH30918@lee--X1>
+ <CAGkH4DOPHQWBVZgiLZugcoTZNJiS-ar8KNvq96W5UmX8C6GCTg@mail.gmail.com>
+ <20140917164925.GO30918@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140917164925.GO30918@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Plumbing the flags argument through the vfs code so they can be passed down to
-__generic_file_(read/write)_iter function that do the acctual work.
+On Wed, 17 Sep 2014, Lee Jones wrote:
 
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
----
- drivers/target/target_core_file.c |  6 +++---
- fs/nfsd/vfs.c                     |  4 ++--
- fs/read_write.c                   | 28 ++++++++++++++++------------
- fs/splice.c                       |  2 +-
- include/linux/aio.h               |  2 ++
- include/linux/fs.h                |  4 ++--
- mm/filemap.c                      |  2 +-
- 7 files changed, 27 insertions(+), 21 deletions(-)
+> On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
+> 
+> > On 17 Sep 2014 09:03, "Lee Jones" <lee.jones@linaro.org> wrote:
+> > >
+> > > On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
+> > >
+> > > > This patch promtes the driver to be at subsystem level as this driver
+> > > > will be used by gpio controller drivers which inturn are used by many
+> > > > platform drivers.
+> > >
+> > > Any reason why you're not using -EPROBE?
+> > >
+> > EPROBE is possible but it's going to add few more cycles to boot time.
+> > 
+> > As this driver is a very basic driver on which other drivers depend
+> > ensuring the sequence would improve the boot time.
+> 
+> We only tend to promote drivers' init level as a last resort.  If
+> -EPROBE_DEFER is possible, please use that instead.
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 7d6cdda..58d9a6d 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -350,9 +350,9 @@ static int fd_do_rw(struct se_cmd *cmd, struct scatterlist *sgl,
- 	set_fs(get_ds());
- 
- 	if (is_write)
--		ret = vfs_writev(fd, &iov[0], sgl_nents, &pos);
-+		ret = vfs_writev(fd, &iov[0], sgl_nents, &pos, 0);
- 	else
--		ret = vfs_readv(fd, &iov[0], sgl_nents, &pos);
-+		ret = vfs_readv(fd, &iov[0], sgl_nents, &pos, 0);
- 
- 	set_fs(old_fs);
- 
-@@ -528,7 +528,7 @@ fd_execute_write_same(struct se_cmd *cmd)
- 
- 	old_fs = get_fs();
- 	set_fs(get_ds());
--	rc = vfs_writev(f, &iov[0], iov_num, &pos);
-+	rc = vfs_writev(f, &iov[0], iov_num, &pos, 0);
- 	set_fs(old_fs);
- 
- 	vfree(iov);
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index f501a9b..db7a31d 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -855,7 +855,7 @@ __be32 nfsd_readv(struct file *file, loff_t offset, struct kvec *vec, int vlen,
- 
- 	oldfs = get_fs();
- 	set_fs(KERNEL_DS);
--	host_err = vfs_readv(file, (struct iovec __user *)vec, vlen, &offset);
-+	host_err = vfs_readv(file, (struct iovec __user *)vec, vlen, &offset, 0);
- 	set_fs(oldfs);
- 	return nfsd_finish_read(file, count, host_err);
- }
-@@ -943,7 +943,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
- 
- 	/* Write the data. */
- 	oldfs = get_fs(); set_fs(KERNEL_DS);
--	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &pos);
-+	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &pos, 0);
- 	set_fs(oldfs);
- 	if (host_err < 0)
- 		goto out_nfserr;
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 009d854..9f6d13d 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -651,7 +651,8 @@ unsigned long iov_shorten(struct iovec *iov, unsigned long nr_segs, size_t to)
- EXPORT_SYMBOL(iov_shorten);
- 
- static ssize_t do_iter_readv_writev(struct file *filp, int rw, const struct iovec *iov,
--		unsigned long nr_segs, size_t len, loff_t *ppos, iter_fn_t fn)
-+		unsigned long nr_segs, size_t len, loff_t *ppos, iter_fn_t fn,
-+		int flags)
- {
- 	struct kiocb kiocb;
- 	struct iov_iter iter;
-@@ -660,6 +661,7 @@ static ssize_t do_iter_readv_writev(struct file *filp, int rw, const struct iove
- 	init_sync_kiocb(&kiocb, filp);
- 	kiocb.ki_pos = *ppos;
- 	kiocb.ki_nbytes = len;
-+	kiocb.ki_rwflags = flags;
- 
- 	iov_iter_init(&iter, rw, iov, nr_segs, len);
- 	ret = fn(&kiocb, &iter);
-@@ -798,7 +800,8 @@ out:
- 
- static ssize_t do_readv_writev(int type, struct file *file,
- 			       const struct iovec __user * uvector,
--			       unsigned long nr_segs, loff_t *pos)
-+			       unsigned long nr_segs, loff_t *pos,
-+			       int flags)
- {
- 	size_t tot_len;
- 	struct iovec iovstack[UIO_FASTIOV];
-@@ -832,7 +835,7 @@ static ssize_t do_readv_writev(int type, struct file *file,
- 
- 	if (iter_fn)
- 		ret = do_iter_readv_writev(file, type, iov, nr_segs, tot_len,
--						pos, iter_fn);
-+						pos, iter_fn, flags);
- 	else if (fnv)
- 		ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
- 						pos, fnv);
-@@ -855,27 +858,27 @@ out:
- }
- 
- ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
--		  unsigned long vlen, loff_t *pos)
-+		  unsigned long vlen, loff_t *pos, int flags)
- {
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
- 	if (!(file->f_mode & FMODE_CAN_READ))
- 		return -EINVAL;
- 
--	return do_readv_writev(READ, file, vec, vlen, pos);
-+	return do_readv_writev(READ, file, vec, vlen, pos, flags);
- }
- 
- EXPORT_SYMBOL(vfs_readv);
- 
- ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
--		   unsigned long vlen, loff_t *pos)
-+		   unsigned long vlen, loff_t *pos, int flags)
- {
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
- 	if (!(file->f_mode & FMODE_CAN_WRITE))
- 		return -EINVAL;
- 
--	return do_readv_writev(WRITE, file, vec, vlen, pos);
-+	return do_readv_writev(WRITE, file, vec, vlen, pos, flags);
- }
- 
- EXPORT_SYMBOL(vfs_writev);
-@@ -888,7 +891,7 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
- 
- 	if (f.file) {
- 		loff_t pos = file_pos_read(f.file);
--		ret = vfs_readv(f.file, vec, vlen, &pos);
-+		ret = vfs_readv(f.file, vec, vlen, &pos, 0);
- 		if (ret >= 0)
- 			file_pos_write(f.file, pos);
- 		fdput_pos(f);
-@@ -908,7 +911,7 @@ SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
- 
- 	if (f.file) {
- 		loff_t pos = file_pos_read(f.file);
--		ret = vfs_writev(f.file, vec, vlen, &pos);
-+		ret = vfs_writev(f.file, vec, vlen, &pos, 0);
- 		if (ret >= 0)
- 			file_pos_write(f.file, pos);
- 		fdput_pos(f);
-@@ -940,7 +943,7 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
- 	if (f.file) {
- 		ret = -ESPIPE;
- 		if (f.file->f_mode & FMODE_PREAD)
--			ret = vfs_readv(f.file, vec, vlen, &pos);
-+			ret = vfs_readv(f.file, vec, vlen, &pos, 0);
- 		fdput(f);
- 	}
- 
-@@ -964,7 +967,7 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
- 	if (f.file) {
- 		ret = -ESPIPE;
- 		if (f.file->f_mode & FMODE_PWRITE)
--			ret = vfs_writev(f.file, vec, vlen, &pos);
-+			ret = vfs_writev(f.file, vec, vlen, &pos, 0);
- 		fdput(f);
- 	}
- 
-@@ -1012,7 +1015,7 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
- 
- 	if (iter_fn)
- 		ret = do_iter_readv_writev(file, type, iov, nr_segs, tot_len,
--						pos, iter_fn);
-+						pos, iter_fn, 0);
- 	else if (fnv)
- 		ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
- 						pos, fnv);
-@@ -1111,6 +1114,7 @@ COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
- 	return __compat_sys_preadv64(fd, vec, vlen, pos);
- }
- 
-+
- static size_t compat_writev(struct file *file,
- 			    const struct compat_iovec __user *vec,
- 			    unsigned long vlen, loff_t *pos)
-diff --git a/fs/splice.c b/fs/splice.c
-index f5cb9ba..9591b9f 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -576,7 +576,7 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
- 	old_fs = get_fs();
- 	set_fs(get_ds());
- 	/* The cast to a user pointer is valid due to the set_fs() */
--	res = vfs_readv(file, (const struct iovec __user *)vec, vlen, &pos);
-+	res = vfs_readv(file, (const struct iovec __user *)vec, vlen, &pos, 0);
- 	set_fs(old_fs);
- 
- 	return res;
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index d9c92da..9c1d499 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -52,6 +52,8 @@ struct kiocb {
- 	 * this is the underlying eventfd context to deliver events to.
- 	 */
- 	struct eventfd_ctx	*ki_eventfd;
-+
-+	int			ki_rwflags;
- };
- 
- static inline bool is_sync_kiocb(struct kiocb *kiocb)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9418772..e9bea52 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1556,9 +1556,9 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
- extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
- extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
- extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
--		unsigned long, loff_t *);
-+		unsigned long, loff_t *, int);
- extern ssize_t vfs_writev(struct file *, const struct iovec __user *,
--		unsigned long, loff_t *);
-+		unsigned long, loff_t *, int);
- 
- struct super_operations {
-    	struct inode *(*alloc_inode)(struct super_block *sb);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 90effcd..6e3ba07 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1456,7 +1456,7 @@ static void shrink_readahead_size_eio(struct file *filp,
-  * of the logic when it comes to error handling etc.
-  */
- static ssize_t do_generic_file_read(struct file *filp, loff_t *ppos,
--		struct iov_iter *iter, ssize_t written)
-+		struct iov_iter *iter, ssize_t written, int flags)
- {
- 	struct address_space *mapping = filp->f_mapping;
- 	struct inode *inode = mapping->host;
+To conclude for any casual/interested observers; I'd be willing to
+accept the patch if you can provide some metrics that prove boot-time
+is sufficiently increased as a result of using -EPROBE_DEFER.
+
+> > > > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> > > > ---
+> > > >  drivers/mfd/ssbi.c | 7 ++++++-
+> > > >  1 file changed, 6 insertions(+), 1 deletion(-)
+> > > >
+> > > > diff --git a/drivers/mfd/ssbi.c b/drivers/mfd/ssbi.c
+> > > > index b78942e..4fbe02e 100644
+> > > > --- a/drivers/mfd/ssbi.c
+> > > > +++ b/drivers/mfd/ssbi.c
+> > > > @@ -331,7 +331,12 @@ static struct platform_driver ssbi_driver = {
+> > > >               .of_match_table = ssbi_match_table,
+> > > >       },
+> > > >  };
+> > > > -module_platform_driver(ssbi_driver);
+> > > > +
+> > > > +static int ssbi_init(void)
+> > > > +{
+> > > > +     return platform_driver_register(&ssbi_driver);
+> > > > +}
+> > > > +subsys_initcall(ssbi_init);
+
+Also, as a nasty side-effect of this patch, this module will no longer
+be unloadable, which is probably not what you want.
+
+> > > >  MODULE_LICENSE("GPL v2");
+> > > >  MODULE_VERSION("1.0");
+
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
