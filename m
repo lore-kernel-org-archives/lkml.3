@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaIQI4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:56:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40878 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaIQI4O (ORCPT
+	id S1754916AbaIQI4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:56:32 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:62353 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910AbaIQI43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:56:14 -0400
-Message-ID: <1410944156.2731.1.camel@pengutronix.de>
-Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
- i.mx6dl
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Robin Gong <b38343@freescale.com>
-Cc: mark.rutland@arm.com, devicetree@vger.kernel.org, linux@arm.linux.org.uk,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        shawn.guo@freescale.com, kernel@pengutronix.de, galak@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 17 Sep 2014 10:55:56 +0200
-In-Reply-To: <20140917084120.GA6369@Robin-OptiPlex-780>
-References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
-	 <1410774073.3314.1.camel@pengutronix.de>
-	 <20140916034123.GA20800@Robin-OptiPlex-780>
-	 <1410861006.2746.1.camel@pengutronix.de>
-	 <20140917084120.GA6369@Robin-OptiPlex-780>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
-Mime-Version: 1.0
+	Wed, 17 Sep 2014 04:56:29 -0400
+Message-ID: <54194CB9.4010200@imgtec.com>
+Date: Wed, 17 Sep 2014 09:56:25 +0100
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        "Jonas Gorski" <jogo@openwrt.org>, John Crispin <blogic@openwrt.org>,
+        David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/24] MIPS: Provide a generic plat_irq_dispatch
+References: <1410825087-5497-1-git-send-email-abrestic@chromium.org> <1410825087-5497-4-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1410825087-5497-4-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 17.09.2014, 16:41 +0800 schrieb Robin Gong:
-> On Tue, Sep 16, 2014 at 11:50:06AM +0200, Lucas Stach wrote:
-> > Hi Robin,
-> > 
-> > Am Dienstag, den 16.09.2014, 11:41 +0800 schrieb Robin Gong:
-> > > Hi Lucas,
-> > >   I understood your concern,but looks we have to break old DT.
-> > 
-> > Sorry, but this isn't going to happen. And honestly I don't even see the
-> > need to do so.
-> > 
-> > > Our old DT
-> > > support SPI DMA on i.mx6q/dl(v2,b3810c3dc1bcbc6a), but the DMA support patch
-> > > for SPI driver is still in reviewing(v6).
-> > 
-> > So this means now is the time to fix this driver patch to not enable DMA
-> > on imx6dl. Nobody will experience any breakage in this case.
-> >
-> Sorry, i.mx6q and i.mx6dl are totally same, not only IP but also clock. So we
-> can't distinguish them except for different compatible name....
+Hi Andrew,
 
-I know that, but I still don't see the problem.
+On 09/16/2014 12:51 AM, Andrew Bresticker wrote:
+> For platforms which boot with device-tree or have correctly chained
+> all external interrupt controllers, a generic plat_irq_dispatch() can
+> be used.  Implement a plat_irq_dispatch() which simply handles all the
+> pending interrupts as reported by C0_Cause.
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>   arch/mips/kernel/irq_cpu.c | 15 +++++++++++++++
+>   1 file changed, 15 insertions(+)
+>
+> diff --git a/arch/mips/kernel/irq_cpu.c b/arch/mips/kernel/irq_cpu.c
+> index ca98a9f..f17bd08 100644
+> --- a/arch/mips/kernel/irq_cpu.c
+> +++ b/arch/mips/kernel/irq_cpu.c
+> @@ -94,6 +94,21 @@ static struct irq_chip mips_mt_cpu_irq_controller = {
+>   	.irq_eoi	= unmask_mips_irq,
+>   };
+>   
+> +asmlinkage void __weak plat_irq_dispatch(void)
+> +{
+> +	unsigned long pending = read_c0_cause() & read_c0_status() & ST0_IM;
+> +	int irq;
+> +
+> +	if (!pending) {
+> +		spurious_interrupt();
+> +		return;
+> +	}
+> +
+> +	pending >>= CAUSEB_IP;
+> +	for_each_set_bit(irq, &pending, 8)
+> +		do_IRQ(MIPS_CPU_IRQ_BASE + irq);
+> +}
+> +
 
-If this issue is specific to the ECSPI IP integrated into a imx6dl SoC
-you need to check for the machine compatible in the driver and disable
-DMA support based on this. We generally avoid checking for the machine
-compatible in drivers and prefer to have a specific IP block compatible
-instead, but in that case it's the only reasonable thing to do.
+If I read the for_each_set_bit() macro correctly it'll iterate through 
+the bits from least to most significant ones which is the reversed 
+priority expected. Some platforms set timer interrupt to bit 7 which is 
+should be the highest priority interrupt. Also when cpu_has_vint is set 
+the hardware prioritirise from most significant to least significant 
+bits so if plat_irq_dispatch() is used with set_vi_handler() it'll cause 
+interrupts to be serviced in the wrong order.
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+Qais
+
+>   static int mips_cpu_intc_map(struct irq_domain *d, unsigned int irq,
+>   			     irq_hw_number_t hw)
+>   {
 
