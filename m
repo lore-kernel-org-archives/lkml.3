@@ -1,86 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbaIQC04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 22:26:56 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20734 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755229AbaIQC0z (ORCPT
+	id S1754981AbaIQC3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 22:29:40 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:33804 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021AbaIQC3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 22:26:55 -0400
-X-IronPort-AV: E=Sophos;i="5.04,537,1406563200"; 
-   d="scan'208";a="36055904"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        <drbd-user@lists.linbit.com>
-Subject: [PATCH] drbd: use RB_DECLARE_CALLBACKS() to define augment callbacks
-Date: Wed, 17 Sep 2014 10:25:35 +0800
-Message-ID: <1410920735-5767-3-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
+	Tue, 16 Sep 2014 22:29:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+In-Reply-To: <1410920735-5767-2-git-send-email-laijs@cn.fujitsu.com>
+References: <1410920735-5767-2-git-send-email-laijs@cn.fujitsu.com>
+Date: Tue, 16 Sep 2014 19:29:38 -0700
+Message-ID: <CANN689EUOraS_OLb1UqdgRzh-Jp+a+ZCx=SaSrvw4PAWyyfehg@mail.gmail.com>
+Subject: Re: [PATCH] rbtree: add comment to rb_insert_augmented()
+From: Michel Lespinasse <walken@google.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code are the same as RB_DECLARE_CALLBACKS().
+On Tue, Sep 16, 2014 at 7:25 PM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> The comment is copied from Documentation/rbtree.txt, but this comment
+> is so important that it should also be in the code.
+>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Michel Lespinasse <walken@google.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-CC: Michel Lespinasse <walken@google.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- drivers/block/drbd/drbd_interval.c |   36 ++----------------------------------
- 1 files changed, 2 insertions(+), 34 deletions(-)
+Looks good, thanks for proposing this.
 
-diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
-index 04a14e0..51b25ad 100644
---- a/drivers/block/drbd/drbd_interval.c
-+++ b/drivers/block/drbd/drbd_interval.c
-@@ -37,40 +37,8 @@ compute_subtree_last(struct drbd_interval *node)
- 	return max;
- }
- 
--static void augment_propagate(struct rb_node *rb, struct rb_node *stop)
--{
--	while (rb != stop) {
--		struct drbd_interval *node = rb_entry(rb, struct drbd_interval, rb);
--		sector_t subtree_last = compute_subtree_last(node);
--		if (node->end == subtree_last)
--			break;
--		node->end = subtree_last;
--		rb = rb_parent(&node->rb);
--	}
--}
--
--static void augment_copy(struct rb_node *rb_old, struct rb_node *rb_new)
--{
--	struct drbd_interval *old = rb_entry(rb_old, struct drbd_interval, rb);
--	struct drbd_interval *new = rb_entry(rb_new, struct drbd_interval, rb);
--
--	new->end = old->end;
--}
--
--static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
--{
--	struct drbd_interval *old = rb_entry(rb_old, struct drbd_interval, rb);
--	struct drbd_interval *new = rb_entry(rb_new, struct drbd_interval, rb);
--
--	new->end = old->end;
--	old->end = compute_subtree_last(old);
--}
--
--static const struct rb_augment_callbacks augment_callbacks = {
--	augment_propagate,
--	augment_copy,
--	augment_rotate,
--};
-+RB_DECLARE_CALLBACKS(static, augment_callbacks, struct drbd_interval, rb,
-+		     sector_t, end, compute_subtree_last);
- 
- /**
-  * drbd_insert_interval  -  insert a new interval into a tree
+Acked-by: Michel Lespinasse <walken@google.com>
+
 -- 
-1.7.4.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
