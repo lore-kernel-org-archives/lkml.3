@@ -1,286 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309AbaIQWdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 18:33:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21563 "EHLO mga02.intel.com"
+	id S1757268AbaIQWdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 18:33:24 -0400
+Received: from mga14.intel.com ([192.55.52.115]:45348 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756433AbaIQWdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755726AbaIQWdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Sep 2014 18:33:22 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,542,1406617200"; 
-   d="scan'208";a="478285709"
-Subject: [RFC][PATCH 1/6] topology: rename topology_core_cpumask() to topology_package_cpumask()
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="387735130"
+Subject: [RFC][PATCH 6/6] sched: consolidate config options
 To: a.p.zijlstra@chello.nl
 Cc: mingo@kernel.org, hpa@linux.intel.com, brice.goglin@gmail.com,
         bp@alien8.de, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@sr71.net>, linux-arch@vger.kernel.org,
-        dave.hansen@linux.intel.com
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
 From: Dave Hansen <dave@sr71.net>
-Date: Wed, 17 Sep 2014 15:33:11 -0700
+Date: Wed, 17 Sep 2014 15:33:20 -0700
 References: <20140917223310.026BCC2C@viggo.jf.intel.com>
 In-Reply-To: <20140917223310.026BCC2C@viggo.jf.intel.com>
-Message-Id: <20140917223311.39AFA26F@viggo.jf.intel.com>
+Message-Id: <20140917223320.2FF9CF11@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+I originally did this when renaming CONFIG_SCHED_MC.  I ended up
+not renaming it, but I still think it's nice to have all the
+Kconfigs consolidated like this.
+
+--
+
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-topology_core_cpumask() is a function that arch-independent code
-uses.  Each (non-generic) architecture will define it in order to
-map over to the arch-specific variables storing the actual mask.
+We have 2 config options (SCHED_MC and SCHED_SMT) which are used
+across a few architectures.  We have one (SCHED_BOOK) only used
+on s390.
 
-I think topology_core_cpumask() is a bad name.  It makes it sound
-like it is generating a cpumask for *A* core.  It is, in fact,
-generating the mask of all cores inside a CPU package.  Let's
-make that more clear with the naming.
+The Kconfig text for MC/SMT are copied verbatim across each of
+the architectures that use it.  This consolidates them down to a
+single Kconfig location.
 
-For the non-x86 architectures, I'd appreciate a sanity check of
-this.  It definitely makes sense on x86, but I'm less confident
-about the others.
-
-Cc: linux-arch@vger.kernel.org
+This gives us a centrally-defined set of config options which
+architectures can 'select' when needed.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- b/arch/arm/include/asm/topology.h         |    2 +-
- b/arch/arm64/include/asm/topology.h       |    2 +-
- b/arch/ia64/include/asm/topology.h        |    2 +-
- b/arch/metag/include/asm/topology.h       |    2 +-
- b/arch/mips/include/asm/smp.h             |    2 +-
- b/arch/powerpc/include/asm/topology.h     |    2 +-
- b/arch/s390/include/asm/topology.h        |    2 +-
- b/arch/sh/include/asm/topology.h          |    2 +-
- b/arch/sparc/include/asm/topology_64.h    |    2 +-
- b/arch/tile/include/asm/topology.h        |    2 +-
- b/arch/x86/include/asm/topology.h         |    2 +-
- b/drivers/base/topology.c                 |    8 ++++----
- b/drivers/block/nvme-core.c               |    2 +-
- b/drivers/cpufreq/arm_big_little.c        |    2 +-
- b/drivers/infiniband/hw/qib/qib_iba7322.c |    2 +-
- b/include/linux/topology.h                |    4 ++--
- b/lib/cpu_rmap.c                          |    2 +-
- 17 files changed, 21 insertions(+), 21 deletions(-)
+ b/arch/arm/Kconfig                       |   18 ++-----------
+ b/arch/arm64/Kconfig                     |   18 ++-----------
+ b/arch/ia64/Kconfig                      |    9 ------
+ b/arch/mips/Kconfig                      |   14 +---------
+ b/arch/powerpc/Kconfig                   |    8 -----
+ b/arch/powerpc/platforms/Kconfig.cputype |    1 
+ b/arch/s390/Kconfig                      |   14 ++--------
+ b/arch/sh/Kconfig                        |    1 
+ b/arch/sh/mm/Kconfig                     |    9 ------
+ b/arch/sparc/Kconfig                     |   20 ++------------
+ b/arch/x86/Kconfig                       |   20 ++------------
+ b/kernel/sched/Kconfig                   |   42 +++++++++++++++++++++++++++++++
+ 12 files changed, 63 insertions(+), 111 deletions(-)
 
-diff -puN arch/arm64/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/arm64/include/asm/topology.h
---- a/arch/arm64/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.310517034 -0700
-+++ b/arch/arm64/include/asm/topology.h	2014-09-17 15:28:56.341518454 -0700
-@@ -17,7 +17,7 @@ extern struct cpu_topology cpu_topology[
+diff -puN arch/arm64/Kconfig~consolidate-config-SCHED_MC arch/arm64/Kconfig
+--- a/arch/arm64/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.592621508 -0700
++++ b/arch/arm64/Kconfig	2014-09-17 15:28:58.613622467 -0700
+@@ -68,6 +68,8 @@ config ARM64
+ 	select SPARSE_IRQ
+ 	select SYSCTL_EXCEPTION_TRACE
+ 	select HAVE_CONTEXT_TRACKING
++	select ARCH_ENABLE_SCHED_MC
++	select ARCH_ENABLE_SCHED_SMT
+ 	help
+ 	  ARM 64-bit (AArch64) Linux support.
  
- #define topology_physical_package_id(cpu)	(cpu_topology[cpu].cluster_id)
- #define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
--#define topology_core_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
-+#define topology_package_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
- #define topology_thread_cpumask(cpu)	(&cpu_topology[cpu].thread_sibling)
+@@ -235,21 +237,7 @@ config SMP
  
- void init_cpu_topology(void);
-diff -puN arch/arm/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/arm/include/asm/topology.h
---- a/arch/arm/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.311517079 -0700
-+++ b/arch/arm/include/asm/topology.h	2014-09-17 15:28:56.341518454 -0700
-@@ -17,7 +17,7 @@ extern struct cputopo_arm cpu_topology[N
+ 	  If you don't know what to do here, say N.
  
- #define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
- #define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
--#define topology_core_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
-+#define topology_package_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
- #define topology_thread_cpumask(cpu)	(&cpu_topology[cpu].thread_sibling)
+-config SCHED_MC
+-	bool "Multi-core scheduler support"
+-	depends on SMP
+-	help
+-	  Multi-core scheduler support improves the CPU scheduler's decision
+-	  making when dealing with multi-core CPU chips at a cost of slightly
+-	  increased overhead in some places. If unsure say N here.
+-
+-config SCHED_SMT
+-	bool "SMT scheduler support"
+-	depends on SMP
+-	help
+-	  Improves the CPU scheduler's decision making when dealing with
+-	  MultiThreading at a cost of slightly increased overhead in some
+-	  places. If unsure say N here.
++source kernel/sched/Kconfig
  
- void init_cpu_topology(void);
-diff -puN arch/ia64/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/ia64/include/asm/topology.h
---- a/arch/ia64/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.313517171 -0700
-+++ b/arch/ia64/include/asm/topology.h	2014-09-17 15:28:56.341518454 -0700
-@@ -52,7 +52,7 @@ void build_cpu_to_node_map(void);
- #ifdef CONFIG_SMP
- #define topology_physical_package_id(cpu)	(cpu_data(cpu)->socket_id)
- #define topology_core_id(cpu)			(cpu_data(cpu)->core_id)
--#define topology_core_cpumask(cpu)		(&cpu_core_map[cpu])
-+#define topology_package_cpumask(cpu)		(&cpu_core_map[cpu])
- #define topology_thread_cpumask(cpu)		(&per_cpu(cpu_sibling_map, cpu))
- #endif
+ config NR_CPUS
+ 	int "Maximum number of CPUs (2-32)"
+diff -puN arch/arm/Kconfig~consolidate-config-SCHED_MC arch/arm/Kconfig
+--- a/arch/arm/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.593621554 -0700
++++ b/arch/arm/Kconfig	2014-09-17 15:28:58.614622513 -0700
+@@ -1355,27 +1355,15 @@ config SMP_ON_UP
+ config ARM_CPU_TOPOLOGY
+ 	bool "Support cpu topology definition"
+ 	depends on SMP && CPU_V7
++	select ARCH_ENABLE_SCHED_MC
++	select ARCH_ENABLE_SCHED_SMT
+ 	default y
+ 	help
+ 	  Support ARM cpu topology definition. The MPIDR register defines
+ 	  affinity between processors which is then used to describe the cpu
+ 	  topology of an ARM System.
  
-diff -puN arch/metag/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/metag/include/asm/topology.h
---- a/arch/metag/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.315517263 -0700
-+++ b/arch/metag/include/asm/topology.h	2014-09-17 15:28:56.342518499 -0700
-@@ -21,7 +21,7 @@ const struct cpumask *cpu_coregroup_mask
+-config SCHED_MC
+-	bool "Multi-core scheduler support"
+-	depends on ARM_CPU_TOPOLOGY
+-	help
+-	  Multi-core scheduler support improves the CPU scheduler's decision
+-	  making when dealing with multi-core CPU chips at a cost of slightly
+-	  increased overhead in some places. If unsure say N here.
+-
+-config SCHED_SMT
+-	bool "SMT scheduler support"
+-	depends on ARM_CPU_TOPOLOGY
+-	help
+-	  Improves the CPU scheduler's decision making when dealing with
+-	  MultiThreading at a cost of slightly increased overhead in some
+-	  places. If unsure say N here.
++source kernel/sched/Kconfig
  
- extern cpumask_t cpu_core_map[NR_CPUS];
+ config HAVE_ARM_SCU
+ 	bool
+diff -puN arch/ia64/Kconfig~consolidate-config-SCHED_MC arch/ia64/Kconfig
+--- a/arch/ia64/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.595621644 -0700
++++ b/arch/ia64/Kconfig	2014-09-17 15:28:58.614622513 -0700
+@@ -49,6 +49,7 @@ config IA64
+ 	select MODULES_USE_ELF_RELA
+ 	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select HAVE_ARCH_AUDITSYSCALL
++	select ARCH_ENABLE_SCHED_SMT
+ 	default y
+ 	help
+ 	  The Itanium Processor Family is Intel's 64-bit successor to
+@@ -382,14 +383,6 @@ config ARCH_ENABLE_MEMORY_HOTPLUG
+ config ARCH_ENABLE_MEMORY_HOTREMOVE
+ 	def_bool y
  
--#define topology_core_cpumask(cpu)	(&cpu_core_map[cpu])
-+#define topology_package_cpumask(cpu)	(&cpu_core_map[cpu])
+-config SCHED_SMT
+-	bool "SMT scheduler support"
+-	depends on SMP
+-	help
+-	  Improves the CPU scheduler's decision making when dealing with
+-	  Intel IA64 chips with MultiThreading at a cost of slightly increased
+-	  overhead in some places. If unsure say N here.
+-
+ config PERMIT_BSP_REMOVE
+ 	bool "Support removal of Bootstrap Processor"
+ 	depends on HOTPLUG_CPU
+diff -puN arch/mips/Kconfig~consolidate-config-SCHED_MC arch/mips/Kconfig
+--- a/arch/mips/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.597621736 -0700
++++ b/arch/mips/Kconfig	2014-09-17 15:28:58.615622560 -0700
+@@ -1948,7 +1948,7 @@ config MIPS_MT_SMP
+ 	select SMP
+ 	select SMP_UP
+ 	select SYS_SUPPORTS_SMP
+-	select SYS_SUPPORTS_SCHED_SMT
++	select ARCH_ENABLE_SCHED_SMT
+ 	select MIPS_PERF_SHARED_TC_COUNTERS
+ 	help
+ 	  This is a kernel model which is known as SMVP. This is supported
+@@ -1960,17 +1960,7 @@ config MIPS_MT_SMP
+ config MIPS_MT
+ 	bool
  
- #include <asm-generic/topology.h>
+-config SCHED_SMT
+-	bool "SMT (multithreading) scheduler support"
+-	depends on SYS_SUPPORTS_SCHED_SMT
+-	default n
+-	help
+-	  SMT scheduler support improves the CPU scheduler's decision making
+-	  when dealing with MIPS MT enabled cores at a cost of slightly
+-	  increased overhead in some places. If unsure say N here.
+-
+-config SYS_SUPPORTS_SCHED_SMT
+-	bool
++source "kernel/sched/Kconfig"
  
-diff -puN arch/mips/include/asm/smp.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/mips/include/asm/smp.h
---- a/arch/mips/include/asm/smp.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.316517309 -0700
-+++ b/arch/mips/include/asm/smp.h	2014-09-17 15:28:56.342518499 -0700
-@@ -39,7 +39,7 @@ extern int __cpu_logical_map[NR_CPUS];
+ config SYS_SUPPORTS_MULTITHREADING
+ 	bool
+diff -puN arch/powerpc/Kconfig~consolidate-config-SCHED_MC arch/powerpc/Kconfig
+--- a/arch/powerpc/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.599621828 -0700
++++ b/arch/powerpc/Kconfig	2014-09-17 15:28:58.616622606 -0700
+@@ -603,14 +603,6 @@ config PPC_SUBPAGE_PROT
+ 	  to set access permissions (read/write, readonly, or no access)
+ 	  on the 4k subpages of each 64k page.
  
- #define topology_physical_package_id(cpu)	(cpu_data[cpu].package)
- #define topology_core_id(cpu)			(cpu_data[cpu].core)
--#define topology_core_cpumask(cpu)		(&cpu_core_map[cpu])
-+#define topology_package_cpumask(cpu)		(&cpu_core_map[cpu])
- #define topology_thread_cpumask(cpu)		(&cpu_sibling_map[cpu])
+-config SCHED_SMT
+-	bool "SMT (Hyperthreading) scheduler support"
+-	depends on PPC64 && SMP
+-	help
+-	  SMT scheduler support improves the CPU scheduler's decision making
+-	  when dealing with POWER5 cpus at a cost of slightly increased
+-	  overhead in some places. If unsure say N here.
+-
+ config PPC_DENORMALISATION
+ 	bool "PowerPC denormalisation exception handling"
+ 	depends on PPC_BOOK3S_64
+diff -puN arch/powerpc/platforms/Kconfig.cputype~consolidate-config-SCHED_MC arch/powerpc/platforms/Kconfig.cputype
+--- a/arch/powerpc/platforms/Kconfig.cputype~consolidate-config-SCHED_MC	2014-09-17 15:28:58.600621874 -0700
++++ b/arch/powerpc/platforms/Kconfig.cputype	2014-09-17 15:28:58.616622606 -0700
+@@ -2,6 +2,7 @@ config PPC64
+ 	bool "64-bit kernel"
+ 	default n
+ 	select HAVE_VIRT_CPU_ACCOUNTING
++	select SCHED_SMT if SMP
+ 	help
+ 	  This option selects whether a 32-bit or a 64-bit kernel
+ 	  will be built.
+diff -puN arch/s390/Kconfig~consolidate-config-SCHED_MC arch/s390/Kconfig
+--- a/arch/s390/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.602621966 -0700
++++ b/arch/s390/Kconfig	2014-09-17 15:28:58.617622652 -0700
+@@ -146,6 +146,8 @@ config S390
+ 	select VIRT_CPU_ACCOUNTING
+ 	select VIRT_TO_BUS
+ 	select ARCH_HAS_SG_CHAIN
++	select ARCH_ENABLE_SCHED_BOOK
++	select ARCH_ENABLE_SCHED_MC
  
- #define SMP_RESCHEDULE_YOURSELF 0x1	/* XXX braindead */
-diff -puN arch/powerpc/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/powerpc/include/asm/topology.h
---- a/arch/powerpc/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.318517401 -0700
-+++ b/arch/powerpc/include/asm/topology.h	2014-09-17 15:28:56.342518499 -0700
-@@ -88,7 +88,7 @@ static inline int prrn_is_enabled(void)
+ config SCHED_OMIT_FRAME_POINTER
+ 	def_bool y
+@@ -372,17 +374,7 @@ config HOTPLUG_CPU
+ 	  can be controlled through /sys/devices/system/cpu/cpu#.
+ 	  Say N if you want to disable CPU hotplug.
  
- #define topology_physical_package_id(cpu)	(cpu_to_chip_id(cpu))
- #define topology_thread_cpumask(cpu)	(per_cpu(cpu_sibling_map, cpu))
--#define topology_core_cpumask(cpu)	(per_cpu(cpu_core_map, cpu))
-+#define topology_package_cpumask(cpu)	(per_cpu(cpu_core_map, cpu))
- #define topology_core_id(cpu)		(cpu_to_core_id(cpu))
- #endif
- #endif
-diff -puN arch/s390/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/s390/include/asm/topology.h
---- a/arch/s390/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.320517491 -0700
-+++ b/arch/s390/include/asm/topology.h	2014-09-17 15:28:56.343518544 -0700
-@@ -20,7 +20,7 @@ extern struct cpu_topology_s390 cpu_topo
+-config SCHED_MC
+-	def_bool n
+-
+-config SCHED_BOOK
+-	def_bool y
+-	prompt "Book scheduler support"
+-	depends on SMP
+-	select SCHED_MC
+-	help
+-	  Book scheduler support improves the CPU scheduler's decision making
+-	  when dealing with machines that have several books.
++source kernel/sched/Kconfig
  
- #define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
- #define topology_core_id(cpu)			(cpu_topology[cpu].core_id)
--#define topology_core_cpumask(cpu)		(&cpu_topology[cpu].core_mask)
-+#define topology_package_cpumask(cpu)		(&cpu_topology[cpu].core_mask)
- #define topology_book_id(cpu)			(cpu_topology[cpu].book_id)
- #define topology_book_cpumask(cpu)		(&cpu_topology[cpu].book_mask)
+ source kernel/Kconfig.preempt
  
-diff -puN arch/sh/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/sh/include/asm/topology.h
---- a/arch/sh/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.321517537 -0700
-+++ b/arch/sh/include/asm/topology.h	2014-09-17 15:28:56.343518544 -0700
-@@ -21,7 +21,7 @@ const struct cpumask *cpu_coregroup_mask
+diff -puN arch/sh/Kconfig~consolidate-config-SCHED_MC arch/sh/Kconfig
+--- a/arch/sh/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.604622056 -0700
++++ b/arch/sh/Kconfig	2014-09-17 15:28:58.618622698 -0700
+@@ -43,6 +43,7 @@ config SUPERH
+ 	select OLD_SIGSUSPEND
+ 	select OLD_SIGACTION
+ 	select HAVE_ARCH_AUDITSYSCALL
++	select ARCH_ENABLE_SCHED_MC
+ 	help
+ 	  The SuperH is a RISC processor targeted for use in embedded systems
+ 	  and consumer electronics; it was also used in the Sega Dreamcast
+diff -puN arch/sh/mm/Kconfig~consolidate-config-SCHED_MC arch/sh/mm/Kconfig
+--- a/arch/sh/mm/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.606622148 -0700
++++ b/arch/sh/mm/Kconfig	2014-09-17 15:28:58.618622698 -0700
+@@ -226,14 +226,7 @@ endchoice
  
- extern cpumask_t cpu_core_map[NR_CPUS];
+ source "mm/Kconfig"
  
--#define topology_core_cpumask(cpu)	(&cpu_core_map[cpu])
-+#define topology_package_cpumask(cpu)	(&cpu_core_map[cpu])
+-config SCHED_MC
+-	bool "Multi-core scheduler support"
+-	depends on SMP
+-	default y
+-	help
+-	  Multi-core scheduler support improves the CPU scheduler's decision
+-	  making when dealing with multi-core CPU chips at a cost of slightly
+-	  increased overhead in some places. If unsure say N here.
++source "kernel/sched/Kconfig"
  
- #include <asm-generic/topology.h>
+ endmenu
  
-diff -puN arch/sparc/include/asm/topology_64.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/sparc/include/asm/topology_64.h
---- a/arch/sparc/include/asm/topology_64.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.323517629 -0700
-+++ b/arch/sparc/include/asm/topology_64.h	2014-09-17 15:28:56.343518544 -0700
-@@ -40,7 +40,7 @@ static inline int pcibus_to_node(struct
- #ifdef CONFIG_SMP
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).core_id)
--#define topology_core_cpumask(cpu)		(&cpu_core_map[cpu])
-+#define topology_package_cpumask(cpu)		(&cpu_core_map[cpu])
- #define topology_thread_cpumask(cpu)		(&per_cpu(cpu_sibling_map, cpu))
- #endif /* CONFIG_SMP */
+diff -puN arch/sparc/Kconfig~consolidate-config-SCHED_MC arch/sparc/Kconfig
+--- a/arch/sparc/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.607622194 -0700
++++ b/arch/sparc/Kconfig	2014-09-17 15:28:58.618622698 -0700
+@@ -79,6 +79,8 @@ config SPARC64
+ 	select NO_BOOTMEM
+ 	select HAVE_ARCH_AUDITSYSCALL
+ 	select ARCH_SUPPORTS_ATOMIC_RMW
++	select ARCH_ENABLE_SCHED_MC if SMP
++	select ARCH_ENABLE_SCHED_SMT if SMP
  
-diff -puN arch/tile/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/tile/include/asm/topology.h
---- a/arch/tile/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.325517721 -0700
-+++ b/arch/tile/include/asm/topology.h	2014-09-17 15:28:56.344518590 -0700
-@@ -54,7 +54,7 @@ static inline const struct cpumask *cpum
- #ifdef CONFIG_SMP
- #define topology_physical_package_id(cpu)       ((void)(cpu), 0)
- #define topology_core_id(cpu)                   (cpu)
--#define topology_core_cpumask(cpu)              ((void)(cpu), cpu_online_mask)
-+#define topology_package_cpumask(cpu)              ((void)(cpu), cpu_online_mask)
- #define topology_thread_cpumask(cpu)            cpumask_of(cpu)
- #endif
+ config ARCH_DEFCONFIG
+ 	string
+@@ -306,23 +308,7 @@ if SPARC64
+ source "kernel/power/Kconfig"
+ endif
  
-diff -puN arch/x86/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask arch/x86/include/asm/topology.h
---- a/arch/x86/include/asm/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.326517767 -0700
-+++ b/arch/x86/include/asm/topology.h	2014-09-17 15:28:56.344518590 -0700
-@@ -123,7 +123,7 @@ extern const struct cpumask *cpu_coregro
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
+-config SCHED_SMT
+-	bool "SMT (Hyperthreading) scheduler support"
+-	depends on SPARC64 && SMP
+-	default y
+-	help
+-	  SMT scheduler support improves the CPU scheduler's decision making
+-	  when dealing with SPARC cpus at a cost of slightly increased overhead
+-	  in some places. If unsure say N here.
+-
+-config SCHED_MC
+-	bool "Multi-core scheduler support"
+-	depends on SPARC64 && SMP
+-	default y
+-	help
+-	  Multi-core scheduler support improves the CPU scheduler's decision
+-	  making when dealing with multi-core CPU chips at a cost of slightly
+-	  increased overhead in some places. If unsure say N here.
++source "kernel/sched/Kconfig"
  
- #ifdef ENABLE_TOPO_DEFINES
--#define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
-+#define topology_package_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- #endif
+ source "kernel/Kconfig.preempt"
  
-diff -puN drivers/base/topology.c~rename-topology_cpu_cpumask-topology_package_cpumask drivers/base/topology.c
---- a/drivers/base/topology.c~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.328517857 -0700
-+++ b/drivers/base/topology.c	2014-09-17 15:28:56.344518590 -0700
-@@ -42,7 +42,7 @@ static ssize_t show_##name(struct device
- 	return sprintf(buf, "%d\n", topology_##name(dev->id));	\
- }
+diff -puN arch/x86/Kconfig~consolidate-config-SCHED_MC arch/x86/Kconfig
+--- a/arch/x86/Kconfig~consolidate-config-SCHED_MC	2014-09-17 15:28:58.609622286 -0700
++++ b/arch/x86/Kconfig	2014-09-17 15:28:58.620622789 -0700
+@@ -255,6 +255,8 @@ config X86_64_SMP
+ config X86_HT
+ 	def_bool y
+ 	depends on SMP
++	select ARCH_ENABLE_SCHED_MC
++	select ARCH_ENABLE_SCHED_SMT
  
--#if defined(topology_thread_cpumask) || defined(topology_core_cpumask) || \
-+#if defined(topology_thread_cpumask) || defined(topology_package_cpumask) || \
-     defined(topology_book_cpumask)
- static ssize_t show_cpumap(int type, const struct cpumask *mask, char *buf)
- {
-@@ -88,9 +88,9 @@ define_siblings_show_func(thread_cpumask
- define_one_ro_named(thread_siblings, show_thread_cpumask);
- define_one_ro_named(thread_siblings_list, show_thread_cpumask_list);
+ config X86_32_LAZY_GS
+ 	def_bool y
+@@ -789,23 +791,7 @@ config NR_CPUS
+ 	  This is purely to save memory - each supported CPU adds
+ 	  approximately eight kilobytes to the kernel image.
  
--define_siblings_show_func(core_cpumask);
--define_one_ro_named(core_siblings, show_core_cpumask);
--define_one_ro_named(core_siblings_list, show_core_cpumask_list);
-+define_siblings_show_func(package_cpumask);
-+define_one_ro_named(core_siblings, show_package_cpumask);
-+define_one_ro_named(core_siblings_list, show_package_cpumask_list);
+-config SCHED_SMT
+-	bool "SMT (Hyperthreading) scheduler support"
+-	depends on X86_HT
+-	---help---
+-	  SMT scheduler support improves the CPU scheduler's decision making
+-	  when dealing with Intel Pentium 4 chips with HyperThreading at a
+-	  cost of slightly increased overhead in some places. If unsure say
+-	  N here.
+-
+-config SCHED_MC
+-	def_bool y
+-	prompt "Multi-core scheduler support"
+-	depends on X86_HT
+-	---help---
+-	  Multi-core scheduler support improves the CPU scheduler's decision
+-	  making when dealing with multi-core CPU chips at a cost of slightly
+-	  increased overhead in some places. If unsure say N here.
++source "kernel/sched/Kconfig"
  
- #ifdef CONFIG_SCHED_BOOK
- define_id_show_func(book_id);
-diff -puN drivers/block/nvme-core.c~rename-topology_cpu_cpumask-topology_package_cpumask drivers/block/nvme-core.c
---- a/drivers/block/nvme-core.c~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.330517950 -0700
-+++ b/drivers/block/nvme-core.c	2014-09-17 15:28:56.345518636 -0700
-@@ -2054,7 +2054,7 @@ static void nvme_assign_io_queues(struct
- 				nvmeq, cpus_per_queue);
- 		if (cpus_weight(mask) < cpus_per_queue)
- 			nvme_add_cpus(&mask, unassigned_cpus,
--				topology_core_cpumask(cpu),
-+				topology_package_cpumask(cpu),
- 				nvmeq, cpus_per_queue);
- 		if (cpus_weight(mask) < cpus_per_queue)
- 			nvme_add_cpus(&mask, unassigned_cpus,
-diff -puN drivers/cpufreq/arm_big_little.c~rename-topology_cpu_cpumask-topology_package_cpumask drivers/cpufreq/arm_big_little.c
---- a/drivers/cpufreq/arm_big_little.c~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.332518042 -0700
-+++ b/drivers/cpufreq/arm_big_little.c	2014-09-17 15:28:56.346518682 -0700
-@@ -449,7 +449,7 @@ static int bL_cpufreq_init(struct cpufre
- 	if (cur_cluster < MAX_CLUSTERS) {
- 		int cpu;
+ source "kernel/Kconfig.preempt"
  
--		cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
-+		cpumask_copy(policy->cpus, topology_package_cpumask(policy->cpu));
- 
- 		for_each_cpu(cpu, policy->cpus)
- 			per_cpu(physical_cluster, cpu) = cur_cluster;
-diff -puN drivers/infiniband/hw/qib/qib_iba7322.c~rename-topology_cpu_cpumask-topology_package_cpumask drivers/infiniband/hw/qib/qib_iba7322.c
---- a/drivers/infiniband/hw/qib/qib_iba7322.c~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.334518132 -0700
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c	2014-09-17 15:28:56.349518820 -0700
-@@ -3449,7 +3449,7 @@ try_intx:
- 	firstcpu = cpumask_first(local_mask);
- 	if (firstcpu >= nr_cpu_ids ||
- 			cpumask_weight(local_mask) == num_online_cpus()) {
--		local_mask = topology_core_cpumask(0);
-+		local_mask = topology_package_cpumask(0);
- 		firstcpu = cpumask_first(local_mask);
- 	}
- 	if (firstcpu < nr_cpu_ids) {
-diff -puN include/linux/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask include/linux/topology.h
---- a/include/linux/topology.h~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.336518224 -0700
-+++ b/include/linux/topology.h	2014-09-17 15:28:56.350518866 -0700
-@@ -177,8 +177,8 @@ static inline int cpu_to_mem(int cpu)
- #ifndef topology_thread_cpumask
- #define topology_thread_cpumask(cpu)		cpumask_of(cpu)
- #endif
--#ifndef topology_core_cpumask
--#define topology_core_cpumask(cpu)		cpumask_of(cpu)
-+#ifndef topology_package_cpumask
-+#define topology_package_cpumask(cpu)		cpumask_of(cpu)
- #endif
- 
- #ifdef CONFIG_SCHED_SMT
-diff -puN lib/cpu_rmap.c~rename-topology_cpu_cpumask-topology_package_cpumask lib/cpu_rmap.c
---- a/lib/cpu_rmap.c~rename-topology_cpu_cpumask-topology_package_cpumask	2014-09-17 15:28:56.337518270 -0700
-+++ b/lib/cpu_rmap.c	2014-09-17 15:28:56.350518866 -0700
-@@ -194,7 +194,7 @@ int cpu_rmap_update(struct cpu_rmap *rma
- 					topology_thread_cpumask(cpu), 1))
- 			continue;
- 		if (cpu_rmap_copy_neigh(rmap, cpu,
--					topology_core_cpumask(cpu), 2))
-+					topology_package_cpumask(cpu), 2))
- 			continue;
- 		if (cpu_rmap_copy_neigh(rmap, cpu,
- 					cpumask_of_node(cpu_to_node(cpu)), 3))
+diff -puN /dev/null kernel/sched/Kconfig
+--- /dev/null	2014-04-10 11:28:14.066815724 -0700
++++ b/kernel/sched/Kconfig	2014-09-17 15:28:58.620622789 -0700
+@@ -0,0 +1,42 @@
++config ARCH_ENABLE_SCHED_MC
++	depends on SMP
++	def_bool n
++
++config ARCH_ENABLE_SCHED_BOOK
++	depends on SMP
++	def_bool n
++
++config ARCH_ENABLE_SCHED_SMT
++	depends on SMP
++	def_bool n
++
++config SCHED_MC
++	bool "Multi-core scheduler support"
++	default n if s390
++	default y
++	depends on ARCH_ENABLE_SCHED_MC
++	help
++	  Multi-core scheduler support improves the CPU scheduler's decision
++	  making when dealing with multi-core CPU chips at a cost of slightly
++	  increased overhead in some places. If unsure say N here.
++
++config SCHED_BOOK
++	def_bool y
++	prompt "Book scheduler support"
++	depends on ARCH_ENABLE_SCHED_BOOK
++	select SCHED_MC
++	help
++	  Book scheduler support improves the CPU scheduler's decision making
++	  when dealing with machines that have several books.
++
++	  Currenltly only used on s390 which has only a single NUMA node.
++	  Books are collections of CPUs that are grouped similarly to a NUMA
++	  node, but without the same memory properites that NUMA nodes have.
++
++config SCHED_SMT
++	bool "SMT scheduler support"
++	depends on ARCH_ENABLE_SCHED_SMT
++	help
++	  Improves the CPU scheduler's decision making when dealing with
++	  MultiThreading at a cost of slightly increased overhead in some
++	  places. If unsure say N here.
 _
