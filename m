@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241AbaIQQh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:37:28 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:44152 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756223AbaIQQhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:37:25 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        scottwood@freescale.com
-Subject: [PATCH v3 17/21] powerpc/8xx: set PTE bit 22 off TLBmiss
-Message-Id: <20140917163700.6AF941AB042@localhost.localdomain>
-Date: Wed, 17 Sep 2014 18:37:00 +0200 (CEST)
+	id S1756437AbaIQQjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:39:16 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:36267 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756420AbaIQQjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:39:11 -0400
+Date: Wed, 17 Sep 2014 09:39:02 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        rogerable@realtek.com, wei_wang@realsil.com.cn
+Subject: Re: [PATCH v2 1/2] mfd: rtsx: fix PM suspend for 5227
+Message-ID: <20140917163902.GN30918@lee--X1>
+References: <cover.1410484754.git.micky_ching@realsil.com.cn>
+ <62adefd6958b52490289cec7c29a064447ed6de8.1410484754.git.micky_ching@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <62adefd6958b52490289cec7c29a064447ed6de8.1410484754.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to re-set this bit at each TLB miss. Let's set it in the PTE.
+On Fri, 12 Sep 2014, micky_ching@realsil.com.cn wrote:
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> From: Micky Ching <micky_ching@realsil.com.cn>
+> 
+> Fix rts5227 failed send buffer cmd after suspend,
+> PM_CTRL3 should reset before send any buffer cmd after suspend.
+> Otherwise, buffer cmd will failed, this will lead resume fail.
+> 
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>  drivers/mfd/rts5227.c        |   19 +++++++++++++++++++
+>  include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
+>  2 files changed, 31 insertions(+)
+> 
+> diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+> index 9c8eec8..197f5c1 100644
+> --- a/drivers/mfd/rts5227.c
+> +++ b/drivers/mfd/rts5227.c
+> @@ -128,8 +128,27 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+>  	return rtsx_pci_send_cmd(pcr, 100);
+>  }
+>  
+> +static int rts5227_pm_reset(struct rtsx_pcr *pcr)
+> +{
+> +	int err;
+> +
+> +	/* init aspm */
+> +	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	/* reset PM_CTRL3 before send buffer cmd */
+> +	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
+> +}
+> +
 
----
-Changes in v2:
-- None
+This is exactly the same function as in the other patch.  Please place
+it somewhere it can be referenced by both drivers.
 
-Changes in v3:
-- Removed PPC405 related macro from PPC8xx specific code
-- PTE_NONE_MASK doesn't need PAGE_ACCESSED in Linux 2.6
+>  static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+>  {
+> +	int err;
+> +
+> +	err = rts5227_pm_reset(pcr);
+> +	if (err < 0)
+> +		return err;
+> +
+>  	/* Optimize RX sensitivity */
+>  	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
+>  }
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index 74346d5..b34fec8 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+>  	return (u8 *)(pcr->host_cmds_ptr);
+>  }
+>  
+> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
+> +		u8 mask, u8 append)
+> +{
+> +	int err;
+> +	u8 val;
+> +
+> +	err = pci_read_config_byte(pcr->pci, addr, &val);
+> +	if (err < 0)
+> +		return err;
+> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
+> +}
+> +
+>  #endif
 
- arch/powerpc/include/asm/pgtable-ppc32.h | 20 ++++++++++++++++++++
- arch/powerpc/include/asm/pte-8xx.h       |  7 +++++--
- arch/powerpc/kernel/head_8xx.S           | 10 ++--------
- 3 files changed, 27 insertions(+), 10 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
-index 47edde8..35a9b44 100644
---- a/arch/powerpc/include/asm/pgtable-ppc32.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc32.h
-@@ -172,6 +172,25 @@ static inline unsigned long pte_update(pte_t *p,
- #ifdef PTE_ATOMIC_UPDATES
- 	unsigned long old, tmp;
- 
-+#ifdef CONFIG_PPC_8xx
-+	unsigned long tmp2;
-+
-+	__asm__ __volatile__("\
-+1:	lwarx	%0,0,%4\n\
-+	andc	%1,%0,%5\n\
-+	or	%1,%1,%6\n\
-+	/* 0x200 == Extended encoding, bit 22 */ \
-+	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
-+	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
-+	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
-+	or	%1,%3,%1\n\
-+	xori	%1,%1,0x200\n"
-+"	stwcx.	%1,0,%4\n\
-+	bne-	1b"
-+	: "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
-+	: "r" (p), "r" (clr), "r" (set), "m" (*p)
-+	: "cc" );
-+#else /* CONFIG_PPC_8xx */
- 	__asm__ __volatile__("\
- 1:	lwarx	%0,0,%3\n\
- 	andc	%1,%0,%4\n\
-@@ -182,6 +201,7 @@ static inline unsigned long pte_update(pte_t *p,
- 	: "=&r" (old), "=&r" (tmp), "=m" (*p)
- 	: "r" (p), "r" (clr), "r" (set), "m" (*p)
- 	: "cc" );
-+#endif /* CONFIG_PPC_8xx */
- #else /* PTE_ATOMIC_UPDATES */
- 	unsigned long old = pte_val(*p);
- 	*p = __pte((old & ~clr) | set);
-diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
-index d44826e..daa4616 100644
---- a/arch/powerpc/include/asm/pte-8xx.h
-+++ b/arch/powerpc/include/asm/pte-8xx.h
-@@ -48,19 +48,22 @@
-  */
- #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
- #define _PAGE_USER	0x0800	/* msb PP bits */
-+/* set when neither _PAGE_USER nor _PAGE_RW are set */
-+#define _PAGE_KNLRO	0x0200
- 
- #define _PMD_PRESENT	0x0001
- #define _PMD_BAD	0x0ff0
- #define _PMD_PAGE_MASK	0x000c
- #define _PMD_PAGE_8M	0x000c
- 
--#define _PTE_NONE_MASK _PAGE_ACCESSED
-+#define _PTE_NONE_MASK _PAGE_KNLRO
- 
- /* Until my rework is finished, 8xx still needs atomic PTE updates */
- #define PTE_ATOMIC_UPDATES	1
- 
- /* We need to add _PAGE_SHARED to kernel pages */
--#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
-+#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
-+#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
- #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index a7af26e..48d3de8 100644
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -445,14 +445,8 @@ DataStoreTLBMiss:
- 	and	r11, r11, r10
- 	rlwimi	r10, r11, 0, _PAGE_PRESENT
- #endif
--	/* Honour kernel RO, User NA */
--	/* 0x200 == Extended encoding, bit 22 */
--	rlwimi	r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
--	/* r11 =  (r10 & _PAGE_RW) >> 1 */
--	rlwinm	r11, r10, 32-1, 0x200
--	or	r10, r11, r10
--	/* invert RW and 0x200 bits */
--	xori	r10, r10, _PAGE_RW | 0x200
-+	/* invert RW */
-+	xori	r10, r10, _PAGE_RW
- 
- 	/* The Linux PTE won't go exactly into the MMU TLB.
- 	 * Software indicator bits 22 and 28 must be clear.
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
