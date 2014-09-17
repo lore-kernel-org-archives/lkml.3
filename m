@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115AbaIQUgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:36:50 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63661 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245AbaIQUgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:36:46 -0400
-Date: Wed, 17 Sep 2014 22:36:40 +0200
-From: Frans Klaver <fransklaver@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Corentin Chary <corentin.chary@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] eeepc-laptop: simplify parse_arg()
-Message-ID: <20140917203640.GB4432@gmail.com>
-References: <7288841.ayNsq2yeGO@vostro.rjw.lan>
- <1410252608.22255.5.camel@x220>
- <20140910033304.GB39541@vmdeb7>
- <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
- <20140910164916.GA48285@vmdeb7>
- <1410379520.11097.18.camel@x220>
- <20140911223739.GB18425@vmdeb7>
- <20140916234543.GA22408@vmdeb7>
- <1410980571.10248.6.camel@x220>
- <20140917203510.GA12682@vmdeb7>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140917203510.GA12682@vmdeb7>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756781AbaIQUly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:41:54 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:48090 "EHLO tetsuo.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756231AbaIQUlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 16:41:52 -0400
+From: Zach Brown <zab@zabbo.net>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: check bh blocknr earlier when searching lru
+Date: Wed, 17 Sep 2014 16:41:50 -0400
+Message-Id: <1410986510-1480-1-git-send-email-zab@zabbo.net>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 01:35:10PM -0700, Darren Hart wrote:
-> On Wed, Sep 17, 2014 at 09:02:51PM +0200, Paul Bolle wrote:
-> > parse_arg() has three possible return values:
-> >     -EINVAL if sscanf(), in short, fails;
-> >     zero if "count" is zero; and
-> >     "count" in all other cases
-> > 
-> > But "count" will never be zero. See, parse_arg() is called by the
-> > various store functions. And the callchain of these functions starts
-> > with sysfs_kf_write(). And that function checks for a zero "count". So
-> > we can stop checking for a zero "count", drop the "count" argument
-> > entirely, and transform parse_arg() into a function that returns zero on
-> > success or a negative error. That, in turn, allows to make those store
-> > functions just return "count" on success. The net effect is that the
-> > code becomes a bit easier to understand.
-> > 
-> > A nice side effect is that this GCC warning is silenced too:
-> >     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
-> >     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-> >       int rv, value;
-> > 
-> > Which is, of course, the reason to have a look at parse_arg().
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Still build tested only, but now on top of v3.17-rc5. Has Frans tested
-> > writing zero length values to these sysfs files?
-> 
-> Frans, can you confirm testing when you get a chance please?
+It's very common for the buffer heads in the lru to have different block
+numbers.  By comparing the blocknr before the bdev and size we can
+reduce the cost of searching in the very common case where all the
+entries have the same bdev and size.
 
-Will do.
+In quick hot cache cycle counting tests on a single fs workstation this
+cut the cost of a miss by about 20%.
 
-Frans
+A diff of the disassembly shows the reordering of the bdev and blocknr
+comparisons.  This is in such a tiny loop that skipping one comparison
+is a meaningful portion of the total work being done:
+
+     1628:      83 c1 01                add    $0x1,%ecx
+     162b:      83 f9 08                cmp    $0x8,%ecx
+     162e:      74 60                   je     1690 <__find_get_block+0xa0>
+     1630:      89 c8                   mov    %ecx,%eax
+     1632:      65 4c 8b 04 c5 00 00    mov    %gs:0x0(,%rax,8),%r8
+     1639:      00 00
+     163b:      4d 85 c0                test   %r8,%r8
+     163e:      4c 89 c3                mov    %r8,%rbx
+     1641:      74 e5                   je     1628 <__find_get_block+0x38>
+-    1643:      4d 3b 68 30             cmp    0x30(%r8),%r13
++    1643:      4d 3b 68 18             cmp    0x18(%r8),%r13
+     1647:      75 df                   jne    1628 <__find_get_block+0x38>
+-    1649:      4d 3b 60 18             cmp    0x18(%r8),%r12
++    1649:      4d 3b 60 30             cmp    0x30(%r8),%r12
+     164d:      75 d9                   jne    1628 <__find_get_block+0x38>
+     164f:      49 39 50 20             cmp    %rdx,0x20(%r8)
+     1653:      75 d3                   jne    1628 <__find_get_block+0x38>
+
+Signed-off-by: Zach Brown <zab@zabbo.net>
+---
+ fs/buffer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 8f05111..d14f782 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1329,8 +1329,8 @@ lookup_bh_lru(struct block_device *bdev, sector_t block, unsigned size)
+ 	for (i = 0; i < BH_LRU_SIZE; i++) {
+ 		struct buffer_head *bh = __this_cpu_read(bh_lrus.bhs[i]);
+ 
+-		if (bh && bh->b_bdev == bdev &&
+-				bh->b_blocknr == block && bh->b_size == size) {
++		if (bh && bh->b_blocknr == block && bh->b_bdev == bdev &&
++		    bh->b_size == size) {
+ 			if (i) {
+ 				while (i) {
+ 					__this_cpu_write(bh_lrus.bhs[i],
+-- 
+1.8.1.4
+
