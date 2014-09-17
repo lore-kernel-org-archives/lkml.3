@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303AbaIQV2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:28:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58117 "EHLO mail.kernel.org"
+	id S932192AbaIQVZT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:25:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58082 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196AbaIQVZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:25:21 -0400
+	id S932080AbaIQVZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 17:25:14 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/20] perf tool: fix compilation for ARM
-Date: Wed, 17 Sep 2014 18:24:14 -0300
-Message-Id: <1410989063-14207-12-git-send-email-acme@kernel.org>
+Subject: [PATCH 09/20] perf tools: Let default config be defined for a PMU
+Date: Wed, 17 Sep 2014 18:24:12 -0300
+Message-Id: <1410989063-14207-10-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410989063-14207-1-git-send-email-acme@kernel.org>
 References: <1410989063-14207-1-git-send-email-acme@kernel.org>
@@ -23,48 +25,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-This patch fixes ARM compile of the perf tool.  The debug.h header file
-was missing from a couple of unwind related modules.
+This allows default config terms to be provided for a PMU. So, for
+example, when the Intel PT PMU is added, it will be possible to specify:
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+	intel_pt//
+
+which will be the same as:
+
+	intel_pt/tsc=1,noretcomp=0/
+
+meaning that the trace should contain TSC timestamps and perform 'return
+compression'.
+
+An important consideration of this patch is that it must be possible to
+overwrite the default values.  That has meant changing the logic so that
+a zero value can replace a non-zero value.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140905042103.GA3091@quad
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1406786474-9306-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/arm/tests/dwarf-unwind.c    | 1 +
- tools/perf/arch/arm/util/unwind-libunwind.c | 1 +
- 2 files changed, 2 insertions(+)
+ tools/perf/tests/pmu.c         |  2 +-
+ tools/perf/util/parse-events.c |  7 ++++++-
+ tools/perf/util/pmu.c          | 42 ++++++++++++++++++++++++++----------------
+ tools/perf/util/pmu.h          |  9 ++++++++-
+ 4 files changed, 41 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
-index 9f870d27cb39..62eff847f91c 100644
---- a/tools/perf/arch/arm/tests/dwarf-unwind.c
-+++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
-@@ -3,6 +3,7 @@
- #include "thread.h"
- #include "map.h"
- #include "event.h"
-+#include "debug.h"
- #include "tests/tests.h"
+diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
+index 12b322fa3475..eeb68bb1972d 100644
+--- a/tools/perf/tests/pmu.c
++++ b/tools/perf/tests/pmu.c
+@@ -152,7 +152,7 @@ int test__pmu(void)
+ 		if (ret)
+ 			break;
  
- #define STACK_SIZE 8192
-diff --git a/tools/perf/arch/arm/util/unwind-libunwind.c b/tools/perf/arch/arm/util/unwind-libunwind.c
-index 729ed69a6664..62c397ed3d97 100644
---- a/tools/perf/arch/arm/util/unwind-libunwind.c
-+++ b/tools/perf/arch/arm/util/unwind-libunwind.c
-@@ -3,6 +3,7 @@
- #include <libunwind.h>
- #include "perf_regs.h"
- #include "../../util/unwind.h"
-+#include "../../util/debug.h"
+-		ret = perf_pmu__config_terms(&formats, &attr, terms);
++		ret = perf_pmu__config_terms(&formats, &attr, terms, false);
+ 		if (ret)
+ 			break;
  
- int libunwind__arch_reg_id(int regnum)
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index e75628813968..61be3e695ec2 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -643,7 +643,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 	if (!pmu)
+ 		return -EINVAL;
+ 
+-	memset(&attr, 0, sizeof(attr));
++	if (pmu->default_config) {
++		memcpy(&attr, pmu->default_config,
++		       sizeof(struct perf_event_attr));
++	} else {
++		memset(&attr, 0, sizeof(attr));
++	}
+ 
+ 	if (!head_config) {
+ 		attr.type = pmu->type;
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9bf582750561..438bb261f391 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -2,6 +2,7 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <stdio.h>
++#include <stdbool.h>
+ #include <dirent.h>
+ #include <api/fs/fs.h>
+ #include <locale.h>
+@@ -387,6 +388,12 @@ static struct cpu_map *pmu_cpumask(const char *name)
+ 	return cpus;
+ }
+ 
++struct perf_event_attr *__attribute__((weak))
++perf_pmu__get_default_config(struct perf_pmu *pmu __maybe_unused)
++{
++	return NULL;
++}
++
+ static struct perf_pmu *pmu_lookup(const char *name)
  {
+ 	struct perf_pmu *pmu;
+@@ -421,6 +428,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	pmu->name = strdup(name);
+ 	pmu->type = type;
+ 	list_add_tail(&pmu->list, &pmus);
++
++	pmu->default_config = perf_pmu__get_default_config(pmu);
++
+ 	return pmu;
+ }
+ 
+@@ -479,28 +489,24 @@ pmu_find_format(struct list_head *formats, char *name)
+ }
+ 
+ /*
+- * Returns value based on the format definition (format parameter)
++ * Sets value based on the format definition (format parameter)
+  * and unformated value (value parameter).
+- *
+- * TODO maybe optimize a little ;)
+  */
+-static __u64 pmu_format_value(unsigned long *format, __u64 value)
++static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
++			     bool zero)
+ {
+ 	unsigned long fbit, vbit;
+-	__u64 v = 0;
+ 
+ 	for (fbit = 0, vbit = 0; fbit < PERF_PMU_FORMAT_BITS; fbit++) {
+ 
+ 		if (!test_bit(fbit, format))
+ 			continue;
+ 
+-		if (!(value & (1llu << vbit++)))
+-			continue;
+-
+-		v |= (1llu << fbit);
++		if (value & (1llu << vbit++))
++			*v |= (1llu << fbit);
++		else if (zero)
++			*v &= ~(1llu << fbit);
+ 	}
+-
+-	return v;
+ }
+ 
+ /*
+@@ -509,7 +515,8 @@ static __u64 pmu_format_value(unsigned long *format, __u64 value)
+  */
+ static int pmu_config_term(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct parse_events_term *term)
++			   struct parse_events_term *term,
++			   bool zero)
+ {
+ 	struct perf_pmu_format *format;
+ 	__u64 *vp;
+@@ -548,18 +555,19 @@ static int pmu_config_term(struct list_head *formats,
+ 	 * non-hardcoded terms, here's the place to translate
+ 	 * them into value.
+ 	 */
+-	*vp |= pmu_format_value(format->bits, term->val.num);
++	pmu_format_value(format->bits, term->val.num, vp, zero);
+ 	return 0;
+ }
+ 
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct list_head *head_terms)
++			   struct list_head *head_terms,
++			   bool zero)
+ {
+ 	struct parse_events_term *term;
+ 
+ 	list_for_each_entry(term, head_terms, list)
+-		if (pmu_config_term(formats, attr, term))
++		if (pmu_config_term(formats, attr, term, zero))
+ 			return -EINVAL;
+ 
+ 	return 0;
+@@ -573,8 +581,10 @@ int perf_pmu__config_terms(struct list_head *formats,
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms)
+ {
++	bool zero = !!pmu->default_config;
++
+ 	attr->type = pmu->type;
+-	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
++	return perf_pmu__config_terms(&pmu->format, attr, head_terms, zero);
+ }
+ 
+ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 1c1e2eecbe1f..413b9a63c38d 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -13,9 +13,12 @@ enum {
+ 
+ #define PERF_PMU_FORMAT_BITS 64
+ 
++struct perf_event_attr;
++
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
++	struct perf_event_attr *default_config;
+ 	struct cpu_map *cpus;
+ 	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
+ 	struct list_head aliases; /* HEAD struct perf_pmu_alias -> list */
+@@ -27,7 +30,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct list_head *head_terms);
++			   struct list_head *head_terms,
++			   bool zero);
+ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+ 			  const char **unit, double *scale);
+ struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+@@ -46,4 +50,7 @@ void print_pmu_events(const char *event_glob, bool name_only);
+ bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
++
++struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
++
+ #endif /* __PMU_H */
 -- 
 1.9.3
 
