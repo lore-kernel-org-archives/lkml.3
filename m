@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192AbaIQIMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:12:14 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:8624 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751895AbaIQIMM (ORCPT
+	id S1754336AbaIQIMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:12:45 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:41417 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaIQIMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:12:12 -0400
-X-IronPort-AV: E=Sophos;i="5.04,539,1406563200"; 
-   d="scan'208";a="36069859"
-Message-ID: <541942B5.6000907@cn.fujitsu.com>
-Date: Wed, 17 Sep 2014 16:13:41 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 17 Sep 2014 04:12:41 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH 17/22] thinkpad_acpi: Replace strnicmp with strncasecmp
+Organization: D03
+References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
+	<1410900696-6481-18-git-send-email-linux@rasmusvillemoes.dk>
+	<20140916220857.GA12780@vmdeb7>
+X-Hashcash: 1:20:140917:ibm-acpi-devel@lists.sourceforge.net::vB0s4qqwRX4bQq2G:00000000000000000000000001Ngg
+X-Hashcash: 1:20:140917:linux-kernel@vger.kernel.org::Ub+YOkOeQS6aI4Vj:0000000000000000000000000000000001fpZ
+X-Hashcash: 1:20:140917:dvhart@infradead.org::3Fjyz+en619H41JL:000000000000000000000000000000000000000001fC3
+X-Hashcash: 1:20:140917:platform-driver-x86@vger.kernel.org::p/m3L1HngBPV6Okr:000000000000000000000000001h4D
+X-Hashcash: 1:20:140917:ibm-acpi@hmh.eng.br::dW3fOFn8wjgywmxX:000000000000000000000000000000000000000000217G
+X-Hashcash: 1:20:140917:akpm@linux-foundation.org::60mOlLCYNG9ysIA2:000000000000000000000000000000000000CQRS
+Date: Wed, 17 Sep 2014 10:12:38 +0200
+In-Reply-To: <20140916220857.GA12780@vmdeb7> (Darren Hart's message of "Tue,
+	16 Sep 2014 15:08:57 -0700")
+Message-ID: <87d2auis21.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, <gleb@kernel.org>,
-        <mtosatti@redhat.com>, <nadav.amit@gmail.com>, <jan.kiszka@web.de>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH v6 4/6] kvm, mem-hotplug: Reload L1' apic access page
- on migration in vcpu_enter_guest().
-References: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com> <1410864122-12434-5-git-send-email-tangchen@cn.fujitsu.com> <54181DE1.3040502@redhat.com>
-In-Reply-To: <54181DE1.3040502@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 17 2014, Darren Hart <dvhart@infradead.org> wrote:
 
-On 09/16/2014 07:24 PM, Paolo Bonzini wrote:
-> Il 16/09/2014 12:42, Tang Chen ha scritto:
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index 33712fb..0df82c1 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -210,6 +210,11 @@ void kvm_make_scan_ioapic_request(struct kvm *kvm)
->>   	make_all_cpus_request(kvm, KVM_REQ_SCAN_IOAPIC);
->>   }
->>   
->> +void kvm_reload_apic_access_page(struct kvm *kvm)
->> +{
->> +	make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
->> +}
->> +
->>   int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
->>   {
->>   	struct page *page;
->> @@ -294,6 +299,13 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
->>   	if (need_tlb_flush)
->>   		kvm_flush_remote_tlbs(kvm);
->>   
->> +	/*
->> +	 * The physical address of apic access page is stored in VMCS.
->> +	 * Update it when it becomes invalid.
->> +	 */
->> +	if (address == gfn_to_hva(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT))
->> +		kvm_reload_apic_access_page(kvm);
-> This cannot be in the generic code.  It is architecture-specific.
-
-Yes.
-
-> Please add a new function kvm_arch_mmu_notifier_invalidate_page, and
-> call it outside the mmu_lock.
-
-Then I think we need a macro to control the calling of this arch function
-since other architectures do not have it.
-
+> On Tue, Sep 16, 2014 at 10:51:31PM +0200, Rasmus Villemoes wrote:
+>> The kernel used to contain two functions for length-delimited,
+>> case-insensitive string comparison, strnicmp with correct semantics
+>> and a slightly buggy strncasecmp. The latter is the POSIX name, so
+>> strnicmp was renamed to strncasecmp, and strnicmp made into a wrapper
+>> for the new strncasecmp to avoid breaking existing users.
 >
-> kvm_reload_apic_access_page need not be in virt/kvm/kvm_main.c, either.
+> When was this done? As of this morning I still see them as independent functions
+> in lib/string.c.
 
-Since kvm_reload_apic_access_page() only calls make_all_cpus_request(),
-and make_all_cpus_request() is static, I'd like to make it non-static, 
-rename
-it to kvm_make_all_cpus_request() and call it directly in 
-kvm_arch_mmu_notifier_invalidate_page().
-we don't need kvm_reload_apic_access_page() actually.
+It will be in 3.18. I thought it had made it to linux-next, but should
+have double-checked (and included the 3.18 info in the email); sorry.
 
-Thanks.
+http://thread.gmane.org/gmane.linux.kernel/1775150/focus=1775152
 
+Rasmus
