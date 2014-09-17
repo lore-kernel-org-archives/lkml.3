@@ -1,85 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387AbaIQKZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:25:14 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38186 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaIQKZN (ORCPT
+	id S1754850AbaIQK0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 06:26:43 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:34490 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327AbaIQK0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:25:13 -0400
-Date: Wed, 17 Sep 2014 12:24:20 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robin Gong <b38343@freescale.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        shawn.guo@freescale.com, kernel@pengutronix.de, sre@kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, grant.likely@linaro.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/3] ARM: dts: imx6: add pm_power_off support for
- i.mx6 chips
-Message-ID: <20140917102420.GW4992@pengutronix.de>
-References: <1410947881-7345-1-git-send-email-b38343@freescale.com>
- <1410947881-7345-2-git-send-email-b38343@freescale.com>
+	Wed, 17 Sep 2014 06:26:41 -0400
+Date: Wed, 17 Sep 2014 13:26:36 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Andres Lagar-Cavilla <andreslc@google.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140917102635.GA30733@minantech.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410947881-7345-2-git-send-email-b38343@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:20:41 up 7 days,  3:08, 56 users,  load average: 0.09, 0.16, 0.21
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1410811885-17267-1-git-send-email-andreslc@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 05:57:58PM +0800, Robin Gong wrote:
-> All chips of i.mx6 can be powered off by programming SNVS.
-> For example :
-> On i.mx6q-sabresd board, PMIC_ON_REQ connect with external
-> pmic ON/OFF pin, that will cause the whole PMIC powered off
-> except VSNVS. And system can restart once PMIC_ON_REQ goes
-> high by push POWRER key.
+On Mon, Sep 15, 2014 at 01:11:25PM -0700, Andres Lagar-Cavilla wrote:
+> When KVM handles a tdp fault it uses FOLL_NOWAIT. If the guest memory has been
+> swapped out or is behind a filemap, this will trigger async readahead and
+> return immediately. The rationale is that KVM will kick back the guest with an
+> "async page fault" and allow for some other guest process to take over.
 > 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
+> If async PFs are enabled the fault is retried asap from a workqueue, or
+> immediately if no async PFs. The retry will not relinquish the mmap semaphore
+> and will block on the IO. This is a bad thing, as other mmap semaphore users
+> now stall. The fault could take a long time, depending on swap or filemap
+> latency.
+> 
+> This patch ensures both the regular and async PF path re-enter the fault
+> allowing for the mmap semaphore to be relinquished in the case of IO wait.
+> 
+> Signed-off-by: Andres Lagar-Cavilla <andreslc@google.com>
 > ---
->  arch/arm/boot/dts/imx6qdl.dtsi |    5 +++++
->  arch/arm/boot/dts/imx6sl.dtsi  |    5 +++++
->  arch/arm/boot/dts/imx6sx.dtsi  |    5 +++++
->  3 files changed, 15 insertions(+)
+>  include/linux/kvm_host.h |  9 +++++++++
+>  include/linux/mm.h       |  1 +
+>  mm/gup.c                 |  4 ++++
+>  virt/kvm/async_pf.c      |  4 +---
+>  virt/kvm/kvm_main.c      | 45 ++++++++++++++++++++++++++++++++++++++++++---
+>  5 files changed, 57 insertions(+), 6 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-> index c701af9..fffa1c6 100644
-> --- a/arch/arm/boot/dts/imx6qdl.dtsi
-> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
-> @@ -645,6 +645,11 @@
->  					interrupts = <0 19 IRQ_TYPE_LEVEL_HIGH>,
->  						     <0 20 IRQ_TYPE_LEVEL_HIGH>;
->  				};
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 3addcbc..704908d 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -198,6 +198,15 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
+>  int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
+>  #endif
+>  
+> +/*
+> + * Retry a fault after a gup with FOLL_NOWAIT. This properly relinquishes mmap
+> + * semaphore if the filemap/swap has to wait on page lock (and retries the gup
+> + * to completion after that).
+> + */
+> +int kvm_get_user_page_retry(struct task_struct *tsk, struct mm_struct *mm,
+> +			    unsigned long addr, bool write_fault,
+> +			    struct page **pagep);
 > +
-> +				snvs-poweroff@38 {
-> +					compatible = "fsl,sec-v4.0-poweroff";
-> +					reg = <0x38 0x4>;
-> +				};
+>  enum {
+>  	OUTSIDE_GUEST_MODE,
+>  	IN_GUEST_MODE,
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index ebc5f90..13e585f7 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -2011,6 +2011,7 @@ static inline struct page *follow_page(struct vm_area_struct *vma,
+>  #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
+>  #define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
+>  #define FOLL_MIGRATION	0x400	/* wait for page to replace migration entry */
+> +#define FOLL_TRIED	0x800	/* a retry, previous pass started an IO */
+>  
+>  typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+>  			void *data);
+> diff --git a/mm/gup.c b/mm/gup.c
+> index 91d044b..332d1c3 100644
+> --- a/mm/gup.c
+> +++ b/mm/gup.c
+> @@ -281,6 +281,10 @@ static int faultin_page(struct task_struct *tsk, struct vm_area_struct *vma,
+>  		fault_flags |= FAULT_FLAG_ALLOW_RETRY;
+>  	if (*flags & FOLL_NOWAIT)
+>  		fault_flags |= FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_RETRY_NOWAIT;
+> +	if (*flags & FOLL_TRIED) {
+> +		WARN_ON_ONCE(fault_flags & FAULT_FLAG_ALLOW_RETRY);
+> +		fault_flags |= FAULT_FLAG_TRIED;
+> +	}
+>  
+>  	ret = handle_mm_fault(mm, vma, address, fault_flags);
+>  	if (ret & VM_FAULT_ERROR) {
+> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+> index d6a3d09..17b78b1 100644
+> --- a/virt/kvm/async_pf.c
+> +++ b/virt/kvm/async_pf.c
+> @@ -80,9 +80,7 @@ static void async_pf_execute(struct work_struct *work)
+>  
+>  	might_sleep();
+>  
+> -	down_read(&mm->mmap_sem);
+> -	get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
+> -	up_read(&mm->mmap_sem);
+> +	kvm_get_user_page_retry(NULL, mm, addr, 1, NULL);
+>  	kvm_async_page_present_sync(vcpu, apf);
+>  
+>  	spin_lock(&vcpu->async_pf.lock);
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 7ef6b48..43a9ab9 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1115,6 +1115,39 @@ static int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
+>  	return __get_user_pages(tsk, mm, start, 1, flags, page, NULL, NULL);
+>  }
+>  
+> +int kvm_get_user_page_retry(struct task_struct *tsk, struct mm_struct *mm,
+> +				unsigned long addr, bool write_fault,
+> +				struct page **pagep)
+> +{
+> +	int npages;
+> +	int locked = 1;
+> +	int flags = FOLL_TOUCH | FOLL_HWPOISON |
+> +		    (pagep ? FOLL_GET : 0) |
+> +		    (write_fault ? FOLL_WRITE : 0);
+> +
+> +	/*
+> +	 * Retrying fault, we get here *not* having allowed the filemap to wait
+> +	 * on the page lock. We should now allow waiting on the IO with the
+> +	 * mmap semaphore released.
+> +	 */
+> +	down_read(&mm->mmap_sem);
+> +	npages = __get_user_pages(tsk, mm, addr, 1, flags, pagep, NULL,
+> +				  &locked);
+> +	if (!locked) {
+> +		BUG_ON(npages != -EBUSY);
+> +		/*
+> +		 * The previous call has now waited on the IO. Now we can
+> +		 * retry and complete. Pass TRIED to ensure we do not re
+> +		 * schedule async IO (see e.g. filemap_fault).
+> +		 */
+> +		down_read(&mm->mmap_sem);
+> +		npages = __get_user_pages(tsk, mm, addr, 1, flags | FOLL_TRIED,
+> +					  pagep, NULL, NULL);
+For async_pf_execute() you do not need to even retry. Next guest's page fault
+will retry it for you.
 
-As said: This makes board specific assumptions on SoC level. Whether or
-not this function is available is *BOARD* specific, so at SoC level this
-needs a status = "disabled";
+> +	}
+> +	up_read(&mm->mmap_sem);
+> +	return npages;
+> +}
+> +
+>  static inline int check_user_page_hwpoison(unsigned long addr)
+>  {
+>  	int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
+> @@ -1177,9 +1210,15 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
+>  		npages = get_user_page_nowait(current, current->mm,
+>  					      addr, write_fault, page);
+>  		up_read(&current->mm->mmap_sem);
+> -	} else
+> -		npages = get_user_pages_fast(addr, 1, write_fault,
+> -					     page);
+> +	} else {
+> +		/*
+> +		 * By now we have tried gup_fast, and possible async_pf, and we
+> +		 * are certainly not atomic. Time to retry the gup, allowing
+> +		 * mmap semaphore to be relinquished in the case of IO.
+> +		 */
+> +		npages = kvm_get_user_page_retry(current, current->mm, addr,
+> +						 write_fault, page);
+> +	}
+>  	if (npages != 1)
+>  		return npages;
+>  
+> -- 
+> 2.1.0.rc2.206.gedb03e5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-So: NACK.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+--
+			Gleb.
