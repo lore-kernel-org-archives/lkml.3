@@ -1,171 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586AbaIQRms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:42:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44784 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756556AbaIQRmr (ORCPT
+	id S1756605AbaIQRoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:44:21 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:47983 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756306AbaIQRoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:42:47 -0400
-Date: Wed, 17 Sep 2014 10:42:32 -0700
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-Cc: timur@tabi.org, Li.Xiubo@freescale.com, lgirdwood@gmail.com,
-        broonie@kernel.org, perex@perex.cz, tiwai@suse.de, mpa@pengutronix.de,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4] ASoC: fsl_ssi: refine ipg clock usage in this module
-Message-ID: <20140917174231.GA6480@Asurada>
-References: <5dc0f13cdb62904ae0f104f9112faec672adea6f.1410833402.git.shengjiu.wang@freescale.com>
+	Wed, 17 Sep 2014 13:44:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5dc0f13cdb62904ae0f104f9112faec672adea6f.1410833402.git.shengjiu.wang@freescale.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1410893339-6361-5-git-send-email-geert+renesas@glider.be>
+References: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
+	<1410893339-6361-5-git-send-email-geert+renesas@glider.be>
+Date: Wed, 17 Sep 2014 19:44:17 +0200
+Message-ID: <CAPDyKFodX5AuJJaW7ChWoi5H56t27AYw0BUYjGXeahGu51KY1A@mail.gmail.com>
+Subject: Re: [PATCH/RFC v2 04/12] PM / Domains: Add genpd attach/detach callbacks
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 10:13:16AM +0800, Shengjiu Wang wrote:
-> Check if ipg clock is in clock-names property, then we can move the
-> ipg clock enable and disable operation to startup and shutdown, that
-> is only enable ipg clock when ssi is working and keep clock is disabled
-> when ssi is in idle.
-> But when the checking is failed, remain the clock control as before.
-> 
-> Tested-by: Markus Pargmann <mpa@pengutronix.de>
-> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
-
-Acked-by: Nicolin Chen <nicoleotsuka@gmail.com>
-
+On 16 September 2014 20:48, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+> While a PM domain can enable PM runtime management of its devices' module
+> clocks by setting
+>
+>         genpd->dev_ops.stop = pm_clk_suspend;
+>         genpd->dev_ops.start = pm_clk_resume;
+>
+> this also requires registering the clocks with the pm_clk subsystem.
+> In the legacy case, this is handled by the platform code, after
+> attaching the device to its PM domain.
+>
+> When the devices are instantiated from DT, devices are attached to their
+> PM domains by generic code, leaving no method for the platform-specific
+> PM domain code to register their clocks.
+>
+> Add two callbacks, allowing a PM domain to perform platform-specific
+> tasks when a device is attached to or detached from a PM domain.
+>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 > ---
-> v4 change log:
-> fix the code indent issue.
-> 
->  sound/soc/fsl/fsl_ssi.c |   53 ++++++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 45 insertions(+), 8 deletions(-)
-> 
-> diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-> index 2fc3e66..16a1361 100644
-> --- a/sound/soc/fsl/fsl_ssi.c
-> +++ b/sound/soc/fsl/fsl_ssi.c
-> @@ -169,6 +169,7 @@ struct fsl_ssi_private {
->  	u8 i2s_mode;
->  	bool use_dma;
->  	bool use_dual_fifo;
-> +	bool has_ipg_clk_name;
->  	unsigned int fifo_depth;
->  	struct fsl_ssi_rxtx_reg_val rxtx_reg_val;
->  
-> @@ -530,6 +531,11 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
->  	struct snd_soc_pcm_runtime *rtd = substream->private_data;
->  	struct fsl_ssi_private *ssi_private =
->  		snd_soc_dai_get_drvdata(rtd->cpu_dai);
-> +	int ret;
+> v2:
+>   - New
+> ---
+>  drivers/base/power/domain.c | 12 ++++++++++++
+>  include/linux/pm_domain.h   |  2 ++
+>  2 files changed, 14 insertions(+)
+>
+> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> index f09b615e61515d11..3fa15b6c54f09b36 100644
+> --- a/drivers/base/power/domain.c
+> +++ b/drivers/base/power/domain.c
+> @@ -1418,6 +1418,12 @@ int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
+>         if (ret)
+>                 goto out;
+>
+> +       if (genpd->attach_dev) {
+> +               ret = genpd->attach_dev(genpd, dev);
+> +               if (ret)
+> +                       goto out;
+> +       }
 > +
-> +	ret = clk_prepare_enable(ssi_private->clk);
-> +	if (ret)
-> +		return ret;
->  
->  	/* When using dual fifo mode, it is safer to ensure an even period
->  	 * size. If appearing to an odd number while DMA always starts its
-> @@ -544,6 +550,21 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
->  }
->  
->  /**
-> + * fsl_ssi_shutdown: shutdown the SSI
-> + *
-> + */
-> +static void fsl_ssi_shutdown(struct snd_pcm_substream *substream,
-> +				struct snd_soc_dai *dai)
-> +{
-> +	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-> +	struct fsl_ssi_private *ssi_private =
-> +		snd_soc_dai_get_drvdata(rtd->cpu_dai);
+>         genpd->device_count++;
+>         genpd->max_off_time_changed = true;
+>
+> @@ -1541,6 +1547,12 @@ int pm_genpd_remove_device(struct generic_pm_domain *genpd,
+>
+>         spin_unlock_irq(&dev->power.lock);
+>
+> +       if (genpd->detach_dev) {
+> +               ret = genpd->detach_dev(genpd, dev);
+> +               if (ret)
+> +                       goto out;
+> +       }
 > +
-> +	clk_disable_unprepare(ssi_private->clk);
-> +
-> +}
-> +
-> +/**
->   * fsl_ssi_set_bclk - configure Digital Audio Interface bit clock
->   *
->   * Note: This function can be only called when using SSI as DAI master
-> @@ -1043,6 +1064,7 @@ static int fsl_ssi_dai_probe(struct snd_soc_dai *dai)
->  
->  static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
->  	.startup	= fsl_ssi_startup,
-> +	.shutdown       = fsl_ssi_shutdown,
->  	.hw_params	= fsl_ssi_hw_params,
->  	.hw_free	= fsl_ssi_hw_free,
->  	.set_fmt	= fsl_ssi_set_dai_fmt,
-> @@ -1168,17 +1190,22 @@ static int fsl_ssi_imx_probe(struct platform_device *pdev,
->  	u32 dmas[4];
->  	int ret;
->  
-> -	ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (ssi_private->has_ipg_clk_name)
-> +		ssi_private->clk = devm_clk_get(&pdev->dev, "ipg");
-> +	else
-> +		ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(ssi_private->clk)) {
->  		ret = PTR_ERR(ssi_private->clk);
->  		dev_err(&pdev->dev, "could not get clock: %d\n", ret);
->  		return ret;
->  	}
->  
-> -	ret = clk_prepare_enable(ssi_private->clk);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
-> -		return ret;
-> +	if (!ssi_private->has_ipg_clk_name) {
-> +		ret = clk_prepare_enable(ssi_private->clk);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
-> +			return ret;
-> +		}
->  	}
->  
->  	/* For those SLAVE implementations, we ingore non-baudclk cases
-> @@ -1236,8 +1263,9 @@ static int fsl_ssi_imx_probe(struct platform_device *pdev,
->  	return 0;
->  
->  error_pcm:
-> -	clk_disable_unprepare(ssi_private->clk);
->  
-> +	if (!ssi_private->has_ipg_clk_name)
-> +		clk_disable_unprepare(ssi_private->clk);
->  	return ret;
->  }
->  
-> @@ -1246,7 +1274,8 @@ static void fsl_ssi_imx_clean(struct platform_device *pdev,
->  {
->  	if (!ssi_private->use_dma)
->  		imx_pcm_fiq_exit(pdev);
-> -	clk_disable_unprepare(ssi_private->clk);
-> +	if (!ssi_private->has_ipg_clk_name)
-> +		clk_disable_unprepare(ssi_private->clk);
->  }
->  
->  static int fsl_ssi_probe(struct platform_device *pdev)
-> @@ -1321,8 +1350,16 @@ static int fsl_ssi_probe(struct platform_device *pdev)
->  		return -ENOMEM;
->  	}
->  
-> -	ssi_private->regs = devm_regmap_init_mmio(&pdev->dev, iomem,
-> +	ret = of_property_match_string(np, "clock-names", "ipg");
-> +	if (ret < 0) {
-> +		ssi_private->has_ipg_clk_name = false;
-> +		ssi_private->regs = devm_regmap_init_mmio(&pdev->dev, iomem,
->  			&fsl_ssi_regconfig);
-> +	} else {
-> +		ssi_private->has_ipg_clk_name = true;
-> +		ssi_private->regs = devm_regmap_init_mmio_clk(&pdev->dev,
-> +			"ipg", iomem, &fsl_ssi_regconfig);
-> +	}
->  	if (IS_ERR(ssi_private->regs)) {
->  		dev_err(&pdev->dev, "Failed to init register map\n");
->  		return PTR_ERR(ssi_private->regs);
-> -- 
-> 1.7.9.5
-> 
+>         mutex_lock(&gpd_data->lock);
+>         pdd->dev = NULL;
+>         mutex_unlock(&gpd_data->lock);
+> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
+> index ff128c1ec0de231c..ac07918f907b7495 100644
+> --- a/include/linux/pm_domain.h
+> +++ b/include/linux/pm_domain.h
+> @@ -73,6 +73,8 @@ struct generic_pm_domain {
+>         bool cached_power_down_ok;
+>         struct device_node *of_node; /* Node in device tree */
+>         struct gpd_cpu_data *cpu_data;
+> +       int (*attach_dev)(struct generic_pm_domain *domain, struct device *dev);
+> +       int (*detach_dev)(struct generic_pm_domain *domain, struct device *dev);
+>  };
+>
+>  static inline struct generic_pm_domain *pd_to_genpd(struct dev_pm_domain *pd)
+> --
+> 1.9.1
+>
+
+
+This is great stuff, exactly what I had in mind! :-)
+
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
