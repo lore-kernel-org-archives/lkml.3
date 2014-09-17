@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaIQKHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:07:55 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:50314 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854AbaIQKHx (ORCPT
+	id S1754526AbaIQKST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 06:18:19 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:20781 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025AbaIQKSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:07:53 -0400
+	Wed, 17 Sep 2014 06:18:17 -0400
+Message-ID: <54195FE1.9030607@huawei.com>
+Date: Wed, 17 Sep 2014 18:18:09 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140917094445.GG20727@localhost>
-References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
-	<1410290686-6680-3-git-send-email-octavian.purdila@intel.com>
-	<20140917094445.GG20727@localhost>
-Date: Wed, 17 Sep 2014 13:07:51 +0300
-Message-ID: <CAE1zotJt+Eq7dCaWgFUV_=tXvHL=nExW-KeL3gzTUEgqu8AX9Q@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] i2c: add support for Diolan DLN-2 USB-I2C adapter
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] cgroup: remove some useless forward declarations
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.54195FE7.003F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: d4fda0626812f4f4a2c1ff67d7b96b6f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 12:44 PM, Johan Hovold <johan@kernel.org> wrote:
 
-<snip>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ include/linux/cgroup.h | 1 -
+ kernel/cgroup.c        | 2 --
+ 2 files changed, 3 deletions(-)
 
->> +     /*
->> +      * Buffer to hold the packet for read or write transfers. One
->> +      * is enough since we can't have multiple transfers in
->> +      * parallel on the i2c adapter.
->> +      */
->> +     union {
->> +             struct {
->> +                     u8 port;
->> +                     u8 addr;
->> +                     u8 mem_addr_len;
->> +                     __le32 mem_addr;
->> +                     __le16 buf_len;
->> +                     u8 buf[DLN2_I2C_MAX_XFER_SIZE];
->> +             } __packed tx;
->> +             struct {
->> +                     __le16 buf_len;
->> +                     u8 buf[DLN2_I2C_MAX_XFER_SIZE];
->> +             } __packed rx;
->> +     } buf;
->
-> While this works in this case due to the extra copy you do in
-> dln2_transfer, allocating buffers that would (generally) be used for DMA
-> transfers as part of a larger structure is a recipe for trouble.
->
-> It's probably better to allocate separately, if only to prevent people
-> from thinking there might be a bug here.
->
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index b5223c5..f7898e0 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -27,7 +27,6 @@
+ 
+ struct cgroup_root;
+ struct cgroup_subsys;
+-struct inode;
+ struct cgroup;
+ 
+ extern int cgroup_init_early(void);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 940aced..0ce9d9e 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -185,7 +185,6 @@ static int need_forkexit_callback __read_mostly;
+ static struct cftype cgroup_dfl_base_files[];
+ static struct cftype cgroup_legacy_base_files[];
+ 
+-static void cgroup_put(struct cgroup *cgrp);
+ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 			     unsigned int ss_mask);
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+@@ -195,7 +194,6 @@ static void css_release(struct percpu_ref *ref);
+ static void kill_css(struct cgroup_subsys_state *css);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+ 			      bool is_add);
+-static void cgroup_pidlist_destroy_all(struct cgroup *cgrp);
+ 
+ /* IDR wrappers which synchronize using cgroup_idr_lock */
+ static int cgroup_idr_alloc(struct idr *idr, void *ptr, int start, int end,
+-- 
+1.8.0.2
 
-Just to make sure I understand this, what could the issues be? The
-buffers not being aligned or not allocated in continuous physical
-memory?
-
-<snip>
-
->> +
->> +     rx_buf_len = le16_to_cpu(dln2->buf.rx.buf_len);
->> +     if (rx_len < rx_buf_len + sizeof(dln2->buf.rx.buf_len))
->> +             return -EPROTO;
->> +
->> +     if (data_len > rx_buf_len)
->> +             data_len = rx_buf_len;
->
-> You're still not checking that the received data does not overflow the
-> supplied buffer as I already commented on v3.
->
->> +
->> +     memcpy(data, dln2->buf.rx.buf, data_len);
->> +
->> +     return data_len;
->> +}
-
-Hmm, perhaps I am missing something, but we never transfer more then
-data_len, where data_len is the size of the buffer supplied by the
-user.
-
-<snip>
-
->> +
->> +     platform_set_drvdata(pdev, dln2);
->> +
->> +     ret = device_create_file(dev, &dev_attr_freq);
->> +     if (ret < 0) {
->> +             dev_err(dev, "failed to add freq attribute\n");
->> +             return ret;
->> +     }
->
-> There are a couple of problems here. First, you should not make this an
-> attribute of the platform device, which is created before any driver is
-> bound (might not ever happen).
->
-> Instead add the attribute to the i2c adapter below. However, you need to
-> do this using device attribute groups to avoid racing with userspace (as
-> you are when using device_create_file after the device itself has been
-> created).
->
-> You should probably also make your attribute name less generic by adding
-> a "dln2_"-prefix.
-
-Thanks for the detailed review and explanations, as always :)
