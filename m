@@ -1,104 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704AbaIQPr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 11:47:57 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:60639 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232AbaIQPrz (ORCPT
+	id S1755812AbaIQPs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 11:48:26 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:46472 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552AbaIQPsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 11:47:55 -0400
+	Wed, 17 Sep 2014 11:48:24 -0400
+Date: Wed, 17 Sep 2014 08:48:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org, jdelvare@suse.de
+Subject: Re: [PATCH v3] hwmon: ntc_thermistor: Add ntc thermistor to thermal
+ subsystem as a sensor.
+Message-ID: <20140917154820.GC29184@roeck-us.net>
+References: <1410933277-31704-1-git-send-email-jonghwa3.lee@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk>
-Date: Wed, 17 Sep 2014 08:47:54 -0700
-X-Google-Sender-Auth: 4nJMEHYDjHSriXG4zM4KdxPqJ_E
-Message-ID: <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow
-From: Doug Anderson <dianders@chromium.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Daniel Drake <drake@endlessm.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410933277-31704-1-git-send-email-jonghwa3.lee@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 17, 2014 at 02:54:37PM +0900, Jonghwa Lee wrote:
+> To get more comprehensive and integrated thermal management, it adds ntc
+> thermistor to thermal framework as a thermal sensor. It's governed thermal
+> susbsystem only if it is described in DT node. Otherwise, it just notifies
+> temperature to userspace via sysfs as it used to be.
+> 
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 
-On Wed, Sep 17, 2014 at 4:50 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> commit 546b117fdf17 ("rtc: s3c: add support for RTC of Exynos3250 SoC")
-> added an "rtc_src" DT property for the Samsung's S3C Real Time Clock
-> controller that specifies the 32.768 kHz clock that uses the RTC as its
-> source clock. In the case of the Exynos5250 based Snow board, the Maxim
-> 77686 32kHz AP clock is used as the source clock.
->
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Looks ok as far as I can see. I applied it to hwmon-next. I'll let you know
+if there are any problems.
+
+Guenter
+
 > ---
->  arch/arm/boot/dts/exynos5250-snow.dts | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index e51fcef..56eec56 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -10,6 +10,7 @@
->
->  /dts-v1/;
->  #include <dt-bindings/gpio/gpio.h>
-> +#include <dt-bindings/clock/maxim,max77686.h>
->  #include "exynos5250.dtsi"
->
->  / {
-> @@ -29,6 +30,8 @@
->
->         rtc@101E0000 {
->                 status = "okay";
-> +               clocks = <&clock CLK_RTC>, <&max77686 MAX77686_CLK_AP>;
-> +               clock-names = "rtc", "rtc_src";
-
-Wait, seriously?  Snow is still using the "rtc@101E0000" syntax?
-Whatever happened to the series that Andreas worked so hard on,
-including <https://patchwork.kernel.org/patch/4664801/>?
-
-Kukjin: Andreas's patch series was Reviewed long ago I think and by
-now I'd imagine it's got some conflicts due to it not having been
-applied in a timely fashion.  Perhaps you could fix it up for Andreas
-(since he's already rebased it several times) and land it?
-
-If I had to guess, outstanding from Andreas's series (patchwork IDs listed):
-
-4751131 New          [v7] ARM: dts: Prepare node labels for exynos5250
-4664801 New          [v6,04/10] ARM: dts: Clean up exynos5250-snow
-4664771 New          [v6,05/10] ARM: dts: Fill in bootargs for exynos5250-snow
-4664731 New          [v6,06/10] ARM: dts: Clean up exynos5250-smdk5250
-4664751 New          [v6,07/10] ARM: dts: Clean up exynos5250-arndale
-4664711 New          [v6,08/10] ARM: dts: Fix apparent GPIO typo in
-exynos5250-arndale
-4664681 New          [v6,09/10] ARM: dts: Simplify USB3503 on exynos5250-arndale
-4664691 New          [v6,10/10] ARM: dts: Add exynos5250-spring device tree
-
-
->         };
->
->         pinctrl@11400000 {
-> @@ -350,7 +353,7 @@
->         samsung,i2c-sda-delay = <100>;
->         samsung,i2c-max-bus-freq = <378000>;
->
-> -       max77686@09 {
-> +       max77686: max77686@09 {
->                 compatible = "maxim,max77686";
->                 interrupt-parent = <&gpx3>;
->                 interrupts = <2 0>;
-
-In any case, there's nothing wrong with Javier's patch other than the
-fact that it will eventually need to get merged with Andreas's, so:
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+> Changes:
+> v3:
+>  - Add dependencies of thermal subsystem for proper building.
+> v2:
+>  - Remove NULL pointer checking already done by thermal_zone_of_sensor_unregister().
+> 
+>  .../devicetree/bindings/hwmon/ntc_thermistor.txt   |    3 +++
+>  drivers/hwmon/Kconfig                              |    1 +
+>  drivers/hwmon/ntc_thermistor.c                     |   25 ++++++++++++++++++++
+>  3 files changed, 29 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt b/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+> index 2391e5c..fcca8e7 100644
+> --- a/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+> +++ b/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+> @@ -25,6 +25,9 @@ Requires node properties:
+>  - "io-channels"	Channel node of ADC to be used for
+>  		conversion.
+>  
+> +Optional node properties:
+> +- "#thermal-sensor-cells" Used to expose itself to thermal fw.
+> +
+>  Read more about iio bindings at
+>  	Documentation/devicetree/bindings/iio/iio-bindings.txt
+>  
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 4289a4f..f790b41 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -1077,6 +1077,7 @@ config SENSORS_PC87427
+>  config SENSORS_NTC_THERMISTOR
+>  	tristate "NTC thermistor support from Murata"
+>  	depends on !OF || IIO=n || IIO
+> +	depends on THERMAL || !THERMAL_OF
+>  	help
+>  	  This driver supports NTC thermistors sensor reading and its
+>  	  interpretation. The driver can also monitor the temperature and
+> diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
+> index bd41072..4ff89b2 100644
+> --- a/drivers/hwmon/ntc_thermistor.c
+> +++ b/drivers/hwmon/ntc_thermistor.c
+> @@ -38,6 +38,7 @@
+>  
+>  #include <linux/hwmon.h>
+>  #include <linux/hwmon-sysfs.h>
+> +#include <linux/thermal.h>
+>  
+>  struct ntc_compensation {
+>  	int		temp_c;
+> @@ -182,6 +183,7 @@ struct ntc_data {
+>  	struct device *dev;
+>  	int n_comp;
+>  	char name[PLATFORM_NAME_SIZE];
+> +	struct thermal_zone_device *tz;
+>  };
+>  
+>  #if defined(CONFIG_OF) && IS_ENABLED(CONFIG_IIO)
+> @@ -428,6 +430,20 @@ static int ntc_thermistor_get_ohm(struct ntc_data *data)
+>  	return -EINVAL;
+>  }
+>  
+> +static int ntc_read_temp(void *dev, long *temp)
+> +{
+> +	struct ntc_data *data = dev_get_drvdata(dev);
+> +	int ohm;
+> +
+> +	ohm = ntc_thermistor_get_ohm(data);
+> +	if (ohm < 0)
+> +		return ohm;
+> +
+> +	*temp = get_temp_mc(data, ohm);
+> +
+> +	return 0;
+> +}
+> +
+>  static ssize_t ntc_show_name(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+> @@ -562,6 +578,13 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
+>  	dev_info(&pdev->dev, "Thermistor type: %s successfully probed.\n",
+>  								pdev_id->name);
+>  
+> +	data->tz = thermal_zone_of_sensor_register(data->dev, 0, data->dev,
+> +						ntc_read_temp, NULL);
+> +	if (IS_ERR(data->tz)) {
+> +		dev_dbg(&pdev->dev, "Failed to register to thermal fw.\n");
+> +		data->tz = NULL;
+> +	}
+> +
+>  	return 0;
+>  err_after_sysfs:
+>  	sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
+> @@ -578,6 +601,8 @@ static int ntc_thermistor_remove(struct platform_device *pdev)
+>  	sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
+>  	ntc_iio_channel_release(pdata);
+>  
+> +	thermal_zone_of_sensor_unregister(data->dev, data->tz);
+> +
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.9.5
+> 
