@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300AbaIQQne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:43:34 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:44134 "EHLO mailhub1.si.c-s.fr"
+	id S1756157AbaIQQhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:37:18 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:44090 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756080AbaIQQhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:37:19 -0400
+	id S1756080AbaIQQhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:37:11 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v3 12/21] powerpc/8xx: Don't use MD_TWC for walk
-Message-Id: <20140917163659.815C81AB03B@localhost.localdomain>
-Date: Wed, 17 Sep 2014 18:36:59 +0200 (CEST)
+Subject: [PATCH v3 04/21] powerpc/8xx: Remove loading of r10 at end of FixupDAR
+Message-Id: <20140917163657.9BC8E1AB033@localhost.localdomain>
+Date: Wed, 17 Sep 2014 18:36:57 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MD_TWC can only be used properly with 4k pages.
-So lets calculate level 2 table index by ourselves.
+Since commit 2321f33790a6c5b80322d907a92d5739e7521a13, r10 is not used anymore
+after FixupDAR. There is therefore no need to set it up with the value of DAR.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
 Changes in v2:
-- No need to save r11 in cr, we can do without modifying r11 in DataStoreTLBMiss
+- None
 
 Changes in v3:
 - None
 
- arch/powerpc/kernel/head_8xx.S |   28 ++++++++++++----------------
- 1 files changed, 12 insertions(+), 16 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index ad15070..0f571f5 100644
+index fbe5d10..e59e39e 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -297,8 +297,6 @@ InstructionTLBMiss:
- 	addi	r11, r10, -0x1000
- 	tlbie	r11
- #endif
--	DO_8xx_CPU6(0x3780, r3)
--	mtspr	SPRN_MD_EPN, r10	/* Have to use MD_EPN for walk, MI_EPN can't */
- 
- 	/* If we are faulting a kernel address, we have to use the
- 	 * kernel page tables.
-@@ -326,10 +324,9 @@ InstructionTLBMiss:
- 	ori	r11,r11,1		/* Set valid bit */
- 	DO_8xx_CPU6(0x2b80, r3)
- 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r10, 0(r11)	/* Get the pte */
-+	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r10, r10, r11	/* Get the pte */
- 
- #ifdef CONFIG_SWAP
- 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
-@@ -395,12 +392,13 @@ DataStoreTLBMiss:
- 
- 	/* We have a pte table, so load fetch the pte from the table.
- 	 */
--	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r10, SPRN_MD_TWC	/* ....and get the pte address */
-+	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
-+	/* Extract level 2 index */
-+	rlwinm	r10, r10, 22, 20, 29
-+	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
- 	lwz	r10, 0(r10)	/* Get the pte */
- 
-+	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
- 	/* Insert the Guarded flag into the TWC from the Linux PTE.
- 	 * It is bit 27 of both the Linux PTE and the TWC (at least
- 	 * I got that right :-).  It will be better when we can put
-@@ -524,18 +522,16 @@ FixupDAR:/* Entry point for dcbx workaround. */
- 	/* fetch instruction from memory. */
- 	mfspr	r10, SPRN_SRR0
- 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
--	DO_8xx_CPU6(0x3780, r3)
--	mtspr	SPRN_MD_EPN, r10
- 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
- 	beq-	3f		/* Branch if user space */
- 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
- 3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r11, 0(r11)	/* Get the pte */
-+	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
-+	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r11, r10, r11	/* Get the pte */
+@@ -495,7 +495,7 @@ DataTLBError:
+ 	mfspr	r10, SPRN_DAR
+ 	cmpwi	cr0, r10, 0x00f0
+ 	beq-	FixupDAR	/* must be a buggy dcbX, icbi insn. */
+-DARFixed:/* Return from dcbx instruction bug workaround, r10 holds value of DAR */
++DARFixed:/* Return from dcbx instruction bug workaround */
  #ifdef CONFIG_8xx_CPU6
- 	lwz	r3, 8(r0)	/* restore r3 from memory */
+ 	lwz	r3, 8(r0)
  #endif
+@@ -524,7 +524,7 @@ DARFixed:/* Return from dcbx instruction bug workaround, r10 holds value of DAR
+ 
+ /* This is the procedure to calculate the data EA for buggy dcbx,dcbi instructions
+  * by decoding the registers used by the dcbx instruction and adding them.
+- * DAR is set to the calculated address and r10 also holds the EA on exit.
++ * DAR is set to the calculated address.
+  */
+  /* define if you don't want to use self modifying code */
+ #define NO_SELF_MODIFYING_CODE
+@@ -564,8 +564,7 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	beq+	142f
+ 	cmpwi	cr0, r10, 1964	/* Is icbi? */
+ 	beq+	142f
+-141:	mfspr	r10, SPRN_DAR	/* r10 must hold DAR at exit */
+-	b	DARFixed	/* Nope, go back to normal TLB processing */
++141:	b	DARFixed	/* Nope, go back to normal TLB processing */
+ 
+ 144:	mfspr	r10, SPRN_DSISR
+ 	rlwinm	r10, r10,0,7,5	/* Clear store bit for buggy dcbst insn */
 -- 
 1.7.1
 
