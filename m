@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaIQMRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:17:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36061 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaIQMRJ (ORCPT
+	id S1755427AbaIQMSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:18:34 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60142 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754653AbaIQMSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:17:09 -0400
-Date: Wed, 17 Sep 2014 07:17:06 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mfd: twl4030-power: use 'ti,system-power-controller'
- as alternative way to support system power off
-Message-ID: <20140917121705.GA2939@splat>
-References: <1409771208-21867-1-git-send-email-nm@ti.com>
- <1409771208-21867-3-git-send-email-nm@ti.com>
- <20140909000126.GU3238@atomide.com>
- <20140916230537.GU25162@lee--X1>
+	Wed, 17 Sep 2014 08:18:33 -0400
+Date: Wed, 17 Sep 2014 13:18:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: hw_breakpoint: Trap undef instruction exceptions
+	on wake-up
+Message-ID: <20140917121820.GR12361@n2100.arm.linux.org.uk>
+References: <1410955036-1956-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140916230537.GU25162@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410955036-1956-1-git-send-email-geert+renesas@glider.be>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:05-20140916, Lee Jones wrote:
-> On Mon, 08 Sep 2014, Tony Lindgren wrote:
+On Wed, Sep 17, 2014 at 01:57:16PM +0200, Geert Uytterhoeven wrote:
+> If power area D4, which contains the Coresight-ETM hardware block, is
+> powered down on R-Mobile A1 (r8a7740), the kernel crashes when
+> suspending from s2ram with:
 > 
-> > * Nishanth Menon <nm@ti.com> [140903 12:07]:
-> > > ti,system-power-controller is more or less the standard way of
-> > > indicating that the PMIC is the system wide power controller and hence
-> > > may be used to switch off the system. Almost ALL TI PMIC drivers and
-> > > many Maxim PMIC drivers follow the same style.
-> > > 
-> > > So support 'ti,system-power-controller' in addition to the usual
-> > > 'ti,use_poweroff' to indicate that the PMIC instance has control for
-> > > switching off the system.
-> > > 
-> > > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > 
-> > Acked-by: Tony Lindgren <tony@atomide.com>
+>     Internal error: Oops - undefined instruction: 0 [#1] ARM
 > 
-> I assume you're going to resend this with the document modifications?
-> When you do, don't forget to apply Tony's Ack, as it will ensure a
-> faster merge.
+> This happens because dbg_cpu_pm_notify() calls reset_ctrl_regs(), which
+> can't access the debug registers as the debug module is powered down.
 > 
+> Protect the call to reset_ctrl_regs() by an undefined instruction hook,
+> like was done in commit 0d352e3d006c9589 ("ARM: hw_breakpoint: trap
+> undef instruction exceptions in reset_ctrl_regs") for another caller.
 
-Thanks for the reminder, This did indeed slip through the cracks.
-Posting updated rev in a few mins..
+I'd prefer a better solution to this (such as tracking whether the ETM
+block is powered down).  This feels very much like a hack than a good
+solution.
+
+Also, the undefined instruction hook was not supposed to be used in this
+way - certainly *not* dynamically like this.  While the lookup of the
+undef handler is done in a safe atomic way, calling the resulting
+function is outside of the locks.
+
 -- 
-Regards,
-Nishanth Menon
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
