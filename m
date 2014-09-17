@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560AbaIQO2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 10:28:30 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:36969 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaIQO23 (ORCPT
+	id S1755571AbaIQObD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 10:31:03 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:39992 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151AbaIQObA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 10:28:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <54194A4A.7030104@zytor.com>
-References: <1410912351-31273-1-git-send-email-rlarocque@google.com>
- <CALCETrXtYV5xKkTxothuqNb7ra80Be7ZXJ-hDnC6p-bfEPZ=Lw@mail.gmail.com>
- <CABgu+=NC1ZMQkV0J2c9-MD1+TAmTjDm4ACZASPnfX2Fwiu5rMQ@mail.gmail.com>
- <CALCETrWj8Pj8d8YjybvOKG-=xmy-XGFo9cGQ9qn0V4t9Oj+dOw@mail.gmail.com>
- <CADU+-uCguxhkw259MefABuzOxvyK_F6bhwza0YhveCCJxEV8wQ@mail.gmail.com> <54194A4A.7030104@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 17 Sep 2014 07:28:07 -0700
-Message-ID: <CALCETrXsx2-1yf6q4OLzBdisr8P1086rNrsAt=WbyJaiT-cMpw@mail.gmail.com>
-Subject: Re: [PATCH] x86/vdso: Add prctl to set per-process VDSO load
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Greg Thelen <gthelen@google.com>, X86 ML <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Michael Davidson <md@google.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Richard Larocque <rlarocque@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Sep 2014 10:31:00 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Michal Simek <monstr@monstr.eu>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] clocksource: cadence_ttc: Add support for 32bit mode
+Date: Wed, 17 Sep 2014 16:30:50 +0200
+Message-Id: <f15c1b3ea80c985535ed9f65d5c3fa4e15fcd190.1410964243.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <3537996136ec435ea660da869102d0a019214979.1410964243.git.michal.simek@xilinx.com>
+References: <3537996136ec435ea660da869102d0a019214979.1410964243.git.michal.simek@xilinx.com>
+In-Reply-To: <3537996136ec435ea660da869102d0a019214979.1410964243.git.michal.simek@xilinx.com>
+References: <3537996136ec435ea660da869102d0a019214979.1410964243.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-29150-1410964256-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 17, 2014 1:46 AM, "H. Peter Anvin" <hpa@zytor.com> wrote:
->
-> On 09/16/2014 11:21 PM, Filipe Brandenburger wrote:
-> > Hi Andy,
-> >
-> > On Tue, Sep 16, 2014 at 10:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> >> I think that the patch should instead tweak the vvar mapping to tell
-> >> the vdso not to use rdtsc.  It should be based on this:
-> >
-> > I've been working on this approach which extends the vvar from 2 to 3
-> > pages. The third page would initially be mapped to a zero page but
-> > then through a prctl a task could replace it with a real page that
-> > could then be inherited through fork and exec.
-> >
-> > That would make it possible to have per-task vvar contents.
-> >
-> > We could use some of those values as flags to indicate whether vdso
-> > routines may use RDTSC or not.
-> >
-> > In the future, we're planning to also use that to store clock offsets
-> > so that we can ensure CLOCK_MONOTONIC works after CRIU migration
-> > without having to turn off the VDSO or have to always fallback to full
-> > syscalls on every case.
-> >
-> > Do you think that would be a reasonable way to accomplish that?
-> >
->
-> Why would we need/want per process vvar contents?  It seems better to
-> have the code swapped out.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-That seems messier from a build perspective.  Also, if we ever want to
-switch this dynamically, swapping out data is much easier than
-swapping out code.  I think we should be able to replace the vvar page
-with the zero page, though.
+--=_mimegpg-monstr-desktop-29150-1410964256-0001
 
-One tricky bit: currently we can only easily do this on exec, but we
-should be able to do it immediately if we start tracking mremap of the
-vdso.  Should we make that a prerequisite?  I don't really want this
-to end up being permanently weird.
+New TTCs support 32bit mode. Older versions support
+only 16bit modes. Keep 16bit mode as default
+and 32bit optional.
 
-As for an actual post-migration offset, I'd rather add support for
-per-mm forced syscall fallback and then get something into the code
-timing code before even thinking about an x86 vdso fast path.  I don't
-think that a feature like per-mm timing offsets should happen as an
-arch-specific thing first.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
---Andy
+ drivers/clocksource/cadence_ttc_timer.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
->
->         -hpa
->
->
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index 7a08811df9aa..510c8a1d37b3 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -25,7 +25,7 @@
+ #include <linux/sched_clock.h>
+
+ /*
+- * This driver configures the 2 16-bit count-up timers as follows:
++ * This driver configures the 2 16/32-bit count-up timers as follows:
+  *
+  * T1: Timer 1, clocksource for generic timekeeping
+  * T2: Timer 2, clockevent source for hrtimers
+@@ -321,7 +321,8 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 	return NOTIFY_DONE;
+ }
+
+-static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
++static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base,
++					 u32 timer_width)
+ {
+ 	struct ttc_timer_clocksource *ttccs;
+ 	int err;
+@@ -351,7 +352,7 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 	ttccs->cs.name = "ttc_clocksource";
+ 	ttccs->cs.rating = 200;
+ 	ttccs->cs.read = __ttc_clocksource_read;
+-	ttccs->cs.mask = CLOCKSOURCE_MASK(16);
++	ttccs->cs.mask = CLOCKSOURCE_MASK(timer_width);
+ 	ttccs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
+
+ 	/*
+@@ -372,7 +373,8 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 	}
+
+ 	ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
+-	sched_clock_register(ttc_sched_clock_read, 16, ttccs->ttc.freq / PRESCALE);
++	sched_clock_register(ttc_sched_clock_read, timer_width,
++			     ttccs->ttc.freq / PRESCALE);
+ }
+
+ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+@@ -467,6 +469,7 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 	struct clk *clk_cs, *clk_ce;
+ 	static int initialized;
+ 	int clksel;
++	u32 timer_width = 16;
+
+ 	if (initialized)
+ 		return;
+@@ -490,6 +493,8 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 		BUG();
+ 	}
+
++	of_property_read_u32(timer, "timer-width", &timer_width);
++
+ 	clksel = readl_relaxed(timer_baseaddr + TTC_CLK_CNTRL_OFFSET);
+ 	clksel = !!(clksel & TTC_CLK_CNTRL_CSRC_MASK);
+ 	clk_cs = of_clk_get(timer, clksel);
+@@ -506,7 +511,7 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 		BUG();
+ 	}
+
+-	ttc_setup_clocksource(clk_cs, timer_baseaddr);
++	ttc_setup_clocksource(clk_cs, timer_baseaddr, timer_width);
+ 	ttc_setup_clockevent(clk_ce, timer_baseaddr + 4, irq);
+
+ 	pr_info("%s #0 at %p, irq=%d\n", timer->name, timer_baseaddr, irq);
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-29150-1410964256-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlQZmyAACgkQykllyylKDCEXowCeLhNBPFNsRqaTsL/KbxSW9oPV
+9k4An2eTqMlhPBN9+gRH3d+oYAJqesnH
+=bJjp
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-29150-1410964256-0001--
