@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370AbaIQWeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 18:34:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21563 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757056AbaIQWd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 18:33:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,542,1406617200"; 
-   d="scan'208";a="604481310"
-Subject: [RFC][PATCH 3/6] x86: use package_map instead of core_map for sysfs
-To: a.p.zijlstra@chello.nl
-Cc: mingo@kernel.org, hpa@linux.intel.com, brice.goglin@gmail.com,
-        bp@alien8.de, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Wed, 17 Sep 2014 15:33:15 -0700
-References: <20140917223310.026BCC2C@viggo.jf.intel.com>
-In-Reply-To: <20140917223310.026BCC2C@viggo.jf.intel.com>
-Message-Id: <20140917223315.B48134C6@viggo.jf.intel.com>
+	id S932197AbaIQWe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 18:34:26 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:40353 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756816AbaIQWeX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 18:34:23 -0400
+Message-ID: <541A0C69.1030402@linaro.org>
+Date: Wed, 17 Sep 2014 23:34:17 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: ssbi: promote the driver to subsys level
+References: <1410915594-15599-1-git-send-email-srinivas.kandagatla@linaro.org> <20140917160305.GH30918@lee--X1> <CAGkH4DOPHQWBVZgiLZugcoTZNJiS-ar8KNvq96W5UmX8C6GCTg@mail.gmail.com> <20140917164925.GO30918@lee--X1> <20140917222519.GV30918@lee--X1>
+In-Reply-To: <20140917222519.GV30918@lee--X1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
 
-The /sys/devices/system/cpu/cpu*/topology/core_siblings*
-files were previously built from the "cpu_core_map".  That
-mask is deeply connected to the sched domains internal
-multi-core (MC) level, which is now become disconnected from
-the actual CPU package.
+On 17/09/14 23:25, Lee Jones wrote:
+> On Wed, 17 Sep 2014, Lee Jones wrote:
+>
+>> On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
+>>
+>>> On 17 Sep 2014 09:03, "Lee Jones" <lee.jones@linaro.org> wrote:
+>>>>
+>>>> On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
+>>>>
+>>>>> This patch promtes the driver to be at subsystem level as this driver
+>>>>> will be used by gpio controller drivers which inturn are used by many
+>>>>> platform drivers.
+>>>>
+>>>> Any reason why you're not using -EPROBE?
+>>>>
+>>> EPROBE is possible but it's going to add few more cycles to boot time.
+>>>
+>>> As this driver is a very basic driver on which other drivers depend
+>>> ensuring the sequence would improve the boot time.
+>>
+>> We only tend to promote drivers' init level as a last resort.  If
+>> -EPROBE_DEFER is possible, please use that instead.
+>
+> To conclude for any casual/interested observers; I'd be willing to
+> accept the patch if you can provide some metrics that prove boot-time
+> is sufficiently increased as a result of using -EPROBE_DEFER.
 
-We have a new "cpu_package_map" which has the sole purpose of
-tracking which package the CPU is in and is unconnected to the
-scheduler.  We will now build those sysfs with information from
-the new package map.
+That's fair enough I will get the details..
 
-Note: this also realigns the sysfs files with their documentation
-in Documentation/ABI.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/arch/x86/include/asm/topology.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN arch/x86/include/asm/topology.h~x86-use-package-map-instead-of-core-map arch/x86/include/asm/topology.h
---- a/arch/x86/include/asm/topology.h~x86-use-package-map-instead-of-core-map	2014-09-17 15:28:57.508571881 -0700
-+++ b/arch/x86/include/asm/topology.h	2014-09-17 15:28:57.511572017 -0700
-@@ -124,7 +124,7 @@ extern const struct cpumask *cpu_package
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
- 
- #ifdef ENABLE_TOPO_DEFINES
--#define topology_package_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
-+#define topology_package_cpumask(cpu)		(per_cpu(cpu_package_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- #endif
- 
-_
+>
+>>>>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>>>>> ---
+>>>>>   drivers/mfd/ssbi.c | 7 ++++++-
+>>>>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/drivers/mfd/ssbi.c b/drivers/mfd/ssbi.c
+>>>>> index b78942e..4fbe02e 100644
+>>>>> --- a/drivers/mfd/ssbi.c
+>>>>> +++ b/drivers/mfd/ssbi.c
+>>>>> @@ -331,7 +331,12 @@ static struct platform_driver ssbi_driver = {
+>>>>>                .of_match_table = ssbi_match_table,
+>>>>>        },
+>>>>>   };
+>>>>> -module_platform_driver(ssbi_driver);
+>>>>> +
+>>>>> +static int ssbi_init(void)
+>>>>> +{
+>>>>> +     return platform_driver_register(&ssbi_driver);
+>>>>> +}
+>>>>> +subsys_initcall(ssbi_init);
+>
+> Also, as a nasty side-effect of this patch, this module will no longer
+> be unloadable, which is probably not what you want.
+>
+>>>>>   MODULE_LICENSE("GPL v2");
+>>>>>   MODULE_VERSION("1.0");
+>
