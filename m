@@ -1,184 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaIQRB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:01:57 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:36468 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731AbaIQRB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:01:56 -0400
-Date: Wed, 17 Sep 2014 10:01:50 -0700
-From: Graeme Gregory <graeme.gregory@linaro.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: suravee.suthikulpanit@amd.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, linux-arm-kernel@lists.infradead.org,
-        linux-apci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        astone@redhat.com, hanjun.guo@linaro.org, rjw@rjwysocki.net,
-        marc.zyngier@arm.com, mark.rutland@arm.com, Sudeep.Holla@arm.com,
-        olof@lixom.net, grant.likely@linaro.org, arnd@arndb.de,
-        jason@lakedaemon.net
-Subject: Re: [PATCH 4/4] [RFC PATCH for Juno 2/2] tty: SBSA compatible UART
-Message-ID: <20140917170150.GB2464@xora-yoga-13>
-References: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1410828446-28502-5-git-send-email-suravee.suthikulpanit@amd.com>
- <20140917114029.190eb8f9@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917114029.190eb8f9@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756252AbaIQRCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:02:06 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:44307 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756217AbaIQRCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 13:02:01 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        scottwood@freescale.com
+Subject: [PATCH v3 20/21] powerpc/8xx: Use DAR to save r3 for CPU6 ERRATA
+Message-Id: <20140917163700.EBDDF1AB045@localhost.localdomain>
+Date: Wed, 17 Sep 2014 18:37:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 11:40:29AM +0100, One Thousand Gnomes wrote:
-> 
-> Firstly provide some useful information about the hardware. It's no good
-> wavng your arms at a document that requires agreeing to a giant ARM T&C
-> to get access to. Most of don't work for ARM and we'd have to get our own
-> corporate legal to approve the legal garbage involved.
-> 
-> Secondly explain why you can't use PL011 given that it already supports
-> non DMA accesses. What would it take to tweak it further for this ?
-> 
-> 
+As we are not using anymore DAR to save registers, it is now available for
+saving the r3 register used for CPU6 ERRATA handling. Therefore we can
+remove the major hack which was to use memory location 0 to save r3.
 
-As the original author of this driver it is only meant for internal use
-inside Linaro. It only ever reached the level of "good enough" for
-internal testing.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-There is a discussion on a more complete driver in this thread.
+---
+Changes in v3:
+- New
 
-http://www.spinics.net/lists/arm-kernel/msg358083.html
+ linux/arch/powerpc/kernel/head_8xx.S | 33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
-Graeme
+diff --git a/linux/arch/powerpc/kernel/head_8xx.S b/linux/arch/powerpc/kernel/head_8xx.S
+index e21f0b2..3e8e341 100644
+--- a/linux/arch/powerpc/kernel/head_8xx.S
++++ b/linux/arch/powerpc/kernel/head_8xx.S
+@@ -83,13 +83,6 @@ _ENTRY(_start);
+  * 8M 1:1.  I also mapped an additional I/O space 1:1 so we can get to
+  * the "internal" processor registers before MMU_init is called.
+  *
+- * The TLB code currently contains a major hack.  Since I use the condition
+- * code register, I have to save and restore it.  I am out of registers, so
+- * I just store it in memory location 0 (the TLB handlers are not reentrant).
+- * To avoid making any decisions, I need to use the "segment" valid bit
+- * in the first level table, but that would require many changes to the
+- * Linux page directory/table functions that I don't want to do right now.
+- *
+  *	-- Dan
+  */
+ 	.globl	__start
+@@ -304,7 +297,7 @@ SystemCall:
+  */
+ InstructionTLBMiss:
+ #ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
++	mtspr	SPRN_DAR, r3
+ #endif
+ 	EXCEPTION_PROLOG_0
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+@@ -349,7 +342,10 @@ InstructionTLBMiss:
+ #ifdef CONFIG_SWAP
+ 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
+ 	cmpwi	cr0, r11, _PAGE_ACCESSED | _PAGE_PRESENT
++	li	r11, RPN_PATTERN
+ 	bne-	cr0, 2f
++#else
++	li	r11, RPN_PATTERN
+ #endif
+ 	/* The Linux PTE won't go exactly into the MMU TLB.
+ 	 * Software indicator bits 21 and 28 must be clear.
+@@ -357,28 +353,29 @@ InstructionTLBMiss:
+ 	 * set.  All other Linux PTE bits control the behavior
+ 	 * of the MMU.
+ 	 */
+-	li	r11, RPN_PATTERN
+ 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
+ 	MTSPR_CPU6(SPRN_MI_RPN, r10, r3)	/* Update TLB entry */
+ 
+ 	/* Restore registers */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
++	mfspr	r3, SPRN_DAR
++	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ #endif
+ 	mfspr	r10, SPRN_SPRG_SCRATCH2
+ 	EXCEPTION_EPILOG_0
+ 	rfi
+ 2:
+-	mfspr	r11, SPRN_SRR1
++	mfspr	r10, SPRN_SRR1
+ 	/* clear all error bits as TLB Miss
+ 	 * sets a few unconditionally
+ 	*/
+-	rlwinm	r11, r11, 0, 0xffff
+-	mtspr	SPRN_SRR1, r11
++	rlwinm	r10, r10, 0, 0xffff
++	mtspr	SPRN_SRR1, r10
+ 
+ 	/* Restore registers */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
++	mfspr	r3, SPRN_DAR
++	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ #endif
+ 	mfspr	r10, SPRN_SPRG_SCRATCH2
+ 	b	InstructionTLBError1
+@@ -386,7 +383,7 @@ InstructionTLBMiss:
+ 	. = 0x1200
+ DataStoreTLBMiss:
+ #ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
++	mtspr	SPRN_DAR, r3
+ #endif
+ 	EXCEPTION_PROLOG_0
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+@@ -457,7 +454,7 @@ DataStoreTLBMiss:
+ 
+ 	/* Restore registers */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
++	mfspr	r3, SPRN_DAR
+ #endif
+ 	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ 	mfspr	r10, SPRN_SPRG_SCRATCH2
+@@ -527,7 +524,7 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+ #define NO_SELF_MODIFYING_CODE
+ FixupDAR:/* Entry point for dcbx workaround. */
+ #ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
++	mtspr	SPRN_DAR, r3
+ #endif
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+ 	/* fetch instruction from memory. */
+@@ -546,7 +543,7 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r11, r10, r11	/* Get the pte */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)	/* restore r3 from memory */
++	mfspr	r3, SPRN_DAR
+ #endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	mfspr	r10, SPRN_SRR0
+-- 
+2.1.0
 
-> > +static void sbsa_tty_do_write(const char *buf, unsigned count)
-> > +{
-> > +	unsigned long irq_flags;
-> > +	struct sbsa_tty *qtty = sbsa_tty;
-> > +	void __iomem *base = qtty->base;
-> > +	unsigned n;
-> > +
-> > +	spin_lock_irqsave(&qtty->lock, irq_flags);
-> > +	for (n = 0; n < count; n++) {
-> > +		while (readw(base + UART01x_FR) & UART01x_FR_TXFF)
-> > +			mdelay(10);
-> > +		writew(buf[n], base + UART01x_DR);
-> 
-> serious - you are going to sit and spin in kernel space with interrupts
-> off for an indefinite period ?
-> 
-> No. Even if your hardware is so completely brain dead and broken that it
-> hasn't got an interrupt for 'write room' that's not acceptable. You need
-> error handling and some kind of sensible timer based solution.
-> 
-> To put it simply. You have a queue (or you should - your driver is broken
-> in that respect too), you have a baud rate, you have a bit time. From
-> that you can compute sensible wakeup points to try and refill the
-> hardware FIFO. Assuming the hardware fifo is not tiny you don't even have
-> to be that good an aim.
-> 
-> It's acceptable for the printk console code to spin, if you think getting
-> the message out on a failure or error outweighs the pain. It's not
-> acceptable for the tty layer.
-> 
-> > +static void sbsauart_fifo_to_tty(struct sbsa_tty *qtty)
-> > +{
-> > +	void __iomem *base = qtty->base;
-> > +	unsigned int flag, max_count = 32;
-> > +	u16 status, ch;
-> > +
-> > +	while (max_count--) {
-> > +		status = readw(base + UART01x_FR);
-> > +		if (status & UART01x_FR_RXFE)
-> > +			break;
-> > +
-> > +		/* Take chars from the FIFO and update status */
-> > +		ch = readw(base + UART01x_DR);
-> > +		flag = TTY_NORMAL;
-> > +
-> > +		if (ch & UART011_DR_BE)
-> > +			flag = TTY_BREAK;
-> > +		else if (ch & UART011_DR_PE)
-> > +			flag = TTY_PARITY;
-> > +		else if (ch & UART011_DR_FE)
-> > +			flag = TTY_FRAME;
-> > +		else if (ch & UART011_DR_OE)
-> > +			flag = TTY_OVERRUN;
-> > +
-> > +		ch &= SBSAUART_CHAR_MASK;
-> > +
-> > +		tty_insert_flip_char(&qtty->port, ch, flag);
-> 
-> If its a console you ought to support the sysrq interfaces.
-> 
-> > +static int sbsa_tty_write_room(struct tty_struct *tty)
-> > +{
-> > +	return 32;
-> > +}
-> 
-> You can't do this. You need a proper queue and queueing mechanism or
-> you'll break in some situations (aside from sitting spinning in your
-> write code trashing your system performance entirely). We have a kfifo
-> object in the kernel which is really trivial to use and should do what
-> you need without any effort.
-> 
-> > +
-> > +static void sbsa_tty_console_write(struct console *co, const char *b,
-> > +								unsigned count)
-> > +{
-> > +	sbsa_tty_do_write(b, count);
-> > +
-> > +	if(b[count - 1] == '\n');
-> > +		sbsa_tty_do_write("\r", 1);
-> 
-> I would expect \r\n to be the order ?
-> 
-> > +static struct tty_port_operations sbsa_port_ops = {
-> > +};
-> 
-> No power management ?
-> 
-> > +
-> > +static const struct tty_operations sbsa_tty_ops = {
-> > +	.open = sbsa_tty_open,
-> > +	.close = sbsa_tty_close,
-> > +	.hangup = sbsa_tty_hangup,
-> > +	.write = sbsa_tty_write,
-> > +	.write_room = sbsa_tty_write_room,
-> 
-> No termios handling ?
-> 
-> > +static int sbsa_tty_probe(struct platform_device *pdev)
-> > +{
-> > +	struct sbsa_tty *qtty;
-> > +	int ret = -EINVAL;
-> > +	int i;
-> > +	struct resource *r;
-> > +	struct device *ttydev;
-> > +	void __iomem *base;
-> > +	u32 irq;
-> > +
-> > +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	if (r == NULL)
-> > +		return -EINVAL;
-> > +
-> > +	base = ioremap(r->start, r->end - r->start);
-> > +	if (base == NULL)
-> > +		pr_err("sbsa_tty: unable to remap base\n");
-> 
-> So you are then going to continue and randomly crash  ???
-> 
-> Also you've got a device so use dev_err() and friends on it
-> 
-> > +	if (pdev->id > 0)
-> > +		goto err_unmap;
-> 
-> Why not test this before you do all the mapping ??
-> 
-> 
-> It's clean code, it's easy to understand it just doesn't seem to be very
-> complete ?
-> 
-> Alan
