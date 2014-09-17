@@ -1,363 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbaIQAoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 20:44:03 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:59413 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186AbaIQAjv (ORCPT
+	id S1753934AbaIQAr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 20:47:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40826 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753039AbaIQAr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 20:39:51 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v13 net-next 01/11] bpf: introduce BPF syscall and maps
-Date: Tue, 16 Sep 2014 17:39:20 -0700
-Message-Id: <1410914370-29883-2-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
-References: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
+	Tue, 16 Sep 2014 20:47:57 -0400
+Date: Wed, 17 Sep 2014 01:47:53 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jonathan Richardson <jonathar@broadcom.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>
+Subject: Re: [PATCH 2/6] clk: Clock driver support for Broadcom Cygnus SoC
+Message-ID: <20140917004753.GJ14191@leverpostej>
+References: <jonathar@broadcom.com>
+ <1410897497-27527-1-git-send-email-jonathar@broadcom.com>
+ <1410897497-27527-3-git-send-email-jonathar@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410897497-27527-3-git-send-email-jonathar@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BPF syscall is a multiplexor for a range of different operations on eBPF.
-This patch introduces syscall with single command to create a map.
-Next patch adds commands to access maps.
+On Tue, Sep 16, 2014 at 08:58:13PM +0100, Jonathan Richardson wrote:
+> The iProc clock driver controls PLL's common across iProc chips. The
 
-'maps' is a generic storage of different types for sharing data between kernel
-and userspace.
+Nit: s/PLL's/PLLs/ (we aren't greengrocers [1]).
 
-Userspace example:
-/* this syscall wrapper creates a map with given type and attributes
- * and returns map_fd on success.
- * use close(map_fd) to delete the map
- */
-int bpf_create_map(enum bpf_map_type map_type, int key_size,
-                   int value_size, int max_entries)
-{
-    union bpf_attr attr = {
-        .map_type = map_type,
-        .key_size = key_size,
-        .value_size = value_size,
-        .max_entries = max_entries
-    };
-
-    return bpf(BPF_MAP_CREATE, &attr, sizeof(attr));
-}
-
-syscall is using 'union bpf_attr' to be backwards compatible with future
-extensions. Different syscall commands will use different attributes.
-
-More details in Documentation/networking/filter.txt and in manpage
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- Documentation/networking/filter.txt |   39 ++++++++++
- include/linux/bpf.h                 |   41 ++++++++++
- include/uapi/linux/bpf.h            |   23 ++++++
- kernel/bpf/Makefile                 |    2 +-
- kernel/bpf/syscall.c                |  144 +++++++++++++++++++++++++++++++++++
- 5 files changed, 248 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/bpf.h
- create mode 100644 kernel/bpf/syscall.c
-
-diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
-index 81916ab5d96f..1900d29518f1 100644
---- a/Documentation/networking/filter.txt
-+++ b/Documentation/networking/filter.txt
-@@ -1001,6 +1001,45 @@ instruction that loads 64-bit immediate value into a dst_reg.
- Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
- 32-bit immediate value into a register.
+> cygnus driver controls cygnus specific features and variations.
+> 
+> Reviewed-by: Ray Jui <rjui@broadcom.com>
+> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+> Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
+> ---
+>  drivers/clk/Makefile         |    1 +
+>  drivers/clk/bcm/Makefile     |    2 +
+>  drivers/clk/bcm/clk-cygnus.c | 1179 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/bcm/clk-iproc.c  |  446 ++++++++++++++++
+>  4 files changed, 1628 insertions(+)
+>  create mode 100644 drivers/clk/bcm/clk-cygnus.c
+>  create mode 100644 drivers/clk/bcm/clk-iproc.c
  
-+eBPF maps
-+---------
-+'maps' is a generic storage of different types for sharing data between kernel
-+and userspace.
-+
-+The maps are accessed from user space via BPF syscall, which has commands:
-+- create a map with given type and attributes
-+  map_fd = bpf(BPF_MAP_CREATE, union bpf_attr *attr, u32 size)
-+  using attr->map_type, attr->key_size, attr->value_size, attr->max_entries
-+  returns process-local file descriptor or negative error
-+
-+- lookup key in a given map
-+  err = bpf(BPF_MAP_LOOKUP_ELEM, union bpf_attr *attr, u32 size)
-+  using attr->map_fd, attr->key, attr->value
-+  returns zero and stores found elem into value or negative error
-+
-+- create or update key/value pair in a given map
-+  err = bpf(BPF_MAP_UPDATE_ELEM, union bpf_attr *attr, u32 size)
-+  using attr->map_fd, attr->key, attr->value
-+  returns zero or negative error
-+
-+- find and delete element by key in a given map
-+  err = bpf(BPF_MAP_DELETE_ELEM, union bpf_attr *attr, u32 size)
-+  using attr->map_fd, attr->key
-+
-+- to delete map: close(fd)
-+  Exiting process will delete maps automatically
-+
-+userspace programs use this syscall to create/access maps that eBPF programs
-+are concurrently updating.
-+
-+maps can have different types: hash, array, bloom filter, radix-tree, etc.
-+
-+The map is defined by:
-+  . type
-+  . max number of elements
-+  . key size in bytes
-+  . value size in bytes
-+
- Testing
- -------
- 
-diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-new file mode 100644
-index 000000000000..48014a71f0fe
---- /dev/null
-+++ b/include/linux/bpf.h
-@@ -0,0 +1,41 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#ifndef _LINUX_BPF_H
-+#define _LINUX_BPF_H 1
-+
-+#include <uapi/linux/bpf.h>
-+#include <linux/workqueue.h>
-+
-+struct bpf_map;
-+
-+/* map is generic key/value storage optionally accesible by eBPF programs */
-+struct bpf_map_ops {
-+	/* funcs callable from userspace (via syscall) */
-+	struct bpf_map *(*map_alloc)(union bpf_attr *attr);
-+	void (*map_free)(struct bpf_map *);
-+};
-+
-+struct bpf_map {
-+	atomic_t refcnt;
-+	enum bpf_map_type map_type;
-+	u32 key_size;
-+	u32 value_size;
-+	u32 max_entries;
-+	struct bpf_map_ops *ops;
-+	struct work_struct work;
-+};
-+
-+struct bpf_map_type_list {
-+	struct list_head list_node;
-+	struct bpf_map_ops *ops;
-+	enum bpf_map_type type;
-+};
-+
-+void bpf_register_map_type(struct bpf_map_type_list *tl);
-+void bpf_map_put(struct bpf_map *map);
-+
-+#endif /* _LINUX_BPF_H */
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 479ed0b6be16..f58a10f9670c 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -62,4 +62,27 @@ struct bpf_insn {
- 	__s32	imm;		/* signed immediate constant */
- };
- 
-+/* BPF syscall commands */
-+enum bpf_cmd {
-+	/* create a map with given type and attributes
-+	 * fd = bpf(BPF_MAP_CREATE, union bpf_attr *, u32 size)
-+	 * returns fd or negative error
-+	 * map is deleted when fd is closed
-+	 */
-+	BPF_MAP_CREATE,
-+};
-+
-+enum bpf_map_type {
-+	BPF_MAP_TYPE_UNSPEC,
-+};
-+
-+union bpf_attr {
-+	struct { /* anonymous struct used by BPF_MAP_CREATE command */
-+		__u32	map_type;	/* one of enum bpf_map_type */
-+		__u32	key_size;	/* size of key in bytes */
-+		__u32	value_size;	/* size of value in bytes */
-+		__u32	max_entries;	/* max number of entries in a map */
-+	};
-+} __attribute__((aligned(8)));
-+
- #endif /* _UAPI__LINUX_BPF_H__ */
-diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
-index 6a71145e2769..e9f7334ed07a 100644
---- a/kernel/bpf/Makefile
-+++ b/kernel/bpf/Makefile
-@@ -1 +1 @@
--obj-y := core.o
-+obj-y := core.o syscall.o
-diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-new file mode 100644
-index 000000000000..328a45a6d038
---- /dev/null
-+++ b/kernel/bpf/syscall.c
-@@ -0,0 +1,144 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ */
-+#include <linux/bpf.h>
-+#include <linux/syscalls.h>
-+#include <linux/slab.h>
-+#include <linux/anon_inodes.h>
-+
-+static LIST_HEAD(bpf_map_types);
-+
-+static struct bpf_map *find_and_alloc_map(union bpf_attr *attr)
-+{
-+	struct bpf_map_type_list *tl;
-+	struct bpf_map *map;
-+
-+	list_for_each_entry(tl, &bpf_map_types, list_node) {
-+		if (tl->type == attr->map_type) {
-+			map = tl->ops->map_alloc(attr);
-+			if (IS_ERR(map))
-+				return map;
-+			map->ops = tl->ops;
-+			map->map_type = attr->map_type;
-+			return map;
-+		}
-+	}
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+/* boot time registration of different map implementations */
-+void bpf_register_map_type(struct bpf_map_type_list *tl)
-+{
-+	list_add(&tl->list_node, &bpf_map_types);
-+}
-+
-+/* called from workqueue */
-+static void bpf_map_free_deferred(struct work_struct *work)
-+{
-+	struct bpf_map *map = container_of(work, struct bpf_map, work);
-+
-+	/* implementation dependent freeing */
-+	map->ops->map_free(map);
-+}
-+
-+/* decrement map refcnt and schedule it for freeing via workqueue
-+ * (unrelying map implementation ops->map_free() might sleep)
-+ */
-+void bpf_map_put(struct bpf_map *map)
-+{
-+	if (atomic_dec_and_test(&map->refcnt)) {
-+		INIT_WORK(&map->work, bpf_map_free_deferred);
-+		schedule_work(&map->work);
-+	}
-+}
-+
-+static int bpf_map_release(struct inode *inode, struct file *filp)
-+{
-+	struct bpf_map *map = filp->private_data;
-+
-+	bpf_map_put(map);
-+	return 0;
-+}
-+
-+static const struct file_operations bpf_map_fops = {
-+	.release = bpf_map_release,
-+};
-+
-+/* helper macro to check that unused fields 'union bpf_attr' are zero */
-+#define CHECK_ATTR(CMD) \
-+	memchr_inv((void *) &attr->CMD##_LAST_FIELD + \
-+		   sizeof(attr->CMD##_LAST_FIELD), 0, \
-+		   sizeof(*attr) - \
-+		   offsetof(union bpf_attr, CMD##_LAST_FIELD) - \
-+		   sizeof(attr->CMD##_LAST_FIELD)) != NULL
-+
-+#define BPF_MAP_CREATE_LAST_FIELD max_entries
-+/* called via syscall */
-+static int map_create(union bpf_attr *attr)
-+{
-+	struct bpf_map *map;
-+	int err;
-+
-+	err = CHECK_ATTR(BPF_MAP_CREATE);
-+	if (err)
-+		return -EINVAL;
-+
-+	/* find map type and init map: hashtable vs rbtree vs bloom vs ... */
-+	map = find_and_alloc_map(attr);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
-+
-+	atomic_set(&map->refcnt, 1);
-+
-+	err = anon_inode_getfd("bpf-map", &bpf_map_fops, map, O_RDWR | O_CLOEXEC);
-+
-+	if (err < 0)
-+		/* failed to allocate fd */
-+		goto free_map;
-+
-+	return err;
-+
-+free_map:
-+	map->ops->map_free(map);
-+	return err;
-+}
-+
-+SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, size)
-+{
-+	union bpf_attr attr = {};
-+	int err;
-+
-+	/* the syscall is limited to root temporarily. This restriction will be
-+	 * lifted when security audit is clean. Note that eBPF+tracing must have
-+	 * this restriction, since it may pass kernel data to user space
-+	 */
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	/* newer userspace cannot run with older kernel */
-+	if (size > sizeof(attr))
-+		return -EINVAL;
-+
-+	/* copy attributes from user space, may be less than sizeof(bpf_attr) */
-+	if (copy_from_user(&attr, uattr, size) != 0)
-+		return -EFAULT;
-+
-+	switch (cmd) {
-+	case BPF_MAP_CREATE:
-+		err = map_create(&attr);
-+		break;
-+	default:
-+		err = -EINVAL;
-+		break;
-+	}
-+
-+	return err;
-+}
--- 
-1.7.9.5
+[...]
 
+> +/*
+> + * Enable clocks controlled through the top clock gating control.
+> + *
+> + * @param state true = enable clock, false = disable clock
+> + */
+> +static void cygnus_clkgate_enable(void __iomem *clkgate_reg,
+> +       enum cygnus_top_clk_gating_ctrl_offsets offset, bool state)
+> +{
+> +       u32 val = readl(clkgate_reg);
+> +
+> +       /* Enable or disable the clock. */
+
+This function is misnamed if it does both, and 'state' is not a very
+descriptive name.
+
+> +       if (state)
+> +               val |= 1 << offset;
+> +       else
+> +               val &= ~(1 << offset);
+> +
+> +       writel(val, clkgate_reg);
+> +}
+> +
+> +/*
+> + * Powers on/off the MIPI GENPLL using CRMU_PLL_AON_CTRL register.
+> + *
+> + * @param state true to power on PLL, false to power off
+> + */
+> +static void cygnus_mipi_genpll_poweron(void __iomem *pll_ctrl_reg,
+> +       bool state)
+> +{
+> +       u32 val;
+> +       u32 pll_ldo_on = ((1 << ASIU_MIPI_GENPLL_PWRON_SHIFT) |
+> +               (1 << ASIU_MIPI_GENPLL_PWRON_PLL_SHIFT) |
+> +               (1 << ASIU_MIPI_GENPLL_PWRON_BG_SHIFT)  |
+> +               (1 << ASIU_MIPI_GENPLL_PWRON_LDO_SHIFT));
+> +
+> +       val = readl(pll_ctrl_reg);
+> +
+> +       /*
+> +        * Set PLL on/off. Set input isolation mode to 1 when disabled, 0 when
+> +        * enabled.
+> +        */
+
+As with cygnus_clkgate_enable, this function is misnamed and 'state' is
+a confusing parameter name.
+
+> +       if (state) {
+> +               val |= pll_ldo_on;
+> +               val &= ~(1 << ASIU_MIPI_GENPLL_ISO_IN_SHIFT);
+> +       } else {
+> +               val &= ~pll_ldo_on;
+> +               val |= 1 << ASIU_MIPI_GENPLL_ISO_IN_SHIFT;
+> +       }
+> +
+> +       writel(val, pll_ctrl_reg);
+> +}
+> +
+> +/*
+> + * Powers on/off the audio PLL using CRMU_PLL_AON_CTRL register.
+> + *
+> + * @param state true to power on PLL, false to power off
+> + */
+> +static void cygnus_audio_genpll_poweron(void __iomem *pll_ctrl_reg,
+> +       bool state)
+> +{
+> +       u32 val;
+> +       u32 pll_ldo_on = ((1 << ASIU_AUDIO_GENPLL_PWRON_PLL_SHIFT) |
+> +               (1 << ASIU_AUDIO_GENPLL_PWRON_BG_SHIFT) |
+> +               (1 << ASIU_AUDIO_GENPLL_PWRON_LDO_SHIFT));
+> +
+> +       val = readl(pll_ctrl_reg);
+> +
+> +       /*
+> +        * Set PLL on/off. Set input isolation mode to 1 when disabled, 0 when
+> +        * enabled.
+> +        */
+
+Misnamed function, confusing parameter name.
+
+> +       if (state) {
+> +               val |= pll_ldo_on;
+> +               val &= ~(1 << ASIU_AUDIO_GENPLL_ISO_IN);
+> +       } else {
+> +               val &= ~pll_ldo_on;
+> +               val |= 1 << ASIU_AUDIO_GENPLL_ISO_IN;
+> +       }
+> +
+> +       writel(val, pll_ctrl_reg);
+> +}
+
+[...]
+
+> +static __init struct clk *cygnus_clock_init(struct device_node *node,
+> +       const struct clk_ops *ops)
+> +{
+> +       u32 channel = 0;
+> +       struct clk *clk;
+> +       struct cygnus_clk *cygnus_clk;
+> +       const char *clk_name = node->name;
+> +       const char *parent_name;
+> +       struct clk_init_data init;
+> +       int rc;
+> +
+> +       pr_debug("Clock name %s\n", node->name);
+> +
+> +       of_property_read_u32(node, "channel", &channel);
+> +       cygnus_clk = kzalloc(sizeof(*cygnus_clk), GFP_KERNEL);
+> +       if (WARN_ON(!cygnus_clk))
+> +               return NULL;
+> +
+> +       cygnus_clk->state = CLK_DISABLED;
+> +
+> +       /* Read base address from device tree and map to virtual address. */
+> +       cygnus_clk->regs_base = of_iomap(node, CYGNUS_CLK_BASE_REG);
+> +       if (WARN_ON(!cygnus_clk->regs_base))
+> +               goto err_alloc;
+> +
+> +       /* Read optional base addresses for PLL control and clock gating. */
+> +       cygnus_clk->clock_gate_ctrl_reg = of_iomap(node,
+> +               CYGNUS_CLK_GATE_CTRL_REG);
+> +       cygnus_clk->pll_ctrl_reg = of_iomap(node, CYGNUS_PLL_CTRL_REG);
+> +
+> +       of_property_read_u32(node, "channel", &channel);
+
+Why do we read this twice?
+
+> +       cygnus_clk->chan = channel;
+> +       of_property_read_string(node, "clock-output-names", &clk_name);
+
+What happens if this is missing from the dt?
+
+> +
+> +       /*
+> +        * Internal divider is optional and used for PLL derived clocks with
+> +        * hardcoded dividers.
+> +        */
+> +       cygnus_clk->internal_div = CLK_RATE_NO_DIV;
+> +       of_property_read_u32(node, "div", &cygnus_clk->internal_div);
+> +
+> +       init.name = clk_name;
+> +       init.ops = ops;
+> +       init.flags = CLK_GET_RATE_NOCACHE;
+> +       parent_name = of_clk_get_parent_name(node, 0);
+> +       init.parent_names = &parent_name;
+> +       init.num_parents = 1;
+> +
+> +       cygnus_clk->hw.init = &init;
+> +
+> +       clk = clk_register(NULL, &cygnus_clk->hw);
+> +       if (WARN_ON(IS_ERR(clk)))
+> +               goto err_unmap;
+> +
+> +       rc = of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> +       if (WARN_ON(IS_ERR_VALUE(rc)))
+> +               goto err_unregister;
+> +
+> +       rc = clk_register_clkdev(clk, clk_name, NULL);
+> +       if (WARN_ON(IS_ERR_VALUE(rc)))
+> +               goto err_provider;
+> +
+> +       return clk;
+> +
+> +err_provider:
+> +       of_clk_del_provider(node);
+> +
+> +err_unregister:
+> +       clk_unregister(clk);
+> +
+> +err_unmap:
+> +       iounmap(cygnus_clk->regs_base);
+> +       iounmap(cygnus_clk->clock_gate_ctrl_reg);
+> +       iounmap(cygnus_clk->pll_ctrl_reg);
+> +
+> +err_alloc:
+> +       kfree(cygnus_clk);
+> +
+> +       return NULL;
+> +}
+
+Thanks,
+Mark.
+
+[1] http://en.wikipedia.org/wiki/Apostrophe#Superfluous_apostrophes_.28.22greengrocers.27_apostrophes.22.29
