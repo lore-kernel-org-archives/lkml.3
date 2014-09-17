@@ -1,93 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775AbaIQTCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:02:42 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:5946 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756351AbaIQTAy (ORCPT
+	id S1756793AbaIQTC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:02:58 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:59719 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756344AbaIQTCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:00:54 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgNAL/ZGVRXQCIg/2dsb2JhbABhgw22FQUBcAGbFwGBFhcBeYQEAQUnLyMQUTkeGYhCAb9nGIYJiW4HFoQ1BZ0MjDKJFoIbgUU7L4JKAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: daniel.vetter@intel.com, Fabian Frederick <fabf@skynet.be>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH 3/6] video: fbdev: controlfb.c: use container_of to resolve fb_info_control from fb_info
-Date: Wed, 17 Sep 2014 21:00:16 +0200
-Message-Id: <1410980419-5326-4-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410980419-5326-1-git-send-email-fabf@skynet.be>
-References: <1410980419-5326-1-git-send-email-fabf@skynet.be>
+	Wed, 17 Sep 2014 15:02:55 -0400
+Message-ID: <1410980571.10248.6.camel@x220>
+Subject: [PATCH v3] eeepc-laptop: simplify parse_arg()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Darren Hart <dvhart@infradead.org>,
+        Corentin Chary <corentin.chary@gmail.com>
+Cc: Frans Klaver <fransklaver@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 17 Sep 2014 21:02:51 +0200
+In-Reply-To: <20140916234543.GA22408@vmdeb7>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+	 <1409814488.5546.63.camel@x220> <20140906021757.GA9197@vmdeb7>
+	 <7288841.ayNsq2yeGO@vostro.rjw.lan> <1410252608.22255.5.camel@x220>
+	 <20140910033304.GB39541@vmdeb7>
+	 <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+	 <20140910164916.GA48285@vmdeb7> <1410379520.11097.18.camel@x220>
+	 <20140911223739.GB18425@vmdeb7> <20140916234543.GA22408@vmdeb7>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 17 Sep 2014 19:02:52.0805 (UTC) FILETIME=[FB83AB50:01CFD2A9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use container_of instead of casting first structure member.
+parse_arg() has three possible return values:
+    -EINVAL if sscanf(), in short, fails;
+    zero if "count" is zero; and
+    "count" in all other cases
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+But "count" will never be zero. See, parse_arg() is called by the
+various store functions. And the callchain of these functions starts
+with sysfs_kf_write(). And that function checks for a zero "count". So
+we can stop checking for a zero "count", drop the "count" argument
+entirely, and transform parse_arg() into a function that returns zero on
+success or a negative error. That, in turn, allows to make those store
+functions just return "count" on success. The net effect is that the
+code becomes a bit easier to understand.
+
+A nice side effect is that this GCC warning is silenced too:
+    drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
+    drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+      int rv, value;
+
+Which is, of course, the reason to have a look at parse_arg().
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
-PPC32 cross-compiled but untested.
+Still build tested only, but now on top of v3.17-rc5. Has Frans tested
+writing zero length values to these sysfs files?
 
- drivers/video/fbdev/controlfb.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+v3: store_sys_acpi() again returns -EIO if set_acpi() fails.
 
-diff --git a/drivers/video/fbdev/controlfb.c b/drivers/video/fbdev/controlfb.c
-index fdadef9..080fdd2 100644
---- a/drivers/video/fbdev/controlfb.c
-+++ b/drivers/video/fbdev/controlfb.c
-@@ -218,7 +218,8 @@ static int controlfb_check_var (struct fb_var_screeninfo *var, struct fb_info *i
+v2: let store_sys_acpi() return whatever error set_acpi() returns
+instead of remapping it to EIO. The new line about that in the commit
+explanation is silly, but I couldn't come up with a better explanation.
+
+ drivers/platform/x86/eeepc-laptop.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index bd533c22be57..3095d386c7f4 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -263,13 +263,11 @@ static int acpi_setter_handle(struct eeepc_laptop *eeepc, int cm,
+ /*
+  * Sys helpers
   */
- static int controlfb_set_par (struct fb_info *info)
+-static int parse_arg(const char *buf, unsigned long count, int *val)
++static int parse_arg(const char *buf, int *val)
  {
--	struct fb_info_control *p = (struct fb_info_control *) info;
-+	struct fb_info_control *p =
-+		container_of(info, struct fb_info_control, info);
- 	struct fb_par_control par;
- 	int err;
+-	if (!count)
+-		return 0;
+ 	if (sscanf(buf, "%i", val) != 1)
+ 		return -EINVAL;
+-	return count;
++	return 0;
+ }
  
-@@ -258,7 +259,8 @@ static int controlfb_pan_display(struct fb_var_screeninfo *var,
- 				 struct fb_info *info)
+ static ssize_t store_sys_acpi(struct device *dev, int cm,
+@@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
+ 	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
+ 	int rv, value;
+ 
+-	rv = parse_arg(buf, count, &value);
+-	if (rv > 0)
+-		value = set_acpi(eeepc, cm, value);
+-	if (value < 0)
++	rv = parse_arg(buf, &value);
++	if (rv < 0)
++		return rv;
++	rv = set_acpi(eeepc, cm, value);
++	if (rv < 0)
+ 		return -EIO;
+-	return rv;
++	return count;
+ }
+ 
+ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
+@@ -377,13 +376,13 @@ static ssize_t store_cpufv(struct device *dev,
+ 		return -EPERM;
+ 	if (get_cpufv(eeepc, &c))
+ 		return -ENODEV;
+-	rv = parse_arg(buf, count, &value);
++	rv = parse_arg(buf, &value);
+ 	if (rv < 0)
+ 		return rv;
+-	if (!rv || value < 0 || value >= c.num)
++	if (value < 0 || value >= c.num)
+ 		return -EINVAL;
+ 	set_acpi(eeepc, CM_ASL_CPUFV, value);
+-	return rv;
++	return count;
+ }
+ 
+ static ssize_t show_cpufv_disabled(struct device *dev,
+@@ -402,7 +401,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
+ 	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
+ 	int rv, value;
+ 
+-	rv = parse_arg(buf, count, &value);
++	rv = parse_arg(buf, &value);
+ 	if (rv < 0)
+ 		return rv;
+ 
+@@ -412,7 +411,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
+ 			pr_warn("cpufv enabled (not officially supported "
+ 				"on this model)\n");
+ 		eeepc->cpufv_disabled = false;
+-		return rv;
++		return count;
+ 	case 1:
+ 		return -EPERM;
+ 	default:
+@@ -1042,10 +1041,11 @@ static ssize_t store_sys_hwmon(void (*set)(int), const char *buf, size_t count)
  {
- 	unsigned int xoffset, hstep;
--	struct fb_info_control *p = (struct fb_info_control *)info;
-+	struct fb_info_control *p =
-+		container_of(info, struct fb_info_control, info);
- 	struct fb_par_control *par = &p->par;
+ 	int rv, value;
  
- 	/*
-@@ -309,7 +311,8 @@ static int controlfb_mmap(struct fb_info *info,
+-	rv = parse_arg(buf, count, &value);
+-	if (rv > 0)
+-		set(value);
+-	return rv;
++	rv = parse_arg(buf, &value);
++	if (rv < 0)
++		return rv;
++	set(value);
++	return count;
+ }
  
- static int controlfb_blank(int blank_mode, struct fb_info *info)
- {
--	struct fb_info_control *p = (struct fb_info_control *) info;
-+	struct fb_info_control *p =
-+		container_of(info, struct fb_info_control, info);
- 	unsigned ctrl;
- 
- 	ctrl = ld_le32(CNTRL_REG(p,ctrl));
-@@ -342,7 +345,8 @@ static int controlfb_blank(int blank_mode, struct fb_info *info)
- static int controlfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
- 			     u_int transp, struct fb_info *info)
- {
--	struct fb_info_control *p = (struct fb_info_control *) info;
-+	struct fb_info_control *p =
-+		container_of(info, struct fb_info_control, info);
- 	__u8 r, g, b;
- 
- 	if (regno > 255)
-@@ -833,7 +837,8 @@ static int control_var_to_par(struct fb_var_screeninfo *var,
- 	unsigned hperiod, hssync, hsblank, hesync, heblank, piped, heq, hlfln,
- 		 hserr, vperiod, vssync, vesync, veblank, vsblank, vswin, vewin;
- 	unsigned long pixclock;
--	struct fb_info_control *p = (struct fb_info_control *) fb_info;
-+	struct fb_info_control *p =
-+		container_of(fb_info, struct fb_info_control, info);
- 	struct control_regvals *r = &par->regvals;
- 
- 	switch (var->bits_per_pixel) {
+ static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
 -- 
-2.1.0
+1.9.3
+
 
