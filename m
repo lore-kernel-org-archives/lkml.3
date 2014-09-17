@@ -1,88 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaIQHZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 03:25:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36624 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaIQHZT (ORCPT
+	id S1754823AbaIQHZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 03:25:38 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:48044 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385AbaIQHZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 03:25:19 -0400
-Date: Wed, 17 Sep 2014 09:24:37 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robin Gong <b38343@freescale.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        kernel@pengutronix.de, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, grant.likely@linaro.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] ARM: dts: imx6: add pm_power_off support for
- i.mx6 chips
-Message-ID: <20140917072437.GP4992@pengutronix.de>
-References: <1410511739-31122-1-git-send-email-b38343@freescale.com>
- <1410511739-31122-2-git-send-email-b38343@freescale.com>
- <20140917021044.GD4796@dragon>
- <20140917034514.GF27452@Robin-OptiPlex-780>
- <20140917060649.GJ4992@pengutronix.de>
- <20140917071736.GA5545@Robin-OptiPlex-780>
+	Wed, 17 Sep 2014 03:25:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917071736.GA5545@Robin-OptiPlex-780>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:11:53 up 6 days, 23:59, 58 users,  load average: 0.02, 0.08, 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140916232149.GB30918@lee--X1>
+References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
+	<1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
+	<20140916232149.GB30918@lee--X1>
+Date: Wed, 17 Sep 2014 10:25:18 +0300
+Message-ID: <CAE1zotJWUnduPUd9C8EgSHHSo-OCgdj7c-sKaT5M2Ajj2CmNWw@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 03:17:38PM +0800, Robin Gong wrote:
-> On Wed, Sep 17, 2014 at 08:06:49AM +0200, Sascha Hauer wrote:
-> > On Wed, Sep 17, 2014 at 11:45:15AM +0800, Robin Gong wrote:
-> > > On Wed, Sep 17, 2014 at 10:10:45AM +0800, Shawn Guo wrote:
-> > > > On Fri, Sep 12, 2014 at 04:48:57PM +0800, Robin Gong wrote:
-> > > > > All chips of i.mx6 can be powered off by programming SNVS.
-> > > > > For example :
-> > > > > On i.mx6q-sabresd board, PMIC_ON_REQ connect with external
-> > > > > pmic ON/OFF pin, that will cause the whole PMIC powered off
-> > > > > except VSNVS. And system can restart once PMIC_ON_REQ goes
-> > > > > high by push POWRER key.
-> > > > 
-> > > > What's the behavior for those boards on which PMIC_ON_REQ isn't
-> > > > connected to anywhere?
-> > > >
-> > > System can't be powered off if not connect PMIC_ON_REQ. Although all of our
-> > > reference design for i.mx6 chips are connecting  PMIC_ON_REQ with external
-> > > PMIC, we need consider others may not use external PMIC. I'll add the info
-> > > into commit log or Kconfig.
-> > 
-> > You should add the information to the dtsi file in form of a
-> > status = "disabled" property so that boards that actually have the
-> > feature can enable it.
-> > 
-> > Sascha
-> Hi Sacha, but that's  SOC level feature and it's harmless even if others don't
-> want to use this pin to control external PMIC.
+On Wed, Sep 17, 2014 at 2:21 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>
+> On Tue, 09 Sep 2014, Octavian Purdila wrote:
+>
+> > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+> > Master Adapter DLN-2. Details about the device can be found here:
+> >
+> > https://www.diolan.com/i2c/i2c_interface.html.
+> >
+> > Information about the USB protocol can be found in the Programmer's
+> > Reference Manual [1], see section 1.7.
+>
+> This driver really needs a USB Ack before I can accept it.
+>
 
-Harmless? If a pm_power_off hook is registered I expect it to work, but
-it doesn't work when my board does not have the connection between the
-PMIC and the SoC. Even worse, if my board has some custom power of
-method you overwrite my method in the snvs poweroff driver with a method
-that does not work on my board.
+Greg, Johan, is the driver acceptable now?
 
-Sascha
+> > Because the hardware has a single transmit endpoint and a single
+> > receive endpoint the communication between the various DLN2 drivers
+> > and the hardware will be muxed/demuxed by this driver.
+> >
+> > Each DLN2 module will be identified by the handle field within the DLN2
+> > message header. If a DLN2 module issues multiple commands in parallel
+> > they will be identified by the echo counter field in the message header.
+> >
+> > The DLN2 modules can use the dln2_transfer() function to issue a
+> > command and wait for its response. They can also register a callback
+> > that is going to be called when a specific event id is generated by
+> > the device (e.g. GPIO interrupts). The device uses handle 0 for
+> > sending events.
+> >
+> > [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+> >
+> > Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> > ---
+> >  drivers/mfd/Kconfig      |   9 +
+> >  drivers/mfd/Makefile     |   1 +
+> >  drivers/mfd/dln2.c       | 681 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/dln2.h |  71 +++++
+> >  4 files changed, 762 insertions(+)
+> >  create mode 100644 drivers/mfd/dln2.c
+> >  create mode 100644 include/linux/mfd/dln2.h
+>
+> [...]
+>
+> > diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
+> > new file mode 100644
+> > index 0000000..b551b5e
+> > --- /dev/null
+> > +++ b/drivers/mfd/dln2.c
+> > @@ -0,0 +1,681 @@
+> > +/*
+> > + * Driver for the Diolan DLN-2 USB adapter
+> > + *
+> > + * Copyright (c) 2014 Intel Corporation
+> > + *
+> > + * Derived from:
+> > + *  i2c-diolan-u2c.c
+> > + *  Copyright (c) 2010-2011 Ericsson AB
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License as
+> > + * published by the Free Software Foundation, version 2.
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/errno.h>
+>
+> What are you using this for?
+>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Not needed, I will remove it.
+
+> > +#include <linux/module.h>
+> > +#include <linux/types.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/usb.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/mutex.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/mfd/core.h>
+> > +#include <linux/mfd/dln2.h>
+> > +
+> > +#define DRIVER_NAME                  "usb-dln2"
+>
+> Don't do this, just use "usb-dln2" where it needs to be used.
+>
+
+Will do.
+
+> [...]
+>
+> > +static struct usb_driver dln2_driver = {
+> > +     .name = DRIVER_NAME,
+> > +     .probe = dln2_probe,
+> > +     .disconnect = dln2_disconnect,
+> > +     .id_table = dln2_table,
+> > +};
+> > +
+> > +module_usb_driver(dln2_driver);
+> > +
+> > +MODULE_AUTHOR("Octavian Purdila <octavian.purdila@intel.com>");
+> > +MODULE_DESCRIPTION(DRIVER_NAME " driver");
+>
+> This is not a description.
+>
+> > +MODULE_LICENSE("GPL");
+>
+> Header says v2.
+>
+
+I will change it to GPL v2.
+
+> > diff --git a/include/linux/mfd/dln2.h b/include/linux/mfd/dln2.h
+> > new file mode 100644
+> > index 0000000..197565d
+> > --- /dev/null
+> > +++ b/include/linux/mfd/dln2.h
+> > @@ -0,0 +1,71 @@
+> > +#ifndef __LINUX_USB_DLN2_H
+> > +#define __LINUX_USB_DLN2_H
+> > +
+> > +#define DLN2_CMD(cmd, id)            ((cmd) | ((id) << 8))
+> > +
+> > +struct dln2_platform_data {
+> > +     u16 handle;
+> > +     union {
+> > +             struct {
+> > +                     u8 port;
+> > +             } i2c;
+> > +     };
+> > +};
+>
+> Why this complexity?
+>
+
+There is also an SPI interface on this adapter which will probably the
+port information and maybe some additional information. Would you
+prefer to add the union later, when we add the SPI driver?
