@@ -1,97 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596AbaIQJM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:12:57 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38833 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160AbaIQJMy (ORCPT
+	id S1754919AbaIQJNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:13:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35073 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765AbaIQJNU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:12:54 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8H9BIhY023693, This message is accepted by code: ctloc85258
-Message-ID: <54195036.2010409@realsil.com.cn>
-Date: Wed, 17 Sep 2014 17:11:18 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
+	Wed, 17 Sep 2014 05:13:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
+   d="scan'208";a="592517760"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: David Miller <davem@davemloft.net>
+CC: "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
+        "rayagond@vayavyalabs.com" <rayagond@vayavyalabs.com>,
+        "vbridgers2013@gmail.com" <vbridgers2013@gmail.com>,
+        "srinivas.kandagatla@st.com" <srinivas.kandagatla@st.com>,
+        "wens@csie.org" <wens@csie.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
-References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn> <CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-In-Reply-To: <CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+Thread-Index: AQHPztbom04Iz4URhUOKiyu70+M/jZwB2NUwgAHEYYCAAP0oIP//qQ8AgADCJaA=
+Date: Wed, 17 Sep 2014 09:11:13 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7E9F5F@PGSMSX102.gar.corp.intel.com>
+References: <F54AEECA5E2B9541821D670476DAE19C2B7E99A7@PGSMSX102.gar.corp.intel.com>
+	<20140916.150037.1715537913178712290.davem@davemloft.net>
+	<F54AEECA5E2B9541821D670476DAE19C2B7E9DCA@PGSMSX102.gar.corp.intel.com>
+ <20140917.005532.2054822778882237895.davem@davemloft.net>
+In-Reply-To: <20140917.005532.2054822778882237895.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2014 02:01 AM, Ulf Hansson wrote:
-> On 12 September 2014 03:39,  <micky_ching@realsil.com.cn> wrote:
->> From: Roger Tseng <rogerable@realtek.com>
->>
->> Some platform have both UEFI driver and MFD/mmc driver, if entering
->> linux while card in the slot, the card power is already on, and rtsx-mmc
->> driver have no chance to make card power off. This will lead UHSI card
->> failed to enter UHSI mode.
->>
->> It is hard to control the UEFI driver leaving state, so we power off the
->> card power during probe.
->>
->> Signed-off-by: Roger Tseng <rogerable@realtek.com>
->> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
->> ---
->>   drivers/mmc/host/rtsx_pci_sdmmc.c |    7 ++++++-
->>   1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
->> index dfde4a2..57b0796 100644
->> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
->> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
->> @@ -1341,8 +1341,13 @@ static int rtsx_pci_sdmmc_drv_probe(struct platform_device *pdev)
->>          host->pcr = pcr;
->>          host->mmc = mmc;
->>          host->pdev = pdev;
->> -       host->power_state = SDMMC_POWER_OFF;
->>          INIT_WORK(&host->work, sd_request);
->> +       sd_power_off(host);
->> +       /*
->> +        * ref: SD spec 3.01: 6.4.1.2 Power On or Power Cycle
->> +        */
->> +       usleep_range(1000, 2000);
->> +
-> This won't work in cases were you power off eMMC cards, unless you can
-> do a full power cycle - cut both VCC and VCCQ. Can you?
-Hi Uffe,
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Wednesday, September 17, 2014 12:56 PM
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+> Date: Wed, 17 Sep 2014 02:41:39 +0000
+> 
+> > Thanks for the pointer. I did a quickly checking on the class number
+> > to see if I could use it for differentiation the ports number. Whereas
+> > I found them both have the same class number as well. Below shows the
+> > "lspci" dump to all the PCI devices on Quark X1000 Galileo board
+> > (Ethernet controllers are
+> > 00:14.6 and 00:14.7). Very unfortunately we are unlikely to use the
+> > class number as well as pci_device_id for the differentiation.
+>  ...
+> > 00:14.6 "Class 0200" "8086" "0937" "8086" "0937"
+> > 00:14.7 "Class 0200" "8086" "0937" "8086" "0937"
+> 
+> Are you kidding me?  It's a perfect way to identify this device, it properly uses
+> PCI_CLASS_NETWORK_ETHERNET (0x0200) in both cases and this will not
+> match any other function on this PCI device at all.
+> 
+> Please do as I suggested and use the PCI class for the differentiation and
+> matching during probing.
 
-VCCQ will poweroff at the same time.
+Hi David,
 
-if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
-then it will check ios.power_mode, but the state is MMC_POWER_OFF and just return.
+Thanks for your feedback so far. Appreciate it.
 
-Best Regards.
-micky.
+Off the list because I think that my poorly written description may have caused some confusion. My sincere apology here. 
+Unfortunately, I don't really grasp your idea clearly based on your responses which I appreciate them a lot. 
+Sorry for the long description below but I hope to clearly pen down my thinking process so that you can follow my thinking incrementally without being confused.
 
-> There are also another option you might want to use,
-> MMC_CAP2_NO_PRESCAN_POWERUP. But again, it must only be used for those
-> hosts that you are able to do a full power cycle for.
->
-> Kind regards
-> Uffe
->
->>          platform_set_drvdata(pdev, host);
->>          pcr->slots[RTSX_SD_CARD].p_dev = pdev;
->>          pcr->slots[RTSX_SD_CARD].card_event = rtsx_pci_sdmmc_card_event;
->> --
->> 1.7.9.5
->>
-> .
->
+So, let's roll back a bit so that with my following description, you can help correct me if my understanding of using PCI function ID to differentiate PHY port that is associated with each Ethernet controller is wrong:
 
+The high-level idea about the change that I made for STMMAC IP inside Quark is as follow:
+
+(1) Based on Quark-specific PCI ID declared inside stmmac_id_table[],  the probe() function is
+       called to continue setting-up STMMAC for Quark.
+
+@@ -228,11 +303,13 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
+ 
+ #define STMMAC_VENDOR_ID 0x700
+ #define STMMAC_DEVICE_ID 0x1108
++#define STMMAC_QUARK_X1000_ID 0x0937
+ 
+ static const struct pci_device_id stmmac_id_table[] = {
+ 	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID), PCI_ANY_ID,
+ 			PCI_ANY_ID, CHIP_STMICRO},
+ 	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_MAC), CHIP_STMICRO},
++	{PCI_VDEVICE(INTEL, STMMAC_QUARK_X1000_ID), CHIP_QUARK_X1000},
+ 	{}
+ };
+
+(2) Back-ground on STMMAC hardware configuration on Intel Galileo Gen 1 & Gen 2 platforms:
+Intel Quark SoC has 2 MAC controller as described by lspci output below:
+
+00:14.6 Class 0200: 8086:0937    ====> 1st MAC controller
+00:14.7 Class 0200: 8086:0937    ====> 2nd MAC controller
+
+These Galileo boards use the same Intel Quark SoC and there is only one PHY connect to the 1st MAC [00:14.6 Class 0200: 8086:0937] The 2nd MAC [00:14.7 Class 0200: 8086:0937] is NOT connected to any PHY at all.
+
+So, it appears to me that the only way that I can differentiate between 1st & 2nd MAC are based on PCI function ID, i.e. 14.6 & 14.7. Therefore, within the probe() function, for Intel Quark SoC only, the function performs next-level discovery of 1st or 2nd MAC controller through quark_run_time_config() function. 
+For other PCI ID (currently STMICRO_MAC) there is NO next-level discovery involved as rt_config is NULL.
+Changes shown below:
+
+static struct platform_data platform_info[] = { @@ -59,15 +65,76 @@ static struct platform_data platform_info[] = {
+ 		.phy_reset = NULL,
+ 		.phy_mask = 0,
+ 		.pbl = 32,
++		.fixed_burst = 0,
+ 		.burst_len = DMA_AXI_BLEN_256,
++		.rt_config = NULL,  ===================> no 2nd-level discovery for other PCI ID 
++	},
++	[CHIP_QUARK_X1000] = {
++		.phy_addr = 1,
++		.interface = PHY_INTERFACE_MODE_RMII,
++		.clk_csr = 2,
++		.has_gmac = 1,
++		.force_sf_dma_mode = 1,
++		.multicast_filter_bins = HASH_TABLE_SIZE,
++		.unicast_filter_entries = 1,
++		.phy_reset = NULL,
++		.phy_mask = 0,
++		.pbl = 16,
++		.fixed_burst = 1,
++		.burst_len = DMA_AXI_BLEN_256,
++		.rt_config = &quark_run_time_config,       ==========> Quark specific 2nd-level discovery
++	},
++};
+
+(3) Within quark_run_time_config(), due to the only way to differentiate 1st or 2nd MAC controller according to difference in function ID explained above, the following changes are made:
+
++static void quark_run_time_config(int chip_id, struct pci_dev *pdev) {
++	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
++	int i;
++	int func_num = PCI_FUNC(pdev->devfn);
++
++	if (!board_name)
++		return;
++
++	for (i = 0; i < ARRAY_SIZE(quark_x1000_phy_info); i++) {
++		if ((!strcmp(quark_x1000_phy_info[i].board_name, board_name)) &&
++		    quark_x1000_phy_info[i].pci_func_num == func_num)
++			platform_info[chip_id].phy_addr =
++				quark_x1000_phy_info[i].phy_address;
++	}
++}
+
+The reasons for the above proposed condition checks, i.e. "board name" & "pci function name" are below:
+  a) As described above, the only difference in both instance of STMMAC IP inside Intel Quark SoC is the function ID,
+       so I have proposed to use function ID to be the decision point here to differentiate 1st MAC from 2nd MAC. 
+  b) Allow future expansion of any other Intel Quark platforms with specific need to fix PHY address
+  c) A PHY address set as "-1"  is to mark that the PHY (associated with function ID) is not connected to MAC, which
+      is being used here for the 2 Galileo boards -> 2nd MAC port not connected with PHY.
+  
+
+Finally, based on the above description, it appears to me that using PCI function ID to decode seems viable for Intel Quark specific hardware configuration. 
+
+Appreciate your time and any feedback is very much appreciated.
+
+Thanks. 
+
+
+Regards,
+Wilson
