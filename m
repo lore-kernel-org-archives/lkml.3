@@ -1,78 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082AbaIQABK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 20:01:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47173 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968AbaIQABG (ORCPT
+	id S1755180AbaIQACX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 20:02:23 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:50917 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870AbaIQACV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 20:01:06 -0400
-Date: Tue, 16 Sep 2014 17:01:04 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH] clocksource: arm_arch_timer: discard unavailable timers
- correctly
-Message-ID: <20140917000104.GA10233@codeaurora.org>
-References: <1410911445-19067-1-git-send-email-sudeep.holla@arm.com>
+	Tue, 16 Sep 2014 20:02:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410911445-19067-1-git-send-email-sudeep.holla@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2001:470:8:ee7:ad06:4a24:71d3:da04]
+In-Reply-To: <5418C9FD.1090400@infradead.org>
+References: <20140916171102.61509be5@canb.auug.org.au> <CAOFdcFMDnR50cS-Geb0S1S2VRPzZqDr9zzqUp-DpMYLfF0qtvQ@mail.gmail.com>
+ <20140917090020.1f3c2c30@canb.auug.org.au> <CAOFdcFOXQRmxFQV_ei3xcdRLaCxEa4yjc=s=xjNM6R3SQBySgg@mail.gmail.com>
+ <5418C9FD.1090400@infradead.org>
+From: Peter Foley <pefoley2@pefoley.com>
+Date: Tue, 16 Sep 2014 20:02:00 -0400
+Message-ID: <CAOFdcFPTpAzLde8GZ+X=tEAMwWku0W-PPnhB1CHAHD-RqCj-5A@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the rd-docs tree
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17, Sudeep Holla wrote:
-> Currently we wait until both nodes are probed if we have two timers
-> without checking if the device is actually available. This might
+On Tue, Sep 16, 2014 at 7:38 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> I don't have a good answer to that, so yes, I suppose just
+> disable it.  Please send a patch.
 
-device node is actually available?
-
-> result in non-functional system as no timer gets registered.
-> 
-> This patch adds the check for the availablity of the timer device
-> so that unavailable timers are discarded correctly.
-> 
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> ---
-
-Looks mostly ok. Comment below could be a follow up I guess.
-
->  drivers/clocksource/arm_arch_timer.c | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 5163ec1..4d025ad 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -622,11 +622,15 @@ static void __init arch_timer_common_init(void)
->  
->  	/* Wait until both nodes are probed if we have two timers */
->  	if ((arch_timers_present & mask) != mask) {
-> -		if (of_find_matching_node(NULL, arch_timer_mem_of_match) &&
-> -				!(arch_timers_present & ARCH_MEM_TIMER))
-> +		struct device_node *dn;
-> +
-> +		dn = of_find_matching_node(NULL, arch_timer_mem_of_match);
-> +		if (dn && of_device_is_available(dn) &&
-> +		    !(arch_timers_present & ARCH_MEM_TIMER))
->  			return;
-> -		if (of_find_matching_node(NULL, arch_timer_of_match) &&
-> -				!(arch_timers_present & ARCH_CP15_TIMER))
-> +		dn = of_find_matching_node(NULL, arch_timer_of_match);
-> +		if (dn && of_device_is_available(dn) &&
-> +		    !(arch_timers_present & ARCH_CP15_TIMER))
->  			return;
-
-Where's the of_node_put()?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Will do.
