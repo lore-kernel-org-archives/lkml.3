@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaIQARD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 20:17:03 -0400
-Received: from g6t1525.atlanta.hp.com ([15.193.200.68]:41745 "EHLO
-	g6t1525.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaIQARB (ORCPT
+	id S1754422AbaIQATe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 20:19:34 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:62746 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382AbaIQATc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 20:17:01 -0400
-Message-ID: <1410913017.2447.22.camel@j-VirtualBox>
-Subject: [PATCH v3] locking/rwsem: Avoid double checking before try
- acquiring write lock
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <dbueso@suse.de>
-Cc: linux-kernel@vger.kernel.org, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, Jason Low <jason.low2@hp.com>
-Date: Tue, 16 Sep 2014 17:16:57 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 16 Sep 2014 20:19:32 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 16 Sep 2014 20:19:29 -0400
+To: NeilBrown <neilb@suse.de>
+Cc: Jeff Layton <jeff.layton@primarydata.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
+Message-ID: <20140916201929.2e355cae@tlielax.poochiereds.net>
+In-Reply-To: <20140917094113.0cb07cf1@notabene.brown>
+References: <20140916051911.22257.24658.stgit@notabene.brown>
+	<20140916074741.1de870c5@tlielax.poochiereds.net>
+	<20140917094113.0cb07cf1@notabene.brown>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/Ys0zqew17SC2TGhq3/B+BHp"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9b0fc9c09f1b checks for if there are known active lockers
-in order to avoid write trylocking using expensive cmpxchg() when
-it likely wouldn't get the lock.
+--Sig_/Ys0zqew17SC2TGhq3/B+BHp
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-However, a subsequent patch was added such that we directly
-check for sem->count == RWSEM_WAITING_BIAS right before trying
-that cmpxchg(). Thus, commit 9b0fc9c09f1b now just adds overhead.
-This patch modifies it so that we only do a check for if
-count == RWSEM_WAITING_BIAS.
+On Wed, 17 Sep 2014 09:41:13 +1000
+NeilBrown <neilb@suse.de> wrote:
 
-Also, add a comment on why we do an "extra check" of count
-before the cmpxchg().
+> On Tue, 16 Sep 2014 07:47:41 -0400 Jeff Layton <jeff.layton@primarydata.c=
+om>
+> wrote:
+>=20
+>=20
+> > Also, we call things like invalidate_complete_page2 from the cache
+> > invalidation code. Will we end up with potential problems now that we
+> > have a stronger possibility that a page might not be freeable when it
+> > calls releasepage? (no idea on this -- I'm just spitballing)
+> >=20
+>=20
+> Answering just this part here:
+>  invalidate_complete_page2() is only called immediately after a call to
+> do_launder_page().
+> For nfs, that means nfs_launder_page() was called, which calls nfs_wb_pag=
+e()
+> which in turn calls
+> 		ret =3D nfs_commit_inode(inode, FLUSH_SYNC);
+>=20
+> so the inode is fully committed when invalidate_complete_page2 is called,=
+ so
+> nfs_release_page will succeed.
+>=20
+> So there shouldn't be a problem there.
+>=20
 
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/locking/rwsem-xadd.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+Yep, Trond pointed that out today when we were discussing it. Thanks
+for confirming it here though...
 
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index 12166ec..7628c3f 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -250,16 +250,18 @@ EXPORT_SYMBOL(rwsem_down_read_failed);
- 
- static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
- {
--	if (!(count & RWSEM_ACTIVE_MASK)) {
--		/* try acquiring the write lock */
--		if (sem->count == RWSEM_WAITING_BIAS &&
--		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
--			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
--			if (!list_is_singular(&sem->wait_list))
--				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
--			return true;
--		}
-+	/*
-+	 * Try acquiring the write lock. Check count first in order
-+	 * to reduce unnecessary expensive cmpxchg() operations.
-+	 */
-+	if (count == RWSEM_WAITING_BIAS &&
-+	    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-+		    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-+		if (!list_is_singular(&sem->wait_list))
-+			rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-+		return true;
- 	}
-+
- 	return false;
- }
- 
--- 
-1.7.1
+--=20
+Jeff Layton <jlayton@primarydata.com>
 
+--Sig_/Ys0zqew17SC2TGhq3/B+BHp
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJUGNORAAoJEAAOaEEZVoIVdxsP/iWsCXblcW/GyBvM33IWf/8D
+kMkX5kZKlL8qzpDI8zXssrw8f84LzwgPcWqawn9NyfGjhGcTUyWgUU3CbhGjHUWO
+3Sfd1xWToc3gm75ZQQCcNSk5PhVAaProerx4c7U/G+rp4zaHylSjGCEqFhxQuw2Y
+sbHwewFwSq+68zcTR8U/wfZuqGl8pC2L4mz4WCmjA8lGNsLlrtC0V7Y16wgAFhSa
+iN5L7GWght21Mdzd8DJUdTTeG0wuU07VsWuc2eE5Xt6LYOMv3343ZFoAWbRtwOYA
+xuxe6t/C/Rw9lBPcyYlIAYEkgZm0UWjLE0iFbfChrLlqo2BEXt/IWnGRLSzcO+yM
+GAGVnqOK5wTdHKpXtIRiAFFbRVcKEcU8YDOaGRSWBw0DTx9aSgJFtzb/U756FAJq
+qQ7t1E/7N6GwsuwHtF2U3pNOdHI1VdmbkEU0KqAvOe8KJZkBLe2O+61gAYxBeT1h
+Ok8BzUyWphBK1/SSEzNtY7ERgjq5kxUhrmt7uttwKOqs9pf5yD7m4KAGDg0kbbbC
+bTKs+e1K5oM6OR09cu7LxRdrdV06FaMIH7x2DjCFn5ycoEGXdn5NjMwktgl+kmal
+tslpZ2HeyF87WoRKkvaQ+VvZ4PKOBpHG6osTTj9cseQlaDZuf+HxIOzKSMSVSRil
+TSB4k0+FfSv77ie7p1jq
+=cwpv
+-----END PGP SIGNATURE-----
+
+--Sig_/Ys0zqew17SC2TGhq3/B+BHp--
