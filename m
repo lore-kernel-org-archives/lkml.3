@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaIQBcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:32:45 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:58586 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaIQBco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:32:44 -0400
+	id S1754732AbaIQBdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 21:33:07 -0400
+Received: from mail-bl2on0140.outbound.protection.outlook.com ([65.55.169.140]:53184
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754618AbaIQBdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 21:33:05 -0400
+X-Greylist: delayed 125057 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Sep 2014 21:33:05 EDT
+Date: Wed, 17 Sep 2014 09:32:52 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+CC: Shengjiu Wang <shengjiu.wang@freescale.com>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ASoC: fsl_spdif: don't change the root clock rate of
+ spdif in driver
+Message-ID: <20140917013251.GA4796@dragon>
+References: <1410867994-32138-1-git-send-email-shengjiu.wang@freescale.com>
+ <20140916180028.GA6784@Asurada>
 MIME-Version: 1.0
-In-Reply-To: <20140917111017.499eb3a9@notabene.brown>
-References: <20140916051911.22257.24658.stgit@notabene.brown>
-	<20140916053135.22257.46476.stgit@notabene.brown>
-	<CAHQdGtQbFtLFEpzgqoMoLiG7-Y0FdFiZdpS4dgkT7hsCnqMiPA@mail.gmail.com>
-	<20140917111017.499eb3a9@notabene.brown>
-Date: Tue, 16 Sep 2014 21:32:43 -0400
-Message-ID: <CAHQdGtST5nEE-Wh99vKLNPsOHc_pSgau4om7dWr+GhfLauFBnA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] NFS/SUNRPC: Remove other deadlock-avoidance
- mechanisms in nfs_release_page()
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Devel FS Linux <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jeff Layton <jeff.layton@primarydata.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140916180028.GA6784@Asurada>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(189002)(51704005)(86362001)(6806004)(21056001)(20776003)(23726002)(85306004)(33656002)(1411001)(92566001)(110136001)(99396002)(4396001)(50986999)(46406003)(105606002)(83072002)(106466001)(76176999)(97756001)(97736003)(107046002)(64706001)(54356999)(83322001)(33716001)(102836001)(31966008)(84676001)(44976005)(95666004)(87936001)(92726001)(26826002)(85852003)(104016003)(68736004)(81342003)(46102003)(77982003)(83506001)(50466002)(47776003)(76482002)(57986006)(81542003)(79102003)(80022003)(74662003)(74502003)(90102001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0615;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0337AFFE9A
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 9:10 PM, NeilBrown <neilb@suse.de> wrote:
->
-> However ... something else occurs to me.  We could use the bdi congestion
-> markers to guide the timeout.
-> When the wait for PG_private times out, or when a connection re-establishment
-> is required (and maybe other similar times) we could set_bdi_congested().
-> Then in nfs_release_page() we could completely avoid the wait if
-> bdi_write_congested().
->
-> The congestion setting should encourage vmscan away from the filesystem so it
-> won't keep calling nfs_release_page() which is a bonus.
->
-> Setting bdi_congestion from the RPC layer might be awkward from a layering
-> perspective, but probably isn't necessary.
->
-> Would the following allay your concerns?  The change to
-> nfs_inode_remove_request ensures that any congestion is removed when a
-> 'commit' completes.
->
-> We certainly could keep the PF_FSTRANS setting in the SUNRPC layer - that was
-> why it was a separate patch.  It would be nice to find a uniform solution
-> though.
->
-> Thanks,
-> NeilBrown
->
->
->
-> diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-> index 5949ca37cd18..bc674ad250ce 100644
-> --- a/fs/nfs/file.c
-> +++ b/fs/nfs/file.c
-> @@ -477,10 +477,15 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
->          * benefit that someone else can worry about the freezer.
->          */
->         if (mapping) {
-> +               struct nfs_server *nfss = NFS_SERVER(mapping->host);
->                 nfs_commit_inode(mapping->host, 0);
-> -               if ((gfp & __GFP_WAIT))
-> +               if ((gfp & __GFP_WAIT) &&
-> +                   !bdi_write_congested(&nfss->backing_dev_info))
->                         wait_on_page_bit_killable_timeout(page, PG_private,
->                                                           HZ);
-> +               if (PagePrivate(page))
-> +                       set_bdi_congested(&nfss->backing_dev_info,
-> +                                         BLK_RW_ASYNC);
->         }
->         /* If PagePrivate() is set, then the page is not freeable */
->         if (PagePrivate(page))
-> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-> index 700e7a865e6d..3ab122e92c9d 100644
-> --- a/fs/nfs/write.c
-> +++ b/fs/nfs/write.c
-> @@ -726,6 +726,7 @@ static void nfs_inode_remove_request(struct nfs_page *req)
->         struct inode *inode = req->wb_context->dentry->d_inode;
->         struct nfs_inode *nfsi = NFS_I(inode);
->         struct nfs_page *head;
-> +       struct nfs_server *nfss = NFS_SERVER(inode);
->
->         if (nfs_page_group_sync_on_bit(req, PG_REMOVE)) {
->                 head = req->wb_head;
-> @@ -742,6 +743,9 @@ static void nfs_inode_remove_request(struct nfs_page *req)
->                 spin_unlock(&inode->i_lock);
->         }
->
-> +       if (atomic_long_read(&nfss->writeback) < NFS_CONGESTION_OFF_THRESH)
-> +               clear_bdi_congested(&nfss->backing_dev_info, BLK_RW_ASYNC);
+On Tue, Sep 16, 2014 at 11:19:28AM -0700, Nicolin Chen wrote:
+> On Tue, Sep 16, 2014 at 07:46:34PM +0800, Shengjiu Wang wrote:
+> > The spdif root clock may be used by other module or defined with
+> > CLK_SET_RATE_GATE, so we can't change the clock rate in driver.
+> > In this patch remove the clk_set_rate and clk_round_rate to protect the
+> > clock.
+> 
+> It's a quite convenient and conservative way to remove the clock
+> dealing code in the driver, however, it may result less flexible
+> functionalities.
+> 
+> The reason why I left the clk_set_rate() in the driver is to hope
+> we may find a better way to tackle those tough situations. For IP
+> itself, it doesn't matter if the clock the SoC provides to it is
+> being shared by other modules or not.
+> 
+> So I think, if it's a shared clock, we should not define it as a
+> rate-changeable one in the SoC level, as we might still have some
+> SoCs provide a dedicated clock to S/PDIF so as to get the maximum
+> range of clock support for users.
+> 
+> @Shawn
+> Sorry to involve you in this topic. I'm not so sure if we can do
+> this in the clock driver so that the clock rate would be fixed
+> even if the driver is trying to change it. If we can, I think we
+> may use a better solution here instead.
 
-Hmm.... We already have this equivalent functionality in
-nfs_end_page_writeback(), so adding it to nfs_inode_remove_request()
-is just causing duplication as far as the stable writeback path is
-concerned. How about adding it to nfs_commit_release_pages() instead?
+No, we do not have anything like that today.
 
-Otherwise, yes, the above does indeed look at if it has merit. Have
-you got a good test?
-
--- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+Shawn
