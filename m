@@ -1,193 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410AbaIQNUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:20:39 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60265 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755257AbaIQNUh (ORCPT
+	id S1755465AbaIQNVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:21:09 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:55415 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257AbaIQNVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:20:37 -0400
-Date: Wed, 17 Sep 2014 14:20:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Pavel Machek <pavel@denx.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dinh Nguyen <dinh.linux@gmail.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Dinh Nguyen <dinguyen@altera.com>, Kevin Hilman <khilman@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        arm@kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kernel list <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
-Subject: Re: 3.17-rc2: root=/dev/mmcblk0p2 command line parsing fails
-Message-ID: <20140917132002.GS12361@n2100.arm.linux.org.uk>
-References: <1405397216-909-1-git-send-email-dinguyen@altera.com> <53C4D874.2040206@samsung.com> <20140814184710.GA11558@amd.pavel.ucw.cz> <53ED2262.50604@gmail.com> <20140814210252.GB26857@amd.pavel.ucw.cz> <20140826114707.GA16372@amd> <CADhT+wdx2SsHnk=zML7a6mUVJxvLQ9ARO16QoYYsopAqhw7cow@mail.gmail.com> <20140909114941.GE15404@amd>
+	Wed, 17 Sep 2014 09:21:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909114941.GE15404@amd>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <36181213.M9hWk1po2a@fb07-iapwap2>
+References: <36181213.M9hWk1po2a@fb07-iapwap2>
+Date: Wed, 17 Sep 2014 09:21:05 -0400
+Message-ID: <CAHQdGtSN-_Te1UJxt7x52oUTG9BBaTpsDFpEzjWUs7HiKGS4Ng@mail.gmail.com>
+Subject: Re: kernel BUG at fs/dcache.c (3.17-rc4/5)
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Marc Dietrich <marvin24@gmx.de>
+Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 01:49:41PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > The problem is still there in 3.17-rc2. 3.16 does not have the
-> > > problem. Messages are still similar:
-> > >
-> > > mmc0: new high speed SDHC card at address b368
-> > > mmcblk0: mmc0:b368 USD   7.45 GiB
-> > >  mmcblk0: p1 p2 p3 p4
-> > > VFS: Cannot open root device "mmcblk0p2" or unknown-block(0,0): error
-> > > -6
-> > > Please append a correct "root=" boot option; here are the available
-> > > partitions:
-> > > b300         7822336 mmcblk0  driver: mmcblk
-> > >   b301          102400 mmcblk0p1 00082434-01
-> > >   b302         1048576 mmcblk0p2 00082434-02
-> > >   b303            1024 mmcblk0p3 00082434-03
-> > >   b304         6086656 mmcblk0p4 00082434-04
-> > > Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-> > > CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-> > > 3.17.0-rc2-00368-gec0400b-dirty #83
-> > >
-> > >
-> > > What is going on there? Clearly partition table was parsed and
-> > > partitions are available; does the mention of unknown-block(0,0) mean
-> > > that kernel failed to parse the command line?
-> > >
-> > > I replaced "root=/dev/mmcblk0p2" with "root=b302" and have a booting
-> > > system.
-> > 
-> > 
-> > Can you do a bisect? 3.17-rc2 booted fine for me today:
-> > 
-> > EXT3-fs (mmcblk0p2): mounted filesystem with ordered data mode
-> > VFS: Mounted root (ext3 filesystem) on device 179:2.
-> > Freeing unused kernel memory: 252K (c052d000 - c056c000)
-> > random: nonblocking pool is initialized
-> 
-> Bisect would be hard... and I believe the problem is somewhere in
-> block layer now -- not socfpga-specific.
+On Wed, Sep 17, 2014 at 9:05 AM, Marc Dietrich <marvin24@gmx.de> wrote:
+> Hi,
+>
+> I get this roughly once in a week. Hard to reproduce.
+>
+> Sep 17 14:44:21 fb07-iapwap2 kernel: ------------[ cut here ]------------
+> Sep 17 14:44:21 fb07-iapwap2 kernel: kernel BUG at fs/dcache.c:1619!
+> Sep 17 14:44:22 fb07-iapwap2 kernel: invalid opcode: 0000 [#1] PREEMPT SMP
+> Sep 17 14:44:22 fb07-iapwap2 kernel: Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) loop fuse af_packet bnep bluetooth
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  snd_seq_device sr_mod kvm_amd kvm pcspkr firewire_ohci firewire_core crc_itu_t serio_raw edac_core cdr
+> Sep 17 14:44:22 fb07-iapwap2 kernel: CPU: 2 PID: 25065 Comm: plasma-desktop Tainted: G           O   3.17.0-rc5-12.gfc9498b-desktop+ #9
+> Sep 17 14:44:22 fb07-iapwap2 kernel: Hardware name: System manufacturer System Product Name/M4A785TD-V EVO, BIOS 2105    07/23/2010
+> Sep 17 14:44:22 fb07-iapwap2 kernel: task: ffff880045030210 ti: ffff8800b2d58000 task.ti: ffff8800b2d58000
+> Sep 17 14:44:22 fb07-iapwap2 kernel: RIP: 0010:[<ffffffff811cfd48>]  [<ffffffff811cfd48>] d_instantiate+0x68/0x70
+> Sep 17 14:44:22 fb07-iapwap2 kernel: RSP: 0018:ffff8800b2d5ba48  EFLAGS: 00010286
+> Sep 17 14:44:22 fb07-iapwap2 kernel: RAX: 0000000000080007 RBX: ffff88002e4e10d8 RCX: 0000000000000000
+> Sep 17 14:44:22 fb07-iapwap2 kernel: RDX: 0000000000000008 RSI: 0000000000000000 RDI: ffff88002e4e10d8
+> Sep 17 14:44:22 fb07-iapwap2 kernel: RBP: ffff8800b2d5bae8 R08: 0000000000000000 R09: 0000000000000000
+> Sep 17 14:44:22 fb07-iapwap2 kernel: R10: 0000000000000546 R11: 0000000000000000 R12: ffff8800d9e65800
+> Sep 17 14:44:22 fb07-iapwap2 kernel: R13: ffff8800d9e65800 R14: ffff88009fe6c718 R15: ffff880100d73c00
+> Sep 17 14:44:22 fb07-iapwap2 kernel: FS:  00007f8a581ae780(0000) GS:ffff88011fc80000(0000) knlGS:00000000f5101b40
+> Sep 17 14:44:22 fb07-iapwap2 kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> Sep 17 14:44:22 fb07-iapwap2 kernel: CR2: 00007f8a2e6ff6a0 CR3: 0000000045d96000 CR4: 00000000000007e0
+> Sep 17 14:44:22 fb07-iapwap2 kernel: Stack:
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  ffffffffc0acc1c0 ffff8800ce2e9060 0000000100000000 ffff880000008000
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  ffff8800fffffffe ffff8800b2d5ba90 ffffffffc0adfece ffff88006d58baa0
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  0000000000000000 ffff88006d58bb28 ffff8800ce2e9000 0000000000008000
+> Sep 17 14:44:22 fb07-iapwap2 kernel: Call Trace:
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0acc1c0>] ? _nfs4_open_and_get_state+0x220/0x3f0 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0adfece>] ? nfs4_get_open_state+0x6e/0x190 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0adffb3>] ? nfs4_get_open_state+0x153/0x190 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0acf323>] nfs4_do_open+0x1b3/0x5b0 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0acf7f7>] nfs4_atomic_open+0xd7/0x100 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0ae2b96>] nfs4_file_open+0xc6/0x1d0 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0ae2ad0>] ? nfs4_file_fsync+0xa0/0xa0 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b5052>] do_dentry_open+0x1d2/0x320
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b536c>] finish_open+0x2c/0x50
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811c782c>] do_last+0xc0c/0x1250
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811c7f26>] path_openat+0xb6/0x680
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff81152439>] ? do_writepages+0x19/0x30
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffffc0ae337e>] ? nfs4_have_delegation+0xe/0x10 [nfsv4]
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811c8ce5>] do_filp_open+0x35/0xa0
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811d58cf>] ? __alloc_fd+0x9f/0x130
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b6ba7>] do_sys_open+0x127/0x220
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff811b6cb9>] SyS_open+0x19/0x20
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  [<ffffffff8162316d>] system_call_fastpath+0x1a/0x1f
+> Sep 17 14:44:22 fb07-iapwap2 kernel: Code: 29 45 00 48 89 de 4c 89 e7 e8 45 98 0d 00 5b 41 5c 41 5d 5d c3 66 0f 1f 44 00 00 31 f6 e8 a1 fe f
+> Sep 17 14:44:22 fb07-iapwap2 kernel: RIP  [<ffffffff811cfd48>] d_instantiate+0x68/0x70
+> Sep 17 14:44:22 fb07-iapwap2 kernel:  RSP <ffff8800b2d5ba48>
+> Sep 17 14:44:22 fb07-iapwap2 kernel: ---[ end trace ff4ccb4b65178939 ]---
+>
+> Full log of blocked tasks attached.
+>
+> Marc
 
-[Adding those on the commit mentioned below to this thread.]
+Does the following commit fix it?
+http://git.linux-nfs.org/?p=trondmy/linux-nfs.git;a=commit;h=f39c01047994e66e7f3d89ddb4c6141f23349d8d
 
-I just updated my nightly build system from -rc3 to -rc5, and I'm seeing
-this on the LDP3430 platform (but not the SDP4430) despite both using
-MMC rootfs.
-
-On SD4430, I see:
-
-Kernel command line: root=/dev/mmcblk0p2 rw mem=512M vmalloc=1G console=ttyO2,115200n8 rootdelay=2 debug
-...
-mmc0: new high speed SD card at address 0002
-mmcblk0: mmc0:0002 00000 971 MiB
- mmcblk0: p1 p2
-leds_pwm pwmleds: unable to request PWM for omap4:green:chrg: -517
-platform pwmleds: Driver leds_pwm requests probe deferral
-Waiting 2 sec before mounting root device...
-mmc1: new high speed MMC card at address 0001
-mmcblk1: mmc1:0001 SEM08G 7.39 GiB
-mmcblk1boot0: mmc1:0001 SEM08G partition 1 1.00 MiB
-mmcblk1boot1: mmc1:0001 SEM08G partition 2 1.00 MiB
- mmcblk1: unknown partition table
- mmcblk1boot1: unknown partition table
- mmcblk1boot0: unknown partition table
-leds_pwm pwmleds: unable to request PWM for omap4:green:chrg: -517
-platform pwmleds: Driver leds_pwm requests probe deferral
-kjournald starting.  Commit interval 5 seconds
-EXT3-fs (mmcblk0p2): warning: maximal mount count reached, running e2fsck is recommended
-EXT3-fs (mmcblk0p2): using internal journal
-EXT3-fs (mmcblk0p2): recovery complete
-EXT3-fs (mmcblk0p2): mounted filesystem with writeback data mode
-VFS: Mounted root (ext3 filesystem) on device 179:2.
-
-However, on LDP3430:
-
-Kernel command line: console=ttyO2,115200n8 noinitrd vmalloc=1G mem=128M root=/dev/mmcblk0p2 rw ip=none rootdelay=2 video=omap24xxfb:rotation=270
-...
-mmc0: host does not support reading read-only switch. assuming write-enable.
-Waiting 2 sec before mounting root device...
-mmc0: new high speed SD card at address 0002
-mmcblk0: mmc0:0002 00000 971 MiB
- mmcblk0: p1 p2
-VFS: Cannot open root device "mmcblk0p2" or unknown-block(0,0): error -6
-Please append a correct "root=" boot option; here are the available partitions:
-b300          994816 mmcblk0  driver: mmcblk
-  b301           72261 mmcblk0p1 0b4c6c45-01
-  b302          915705 mmcblk0p2 0b4c6c45-02
-Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-
-I think the problem may be 4dfe694f616e00e6fd83e5bbcd7a3c4d7113493d
-("init: make rootdelay=N consistent with rootwait behaviour") which
-was merged during the recent window.  This moved the delay after the
-saved_root_name[] handling.  As we can see in the SDP4430 case, the
-order was:
-
- - mmcblk0p2 detected
- - delay message
- - rootfs failure
-
-and everything worked.  However, in the LDP3430 case:
-
- - delay message
- - mmcblk0p2 detected
- - rootfs failure
-
-and it failed.  If we look at the code as it stands today:
-
-        if (saved_root_name[0]) {
-                root_device_name = saved_root_name;
-                if (!strncmp(root_device_name, "mtd", 3) ||
-                    !strncmp(root_device_name, "ubi", 3)) {
-                        mount_block_root(root_device_name, root_mountflags);
-                        goto out;
-                }
-                ROOT_DEV = name_to_dev_t(root_device_name);
-                if (strncmp(root_device_name, "/dev/", 5) == 0)
-                        root_device_name += 5;
-        }
-
-This tries to look up the root device name and translate to a dev_t.
-We know that "mmcblk0p2" doesn't exist at this point, so ROOT_DEV is
-zero here.
-
-        if (initrd_load())
-                goto out;
-
-        if (root_delay) {
-                pr_info("Waiting %d sec before mounting root device...\n",
-                        root_delay);
-                ssleep(root_delay);
-        }
-
-Here's our delay.
-
-        /* wait for any asynchronous scanning to complete */
-        if ((ROOT_DEV == 0) && root_wait) {
-                printk(KERN_INFO "Waiting for root device %s...\n",
-                        saved_root_name);
-                while (driver_probe_done() != 0 ||
-                        (ROOT_DEV = name_to_dev_t(saved_root_name)) == 0)
-                        msleep(100);
-                async_synchronize_full();
-        }
-
-If ROOT_DEV was still zero, and root_wait was set (it isn't) we'd then
-try to re-evaluate ROOT_DEV.  ROOT_DEV must be set to mount the rootfs,
-and we can see from the above failure messages that it was still zero.
-That works out, because this code would never be run with root_wait=false.
-
-The reason it used to work is because the delay came _before_ the first
-"if" above, so causing the first ROOT_DEV lookup to succeed.
-
-I think it may be better to move the root_delay handling either immediately
-after md_run_setup(), or we need to re-lookup ROOT_DEV after the delay.
-Paul, any thoughts?
-
+Cheers
+  Trond
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Trond Myklebust
+
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
