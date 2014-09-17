@@ -1,330 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468AbaIQR5J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:57:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42193 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755391AbaIQR5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:57:06 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [GIT PULL] USB changes for v3.18 merge window
-Date: Wed, 17 Sep 2014 12:56:42 -0500
-Message-ID: <1410976602-1536-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 2.1.0.243.g30d45f7
+	id S1756596AbaIQR51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:57:27 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33855 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756527AbaIQR5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 13:57:25 -0400
+Date: Wed, 17 Sep 2014 18:57:41 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: "bsegall@google.com" <bsegall@google.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH] sched: Update task group load contributions during
+ active load-balancing
+Message-ID: <20140917175741.GA9854@e103034-lin>
+References: <1410826030-26301-1-git-send-email-morten.rasmussen@arm.com>
+ <xm26sijrqwv9.fsf@sword-of-the-dawn.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xm26sijrqwv9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tue, Sep 16, 2014 at 06:49:14PM +0100, bsegall@google.com wrote:
+> Morten Rasmussen <morten.rasmussen@arm.com> writes:
+> 
+> > Task group load-contributions are not updated when tasks belonging to
+> > task groups are migrated by active load-balancing. If no other task
+> > belonging to the same task group is already queued at the destination
+> > cpu the group sched_entity will be enqueued with load_avg_contrib=0.
+> > Hence, weighted_cpuload() won't reflect the newly added load.
+> >
+> > The load may remain invisible until the next tick, when the sched_entity
+> > load_avg_contrib and task group contributions are reevaluated.
+> >
+> > The enqueue loop
+> >
+> > 	for_each_entity(se) {
+> > 	   enqueue_entity(cfs_rq,se)
+> > 	      ...
+> > 	      enqueue_entity_load_avg(cfs_rq,se)
+> > 	         ...
+> > 	         update_entity_load_avg(se)
+> > 		    ...
+> > 		    __update_entity_load_avg_contrib(se)
+> > 		    ...
+> > 		 ...
+> > 	         update_cfs_rq_blocked_load(cfs_rq)
+> > 		    ...
+> > 		    __update_cfs_rq_tg_load_contrib(cfs_rq)
+> > 		    ...
+> > 	}
+> >
+> > currently skips __update_entity_load_avg_contrib() and
+> > __update_cfs_rq_tg_load_contrib() for group entities for active
+> > load-balance migrations. The former updates the sched_entity
+> > load_avg_contrib, and the latter updates the task group contribution
+> > which is needed by the former. They must both be called to ensure that
+> > load doesn't temporarily disappear.
+> >
+> > cc: Paul Turner <pjt@google.com>
+> > cc: Ben Segall <bsegall@google.com>
+> >
+> > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> > ---
+> >  kernel/sched/fair.c |    7 ++++++-
+> >  1 file changed, 6 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index be9e97b..2b6e2eb 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -2521,7 +2521,8 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+> >  	else
+> >  		now = cfs_rq_clock_task(group_cfs_rq(se));
+> >  
+> > -	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
+> > +	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq) &&
+> > +							entity_is_task(se))
+> >  		return;
+> >  
+> >  	contrib_delta = __update_entity_load_avg_contrib(se);
+> > @@ -2609,6 +2610,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+> >  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
+> >  	/* we force update consideration on load-balancer moves */
+> >  	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+> > +
+> > +	/* We force update group contributions on load-balancer moves */
+> > +	if (wakeup && !entity_is_task(se))
+> > +		__update_cfs_rq_tg_load_contrib(cfs_rq, 0);
+> >  }
+> >  
+> >  /*
+> 
+> It should probably be clearer that what this actually means is that we
+> always update tg_load_contrib for any group-of-group (which is weird),
 
-Here's my pull request for v3.18. Now I'll ignore linux-usb for a while and get
-a beer or two.
+Would it not only update groups entities if they aren't already on a
+runqueue? I'm clearly missing something.
 
-Anyway, let me know if you want anything to be changed, but I tested these
-patches with beaglebone black and am437x SK.
+> so that we update the entire tree on load-balancer moves (which is
+> sensible and what we care about, because it determines each se.load_avg_contrib).
+> 
+> Wouldn't we need this on dequeue as well?
 
-cheers
+Yes. The problem is there too I think. It is not as visible though. If
+the last task of a particular group is migrated away from a cpu, the
+group entities will be dequeued and we should be fine. However, if there
+are other tasks left in the group or any parent group the load of that
+group will be off, I think. I need to verify that.
 
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
+> 
+> I believe the reason for both of these ratelimits was performance on
+> sleep/wake (where blocked_load_avg means tg_load_contrib should not have
+> changed), it would be good to know how much this hurts. Given the
+> fast-exit in __update_cfs_rq_tg_load_contrib, it seems like it might be
+> fine, but the group-entity __update_entity_load_avg_contrib is less
+> free when div_u64 is expensive, and is currently only called 1/ms.
 
-  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
+Right. Is there a suitable group scheduling benchmark I can use to test
+this?
 
-are available in the git repository at:
+> 
+> It seems like it would be a bit of a mess to force an update of the
+> entire path in migrate, but it would certainly dodge the performance
+> concerns if they wind up being an issue. (I suppose we could have
+> ENQUEUE/DEQUEUE_MIGRATE or something...)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/usb-for-v3.18
+Yes, I had the same thought. We might have to do something like that
+anyway to fix the dequeue path. It seems less straightforward to fix,
+but I need to take a closer look.
 
-for you to fetch changes up to 5b484989a998074762281a1ae71b2d88f26f66d6:
-
-  usb: gadget: gr_udc: Add bounce buffer to handle odd sized OUT requests (2014-09-16 10:01:45 -0500)
-
-----------------------------------------------------------------
-usb: changes for v3.18 merge window
-
-Quite big pull request this time. Audio and UVC gadgets
-can now be used with our configfs-based binding. We have
-three PHY drivers being removed because a new one has been
-added using new PHY framework.
-
-Gadget framework got a new ->reset callback preparing for
-some other changes to come on next merge window.
-
-A few new drivers came in as well; among those we have a
-new UDC driver from Xilinx and two new glue layers for
-DWC3 (ST and Qualcomm).
-
-DWC3 also learned about tracepoints which will help debugging
-quite a bit.
-
-Other than that, a big series of non-critical fixes and
-cleanups.
-
-All patches have been on linux-next for quite a bit of time
-and I boot tested these changes on platforms I have access
-to and work with mainline.
-
-Signed-of-by: Felipe Balbi <balbi@ti.com>
-
-----------------------------------------------------------------
-Amit Virdi (3):
-      usb: gadget: zero: Add support for interrupt EP
-      usbtest: Add interrupt EP testcases
-      usb: gadget: zero: Fix warning generated by kbuild
-
-Andreas Larsson (2):
-      usb: gadget: udc_core: Use right kobj when calling sysfs_notify
-      usb: gadget: gr_udc: Add bounce buffer to handle odd sized OUT requests
-
-Andrzej Pietrasiewicz (23):
-      usb: gadget: audio: Use container_of to free audio_dev
-      usb: gadget: f_uac2: convert to new function interface with backward compatibility
-      usb: gadget: audio: convert to new interface of f_uac2
-      usb: gadget: f_uac2: remove compatibility layer
-      usb: gadget: f_uac2: use usb_gstrings_attach
-      usb: gadget: f_uac2: use defined constants as defaults
-      usb: gadget: f_uac2: add configfs support
-      usb: gadget: f_uac1: add function strings
-      usb: gadget: f_uac1: prepare for separate compilation
-      usb: gadget: f_uac1: convert to new function interface with backward compatibility
-      usb: gadget: audio: convert to new interface of f_uac1
-      usb: gadget: f_uac1: remove compatibility layer
-      usb: gadget: f_uac1: use usb_gstrings_attach
-      usb: gadget: f_uac1: use defined constants as defaults
-      usb: gadget: f_uac1: add configfs support
-      usb: gadget: f_uvc: fix potential memory leak
-      usb: gadget: uvc: move module parameters from f_uvc
-      usb: gadget: uvc: rename functions to avoid conflicts with host uvc
-      usb: gadget: uvc: separately compile some components of f_uvc
-      usb: gadget: f_uvc: convert f_uvc to new function interface
-      usb: gadget: webcam: convert webcam to new interface of f_uvc
-      usb: gadget: f_uvc: remove compatibility layer
-      usb: gadget: f_uvc: use usb_gstrings_attach
-
-Bartlomiej Zolnierkiewicz (3):
-      usb: phy: samsung: remove old USB 2.0 PHY driver
-      usb: phy: samsung: remove old USB 3.0 PHY driver
-      usb: phy: samsung: remove old common USB PHY code
-
-Dan Carpenter (1):
-      usb: gadget: f_fs: signedness bug in __ffs_func_bind_do_descs()
-
-Daniel Mack (6):
-      usb: gadget: f_uac2: restructure some code in afunc_set_alt()
-      usb: gadget: f_uac2: add short-hand for 'dev'
-      usb: gadget: f_uac2: introduce agdev_to_uac2_opts
-      usb: gadget: f_uac2: handle partial dma area wrap
-      usb: gadget: f_uac2: send reasonably sized packets
-      usb: musb: cppi41: tweak hrtimer values
-
-Felipe Balbi (8):
-      usb: phy: msm: mark msm_otg_mode_fops static
-      usb: dwc3: move all string helper functions to debug.h
-      usb: dwc3: debug: add dwc3_gadget_event_type_string
-      usb: dwc3: gadget: cmd argument should always be unsigned
-      usb: dwc3: add tracepoints to aid debugging
-      Merge tag 'v3.17-rc4' into next
-      Merge tag 'v3.17-rc5' into next
-      usb: musb: dsps: kill OTG timer on suspend
-
-Fengguang Wu (1):
-      usb: gadget: uvc: uvc_alloc() can be static
-
-Geert Uytterhoeven (1):
-      usb: gadget: USB_RENESAS_USBHS_UDC should depend on HAS_DMA
-
-Himangi Saraogi (1):
-      usb: gadget: udc: use USB API functions rather than constants
-
-Ivan T. Ivanov (2):
-      usb: dwc3: qcom: Add device tree binding
-      usb: dwc3: Add Qualcomm DWC3 glue layer driver
-
-Jingoo Han (2):
-      usb: dwc3: remove unnecessary OOM messages
-      usb: phy: samsung: Remove unnecessary lines of register bit definitions
-
-Laurent Pinchart (4):
-      usb: gadget: f_uvc: Store EP0 control request state during setup stage
-      usb: gadget: f_uvc: Move to video_ioctl2
-      usb: gadget: uvc: Fix endianness mismatches
-      usb: gadget: uvc: Simplify uvcg_video_pump by using local variable
-
-Li Jun (1):
-      usb: gadget: composite: dequeue cdev->req before free its buffer
-
-Michael Grzeschik (2):
-      usb: gadget: uvc: Change KERN_INFO to KERN_DEBUG on request shutdown
-      usb: gadget: uvc: remove DRIVER_VERSION{,_NUMBER}
-
-Michal Nazarewicz (5):
-      usb: gadget: f_fs: add usb_functionfs_descs_head_v2 structure
-      tools: ffs-test: convert to new descriptor format
-      tools: ffs-test: add compatibility code for old kernels
-      usb: gadget: f_mass_storage: simplify start_transfer slightly
-      usb: f_fs: replace BUG in dead-code with less serious WARN_ON
-
-Paul Zimmerman (1):
-      usb: gadget: document a usb_ep_dequeue() requirement
-
-Peter Chen (6):
-      usb: gadget: add reset API at usb_gadget_driver
-      usb: gadget: composite: add reset API at usb_gadget_driver
-      usb: gadget: configfs: add reset API at usb_gadget_driver
-      usb: gadget: gadgetfs: add reset API at usb_gadget_driver
-      usb: gadget: dbgp: add reset API at usb_gadget_driver
-      usb: gadget: udc-core: add utility for bus reset
-
-Peter Griffin (3):
-      usb: dwc3: add ST dwc3 glue layer to manage dwc3 HC
-      usb: dwc3: dwc3-st: Add st-dwc3 devicetree bindings documentation
-      MAINTAINERS: Add dwc3-st.c file to ARCH/STI architecture
-
-Philipp Zabel (1):
-      usb: gadget: uvc: Add support for DMABUF importing
-
-Richard Leitner (2):
-      usb: gadget: serial: replace {V,}DBG macro with dev_{v,}dbg
-      usb: gadget: serial: remove PREFIX macro
-
-Robert Baldyga (2):
-      usb: gadget: f_fs: add ioctl returning ep descriptor
-      usb: gadget: f_fs: virtual endpoint address mapping
-
-Srinivas Kandagatla (1):
-      usb: phy: msm: Make phy_reset clk and reset line optional.
-
-Stefan Agner (1):
-      usb: phy: mxs: Add VF610 USB PHY support
-
-Subbaraya Sundeep Bhatta (2):
-      usb: doc: udc-xilinx: Add devicetree bindings
-      usb: gadget: Add xilinx usb2 device support
-
-Tony Lindgren (1):
-      usb: phy: twl6030-usb: Remove unused irq_enabled
-
-Wei Yongjun (1):
-      usb: gadget: Remove redundant dev_err call in r8a66597_sudmac_ioremap()
-
-Yegor Yefremov (1):
-      usb: gadget: use $(srctree) instead of $(PWD) for includes
-
-Yoshihiro Shimoda (2):
-      usb: renesas_usbhs: Add device tree bindings documentation
-      usb: renesas_usbhs: Add device tree support for R-Car H2 and M2
-
- Documentation/ABI/testing/configfs-usb-gadget-uac1 |   12 +
- Documentation/ABI/testing/configfs-usb-gadget-uac2 |   12 +
- .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 +
- Documentation/devicetree/bindings/usb/dwc3-st.txt  |   68 +
- Documentation/devicetree/bindings/usb/mxs-phy.txt  |    1 +
- .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 +
- .../devicetree/bindings/usb/renesas_usbhs.txt      |   24 +
- .../devicetree/bindings/usb/udc-xilinx.txt         |   18 +
- MAINTAINERS                                        |    3 +-
- drivers/usb/dwc3/Kconfig                           |   17 +
- drivers/usb/dwc3/Makefile                          |    7 +-
- drivers/usb/dwc3/core.c                            |    9 +-
- drivers/usb/dwc3/core.h                            |    4 +-
- drivers/usb/dwc3/debug.c                           |   32 +
- drivers/usb/dwc3/debug.h                           |  200 +-
- drivers/usb/dwc3/dwc3-exynos.c                     |    4 +-
- drivers/usb/dwc3/dwc3-omap.c                       |    4 +-
- drivers/usb/dwc3/dwc3-pci.c                        |    4 +-
- drivers/usb/dwc3/dwc3-qcom.c                       |  131 ++
- drivers/usb/dwc3/dwc3-st.c                         |  367 ++++
- drivers/usb/dwc3/ep0.c                             |   65 +-
- drivers/usb/dwc3/gadget.c                          |  138 +-
- drivers/usb/dwc3/gadget.h                          |   56 -
- drivers/usb/dwc3/io.h                              |   30 +-
- drivers/usb/dwc3/trace.c                           |   19 +
- drivers/usb/dwc3/trace.h                           |  220 ++
- drivers/usb/gadget/Kconfig                         |    9 +
- drivers/usb/gadget/Makefile                        |    2 +-
- drivers/usb/gadget/composite.c                     |    3 +-
- drivers/usb/gadget/configfs.c                      |    1 +
- drivers/usb/gadget/function/Makefile               |   10 +-
- drivers/usb/gadget/function/f_acm.c                |   49 +-
- drivers/usb/gadget/function/f_fs.c                 |   52 +-
- drivers/usb/gadget/function/f_loopback.c           |    3 +-
- drivers/usb/gadget/function/f_mass_storage.c       |   27 +-
- drivers/usb/gadget/function/f_obex.c               |   28 +-
- drivers/usb/gadget/function/f_serial.c             |   19 +-
- drivers/usb/gadget/function/f_sourcesink.c         |  511 ++++-
- drivers/usb/gadget/function/f_uac1.c               |  337 ++-
- drivers/usb/gadget/function/f_uac2.c               |  520 +++--
- drivers/usb/gadget/function/f_uvc.c                |  274 ++-
- drivers/usb/gadget/function/f_uvc.h                |   13 +-
- drivers/usb/gadget/function/g_zero.h               |   13 +-
- drivers/usb/gadget/function/u_fs.h                 |    2 +
- drivers/usb/gadget/function/u_serial.c             |   30 +-
- drivers/usb/gadget/function/u_uac1.c               |   38 +-
- drivers/usb/gadget/function/u_uac1.h               |   31 +-
- drivers/usb/gadget/function/u_uac2.h               |   42 +
- drivers/usb/gadget/function/u_uvc.h                |   39 +
- drivers/usb/gadget/function/uvc.h                  |    4 +-
- drivers/usb/gadget/function/uvc_queue.c            |   46 +-
- drivers/usb/gadget/function/uvc_queue.h            |   33 +
- drivers/usb/gadget/function/uvc_v4l2.c             |  327 +--
- drivers/usb/gadget/function/uvc_v4l2.h             |   22 +
- drivers/usb/gadget/function/uvc_video.c            |   48 +-
- drivers/usb/gadget/function/uvc_video.h            |   24 +
- drivers/usb/gadget/legacy/Kconfig                  |    3 +
- drivers/usb/gadget/legacy/Makefile                 |    6 +-
- drivers/usb/gadget/legacy/audio.c                  |  149 +-
- drivers/usb/gadget/legacy/dbgp.c                   |    1 +
- drivers/usb/gadget/legacy/inode.c                  |    1 +
- drivers/usb/gadget/legacy/webcam.c                 |   75 +-
- drivers/usb/gadget/legacy/zero.c                   |   21 +
- drivers/usb/gadget/udc/Kconfig                     |   17 +-
- drivers/usb/gadget/udc/Makefile                    |    1 +
- drivers/usb/gadget/udc/gr_udc.c                    |   81 +-
- drivers/usb/gadget/udc/gr_udc.h                    |    7 +
- drivers/usb/gadget/udc/r8a66597-udc.c              |   10 +-
- drivers/usb/gadget/udc/udc-core.c                  |   31 +-
- drivers/usb/gadget/udc/udc-xilinx.c                | 2180 ++++++++++++++++++++
- drivers/usb/misc/usbtest.c                         |  113 +-
- drivers/usb/musb/musb_cppi41.c                     |    4 +-
- drivers/usb/musb/musb_dsps.c                       |    2 +
- drivers/usb/phy/Kconfig                            |   16 -
- drivers/usb/phy/Makefile                           |    2 -
- drivers/usb/phy/phy-msm-usb.c                      |   15 +-
- drivers/usb/phy/phy-mxs-usb.c                      |    6 +
- drivers/usb/phy/phy-samsung-usb.c                  |  241 ---
- drivers/usb/phy/phy-samsung-usb.h                  |  349 ----
- drivers/usb/phy/phy-samsung-usb2.c                 |  541 -----
- drivers/usb/phy/phy-samsung-usb3.c                 |  350 ----
- drivers/usb/phy/phy-twl6030-usb.c                  |    2 -
- drivers/usb/renesas_usbhs/common.c                 |   44 +
- include/linux/platform_data/samsung-usbphy.h       |   27 -
- include/linux/usb/gadget.h                         |   18 +-
- include/uapi/linux/usb/functionfs.h                |   19 +-
- tools/usb/ffs-test.c                               |  126 +-
- 87 files changed, 5999 insertions(+), 2566 deletions(-)
- create mode 100644 Documentation/ABI/testing/configfs-usb-gadget-uac1
- create mode 100644 Documentation/ABI/testing/configfs-usb-gadget-uac2
- create mode 100644 Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
- create mode 100644 Documentation/devicetree/bindings/usb/dwc3-st.txt
- create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
- create mode 100644 Documentation/devicetree/bindings/usb/renesas_usbhs.txt
- create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.txt
- create mode 100644 drivers/usb/dwc3/debug.c
- create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
- create mode 100644 drivers/usb/dwc3/dwc3-st.c
- create mode 100644 drivers/usb/dwc3/trace.c
- create mode 100644 drivers/usb/dwc3/trace.h
- create mode 100644 drivers/usb/gadget/function/u_uac2.h
- create mode 100644 drivers/usb/gadget/function/u_uvc.h
- create mode 100644 drivers/usb/gadget/function/uvc_v4l2.h
- create mode 100644 drivers/usb/gadget/function/uvc_video.h
- create mode 100644 drivers/usb/gadget/udc/udc-xilinx.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb.h
- delete mode 100644 drivers/usb/phy/phy-samsung-usb2.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
- delete mode 100644 include/linux/platform_data/samsung-usbphy.h
+Morten
