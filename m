@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110AbaIQVYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:24:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57874 "EHLO mail.kernel.org"
+	id S1757139AbaIQVYu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:24:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57921 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757083AbaIQVYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:24:42 -0400
+	id S1757117AbaIQVYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 17:24:48 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/20] perf tools: Add +field argument support for --sort option
-Date: Wed, 17 Sep 2014 18:24:04 -0300
-Message-Id: <1410989063-14207-2-git-send-email-acme@kernel.org>
+Subject: [PATCH 03/20] perf kvm stat report: Save pid string in opts.target.pid
+Date: Wed, 17 Sep 2014 18:24:06 -0300
+Message-Id: <1410989063-14207-4-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410989063-14207-1-git-send-email-acme@kernel.org>
 References: <1410989063-14207-1-git-send-email-acme@kernel.org>
@@ -27,103 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-Adding support to add field(s) to default sort order via using the '+'
-prefix, like for report:
+The 'perf kvm stat report' command uses the kvm->pid_str field to keep
+the value of the --pid option. Let's use kvm->opts.target.pid instead.
 
-  $ perf report
-  Samples: 2K of event 'cycles', Event count (approx.): 882172583
-  Overhead  Command  Shared Object        Symbol
-     7.39%  swapper  [kernel.kallsyms]    [k] intel_idle
-     1.97%  firefox  libpthread-2.17.so   [.] pthread_mutex_lock
-     1.39%  firefox  [snd_hda_intel]      [k] azx_get_position
-     1.11%  firefox  libpthread-2.17.so   [.] pthread_mutex_unlock
-
-  $ perf report -s +cpu
-  Samples: 2K of event 'cycles', Event count (approx.): 882172583
-  Overhead  Command  Shared Object        Symbol                  CPU
-     2.89%  swapper  [kernel.kallsyms]    [k] intel_idle          000
-     2.61%  swapper  [kernel.kallsyms]    [k] intel_idle          002
-     1.20%  swapper  [kernel.kallsyms]    [k] intel_idle          001
-     0.82%  firefox  libpthread-2.17.so   [.] pthread_mutex_lock  002
-
-Works in general for commands using --sort option.
-
-v2 with changes suggested:
-  - Use dynamic memory instead static buffer
-  - Fix error message typo
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140823125948.GA1193@krava.brq.redhat.com
+Link: http://lkml.kernel.org/r/1409579095-12963-2-git-send-email-yarygin@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 37 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 36 insertions(+), 1 deletion(-)
+ tools/perf/builtin-kvm.c   | 6 +++---
+ tools/perf/util/kvm-stat.h | 1 -
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 1958637cf136..289df9d1e65a 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1446,12 +1446,47 @@ static const char *get_default_sort_order(void)
- 	return default_sort_orders[sort__mode];
- }
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 1a4ef9cd9d5f..646ec5d5de80 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1085,8 +1085,8 @@ static int read_events(struct perf_kvm_stat *kvm)
  
-+static int setup_sort_order(void)
-+{
-+	char *new_sort_order;
-+
-+	/*
-+	 * Append '+'-prefixed sort order to the default sort
-+	 * order string.
-+	 */
-+	if (!sort_order || is_strict_order(sort_order))
-+		return 0;
-+
-+	if (sort_order[1] == '\0') {
-+		error("Invalid --sort key: `+'");
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * We allocate new sort_order string, but we never free it,
-+	 * because it's checked over the rest of the code.
-+	 */
-+	if (asprintf(&new_sort_order, "%s,%s",
-+		     get_default_sort_order(), sort_order + 1) < 0) {
-+		error("Not enough memory to set up --sort");
-+		return -ENOMEM;
-+	}
-+
-+	sort_order = new_sort_order;
-+	return 0;
-+}
-+
- static int __setup_sorting(void)
+ static int parse_target_str(struct perf_kvm_stat *kvm)
  {
- 	char *tmp, *tok, *str;
--	const char *sort_keys = sort_order;
-+	const char *sort_keys;
- 	int ret = 0;
+-	if (kvm->pid_str) {
+-		kvm->pid_list = intlist__new(kvm->pid_str);
++	if (kvm->opts.target.pid) {
++		kvm->pid_list = intlist__new(kvm->opts.target.pid);
+ 		if (kvm->pid_list == NULL) {
+ 			pr_err("Error parsing process id string\n");
+ 			return -EINVAL;
+@@ -1188,7 +1188,7 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
+ 			    "key for sorting: sample(sort by samples number)"
+ 			    " time (sort by avg time)"),
+-		OPT_STRING('p', "pid", &kvm->pid_str, "pid",
++		OPT_STRING('p', "pid", &kvm->opts.target.pid, "pid",
+ 			   "analyze events only for given process id(s)"),
+ 		OPT_END()
+ 	};
+diff --git a/tools/perf/util/kvm-stat.h b/tools/perf/util/kvm-stat.h
+index 0b5a8cd2ee79..cf1d7913783b 100644
+--- a/tools/perf/util/kvm-stat.h
++++ b/tools/perf/util/kvm-stat.h
+@@ -92,7 +92,6 @@ struct perf_kvm_stat {
+ 	u64 lost_events;
+ 	u64 duration;
  
-+	ret = setup_sort_order();
-+	if (ret)
-+		return ret;
-+
-+	sort_keys = sort_order;
- 	if (sort_keys == NULL) {
- 		if (is_strict_order(field_order)) {
- 			/*
+-	const char *pid_str;
+ 	struct intlist *pid_list;
+ 
+ 	struct rb_root result;
 -- 
 1.9.3
 
