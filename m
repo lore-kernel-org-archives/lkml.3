@@ -1,247 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117AbaIQWMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 18:12:54 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:41735 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457AbaIQWMw convert rfc822-to-8bit (ORCPT
+	id S1757164AbaIQWNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 18:13:07 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:49249 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757128AbaIQWNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 18:12:52 -0400
+	Wed, 17 Sep 2014 18:13:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <541709FD.8090004@neotion.com>
-References: <53C7E45E.2060102@neotion.com>
-	<CAPDyKFoRpQBHGGCMPvEKdeVGjTO-rnyYVostLZGCV3dudD1rmA@mail.gmail.com>
-	<53EB2DC3.2080002@neotion.com>
-	<CAPDyKFpjYqVUZ8GHB76gD8pOx_eMg9ecvbWrMEfbhEd5ffk7mw@mail.gmail.com>
-	<53ECB95F.2030207@neotion.com>
-	<CAPDyKFp2ekmucHVzMWxeKfyTmuFKTXAYwUEpL5QxvEh8AjFopg@mail.gmail.com>
-	<53F1FBA3.6060108@neotion.com>
-	<5411435C.3080905@neotion.com>
-	<541303B8.2060208@neotion.com>
-	<54166914.4080706@samsung.com>
-	<541709FD.8090004@neotion.com>
-Date: Thu, 18 Sep 2014 00:12:51 +0200
-Message-ID: <CAPDyKFojuf6EWL8dgXwd16CxW8YMZov1Xif-yvETM6sdtgHhLg@mail.gmail.com>
-Subject: Re: [PATCH v6 0002/0003] mmc: Replace "enhanced_area_en" attribute by "partition_setting_completed"
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+In-Reply-To: <20140915082346.GB17875@mwanda>
+References: <1410710597-14520-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20140915082346.GB17875@mwanda>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Thu, 18 Sep 2014 00:12:42 +0200
+Message-ID: <CAFo99gZUiSB2cgSAAj7EBjZJTs7QxvCDZr6Wms3ud5qQvBWQMw@mail.gmail.com>
+Subject: Re: [PATCH] staging: lustre: lustre: libcfs: debug.c: Cleaning up
+ unnecessary use of memset in conjunction with strncpy
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peng Tao <bergwolf@gmail.com>, devel@driverdev.osuosl.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 September 2014 17:47, Grégory Soutadé <gsoutade@neotion.com> wrote:
-> Replace ext_csd "enhanced_area_en" attribute by
->  "partition_setting_completed". It was used whether or
->  not enhanced user area is defined and without checks of
->  EXT_CSD_PARTITION_SETTING_COMPLETED bit.
+2014-09-15 10:23 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Sun, Sep 14, 2014 at 06:03:16PM +0200, Rickard Strandqvist wrote:
+>> Using memset before strncpy just to ensure a trailing null
+>> character is an unnecessary double writing of a string
+>>
 >
-> Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
+> You really should make a function which pads and NUL terminates.
+>
+> I've said this before, of course, but you haven't even tried.
+>
+> I can't get excited about these cleanups which open code NUL termination
+> every where.  They are risky and have introduced bugs before.
+>
+> regards,
+> dan carpenter
 
-Thanks! Applied for next.
+
+
+Hi Dan
+
+Ok, I have made two suggestions for strncpy function that also
+guarantees a terminating null character.
+1) retunerar number of characters to be copied, it can be good to
+have, but was not really satisfied.
+
+int strncpyz(char *dest, const char *src, size_t count)
+{
+  size_t len=0;
+
+  if(0 == count)
+    return 0;
+
+  --count;
+  while(len < count && src[len])
+   *dest++ = src[len++];
+
+  do {
+    *dest++ = '\0';
+  }
+  while(len < count--);
+
+  return len;
+}
+
+
+2) The next version is almost the same code as the regular strncpy,
+but with two extra lines.
+
+char *strncpyz(char *dest, const char *src, size_t count)
+{
+        char *tmp = dest;
+
+        while (count) {
+                if ((*tmp = *src) != 0)
+                        src++;
+                tmp++;
+                count--;
+        }
+
+        if(tmp != dest)
+          *--tmp = '\0';
+
+        return dest;
+}
+
+
+Since I did not got any better solution to variant 1, I prefer variant 2.
+
+Then the next question is of course what it should be called  :-)
+
 
 Kind regards
-Uffe
-
-
-> ---
->  drivers/mmc/core/mmc.c   |   13 ++++++++-----
->  include/linux/mmc/card.h |    2 +-
->  include/linux/mmc/mmc.h  |    2 ++
->  3 files changed, 11 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 77b4cf3..64d0371 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -314,7 +314,6 @@ static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
->                 hc_wp_grp_sz =
->                         ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->
-> -               card->ext_csd.enhanced_area_en = 1;
->                 /*
->                  * calculate the enhanced data area offset, in bytes
->                  */
-> @@ -355,13 +354,11 @@ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
->          */
->         if (ext_csd[EXT_CSD_PARTITION_SUPPORT] &
->             EXT_CSD_PART_SUPPORT_PART_EN) {
-> -               if (card->ext_csd.enhanced_area_en != 1) {
-> +               if (card->ext_csd.partition_setting_completed) {
->                         hc_erase_grp_sz =
->                                 ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->                         hc_wp_grp_sz =
->                                 ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-> -
-> -                       card->ext_csd.enhanced_area_en = 1;
->                 }
->
->                 for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
-> @@ -488,6 +485,12 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->                 ext_csd[EXT_CSD_TRIM_MULT];
->         card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
->         if (card->ext_csd.rev >= 4) {
-> +               if (ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED] &
-> +                   EXT_CSD_PART_SETTING_COMPLETED)
-> +                       card->ext_csd.partition_setting_completed = 1;
-> +               else
-> +                       card->ext_csd.partition_setting_completed = 0;
-> +
->                 mmc_manage_enhanced_area(card, ext_csd);
->
->                 mmc_manage_gp_partitions(card, ext_csd);
-> @@ -1324,7 +1327,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
->          * If enhanced_area_en is TRUE, host needs to enable ERASE_GRP_DEF
->          * bit.  This bit will be lost every time after a reset or power off.
->          */
-> -       if (card->ext_csd.enhanced_area_en ||
-> +       if (card->ext_csd.partition_setting_completed ||
->             (card->ext_csd.rev >= 3 && (host->caps2 & MMC_CAP2_HC_ERASE_SZ))) {
->                 err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
->                                  EXT_CSD_ERASE_GROUP_DEF, 1,
-> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> index d424b9d..38175be 100644
-> --- a/include/linux/mmc/card.h
-> +++ b/include/linux/mmc/card.h
-> @@ -74,7 +74,7 @@ struct mmc_ext_csd {
->         unsigned int            sec_trim_mult;  /* Secure trim multiplier  */
->         unsigned int            sec_erase_mult; /* Secure erase multiplier */
->         unsigned int            trim_timeout;           /* In milliseconds */
-> -       bool                    enhanced_area_en;       /* enable bit */
-> +       bool                    partition_setting_completed;    /* enable bit */
->         unsigned long long      enhanced_area_offset;   /* Units: Byte */
->         unsigned int            enhanced_area_size;     /* Units: KB */
->         unsigned int            cache_size;             /* Units: KB */
-> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> index 64ec963..78753bc 100644
-> --- a/include/linux/mmc/mmc.h
-> +++ b/include/linux/mmc/mmc.h
-> @@ -281,6 +281,7 @@ struct _mmc_csd {
->  #define EXT_CSD_EXP_EVENTS_CTRL                56      /* R/W, 2 bytes */
->  #define EXT_CSD_DATA_SECTOR_SIZE       61      /* R */
->  #define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
-> +#define EXT_CSD_PARTITION_SETTING_COMPLETED 155        /* R/W */
->  #define EXT_CSD_PARTITION_ATTRIBUTE    156     /* R/W */
->  #define EXT_CSD_PARTITION_SUPPORT      160     /* RO */
->  #define EXT_CSD_HPI_MGMT               161     /* R/W */
-> @@ -349,6 +350,7 @@ struct _mmc_csd {
->  #define EXT_CSD_PART_CONFIG_ACC_RPMB   (0x3)
->  #define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
->
-> +#define EXT_CSD_PART_SETTING_COMPLETED (0x1)
->  #define EXT_CSD_PART_SUPPORT_PART_EN   (0x1)
->
->  #define EXT_CSD_CMD_SET_NORMAL         (1<<0)
-> --
-> 1.7.9.5
->
-> Le 15/09/2014 06:20, Jaehoon Chung a écrit :
->> On 09/12/2014 11:31 PM, Grégory Soutadé wrote:
->>> Replace ext_csd "enhanced_area_en" attribute by
->>>  "partition_setting_completed". It was used whether or
->>>  not enhanced user area is defined and without checks of
->>>  EXT_CSD_PARTITION_SETTING_COMPLETED bit.
->>>
->>> Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
->>> ---
->>>  drivers/mmc/core/mmc.c   |   14 +++++++++-----
->>>  include/linux/mmc/card.h |    2 +-
->>>  include/linux/mmc/mmc.h  |    2 ++
->>>  3 files changed, 12 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>> index 77b4cf3..d8d3aef 100644
->>> --- a/drivers/mmc/core/mmc.c
->>> +++ b/drivers/mmc/core/mmc.c
->>> @@ -314,7 +314,6 @@ static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
->>>              hc_wp_grp_sz =
->>>                      ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>
->>> -            card->ext_csd.enhanced_area_en = 1;
->>>              /*
->>>               * calculate the enhanced data area offset, in bytes
->>>               */
->>> @@ -355,13 +354,11 @@ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
->>>       */
->>>      if (ext_csd[EXT_CSD_PARTITION_SUPPORT] &
->>>          EXT_CSD_PART_SUPPORT_PART_EN) {
->>> -            if (card->ext_csd.enhanced_area_en != 1) {
->>> +            if (card->ext_csd.partition_setting_completed) {
->>>                      hc_erase_grp_sz =
->>>                              ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>>                      hc_wp_grp_sz =
->>>                              ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>> -
->>> -                    card->ext_csd.enhanced_area_en = 1;
->>>              }
->>>
->>>              for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
->>> @@ -488,6 +485,13 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->>>              ext_csd[EXT_CSD_TRIM_MULT];
->>>      card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
->>>      if (card->ext_csd.rev >= 4) {
->>> +            if (ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED] &
->>> +                EXT_CSD_PART_SETTING_COMPLETED) {
->>> +                    card->ext_csd.partition_setting_completed = 1;
->>> +            } else {
->>> +                    card->ext_csd.partition_setting_completed = 0;
->>> +            }
->>
->> I remembered that Ulf mentioned these brackets can be removed.
->>
->> Best Regards,
->> Jaehoon Chung
->>> +
->>>              mmc_manage_enhanced_area(card, ext_csd);
->>>
->>>              mmc_manage_gp_partitions(card, ext_csd);
->>> @@ -1324,7 +1328,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
->>>       * If enhanced_area_en is TRUE, host needs to enable ERASE_GRP_DEF
->>>       * bit.  This bit will be lost every time after a reset or power off.
->>>       */
->>> -    if (card->ext_csd.enhanced_area_en ||
->>> +    if (card->ext_csd.partition_setting_completed ||
->>>          (card->ext_csd.rev >= 3 && (host->caps2 & MMC_CAP2_HC_ERASE_SZ))) {
->>>              err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
->>>                               EXT_CSD_ERASE_GROUP_DEF, 1,
->>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>> index d424b9d..38175be 100644
->>> --- a/include/linux/mmc/card.h
->>> +++ b/include/linux/mmc/card.h
->>> @@ -74,7 +74,7 @@ struct mmc_ext_csd {
->>>      unsigned int            sec_trim_mult;  /* Secure trim multiplier  */
->>>      unsigned int            sec_erase_mult; /* Secure erase multiplier */
->>>      unsigned int            trim_timeout;           /* In milliseconds */
->>> -    bool                    enhanced_area_en;       /* enable bit */
->>> +    bool                    partition_setting_completed;    /* enable bit */
->>>      unsigned long long      enhanced_area_offset;   /* Units: Byte */
->>>      unsigned int            enhanced_area_size;     /* Units: KB */
->>>      unsigned int            cache_size;             /* Units: KB */
->>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
->>> index 64ec963..78753bc 100644
->>> --- a/include/linux/mmc/mmc.h
->>> +++ b/include/linux/mmc/mmc.h
->>> @@ -281,6 +281,7 @@ struct _mmc_csd {
->>>  #define EXT_CSD_EXP_EVENTS_CTRL             56      /* R/W, 2 bytes */
->>>  #define EXT_CSD_DATA_SECTOR_SIZE    61      /* R */
->>>  #define EXT_CSD_GP_SIZE_MULT                143     /* R/W */
->>> +#define EXT_CSD_PARTITION_SETTING_COMPLETED 155     /* R/W */
->>>  #define EXT_CSD_PARTITION_ATTRIBUTE 156     /* R/W */
->>>  #define EXT_CSD_PARTITION_SUPPORT   160     /* RO */
->>>  #define EXT_CSD_HPI_MGMT            161     /* R/W */
->>> @@ -349,6 +350,7 @@ struct _mmc_csd {
->>>  #define EXT_CSD_PART_CONFIG_ACC_RPMB        (0x3)
->>>  #define EXT_CSD_PART_CONFIG_ACC_GP0 (0x4)
->>>
->>> +#define EXT_CSD_PART_SETTING_COMPLETED      (0x1)
->>>  #define EXT_CSD_PART_SUPPORT_PART_EN        (0x1)
->>>
->>>  #define EXT_CSD_CMD_SET_NORMAL              (1<<0)
->>>
->>
->>
+Rickard Strandqvist
