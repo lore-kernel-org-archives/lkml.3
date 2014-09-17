@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261AbaIQQhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:37:31 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:44150 "EHLO mailhub1.si.c-s.fr"
+	id S1756358AbaIQQiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:38:18 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:44205 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756171AbaIQQhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:37:25 -0400
+	id S1756245AbaIQQha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:37:30 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v3 15/21] powerpc/8xx: Implement 16k pages
-Message-Id: <20140917163700.1426D1AB040@localhost.localdomain>
+Subject: [PATCH v3 18/21] powerpc/8xx: _PMD_PRESENT already set in level 1 entries
+Message-Id: <20140917163700.969841AB043@localhost.localdomain>
 Date: Wed, 17 Sep 2014 18:37:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch activates the handling of 16k pages on the MPC8xx.
+When a PMD entry is valid, _PMD_PRESENT is set. Therefore, forcing that bit
+during TLB loading is useless.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
@@ -30,60 +31,29 @@ Changes in v2:
 Changes in v3:
 - None
 
- arch/powerpc/Kconfig               |    2 +-
- arch/powerpc/include/asm/mmu-8xx.h |    2 ++
- arch/powerpc/kernel/head_8xx.S     |    4 ++++
- 3 files changed, 7 insertions(+), 1 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 5f44d3b..dc5f64e 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -518,7 +518,7 @@ config PPC_4K_PAGES
- 	bool "4k page size"
- 
- config PPC_16K_PAGES
--	bool "16k page size" if 44x
-+	bool "16k page size" if 44x || PPC_8xx
- 
- config PPC_64K_PAGES
- 	bool "64k page size" if 44x || PPC_STD_MMU_64 || PPC_BOOK3E_64
-diff --git a/arch/powerpc/include/asm/mmu-8xx.h b/arch/powerpc/include/asm/mmu-8xx.h
-index 3d11d3c..986b9e1 100644
---- a/arch/powerpc/include/asm/mmu-8xx.h
-+++ b/arch/powerpc/include/asm/mmu-8xx.h
-@@ -56,6 +56,7 @@
-  * additional information from the MI_EPN, and MI_TWC registers.
-  */
- #define SPRN_MI_RPN	790
-+#define MI_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
- 
- /* Define an RPN value for mapping kernel memory to large virtual
-  * pages for boot initialization.  This has real page number of 0,
-@@ -129,6 +130,7 @@
-  * additional information from the MD_EPN, and MD_TWC registers.
-  */
- #define SPRN_MD_RPN	798
-+#define MD_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
- 
- /* This is a temporary storage register that could be used to save
-  * a processor working register during a tablewalk.
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 8966262..4dd6be0 100644
+index 48d3de8..bb7c816 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -45,7 +45,11 @@
-  * Value for the bits that have fixed value in RPN entries.
-  * Also used for tagging DAR for DTLBerror.
-  */
-+#ifdef CONFIG_PPC_16K_PAGES
-+#define RPN_PATTERN	(0x00f0 | MD_SPS16K)
-+#else
- #define RPN_PATTERN	0x00f0
-+#endif
+@@ -340,7 +340,6 @@ InstructionTLBMiss:
+ 	/* We have a pte table, so load the MI_TWC with the attributes
+ 	 * for this "segment."
+ 	 */
+-	ori	r11,r11,1		/* Set valid bit */
+ 	MTSPR_CPU6(SPRN_MI_TWC, r11, r3)	/* Set segment attributes */
+ 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
+ 	/* Extract level 2 index */
+@@ -417,7 +416,6 @@ DataStoreTLBMiss:
+ 	rlwimi	r10, r11, 0, 0, 32 - PAGE_SHIFT - 1	/* Add level 2 base */
+ 	lwz	r10, 0(r10)	/* Get the pte */
  
- 	__HEAD
- _ENTRY(_stext);
+-	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
+ 	/* Insert the Guarded flag into the TWC from the Linux PTE.
+ 	 * It is bit 27 of both the Linux PTE and the TWC (at least
+ 	 * I got that right :-).  It will be better when we can put
 -- 
 1.7.1
 
