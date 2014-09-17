@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573AbaIQQvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:51:35 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:51666 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484AbaIQQvb (ORCPT
+	id S1756034AbaIQQyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:54:39 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:45367 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755660AbaIQQyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:51:31 -0400
+	Wed, 17 Sep 2014 12:54:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAD8Lp45LyE6AuGgC7xKyFiniF2K4v_G1X-=QARrJ1DqLYRy3Lg@mail.gmail.com>
-References: <1409216559-22402-1-git-send-email-cw00.choi@samsung.com>
-	<1409216559-22402-5-git-send-email-cw00.choi@samsung.com>
-	<CABxcv=ku9fjFfzyXZEnCGpTrWQ0pN+5mLWay90jXBhkFeWb7sg@mail.gmail.com>
-	<CAD8Lp47M8jHLrQAdYUn6NZn2Ety_02E6HPzPDUX3uGLVqf1riw@mail.gmail.com>
-	<CABxcv==CBbaY_GVgmWe5QzJdhMipyx5TpZ4_3oKLzkyiGPOBrw@mail.gmail.com>
-	<CAD=FV=VsSg5QLbdhgb4vV1+boeWaksCGj4MfGnCQnyhQR6Dr5A@mail.gmail.com>
-	<CAD8Lp45LyE6AuGgC7xKyFiniF2K4v_G1X-=QARrJ1DqLYRy3Lg@mail.gmail.com>
-Date: Wed, 17 Sep 2014 09:51:29 -0700
-X-Google-Sender-Auth: 0aQE-PA7VZIBI1iPOdW7jHxEwkg
-Message-ID: <CAD=FV=UsB0r7UwnNsmzE_fEQnurE=Qf_vZQKidivGYajZX=-dQ@mail.gmail.com>
-Subject: Re: [PATCHv3 4/5] rtc: s3c: Add support for RTC of Exynos3250 SoC
+In-Reply-To: <20140917165109.GM7960@sirena.org.uk>
+References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
+	<1410959280-29662-2-git-send-email-zyw@rock-chips.com>
+	<20140917165109.GM7960@sirena.org.uk>
+Date: Wed, 17 Sep 2014 09:54:37 -0700
+X-Google-Sender-Auth: Zd-TCv-rZL-jSIvIKD4co8QmDp8
+Message-ID: <CAD=FV=UYdBDf+dvUp8U6qbW3CgrMP3vtF_yDamBYwSjZVJ42Qw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] regulator: st-pwm: get voltage and duty table from dts
 From: Doug Anderson <dianders@chromium.org>
-To: Daniel Drake <drake@endlessm.com>
-Cc: Javier Martinez Canillas <javier@dowhile0.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, rtc-linux@googlegroups.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+Hi,
 
-On Wed, Sep 17, 2014 at 9:49 AM, Daniel Drake <drake@endlessm.com> wrote:
-> On Tue, Sep 16, 2014 at 4:15 PM, Doug Anderson <dianders@chromium.org> wrote:
->> NOTE: I don't think that the builtin RTC is terribly important for any
->> exynos-based Chromebooks that I'm aware of.  We rely on the RTC that's
->> part of the Maxim PMIC itself and pretty much ignore the one built-in
->> to the exynos.  I think there are some cases it was used (as a
->> fallback wakeup source in certain test scripts), but nothing very
->> important.
+On Wed, Sep 17, 2014 at 9:51 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Sep 17, 2014 at 09:07:59PM +0800, Chris Zhong wrote:
+>> Get voltage & duty table from device tree might be better, other platforms can also use this
+>> driver without any modify.
+>>
+>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>> ---
+>>
+>>  drivers/regulator/Kconfig  |    1 -
+>>  drivers/regulator/st-pwm.c |   80 +++++++++++++++++++++++---------------------
 >
-> That's not true for all hardware though, at least the board I'm
-> working on now has the SoC RTC as battery-backed and the PMIC one with
-> no battery. So in this case at least, the interesting RTC is the SoC
-> one.
+> You need to update the binding document if you're updating the DT
+> bindings.
 
-Yup, I can totally believe that.  My statement was meant only to apply
-to the boards I knew about firsthand...
+Mark: See part 2 <https://patchwork.kernel.org/patch/4924381/>.
+Unfortunately you weren't CCed on that.  It also should have been
+patch #1, not patch #2.
+
+Chris: please change the order and make sure Mark is CCed on the
+bindings.  Probably anyone CCed on the code change should be on the
+bindings change (and probably vice versa, but maybe not as critical).
 
 -Doug
