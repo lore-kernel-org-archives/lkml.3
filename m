@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443AbaIQNFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:05:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45921 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215AbaIQNF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:05:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,540,1406617200"; 
-   d="scan'208";a="592608791"
-Message-ID: <54198A2D.30908@linux.intel.com>
-Date: Wed, 17 Sep 2014 16:18:37 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Loic Poulain <loic.poulain@intel.com>, heikki.krogerus@linux.intel.com,
-        mika.westerberg@intel.com, samuel.ortiz@intel.com
-CC: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: baytrail: Clear DIRECT_IRQ bit
-References: <1410957035-13965-1-git-send-email-loic.poulain@intel.com>
-In-Reply-To: <1410957035-13965-1-git-send-email-loic.poulain@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755498AbaIQNFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:05:48 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48175 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215AbaIQNFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 09:05:45 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: netdev@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, Meelis Roos <mroos@linux.ee>
+Subject: [PATCH 2/2] 3c59x: Fix bad offset spec in skb_frag_dma_map
+Date: Wed, 17 Sep 2014 09:04:45 -0400
+Message-Id: <1410959085-7351-2-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410959085-7351-1-git-send-email-nhorman@tuxdriver.com>
+References: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee>
+ <1410959085-7351-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2014 03:30 PM, Loic Poulain wrote:
-> Direct Irq En bit can be initialized to a bad value.
-> This bit has to be cleared for io access mode.
-> 
-> Signed-off-by: Loic Poulain <loic.poulain@intel.com>
-> ---
->  drivers/pinctrl/pinctrl-baytrail.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> index 975572e..94902f7 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -44,6 +44,7 @@
->  
->  /* BYT_CONF0_REG register bits */
->  #define BYT_IODEN		BIT(31)
-> +#define BYT_DIRECT_IRQ		BIT(27)
->  #define BYT_TRIG_NEG		BIT(26)
->  #define BYT_TRIG_POS		BIT(25)
->  #define BYT_TRIG_LVL		BIT(24)
-> @@ -232,7 +233,7 @@ static int byt_irq_type(struct irq_data *d, unsigned type)
->  	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
->  	 * are used to indicate high and low level triggering
->  	 */
-> -	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
-> +	value &= ~(BYT_DIRECT_IRQ | BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
->  
->  	switch (type) {
->  	case IRQ_TYPE_LEVEL_HIGH:
-> 
+Recently aded the use of skb_frag_dma_map to 3c59x, but didn't realize it
+automatically included the frag_offset internally, as well as provided an option
+to specify an extra offset in the parameter list.  We need to specify an offset
+of 0 in the parameter list to avoid skb corruption that results in lost
+connections.
 
-Just checked that there is a patch already upstream that warns if this bit is set.
-It defines BYT_DIRECT_IRQ_EN already, but doesn't clear the bit.
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+---
+ drivers/net/ethernet/3com/3c59x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-commit ff998356b644ebe723127bd9eec6040b59a4a4f6
-Author: Eric Ernst <eric.ernst@linux.intel.com>
-Date:   Thu Jun 12 11:06:20 2014 -0700
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index 5621dab..0f59d68 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -2186,7 +2186,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
+ 			dma_addr = skb_frag_dma_map(&VORTEX_PCI(vp)->dev, frag,
+-						    frag->page_offset,
++						    0,
+ 						    frag->size,
+ 						    DMA_TO_DEVICE);
+ 			if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr)) {
+-- 
+1.9.3
 
-    pinctrl: baytrail: Warn if direct IRQ GPIO set to output
-
-
-Maybe adding a patch clearing the bit on top of that patch?
-
-And send that patch to Linus Walleij as well (added to cc) 
-
-Thanks
--Mathias
