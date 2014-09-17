@@ -1,65 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611AbaIQSDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:03:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755894AbaIQSDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:03:39 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
-        aviro@redhat.com, ebiederm@xmission.com,
-        stable@vger.kernel.org.#.v3.10-rc1+
-Subject: [PATCH] audit: restore AUDIT_LOGINUID unset ABI
-Date: Wed, 17 Sep 2014 14:03:01 -0400
-Message-Id: <a2c1c2d57a0491ea6ea38a46b57e25d8e1560074.1410976788.git.rgb@redhat.com>
+	id S1756592AbaIQSGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:06:25 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53223 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235AbaIQSGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 14:06:24 -0400
+From: bsegall@google.com
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz\@infradead.org" <peterz@infradead.org>,
+        "mingo\@kernel.org" <mingo@kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH] sched: Update task group load contributions during active load-balancing
+References: <1410826030-26301-1-git-send-email-morten.rasmussen@arm.com>
+	<xm26sijrqwv9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<20140917175741.GA9854@e103034-lin>
+Date: Wed, 17 Sep 2014 11:06:20 -0700
+In-Reply-To: <20140917175741.GA9854@e103034-lin> (Morten Rasmussen's message
+	of "Wed, 17 Sep 2014 18:57:41 +0100")
+Message-ID: <xm26k352qfz7.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A regression was caused by commit 780a7654cee8:
-	 audit: Make testing for a valid loginuid explicit.
-(which in turn attempted to fix a regression caused by e1760bd)
+Morten Rasmussen <morten.rasmussen@arm.com> writes:
 
-When audit_krule_to_data() fills in the rules to get a listing, there was a
-missing clause to convert back from AUDIT_LOGINUID_SET to AUDIT_LOGINUID.
+> On Tue, Sep 16, 2014 at 06:49:14PM +0100, bsegall@google.com wrote:
+>> Morten Rasmussen <morten.rasmussen@arm.com> writes:
+>> 
+>> > Task group load-contributions are not updated when tasks belonging to
+>> > task groups are migrated by active load-balancing. If no other task
+>> > belonging to the same task group is already queued at the destination
+>> > cpu the group sched_entity will be enqueued with load_avg_contrib=0.
+>> > Hence, weighted_cpuload() won't reflect the newly added load.
+>> >
+>> > The load may remain invisible until the next tick, when the sched_entity
+>> > load_avg_contrib and task group contributions are reevaluated.
+>> >
+>> > The enqueue loop
+>> >
+>> > 	for_each_entity(se) {
+>> > 	   enqueue_entity(cfs_rq,se)
+>> > 	      ...
+>> > 	      enqueue_entity_load_avg(cfs_rq,se)
+>> > 	         ...
+>> > 	         update_entity_load_avg(se)
+>> > 		    ...
+>> > 		    __update_entity_load_avg_contrib(se)
+>> > 		    ...
+>> > 		 ...
+>> > 	         update_cfs_rq_blocked_load(cfs_rq)
+>> > 		    ...
+>> > 		    __update_cfs_rq_tg_load_contrib(cfs_rq)
+>> > 		    ...
+>> > 	}
+>> >
+>> > currently skips __update_entity_load_avg_contrib() and
+>> > __update_cfs_rq_tg_load_contrib() for group entities for active
+>> > load-balance migrations. The former updates the sched_entity
+>> > load_avg_contrib, and the latter updates the task group contribution
+>> > which is needed by the former. They must both be called to ensure that
+>> > load doesn't temporarily disappear.
+>> >
+>> > cc: Paul Turner <pjt@google.com>
+>> > cc: Ben Segall <bsegall@google.com>
+>> >
+>> > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+>> > ---
+>> >  kernel/sched/fair.c |    7 ++++++-
+>> >  1 file changed, 6 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> > index be9e97b..2b6e2eb 100644
+>> > --- a/kernel/sched/fair.c
+>> > +++ b/kernel/sched/fair.c
+>> > @@ -2521,7 +2521,8 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+>> >  	else
+>> >  		now = cfs_rq_clock_task(group_cfs_rq(se));
+>> >  
+>> > -	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
+>> > +	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq) &&
+>> > +							entity_is_task(se))
+>> >  		return;
+>> >  
+>> >  	contrib_delta = __update_entity_load_avg_contrib(se);
+>> > @@ -2609,6 +2610,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>> >  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
+>> >  	/* we force update consideration on load-balancer moves */
+>> >  	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+>> > +
+>> > +	/* We force update group contributions on load-balancer moves */
+>> > +	if (wakeup && !entity_is_task(se))
+>> > +		__update_cfs_rq_tg_load_contrib(cfs_rq, 0);
+>> >  }
+>> >  
+>> >  /*
+>> 
+>> It should probably be clearer that what this actually means is that we
+>> always update tg_load_contrib for any group-of-group (which is weird),
+>
+> Would it not only update groups entities if they aren't already on a
+> runqueue? I'm clearly missing something.
 
-This broke userspace by not returning the same information that was sent and
-expected.
+No, that's correct, but it will do it on normal sleep/wake too, not just
+load-balancer moves.
 
-The rule:
-	auditctl -a exit,never -F auid=-1
-gives:
-	auditctl -l
-		LIST_RULES: exit,never f24=0 syscall=all
-when it should give:
-		LIST_RULES: exit,never auid=-1 (0xffffffff) syscall=all
+>
+>> so that we update the entire tree on load-balancer moves (which is
+>> sensible and what we care about, because it determines each se.load_avg_contrib).
+>> 
+>> Wouldn't we need this on dequeue as well?
+>
+> Yes. The problem is there too I think. It is not as visible though. If
+> the last task of a particular group is migrated away from a cpu, the
+> group entities will be dequeued and we should be fine. However, if there
+> are other tasks left in the group or any parent group the load of that
+> group will be off, I think. I need to verify that.
 
-Cc: stable@vger.kernel.org # v3.10-rc1+
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- kernel/auditfilter.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Yeah, the case where it comes up would be different, and possibly less
+bad.
 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 40ed981..d0715a7 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -630,6 +630,13 @@ static struct audit_rule_data *audit_krule_to_data(struct audit_krule *krule)
- 			data->buflen += data->values[i] =
- 				audit_pack_string(&bufp, krule->filterkey);
- 			break;
-+		case AUDIT_LOGINUID_SET:
-+			if (!f->val) {
-+				data->fields[i] = AUDIT_LOGINUID;
-+				data->values[i] = AUDIT_UID_UNSET;
-+				break;
-+			}
-+			/* fallthrough if set */
- 		default:
- 			data->values[i] = f->val;
- 		}
--- 
-1.7.1
+>
+>> 
+>> I believe the reason for both of these ratelimits was performance on
+>> sleep/wake (where blocked_load_avg means tg_load_contrib should not have
+>> changed), it would be good to know how much this hurts. Given the
+>> fast-exit in __update_cfs_rq_tg_load_contrib, it seems like it might be
+>> fine, but the group-entity __update_entity_load_avg_contrib is less
+>> free when div_u64 is expensive, and is currently only called 1/ms.
+>
+> Right. Is there a suitable group scheduling benchmark I can use to test
+> this?
 
+The most severe would probably be pipe test where you moved the threads
+to be in separate cgroups. A more realistic one would probably just be
+looping around nanosleep(100ns) on a bunch of cpus or something like that.
+
+>
+>> 
+>> It seems like it would be a bit of a mess to force an update of the
+>> entire path in migrate, but it would certainly dodge the performance
+>> concerns if they wind up being an issue. (I suppose we could have
+>> ENQUEUE/DEQUEUE_MIGRATE or something...)
+>
+> Yes, I had the same thought. We might have to do something like that
+> anyway to fix the dequeue path. It seems less straightforward to fix,
+> but I need to take a closer look.
+>
+> Morten
