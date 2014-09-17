@@ -1,178 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaIQVGC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:06:02 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51805 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031AbaIQVGA (ORCPT
+	id S1756843AbaIQVHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:07:12 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41268 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031AbaIQVHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:06:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH2r5muWCr9VLdQLGr+u-grdk=q+DfgdrRQU2dn2A37yLTAieA@mail.gmail.com>
-References: <CAH2r5mvTP1oGNoetuSkPdirBb1UDH6fiNCVjs_gJNKeJ1Dz5sA@mail.gmail.com>
- <5419F007.9070509@infradead.org> <5419F0D4.9090107@infradead.org> <CAH2r5muWCr9VLdQLGr+u-grdk=q+DfgdrRQU2dn2A37yLTAieA@mail.gmail.com>
-From: Steve French <smfrench@gmail.com>
-Date: Wed, 17 Sep 2014 16:05:39 -0500
-Message-ID: <CAH2r5muvhC6ww_U8o4mN119ptnNsuT+mcSmfaFbP7DqV0ZQpiw@mail.gmail.com>
-Subject: Re: match_token weird behavior
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Sep 2014 17:07:10 -0400
+From: Julien Grall <julien.grall@linaro.org>
+To: xen-devel@lists.xenproject.org
+Cc: ian.campbell@citrix.com, tim@xen.org, stefano.stabellini@citrix.com,
+        Julien Grall <julien.grall@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arm{,64}/xen: Remove "EXPERIMENTAL" in the description of the Xen options
+Date: Wed, 17 Sep 2014 14:07:06 -0700
+Message-Id: <1410988026-19949-1-git-send-email-julien.grall@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking at more examples, some of which are much larger match tables
-maybe it has to do with how the final entry is defined.  In this
-example the NULL match is explicitly stated.
+The Xen ARM API is stable since Xen 4.4 and everything has been
+upstreamed in Linux for ARM and ARM64. Therefore we can drop "EXPERIMENTAL"
+from the Xen option in the both Kconfig.
 
-static const match_table_t cifs_secflavor_tokens = {
-    { Opt_sec_krb5, "krb5" },
-    { Opt_sec_krb5i, "krb5i" },
-    { Opt_sec_krb5p, "krb5p" },
-    { Opt_sec_ntlmsspi, "ntlmsspi" },
-    { Opt_sec_ntlmssp, "ntlmssp" },
-    { Opt_ntlm, "ntlm" },
-    { Opt_sec_ntlmi, "ntlmi" },
-    { Opt_sec_ntlmv2, "nontlm" },
-    { Opt_sec_ntlmv2, "ntlmv2" },
-    { Opt_sec_ntlmv2i, "ntlmv2i" },
-    { Opt_sec_lanman, "lanman" },
-    { Opt_sec_none, "none" },
+Signed-off-by: Julien Grall <julien.grall@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/Kconfig   | 2 +-
+ arch/arm64/Kconfig | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-    { Opt_sec_err, NULL }
-};
-
-On Wed, Sep 17, 2014 at 3:53 PM, Steve French <smfrench@gmail.com> wrote:
-> For additional information the strings that are being matched against are:
->
-> #define SMB1_VERSION_STRING    "1.0"
-> #define SMB20_VERSION_STRING    "2.0"
-> #define SMB21_VERSION_STRING    "2.1"
-> #define SMB30_VERSION_STRING    "3.0"
-> #define SMB302_VERSION_STRING    "3.02"
-> #define SMB31_VERSION_STRING    "3.1"
->
->
-> The matching works as expected, e,g. specifying 3.0 gets matched to
-> Smb_30, before and/after adding the sixth element to the match_table_t
-> - except that unmatched items (picking a dialect that doesn't exist
-> like "5.1") matches to Smb_21 where it used to fall through to the
-> default (error) case.
->
-> It got me a little worried that there MAX_OPT_ARGS is 3 and I am
-> getting the third element in the case of the error.
->
-> Looking at other examples in the kernel were strange e.g. ext4/super.c has this
->
->         /*
->          * Initialize args struct so we know whether arg was
->          * found; some options take optional arguments.
->          */
->         args[0].to = args[0].from = NULL;
->         token = match_token(p, tokens, args);
->         (and then passes args down to a large helper function handle_mount_opt)
->
-> Initializing args didn't seem to help in the cifs case
->
-> On Wed, Sep 17, 2014 at 3:36 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->> On 09/17/14 13:33, Randy Dunlap wrote:
->>> On 09/17/14 11:20, Steve French wrote:
->>>> Noticing something very strange with match_token.   I had five strings
->>>> I need to compare a version string (protocol dialect eg. "2.1" or
->>>> "3.0") against, to find which it matches (if any), but adding one to
->>>> the list (now checking for one of six strings instead of five) causes
->>>> the error case to always default to element 3 (in my example looks as
->>>> if it matched to the 2.1 string) instead of the error case.
->>>>
->>>> enum smb_version {
->>>>     Smb_1 = 1,
->>>>     Smb_20,
->>>>     Smb_21,
->>>>     Smb_30,
->>>>     Smb_302,
->>>> };
->>>>
->>>> static const match_table_t cifs_smb_version_tokens = {
->>>>     { Smb_1, SMB1_VERSION_STRING },
->>>>     { Smb_20, SMB20_VERSION_STRING},
->>>>     { Smb_21, SMB21_VERSION_STRING },
->>>>     { Smb_30, SMB30_VERSION_STRING },
->>>>     { Smb_302, SMB302_VERSION_STRING },
->>>> };
->>>>
->>>
->>> You don't tell us what the actual string values are, but I'm guessing that
->>> SMB302_VERSION_STRING is a subset (same in first N characters) of SMB30_VERSION_STRING. ??
->>>
->>> In that case I think that match_token() will return a ptr to SMB_30 instead of to
->>> SMB_302 when the input is "3.02" (matches "3.0" due to the kernel's implementation
->>> of strcmp() stopping at the end of string1 (where string1 is "3.0" in this case).
->>
->> Oops, it seems that I got the strcmp() parameters reversed.  Sorry about that.
->> Feel free to disregard my ramblings.
->>
->>>
->>> If that is all correct, then could your return value be off by 1?
->>>
->>>>
->>>> When I add one entry to the lists above (going from 5 to 6 elements),
->>>> and then add one additional case for it to the switch statement, an
->>>> attempt to provide an unrecognized string (e.g. if I specify an illegal
->>>> dialect string like "9" instead of "3.0" or "2.1" etc) will now match the
->>>> third element (Smb_21) instead of "default" in the code snippet below.
->>>> Is match_token broken? Can match token only handle tables with 5
->>>> elements or fewer? Is there a replacement for it for this kind of thing
->>>> (matching a string versus which from among a list of valid strings)
->>>> other than match_token?  Is match_token just broken?
->>>>
->>>>     substring_t args[MAX_OPT_ARGS];
->>>>
->>>>     switch (match_token(value, cifs_smb_version_tokens, args)) {
->>>>     case Smb_1:
->>>>         vol->ops = &smb1_operations;
->>>>         vol->vals = &smb1_values;
->>>>         break;
->>>>     case Smb_20:
->>>>         vol->ops = &smb20_operations;
->>>>         vol->vals = &smb20_values;
->>>>         break;
->>>>     case Smb_21:
->>>>         vol->ops = &smb21_operations;
->>>>         vol->vals = &smb21_values;
->>>>         break;
->>>>     case Smb_30:
->>>>         vol->ops = &smb30_operations;
->>>>         vol->vals = &smb30_values;
->>>>         break;
->>>>     case Smb_302:
->>>>         vol->ops = &smb30_operations; /* currently identical with 3.0 */
->>>>         vol->vals = &smb302_values;
->>>>         break;
->>>>     default:
->>>>         cifs_dbg(VFS, "Unknown vers= option specified: %s\n", value);
->>>>         return 1;
->>>>
->>>
->>>
->>
->>
->> --
->> ~Randy
->
->
->
-> --
-> Thanks,
->
-> Steve
-
-
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 32cbbd5..aa97108 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1758,7 +1758,7 @@ config XEN_DOM0
+ 	depends on XEN
+ 
+ config XEN
+-	bool "Xen guest support on ARM (EXPERIMENTAL)"
++	bool "Xen guest support on ARM"
+ 	depends on ARM && AEABI && OF
+ 	depends on CPU_V7 && !CPU_V6
+ 	depends on !GENERIC_ATOMIC64
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index fd4e81a..82bd86c 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -317,7 +317,7 @@ config XEN_DOM0
+ 	depends on XEN
+ 
+ config XEN
+-	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
++	bool "Xen guest support on ARM64"
+ 	depends on ARM64 && OF
+ 	select SWIOTLB_XEN
+ 	help
 -- 
-Thanks,
+1.9.3
 
-Steve
