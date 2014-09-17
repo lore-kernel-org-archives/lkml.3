@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaIQCSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 22:18:17 -0400
-Received: from ozlabs.org ([103.22.144.67]:60898 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283AbaIQCSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 22:18:15 -0400
-Date: Wed, 17 Sep 2014 12:18:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, anish@chelsio.com
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-ID: <20140917121808.27977073@canb.auug.org.au>
-In-Reply-To: <20140916.214859.1906368469534009374.davem@davemloft.net>
-References: <20140917110454.399a7841@canb.auug.org.au>
-	<20140916.214859.1906368469534009374.davem@davemloft.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754388AbaIQCYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 22:24:53 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:59218 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339AbaIQCYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 22:24:52 -0400
+Date: Tue, 16 Sep 2014 19:24:40 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Shengjiu Wang <shengjiu.wang@freescale.com>, timur@tabi.org,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: fsl_spdif: don't change the root clock rate of
+ spdif in driver
+Message-ID: <20140917022440.GA3216@Asurada>
+References: <1410867994-32138-1-git-send-email-shengjiu.wang@freescale.com>
+ <20140916180028.GA6784@Asurada>
+ <20140917013251.GA4796@dragon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/C1dOj0=f.Gtgr.IlFc622L2"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140917013251.GA4796@dragon>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/C1dOj0=f.Gtgr.IlFc622L2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 17, 2014 at 09:32:52AM +0800, Shawn Guo wrote:
+> On Tue, Sep 16, 2014 at 11:19:28AM -0700, Nicolin Chen wrote:
+> > On Tue, Sep 16, 2014 at 07:46:34PM +0800, Shengjiu Wang wrote:
+> > > The spdif root clock may be used by other module or defined with
+> > > CLK_SET_RATE_GATE, so we can't change the clock rate in driver.
+> > > In this patch remove the clk_set_rate and clk_round_rate to protect the
+> > > clock.
+> > 
+> > It's a quite convenient and conservative way to remove the clock
+> > dealing code in the driver, however, it may result less flexible
+> > functionalities.
+> > 
+> > The reason why I left the clk_set_rate() in the driver is to hope
+> > we may find a better way to tackle those tough situations. For IP
+> > itself, it doesn't matter if the clock the SoC provides to it is
+> > being shared by other modules or not.
+> > 
+> > So I think, if it's a shared clock, we should not define it as a
+> > rate-changeable one in the SoC level, as we might still have some
+> > SoCs provide a dedicated clock to S/PDIF so as to get the maximum
+> > range of clock support for users.
+> > 
+> > @Shawn
+> > Sorry to involve you in this topic. I'm not so sure if we can do
+> > this in the clock driver so that the clock rate would be fixed
+> > even if the driver is trying to change it. If we can, I think we
+> > may use a better solution here instead.
+> 
+> No, we do not have anything like that today.
 
-Hi Dave,
+It's not supported in the clock API or just not implemented in our
+code? Can we just register a clock without CLK_SET_RATE_PARENT to
+achieve the purpose? (We are just trying to fix those PRED and PODF
+dividers when the driver calls set_rate to their GATE clock.)
 
-On Tue, 16 Sep 2014 21:48:59 -0400 (EDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 17 Sep 2014 11:04:54 +1000
->=20
-> > This is a bit different to yesterday's failure but I assume it is still
-> > related to commit 5d6be6a5d486 ("scsi_netlink : Make SCSI_NETLINK
-> > dependent on NET instead of selecting NET").
-> >=20
-> > I used the net tree from next-20140915 again today.
->=20
-> Should be fixed by:
->=20
-> commit 6a38792ca8a5da28f65dc42eeb73d9a431f8d0fd
-> Author: Randy Dunlap <rdunlap@infradead.org>
-> Date:   Tue Sep 16 13:47:41 2014 -0700
->=20
->     scsi: use 'depends' instead of 'select' for SCSI_FC_ATTRS
->    =20
->     There are other kconfig symbols which use SCSI_FC_ATTRS.
->     In order to maintain sanity and prevent kconfig warnings, change
->     all of these from using 'select' to using 'depends on' so that
->     proper symbol dependencies will be honored and circular depends
->     problems will be avoided.
->     This fixes kconfig warnings and build errors:
+Thank you
+Nicolin
 
-OK, thanks.  That was not in the net tree I fetched this morning, so
-should be good tomorrow.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/C1dOj0=f.Gtgr.IlFc622L2
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUGO9kAAoJEMDTa8Ir7ZwV0D4P/2TaL3IDRucJ9wG0lmpxJxXu
-Mn23DMYSmVqfWBC/3SAa2had30q0OozZEyLGLRtelKwtikX2dCvBtE5cX+winX7T
-hcRGqn1WOoZlk4xzGOmsJT9BiDiR5ZkOyWt4KCsJx7HhlwlWDok/EdLi0LguzS63
-ygDxDQdRa3k83XxKghPWhbdPIovuQ9aD9pFq6JPKLvSgrJcKsbcgq+mRS6F1UxmD
-njVq+LWSmIJgUzbSMheiRExBfRGuvm14OoinTfzkttAgdAQKZasOtCa5CtSvnhoN
-JdjFNnQJBeYOQt3NV50+jZHlRG+Rp4TGquBG28I7Mlmzf1wmJBfAyL2nh+IEqZER
-ZMbUwAmnRkpvZQOKH9TFGObP00z6pprSUwYOV2K10ifKkn3Zwa6axF/TA5CJWQG0
-9FztZqfrCE3zXv62a8yhvkbzAgJJlZ7pfawU5gNzwp8yhCf5GCc/3y3SKTJrLC1t
-fxlYdFmyO2ve9sM8j07iTOauGStVegN6VYtdm5Sod5nVfkCVs4MJrocnJgzYhGmB
-p9XQBtEvzj/c334/k1X44aEI7G3FINsef/WJmbRWUQHG2/r5Ud6lK2ITGpKSnmuz
-KQyEvAjfx2nNGVAWCRjVd0sL40YRIziLhW4NF6kcyQZMNBnC1KKUoJVASR3sxxAq
-EPlIIOUWX4yJN9fxBGFP
-=Jgf3
------END PGP SIGNATURE-----
-
---Sig_/C1dOj0=f.Gtgr.IlFc622L2--
