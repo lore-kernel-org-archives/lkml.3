@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148AbaIQVsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:48:31 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:36094 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071AbaIQVs3 (ORCPT
+	id S1757187AbaIQVsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:48:36 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:39490 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117AbaIQVsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:48:29 -0400
+	Wed, 17 Sep 2014 17:48:31 -0400
 From: Frans Klaver <fransklaver@gmail.com>
 To: Darren Hart <dvhart@infradead.org>
 Cc: Frans Klaver <fransklaver@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frans Klaver <fransklaver@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         acpi4asus-user@lists.sourceforge.net,
         platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] eeepc-laptop: make fan1_input really read-only
-Date: Wed, 17 Sep 2014 23:47:25 +0200
-Message-Id: <1410990447-3210-8-git-send-email-fransklaver@gmail.com>
+Subject: [PATCH 9/9] eeepc-laptop: store_cpufv: return error if set_acpi fails
+Date: Wed, 17 Sep 2014 23:47:27 +0200
+Message-Id: <1410990447-3210-10-git-send-email-fransklaver@gmail.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
 References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
@@ -25,77 +25,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the instantiation of the fan1_input device attribute, NULL is passed
-as set function to store_sys_hwmon. The function pointer is never
-checked before dereferencing it. This is fine if we can guarantee that
-it will never be called with an invalid pointer, but we can't. If
-someone from user space decides to change the permissions on this
-attribute and write to it, kernel will crash.
-
-Introduce EEEPC_CREATE_SENSOR_ATTR_RO() to instantiate a read-only
-attribute, and declare fan1_input with it. This ensures store_sys_hwmon
-is never called with NULL parameters. If someone tries to write the
-attribute, the system will at least keep its sanity.
-
-This also causes EEEPC_CREATE_SENSOR_ATTR() to be only used for R/W
-attributes.This enables us to drop the _mode argument from the macro
-and use DEVICE_ATTR_RW() internally while we're at it. Append _RW to the
-name for readability.
+The result of set_acpi is left unchecked, but it may return errors. If
+one occurs, send the error to the caller. There's no reason to lie about
+it, if set_acpi fails.
 
 Signed-off-by: Frans Klaver <fransklaver@gmail.com>
 ---
- drivers/platform/x86/eeepc-laptop.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ drivers/platform/x86/eeepc-laptop.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index ba251bb..e93a54e 100644
+index 875a43f..3f6c762 100644
 --- a/drivers/platform/x86/eeepc-laptop.c
 +++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -1039,7 +1039,7 @@ static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
+@@ -388,7 +388,9 @@ static ssize_t cpufv_store(struct device *dev,
+ 		return rv;
+ 	if (value < 0 || value >= c.num)
+ 		return -EINVAL;
+-	set_acpi(eeepc, CM_ASL_CPUFV, value);
++	rv = set_acpi(eeepc, CM_ASL_CPUFV, value);
++	if (rv)
++		return rv;
+ 	return count;
  }
  
- #define EEEPC_SENSOR_SHOW_FUNC(_name, _get)				\
--	static ssize_t show_##_name(struct device *dev,			\
-+	static ssize_t _name##_show(struct device *dev,			\
- 				    struct device_attribute *attr,	\
- 				    char *buf)				\
- 	{								\
-@@ -1047,23 +1047,27 @@ static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
- 	}
- 
- #define EEEPC_SENSOR_STORE_FUNC(_name, _set)				\
--	static ssize_t store_##_name(struct device *dev,		\
-+	static ssize_t _name##_store(struct device *dev,		\
- 				     struct device_attribute *attr,	\
- 				     const char *buf, size_t count)	\
- 	{								\
- 		return store_sys_hwmon(_set, buf, count);		\
- 	}
- 
--#define EEEPC_CREATE_SENSOR_ATTR(_name, _mode, _get, _set)		\
-+#define EEEPC_CREATE_SENSOR_ATTR_RW(_name, _get, _set)			\
- 	EEEPC_SENSOR_SHOW_FUNC(_name, _get)				\
- 	EEEPC_SENSOR_STORE_FUNC(_name, _set)				\
--	static DEVICE_ATTR(_name, _mode, show_##_name, store_##_name)
-+	static DEVICE_ATTR_RW(_name)
-+
-+#define EEEPC_CREATE_SENSOR_ATTR_RO(_name, _get)			\
-+	EEEPC_SENSOR_SHOW_FUNC(_name, _get)				\
-+	static DEVICE_ATTR_RO(_name)
- 
--EEEPC_CREATE_SENSOR_ATTR(fan1_input, S_IRUGO, eeepc_get_fan_rpm, NULL);
--EEEPC_CREATE_SENSOR_ATTR(pwm1, S_IRUGO | S_IWUSR,
--			 eeepc_get_fan_pwm, eeepc_set_fan_pwm);
--EEEPC_CREATE_SENSOR_ATTR(pwm1_enable, S_IRUGO | S_IWUSR,
--			 eeepc_get_fan_ctrl, eeepc_set_fan_ctrl);
-+EEEPC_CREATE_SENSOR_ATTR_RO(fan1_input, eeepc_get_fan_rpm);
-+EEEPC_CREATE_SENSOR_ATTR_RW(pwm1, eeepc_get_fan_pwm,
-+			    eeepc_set_fan_pwm);
-+EEEPC_CREATE_SENSOR_ATTR_RW(pwm1_enable, eeepc_get_fan_ctrl,
-+			    eeepc_set_fan_ctrl);
- 
- static struct attribute *hwmon_attrs[] = {
- 	&dev_attr_pwm1.attr,
 -- 
 2.1.0
 
