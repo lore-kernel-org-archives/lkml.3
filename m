@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaIQAt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 20:49:57 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:42063 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064AbaIQAt4 (ORCPT
+	id S1754315AbaIQAup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 20:50:45 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:48775 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaIQAuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 20:49:56 -0400
-From: Martin Kelly <martin@martingkelly.com>
-To: x86@kernel.org, mingo@redhat.com
-Cc: vishwesh.m.rudramuni@intel.com, joe@perches.com, hpa@linux.intel.com,
-        aubrey.li@linux.intel.com, linux-kernel@vger.kernel.org,
-        Martin Kelly <martin@martingkelly.com>,
-        Martin Kelly <martkell@amazon.com>
-Subject: [PATCH v2] x86/pmc_atom: Fix warning when CONFIG_DEBUG_FS=n
-Date: Tue, 16 Sep 2014 17:49:35 -0700
-Message-Id: <1410914975-23285-1-git-send-email-martin@martingkelly.com>
-X-Mailer: git-send-email 2.1.0
+	Tue, 16 Sep 2014 20:50:44 -0400
+X-Auth-Info: hWvJoVnza2i8wTqEplZItnk6u84HMhldYx66MEYnxyE=
+From: Marek Vasut <marex@denx.de>
+To: Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH v6] spi: spi-imx: add DMA support
+Date: Wed, 17 Sep 2014 02:49:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: Robin Gong <b38343@freescale.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, Frank.Li@freescale.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org
+References: <1410398324-15284-1-git-send-email-b38343@freescale.com> <20140915223944.GH7960@sirena.org.uk>
+In-Reply-To: <20140915223944.GH7960@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409170249.17597.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling with CONFIG_DEBUG_FS=n, gcc emits an unused variable
-warning for pmc_atom.c because "ret" is used only within the
-CONFIG_DEBUG_FS block. This patch adds a dummy #ifdef for
-pmc_dbgfs_register when CONFIG_DEBUG_FS=n to simplify the code and
-remove the warning.
+On Tuesday, September 16, 2014 at 12:39:44 AM, Mark Brown wrote:
+> On Thu, Sep 11, 2014 at 09:18:44AM +0800, Robin Gong wrote:
+> > Enable DMA support on i.mx6. The read speed can increase from 600KB/s
+> > to 1.2MB/s on i.mx6q. You can disable or enable dma function in dts.
+> > If not set "dma-names" in dts, spi will use PIO mode. This patch only
+> > validate on i.mx6, not i.mx5, but encourage ones to apply this patch
+> > on i.mx5 since they share the same IP.
+> 
+> Adding Maerk (who I had to add to earlier versions of this patch).
 
-Signed-off-by: Martin Kelly <martkell@amazon.com>
----
-Changes in v2:
-  - Implemented Ingo Molnar's suggestion to #ifdef the function rather
-    than the lines.
----
- arch/x86/kernel/pmc_atom.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Looks OK to me.
 
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0c424a6..d06527a 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -235,6 +235,11 @@ err:
- 	pmc_dbgfs_unregister(pmc);
- 	return -ENODEV;
- }
-+#else
-+static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_DEBUG_FS */
- 
- static int pmc_setup_dev(struct pci_dev *pdev)
-@@ -262,13 +267,11 @@ static int pmc_setup_dev(struct pci_dev *pdev)
- 	/* PMC hardware registers setup */
- 	pmc_hw_reg_setup(pmc);
- 
--#ifdef CONFIG_DEBUG_FS
- 	ret = pmc_dbgfs_register(pmc, pdev);
- 	if (ret) {
- 		iounmap(pmc->regmap);
- 		return ret;
- 	}
--#endif /* CONFIG_DEBUG_FS */
- 	return 0;
- }
- 
--- 
-2.1.0
+Acked-by: Marek Vasut <marex@denx.de>
 
+Thank you!
+
+Best regards,
+Marek Vasut
