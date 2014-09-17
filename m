@@ -1,449 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812AbaIQTyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:54:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55802 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756223AbaIQTyK (ORCPT
+	id S1756831AbaIQTzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:55:24 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:47439 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756604AbaIQTzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:54:10 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
-        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv7 1/2] pwm: Add Allwinner SoC support
-Date: Wed, 17 Sep 2014 21:53:57 +0200
-Message-Id: <1410983638-24915-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410983638-24915-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410983638-24915-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 17 Sep 2014 15:55:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410542338-24565-1-git-send-email-swarren@wwwdotorg.org>
+References: <1410542338-24565-1-git-send-email-swarren@wwwdotorg.org>
+Date: Wed, 17 Sep 2014 21:55:21 +0200
+Message-ID: <CAPDyKFq63LKHKJ_1JD=SGU=V1eE-1105qPLy1EQtf=4k8dwKkA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: don't request CD IRQ until mmc_start_host()
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic PWM framework driver for the PWM controller
-found on Allwinner SoCs.
+On 12 September 2014 19:18, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>
+> As soon as the CD IRQ is requested, it can trigger, since it's an
+> externally controlled event. If it does, delayed_work host->detect will
+> be scheduled.
+>
+> Many host controller probe()s are roughly structured as:
+>
+> *_probe() {
+>     host = sdhci_pltfm_init();
+>     mmc_of_parse(host->mmc);
+>     rc = sdhci_add_host(host);
+>     if (rc) {
+>         sdhci_pltfm_free();
+>         return rc;
+>     }
+>
+> In 3.17, CD IRQs can are enabled quite early via *_probe() ->
+> mmc_of_parse() -> mmc_gpio_request_cd() -> mmc_gpiod_request_cd_irq().
+>
+> Note that in linux-next, mmc_of_parse() calls mmc_gpio*d*_request_cd()
+> rather than mmc_gpio_request_cd(), and mmc_gpio*d*_request_cd() doesn't
+> call mmc_gpiod_request_cd_irq(). However, this issue still exists for
+> any other direct users of mmc_gpio_request_cd().
+>
+> sdhci_add_host() may fail part way through (e.g. due to deferred
+> probe for a vmmc regulator), and sdhci_pltfm_free() does nothing to
+> unrequest the CD IRQ nor cancel the delayed_work. sdhci_pltfm_free() is
+> coded to assume that if sdhci_add_host() failed, then the delayed_work
+> cannot (or should not) have been triggered.
+>
+> This can lead to the following with CONFIG_DEBUG_OBJECTS_* enabled, when
+> kfree(host) is eventually called inside sdhci_pltfm_free():
+>
+> WARNING: CPU: 2 PID: 6 at lib/debugobjects.c:263 debug_print_object+0x8c/0xb4()
+> ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x18
+>
+> The object being complained about is host->detect.
+>
+> There's no need to request the CD IRQ so early; mmc_start_host() already
+> requests it, and I *assume* that mmc_start_host() is called somehow for
+> all host controllers. For SDHCI hosts at least, the typical call path
+> that does this is: *_probe() -> sdhci_add_host() -> mmc_add_host() ->
+> mmc_start_host(). So, remove the call to mmc_gpiod_request_cd_irq() from
+> mmc_gpio_request_cd(). This matches mmc_gpio*d*_request_cd(), which
+> already doesn't call mmc_gpiod_request_cd_irq().
+>
+> This solves the problem (eliminates the kernel error message above),
+> since it guarantees that the IRQ can't trigger before mmc_start_host()
+> is called.
+>
+> The critical point here is that once sdhci_add_host() calls
+> mmc_add_host() -> mmc_start_host(), sdhci_add_host() is coded not to
+> fail. In other words, if there's a chance that mmc_start_host() may have
+> been called, and CD IRQs triggered, and the delayed_work scheduled,
+> sdhci_add_host() won't fail, and so cleanup is no longer via
+> sdhci_pltfm_free() (which doesn't free the IRQ or cancel the work queue)
+> but instead must be via sdhci_remove_host(), which calls mmc_remove_host()
+> -> mmc_stop_host(), which does free the IRQ and cancel the work queue.
+>
+> This fixes what I might conclude to be a mistake in commit 740a221ef0e5
+> ("mmc: slot-gpio: Add GPIO descriptor based CD GPIO API"), which added the
+> call from mmc_start_host() to mmc_gpiod_request_cd_irq(), but also added
+> incorrectly added a call from mmc_gpio_request_cd() to
+> mmc_gpiod_request_cd_irq().
+>
+> CC: Russell King <linux@arm.linux.org.uk>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: Alexandre Courbot <acourbot@nvidia.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/pwm/Kconfig     |   9 ++
- drivers/pwm/Makefile    |   1 +
- drivers/pwm/pwm-sunxi.c | 371 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 381 insertions(+)
- create mode 100644 drivers/pwm/pwm-sunxi.c
+Hi Stephen,
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 3865dfb9ed08..80e03df5744f 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -262,6 +262,15 @@ config PWM_STI
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-sti.
- 
-+config PWM_SUNXI
-+	tristate "Allwinner PWM support"
-+	depends on ARCH_SUNXI || COMPILE_TEST
-+	help
-+	  Generic PWM framework driver for Allwinner SoCs.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-sunxi.
-+
- config PWM_TEGRA
- 	tristate "NVIDIA Tegra PWM support"
- 	depends on ARCH_TEGRA
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index c458606c3755..a9386bd61956 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -24,6 +24,7 @@ obj-$(CONFIG_PWM_ROCKCHIP)	+= pwm-rockchip.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_SPEAR)		+= pwm-spear.o
- obj-$(CONFIG_PWM_STI)		+= pwm-sti.o
-+obj-$(CONFIG_PWM_SUNXI)		+= pwm-sunxi.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
- obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
-diff --git a/drivers/pwm/pwm-sunxi.c b/drivers/pwm/pwm-sunxi.c
-new file mode 100644
-index 000000000000..643f84ea013e
---- /dev/null
-+++ b/drivers/pwm/pwm-sunxi.c
-@@ -0,0 +1,371 @@
-+/*
-+ * Driver for Allwinner Pulse Width Modulation Controller
-+ *
-+ * Copyright (C) 2014 Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+ *
-+ * Licensed under GPLv2.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+#include <linux/time.h>
-+
-+#define PWM_CTRL_REG		0x0
-+
-+#define PWM_CH_PRD_BASE		0x4
-+#define PWM_CH_PRD_OFFSET	0x4
-+#define PWM_CH_PRD(ch)		(PWM_CH_PRD_BASE + PWM_CH_PRD_OFFSET * (ch))
-+
-+#define PWMCH_OFFSET		15
-+#define PWM_PRESCAL_MASK	GENMASK(3, 0)
-+#define PWM_PRESCAL_OFF		0
-+#define PWM_EN			BIT(4)
-+#define PWM_ACT_STATE		BIT(5)
-+#define PWM_CLK_GATING		BIT(6)
-+#define PWM_MODE		BIT(7)
-+#define PWM_PULSE		BIT(8)
-+#define PWM_BYPASS		BIT(9)
-+
-+#define PWM_RDY_BASE		28
-+#define PWM_RDY_OFFSET		1
-+#define PWM_RDY(ch)		BIT(PWM_RDY_BASE + PWM_RDY_OFFSET * (ch))
-+
-+#define PWM_PRD(prd)		(((prd) - 1) << 16)
-+#define PWM_PRD_MASK		GENMASK(15, 0)
-+
-+#define PWM_DTY_MASK		GENMASK(15, 0)
-+
-+#define BIT_CH(bit, chan)	(bit << (chan * PWMCH_OFFSET))
-+
-+static const u32 prescaler_table[] = {
-+	120,
-+	180,
-+	240,
-+	360,
-+	480,
-+	0,
-+	0,
-+	0,
-+	12000,
-+	24000,
-+	36000,
-+	48000,
-+	72000,
-+	0,
-+	0,
-+	0, /* Actually 1 but tested separately */
-+};
-+
-+struct sunxi_pwm_data {
-+	bool has_prescaler_bypass;
-+	bool has_rdy;
-+};
-+
-+struct sunxi_pwm_chip {
-+	struct pwm_chip chip;
-+	struct clk *clk;
-+	void __iomem *base;
-+	struct mutex ctrl_lock;
-+	const struct sunxi_pwm_data *data;
-+};
-+
-+static inline struct sunxi_pwm_chip *to_sunxi_pwm_chip(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct sunxi_pwm_chip, chip);
-+}
-+
-+static inline u32 sunxi_pwm_readl(struct sunxi_pwm_chip *chip,
-+				  unsigned long offset)
-+{
-+	return readl(chip->base + offset);
-+}
-+
-+
-+static inline void sunxi_pwm_writel(struct sunxi_pwm_chip *chip,
-+				    u32 val, unsigned long offset)
-+{
-+	writel(val, chip->base + offset);
-+}
-+
-+static int sunxi_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			    int duty_ns, int period_ns)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 clk_rate, prd, dty, val, clk_gate;
-+	u64 div = 0;
-+	unsigned int prescaler = 0;
-+	int err;
-+
-+	clk_rate = clk_get_rate(sunxi_pwm->clk);
-+
-+	if (sunxi_pwm->data->has_prescaler_bypass) {
-+		/* First, test without any prescaler when available */
-+		prescaler = PWM_PRESCAL_MASK;
-+		/*
-+		 * When not using any prescaler, the clock period in nanoseconds
-+		 * is not an integer so round it half up instead of
-+		 * truncating to get less surprising values.
-+		 */
-+		div = clk_rate * (u64)period_ns + NSEC_PER_SEC/2;
-+		do_div(div, NSEC_PER_SEC);
-+		if (div - 1 > PWM_PRD_MASK)
-+			prescaler = 0;
-+	}
-+
-+	if (prescaler == 0) {
-+		/* Go up from the first divider */
-+		for (prescaler = 0; prescaler < PWM_PRESCAL_MASK; prescaler++) {
-+			if (!prescaler_table[prescaler])
-+				continue;
-+			div = clk_rate / prescaler_table[prescaler];
-+			div = div * (u64)period_ns;
-+			do_div(div, NSEC_PER_SEC);
-+			if (div - 1 <= PWM_PRD_MASK)
-+				break;
-+		}
-+
-+		if (div - 1 > PWM_PRD_MASK) {
-+			dev_err(chip->dev, "period exceeds the maximum value\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	prd = div;
-+	div *= duty_ns;
-+	do_div(div, period_ns);
-+	dty = div;
-+
-+	err = clk_prepare_enable(sunxi_pwm->clk);
-+	if (err) {
-+		dev_err(chip->dev, "failed to enable PWM clock\n");
-+		return err;
-+	}
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+
-+	if (sunxi_pwm->data->has_rdy && (val & PWM_RDY(pwm->hwpwm))) {
-+		mutex_unlock(&sunxi_pwm->ctrl_lock);
-+		clk_disable_unprepare(sunxi_pwm->clk);
-+		return -EBUSY;
-+	}
-+
-+	clk_gate = val & BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+	if (clk_gate) {
-+		val &= ~BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+		sunxi_pwm_writel(sunxi_pwm, val, PWM_CTRL_REG);
-+	}
-+
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+	val &= ~BIT_CH(PWM_PRESCAL_MASK, pwm->hwpwm);
-+	val |= BIT_CH(prescaler, pwm->hwpwm);
-+	sunxi_pwm_writel(sunxi_pwm, val, PWM_CTRL_REG);
-+
-+	val = (dty & PWM_DTY_MASK) | PWM_PRD(prd);
-+	sunxi_pwm_writel(sunxi_pwm, val, PWM_CH_PRD(pwm->hwpwm));
-+
-+	if (clk_gate) {
-+		val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+		val |= clk_gate;
-+		sunxi_pwm_writel(sunxi_pwm, val, PWM_CTRL_REG);
-+	}
-+
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+
-+	return 0;
-+}
-+
-+static int sunxi_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				  enum pwm_polarity polarity)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 val;
-+	int ret;
-+
-+	ret = clk_prepare_enable(sunxi_pwm->clk);
-+	if (ret) {
-+		dev_err(chip->dev, "failed to enable PWM clock\n");
-+		return ret;
-+	}
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+
-+	if (polarity != PWM_POLARITY_NORMAL)
-+		val &= ~BIT_CH(PWM_ACT_STATE, pwm->hwpwm);
-+	else
-+		val |= BIT_CH(PWM_ACT_STATE, pwm->hwpwm);
-+
-+	sunxi_pwm_writel(sunxi_pwm, val, PWM_CTRL_REG);
-+
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+
-+	return 0;
-+}
-+
-+static int sunxi_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 val;
-+	int ret;
-+
-+	ret = clk_prepare_enable(sunxi_pwm->clk);
-+	if (ret) {
-+		dev_err(chip->dev, "failed to enable PWM clock\n");
-+		return ret;
-+	}
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+	val |= BIT_CH(PWM_EN, pwm->hwpwm);
-+	val |= BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+	sunxi_pwm_writel(sunxi_pwm, val, PWM_CTRL_REG);
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+
-+	return 0;
-+}
-+
-+static void sunxi_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 val;
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+	val &= ~BIT_CH(PWM_EN, pwm->hwpwm);
-+	val &= ~BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+	sunxi_pwm_writel(sunxi_pwm, val, PWM_CTRL_REG);
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+}
-+
-+static const struct pwm_ops sunxi_pwm_ops = {
-+	.config = sunxi_pwm_config,
-+	.set_polarity = sunxi_pwm_set_polarity,
-+	.enable = sunxi_pwm_enable,
-+	.disable = sunxi_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static const struct sunxi_pwm_data sunxi_pwm_data_a10 = {
-+	.has_prescaler_bypass = false,
-+	.has_rdy = false,
-+};
-+
-+static const struct sunxi_pwm_data sunxi_pwm_data_a20 = {
-+	.has_prescaler_bypass = true,
-+	.has_rdy = true,
-+};
-+
-+static const struct of_device_id sunxi_pwm_dt_ids[] = {
-+	{
-+		.compatible = "allwinner,sun4i-a10-pwm",
-+		.data = &sunxi_pwm_data_a10,
-+	}, {
-+		.compatible = "allwinner,sun7i-a20-pwm",
-+		.data = &sunxi_pwm_data_a20,
-+	}, {
-+		/* sentinel */
-+	},
-+};
-+MODULE_DEVICE_TABLE(of, sunxi_pwm_dt_ids);
-+
-+static int sunxi_pwm_probe(struct platform_device *pdev)
-+{
-+	struct sunxi_pwm_chip *pwm;
-+	struct resource *res;
-+	u32 val;
-+	int i, ret;
-+	const struct of_device_id *match;
-+
-+	match = of_match_device(sunxi_pwm_dt_ids, &pdev->dev);
-+
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	pwm->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(pwm->base))
-+		return PTR_ERR(pwm->base);
-+
-+	pwm->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pwm->clk))
-+		return PTR_ERR(pwm->clk);
-+
-+	pwm->chip.dev = &pdev->dev;
-+	pwm->chip.ops = &sunxi_pwm_ops;
-+	pwm->chip.base = -1;
-+	pwm->chip.npwm = 2;
-+	pwm->chip.can_sleep = true;
-+	pwm->chip.of_xlate = of_pwm_xlate_with_flags;
-+	pwm->chip.of_pwm_n_cells = 3;
-+	pwm->data = match->data;
-+
-+	mutex_init(&pwm->ctrl_lock);
-+
-+	ret = pwmchip_add(&pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add PWM chip %d\n", ret);
-+		goto error;
-+	}
-+
-+	ret = clk_prepare_enable(pwm->clk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable PWM clock\n");
-+		goto error;
-+	}
-+
-+	val = sunxi_pwm_readl(pwm, PWM_CTRL_REG);
-+	for (i = 0; i < pwm->chip.npwm; i++) {
-+		if (!(val & BIT_CH(PWM_ACT_STATE, i)))
-+			pwm->chip.pwms[i].polarity = PWM_POLARITY_INVERSED;
-+	}
-+
-+	clk_disable_unprepare(pwm->clk);
-+
-+	platform_set_drvdata(pdev, pwm);
-+
-+	return ret;
-+
-+error:
-+	mutex_destroy(&pwm->ctrl_lock);
-+	clk_disable_unprepare(pwm->clk);
-+	return ret;
-+}
-+
-+static int sunxi_pwm_remove(struct platform_device *pdev)
-+{
-+	struct sunxi_pwm_chip *pwm = platform_get_drvdata(pdev);
-+
-+	mutex_destroy(&pwm->ctrl_lock);
-+
-+	return pwmchip_remove(&pwm->chip);
-+}
-+
-+static struct platform_driver sunxi_pwm_driver = {
-+	.driver = {
-+		.name = "sunxi-pwm",
-+		.of_match_table = sunxi_pwm_dt_ids,
-+	},
-+	.probe = sunxi_pwm_probe,
-+	.remove = sunxi_pwm_remove,
-+};
-+module_platform_driver(sunxi_pwm_driver);
-+
-+MODULE_ALIAS("platform:sunxi-pwm");
-+MODULE_AUTHOR("Alexandre Belloni <alexandre.belloni@free-electrons.com>");
-+MODULE_DESCRIPTION("Allwinner PWM driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
+Thanks for looking into this. It seems like this issue has been
+present for quite a while.
+I believe your patch should have a stable tag for 3.15+ as well,
+unless you object I will add it.
 
+Applied for next!
+
+Kind regards
+Uffe
+
+> ---
+>  drivers/mmc/core/slot-gpio.c | 2 --
+>  1 file changed, 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+> index 5f89cb83d5f0..187f48a5795a 100644
+> --- a/drivers/mmc/core/slot-gpio.c
+> +++ b/drivers/mmc/core/slot-gpio.c
+> @@ -221,8 +221,6 @@ int mmc_gpio_request_cd(struct mmc_host *host, unsigned int gpio,
+>         ctx->override_cd_active_level = true;
+>         ctx->cd_gpio = gpio_to_desc(gpio);
+>
+> -       mmc_gpiod_request_cd_irq(host);
+> -
+>         return 0;
+>  }
+>  EXPORT_SYMBOL(mmc_gpio_request_cd);
+> --
+> 1.9.1
+>
