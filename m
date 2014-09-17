@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaIQL2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 07:28:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754048AbaIQL2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 07:28:00 -0400
-Date: Wed, 17 Sep 2014 13:27:14 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Gleb Natapov <gleb@kernel.org>
-Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-Message-ID: <20140917112713.GB1273@potion.brq.redhat.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
- <20140917102635.GA30733@minantech.com>
+	id S1755270AbaIQLbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 07:31:16 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:47574 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048AbaIQLbO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 07:31:14 -0400
+Date: Wed, 17 Sep 2014 19:30:35 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: behanw@converseincode.com, agk@redhat.com, clm@fb.com, davem@davemloft.net,
+        dm-devel@redhat.com, fabf@skynet.be, jbacik@fb.com, snitzer@redhat.com,
+        tadeusz.struk@intel.com, akpm@linux-foundation.org,
+        bruce.w.allan@intel.com, james.l.morris@oracle.com,
+        john.griffin@intel.com, linux-btrfs@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
+        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
+        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH v3 01/12] crypto: LLVMLinux: Add macro to remove use of
+ VLAIS in crypto code
+Message-ID: <20140917113035.GB2129@gondor.apana.org.au>
+References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
+ <1410766234-1634-2-git-send-email-behanw@converseincode.com>
+ <20140917092212.GA1213@gondor.apana.org.au>
+ <54196D5C.6040104@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140917102635.GA30733@minantech.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54196D5C.6040104@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-17 13:26+0300, Gleb Natapov:
-> For async_pf_execute() you do not need to even retry. Next guest's page fault
-> will retry it for you.
+On Wed, Sep 17, 2014 at 02:15:40PM +0300, Dmitry Kasatkin wrote:
+> On 17/09/14 12:22, Herbert Xu wrote:
+> > On Mon, Sep 15, 2014 at 12:30:23AM -0700, behanw@converseincode.com wrote:
+> >> From: Behan Webster <behanw@converseincode.com>
+> >>
+> >> Add a macro which replaces the use of a Variable Length Array In Struct (VLAIS)
+> >> with a C99 compliant equivalent. This macro instead allocates the appropriate
+> >> amount of memory using an char array.
+> >>
+> >> The new code can be compiled with both gcc and clang.
+> >>
+> >> struct shash_desc contains a flexible array member member ctx declared with
+> >> CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
+> >> of the array declared after struct shash_desc with long long.
+> >>
+> >> No trailing padding is required because it is not a struct type that can
+> >> be used in an array.
+> >>
+> >> The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
+> >> as would be the case for a struct containing a member with
+> >> CRYPTO_MINALIGN_ATTR.
+> >>
+> >> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> > Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+> >
+> > Thanks,
+> 
+> Just in case.
+> I would still follow advice from "Michał Mirosław" to use shash##__desc[]
 
-Wouldn't that be a waste of vmentries?
+Oh yes of course.  My ack is more about the approach.
 
-The guest might be able to handle interrupts while we are waiting, so if
-we used async-io-done notifier, this could work without CPU spinning.
-(Probably with added latency.)
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
