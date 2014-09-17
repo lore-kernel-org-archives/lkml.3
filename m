@@ -1,123 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730AbaIQNwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:52:42 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:40828 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402AbaIQNwk convert rfc822-to-8bit (ORCPT
+	id S1755681AbaIQNxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:53:42 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:56158 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401AbaIQNxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:52:40 -0400
-Date: Wed, 17 Sep 2014 21:52:26 +0800
-From: Ming Lei <tom.leiming@gmail.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        KVM list <kvm@vger.kernel.org>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq crash under KVM in multiqueue block code (with
- virtio-blk and ext4)
-Message-ID: <20140917215226.426f6ce7@tom-ThinkPad-T410>
-In-Reply-To: <20140917140034.10125d00@thinkpad-w530>
-References: <541178D6.6010303@de.ibm.com>
-	<CACVXFVO7Oo9GeagPhejngfoeySxOP4EqWz_GN6kYv2956-Wtxg@mail.gmail.com>
-	<541352ED.7030800@de.ibm.com>
-	<54193F4F.9060508@de.ibm.com>
-	<20140917140034.10125d00@thinkpad-w530>
-Organization: Ming
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Sep 2014 09:53:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140917132141.GD5358@nazgul.tnic>
+References: <20140917124501.GC5358@nazgul.tnic>
+	<1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
+	<1410958454-7501-2-git-send-email-namit@cs.technion.ac.il>
+	<20140917132141.GD5358@nazgul.tnic>
+Date: Wed, 17 Sep 2014 16:53:39 +0300
+X-Google-Sender-Auth: Tp2e9FPEdibYMfmcWWtNzSejMgE
+Message-ID: <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014 14:00:34 +0200
-David Hildenbrand <dahi@linux.vnet.ibm.com> wrote:
+Boris,
 
-> > >>> Does anyone have an idea?
-> > >>> The request itself is completely filled with cc
-> > >>
-> > >> That is very weird, the 'rq' is got from hctx->tags,  and rq should be
-> > >> valid, and rq->q shouldn't have been changed even though it was
-> > >> double free or double allocation.
-> > >>
-> > >>> I am currently asking myself if blk_mq_map_request should protect against softirq here but I cant say for sure,as I have never looked into that code before.
-> > >>
-> > >> No, it needn't the protection.
-> > >>
-> > >> Thanks,
-> > >>
-> > > 
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > 
-> > 
-> 
-> Digging through the code, I think I found a possible cause:
-> 
-> tags->rqs[..] is not initialized with zeroes (via alloc_pages_node in
-> blk-mq.c:blk_mq_init_rq_map()).
+Thanks for you comments - please see inline.
 
-Yes, it may cause problem when the request is allocated at the 1st time,
-and timeout handler may comes just after the allocation and before its
-initialization, then oops triggered because of garbage data in the request. 
+On Wed, Sep 17, 2014 at 4:21 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Sep 17, 2014 at 03:54:12PM +0300, Nadav Amit wrote:
+>> Adding structs that reflect various cpuid fields in x86 architecture. Structs
+>> were added only for functions that are not pure bitmaps.
+>>
+>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>> ---
+>>  arch/x86/include/asm/cpuid_def.h | 163 +++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 163 insertions(+)
+>>  create mode 100644 arch/x86/include/asm/cpuid_def.h
+>>
+>> diff --git a/arch/x86/include/asm/cpuid_def.h b/arch/x86/include/asm/cpuid_def.h
+>> new file mode 100644
+>> index 0000000..0cf43ba
+>> --- /dev/null
+>> +++ b/arch/x86/include/asm/cpuid_def.h
+>> @@ -0,0 +1,163 @@
+>> +#ifndef ARCH_X86_KVM_CPUID_DEF_H
+>> +#define ARCH_X86_KVM_CPUID_DEF_H
+>> +
+>> +union cpuid1_eax {
+>> +     struct {
+>> +             unsigned int stepping_id:4;
+>> +             unsigned int model:4;
+>> +             unsigned int family_id:4;
+>> +             unsigned int processor_type:2;
+>
+> This is not present on AMD so now you need to start differentiate
+> between vendors. Not a big deal, it simply doesn't get touched as it is
+> in the reserved range there...
 
---
->From ffd0824b7b686074c2d5d70bc4e6bba3ba56a30c Mon Sep 17 00:00:00 2001
-From: Ming Lei <ming.lei@canonical.com>
-Date: Wed, 17 Sep 2014 21:00:34 +0800
-Subject: [PATCH] blk-mq: initialize request before the 1st allocation
+It does not seem to be coincidence; AMD and Intel appear to be
+synchronised when it comes to CPUID, MSRs and opcodes.
 
-Otherwise the request can be accessed from timeout handler
-just after its 1st allocation from tag pool and before
-initialization in blk_mq_rq_ctx_init(), so cause oops since
-the request is filled up with garbage data.
+>
+>> +             unsigned int reserved:2;
+>> +             unsigned int extended_model_id:4;
+>> +             unsigned int extended_family_id:8;
+>> +             unsigned int reserved2:4;
+>> +     } split;
+>> +     unsigned int full;
+>> +};
+>> +
+>> +union cpuid1_ebx {
+>> +     struct {
+>> +             unsigned int brand_index:8;
+>> +             unsigned int clflush_size:8;
+>> +             unsigned int max_logical_proc:8;
+>> +             unsigned int initial_apicid:8;
+>> +     } split;
+>> +     unsigned int full;
+>> > +
+>> +
+>> +union cpuid4_eax {
+>> +     struct {
+>> +             unsigned int cache_type:5;
+>> +             unsigned int cache_level:3;
+>> +             unsigned int self_init_cache_level:1;
+>> +             unsigned int fully_associative:1;
+>> +             unsigned int reserved:4;
+>> +             unsigned int max_logical_proc:12;
+>> +             unsigned int max_package_proc:6;
+>> +     } split;
+>> +     unsigned int full;
+>> +};
+>> +
+>> +union cpuid4_ebx {
+>> +     struct {
+>> +             unsigned int coherency_line_size:12;
+>> +             unsigned int physical_line_partitions:10;
+>> +             unsigned int ways:10;
+>> +     } split;
+>> +     unsigned int full;
+>> +};
+>> +
+>> +union cpuid5_eax {
+>> +     struct {
+>> +             unsigned int min_monitor_line_size:16;
+>> +             unsigned int reserved:16;
+>
+> ... the problem with hardcoding those bitfields I see are those reserved
+> fields. The moment hw guys decide to widen, say, that smallest monitor
+> line size, you need the ifdeffery around it. Which automatically becomes
+> ugly and now all of a sudden you need to pay attention to it.
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- block/blk-mq.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+AFAIK backward compatibility is usually maintained in x86. I did not
+see in Intel SDM anything that says "this CPUID field means something
+for CPU X and something else for CPU Y". Anyhow, it is not different
+than bitmasks in this respect.
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 4aac826..d24673f 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -514,6 +514,10 @@ struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
- {
- 	struct request *rq = tags->rqs[tag];
- 
-+	/* uninitialized request */
-+	if (!rq->q || rq->tag == -1)
-+		return rq;
-+
- 	if (!is_flush_request(rq, tag))
- 		return rq;
- 
-@@ -1401,6 +1405,12 @@ static struct blk_mq_tags *blk_mq_init_rq_map(struct blk_mq_tag_set *set,
- 		left -= to_do * rq_size;
- 		for (j = 0; j < to_do; j++) {
- 			tags->rqs[i] = p;
-+
-+			/* Avoiding early access from timeout handler */
-+			tags->rqs[i]->tag = -1;
-+			tags->rqs[i]->q = NULL;
-+			tags->rqs[i]->cmd_flags = 0;
-+
- 			if (set->ops->init_request) {
- 				if (set->ops->init_request(set->driver_data,
- 						tags->rqs[i], hctx_idx, i,
--- 
-1.7.9.5
+>
+> And not all vendors define all bits the same so you're probably going to
+> have to differentiate there too, at some point.
+I am not sure, unless an additional x86 competitor comes to the market...
 
+>
+> Oh, and I don't see what is wrong with opening the CPUID manual in
+> parallel and looking at the bits.
+Well, cscope still does not handle bitmasks. You could have made the
+same argument for segment descriptors, yet desc_struct exists and I
+think its wide use shows its easier to use.
 
+>
+> So, IMO, doing this is a bad idea.
+I don't want to be a snitch, but cpuid10_eax and other PMU related
+cpuid structures already use bitfields, so I don't understand what all
+the fuss is about.
 
-
-
--- 
-Ming Lei
+Regards,
+Nadav
