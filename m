@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580AbaIQNuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:50:15 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:61935 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755346AbaIQNuM (ORCPT
+	id S1755710AbaIQNut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:50:49 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:36278 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548AbaIQNus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:50:12 -0400
-Message-ID: <54199160.7090401@fb.com>
-Date: Wed, 17 Sep 2014 09:49:20 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <behanw@converseincode.com>, <agk@redhat.com>, <davem@davemloft.net>,
-        <dm-devel@redhat.com>, <fabf@skynet.be>, <herbert@gondor.apana.org.au>,
-        <jbacik@fb.com>, <snitzer@redhat.com>, <tadeusz.struk@intel.com>
-CC: <akpm@linux-foundation.org>, <bruce.w.allan@intel.com>,
-        <d.kasatkin@samsung.com>, <james.l.morris@oracle.com>,
-        <john.griffin@intel.com>, <linux-btrfs@vger.kernel.org>,
-        <linux-crypto@vger.kernel.org>,
-        <linux-ima-devel@lists.sourceforge.net>,
-        <linux-ima-user@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <linux-raid@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
-        <neilb@suse.de>, <qat-linux@intel.com>, <serge@hallyn.com>,
-        <thomas.lendacky@amd.com>, <zohar@linux.vnet.ibm.com>,
-        <torvalds@linux-foundation.org>,
-        =?UTF-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>
-Subject: Re: [PATCH v3 02/12] btrfs: LLVMLinux: Remove VLAIS
-References: <1410766234-1634-1-git-send-email-behanw@converseincode.com> <1410766234-1634-3-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1410766234-1634-3-git-send-email-behanw@converseincode.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-17_05:2014-09-17,2014-09-17,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.324642340081358 urlsuspect_oldscore=0.324642340081358
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.324642340081358 spamscore=0
- recipient_to_sender_domain_totalscore=17 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1409170116
-X-FB-Internal: deliver
+	Wed, 17 Sep 2014 09:50:48 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, davem@davemloft.net, gregkh@linuxfoundation.org,
+        joe@perches.com, m.chehab@samsung.com, crope@iki.fi,
+        linux-arm-kernel@lists.infradead.org,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Subject: [PATCH] MAINTAINERS: Add maintainers entry for Mediatek SoCs
+Date: Wed, 17 Sep 2014 15:50:31 +0200
+Message-Id: <1410961831-15532-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I plan to stay with the Mediatek SoCs for the near future
+and hope to expand its support along the way with the help
+of a whole bunch of people.
 
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+---
+ MAINTAINERS | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-On 09/15/2014 03:30 AM, behanw@converseincode.com wrote:
-> From: Vinícius Tinti <viniciustinti@gmail.com>
-> 
-> Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-> compliant equivalent. This is the original VLAIS struct.
-> 
-> struct {
-> 	struct shash_desc shash;
-> 	char ctx[crypto_shash_descsize(tfm)];
-> } desc;
-> 
-> This patch instead allocates the appropriate amount of memory using a
-> char array using the SHASH_DESC_ON_STACK macro.
-> 
-> The new code can be compiled with both gcc and clang.
-> 
-> Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-> Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
-> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 63c1b0f..23618e7 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1162,6 +1162,16 @@ W:	http://www.digriz.org.uk/ts78xx/kernel
+ S:	Maintained
+ F:	arch/arm/mach-orion5x/ts78xx-*
+ 
++ARM/Mediatek SoC support
++M:	Matthias Brugger <matthias.bgg@gmail.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++F:	arch/arm/boot/dts/mt6*
++F:	arch/arm/boot/dts/mt8*
++F:	arch/arm/mach-mediatek/
++N:	mtk
++K:	mediatek
++
+ ARM/MICREL KS8695 ARCHITECTURE
+ M:	Greg Ungerer <gerg@uclinux.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-- 
+1.9.1
 
-Acked-by: Chris Mason <clm@fb.com>
-
-On the btrfs bits.  Thanks for the v3.
-
--chris
