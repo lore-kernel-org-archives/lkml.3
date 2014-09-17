@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768AbaIQDru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 23:47:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:58661 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753886AbaIQDrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 23:47:48 -0400
-Date: Wed, 17 Sep 2014 13:47:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140917134740.32dae50b@canb.auug.org.au>
-In-Reply-To: <20140909124306.2d5a0d76@canb.auug.org.au>
-References: <20140909124306.2d5a0d76@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1755105AbaIQDtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 23:49:22 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:39580 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251AbaIQDtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 23:49:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/rpL3zsI5C.XEYuJq/0jx+ep"; protocol="application/pgp-signature"
+In-Reply-To: <1409899692-1455-1-git-send-email-rric@kernel.org>
+References: <1409899692-1455-1-git-send-email-rric@kernel.org>
+Date: Tue, 16 Sep 2014 20:49:18 -0700
+Message-ID: <CAL1qeaGCeRyeKLo70E264bZcamOfBKoN9Y8_NDCjV5j4DoOw1Q@mail.gmail.com>
+Subject: Re: [PATCH 0/6] dts, kbuild: Implement support for dtb vendor subdirs
+From: Andrew Bresticker <abrestic@google.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Marek <mmarek@suse.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/rpL3zsI5C.XEYuJq/0jx+ep
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Robert,
 
-Hi all,
-
-On Tue, 9 Sep 2014 12:43:06 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+> For arm64 we want to put dts files into vendor's subdirectories from
+> the beginning. This patch set implements this. As this is a generic
+> kbuild implementation, vendor subdirs will be also available for
+> arch/arm and other architectures. The subdirectory tree is also
+> reflected in the install path.
 >
-> After merging the v4l-dvb tree, today's linux-next build (x86_64 allmodco=
-nfig)
-> failed like this:
->=20
-> ERROR: "omap_stop_dma" [drivers/media/platform/soc_camera/omap1_camera.ko=
-] undefined!
-> ERROR: "omap_start_dma" [drivers/media/platform/soc_camera/omap1_camera.k=
-o] undefined!
-> ERROR: "omap_dma_link_lch" [drivers/media/platform/soc_camera/omap1_camer=
-a.ko] undefined!
-> ERROR: "omap_set_dma_dest_burst_mode" [drivers/media/platform/soc_camera/=
-omap1_camera.ko] undefined!
-> ERROR: "omap_set_dma_src_params" [drivers/media/platform/soc_camera/omap1=
-_camera.ko] undefined!
-> ERROR: "omap_request_dma" [drivers/media/platform/soc_camera/omap1_camera=
-.ko] undefined!
-> ERROR: "omap_set_dma_transfer_params" [drivers/media/platform/soc_camera/=
-omap1_camera.ko] undefined!
-> ERROR: "omap_set_dma_dest_params" [drivers/media/platform/soc_camera/omap=
-1_camera.ko] undefined!
-> ERROR: "omap_free_dma" [drivers/media/platform/soc_camera/omap1_camera.ko=
-] undefined!
-> ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undef=
-ined!
-> ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_display.ko] undef=
-ined!
-> ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_capture.ko] undef=
-ined!
+> A new makefile variable dts-dirs is introduced to point to dts
+> subdirs. This variable is used by kbuild for building and installation
+> of dtb files.
+>
+> A dts Makefile looks now as follows:
+>
+> ----
+> dtb-$(CONFIG_...) += some_file_1.dtb
+> dtb-$(CONFIG_...) += some_file_2.dtb
+>
+> dts-dirs          += dir_vendor_a
+> dts-dirs          += dir_vendor_b
+>
+> # come always afterwards:
+> always         := $(dtb-y)
+> subdir-y       := $(dts-dirs)
+> clean-files    := *.dtb
+> ----
+>
+> This patches also introduces the dtbs_install make target for
+> arm64. Install rules are moved to Makefile.dtbinst using the same
+> style and calling convention like for modinst and fwinst.
+>
+> Robert Richter (6):
+>   dts, arm64: Add dtbs_install make target
+>   dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
+>   dts, arm/arm64: Remove dtbs build rules in sub-makes
+>   dts, kbuild: Implement support for dtb vendor subdirs
+>   dts, arm64: Move dts files to vendor subdirs
+>   dts, arm: Remove $(MACHINE) variable from dtbs make recipes
 
-Still getting these ...
+I've tested this for arm64 and by adding a vendor sub-directory
+locally for arm.  This series is also the base for my MIPS DT vendor
+sub-directory series
+(http://www.linux-mips.org/archives/linux-mips/2014-09/msg00217.html).
+So, for the entire series,
 
-> I have used the v4l-dvb tree from next-20140908 for today.
-
-So this still applies.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/rpL3zsI5C.XEYuJq/0jx+ep
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUGQRhAAoJEMDTa8Ir7ZwVeN0QAJatBYn5HBWmet/x+Zr+rzK7
-o2zt8krLEgcNZDCW2YdTHsMMNdxXZg2j8CqC1WK3VmFn2t/ZzXPH3N0HzjMHlz+n
-bewnkiIsAjH0TxL0SAW7GCgGlvU4nvGqv54Hr8v83qCEZXB0JILNehzT5CFdlS5e
-+pVX91uRyP/CTndNY0k97SNcl2cz+QaqNZB9CLITWF/6X+7lR5CckcTzlBuAdhrQ
-6G6ioRa0dNeSEztpwzXjBRQxTEbzWl+iKLfrixGrk5XkQ1zF4GcZPMBnnwoPC10S
-JxgNxhb47kE/P9/bWd2pZDCgKcYbTnDYtKfd6L/c9/zCsMybNK1NXfmDtEaBtZPy
-UUWjh+M6sLPnrS5b/3aGhbbNncIZdKEFjtvSBviQMWgYw7MCCkIS39Zap/wnSYpo
-eIM+HBkDa7UzOxfScJOrFcv7N3R3+0iXTBnLljwGKpR7GaXRCKYRvzEU0pOrw8Jr
-in+NP33f6cguZ/qjpYd8Uq0WB/S7YqknlNY0aN+F5uxSId1SEGDDItcC+4PKrpIU
-FlWANX/uRiR0LWqBimUhw2P/fC78KbyN9am+fNZJCptRHYEBr5VnA4I6255n2BUn
-KMnwyNJEQZ4iUdyCjEouEJi6A3E+oPh5udsGRTwBYFdFQI0RLCRkKY1R+cgDcr8m
-zs+b/ApNiP/Nx3GPikS7
-=3WBV
------END PGP SIGNATURE-----
-
---Sig_/rpL3zsI5C.XEYuJq/0jx+ep--
+Tested-by: Andrew Bresticker <abrestic@chromium.org>
