@@ -1,42 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaIQB5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:57:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43812 "EHLO
+	id S1754642AbaIQCCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 22:02:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43838 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaIQB5n (ORCPT
+	with ESMTP id S1752801AbaIQCB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:57:43 -0400
-Date: Wed, 17 Sep 2014 02:57:34 +0100
+	Tue, 16 Sep 2014 22:01:59 -0400
+Date: Wed, 17 Sep 2014 02:26:14 +0100
 From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Charles.Garcia-Tobin@arm.com,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Jon Masters <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
-Message-ID: <20140917015734.GD31214@srcf.ucam.org>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org>
- <20140917014410.GC31214@srcf.ucam.org>
+To: suravee.suthikulpanit@amd.com
+Cc: catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-acpi@vger.kernel.org,
+        mark.rutland@arm.com, arnd@arndb.de, graeme.gregory@linaro.org,
+        marc.zyngier@arm.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        astone@redhat.com, grant.likely@linaro.org, hanjun.guo@linaro.org,
+        Sudeep.Holla@arm.com, olof@lixom.net, jason@lakedaemon.net
+Subject: Re: [PATCH 1/4] ata: ahci_platform: Add ACPI support for AMD Seattle
+ SATA controller
+Message-ID: <20140917012614.GA31214@srcf.ucam.org>
+References: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1410828446-28502-2-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140917014410.GC31214@srcf.ucam.org>
+In-Reply-To: <1410828446-28502-2-git-send-email-suravee.suthikulpanit@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -45,19 +33,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 02:44:10AM +0100, Matthew Garrett wrote:
-> On Fri, Sep 12, 2014 at 10:00:16PM +0800, Hanjun Guo wrote:
-> > +No code shall be accepted into the kernel unless it complies with the released
-> > +standards from UEFI ASWG. If there are features missing from ACPI to make it
-> > +function on a platform, ECRs should be submitted to ASWG and go through the
-> > +approval process.
+On Mon, Sep 15, 2014 at 07:47:23PM -0500, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
-> Similar question here. Is the expectation that all ARM vendors will 
-> become UEFI contributors?
+> This patch adds ACPI match table in ahci_platform. The table includes
+> the acpi_device_id to match AMD Seattle SATA controller with following
+> asl structure in DSDT:
+> 
+>     Device (SATA0)
+>     {
+>       Name(_HID, "AMDI0600")	// Seattle AHSATA
 
-I should also add that this is inconsistent with how we've managed 
-things in the x86 world - there's a great deal of ACPI functionality 
-implemented that's not covered in the spec.
+There really ought to be a well-defined PNPID for AHCI, so you can _HID 
+to AMD and _CID to something generic. That way we won't have:
+
+> +#ifdef CONFIG_ATA_ACPI
+> +static const struct acpi_device_id ahci_acpi_match[] = {
+> +	{ "AMDI0600", 0 }, /* AMD Seattle AHCI */
+> +	{ },
+> +};
+
+utter sadness here. Really, please don't end up in a situation where we 
+need to add device-specific IDs to a generic driver.
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
