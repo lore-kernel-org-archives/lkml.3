@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758AbaIQTvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:51:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33945 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223AbaIQTvw (ORCPT
+	id S1756796AbaIQTyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:54:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55806 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756590AbaIQTyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:51:52 -0400
-Date: Wed, 17 Sep 2014 12:51:50 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2] clocksource: arm_arch_timer: discard unavailable
- timers correctly
-Message-ID: <20140917195150.GC10233@codeaurora.org>
-References: <1410911445-19067-1-git-send-email-sudeep.holla@arm.com>
- <1410982774-4724-1-git-send-email-sudeep.holla@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410982774-4724-1-git-send-email-sudeep.holla@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Sep 2014 15:54:11 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
+        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv7 2/2] pwm: sunxi: document OF bindings
+Date: Wed, 17 Sep 2014 21:53:58 +0200
+Message-Id: <1410983638-24915-3-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410983638-24915-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1410983638-24915-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17, Sudeep Holla wrote:
-> Currently we wait until both cp15 and mem timers are probed if we
-> have both timer device nodes present in the device tree without
-> checking if the device is actually available. If one of the timer
-> device node present is disabled, the system locks up on the boot
-> as no timer gets registered.
-> 
-> This patch adds the check for the availablity of the timer device
-> so that we unavailable timers are discarded correctly. It also adds
+This is the documentation for the Allwinner SoCs PWM bindings.
 
-s/we//
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ Documentation/devicetree/bindings/pwm/pwm-sunxi.txt | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
 
-> the missing of_node_put.
-> 
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> ---
-
-Thanks.
-
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-sunxi.txt b/Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
+new file mode 100644
+index 000000000000..215d33d94870
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
+@@ -0,0 +1,20 @@
++Allwinner SoC PWM controller
++
++Required properties:
++  - compatible: should be one of:
++    - "allwinner,sun4i-a10-pwm"
++    - "allwinner,sun7i-a20-pwm"
++  - reg: physical base address and length of the controller's registers
++  - #pwm-cells: should be 3. See pwm.txt in this directory for a description of
++    the cells format.
++  - clocks: From common clock binding, handle to the parent clock.
++
++Example:
++
++	pwm: pwm@01c20e00 {
++		compatible = "allwinner,sun7i-a20-pwm";
++		reg = <0x01c20e00 0xc>;
++		clocks = <&osc24M>;
++		#pwm-cells = <3>;
++		status = "disabled";
++	};
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.1
+
