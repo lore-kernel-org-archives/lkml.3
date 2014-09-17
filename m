@@ -1,212 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499AbaIQPNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 11:13:11 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:35100 "EHLO gloria.sntech.de"
+	id S1755569AbaIQPN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 11:13:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59818 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786AbaIQPNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 11:13:10 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: dianders@chromium.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: st-pwm: get voltage and duty table from dts
-Date: Wed, 17 Sep 2014 17:15:27 +0200
-Message-ID: <1589492.avvszpBkYL@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1410959280-29662-2-git-send-email-zyw@rock-chips.com>
-References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com> <1410959280-29662-2-git-send-email-zyw@rock-chips.com>
+	id S1754786AbaIQPNY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 11:13:24 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, milosz@adfin.com, neilb@suse.de,
+        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Fixes for FS-Cache/CacheFiles
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
+Content-ID: <27833.1410966793.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Sep 2014 16:13:13 +0100
+Message-ID: <27834.1410966793@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Hi Linus,
 
-Am Mittwoch, 17. September 2014, 21:07:59 schrieb Chris Zhong:
-> Get voltage & duty table from device tree might be better, other platforms
-> can also use this driver without any modify.
-> 
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> ---
-> 
->  drivers/regulator/Kconfig  |    1 -
->  drivers/regulator/st-pwm.c |   80
-> +++++++++++++++++++++++--------------------- 2 files changed, 42
-> insertions(+), 39 deletions(-)
-> 
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index fb32bab..06a9632 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -495,7 +495,6 @@ config REGULATOR_S5M8767
-> 
->  config REGULATOR_ST_PWM
->  	tristate "STMicroelectronics PWM voltage regulator"
-> -	depends on ARCH_STI
->  	help
->  	 This driver supports ST's PWM controlled voltage regulators.
-> 
-> diff --git a/drivers/regulator/st-pwm.c b/drivers/regulator/st-pwm.c
-> index 5ea78df..877381b 100644
-> --- a/drivers/regulator/st-pwm.c
-> +++ b/drivers/regulator/st-pwm.c
-> @@ -20,16 +20,11 @@
->  #include <linux/of_device.h>
->  #include <linux/pwm.h>
-> 
-> -#define ST_PWM_REG_PERIOD 8448
-> -
-> -struct st_pwm_regulator_pdata {
-> -	const struct regulator_desc *desc;
-> -	struct st_pwm_voltages *duty_cycle_table;
-> -};
-> -
->  struct st_pwm_regulator_data {
-> -	const struct st_pwm_regulator_pdata *pdata;
-> +	struct regulator_desc *desc;
-> +	struct st_pwm_voltages *duty_cycle_table;
->  	struct pwm_device *pwm;
-> +	int pwm_reg_period;
->  	bool enabled;
->  	int state;
->  };
-> @@ -53,10 +48,10 @@ static int st_pwm_regulator_set_voltage_sel(struct
-> regulator_dev *dev, int dutycycle;
->  	int ret;
-> 
-> -	dutycycle = (ST_PWM_REG_PERIOD / 100) *
-> -		drvdata->pdata->duty_cycle_table[selector].dutycycle;
-> +	dutycycle = (drvdata->pwm_reg_period / 100) *
-> +		    drvdata->duty_cycle_table[selector].dutycycle;
-> 
-> -	ret = pwm_config(drvdata->pwm, dutycycle, ST_PWM_REG_PERIOD);
-> +	ret = pwm_config(drvdata->pwm, dutycycle, drvdata->pwm_reg_period);
->  	if (ret) {
->  		dev_err(&dev->dev, "Failed to configure PWM\n");
->  		return ret;
-> @@ -84,7 +79,7 @@ static int st_pwm_regulator_list_voltage(struct
-> regulator_dev *dev, if (selector >= dev->desc->n_voltages)
->  		return -EINVAL;
-> 
-> -	return drvdata->pdata->duty_cycle_table[selector].uV;
-> +	return drvdata->duty_cycle_table[selector].uV;
->  }
-> 
->  static struct regulator_ops st_pwm_regulator_voltage_ops = {
-> @@ -94,32 +89,16 @@ static struct regulator_ops st_pwm_regulator_voltage_ops
-> = { .map_voltage     = regulator_map_voltage_iterate,
->  };
-> 
-> -static struct st_pwm_voltages b2105_duty_cycle_table[] = {
-> -	{ .uV = 1114000, .dutycycle = 0,  },
-> -	{ .uV = 1095000, .dutycycle = 10, },
-> -	{ .uV = 1076000, .dutycycle = 20, },
-> -	{ .uV = 1056000, .dutycycle = 30, },
-> -	{ .uV = 1036000, .dutycycle = 40, },
-> -	{ .uV = 1016000, .dutycycle = 50, },
-> -	/* WARNING: Values above 50% duty-cycle cause boot failures. */
-> -};
-> -
-> -static const struct regulator_desc b2105_desc = {
-> +static struct regulator_desc b2105_desc = {
->  	.name		= "b2105-pwm-regulator",
->  	.ops		= &st_pwm_regulator_voltage_ops,
->  	.type		= REGULATOR_VOLTAGE,
->  	.owner		= THIS_MODULE,
-> -	.n_voltages	= ARRAY_SIZE(b2105_duty_cycle_table),
->  	.supply_name    = "pwm",
->  };
-> 
-> -static const struct st_pwm_regulator_pdata b2105_info = {
-> -	.desc		  = &b2105_desc,
-> -	.duty_cycle_table = b2105_duty_cycle_table,
-> -};
-> -
->  static const struct of_device_id st_pwm_of_match[] = {
-> -	{ .compatible = "st,b2105-pwm-regulator", .data = &b2105_info, },
-> +	{ .compatible = "st,b2105-pwm-regulator" },
+Could you pull these fixes for FS-Cache and Cachefiles:
 
-This is breaking compatibility with the existing binding for the b2105-pwm-
-regulator - which has to stay intact. Please add a separate compatiblity like 
-"pwm-regulator" that reads the table from the dt and let the b2105 keep it's 
-voltage<->duty_cycle table in the driver as it is now.
+ (1) Put a timeout in releasepage() to deal with a recursive hang between the
+     memory allocator, writeback, ext4 and fscache under memory pressure.
+
+ (2) Fix a pair of refcount bugs in the fscache error handling.
+
+ (3) Remove a couple of unused pagevecs.  This could be punted to -next if
+     you'd rather.
+
+Thanks,
+David
+---
+The following changes since commit 68e370289c29e3beac99d59c6d840d470af9dfcf:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux (2014-08-26 13:50:23 -0700)
+
+are available in the git repository at:
 
 
-Heiko
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/fscache-fixes-20140827
 
+for you to fetch changes up to 1a8ed18fb7db48c916c2ccd484e04bd4dd737834:
 
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(of, st_pwm_of_match);
-> @@ -127,10 +106,11 @@ MODULE_DEVICE_TABLE(of, st_pwm_of_match);
->  static int st_pwm_regulator_probe(struct platform_device *pdev)
->  {
->  	struct st_pwm_regulator_data *drvdata;
-> +	struct property *prop;
->  	struct regulator_dev *regulator;
->  	struct regulator_config config = { };
->  	struct device_node *np = pdev->dev.of_node;
-> -	const struct of_device_id *of_match;
-> +	int length, ret;
-> 
->  	if (!np) {
->  		dev_err(&pdev->dev, "Device Tree node missing\n");
-> @@ -141,12 +121,36 @@ static int st_pwm_regulator_probe(struct
-> platform_device *pdev) if (!drvdata)
->  		return -ENOMEM;
-> 
-> -	of_match = of_match_device(st_pwm_of_match, &pdev->dev);
-> -	if (!of_match) {
-> -		dev_err(&pdev->dev, "failed to match of device\n");
-> -		return -ENODEV;
-> +	drvdata->desc = &b2105_desc;
-> +
-> +	/* determine the number of voltage-table */
-> +	prop = of_find_property(np, "voltage-table", &length);
-> +	if (!prop)
-> +		return -EINVAL;
-> +
-> +	drvdata->desc->n_voltages = length / sizeof(*drvdata->duty_cycle_table);
-> +
-> +	/* read voltage table from DT property */
-> +	if (length > 0) {
-> +		size_t size = sizeof(*drvdata->duty_cycle_table) *
-> +			      drvdata->desc->n_voltages;
-> +
-> +		drvdata->duty_cycle_table = devm_kzalloc(&pdev->dev,
-> +							 size, GFP_KERNEL);
-> +		if (!drvdata->duty_cycle_table)
-> +			return -ENOMEM;
-> +
-> +		ret = of_property_read_u32_array(np, "voltage-table",
-> +				(u32 *)drvdata->duty_cycle_table,
-> +				length / sizeof(u32));
-> +		if (ret < 0)
-> +			return ret;
->  	}
-> -	drvdata->pdata = of_match->data;
-> +
-> +	ret = of_property_read_u32(np, "pwm-reg-period",
-> +				   &drvdata->pwm_reg_period);
-> +	if (ret)
-> +		return -EINVAL;
-> 
->  	config.init_data = of_get_regulator_init_data(&pdev->dev, np);
->  	if (!config.init_data)
-> @@ -163,10 +167,10 @@ static int st_pwm_regulator_probe(struct
-> platform_device *pdev) }
-> 
->  	regulator = devm_regulator_register(&pdev->dev,
-> -					    drvdata->pdata->desc, &config);
-> +					    drvdata->desc, &config);
->  	if (IS_ERR(regulator)) {
->  		dev_err(&pdev->dev, "Failed to register regulator %s\n",
-> -			drvdata->pdata->desc->name);
-> +			drvdata->desc->name);
->  		return PTR_ERR(regulator);
->  	}
+  cachefiles: remove two unused pagevecs. (2014-08-27 15:54:39 +0100)
 
+----------------------------------------------------------------
+FS-Cache fixes
+
+----------------------------------------------------------------
+Milosz Tanski (3):
+      FS-Cache: Timeout for releasepage()
+      FS-Cache: Reduce cookie ref count if submit fails.
+      FS-Cache: refcount becomes corrupt under vma pressure.
+
+NeilBrown (1):
+      cachefiles: remove two unused pagevecs.
+
+ fs/cachefiles/rdwr.c |  6 ------
+ fs/fscache/object.c  |  1 +
+ fs/fscache/page.c    | 25 +++++++++++++++++++++----
+ 3 files changed, 22 insertions(+), 10 deletions(-)
