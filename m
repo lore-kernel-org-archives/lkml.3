@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914AbaIQUgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:36:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60352 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245AbaIQUgk (ORCPT
+	id S932115AbaIQUgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:36:50 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:63661 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245AbaIQUgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:36:40 -0400
-Message-ID: <5419F0D4.9090107@infradead.org>
-Date: Wed, 17 Sep 2014 13:36:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 17 Sep 2014 16:36:46 -0400
+Date: Wed, 17 Sep 2014 22:36:40 +0200
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Corentin Chary <corentin.chary@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] eeepc-laptop: simplify parse_arg()
+Message-ID: <20140917203640.GB4432@gmail.com>
+References: <7288841.ayNsq2yeGO@vostro.rjw.lan>
+ <1410252608.22255.5.camel@x220>
+ <20140910033304.GB39541@vmdeb7>
+ <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+ <20140910164916.GA48285@vmdeb7>
+ <1410379520.11097.18.camel@x220>
+ <20140911223739.GB18425@vmdeb7>
+ <20140916234543.GA22408@vmdeb7>
+ <1410980571.10248.6.camel@x220>
+ <20140917203510.GA12682@vmdeb7>
 MIME-Version: 1.0
-To: Steve French <smfrench@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: match_token weird behavior
-References: <CAH2r5mvTP1oGNoetuSkPdirBb1UDH6fiNCVjs_gJNKeJ1Dz5sA@mail.gmail.com> <5419F007.9070509@infradead.org>
-In-Reply-To: <5419F007.9070509@infradead.org>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140917203510.GA12682@vmdeb7>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/14 13:33, Randy Dunlap wrote:
-> On 09/17/14 11:20, Steve French wrote:
->> Noticing something very strange with match_token.   I had five strings
->> I need to compare a version string (protocol dialect eg. "2.1" or
->> "3.0") against, to find which it matches (if any), but adding one to
->> the list (now checking for one of six strings instead of five) causes
->> the error case to always default to element 3 (in my example looks as
->> if it matched to the 2.1 string) instead of the error case.
->>
->> enum smb_version {
->>     Smb_1 = 1,
->>     Smb_20,
->>     Smb_21,
->>     Smb_30,
->>     Smb_302,
->> };
->>
->> static const match_table_t cifs_smb_version_tokens = {
->>     { Smb_1, SMB1_VERSION_STRING },
->>     { Smb_20, SMB20_VERSION_STRING},
->>     { Smb_21, SMB21_VERSION_STRING },
->>     { Smb_30, SMB30_VERSION_STRING },
->>     { Smb_302, SMB302_VERSION_STRING },
->> };
->>
+On Wed, Sep 17, 2014 at 01:35:10PM -0700, Darren Hart wrote:
+> On Wed, Sep 17, 2014 at 09:02:51PM +0200, Paul Bolle wrote:
+> > parse_arg() has three possible return values:
+> >     -EINVAL if sscanf(), in short, fails;
+> >     zero if "count" is zero; and
+> >     "count" in all other cases
+> > 
+> > But "count" will never be zero. See, parse_arg() is called by the
+> > various store functions. And the callchain of these functions starts
+> > with sysfs_kf_write(). And that function checks for a zero "count". So
+> > we can stop checking for a zero "count", drop the "count" argument
+> > entirely, and transform parse_arg() into a function that returns zero on
+> > success or a negative error. That, in turn, allows to make those store
+> > functions just return "count" on success. The net effect is that the
+> > code becomes a bit easier to understand.
+> > 
+> > A nice side effect is that this GCC warning is silenced too:
+> >     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
+> >     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> >       int rv, value;
+> > 
+> > Which is, of course, the reason to have a look at parse_arg().
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Still build tested only, but now on top of v3.17-rc5. Has Frans tested
+> > writing zero length values to these sysfs files?
 > 
-> You don't tell us what the actual string values are, but I'm guessing that
-> SMB302_VERSION_STRING is a subset (same in first N characters) of SMB30_VERSION_STRING. ??
-> 
-> In that case I think that match_token() will return a ptr to SMB_30 instead of to
-> SMB_302 when the input is "3.02" (matches "3.0" due to the kernel's implementation
-> of strcmp() stopping at the end of string1 (where string1 is "3.0" in this case).
+> Frans, can you confirm testing when you get a chance please?
 
-Oops, it seems that I got the strcmp() parameters reversed.  Sorry about that.
-Feel free to disregard my ramblings.
+Will do.
 
-> 
-> If that is all correct, then could your return value be off by 1?
-> 
->>
->> When I add one entry to the lists above (going from 5 to 6 elements),
->> and then add one additional case for it to the switch statement, an
->> attempt to provide an unrecognized string (e.g. if I specify an illegal
->> dialect string like "9" instead of "3.0" or "2.1" etc) will now match the
->> third element (Smb_21) instead of "default" in the code snippet below.
->> Is match_token broken? Can match token only handle tables with 5
->> elements or fewer? Is there a replacement for it for this kind of thing
->> (matching a string versus which from among a list of valid strings)
->> other than match_token?  Is match_token just broken?
->>
->>     substring_t args[MAX_OPT_ARGS];
->>
->>     switch (match_token(value, cifs_smb_version_tokens, args)) {
->>     case Smb_1:
->>         vol->ops = &smb1_operations;
->>         vol->vals = &smb1_values;
->>         break;
->>     case Smb_20:
->>         vol->ops = &smb20_operations;
->>         vol->vals = &smb20_values;
->>         break;
->>     case Smb_21:
->>         vol->ops = &smb21_operations;
->>         vol->vals = &smb21_values;
->>         break;
->>     case Smb_30:
->>         vol->ops = &smb30_operations;
->>         vol->vals = &smb30_values;
->>         break;
->>     case Smb_302:
->>         vol->ops = &smb30_operations; /* currently identical with 3.0 */
->>         vol->vals = &smb302_values;
->>         break;
->>     default:
->>         cifs_dbg(VFS, "Unknown vers= option specified: %s\n", value);
->>         return 1;
->>
-> 
-> 
-
-
--- 
-~Randy
+Frans
