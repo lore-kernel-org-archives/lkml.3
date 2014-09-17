@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaIQBfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:35:08 -0400
-Received: from icp-osb-irony-out8.external.iinet.net.au ([203.59.1.225]:14160
-	"EHLO icp-osb-irony-out8.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753765AbaIQBfF (ORCPT
+	id S1754091AbaIQBoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 21:44:22 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43701 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaIQBoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:35:05 -0400
-X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Sep 2014 21:35:05 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqABAPXhGFSVhxBY/2dsb2JhbAANU4Q30EQBgSoBhH0BAQR4ARALDQEKCRYPCQMCAQIBRQYBDAEFAgEBiCUBph+WagEXjmdkB4RLAQSke49vgVVagQaBRAEBAQ
-X-IronPort-AV: E=Sophos;i="5.04,537,1406563200"; 
-   d="scan'208";a="853663009"
-Message-ID: <5418E31B.9020103@westnet.com.au>
-Date: Wed, 17 Sep 2014 11:25:47 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 16 Sep 2014 21:44:20 -0400
+Date: Wed, 17 Sep 2014 02:44:10 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+Message-ID: <20140917014410.GC31214@srcf.ucam.org>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 1/1 linux-next] m68k/coldfire: remove second asm/mcfclk.h
- inclusion in m54xx.c
-References: <1410893014-32665-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1410893014-32665-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabian,
+On Fri, Sep 12, 2014 at 10:00:16PM +0800, Hanjun Guo wrote:
 
-On 17/09/14 04:43, Fabian Frederick wrote:
-> asm/mcfclk.h was included twice.
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> +Common _DSD bindings should be submitted to ASWG to be included in the
+> +document :-
+> +
+> +http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
 
-Looks good, thanks. I have added it to the for-next branch
-of the m68knommu git tree.
+How are individuals/companies who aren't UEFI members supposed to do 
+this? Aren't there IP issues involved in taking submissions from 
+non-members?
 
-Regards
-Greg
+> +No code shall be accepted into the kernel unless it complies with the released
+> +standards from UEFI ASWG. If there are features missing from ACPI to make it
+> +function on a platform, ECRs should be submitted to ASWG and go through the
+> +approval process.
 
+Similar question here. Is the expectation that all ARM vendors will 
+become UEFI contributors?
 
-> ---
->  arch/m68k/coldfire/m54xx.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/m68k/coldfire/m54xx.c b/arch/m68k/coldfire/m54xx.c
-> index eec7f71..075aaab 100644
-> --- a/arch/m68k/coldfire/m54xx.c
-> +++ b/arch/m68k/coldfire/m54xx.c
-> @@ -23,7 +23,6 @@
->  #include <asm/mcfuart.h>
->  #include <asm/mcfclk.h>
->  #include <asm/m54xxgpt.h>
-> -#include <asm/mcfclk.h>
->  #ifdef CONFIG_MMU
->  #include <asm/mmu_context.h>
->  #endif
-> 
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
