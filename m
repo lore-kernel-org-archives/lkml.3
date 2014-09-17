@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821AbaIQTDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:03:30 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:17035 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755802AbaIQTAu (ORCPT
+	id S1756742AbaIQTEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:04:11 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:36880 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872AbaIQTEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:00:50 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgNAL/ZGVRXQCIg/2dsb2JhbABhgw22FQUBcAGbFwGBFhcBeYQEAQUnLyMQUTkeGYhCAb9nGIYJiW4HFoQ1BZ0MjDKJFoIbgUU7L4JKAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: daniel.vetter@intel.com, Fabian Frederick <fabf@skynet.be>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-parisc@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH 1/6] video: fbdev: stifb.c: use container_of to resolve stifb_info from fb_info
-Date: Wed, 17 Sep 2014 21:00:14 +0200
-Message-Id: <1410980419-5326-2-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410980419-5326-1-git-send-email-fabf@skynet.be>
-References: <1410980419-5326-1-git-send-email-fabf@skynet.be>
+	Wed, 17 Sep 2014 15:04:09 -0400
+Date: Wed, 17 Sep 2014 20:04:01 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, maxime.ripard@free-electrons.com,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        lee.jones@linaro.org
+Subject: Re: [PATCH 7/9] phy: remove .owner field for drivers using
+ module_platform_driver
+Message-ID: <20140917190401.GA31237@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1408106416-19044-1-git-send-email-peter.griffin@linaro.org>
+ <1408106416-19044-8-git-send-email-peter.griffin@linaro.org>
+ <5419B485.8010002@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5419B485.8010002@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use container_of instead of casting first structure member.
+Hi Kishon,
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
-PARISC cross-compiled but untested.
+On Wed, 17 Sep 2014, Kishon Vijay Abraham I wrote:
 
- drivers/video/fbdev/stifb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Hi,
+> 
+> On Friday 15 August 2014 06:10 PM, Peter Griffin wrote:
+> > This patch removes the superflous .owner field for drivers which
+> > use the module_platform_driver or platform_driver_register api,
+> > as this is overriden in __platform_driver_register.
+> > 
+> > Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 
-diff --git a/drivers/video/fbdev/stifb.c b/drivers/video/fbdev/stifb.c
-index cfe8a2f..86621fa 100644
---- a/drivers/video/fbdev/stifb.c
-+++ b/drivers/video/fbdev/stifb.c
-@@ -918,7 +918,7 @@ static int
- stifb_setcolreg(u_int regno, u_int red, u_int green,
- 	      u_int blue, u_int transp, struct fb_info *info)
- {
--	struct stifb_info *fb = (struct stifb_info *) info;
-+	struct stifb_info *fb = container_of(info, struct stifb_info, info);
- 	u32 color;
- 
- 	if (regno >= NR_PALETTE)
-@@ -978,7 +978,7 @@ stifb_setcolreg(u_int regno, u_int red, u_int green,
- static int
- stifb_blank(int blank_mode, struct fb_info *info)
- {
--	struct stifb_info *fb = (struct stifb_info *) info;
-+	struct stifb_info *fb = container_of(info, struct stifb_info, info);
- 	int enable = (blank_mode == 0) ? ENABLE : DISABLE;
- 
- 	switch (fb->id) {
--- 
-2.1.0
+<snip>
+> >  drivers/phy/phy-twl4030-usb.c       | 1 -
+> 
+> twl4030-usb doesn't use module_platform_driver. Care to resend this patch
+> along? I've merged all other patches in this series.
 
+That is true, but it does use platform_driver_register  whih overrides .owner.
+So the patch is stil good I think (fyi see include/linux/platform_device.h).
+
+regards,
+
+Peter.
