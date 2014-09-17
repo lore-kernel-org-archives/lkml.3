@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaIQLlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 07:41:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754048AbaIQLk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 07:40:58 -0400
-From: Aaron Tomlin <atomlin@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, atomlin@redhat.com,
-        oleg@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
-        mguzik@redhat.com, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] fs: Use a seperate wq for do_sync_work() to avoid a potential deadlock
-Date: Wed, 17 Sep 2014 12:39:02 +0100
-Message-Id: <1410953942-32144-1-git-send-email-atomlin@redhat.com>
+	id S1755290AbaIQLmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 07:42:20 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:35918 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634AbaIQLmT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 07:42:19 -0400
+Date: Wed, 17 Sep 2014 14:42:15 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140917114214.GB30733@minantech.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+ <20140917102635.GA30733@minantech.com>
+ <20140917112713.GB1273@potion.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140917112713.GB1273@potion.brq.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since do_sync_work() is a deferred function it can block indefinitely by
-design. At present do_sync_work() is added to the global system_wq.
-As such a deadlock is theoretically possible between sys_unmount() and
-sync_filesystems():
+On Wed, Sep 17, 2014 at 01:27:14PM +0200, Radim Krčmář wrote:
+> 2014-09-17 13:26+0300, Gleb Natapov:
+> > For async_pf_execute() you do not need to even retry. Next guest's page fault
+> > will retry it for you.
+> 
+> Wouldn't that be a waste of vmentries?
+This is how it will work with or without this second gup. Page is not
+mapped into a shadow page table on this path, it happens on a next fault.
 
-  * The current work fn on the system_wq (do_sync_work()) is blocked
-    waiting to aquire a sb's s_umount for reading.
-
-  * The "umount" task is the current owner of the s_umount in
-    question but is waiting for do_sync_work() to continue.
-    Thus we hit a deadlock situation.
-
-This patch introduces a separate workqueue for do_sync_work() to avoid a
-the described deadlock.
-
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-Reviewed-by: Alexander Viro <viro@zeniv.linux.org.uk>
----
- fs/sync.c | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
-
-diff --git a/fs/sync.c b/fs/sync.c
-index bdc729d..df455d0 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -15,6 +15,7 @@
- #include <linux/pagemap.h>
- #include <linux/quotaops.h>
- #include <linux/backing-dev.h>
-+#include <linux/kthread.h>
- #include "internal.h"
- 
- #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
-@@ -114,7 +115,7 @@ SYSCALL_DEFINE0(sync)
- 	return 0;
- }
- 
--static void do_sync_work(struct work_struct *work)
-+static int do_sync_work(void *dummy)
- {
- 	int nowait = 0;
- 
-@@ -129,18 +130,12 @@ static void do_sync_work(struct work_struct *work)
- 	iterate_supers(sync_fs_one_sb, &nowait);
- 	iterate_bdevs(fdatawrite_one_bdev, NULL);
- 	printk("Emergency Sync complete\n");
--	kfree(work);
-+	return 0;
- }
- 
- void emergency_sync(void)
- {
--	struct work_struct *work;
--
--	work = kmalloc(sizeof(*work), GFP_ATOMIC);
--	if (work) {
--		INIT_WORK(work, do_sync_work);
--		schedule_work(work);
--	}
-+	kthread_run(do_sync_work, NULL, "sync_work_thread");
- }
- 
- /*
--- 
-1.9.3
-
+--
+			Gleb.
