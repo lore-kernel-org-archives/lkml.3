@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaIQJas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:30:48 -0400
-Received: from mx1.riseup.net ([198.252.153.129]:39680 "EHLO mx1.riseup.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852AbaIQJap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:30:45 -0400
-From: Albino Biasutti Neto <bino@riseup.net>
-To: linux-kernel@vger.kernel.org
-Cc: Albino Biasutti Neto <bino@riseup.net>
-Subject: [PATCH 10/10] Fix style code and DDR_DESENTY_4Gb.
-Date: Wed, 17 Sep 2014 06:28:14 -0300
-Message-Id: <1410946094-2502-1-git-send-email-bino@riseup.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <Fix style coding and add more line 351.>
-References: <Fix style coding and add more line 351.>
+	id S1754621AbaIQJev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:34:51 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:57644 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbaIQJeu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 05:34:50 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [PATCH] clk: tegra: Make clock initialization more robust
+Date: Wed, 17 Sep 2014 11:34:17 +0200
+Message-Id: <1410946457-24669-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Albino Biasutti Neto  <bino@riseup.net>
----
- drivers/memory/emif.c | 27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
+Don't abort clock initialization if we cannot match an entry in
+tegra_clk_init_table to a valid entry in the clk array.
 
-diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 1c5bbf2..4045b46 100644
---- a/drivers/memory/emif.c
-+++ b/drivers/memory/emif.c
-@@ -201,9 +201,6 @@ static void __exit emif_debugfs_exit(struct emif_data *emif)
- static inline int __init_or_module emif_debugfs_init(struct emif_data *emif)
- 	return 0;
+Also log a corresponding error message.
+
+This was discovered when testing a patch that removed the EMC clock from
+tegra124_clks but left a mention in tegra_clk_init_table.
+
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ drivers/clk/tegra/clk.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+index d5963f6..562c911 100644
+--- a/drivers/clk/tegra/clk.c
++++ b/drivers/clk/tegra/clk.c
+@@ -206,8 +206,13 @@ void __init tegra_init_from_table(struct tegra_clk_init_table *tbl,
  
--//static inline void __exit emif_debugfs_exit(struct emif_data *emif)
--//{
--//}
- #endif
- 
- /*
-@@ -354,6 +351,7 @@ static const struct lpddr2_addressing *get_addressing_table(
- 		case DDR_DENSITY_1Gb:
- 		case DDR_DENSITY_2Gb:
- 		case DDR_DENSITY_4Gb:
+ 	for (; tbl->clk_id < clk_max; tbl++) {
+ 		clk = clks[tbl->clk_id];
+-		if (IS_ERR_OR_NULL(clk))
+-			return;
++		if (IS_ERR_OR_NULL(clk)) {
++			pr_err("%s: invalid entry %ld in clks array for id %d\n",
++			       __func__, PTR_ERR(clk), tbl->clk_id);
++			WARN_ON(1);
 +
- 		  index = density + 3;
- 			break;
- 		default:
-@@ -812,8 +810,7 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
- 	/* Setup required timing */
- 	pwr_mgmt_ctrl = (timeout << shift) & mask;
- 	/* setup a default mask for rest of the modes */
--	pwr_mgmt_ctrl |= (SR_TIM_MASK | CS_TIM_MASK | PD_TIM_MASK) &
--			  ~mask;
-+	pwr_mgmt_ctrl |= (SR_TIM_MASK | CS_TIM_MASK | PD_TIM_MASK) & ~mask;
++			continue;
++		}
  
- 	/* No CS_TIM in EMIF_4D5 */
- 	if (ip_rev == EMIF_4D5)
-@@ -1062,10 +1059,10 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
- 	if (emif->curr_regs) {
- 		setup_temperature_sensitive_regs(emif, emif->curr_regs);
- 		do_freq_update();
--	} else {
--		dev_err(emif->dev, "temperature alert before registers are calculated, not de-rating timings\n");
--	}
--
-+	} 
-+        else 
-+	   dev_err(emif->dev, "temperature alert before registers are calculated, not de-rating timings\n");
-+	
- 	spin_unlock_irqrestore(&emif_lock, irq_state);
- 
- 	return IRQ_HANDLED;
-@@ -1506,9 +1503,9 @@ static struct emif_data *__init_or_module get_device_details(
- 				__LINE__);
- 			get_default_timings(emif);
- 		}
--	} else {
--		get_default_timings(emif);
--	}
-+	} 
-+        else 
-+           get_default_timings(emif);
- 
- 	if (pd->min_tck) {
- 		temp = devm_kzalloc(dev, sizeof(*pd->min_tck), GFP_KERNEL);
-@@ -1520,9 +1517,9 @@ static struct emif_data *__init_or_module get_device_details(
- 				__LINE__);
- 			pd->min_tck = &lpddr2_jedec_min_tck;
- 		}
--	} else {
--		pd->min_tck = &lpddr2_jedec_min_tck;
--	}
-+	} 
-+       else 
-+	   pd->min_tck = &lpddr2_jedec_min_tck;
- 
- out:
- 	return emif;
+ 		if (tbl->parent_id < clk_max) {
+ 			struct clk_core *parent = clks[tbl->parent_id];
 -- 
-2.1.0
+1.9.3
 
