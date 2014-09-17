@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562AbaIQQlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:41:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36239 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515AbaIQQkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:40:46 -0400
-X-AuditID: cbfee68f-f797f6d000001173-ed-5419b989bd3d
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH v5 2/3] mfd: max77693: add haptic of_compatible in mfd_cell
-Date: Thu, 18 Sep 2014 01:40:25 +0900
-Message-id: <1410972026-25189-3-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1410972026-25189-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1410972026-25189-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsWyRsSkWLdzp2SIwe9jxhbXvzxntdjRcITV
-	4v7Xo4wWl3fNYXNg8bhzbQ+bR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGVcvHSDseAVW8Wa
-	toNsDYwXWLsYOTkkBEwkGqf/YoawxSQu3FvP1sXIxSEksJRRoutsMyNMUc/p6cwQiUWMEt/u
-	z2KEcNqYJGbe3wY2ik1AW+L7+sVANgeHiICKxLk35iAms0C+xP9NZiAVwgLeEnuubwGbySKg
-	KrG5ayITSAmvgIfEpzNg1RICChJzJtmAVHAKeEo0rL0CVi0EVHFw2ncmkKUSAp/ZJJZNhbiZ
-	RUBA4tvkQywQvbISmw5AvSIpcXDFDZYJjMILGBlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+du
-	YgSG6+l/z/p3MN49YH2IUYCDUYmHd8NliRAh1sSy4srcQ4ymQBsmMkuJJucDoyKvJN7Q2MzI
-	wtTE1NjI3NJMSZx3odTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M82y1WFnFZu+XiHTs
-	Px+9+6vKBI4WpvtMc9dPmN7aN8UuzCG8/M/FSubUhn99PSv57gRdjd2XF7H6I/vkf/9+zdn0
-	OejT6/XLZEPMJJ7dvSa74pv2rSiDtIeWty+6lc+ff/2bmO8neWOXDVPNPrF8XlOVI+399CP3
-	5RfXkyedURHoChX3DEqepsRSnJFoqMVcVJwIADd1tUVSAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xgG7nTskQg/WtuhbXvzxntdjRcITV
-	4v7Xo4wWl3fNYXNg8bhzbQ+bR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
-	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
-	GxIE12NkgAYS1jBmXLx0g7HgFVvFmraDbA2MF1i7GDk5JARMJHpOT2eGsMUkLtxbz9bFyMUh
-	JLCIUeLb/VmMEE4bk8TM+9vAOtgEtCW+r18MZHNwiAioSJx7Yw5iMgvkS/zfZAZSISzgLbHn
-	+hZGEJtFQFVic9dEJpASXgEPiU9nwKolBBQk5kyyAangFPCUaFh7BaxaCKji4LTvTBMYeRcw
-	MqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6GZ1I7GFc2WBxiFOBgVOLh3XBZIkSINbGs
-	uDL3EKMEB7OSCK/1RskQId6UxMqq1KL8+KLSnNTiQ4ymQDdNZJYSTc4HRmpeSbyhsYmZkaWR
-	uaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQbGRdcCU4rmdwjpPLum9XJR3daJ9Sei
-	hA+ziixb7zDpg/r/5SwN/XLN0swCJuU7xPhX3mRY0V93y1nxynqFuVF9V6axaDfuv/d9k9yd
-	mjMmaxpX+27hb+pbEfiaufXAp/Xng2vSQsxubBVkrLv2VL8s7YR31i/hnVzX280XyEqW7RNn
-	mn5e6HCCEktxRqKhFnNRcSIAr3sXXpwCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756580AbaIQQlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:41:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756515AbaIQQlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:41:10 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v2 1/2] PCI: Remove pci_find_upstream_pcie_bridge()
+To: linux-pci@vger.kernel.org, bhelgaas@google.com
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 17 Sep 2014 10:41:07 -0600
+Message-ID: <20140917164106.21584.20401.stgit@gimli.home>
+In-Reply-To: <20140917163930.21584.69496.stgit@gimli.home>
+References: <20140917163930.21584.69496.stgit@gimli.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add haptic of_compatible in order to use the haptic
-device driver using Devicetree.
+This is now dead code.
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/mfd/max77693.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index fbfed56..5b516fe 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -46,7 +46,10 @@ static const struct mfd_cell max77693_devs[] = {
- 	{ .name = "max77693-charger", },
- 	{ .name = "max77693-flash", },
- 	{ .name = "max77693-muic", },
--	{ .name = "max77693-haptic", },
-+	{
-+		.name = "max77693-haptic",
-+		.of_compatible = "maxim,max77693-haptic",
-+	},
- };
+ drivers/pci/search.c |   34 ----------------------------------
+ include/linux/pci.h  |   11 -----------
+ 2 files changed, 45 deletions(-)
+
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index 827ad83..a81f413 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -103,40 +103,6 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+ 	return ret;
+ }
  
- static const struct regmap_config max77693_regmap_config = {
--- 
-1.7.9.5
+-/*
+- * find the upstream PCIe-to-PCI bridge of a PCI device
+- * if the device is PCIE, return NULL
+- * if the device isn't connected to a PCIe bridge (that is its parent is a
+- * legacy PCI bridge and the bridge is directly connected to bus 0), return its
+- * parent
+- */
+-struct pci_dev *pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
+-{
+-	struct pci_dev *tmp = NULL;
+-
+-	if (pci_is_pcie(pdev))
+-		return NULL;
+-	while (1) {
+-		if (pci_is_root_bus(pdev->bus))
+-			break;
+-		pdev = pdev->bus->self;
+-		/* a p2p bridge */
+-		if (!pci_is_pcie(pdev)) {
+-			tmp = pdev;
+-			continue;
+-		}
+-		/* PCI device should connect to a PCIe bridge */
+-		if (pci_pcie_type(pdev) != PCI_EXP_TYPE_PCI_BRIDGE) {
+-			/* Busted hardware? */
+-			WARN_ON_ONCE(1);
+-			return NULL;
+-		}
+-		return pdev;
+-	}
+-
+-	return tmp;
+-}
+-
+ static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
+ {
+ 	struct pci_bus *child;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 61978a4..b4fb9f4 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1828,15 +1828,4 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+ 			   int (*fn)(struct pci_dev *pdev,
+ 				     u16 alias, void *data), void *data);
+ 
+-/**
+- * pci_find_upstream_pcie_bridge - find upstream PCIe-to-PCI bridge of a device
+- * @pdev: the PCI device
+- *
+- * if the device is PCIE, return NULL
+- * if the device isn't connected to a PCIe bridge (that is its parent is a
+- * legacy PCI bridge and the bridge is directly connected to bus 0), return its
+- * parent
+- */
+-struct pci_dev *pci_find_upstream_pcie_bridge(struct pci_dev *pdev);
+-
+ #endif /* LINUX_PCI_H */
 
