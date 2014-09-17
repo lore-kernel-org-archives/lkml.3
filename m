@@ -1,408 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaIQJMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:12:16 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:61404 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaIQJML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:12:11 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 17 Sep 2014 11:10:01 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20140917091001.GF20727@localhost>
-References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
- <1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
+	id S1754352AbaIQJMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:12:53 -0400
+Received: from mail-by2on0104.outbound.protection.outlook.com ([207.46.100.104]:9284
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751852AbaIQJMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 05:12:51 -0400
+Date: Wed, 17 Sep 2014 17:19:24 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Lucas Stach <l.stach@pengutronix.de>
+CC: <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <linux-kernel@vger.kernel.org>,
+        <robh+dt@kernel.org>, <shawn.guo@freescale.com>,
+        <kernel@pengutronix.de>, <galak@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
+ i.mx6dl
+Message-ID: <20140917091922.GA6551@Robin-OptiPlex-780>
+References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
+ <1410774073.3314.1.camel@pengutronix.de>
+ <20140916034123.GA20800@Robin-OptiPlex-780>
+ <1410861006.2746.1.camel@pengutronix.de>
+ <20140917084120.GA6369@Robin-OptiPlex-780>
+ <1410944156.2731.1.camel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1410944156.2731.1.camel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(51704005)(189002)(15202345003)(93886004)(50466002)(95666004)(64706001)(26826002)(83072002)(105606002)(85306004)(47776003)(110136001)(46102003)(23726002)(99396002)(46406003)(81342003)(31966008)(104016003)(4396001)(54356999)(90102001)(97736003)(44976005)(102836001)(79102003)(50986999)(87936001)(21056001)(83322001)(20776003)(85852003)(76176999)(81542003)(33656002)(33716001)(74662003)(68736004)(6806004)(83506001)(106466001)(84676001)(15975445006)(76482002)(107046002)(19580395003)(92726001)(80022003)(92566001)(97756001)(74502003)(77982003)(32563001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB337;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB337;
+X-Forefront-PRVS: 0337AFFE9A
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 10:24:44PM +0300, Octavian Purdila wrote:
-> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
-> Master Adapter DLN-2. Details about the device can be found here:
+On Wed, Sep 17, 2014 at 10:55:56AM +0200, Lucas Stach wrote:
+> Am Mittwoch, den 17.09.2014, 16:41 +0800 schrieb Robin Gong:
+> > On Tue, Sep 16, 2014 at 11:50:06AM +0200, Lucas Stach wrote:
+> > > Hi Robin,
+> > > 
+> > > Am Dienstag, den 16.09.2014, 11:41 +0800 schrieb Robin Gong:
+> > > > Hi Lucas,
+> > > >   I understood your concern,but looks we have to break old DT.
+> > > 
+> > > Sorry, but this isn't going to happen. And honestly I don't even see the
+> > > need to do so.
+> > > 
+> > > > Our old DT
+> > > > support SPI DMA on i.mx6q/dl(v2,b3810c3dc1bcbc6a), but the DMA support patch
+> > > > for SPI driver is still in reviewing(v6).
+> > > 
+> > > So this means now is the time to fix this driver patch to not enable DMA
+> > > on imx6dl. Nobody will experience any breakage in this case.
+> > >
+> > Sorry, i.mx6q and i.mx6dl are totally same, not only IP but also clock. So we
+> > can't distinguish them except for different compatible name....
 > 
-> https://www.diolan.com/i2c/i2c_interface.html.
+> I know that, but I still don't see the problem.
 > 
-> Information about the USB protocol can be found in the Programmer's
-> Reference Manual [1], see section 1.7.
+> If this issue is specific to the ECSPI IP integrated into a imx6dl SoC
+> you need to check for the machine compatible in the driver and disable
+> DMA support based on this. We generally avoid checking for the machine
+> compatible in drivers and prefer to have a specific IP block compatible
+> instead, but in that case it's the only reasonable thing to do.
 > 
-> Because the hardware has a single transmit endpoint and a single
-> receive endpoint the communication between the various DLN2 drivers
-> and the hardware will be muxed/demuxed by this driver.
+> Regards,
+> Lucas
+Sounds we make a agreement on use different compatible name, right? I will
+make patch for reviewing, thanks.
+> -- 
+> Pengutronix e.K.             | Lucas Stach                 |
+> Industrial Linux Solutions   | http://www.pengutronix.de/  |
 > 
-> Each DLN2 module will be identified by the handle field within the DLN2
-> message header. If a DLN2 module issues multiple commands in parallel
-> they will be identified by the echo counter field in the message header.
-> 
-> The DLN2 modules can use the dln2_transfer() function to issue a
-> command and wait for its response. They can also register a callback
-> that is going to be called when a specific event id is generated by
-> the device (e.g. GPIO interrupts). The device uses handle 0 for
-> sending events.
-> 
-> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
-> 
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> ---
->  drivers/mfd/Kconfig      |   9 +
->  drivers/mfd/Makefile     |   1 +
->  drivers/mfd/dln2.c       | 681 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/dln2.h |  71 +++++
->  4 files changed, 762 insertions(+)
->  create mode 100644 drivers/mfd/dln2.c
->  create mode 100644 include/linux/mfd/dln2.h
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index de5abf2..7bcf895 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -183,6 +183,15 @@ config MFD_DA9063
->  	  Additional drivers must be enabled in order to use the functionality
->  	  of the device.
->  
-> +config MFD_DLN2
-> +	tristate "Diolan DLN2 support"
-> +	select MFD_CORE
-> +	depends on USB
-> +	help
-> +	  This adds support for Diolan USB-I2C/SPI/GPIO Master Adapter DLN-2.
-> +	  Additional drivers must be enabled in order to use the functionality
-> +	  of the device.
-> +
->  config MFD_MC13XXX
->  	tristate
->  	depends on (SPI_MASTER || I2C)
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index f001487..591988d 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
->  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
->  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
->  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-> +obj-$(CONFIG_MFD_DLN2)		+= dln2.o
->  
->  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
->  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-> new file mode 100644
-> index 0000000..b551b5e
-> --- /dev/null
-> +++ b/drivers/mfd/dln2.c
-> @@ -0,0 +1,681 @@
-> +/*
-> + * Driver for the Diolan DLN-2 USB adapter
-> + *
-> + * Copyright (c) 2014 Intel Corporation
-> + *
-> + * Derived from:
-> + *  i2c-diolan-u2c.c
-> + *  Copyright (c) 2010-2011 Ericsson AB
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation, version 2.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/errno.h>
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/slab.h>
-> +#include <linux/usb.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mutex.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/dln2.h>
-> +
-> +#define DRIVER_NAME			"usb-dln2"
-> +
-> +struct dln2_header {
-> +	__le16 size;
-> +	__le16 id;
-> +	__le16 echo;
-> +	__le16 handle;
-> +} __packed;
-> +
-> +struct dln2_response {
-> +	struct dln2_header hdr;
-> +	__le16 result;
-> +} __packed;
-> +
-> +#define DLN2_GENERIC_MODULE_ID		0x00
-> +#define DLN2_GENERIC_CMD(cmd)		DLN2_CMD(cmd, DLN2_GENERIC_MODULE_ID)
-> +#define CMD_GET_DEVICE_VER		DLN2_GENERIC_CMD(0x30)
-> +#define CMD_GET_DEVICE_SN		DLN2_GENERIC_CMD(0x31)
-> +
-> +#define DLN2_HW_ID			0x200
-> +#define DLN2_USB_TIMEOUT		200	/* in ms */
-> +#define DLN2_MAX_RX_SLOTS		16
-> +#define DLN2_MAX_MODULES		5
-
-Reduce to 4 until you implement support for more modules and save some
-memory meanwhile? (Or is id 4 already used?)
-
-> +#define DLN2_MAX_URBS			16
-> +#define DLN2_RX_BUF_SIZE		512
-> +
-> +#define DLN2_HANDLE_EVENT		0
-> +#define DLN2_HANDLE_CTRL		1
-> +#define DLN2_HANDLE_GPIO		2
-> +#define DLN2_HANDLE_I2C			3
-> +
-> +/*
-> + * Receive context used between the receive demultiplexer and the
-> + * transfer routine. While sending a request the transfer routine
-> + * will look for a free receive context and use it to wait for a
-> + * response and to receive the URB and thus the response data.
-> + */
-> +struct dln2_rx_context {
-> +	struct completion done;
-> +	struct urb *urb;
-> +	bool connected;
-> +};
-> +
-> +/*
-> + * Receive contexts for a particular DLN2 module (i2c, gpio, etc.). We
-> + * use the handle header field to indentify the module in
-> + * dln2_dev.mod_rx_slots and then the echo header field to index the
-> + * slots field and find the receive context for a particular
-> + * request.
-> + */
-> +struct dln2_mod_rx_slots {
-> +	/* RX slots bitmap */
-> +	unsigned long bmap;
-> +
-> +	/* used to wait for a free RX slot */
-> +	wait_queue_head_t wq;
-> +
-> +	/* used to wait for an RX operation to complete */
-> +	struct dln2_rx_context slots[DLN2_MAX_RX_SLOTS];
-> +
-> +	/* avoid races between free_rx_slot and dln2_rx_transfer */
-> +	spinlock_t lock;
-> +};
-> +
-> +struct dln2_dev {
-> +	struct usb_device *usb_dev;
-> +	struct usb_interface *interface;
-> +	u8 ep_in;
-> +	u8 ep_out;
-> +
-> +	struct urb *rx_urb[DLN2_MAX_URBS];
-> +	void *rx_buf[DLN2_MAX_URBS];
-> +
-> +	struct dln2_mod_rx_slots mod_rx_slots[DLN2_MAX_MODULES];
-> +
-> +	struct list_head rx_cb_list;
-> +	spinlock_t rx_cb_lock;
-> +};
-> +
-> +static bool find_free_slot(struct dln2_mod_rx_slots *rxs, int *slot)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&rxs->lock, flags);
-> +
-> +	*slot = find_first_zero_bit(&rxs->bmap, DLN2_MAX_RX_SLOTS);
-> +
-> +	if (*slot < DLN2_MAX_RX_SLOTS) {
-> +		struct dln2_rx_context *rxc = &rxs->slots[*slot];
-> +
-> +		set_bit(*slot, &rxs->bmap);
-> +		rxc->connected = true;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&rxs->lock, flags);
-> +
-> +	return *slot < DLN2_MAX_RX_SLOTS;
-> +}
-> +
-> +static int alloc_rx_slot(struct dln2_mod_rx_slots *rxs)
-> +{
-> +	int ret;
-> +	int slot;
-> +
-> +	/* No need to timeout here, the wait is bounded by the timeout
-> +	 * in _dln2_transfer
-> +	 */
-
-Multi-comment style, again.
-
-> +	ret = wait_event_interruptible(rxs->wq, find_free_slot(rxs, &slot));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return slot;
-> +}
-
-<snip>
-
-> +static struct dln2_platform_data dln2_pdata_gpio = {
-> +	.handle = DLN2_HANDLE_GPIO,
-> +};
-> +
-> +/* Right now only one I2C port seems to be supported */
-> +static struct dln2_platform_data dln2_pdata_i2c = {
-> +	.handle = DLN2_HANDLE_I2C,
-> +	.i2c = {
-> +		.port = 0,
-> +	},
-> +};
-> +
-> +static const struct mfd_cell dln2_devs[] = {
-> +	{
-> +		.name	= "dln2-gpio",
-
-Drop indentation     ^
-
-> +		.platform_data = &dln2_pdata_gpio,
-> +		.pdata_size = sizeof(struct dln2_platform_data),
-> +	},
-> +	{
-> +		.name	= "dln2-i2c",
-
-Ditto
-
-> +		.platform_data = &dln2_pdata_i2c,
-> +		.pdata_size = sizeof(struct dln2_platform_data),
-> +	},
-> +};
-> +
-> +static void dln2_disconnect(struct usb_interface *interface)
-> +{
-> +	struct dln2_dev *dln2 = usb_get_intfdata(interface);
-> +
-> +	mfd_remove_devices(&interface->dev);
-> +	dln2_free(dln2);
-> +}
-> +
-> +static int dln2_probe(struct usb_interface *interface,
-> +		      const struct usb_device_id *id)
-> +{
-> +	struct usb_host_interface *hostif = interface->cur_altsetting;
-> +	struct device *dev = &interface->dev;
-> +	struct dln2_dev *dln2;
-> +	int ret;
-> +	int i, j;
-> +
-> +	if (hostif->desc.bInterfaceNumber != 0 ||
-> +	    hostif->desc.bNumEndpoints < 2)
-> +		return -ENODEV;
-> +
-> +	dln2 = kzalloc(sizeof(*dln2), GFP_KERNEL);
-> +	if (!dln2)
-> +		return -ENOMEM;
-> +
-> +	dln2->ep_out = hostif->endpoint[0].desc.bEndpointAddress;
-> +	dln2->ep_in = hostif->endpoint[1].desc.bEndpointAddress;
-> +	dln2->usb_dev = usb_get_dev(interface_to_usbdev(interface));
-> +	dln2->interface = interface;
-> +	usb_set_intfdata(interface, dln2);
-> +
-> +	for (i = 0; i < DLN2_MAX_MODULES; i++) {
-> +		init_waitqueue_head(&dln2->mod_rx_slots[i].wq);
-> +		spin_lock_init(&dln2->mod_rx_slots[i].lock);
-> +		for (j = 0; j < DLN2_MAX_RX_SLOTS; j++)
-> +			init_completion(&dln2->mod_rx_slots[i].slots[j].done);
-> +	}
-> +
-> +	spin_lock_init(&dln2->rx_cb_lock);
-> +	INIT_LIST_HEAD(&dln2->rx_cb_list);
-> +
-> +	ret = dln2_setup_rx_urbs(dln2, hostif);
-> +	if (ret) {
-> +		dln2_free(dln2);
-> +		return ret;
-> +	}
-> +
-> +	ret = dln2_hw_init(dln2);
-> +	if (ret < 0) {
-> +		dev_err(dev, "failed to initialize hardware\n");
-> +		goto out_cleanup;
-> +	}
-> +
-> +	ret = mfd_add_devices(dev, -1, dln2_devs, ARRAY_SIZE(dln2_devs),
-> +			      NULL, 0, NULL);
-> +	if (ret != 0) {
-> +		dev_err(dev, "Failed to add mfd devices to core.\n");
-> +		goto out_cleanup;
-> +	}
-
-You cannot use id -1 (PLATFORM_DEVID_NONE) here. You either need to use
-a unique id base or use -2 (PLATFORM_DEVID_AUTO) so that a platform
-device id is assigned automatically.
-
-Currently, the platform devices end up being named
-
-	dln2-gpio
-	dln2-i2c
-
-without unique ids in sysfs. When you connect a second DLN2 device your
-driver will try to register the same names and fail:
-
-[ 2146.320648] ------------[ cut here ]------------
-[ 2146.320831] WARNING: CPU: 0 PID: 178 at /home/johan/work/omicron/src/linux/fs/sysfs/dir.c:31 sysfs_warn_dup+0x74/0x84()
-[ 2146.320922] sysfs: cannot create duplicate filename '/bus/platform/devices/dln2-gpio'
-[ 2146.321014] Modules linked in: i2c_dln2 gpio_dln2 dln2 netconsole [last unloaded: dln2]
-[ 2146.323974] CPU: 0 PID: 178 Comm: bash Tainted: G        W      3.17.0-rc3 #9
-[ 2146.324737] [<c0016bec>] (unwind_backtrace) from [<c0013850>] (show_stack+0x20/0x24)
-[ 2146.324890] [<c0013850>] (show_stack) from [<c042cb74>] (dump_stack+0x24/0x28)
-[ 2146.326538] [<c042cb74>] (dump_stack) from [<c0040ff4>] (warn_slowpath_common+0x80/0x98)
-[ 2146.326721] [<c0040ff4>] (warn_slowpath_common) from [<c004104c>] (warn_slowpath_fmt+0x40/0x48)
-[ 2146.326812] [<c004104c>] (warn_slowpath_fmt) from [<c016ee54>] (sysfs_warn_dup+0x74/0x84)
-[ 2146.326904] [<c016ee54>] (sysfs_warn_dup) from [<c016f1e0>] (sysfs_do_create_link_sd.isra.2+0xcc/0xd0)
-[ 2146.327026] [<c016f1e0>] (sysfs_do_create_link_sd.isra.2) from [<c016f220>] (sysfs_create_link+0x3c/0x48)
-[ 2146.328338] [<c016f220>] (sysfs_create_link) from [<c0286474>] (bus_add_device+0x12c/0x1e0)
-[ 2146.328460] [<c0286474>] (bus_add_device) from [<c02844a8>] (device_add+0x410/0x584)
-[ 2146.328552] [<c02844a8>] (device_add) from [<c02890c8>] (platform_device_add+0xd8/0x26c)
-[ 2146.328643] [<c02890c8>] (platform_device_add) from [<c02a571c>] (mfd_add_device+0x23c/0x3a0)
-[ 2146.328735] [<c02a571c>] (mfd_add_device) from [<c02a5978>] (mfd_add_devices+0xb8/0x110)
-[ 2146.328857] [<c02a5978>] (mfd_add_devices) from [<bf0ac800>] (dln2_probe+0x1f4/0x250 [dln2])
-[ 2146.328948] [<bf0ac800>] (dln2_probe [dln2]) from [<c030bc98>] (usb_probe_interface+0x1bc/0x2a8)
-[ 2146.329071] [<c030bc98>] (usb_probe_interface) from [<c0287314>] (driver_probe_device+0x14c/0x3ac)
-[ 2146.330718] [<c0287314>] (driver_probe_device) from [<c028766c>] (__driver_attach+0xa4/0xa8)
-[ 2146.330810] [<c028766c>] (__driver_attach) from [<c0285320>] (bus_for_each_dev+0x70/0xa4)
-[ 2146.330902] [<c0285320>] (bus_for_each_dev) from [<c0286cb8>] (driver_attach+0x2c/0x30)
-[ 2146.330993] [<c0286cb8>] (driver_attach) from [<c0309f20>] (usb_store_new_id+0x170/0x1ac)
-[ 2146.331909] [<c0309f20>] (usb_store_new_id) from [<c0309f90>] (new_id_store+0x34/0x3c)
-[ 2146.332000] [<c0309f90>] (new_id_store) from [<c0285074>] (drv_attr_store+0x30/0x3c)
-[ 2146.332611] [<c0285074>] (drv_attr_store) from [<c016e740>] (sysfs_kf_write+0x5c/0x60)
-[ 2146.332702] [<c016e740>] (sysfs_kf_write) from [<c016d900>] (kernfs_fop_write+0xd4/0x194)
-[ 2146.332794] [<c016d900>] (kernfs_fop_write) from [<c010fde8>] (vfs_write+0xb4/0x1c0)
-[ 2146.332916] [<c010fde8>] (vfs_write) from [<c0110450>] (SyS_write+0x4c/0xa0)
-[ 2146.333007] [<c0110450>] (SyS_write) from [<c000f900>] (ret_fast_syscall+0x0/0x48)
-[ 2146.333984] ---[ end trace ad1c64348c92978a ]---
-[ 2146.334625] usb-dln2 1-2.1:1.0: Failed to add mfd devices to core.
-[ 2146.334930] usb-dln2: probe of 1-2.1:1.0 failed with error -17
-
-
-I noticed that the other two USB MFD drivers suffer from similar
-problems. The rtsx_usb driver almost gets it right by using the usb
-device number (address) but that is only unique per bus. I suggest using
-
-	bus_num << 8 | devnum
-
-as a base for USB MFD device ids instead. Note however that this might
-still not be sufficient if there are ever USB-MFD drivers with multiple
-cells of the same type (with increasing cell ids). (That could of course
-then be solved by further shifting.)
-
-Unless anyone suggests otherwise (e.g. to stick with auto id), I'll add
-a helper function for this and fix up those two drivers.
-
-Johan
