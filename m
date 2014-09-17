@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350AbaIQRRY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:17:24 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36464 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbaIQRRX (ORCPT
+	id S1756069AbaIQRVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:21:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57852 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaIQRVl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:17:23 -0400
-Date: Wed, 17 Sep 2014 10:17:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Clark Williams <clark.williams@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: unify boost and kthread priorities
-Message-ID: <20140917171717.GC4723@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140915100524.2cd80d2e@sluggy>
- <20140916204156.GP4723@linux.vnet.ibm.com>
- <1410972543.31130.87.camel@x220>
+	Wed, 17 Sep 2014 13:21:41 -0400
+Date: Wed, 17 Sep 2014 20:21:37 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Andres Lagar-Cavilla <andreslc@google.com>
+Cc: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140917172137.GH26540@minantech.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+ <20140917102635.GA30733@minantech.com>
+ <20140917112713.GB1273@potion.brq.redhat.com>
+ <20140917114214.GB30733@minantech.com>
+ <CAJu=L58O147YQJyODD8MFtdvQ6+TSG6gi6qGySgH3EigP32MrQ@mail.gmail.com>
+ <20140917170841.GG26540@minantech.com>
+ <CAJu=L599fJABew7Oe6Bmp40VzMXY9wnE7P=c1xFaa+cU_KSoMw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410972543.31130.87.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091717-7164-0000-0000-000004AED610
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAJu=L599fJABew7Oe6Bmp40VzMXY9wnE7P=c1xFaa+cU_KSoMw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 06:49:03PM +0200, Paul Bolle wrote:
-> Hi Paul,
+On Wed, Sep 17, 2014 at 10:13:45AM -0700, Andres Lagar-Cavilla wrote:
+> On Wed, Sep 17, 2014 at 10:08 AM, Gleb Natapov <gleb@kernel.org> wrote:
+> > On Wed, Sep 17, 2014 at 10:00:32AM -0700, Andres Lagar-Cavilla wrote:
+> >> On Wed, Sep 17, 2014 at 4:42 AM, Gleb Natapov <gleb@kernel.org> wrote:
+> >> > On Wed, Sep 17, 2014 at 01:27:14PM +0200, Radim Krčmář wrote:
+> >> >> 2014-09-17 13:26+0300, Gleb Natapov:
+> >> >> > For async_pf_execute() you do not need to even retry. Next guest's page fault
+> >> >> > will retry it for you.
+> >> >>
+> >> >> Wouldn't that be a waste of vmentries?
+> >> > This is how it will work with or without this second gup. Page is not
+> >> > mapped into a shadow page table on this path, it happens on a next fault.
+> >>
+> >> The point is that the gup in the async pf completion from the work
+> >> queue will not relinquish the mmap semaphore. And it most definitely
+> >> should, given that we are likely looking at swap/filemap.
+> >>
+> > I get this point and the patch looks good in general, but my point is
+> > that when _retry() is called from async_pf_execute() second gup is not
+> > needed. In the original code gup is called to do IO and nothing else.
+> > In your patch this is accomplished by the first gup already, so you
+> > can skip second gup if pagep == nullptr.
 > 
-> On Tue, 2014-09-16 at 13:41 -0700, Paul E. McKenney wrote:
-> > rcu: unify boost and kthread priorities
-> > 
-> > Rename CONFIG_RCU_BOOST_PRIO to CONFIG_RCU_KTHREAD_PRIO and use this
-> > value for both the per-CPU kthreads (rcuc/N) and the rcu boosting
-> > threads (rcub/n).
-> > 
-> > Also, create the module_parameter rcutree.kthread_prio to be used on
-> > the kernel command line at boot to set a new value (rcutree.kthread_prio=N).
-> > 
-> > Signed-off-by: Clark Williams <clark.williams@gmail.com>
-> > [ paulmck: Ported to rcu/dev. ]
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> I see. However, if this function were to be used elsewhere in the
+> future, then the "if pagep == NULL don't retry" semantics may not
+> match the new caller's intention. Would you prefer an explicit flag?
 > 
-> This landed in today's linux-next (ie, next-20140917) as commit
-> 04a96e05bda6 ("rcu: unify boost and kthread priorities").
-> 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> >[...]
-> > diff --git a/init/Kconfig b/init/Kconfig
-> >[...]
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> >[...]
-> 
-> There's a reference to CONFIG_RCU_BOOST_PRIO in
-> tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt. It needs
-> updating too, doesn't it?
+We can add explicit flag whenever such caller will be added, if ever.
 
-Good catch!
-
-Also the one in tools/testing/selftests/rcutorture/configs/rcu/TREE03.
-
-Fixed both, thank you!
-
-							Thanx, Paul
-
+--
+			Gleb.
