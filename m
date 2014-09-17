@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148AbaIQVZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:25:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57968 "EHLO mail.kernel.org"
+	id S932124AbaIQVY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:24:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57953 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080AbaIQVY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:24:59 -0400
+	id S932080AbaIQVYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 17:24:55 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Kyle McMartin <kyle@mcmartin.ca>, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/20] perf tools: Allow to specify lib compile variable for spec usage
-Date: Wed, 17 Sep 2014 18:24:09 -0300
-Message-Id: <1410989063-14207-7-git-send-email-acme@kernel.org>
+Subject: [PATCH 05/20] perf kvm stat report: Unify the title bar output
+Date: Wed, 17 Sep 2014 18:24:08 -0300
+Message-Id: <1410989063-14207-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410989063-14207-1-git-send-email-acme@kernel.org>
 References: <1410989063-14207-1-git-send-email-acme@kernel.org>
@@ -26,52 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-We need a way to specify $(lib) part of the installation path for
-traceevent plugin libraries. Currently we use 'lib64' for x86_64 and
-'lib' otherwise.
+The 'live' command prints additional information to the "Analyze events
+for " title bar about the current target.  Let's print the same title
+for the 'report' command.
 
-Instead of listing all possible values, this change allows the rpm spec
-code to specify the correct $(lib) part based on processed architecture,
-like
-
-  $ make ... lib=%{_lib}
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Tested-by: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1408978552-17131-1-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1409579095-12963-4-git-send-email-yarygin@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/builtin-kvm.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 98c9fd174e98..58f609198c6d 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -653,11 +653,13 @@ else
- sysconfdir = $(prefix)/etc
- ETC_PERFCONFIG = etc/perfconfig
- endif
-+ifndef lib
- ifeq ($(IS_X86_64),1)
- lib = lib64
- else
- lib = lib
- endif
-+endif # lib
- libdir = $(prefix)/$(lib)
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 84295ab6c4e1..f5d3ae483110 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -543,14 +543,12 @@ static void print_vcpu_info(struct perf_kvm_stat *kvm)
  
- # Shell quote (do not use $(call) to accommodate ancient setups);
+ 	pr_info("Analyze events for ");
+ 
+-	if (kvm->live) {
+-		if (kvm->opts.target.system_wide)
+-			pr_info("all VMs, ");
+-		else if (kvm->opts.target.pid)
+-			pr_info("pid(s) %s, ", kvm->opts.target.pid);
+-		else
+-			pr_info("dazed and confused on what is monitored, ");
+-	}
++	if (kvm->opts.target.system_wide)
++		pr_info("all VMs, ");
++	else if (kvm->opts.target.pid)
++		pr_info("pid(s) %s, ", kvm->opts.target.pid);
++	else
++		pr_info("dazed and confused on what is monitored, ");
+ 
+ 	if (vcpu == -1)
+ 		pr_info("all VCPUs:\n\n");
 -- 
 1.9.3
 
