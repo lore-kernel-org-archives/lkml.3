@@ -1,38 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbaIQJFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:05:13 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60086 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751852AbaIQJFK (ORCPT
+	id S1754799AbaIQJGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:06:33 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57863 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377AbaIQJGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:05:10 -0400
-Date: Wed, 17 Sep 2014 11:05:06 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: gregkh@linuxfoundation.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH 00/16 v9] omap 8250 based uart + DMA
-Message-ID: <20140917090506.GA6812@breakpoint.cc>
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+	Wed, 17 Sep 2014 05:06:31 -0400
+Date: Wed, 17 Sep 2014 11:06:16 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, ak@linux.intel.com,
+        kan.liang@intel.com
+Subject: [PATCH v2] perf/x86/uncore: update support for client uncore IMC PMU
+Message-ID: <20140917090616.GA11281@quad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-10 21:29:55 [+0200], Sebastian Andrzej Siewior wrote:
-> the diff of v8…v9 is small:
 
-Greg, do you mind taking patches from this series up to "[PATCH 05/16]"?
-Nobody complained about those so far and it would keep v10 a little smaller.
-I have changes to #6 (the omap driver) and need to do some DMA related
-changes in the following
+This patch restructures the memory controller (IMC) uncore
+PMU support for client SNB/IVB/HSW processors. The main change
+is that it can now cope with more than one PCI device ID per
+processor model. There are many flavors of memory controllers
+for each processor. They have different PCI device ID, yet
+they behave the same w.r.t. the memory controller PMU that
+we are interested in.
 
-Sebastian
+The patch now supports two distinct memory controllers for IVB
+processors: one for mobile, one for desktop.
+
+In V2, we fix the formatting issues reported by checkpatch.
+
+Signed-off-by: Stephane eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c |   69 +++++++++++++++------
+ include/linux/pci_ids.h                           |    1 +
+ 2 files changed, 52 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c
+index e0e934c..3001015 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c
+@@ -460,6 +460,10 @@ static const struct pci_device_id ivb_uncore_pci_ids[] = {
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_IMC),
+ 		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
+ 	},
++	{ /* IMC */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_E3_IMC),
++		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
++	},
+ 	{ /* end: all zeroes */ },
+ };
+ 
+@@ -486,34 +490,63 @@ static struct pci_driver hsw_uncore_pci_driver = {
+ 	.id_table	= hsw_uncore_pci_ids,
+ };
+ 
+-int snb_uncore_pci_init(void)
++struct imc_uncore_pci_dev {
++	__u32 pci_id;
++	struct pci_driver *driver;
++};
++#define IMC_DEV(a, d) \
++	{ .pci_id = PCI_DEVICE_ID_INTEL_##a, .driver = (d) }
++
++static const struct imc_uncore_pci_dev desktop_imc_pci_ids[] = {
++	IMC_DEV(SNB_IMC, &snb_uncore_pci_driver),
++	IMC_DEV(IVB_IMC, &ivb_uncore_pci_driver),    /* 3rd Gen Core processor */
++	IMC_DEV(IVB_E3_IMC, &ivb_uncore_pci_driver), /* Xeon E3-1200 v2/3rd Gen Core processor */
++	IMC_DEV(HSW_IMC, &hsw_uncore_pci_driver),    /* 4th Gen Core Processor */
++	{  /* end marker */ }
++};
++
++
++#define for_each_imc_pci_id(x, t) \
++	for (x = (t); (x)->pci_id; x++)
++
++static struct pci_driver *imc_uncore_find_dev(void)
+ {
+-	int ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_SNB_IMC);
+-	if (ret)
+-		return ret;
+-	uncore_pci_uncores = snb_pci_uncores;
+-	uncore_pci_driver = &snb_uncore_pci_driver;
+-	return 0;
++	const struct imc_uncore_pci_dev *p;
++	int ret;
++
++	for_each_imc_pci_id(p, desktop_imc_pci_ids) {
++		ret = snb_pci2phy_map_init(p->pci_id);
++		if (ret == 0)
++			return p->driver;
++	}
++	return NULL;
+ }
+ 
+-int ivb_uncore_pci_init(void)
++static int imc_uncore_pci_init(void)
+ {
+-	int ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_IVB_IMC);
+-	if (ret)
+-		return ret;
++	struct pci_driver *imc_drv = imc_uncore_find_dev();
++
++	if (!imc_drv)
++		return -ENODEV;
++
+ 	uncore_pci_uncores = snb_pci_uncores;
+-	uncore_pci_driver = &ivb_uncore_pci_driver;
++	uncore_pci_driver = imc_drv;
++
+ 	return 0;
+ }
+ 
++int snb_uncore_pci_init(void)
++{
++	return imc_uncore_pci_init();
++}
++
++int ivb_uncore_pci_init(void)
++{
++	return imc_uncore_pci_init();
++}
+ int hsw_uncore_pci_init(void)
+ {
+-	int ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_HSW_IMC);
+-	if (ret)
+-		return ret;
+-	uncore_pci_uncores = snb_pci_uncores;
+-	uncore_pci_driver = &hsw_uncore_pci_driver;
+-	return 0;
++	return imc_uncore_pci_init();
+ }
+ 
+ /* end of Sandy Bridge uncore support */
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index aa0d390..eb46039 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2536,6 +2536,7 @@
+ #define PCI_DEVICE_ID_INTEL_EESSC	0x0008
+ #define PCI_DEVICE_ID_INTEL_SNB_IMC	0x0100
+ #define PCI_DEVICE_ID_INTEL_IVB_IMC	0x0154
++#define PCI_DEVICE_ID_INTEL_IVB_E3_IMC	0x0150
+ #define PCI_DEVICE_ID_INTEL_HSW_IMC	0x0c00
+ #define PCI_DEVICE_ID_INTEL_PXHD_0	0x0320
+ #define PCI_DEVICE_ID_INTEL_PXHD_1	0x0321
+-- 
+1.7.9.5
+
