@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538AbaIQXpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 19:45:45 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:38007 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871AbaIQXpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 19:45:43 -0400
+	id S1754537AbaIQXup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 19:50:45 -0400
+Received: from mail-bn1on0141.outbound.protection.outlook.com ([157.56.110.141]:13680
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752039AbaIQXun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 19:50:43 -0400
+Message-ID: <541A1E49.2080404@freescale.com>
+Date: Wed, 17 Sep 2014 18:50:33 -0500
+From: German Rivera <German.Rivera@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzhcmZiYZL8TR008or8uaefDBrEKDjqA-tOrRLEZsm95A@mail.gmail.com>
-References: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
-	<1410914370-29883-8-git-send-email-ast@plumgrid.com>
-	<54192F66.8020200@redhat.com>
-	<CAMEtUuxK68ZoJ-izjLoygv0f+rLtPmMLUUq1=BJ+_ZBGfynkdA@mail.gmail.com>
-	<5419BED8.5020309@redhat.com>
-	<5419DE51.1060904@redhat.com>
-	<CAMEtUuzhcmZiYZL8TR008or8uaefDBrEKDjqA-tOrRLEZsm95A@mail.gmail.com>
-Date: Wed, 17 Sep 2014 16:45:42 -0700
-Message-ID: <CAMEtUuw0aDPpQhd13ssk2PDLffBJNeef9jicOnhQLH6KtJ8gsQ@mail.gmail.com>
-Subject: Re: [PATCH v13 net-next 07/11] bpf: verifier (add ability to receive
- verification log)
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Joe Perches <joe@perches.com>
+CC: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <stuart.yoder@freescale.com>,
+        <Kim.Phillips@freescale.com>, <scottwood@freescale.com>,
+        <agraf@suse.de>, <linuxppc-release@linux.freescale.net>
+Subject: Re: [PATCH 2/4] drivers/bus: Freescale Management Complex (fsl-mc)
+ bus driver
+References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>	 <1410456864-27890-3-git-send-email-German.Rivera@freescale.com> <1410461351.9942.19.camel@joe-AO725>
+In-Reply-To: <1410461351.9942.19.camel@joe-AO725>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.88.168.50]
+X-ClientProxiedBy: BLUPR08CA0051.namprd08.prod.outlook.com (10.141.200.31) To
+ BLUPR03MB327.namprd03.prod.outlook.com (10.141.48.18)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0337AFFE9A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(6049001)(199003)(51704005)(377454003)(479174003)(24454002)(189002)(23746002)(83322001)(86362001)(65816999)(50986999)(87266999)(101416001)(31966008)(99396002)(36756003)(92726001)(92566001)(83072002)(85852003)(4396001)(21056001)(90102001)(76176999)(54356999)(47776003)(64706001)(20776003)(87976001)(74662003)(74502003)(77982003)(81342003)(81542003)(46102003)(79102003)(65956001)(80022003)(65806001)(66066001)(59896002)(85306004)(77096002)(95666004)(106356001)(105586002)(107046002)(110136001)(42186005)(50466002)(33656002)(97736003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB327;H:[10.81.33.65];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 12:37 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->
->> Hm, thinking out loudly ... perhaps this could be made a library problem.
->> Such that the library which wraps the syscall needs to be aware of a
->> marker where the initial version ends, and if the application doesn't
->> make use of any of the new features, it would just pass in the length up
->> to the marker as size attribute into the syscall. Similarly, if new
->> features are always added to the end of a structure and the library
->> truncates the overall-length after the last used member we might have
->> a chance to load something on older kernels, haven't tried that though.
->
-> that's a 3rd option. I think it's cleaner than 2nd, since it solves it
-> completely from user space.
-> It can even be smarter than that. If this syscall wrapper library
-> sees that newer features are used and it can workaround them:
-> it can chop size and pass older fields into the older kernel
-> and when it returns, do a workaround based on newer fields.
 
-the more I think about 'new user space + old kernel' problem,
-the more certain I am that kernel should not try to help
-user space, since most of the time it's not going to be enough,
-but additional code in kernel would need to be maintained.
-
-syscall commands and size of bpf_attr is the least of problems.
-New map_type and prog_type will be added, new helper
-functions will be available to programs.
-One would think that md5 of uapi/linux/bpf.h would be
-enough to say that user app is compatible... In reality,
-it's not. The 'state pruning' verifier optimization I've talked
-about will not change a single bit in bpf.h, but it will be
-able to recognize more programs as safe.
-A program developed on a new kernel with more
-advanced verifier will load just fine on new kernel, but
-this valid program will not load on old kernel, only because
-verifier is not smart enough. Now we would need a version
-of verifier exposed all the way to user space?!
-imo that's too much. I think for eBPF infra kernel
-should only guarantee backwards compatibility
-(old user space must work with new kernel) and that's it.
-That's what this patch is trying to do.
-Thoughts?
+On 09/11/2014 01:49 PM, Joe Perches wrote:
+>
+>> +out:
+>> +	pr_debug("%s: %s %s\n", __func__, dev_name(dev),
+>> +		 found ? "matched" : "not matched");
+>
+> Thia should probably use dev_dbg
+>
+> 	dev_dbg(dev, "%smatched\n", found ? "" : "not ");
+>
+> and let the dynamic debug mechanism emit the
+> function name if desired.
+>
+>
+Ok, I'll make this change in the v2 respin
