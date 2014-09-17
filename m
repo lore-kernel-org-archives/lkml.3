@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaIQP0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 11:26:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54238 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755345AbaIQP0C (ORCPT
+	id S1755956AbaIQP02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 11:26:28 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62192 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862AbaIQP0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 11:26:02 -0400
-Date: Wed, 17 Sep 2014 17:25:58 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Nadav Haklai <nadavh@marvell.com>
-Subject: Re: [PATCH v2 0/3] PCI/MSI: Remove arch_msi_check_device()
-Message-ID: <20140917172558.5847e16f@free-electrons.com>
-In-Reply-To: <cover.1410078503.git.agordeev@redhat.com>
-References: <cover.1410078503.git.agordeev@redhat.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 17 Sep 2014 11:26:23 -0400
+Message-ID: <5419A81B.2030705@converseincode.com>
+Date: Wed, 17 Sep 2014 08:26:19 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+CC: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
+        fabf@skynet.be, jbacik@fb.com, snitzer@redhat.com,
+        tadeusz.struk@intel.com, akpm@linux-foundation.org,
+        bruce.w.allan@intel.com, james.l.morris@oracle.com,
+        john.griffin@intel.com, linux-btrfs@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
+        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
+        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH v3 01/12] crypto: LLVMLinux: Add macro to remove use of
+ VLAIS in crypto code
+References: <1410766234-1634-1-git-send-email-behanw@converseincode.com> <1410766234-1634-2-git-send-email-behanw@converseincode.com> <20140917092212.GA1213@gondor.apana.org.au> <54196D5C.6040104@samsung.com> <20140917113035.GB2129@gondor.apana.org.au>
+In-Reply-To: <20140917113035.GB2129@gondor.apana.org.au>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexander Gordeev,
+On 09/17/14 04:30, Herbert Xu wrote:
+> On Wed, Sep 17, 2014 at 02:15:40PM +0300, Dmitry Kasatkin wrote:
+>> On 17/09/14 12:22, Herbert Xu wrote:
+>>> On Mon, Sep 15, 2014 at 12:30:23AM -0700, behanw@converseincode.com wrote:
+>>>> From: Behan Webster <behanw@converseincode.com>
+>>>>
+>>>> Add a macro which replaces the use of a Variable Length Array In Struct (VLAIS)
+>>>> with a C99 compliant equivalent. This macro instead allocates the appropriate
+>>>> amount of memory using an char array.
+>>>>
+>>>> The new code can be compiled with both gcc and clang.
+>>>>
+>>>> struct shash_desc contains a flexible array member member ctx declared with
+>>>> CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
+>>>> of the array declared after struct shash_desc with long long.
+>>>>
+>>>> No trailing padding is required because it is not a struct type that can
+>>>> be used in an array.
+>>>>
+>>>> The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
+>>>> as would be the case for a struct containing a member with
+>>>> CRYPTO_MINALIGN_ATTR.
+>>>>
+>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>>> Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+>>>
+>>> Thanks,
+>> Just in case.
+>> I would still follow advice from "Michał Mirosław" to use shash##__desc[]
+Absolutely. I will be posting a v4 patchset . Just waiting a bit more 
+for more comments on v3.
 
-On Sun,  7 Sep 2014 20:57:52 +0200, Alexander Gordeev wrote:
+The macro from v4 will look like this which I believe will satisfy the 
+concern and indeed be safer than my previous version.
 
-> Alexander Gordeev (3):
->   patch 1 - PCI/MSI/PPC: Remove arch_msi_check_device()
->   patch 2 - PCI/MSI/Armada-370-xp: Remove arch_msi_check_device()
->   patch 3 - PCI/MSI: Remove arch_msi_check_device()
++#define SHASH_DESC_ON_STACK(shash, tfm)                                  \
++       char __##shash##_desc[sizeof(struct shash_desc) +        \
++               crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR; \
++       struct shash_desc *shash = (struct shash_desc *)__##shash##_desc
 
-For the entire series:
+Hmm. Is it worth adding a comment with this macro explaining the reason this works? Essentially much of what is in the commit message?
+  
 
-Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Oh yes of course.  My ack is more about the approach.
 
-I tested on the Armada XP GP platform, which is particularly affected
-by PATCH 2/3, as it is using the irq-armada-370-xp irqchip driver. I
-tested with an igb PCIe NIC that supports MSI and MSI-X, and I verified
-that MSI-X is still rejected (since we don't support it on Armada XP,
-at least for now), and that MSI is accepted and actually works.
+Wonderful!
 
-Thanks for doing this, and sorry for the delay in getting the patches
-tested!
+Indeed. I would have asked for you to wait for v4 anyways. :)
 
-Best regards,
+Thank you,
 
-Thomas
+Behan
+
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Behan Webster
+behanw@converseincode.com
+
