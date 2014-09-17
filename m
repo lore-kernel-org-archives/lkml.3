@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbaIQOXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 10:23:06 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:37837 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755400AbaIQOXF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 10:23:05 -0400
-Date: Wed, 17 Sep 2014 10:22:55 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140917102255.5cd03071@gandalf.local.home>
-In-Reply-To: <20140917141816.GO2840@worktop.localdomain>
-References: <20140914055450.GB296@x4>
-	<CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
-	<20140915163740.GA12408@x4>
-	<20140916105547.GA1205@quack.suse.cz>
-	<20140916144252.GB32118@x4>
-	<20140916111331.14303381@gandalf.local.home>
-	<20140916203510.GF1205@quack.suse.cz>
-	<20140916170709.73ef2993@gandalf.local.home>
-	<20140916212250.GI1205@quack.suse.cz>
-	<20140916173328.6306a5c2@gandalf.local.home>
-	<20140917141816.GO2840@worktop.localdomain>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1755533AbaIQOZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 10:25:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37771 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755215AbaIQOZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 10:25:48 -0400
+Date: Wed, 17 Sep 2014 09:25:03 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony <tony@atomide.com>
+CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: DRA7: Add PMU nodes
+Message-ID: <20140917142503.GA11856@kahuna>
+References: <1408456440-30171-1-git-send-email-nm@ti.com>
+ <540719FC.5070803@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <540719FC.5070803@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014 16:18:16 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, Sep 16, 2014 at 05:33:28PM -0400, Steven Rostedt wrote:
-> 
-> > >   printk_deffered() will be in order with other printks after your commit
-> > > 458df9fd4815b47809875d57f42e16401674b621. Just printing to console itself
-> > > will be delayed to the next timer interrupt. Or am I missing something?
+On 08:39-20140903, Nishanth Menon wrote:
+> On 08/19/2014 08:54 AM, Nishanth Menon wrote:
+> > From: Lucas Weaver <l-weaver@ti.com>
 > > 
-> > Hehe, you're right. I blame the meds for forgetting this.
+> > DRA74x and DRA72x family of processors vary slightly in the number
+> > of CPUs. So, add different instances of PMU for each of these processor
+> > groups. Further, since the interrupts bypass crossbar and are directly
+> > connected to GIC, mark the dts nodes with relevant information.
 > > 
-> > Yeah, my update will put the data in order. Thus I guess I agree with
-> > your assessment. We probably don't need the "sched_delayed" anymore.
+> > Tested with perf utility.
 > > 
-> > OK, you convinced me, but I still like to hear Peter's view on this
-> > before we commit it.
-> 
-> By not calling console_unlock() the messages will be 'delayed', as in,
-> we'll not call console->write() and we'll not see them, etc..
-> 
-> So some form of [delayed] or whatnot seems to remain appropriate.
-> 
-> I agree that the 'sched_' part has lived far beyond its relevance.
+> > Reviewed-by: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Lucas Weaver <l-weaver@ti.com>
+> > Signed-off-by: Nishanth Menon <nm@ti.com>
+> > ---
+> Hi,
+> Gentle ping..
 
-But then we should add '[delayed]' if a CPU calls printk() while
-another CPU is printing, as printk() wont block in that case either,
-and the output will happen some later time.
+Tony,
+I dont see this patch in omap-for-v3.18/dt
 
--- Steve
+Is there anyway you might consider pulling this for 3.18?
+
+Patchworks link:
+https://patchwork.kernel.org/patch/4743121/
+
+> 
+> Regards,
+> Nishanth Menon
+> >  arch/arm/boot/dts/dra72x.dtsi |    5 +++++
+> >  arch/arm/boot/dts/dra74x.dtsi |    6 ++++++
+> >  2 files changed, 11 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/dra72x.dtsi b/arch/arm/boot/dts/dra72x.dtsi
+> > index f1ec22f..e5a3d23 100644
+> > --- a/arch/arm/boot/dts/dra72x.dtsi
+> > +++ b/arch/arm/boot/dts/dra72x.dtsi
+> > @@ -22,4 +22,9 @@
+> >  			reg = <0>;
+> >  		};
+> >  	};
+> > +
+> > +	pmu {
+> > +		compatible = "arm,cortex-a15-pmu";
+> > +		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>;
+> > +	};
+> >  };
+> > diff --git a/arch/arm/boot/dts/dra74x.dtsi b/arch/arm/boot/dts/dra74x.dtsi
+> > index a4e8bb9..3be544c 100644
+> > --- a/arch/arm/boot/dts/dra74x.dtsi
+> > +++ b/arch/arm/boot/dts/dra74x.dtsi
+> > @@ -38,4 +38,10 @@
+> >  			reg = <1>;
+> >  		};
+> >  	};
+> > +
+> > +	pmu {
+> > +		compatible = "arm,cortex-a15-pmu";
+> > +		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>,
+> > +			     <GIC_SPI DIRECT_IRQ(132) IRQ_TYPE_LEVEL_HIGH>;
+> > +	};
+> >  };
+> > 
+> 
+> 
+> -- 
+> Regards,
+> Nishanth Menon
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Regards,
+Nishanth Menon
