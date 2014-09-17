@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaIQBM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:12:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:33864 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547AbaIQBMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:12:24 -0400
-Date: Wed, 17 Sep 2014 11:12:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-ID: <20140917111217.36853551@canb.auug.org.au>
-In-Reply-To: <20140917110454.399a7841@canb.auug.org.au>
-References: <20140917110454.399a7841@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754785AbaIQBMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 21:12:38 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:37613 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547AbaIQBMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 21:12:35 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: linux-kernel@vger.kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <0d01e84ded65909071948277406839a0>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <5418DFFC.5030808@rock-chips.com>
+Date: Wed, 17 Sep 2014 09:12:28 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/O8w4w6IJ9pTIu+K193PDvy3"; protocol="application/pgp-signature"
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "heiko@sntech.de" <heiko@sntech.de>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "hj@rock-chips.com" <hj@rock-chips.com>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] Documentation: dt-bindings: add dt binding info
+ for rk3288-smp
+References: <1410864271-9277-1-git-send-email-kever.yang@rock-chips.com> <1410864271-9277-2-git-send-email-kever.yang@rock-chips.com> <20140916185439.GF14191@leverpostej>
+In-Reply-To: <20140916185439.GF14191@leverpostej>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/O8w4w6IJ9pTIu+K193PDvy3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Mark,
 
-Hi Steffen,
-
-On Wed, 17 Sep 2014 11:04:54 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+     Thanks for your comment.
+On 09/17/2014 02:54 AM, Mark Rutland wrote:
+> On Tue, Sep 16, 2014 at 11:44:28AM +0100, Kever Yang wrote:
+>> This add documentation for rk3288 smp dt binding
+>>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> ---
+>>
+>> Changes in v2:
+>> - add documentation
+>>
+>>   Documentation/devicetree/bindings/arm/cpus.txt | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+>> index 298e2f6..4b46233 100644
+>> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+>> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+>> @@ -195,6 +195,7 @@ nodes to be present and contain the properties described below.
+>>   			    "qcom,kpss-acc-v1"
+>>   			    "qcom,kpss-acc-v2"
+>>   			    "rockchip,rk3066-smp"
+>> +			    "rockchip,rk3288-smp"
+> How do these differ?
+rk3066 and rk3288 smp bring up code is quite different, so I need a new 
+node "rockchip,rk3288-smp"
+other than "rockchip,rk3066-smp".
 >
-> After merging the net tree, today's linux-next build (powerpc ppc64_defco=
-nfig)
-> failed like this:
->=20
-> warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER=
- && 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII whi=
-ch has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-> warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX &&=
- 440GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which ha=
-s unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-> warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects=
- IBM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET &=
-& NET_VENDOR_IBM)
-> warning: (LIBFC && SCSI_IBMVFC && SCSI_QLA_FC && SCSI_LPFC && ZFCP && SCS=
-I_BFA_FC && SCSI_CHELSIO_FCOE && FUSION_FC) selects SCSI_FC_ATTRS which has=
- unmet direct dependencies (SCSI && NET)
-> warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440S=
-Pe && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has=
- unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-> warning: (LIBFC && SCSI_IBMVFC && SCSI_QLA_FC && SCSI_LPFC && ZFCP && SCS=
-I_BFA_FC && SCSI_CHELSIO_FCOE && FUSION_FC) selects SCSI_FC_ATTRS which has=
- unmet direct dependencies (SCSI && NET)
-> warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX &&=
- 440GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which ha=
-s unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-> warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER=
- && 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII whi=
-ch has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-> warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects=
- IBM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET &=
-& NET_VENDOR_IBM)
-> warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440S=
-Pe && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has=
- unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-> drivers/scsi/scsi_transport_fc.c: In function 'fc_host_post_event':
-> drivers/scsi/scsi_transport_fc.c:543:7: error: 'scsi_nl_sock' undeclared =
-(first use in this function)
->   if (!scsi_nl_sock) {
->        ^
-> drivers/scsi/scsi_transport_fc.c:543:7: note: each undeclared identifier =
-is reported only once for each function it appears in
-> drivers/scsi/scsi_transport_fc.c: In function 'fc_host_post_vendor_event':
-> drivers/scsi/scsi_transport_fc.c:611:7: error: 'scsi_nl_sock' undeclared =
-(first use in this function)
->   if (!scsi_nl_sock) {
->        ^
->=20
-> This is a bit different to yesterday's failure but I assume it is still
-> related to commit 5d6be6a5d486 ("scsi_netlink : Make SCSI_NETLINK
-> dependent on NET instead of selecting NET").
->=20
-> I used the net tree from next-20140915 again today.
+> What does "rockchip,rk3288-smp" mean exactly?
+The driver who using this node is in 2/3 of this patchset, it goes to 
+linux-arm-kernel list and linux-rockchip
+list, I'm not sure if you have get that, maybe I need a RESEND?
+>
+> Presumably other nodes / properties are required?
+Base on linux-next, I think only "rockchip,rk3288-smp" is new node to my 
+driver.
 
-I also had to use the version of the ipsec tree from next-20140916
-since today's version is based on the version of the net tree with
-errors.
+BR
+-Kever
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/O8w4w6IJ9pTIu+K193PDvy3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUGN/1AAoJEMDTa8Ir7ZwVO6MP/iGgU5TAlLvxUcCUh87RetoV
-KPftcMl8oXSOeWa8Aj5OROXG9XmJVRngYiXwqc4zBoq53R16VjvZ5TX8tMvL5tmA
-n8ivWVvcXDZUa0cEkGKXWVN8hTABVwSeqa6Tghb3Su2it0eUoJcsd3QfIehH7++u
-JuZEK9drpEd7RxIs43JyVv4M4ruUkZALJdv3lGVxcc9+4C6593PXYHgyDdyWpccL
-iJKrwG9ZWROvbvblIJm8QpQfMW39QnbauOIGYxd2euaqzHl21IJQTG/0nHRHqBlb
-sVGeCoQiylDaHV62P+obczCeKju609vGihWtRWJHKd/TxEvPc89DL+iuhmvShcBC
-nwS7abRbdteyPBJ5ckynJvUMR+h/zmWf3QVStcoeJHiiNJ6ca1vt3vNx87f92SM7
-L/q/IpvLIKL9hzv+YiCY1n38uiRTGfF/ZdPCgUtd0y7BzoIrV+ge+CAqWoTv4lA6
-I3WqPhLEVhHCrdBo6iKfze/E3ffEYurxTwrPacULsfNYAQ+QkB4Zpt5jthnQ6qNI
-ezamy7fnqYbx/mulx3aGxejVaOJ36kp09Lbi0tr08y29mi6CH38cIMZQdDUmpIS4
-KCj70sSqlO63GmXVyOKCG0em99WvJX+dBoCqez4yvknBfG98KOFgyGJ7hwLf8udv
-xONtczTIh+5VHeZF34w6
-=aCFo
------END PGP SIGNATURE-----
-
---Sig_/O8w4w6IJ9pTIu+K193PDvy3--
