@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaIQCLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 22:11:06 -0400
-Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:32736
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753575AbaIQCLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 22:11:03 -0400
-X-Greylist: delayed 1401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Sep 2014 22:11:03 EDT
-Date: Wed, 17 Sep 2014 10:10:45 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Robin Gong <b38343@freescale.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <kernel@pengutronix.de>, <sre@kernel.org>, <dbaryshkov@gmail.com>,
-        <dwmw2@infradead.org>, <grant.likely@linaro.org>,
-        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/3] ARM: dts: imx6: add pm_power_off support for
- i.mx6 chips
-Message-ID: <20140917021044.GD4796@dragon>
-References: <1410511739-31122-1-git-send-email-b38343@freescale.com>
- <1410511739-31122-2-git-send-email-b38343@freescale.com>
+	id S1754300AbaIQCSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 22:18:17 -0400
+Received: from ozlabs.org ([103.22.144.67]:60898 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283AbaIQCSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 22:18:15 -0400
+Date: Wed, 17 Sep 2014 12:18:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, anish@chelsio.com
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-ID: <20140917121808.27977073@canb.auug.org.au>
+In-Reply-To: <20140916.214859.1906368469534009374.davem@davemloft.net>
+References: <20140917110454.399a7841@canb.auug.org.au>
+	<20140916.214859.1906368469534009374.davem@davemloft.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1410511739-31122-2-git-send-email-b38343@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(189002)(24454002)(79102003)(54356999)(74662003)(106466001)(74502003)(46102003)(85852003)(19580405001)(81342003)(97756001)(4396001)(92726001)(95666004)(20776003)(68736004)(77982003)(81542003)(31966008)(86362001)(84676001)(90102001)(87936001)(46406003)(19580395003)(21056001)(97736003)(26826002)(44976005)(50466002)(83322001)(33716001)(47776003)(83506001)(6806004)(107046002)(99396002)(76176999)(83072002)(50986999)(57986006)(23726002)(33656002)(80022003)(92566001)(64706001)(76482002)(85306004)(104016003)(102836001)(110136001)(105606002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB040;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0337AFFE9A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/C1dOj0=f.Gtgr.IlFc622L2"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 04:48:57PM +0800, Robin Gong wrote:
-> All chips of i.mx6 can be powered off by programming SNVS.
-> For example :
-> On i.mx6q-sabresd board, PMIC_ON_REQ connect with external
-> pmic ON/OFF pin, that will cause the whole PMIC powered off
-> except VSNVS. And system can restart once PMIC_ON_REQ goes
-> high by push POWRER key.
+--Sig_/C1dOj0=f.Gtgr.IlFc622L2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-What's the behavior for those boards on which PMIC_ON_REQ isn't
-connected to anywhere?
+Hi Dave,
 
-BTW, the commit log of the driver patch [[PATCH v2 2/3] ] should be
-improved.
+On Tue, 16 Sep 2014 21:48:59 -0400 (EDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 17 Sep 2014 11:04:54 +1000
+>=20
+> > This is a bit different to yesterday's failure but I assume it is still
+> > related to commit 5d6be6a5d486 ("scsi_netlink : Make SCSI_NETLINK
+> > dependent on NET instead of selecting NET").
+> >=20
+> > I used the net tree from next-20140915 again today.
+>=20
+> Should be fixed by:
+>=20
+> commit 6a38792ca8a5da28f65dc42eeb73d9a431f8d0fd
+> Author: Randy Dunlap <rdunlap@infradead.org>
+> Date:   Tue Sep 16 13:47:41 2014 -0700
+>=20
+>     scsi: use 'depends' instead of 'select' for SCSI_FC_ATTRS
+>    =20
+>     There are other kconfig symbols which use SCSI_FC_ATTRS.
+>     In order to maintain sanity and prevent kconfig warnings, change
+>     all of these from using 'select' to using 'depends on' so that
+>     proper symbol dependencies will be honored and circular depends
+>     problems will be avoided.
+>     This fixes kconfig warnings and build errors:
 
-Shawn
+OK, thanks.  That was not in the net tree I fetched this morning, so
+should be good tomorrow.
 
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
-> ---
->  .../bindings/power_supply/imx-snvs-poweroff.txt     | 21 +++++++++++++++++++++
->  arch/arm/boot/dts/imx6qdl.dtsi                      |  5 +++++
->  arch/arm/boot/dts/imx6sl.dtsi                       |  5 +++++
->  arch/arm/boot/dts/imx6sx.dtsi                       |  5 +++++
->  4 files changed, 36 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt b/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
-> new file mode 100644
-> index 0000000..1a3ab9a
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
-> @@ -0,0 +1,21 @@
-> +i.mx6 Poweroff Driver
-> +
-> +SNVS_LPCR in SNVS module can power off the whole system by pull
-> +PMIC_ON_REQ low.
-> +
-> +Required Properties:
-> +-compatible: "fsl,sec-v4.0-poweroff"
-> +-reg: Specifies the physical address of the SNVS_LPCR register
-> +
-> +Example:
-> +	snvs@020cc000 {
-> +		compatible = "fsl,sec-v4.0-mon", "simple-bus";
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges = <0 0x020cc000 0x4000>;
-> +		.....
-> +		snvs-poweroff@38 {
-> +			compatible = "fsl,sec-v4.0-poweroff";
-> +			reg = <0x38 0x4>;
-> +		};
-> +	}
-> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-> index 70d7207..d2d7563 100644
-> --- a/arch/arm/boot/dts/imx6qdl.dtsi
-> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
-> @@ -650,6 +650,11 @@
->  					interrupts = <0 19 IRQ_TYPE_LEVEL_HIGH>,
->  						     <0 20 IRQ_TYPE_LEVEL_HIGH>;
->  				};
-> +
-> +				snvs-poweroff@38 {
-> +					compatible = "fsl,sec-v4.0-poweroff";
-> +					reg = <0x38 0x4>;
-> +				};
->  			};
->  
->  			epit1: epit@020d0000 { /* EPIT1 */
-> diff --git a/arch/arm/boot/dts/imx6sl.dtsi b/arch/arm/boot/dts/imx6sl.dtsi
-> index ba67714..6e1d8f6 100644
-> --- a/arch/arm/boot/dts/imx6sl.dtsi
-> +++ b/arch/arm/boot/dts/imx6sl.dtsi
-> @@ -568,6 +568,11 @@
->  					interrupts = <0 19 IRQ_TYPE_LEVEL_HIGH>,
->  						     <0 20 IRQ_TYPE_LEVEL_HIGH>;
->  				};
-> +
-> +				snvs-poweroff@38 {
-> +					compatible = "fsl,sec-v4.0-poweroff";
-> +					reg = <0x38 0x4>;
-> +				};
->  			};
->  
->  			epit1: epit@020d0000 {
-> diff --git a/arch/arm/boot/dts/imx6sx.dtsi b/arch/arm/boot/dts/imx6sx.dtsi
-> index d137caca..c1f937e 100644
-> --- a/arch/arm/boot/dts/imx6sx.dtsi
-> +++ b/arch/arm/boot/dts/imx6sx.dtsi
-> @@ -671,6 +671,11 @@
->  					reg = <0x34 0x58>;
->  					interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
->  				};
-> +
-> +				snvs-poweroff@38 {
-> +					compatible = "fsl,sec-v4.0-poweroff";
-> +					reg = <0x38 0x4>;
-> +				};
->  			};
->  
->  			epit1: epit@020d0000 {
-> -- 
-> 1.9.1
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/C1dOj0=f.Gtgr.IlFc622L2
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUGO9kAAoJEMDTa8Ir7ZwV0D4P/2TaL3IDRucJ9wG0lmpxJxXu
+Mn23DMYSmVqfWBC/3SAa2had30q0OozZEyLGLRtelKwtikX2dCvBtE5cX+winX7T
+hcRGqn1WOoZlk4xzGOmsJT9BiDiR5ZkOyWt4KCsJx7HhlwlWDok/EdLi0LguzS63
+ygDxDQdRa3k83XxKghPWhbdPIovuQ9aD9pFq6JPKLvSgrJcKsbcgq+mRS6F1UxmD
+njVq+LWSmIJgUzbSMheiRExBfRGuvm14OoinTfzkttAgdAQKZasOtCa5CtSvnhoN
+JdjFNnQJBeYOQt3NV50+jZHlRG+Rp4TGquBG28I7Mlmzf1wmJBfAyL2nh+IEqZER
+ZMbUwAmnRkpvZQOKH9TFGObP00z6pprSUwYOV2K10ifKkn3Zwa6axF/TA5CJWQG0
+9FztZqfrCE3zXv62a8yhvkbzAgJJlZ7pfawU5gNzwp8yhCf5GCc/3y3SKTJrLC1t
+fxlYdFmyO2ve9sM8j07iTOauGStVegN6VYtdm5Sod5nVfkCVs4MJrocnJgzYhGmB
+p9XQBtEvzj/c334/k1X44aEI7G3FINsef/WJmbRWUQHG2/r5Ud6lK2ITGpKSnmuz
+KQyEvAjfx2nNGVAWCRjVd0sL40YRIziLhW4NF6kcyQZMNBnC1KKUoJVASR3sxxAq
+EPlIIOUWX4yJN9fxBGFP
+=Jgf3
+-----END PGP SIGNATURE-----
+
+--Sig_/C1dOj0=f.Gtgr.IlFc622L2--
