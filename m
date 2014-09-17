@@ -1,367 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884AbaIQWU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 18:20:28 -0400
-Received: from mout.gmx.net ([212.227.15.15]:58658 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755815AbaIQWU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 18:20:26 -0400
-Message-ID: <541A0910.90806@gmx.de>
-Date: Thu, 18 Sep 2014 00:20:00 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
-MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>, IIO <linux-iio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Fugang Duan <B38611@freescale.com>, Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v4 2/3] iio/adc: add support for axp288 adc
-References: <1410912715-25903-1-git-send-email-jacob.jun.pan@linux.intel.com> <1410912715-25903-3-git-send-email-jacob.jun.pan@linux.intel.com>
-In-Reply-To: <1410912715-25903-3-git-send-email-jacob.jun.pan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:z07Nl0rMoYokhlmC2JxVd4FGtBOqXL3jHWLatTzDShtz2pB+THb
- P8t5T+Zdqc9Fzqx8Ep334boo17fmc9tpzwk4F9vj6fymii6Wm6SE4rJWEYC3/UdPawCIPJL
- ehEdlEO4DsxxoTcfnAg2fnlh4EzY8oxKhnd4kWRnO1DjW3JSeLbzK/ZA9MlJw5yvds9rf8w
- 16u649otk1nzfiAt6aEUQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1757091AbaIQWVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 18:21:01 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:60373 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815AbaIQWU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 18:20:57 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [RFC v2 0/5] Non-blockling buffered fs read (page cache only)
+Date: Wed, 17 Sep 2014 22:20:45 +0000
+Message-Id: <cover.1410983998.git.milosz@adfin.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1410810247.git.milosz@adfin.com>
+References: <cover.1410810247.git.milosz@adfin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jacob Pan schrieb, Am 17.09.2014 02:11:
-> Platform driver for X-Powers AXP288 ADC, which is a sub-device of the
-> customized AXP288 PMIC for Intel Baytrail-CR platforms. GPADC device
-> enumerates as one of the MFD cell devices. It uses IIO infrastructure
-> to communicate with userspace and consumer drivers.
-> 
-> Usages of ADC channels include battery charging and thermal sensors.
-> 
-You are progressing, but still a few issues left. One thing is indentation in some places (I feel like being pretty annoying about this), others are commented in line.
-> Based on initial work by:
-> Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  drivers/iio/adc/Kconfig      |   8 ++
->  drivers/iio/adc/Makefile     |   1 +
->  drivers/iio/adc/axp288_adc.c | 254 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 263 insertions(+)
->  create mode 100644 drivers/iio/adc/axp288_adc.c
-> 
-> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-> index 11b048a..db2681b 100644
-> --- a/drivers/iio/adc/Kconfig
-> +++ b/drivers/iio/adc/Kconfig
-> @@ -127,6 +127,14 @@ config AT91_ADC
->  	help
->  	  Say yes here to build support for Atmel AT91 ADC.
->  
-> +config AXP288_ADC
-> +	tristate "X-Powers AXP288 ADC driver"
-> +	depends on MFD_AXP20X
-> +	help
-> +	  Say yes here to have support for X-Powers power management IC (PMIC) ADC
-> +	  device. Depending on platform configuration, this general purpose ADC can
-> +	  be used for sampling sensors such as thermal resistors.
-> +
->  config EXYNOS_ADC
->  	tristate "Exynos ADC driver support"
->  	depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
-> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-> index ad81b51..19640f9 100644
-> --- a/drivers/iio/adc/Makefile
-> +++ b/drivers/iio/adc/Makefile
-> @@ -14,6 +14,7 @@ obj-$(CONFIG_AD7793) += ad7793.o
->  obj-$(CONFIG_AD7887) += ad7887.o
->  obj-$(CONFIG_AD799X) += ad799x.o
->  obj-$(CONFIG_AT91_ADC) += at91_adc.o
-> +obj-$(CONFIG_AXP288_ADC) += axp288_adc.o
->  obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
->  obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
->  obj-$(CONFIG_MAX1027) += max1027.o
-> diff --git a/drivers/iio/adc/axp288_adc.c b/drivers/iio/adc/axp288_adc.c
-> new file mode 100644
-> index 0000000..333c624
-> --- /dev/null
-> +++ b/drivers/iio/adc/axp288_adc.c
-> @@ -0,0 +1,254 @@
-> +/*
-> + * axp288_adc.c - X-Powers AXP288 PMIC ADC Driver
-> + *
-> + * Copyright (C) 2014 Intel Corporation
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
-> + * General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/axp20x.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/machine.h>
-> +#include <linux/iio/driver.h>
-> +
-> +#define AXP288_ADC_EN_MASK		0xF1
-> +#define AXP288_ADC_TS_PIN_GPADC		0xF2
-> +#define AXP288_ADC_TS_PIN_ON		0xF3
-> +
-> +enum axp288_adc_id {
-> +	AXP288_ADC_TS,
-> +	AXP288_ADC_PMIC,
-> +	AXP288_ADC_GP,
-> +	AXP288_ADC_BATT_CHRG_I,
-> +	AXP288_ADC_BATT_DISCHRG_I,
-> +	AXP288_ADC_BATT_V,
-> +	AXP288_ADC_NR_CHAN,
-> +};
-> +
-> +struct axp288_adc_info {
-> +	int irq;
-> +	struct device *dev;
-> +	struct regmap *regmap;
-> +};
-> +
-> +static const struct iio_chan_spec const axp288_adc_channels[] = {
-> +	{
-> +		.indexed = 1,
-> +		.type = IIO_TEMP,
-> +		.channel = 0,
-> +		.address = AXP288_TS_ADC_H,
-> +		.datasheet_name = "CH0",
-> +	}, {
-> +		.indexed = 1,
-> +		.type = IIO_TEMP,
-> +		.channel = 1,
-> +		.address = AXP288_PMIC_ADC_H,
-> +		.datasheet_name = "CH1",
-> +	}, {
-> +		.indexed = 1,
-> +		.type = IIO_TEMP,
-> +		.channel = 2,
-> +		.address = AXP288_GP_ADC_H,
-> +		.datasheet_name = "CH2",
-> +	}, {
-> +		.indexed = 1,
-> +		.type = IIO_CURRENT,
-> +		.channel = 3,
-> +		.address = AXP20X_BATT_CHRG_I_H,
-> +		.datasheet_name = "CH3",
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> +	}, {
-> +		.indexed = 1,
-> +		.type = IIO_CURRENT,
-> +		.channel = 4,
-> +		.address = AXP20X_BATT_DISCHRG_I_H,
-> +		.datasheet_name = "CH4",
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> +	}, {
-> +		.indexed = 1,
-> +		.type = IIO_VOLTAGE,
-> +		.channel = 5,
-> +		.address = AXP20X_BATT_V_H,
-> +		.datasheet_name = "CH5",
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> +	},
-> +};
-> +
-> +#define AXP288_ADC_MAP(_adc_channel_label, _consumer_dev_name,	\
-> +		_consumer_channel)				\
-> +	{							\
-> +		.adc_channel_label = _adc_channel_label,	\
-> +		.consumer_dev_name = _consumer_dev_name,	\
-> +		.consumer_channel = _consumer_channel,		\
-> +	}
-> +
-> +/* for consumer drivers */
-> +static struct iio_map axp288_adc_default_maps[] = {
-> +	AXP288_ADC_MAP("TS_PIN", "axp288-batt", "axp288-batt-temp"),
-> +	AXP288_ADC_MAP("PMIC_TEMP", "axp288-pmic", "axp288-pmic-temp"),
-> +	AXP288_ADC_MAP("GPADC", "axp288-gpadc", "axp288-system-temp"),
-> +	AXP288_ADC_MAP("BATT_CHG_I", "axp288-chrg", "axp288-chrg-curr"),
-> +	AXP288_ADC_MAP("BATT_DISCHRG_I", "axp288-chrg", "axp288-chrg-d-curr"),
-> +	AXP288_ADC_MAP("BATT_V", "axp288-batt", "axp288-batt-volt"),
-> +	{},
-> +};
-> +
-> +static int axp288_adc_read_raw(struct iio_dev *indio_dev,
-> +			struct iio_chan_spec const *chan,
-> +			int *val, int *val2, long mask)
-> +{
-> +	int ret;
-> +	struct axp288_adc_info *info = iio_priv(indio_dev);
-> +	u8 buf[2];
-You could use __be16 instead. Then you just need to use be16_to_cpu(), shift 4 bits to the right and mask the result with 0xFF.
-> +
-> +	mutex_lock(&indio_dev->mlock);
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		/* special case for GPADC sample */
-> +		if (chan->address == AXP288_GP_ADC_H) {
-> +			ret = regmap_write(info->regmap, AXP288_ADC_TS_PIN_CTRL,
-> +					AXP288_ADC_TS_PIN_GPADC);
-> +			if (ret) {
-> +				dev_err(&indio_dev->dev, "GPADC mode\n");
-> +				mutex_unlock(&indio_dev->mlock);
-> +				return ret;
-You may even just goto the mutex_unlock at the end of the function. Would safe a few bytes here in the source - up to you. More interesting is, if the error message is required, as you don't have one below, when switching to TS_PIN_ON.
-> +			}
-> +		}
-> +	case IIO_CHAN_INFO_PROCESSED:
-> +		ret = regmap_bulk_read(info->regmap, chan->address, buf, 2);
-> +		if (ret) {
-> +			dev_err(&indio_dev->dev, "sample raw data failed\n");
-> +			break;
-> +		}
-> +		*val = (buf[0] << 4) + ((buf[1] >> 4) & 0x0F);
-> +		ret = IIO_VAL_INT;
-> +		break;
-> +	default:
-> +		ret = -EINVAL;
-> +	}
-> +
-> +	if (mask == IIO_CHAN_INFO_RAW && chan->address == AXP288_GP_ADC_H)
-> +		ret = regmap_write(info->regmap, AXP288_ADC_TS_PIN_CTRL,
-> +			AXP288_ADC_TS_PIN_ON);
-> +
-> +	mutex_unlock(&indio_dev->mlock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int axp288_adc_enable(struct regmap *regmap, bool enable)
-> +{
-> +	unsigned int pin_on, adc_en;
-> +
-> +	if (enable) {
-> +		pin_on = AXP288_ADC_TS_PIN_ON;
-> +		adc_en = AXP288_ADC_EN_MASK;
-> +	} else {
-> +		pin_on = ~AXP288_ADC_TS_PIN_ON;
-> +		adc_en = ~AXP288_ADC_EN_MASK;
-> +	}
-> +	if (regmap_write(regmap, AXP288_ADC_TS_PIN_CTRL, pin_on))
-> +		return -EIO;
-> +
-> +	return regmap_write(regmap, AXP20X_ADC_EN1, ~AXP288_ADC_EN_MASK);
-So, what's the deal about the variable adc_en?
-> +}
-> +
-> +static const struct iio_info axp288_adc_iio_info = {
-> +	.read_raw = &axp288_adc_read_raw,
-> +	.driver_module = THIS_MODULE,
-> +};
-> +
-> +static int axp288_adc_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct axp288_adc_info *info;
-> +	struct iio_dev *indio_dev;
-> +	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
-> +
-> +	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +
-> +	info = iio_priv(indio_dev);
-> +	info->irq = platform_get_irq(pdev, 0);
-> +	if (info->irq < 0) {
-> +		dev_err(&pdev->dev, "no irq resource?\n");
-> +		return info->irq;
-> +	}
-> +	platform_set_drvdata(pdev, indio_dev);
-> +	info->regmap = axp20x->regmap;
-> +	ret = axp288_adc_enable(axp20x->regmap, true);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Unable to enable ADC device\n");
-> +		return ret;
-> +	}
-> +
-> +	indio_dev->dev.parent = &pdev->dev;
-> +	indio_dev->name = pdev->name;
-> +	indio_dev->channels = axp288_adc_channels;
-> +	indio_dev->num_channels = ARRAY_SIZE(axp288_adc_channels);
-> +	indio_dev->info = &axp288_adc_iio_info;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	ret = iio_map_array_register(indio_dev, axp288_adc_default_maps);
-> +	if (ret < 0)
-> +		goto err_disable_dev;
-> +
-> +	ret = iio_device_register(indio_dev);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "unable to register iio device\n");
-> +		goto err_array_unregister;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_array_unregister:
-> +	iio_map_array_unregister(indio_dev);
-> +err_disable_dev:
-> +	ret = axp288_adc_enable(axp20x->regmap, false);
-Don't set ret here. We want to return the error code from the function that failed above.
-> +
-> +	return ret;
-> +}
-> +
-> +static int axp288_adc_remove(struct platform_device *pdev)
-> +{
-> +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-> +	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
-> +
-> +	if (axp288_adc_enable(axp20x->regmap, false))
-> +		dev_err(&pdev->dev, "Unable to disable ADC device\n");
-> +	iio_device_unregister(indio_dev);
-> +	iio_map_array_unregister(indio_dev);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver axp288_adc_driver = {
-> +	.probe = axp288_adc_probe,
-> +	.remove = axp288_adc_remove,
-> +	.driver = {
-> +		.name = "axp288_adc",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(axp288_adc_driver);
-> +
-> +MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@linux.intel.com>");
-> +MODULE_DESCRIPTION("X-Powers AXP288 ADC Driver");
-> +MODULE_LICENSE("GPL");
-> 
+This patcheset introduces an ability to perform a non-blocking read from
+regular files in buffered IO mode. This works by only for those filesystems
+that have data in the page cache.
+
+It does this by introducing new syscalls new syscalls readv2/writev2 and
+preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
+syscalls that accept an extra flag argument (O_NONBLOCK).
+
+It's a very common patern today (samba, libuv, etc..) use a large threadpool to
+perform buffered IO operations. They submit the work form another thread
+that performs network IO and epoll or other threads that perform CPU work. This
+leads to increased latency for processing, esp. in the case of data that's
+already cached in the page cache.
+
+With the new interface the applications will now be able to fetch the data in
+their network / cpu bound thread(s) and only defer to a threadpool if it's not
+there. In our own application (VLDB) we've observed a decrease in latency for
+"fast" request by avoiding unnecessary queuing and having to swap out current
+tasks in IO bound work threads.
+
+
+Version 2 highlights:
+ - Put the flags argument into kiocb (less noise), per. Al Viro
+ - O_DIRECT checking early in the process, per. Jeff Moyer
+ - Resolved duplicate (c&p) code in syscall code, per. Jeff
+ - Included perf data in thread cover letter, per. Jeff
+ - Created a new flag (not O_NONBLOCK) for readv2, perf Jeff
+
+
+Some perf data generated using fio comparing the posix aio engine to a version
+of the posix AIO engine that attempts to performs "fast" reads before
+submitting the operations to the queue. This workflow is on ext4 partition on
+raid0 (test / build-rig.) Simulating our database access patern workload using
+16kb read accesses. Our database uses a home-spun posix aio like queue (samba
+does the same thing.)
+
+f1: ~73% rand read over mostly cached data (zipf med-size dataset)
+f2: ~18% rand read over mostly un-cached data (uniform large-dataset)
+f3: ~9% seq-read over large dataset
+
+before:
+
+f1:
+    bw (KB  /s): min=   11, max= 9088, per=0.56%, avg=969.54, stdev=827.99
+    lat (msec) : 50=0.01%, 100=1.06%, 250=5.88%, 500=4.08%, 750=12.48%
+    lat (msec) : 1000=17.27%, 2000=49.86%, >=2000=9.42%
+f2:
+    bw (KB  /s): min=    2, max= 1882, per=0.16%, avg=273.28, stdev=220.26
+    lat (msec) : 250=5.65%, 500=3.31%, 750=15.64%, 1000=24.59%, 2000=46.56%
+    lat (msec) : >=2000=4.33%
+f3:
+    bw (KB  /s): min=    0, max=265568, per=99.95%, avg=174575.10,
+                 stdev=34526.89
+    lat (usec) : 2=0.01%, 4=0.01%, 10=0.02%, 20=0.27%, 50=10.82%
+    lat (usec) : 100=50.34%, 250=5.05%, 500=7.12%, 750=6.60%, 1000=4.55%
+    lat (msec) : 2=8.73%, 4=3.49%, 10=1.83%, 20=0.89%, 50=0.22%
+    lat (msec) : 100=0.05%, 250=0.02%, 500=0.01%
+total:
+   READ: io=102365MB, aggrb=174669KB/s, minb=240KB/s, maxb=173599KB/s,
+         mint=600001msec, maxt=600113msec
+
+after (with fast read using preadv2 before submit):
+
+f1:
+    bw (KB  /s): min=    3, max=14897, per=1.28%, avg=2276.69, stdev=2930.39
+    lat (usec) : 2=70.63%, 4=0.01%
+    lat (msec) : 250=0.20%, 500=2.26%, 750=1.18%, 2000=0.22%, >=2000=25.53%
+f2:
+    bw (KB  /s): min=    2, max= 2362, per=0.14%, avg=249.83, stdev=222.00
+    lat (msec) : 250=6.35%, 500=1.78%, 750=9.29%, 1000=20.49%, 2000=52.18%
+    lat (msec) : >=2000=9.99%
+f3:
+    bw (KB  /s): min=    1, max=245448, per=100.00%, avg=177366.50,
+                 stdev=35995.60
+    lat (usec) : 2=64.04%, 4=0.01%, 10=0.01%, 20=0.06%, 50=0.43%
+    lat (usec) : 100=0.20%, 250=1.27%, 500=2.93%, 750=3.93%, 1000=7.35%
+    lat (msec) : 2=14.27%, 4=2.88%, 10=1.54%, 20=0.81%, 50=0.22%
+    lat (msec) : 100=0.05%, 250=0.02%
+total:
+   READ: io=103941MB, aggrb=177339KB/s, minb=213KB/s, maxb=176375KB/s,
+	 mint=600020msec, maxt=600178msec
+
+Interpreting the results you can see total bandwidth stays the same but overall
+request latency is decreased in f1 (random, mostly cached) and f3 (sequential)
+workloads. There is a slight bump in latency for since it's random data that's
+unlikely to be cached but we're always trying "fast read".
+
+In our application we have starting keeping track of "fast read" hits/misses
+and for files / requests that have a lot hit ratio we don't do "fast reads"
+mostly getting rid of extra latency in the uncached cases.
+
+I've performed other benchmarks and I have no observed any perf regressions in
+any of the normal (old) code paths.
+
+
+I have co-developed these changes with Christoph Hellwig.
+
+Christoph Hellwig (1):
+  Check for O_NONBLOCK in all read_iter instances
+
+Milosz Tanski (4):
+  Prepare for adding a new readv/writev with user flags.
+  Define new syscalls readv2,preadv2,writev2,pwritev2
+  Export new vector IO (with flags) to userland
+  O_NONBLOCK flag for readv2/preadv2
+
+ arch/x86/syscalls/syscall_32.tbl  |   4 ++
+ arch/x86/syscalls/syscall_64.tbl  |   4 ++
+ drivers/target/target_core_file.c |   6 +-
+ fs/cifs/file.c                    |   6 ++
+ fs/nfsd/vfs.c                     |   4 +-
+ fs/ocfs2/file.c                   |   6 ++
+ fs/pipe.c                         |   3 +-
+ fs/read_write.c                   | 119 +++++++++++++++++++++++++++++---------
+ fs/splice.c                       |   2 +-
+ fs/xfs/xfs_file.c                 |   4 ++
+ include/linux/aio.h               |   2 +
+ include/linux/fs.h                |   7 ++-
+ include/linux/syscalls.h          |  12 ++++
+ include/uapi/asm-generic/unistd.h |  10 +++-
+ mm/filemap.c                      |  23 +++++++-
+ mm/shmem.c                        |   4 ++
+ 16 files changed, 178 insertions(+), 38 deletions(-)
+
+-- 
+2.1.0
 
