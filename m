@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaIQEMt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 00:12:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50533 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327AbaIQEMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 00:12:46 -0400
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, jbeulich@suse.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V2 2/3] xen: eliminate scalability issues from initrd handling
-Date: Wed, 17 Sep 2014 06:12:36 +0200
-Message-Id: <1410927157-15069-3-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1410927157-15069-1-git-send-email-jgross@suse.com>
-References: <1410927157-15069-1-git-send-email-jgross@suse.com>
+	id S1751885AbaIQEPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 00:15:09 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:55767 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaIQEPH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 00:15:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140916223402.GL15807@hpx.cz>
+References: <CAJu=L59f6ODMDOiKEGGSGg+0RhYw3FDy5D7AJcCOrHD5xL_iwQ@mail.gmail.com>
+	<20140916223402.GL15807@hpx.cz>
+Date: Tue, 16 Sep 2014 21:15:06 -0700
+Message-ID: <CAJu=L5-UPXzxnM0D2Z2Rgn7Cgv_4HpKiHz4e475gp7m2fa3bzQ@mail.gmail.com>
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Size restrictions native kernels wouldn't have resulted from the initrd
-getting mapped into the initial mapping. The kernel doesn't really need
-the initrd to be mapped, so use infrastructure available in Xen to avoid
-the mapping and hence the restriction.
+On Tue, Sep 16, 2014 at 3:34 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
+> [Emergency posting to fix the tag and couldn't find unmangled Cc list,
+>  so some recipients were dropped, sorry.  (I guess you are glad though).]
+>
+> 2014-09-16 14:01-0700, Andres Lagar-Cavilla:
+>> On Tue, Sep 16, 2014 at 1:51 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
+>> > 2014-09-15 13:11-0700, Andres Lagar-Cavilla:
+>> >> +int kvm_get_user_page_retry(struct task_struct *tsk, struct
+>> >> mm_struct *mm,
+>> >
+>> > The suffix '_retry' is not best suited for this.
+>> > On first reading, I imagined we will be retrying something from
+>> > before,
+>> > possibly calling it in a loop, but we are actually doing the first and
+>> > last try in one call.
+>>
+>> We are doing ... the second and third in most scenarios. async_pf did
+>> the first with _NOWAIT. We call this from the async pf retrier, or if
+>> async pf couldn't be notified to the guest.
+>
+> I was thinking more about what the function does, not how we currently
+> use it -- nothing prevents us from using it as first somewhere -- but
+> yeah, even comments would be off then.
+>
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/xen/enlighten.c | 11 +++++++++--
- arch/x86/xen/xen-head.S  |  1 +
- 2 files changed, 10 insertions(+), 2 deletions(-)
+Good point. Happy to expand comments. What about _complete? _io? _full?
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c0cb11f..8fd075f 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1519,6 +1519,7 @@ static void __init xen_pvh_early_guest_init(void)
- asmlinkage __visible void __init xen_start_kernel(void)
- {
- 	struct physdev_set_iopl set_iopl;
-+	unsigned long initrd_start = 0;
- 	int rc;
- 
- 	if (!xen_start_info)
-@@ -1667,10 +1668,16 @@ asmlinkage __visible void __init xen_start_kernel(void)
- 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
- #endif
- 
-+	if (xen_start_info->mod_start)
-+		initrd_start = __pa(xen_start_info->mod_start);
-+#ifdef CONFIG_BLK_DEV_INITRD
-+	if (xen_start_info->flags & SIF_MOD_START_PFN)
-+		initrd_start = PFN_PHYS(xen_start_info->mod_start);
-+#endif
-+
- 	/* Poke various useful things into boot_params */
- 	boot_params.hdr.type_of_loader = (9 << 4) | 0;
--	boot_params.hdr.ramdisk_image = xen_start_info->mod_start
--		? __pa(xen_start_info->mod_start) : 0;
-+	boot_params.hdr.ramdisk_image = initrd_start;
- 	boot_params.hdr.ramdisk_size = xen_start_info->mod_len;
- 	boot_params.hdr.cmd_line_ptr = __pa(xen_start_info->cmd_line);
- 
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 485b695..46408e5 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -124,6 +124,7 @@ NEXT_HYPERCALL(arch_6)
- 	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
- 		.quad _PAGE_PRESENT; .quad _PAGE_PRESENT)
- 	ELFNOTE(Xen, XEN_ELFNOTE_SUSPEND_CANCEL, .long 1)
-+	ELFNOTE(Xen, XEN_ELFNOTE_MOD_START_PFN,  .long 1)
- 	ELFNOTE(Xen, XEN_ELFNOTE_HV_START_LOW,   _ASM_PTR __HYPERVISOR_VIRT_START)
- 	ELFNOTE(Xen, XEN_ELFNOTE_PADDR_OFFSET,   _ASM_PTR 0)
- 
--- 
-1.8.4.5
+>> >> Apart from this, the patch looks good.  The mm/ parts are minimal, so
+>> >> I
+>> >> think it's best to merge it through the KVM tree with someone's
+>> >> Acked-by.
+>> >
+>> > I would prefer to have the last hunk in a separate patch, but still,
+>> >
+>> > Acked-by: Radim Krčmář <rkrcmar@redhat.com>
+>>
+>> Awesome, thanks much.
+>>
+>> I'll recut with the VM_BUG_ON from Paolo and your Ack. LMK if anything
+>> else from this email should go into the recut.
+>
+> Ah, sorry, I'm not maintaining mm ... what I meant was
+>
+> Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
 
+Cool cool cool
+Andres
+
+>
+> and I had to leave before I could find a good apology for
+> VM_WARN_ON_ONCE(), so if you are replacing BUG_ON, you might want to
+> look at that one as well.
