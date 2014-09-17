@@ -1,83 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaIQEPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 00:15:09 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:55767 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaIQEPH convert rfc822-to-8bit (ORCPT
+	id S1752474AbaIQEPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 00:15:24 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:62483 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaIQEPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 00:15:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140916223402.GL15807@hpx.cz>
-References: <CAJu=L59f6ODMDOiKEGGSGg+0RhYw3FDy5D7AJcCOrHD5xL_iwQ@mail.gmail.com>
-	<20140916223402.GL15807@hpx.cz>
-Date: Tue, 16 Sep 2014 21:15:06 -0700
-Message-ID: <CAJu=L5-UPXzxnM0D2Z2Rgn7Cgv_4HpKiHz4e475gp7m2fa3bzQ@mail.gmail.com>
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Sep 2014 00:15:19 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-f79ce6d00000115a-83-54190ad4daa0
+Content-transfer-encoding: 8BIT
+Message-id: <54190AD3.7020006@samsung.com>
+Date: Wed, 17 Sep 2014 13:15:15 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
+ Thunderbird/11.0.1
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org, jdelvare@suse.de
+Subject: Re: [PATCH RESEND v2] hwmon: ntc_thermistor: Add ntc thermistor to
+ thermal subsystem as a sensor.
+References: <1410921693-3291-1-git-send-email-jonghwa3.lee@samsung.com>
+ <54190983.9030906@roeck-us.net>
+In-reply-to: <54190983.9030906@roeck-us.net>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42JZI2JSoHuFSzLEYNJiLouldz+xWVzeNYfN
+	4snCM0wWd6btZXNg8XgwcTebx87vDewem09Xe3zeJBfAEsVlk5Kak1mWWqRvl8CVca5nDnvB
+	PcWKQ7vWMzcwrpfqYuTkkBAwkbjR28YKYYtJXLi3nq2LkYtDSGApo8T5L3tZYIr2XDnODJGY
+	ziix+NBLsASvgKDEj8n3gGwODmYBeYkjl7JBwswC6hKT5i1iBrGFBF4zSlzakw9RriWx69QP
+	RhCbRUBVYlHrIbDFbAJyEm+bvoHFRQXCJK5OOA42XkRATaL5VAsbxExfiYf3j4PZwgI5EpM3
+	LmGBmJ8p8e76K3aQEzgFdCQe/ouGOHkdu8Tlu+UQqwQkvk0+BHalhICsxKYDzBAlkhIHV9xg
+	mcAoNgvJL7MQfpmF5JcFjMyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MQKj6PS/ZxN2MN47
+	YH2IUYCDUYmHd8NliRAh1sSy4srcQ4ymQEdMZJYSTc4HxmpeSbyhsZmRhamJqbGRuaWZkjjv
+	a6mfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYTaNaN4ZrPnp5vHdWk/3ekFuXqjeb2l5I
+	3/vS+6DYm5/aUip3u+au+HNBPEj13sslJ1qeLGb5unbK3DPbQ57qLvmgl8yqvCFcPlYv9sDZ
+	57Z2q5slldvPJ67YyNd3OuLa9qmtvF0i7H84WeYdbzFMmrxK+oyAt7JKlYnsDs2zHkvTPp63
+	z5r9S4mlOCPRUIu5qDgRAOrTG3idAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jQd0rXJIhBueamS2W3v3EZnF51xw2
+	iycLzzBZ3Jm2l82BxePBxN1sHju/N7B7bD5d7fF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGENY8a5njnsBfcUKw7tWs/cwLheqouRk0NCwERiz5XjzBC2mMSFe+vZ
+	uhi5OIQEpjNKLD70kgUkwSsgKPFj8j0gm4ODWUBe4silbJAws4C6xKR5i8B6hQReM0pc2pMP
+	Ua4lsevUD0YQm0VAVWJR6yFWEJtNQE7ibdM3sLioQJjE1QnHwcaLCKhJNJ9qYYOY6Svx8P5x
+	MFtYIEdi8sYlLBDzMyXeXX/FDnICp4COxMN/0RMYBWYhOW4WwnGzkBy3gJF5FaNoakFyQXFS
+	eq6RXnFibnFpXrpecn7uJkZwlD6T3sG4qsHiEKMAB6MSD++GyxIhQqyJZcWVuYcYJTiYlUR4
+	Re4BhXhTEiurUovy44tKc1KLDzGaAv02kVlKNDkfmEDySuINjU3MjCyNzA0tjIzNlcR5D7Za
+	BwoJpCeWpGanphakFsH0MXFwSjUwtrEt+bSzeqLwnsRZWscFZi4/M1X9zan33k2Wlo93C22Q
+	aEh8WbluiUyIypGNV+bWSauVeF3zeb69s2qvx+ZKyVWr4+d6fi+y0l6kLHJFZeV13jb1SYJC
+	Z8QFt9Xkfvm3j0msa9ebo6tvucW7qOy9aVwXHC/n0LuE+2gN47ela7L5dV/YKvlHKLEUZyQa
+	ajEXFScCAJJE8nnoAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 3:34 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
-> [Emergency posting to fix the tag and couldn't find unmangled Cc list,
->  so some recipients were dropped, sorry.  (I guess you are glad though).]
->
-> 2014-09-16 14:01-0700, Andres Lagar-Cavilla:
->> On Tue, Sep 16, 2014 at 1:51 PM, Radim Krčmář <rkrcmar@redhat.com> wrote:
->> > 2014-09-15 13:11-0700, Andres Lagar-Cavilla:
->> >> +int kvm_get_user_page_retry(struct task_struct *tsk, struct
->> >> mm_struct *mm,
->> >
->> > The suffix '_retry' is not best suited for this.
->> > On first reading, I imagined we will be retrying something from
->> > before,
->> > possibly calling it in a loop, but we are actually doing the first and
->> > last try in one call.
+On 2014년 09월 17일 13:09, Guenter Roeck wrote:
+
+> On 09/16/2014 07:41 PM, Jonghwa Lee wrote:
+>> To get more comprehensive and integrated thermal management, it adds ntc
+>> thermistor to thermal framework as a thermal sensor. It's governed thermal
+>> susbsystem only if it is described in DT node. Otherwise, it just notifies
+>> temperature to userspace via sysfs as it used to be.
 >>
->> We are doing ... the second and third in most scenarios. async_pf did
->> the first with _NOWAIT. We call this from the async pf retrier, or if
->> async pf couldn't be notified to the guest.
->
-> I was thinking more about what the function does, not how we currently
-> use it -- nothing prevents us from using it as first somewhere -- but
-> yeah, even comments would be off then.
->
+>> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>> ---
+> 
+> As has been pointed out, with
+> 
+> CONFIG_OF=y
+> CONFIG_THERMAL=m
+> CONFIG_SENSORS_NTC_THERMISTOR=y
+> 
+> this patch results in
+> 
+> drivers/built-in.o: In function `ntc_thermistor_probe':
+> ntc_thermistor.c:(.text+0xfff52): undefined reference to
+> `thermal_zone_of_sensor_register'
+> drivers/built-in.o: In function `ntc_thermistor_remove':
+> ntc_thermistor.c:(.text+0xfffc5): undefined reference to
+> `thermal_zone_of_sensor_unregister'
+> make: *** [vmlinux] Error 1
+> 
+> Resending the patch without changes does not fix the problem.
+> Please submit a fixed version.
+> 
 
-Good point. Happy to expand comments. What about _complete? _io? _full?
 
->> >> Apart from this, the patch looks good.  The mm/ parts are minimal, so
->> >> I
->> >> think it's best to merge it through the KVM tree with someone's
->> >> Acked-by.
->> >
->> > I would prefer to have the last hunk in a separate patch, but still,
->> >
->> > Acked-by: Radim Krčmář <rkrcmar@redhat.com>
+Sorry, I think I lost the thread, I didn't notice you commented before.
+Anyway I'll fix it resend it.
+
+Thanks,
+Jonghwa
+
+> Thanks,
+> Guenter
+> 
+> 
+>> Updates in v2
+>>   - Remove NULL pointer checking already done by
+>> thermal_zone_of_sensor_unregister().
 >>
->> Awesome, thanks much.
+>>   .../devicetree/bindings/hwmon/ntc_thermistor.txt   |    3 +++
+>>   drivers/hwmon/ntc_thermistor.c                     |   25 ++++++++++++++++++++
+>>   2 files changed, 28 insertions(+)
 >>
->> I'll recut with the VM_BUG_ON from Paolo and your Ack. LMK if anything
->> else from this email should go into the recut.
->
-> Ah, sorry, I'm not maintaining mm ... what I meant was
->
-> Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+>> diff --git a/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+>> b/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+>> index 2391e5c..fcca8e7 100644
+>> --- a/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+>> +++ b/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
+>> @@ -25,6 +25,9 @@ Requires node properties:
+>>   - "io-channels"    Channel node of ADC to be used for
+>>           conversion.
+>>
+>> +Optional node properties:
+>> +- "#thermal-sensor-cells" Used to expose itself to thermal fw.
+>> +
+>>   Read more about iio bindings at
+>>       Documentation/devicetree/bindings/iio/iio-bindings.txt
+>>
+>> diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
+>> index bd41072..4ff89b2 100644
+>> --- a/drivers/hwmon/ntc_thermistor.c
+>> +++ b/drivers/hwmon/ntc_thermistor.c
+>> @@ -38,6 +38,7 @@
+>>
+>>   #include <linux/hwmon.h>
+>>   #include <linux/hwmon-sysfs.h>
+>> +#include <linux/thermal.h>
+>>
+>>   struct ntc_compensation {
+>>       int        temp_c;
+>> @@ -182,6 +183,7 @@ struct ntc_data {
+>>       struct device *dev;
+>>       int n_comp;
+>>       char name[PLATFORM_NAME_SIZE];
+>> +    struct thermal_zone_device *tz;
+>>   };
+>>
+>>   #if defined(CONFIG_OF) && IS_ENABLED(CONFIG_IIO)
+>> @@ -428,6 +430,20 @@ static int ntc_thermistor_get_ohm(struct ntc_data *data)
+>>       return -EINVAL;
+>>   }
+>>
+>> +static int ntc_read_temp(void *dev, long *temp)
+>> +{
+>> +    struct ntc_data *data = dev_get_drvdata(dev);
+>> +    int ohm;
+>> +
+>> +    ohm = ntc_thermistor_get_ohm(data);
+>> +    if (ohm < 0)
+>> +        return ohm;
+>> +
+>> +    *temp = get_temp_mc(data, ohm);
+>> +
+>> +    return 0;
+>> +}
+>> +
+>>   static ssize_t ntc_show_name(struct device *dev,
+>>           struct device_attribute *attr, char *buf)
+>>   {
+>> @@ -562,6 +578,13 @@ static int ntc_thermistor_probe(struct platform_device
+>> *pdev)
+>>       dev_info(&pdev->dev, "Thermistor type: %s successfully probed.\n",
+>>                                   pdev_id->name);
+>>
+>> +    data->tz = thermal_zone_of_sensor_register(data->dev, 0, data->dev,
+>> +                        ntc_read_temp, NULL);
+>> +    if (IS_ERR(data->tz)) {
+>> +        dev_dbg(&pdev->dev, "Failed to register to thermal fw.\n");
+>> +        data->tz = NULL;
+>> +    }
+>> +
+>>       return 0;
+>>   err_after_sysfs:
+>>       sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
+>> @@ -578,6 +601,8 @@ static int ntc_thermistor_remove(struct platform_device
+>> *pdev)
+>>       sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
+>>       ntc_iio_channel_release(pdata);
+>>
+>> +    thermal_zone_of_sensor_unregister(data->dev, data->tz);
+>> +
+>>       return 0;
+>>   }
+>>
+>>
+> 
+> 
 
-Cool cool cool
-Andres
 
->
-> and I had to leave before I could find a good apology for
-> VM_WARN_ON_ONCE(), so if you are replacing BUG_ON, you might want to
-> look at that one as well.
