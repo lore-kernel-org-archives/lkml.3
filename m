@@ -1,151 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaIQQLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:11:07 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:48030 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058AbaIQQK2 (ORCPT
+	id S1756114AbaIQQLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:11:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34565 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842AbaIQQLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:10:28 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.17-rc4 v7 5/6] ARM: add basic support for on-demand backtrace of other CPUs
-Date: Wed, 17 Sep 2014 09:10:17 -0700
-Message-Id: <1410970218-28847-6-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 17 Sep 2014 12:11:21 -0400
+Message-ID: <1410970272.15235.32.camel@fourier>
+Subject: Re: [PATCH 3.13 044/187] x86_64/entry/xen: Do not invoke espfix64
+ on Xen
+From: Kamal Mostafa <kamal@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Wed, 17 Sep 2014 09:11:12 -0700
+In-Reply-To: <1410953151.3040.101.camel@decadent.org.uk>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+	 <1410818997-9432-45-git-send-email-kamal@canonical.com>
+	 <1410953151.3040.101.camel@decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic infrastructure for triggering a backtrace of other CPUs
-via an IPI, preferably at FIQ level.  It is intended that this shall
-be used for cases where we have detected that something has already
-failed in the kernel.
+On Wed, 2014-09-17 at 12:25 +0100, Ben Hutchings wrote:
+> On Mon, 2014-09-15 at 15:07 -0700, Kamal Mostafa wrote:
+> > 3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Andy Lutomirski <luto@amacapital.net>
+> > 
+> > commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
+> > 
+> > This moves the espfix64 logic into native_iret.  To make this work,
+> > it gets rid of the native patch for INTERRUPT_RETURN:
+> > INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
+> > 
+> > This changes the 16-bit SS behavior on Xen from OOPSing to leaking
+> > some bits of the Xen hypervisor's RSP (I think).
+> > 
+> > [ hpa: this is a nonzero cost on native, but probably not enough to
+> >   measure. Xen needs to fix this in their own code, probably doing
+> >   something equivalent to espfix64. ]
+> > 
+> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> > Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
+> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> [...]
+> 
+> There's another fix related to espfix on Xen, commit 8762e5092828
+> ("x86/espfix/xen: Fix allocation of pages for paravirt page tables").
+> But I'm not sure whether it's actually needed after this.
+> 
+> Ben.
+> 
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- arch/arm/include/asm/irq.h |  5 ++++
- arch/arm/kernel/smp.c      | 62 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+)
+I have now queued that one up for 3.13.11.7 also.  Thanks yet again,
+Ben!
 
-diff --git a/arch/arm/include/asm/irq.h b/arch/arm/include/asm/irq.h
-index 53c15de..be1d07d 100644
---- a/arch/arm/include/asm/irq.h
-+++ b/arch/arm/include/asm/irq.h
-@@ -35,6 +35,11 @@ extern void (*handle_arch_irq)(struct pt_regs *);
- extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
- #endif
- 
-+#ifdef CONFIG_SMP
-+extern void arch_trigger_all_cpu_backtrace(bool);
-+#define arch_trigger_all_cpu_backtrace(x) arch_trigger_all_cpu_backtrace(x)
-+#endif
-+
- #endif
- 
- #endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9388a3d..94959f9 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -72,8 +72,12 @@ enum ipi_msg_type {
- 	IPI_CPU_STOP,
- 	IPI_IRQ_WORK,
- 	IPI_COMPLETION,
-+	IPI_CPU_BACKTRACE,
- };
- 
-+/* For reliability, we're prepared to waste bits here. */
-+static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-+
- static DECLARE_COMPLETION(cpu_running);
- 
- static struct smp_operations smp_ops;
-@@ -539,6 +543,21 @@ static void ipi_cpu_stop(unsigned int cpu)
- 		cpu_relax();
- }
- 
-+static void ipi_cpu_backtrace(struct pt_regs *regs)
-+{
-+	int cpu = smp_processor_id();
-+
-+	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-+		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+		arch_spin_lock(&lock);
-+		printk(KERN_WARNING "FIQ backtrace for cpu %d\n", cpu);
-+		show_regs(regs);
-+		arch_spin_unlock(&lock);
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+	}
-+}
-+
- static DEFINE_PER_CPU(struct completion *, cpu_completion);
- 
- int register_ipi_completion(struct completion *completion, int cpu)
-@@ -618,6 +637,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		irq_exit();
- 		break;
- 
-+	case IPI_CPU_BACKTRACE:
-+		irq_enter();
-+		ipi_cpu_backtrace(regs);
-+		irq_exit();
-+		break;
-+
- 	default:
- 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
- 		       cpu, ipinr);
-@@ -712,3 +737,40 @@ static int __init register_cpufreq_notifier(void)
- core_initcall(register_cpufreq_notifier);
- 
- #endif
-+
-+void arch_trigger_all_cpu_backtrace(bool include_self)
-+{
-+	static unsigned long backtrace_flag;
-+	int i, cpu = get_cpu();
-+
-+	if (test_and_set_bit(0, &backtrace_flag)) {
-+		/*
-+		 * If there is already a trigger_all_cpu_backtrace() in progress
-+		 * (backtrace_flag == 1), don't output double cpu dump infos.
-+		 */
-+		put_cpu();
-+		return;
-+	}
-+
-+	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
-+	if (!include_self)
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+
-+	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
-+		pr_info("Sending FIQ to %s CPUs:\n",
-+			(include_self ? "all" : "other"));
-+		smp_cross_call(to_cpumask(backtrace_mask), IPI_CPU_BACKTRACE);
-+	}
-+
-+	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
-+	for (i = 0; i < 10 * 1000; i++) {
-+		if (cpumask_empty(to_cpumask(backtrace_mask)))
-+			break;
-+
-+		mdelay(1);
-+	}
-+
-+	clear_bit(0, &backtrace_flag);
-+	smp_mb__after_atomic();
-+	put_cpu();
-+}
--- 
-1.9.3
+ -Kamal
+
 
