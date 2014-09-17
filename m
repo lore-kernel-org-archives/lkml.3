@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaIQKtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:49:33 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:56863 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaIQKtc (ORCPT
+	id S1754775AbaIQKzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 06:55:16 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:11313 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751564AbaIQKzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:49:32 -0400
-Date: Wed, 17 Sep 2014 11:49:16 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, peter@hurleysoftware.com
-Subject: Re: [PATCH 0/9 linux-next] drivers/gpu/drm: use container_of where
- possible
-Message-ID: <20140917114916.1c0928c2@alan.etchedpixels.co.uk>
-In-Reply-To: <1669797975.16695.1410804954304.open-xchange@webmail.nmp.skynet.be>
-References: <1410712823-29137-1-git-send-email-fabf@skynet.be>
-	<20140915001356.2e05d782@alan.etchedpixels.co.uk>
-	<1669797975.16695.1410804954304.open-xchange@webmail.nmp.skynet.be>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 17 Sep 2014 06:55:14 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-9.tower-38.messagelabs.com!1410951278!12623533!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 17 Sep 2014 12:54:39 +0200
+Date: Wed, 17 Sep 2014 12:54:33 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: Re: [PATCH v3] tty: serial: men_z135_uart: Fix driver for changes in
+ hardware
+Message-ID: <20140917105432.GA17369@jtlinux>
+References: <1410845068-2954-1-git-send-email-johannes.thumshirn@men.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1410845068-2954-1-git-send-email-johannes.thumshirn@men.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What if someone doesn't know about that intention one day and inserts
-> some field in the structure at the "wrong place" ?
+On Tue, Sep 16, 2014 at 07:24:28AM +0200, Johannes Thumshirn wrote:
+> 16z135 IP Core has changed so the driver needs to be updated to respect
+> these changes. The following changes have been made:
+>
+> * Don't invert the 16z135 modem status register when reading.
+> * Add module parameter to configure the (baud rate dependent) RX timeout.
+>   Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
+> * Enable the handling of UART core's automatic flow control feature.
+>   When AFE is active disable generation of modem status IRQs.
+> * Rework the handling of IRQs to be conform with newer FPGA versions and
+>   take precautions not to miss an interrupt because of the destructive read
+>   of the IIR register.
+> * Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not
+>   stat_reg[7:0]
+>
+> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> ---
+> Changes to v1:
+> Incorporated comments of Jiri Slaby:
+>
+> * Timeout value is documented in module parameter description
+> * rx_timeout variable is uint
+> * Changed IRQ handled variable to bool
+> * Changed if statement for RDA or CTI IRQ
+>
+> Changes to v2:
+> Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not stat_reg[7:0]
 
-Then we have code review. Also they are much more likely to simply change
-the code elsewhere and break it. Nobody afaik ever got this wrong, while
-the litany of other broken patches and bugs introduced into the same code
-is lagre.
+We've found a bug in this patch during our tests so please do not en-queue it yet.
 
-The goal of the kernel is not to be foolproof to developer incompetence -
-that's a battle you can't win until you replace driver developers with
-software systems.
+Sorry for the inconvenience.
 
-Alan
+Thanks,
+Johannes
