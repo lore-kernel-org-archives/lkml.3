@@ -1,59 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152AbaIQJNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:13:43 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:58714 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830AbaIQJNY (ORCPT
+	id S1755288AbaIQJO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:14:58 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:45843 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbaIQJOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:13:24 -0400
+	Wed, 17 Sep 2014 05:14:55 -0400
+Message-ID: <5419510A.3000300@imgtec.com>
+Date: Wed, 17 Sep 2014 10:14:50 +0100
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140707200550.GA6758@twins.programming.kicks-ass.net>
-References: <53B98709.3090603@oracle.com>
-	<20140707083016.GA19379@twins.programming.kicks-ass.net>
-	<53BAA6DF.5060409@oracle.com>
-	<20140707200550.GA6758@twins.programming.kicks-ass.net>
-Date: Wed, 17 Sep 2014 17:13:22 +0800
-Message-ID: <CAGdX0WGfDm7jHreSREM8PdUUA9zcdDBz8rF2LJC-h7imfMq8jw@mail.gmail.com>
-Subject: Re: sched: spinlock recursion in sched_rr_get_interval
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        "Jonas Gorski" <jogo@openwrt.org>, John Crispin <blogic@openwrt.org>,
+        David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/24] irqchip: mips-gic: Implement generic irq_ack/irq_eoi
+ callbacks
+References: <1410825087-5497-1-git-send-email-abrestic@chromium.org> <1410825087-5497-15-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1410825087-5497-15-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 4:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jul 07, 2014 at 09:55:43AM -0400, Sasha Levin wrote:
->> I've also had this one, which looks similar:
->>
->> [10375.005884] BUG: spinlock recursion on CPU#0, modprobe/10965
->> [10375.006573]  lock: 0xffff8803a0fd7740, .magic: dead4ead, .owner: modprobe/10965, .owner_cpu: 15
->> [10375.007412] CPU: 0 PID: 10965 Comm: modprobe Tainted: G        W      3.16.0-rc3-next-20140704-sasha-00023-g26c0906-dirty #765
+Hi Andrew,
+
+On 09/16/2014 12:51 AM, Andrew Bresticker wrote:
+> There's no need for platforms to have their own GIC irq_ack/irq_eoi
+> callbacks.  Move them to the GIC irqchip driver.
 >
-> Something's fucked; so we have:
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>   arch/mips/include/asm/gic.h     |  2 --
+>   arch/mips/mti-malta/malta-int.c | 16 ----------------
+>   arch/mips/mti-sead3/sead3-int.c | 21 ---------------------
+>   drivers/irqchip/irq-mips-gic.c  | 15 ++++++++++++---
+>   4 files changed, 12 insertions(+), 42 deletions(-)
 >
-> debug_spin_lock_before()
->         SPIN_BUG_ON(lock->owner == current, "recursion");
->
-> Causing that, _HOWEVER_ look at .owner_cpu and the reporting cpu!! How
-> can the lock owner, own the lock on cpu 15 and again contend with it on
-> CPU 0. That's impossible.
->
-> About when-ish did you start seeing things like this? Lemme go stare
-> hard at recent changes.
+> diff --git a/arch/mips/include/asm/gic.h b/arch/mips/include/asm/gic.h
+> index 022d831..1bf7985 100644
+> --- a/arch/mips/include/asm/gic.h
+> +++ b/arch/mips/include/asm/gic.h
+> @@ -376,7 +376,5 @@ extern void gic_bind_eic_interrupt(int irq, int set);
+>   extern unsigned int gic_get_timer_pending(void);
+>   extern void gic_get_int_mask(unsigned long *dst, const unsigned long *src);
+>   extern unsigned int gic_get_int(void);
+> -extern void gic_irq_ack(struct irq_data *d);
+> -extern void gic_finish_irq(struct irq_data *d);
+>   extern void gic_platform_init(int irqs, struct irq_chip *irq_controller);
+>   #endif /* _ASM_GICREGS_H */
+> diff --git a/arch/mips/mti-malta/malta-int.c b/arch/mips/mti-malta/malta-int.c
+> index 5c31208..b60adfd 100644
+> --- a/arch/mips/mti-malta/malta-int.c
+> +++ b/arch/mips/mti-malta/malta-int.c
+> @@ -715,22 +715,6 @@ int malta_be_handler(struct pt_regs *regs, int is_fixup)
+>   	return retval;
+>   }
+>   
+> -void gic_irq_ack(struct irq_data *d)
+> -{
+> -	int irq = (d->irq - gic_irq_base);
+> -
+> -	GIC_CLR_INTR_MASK(irq);
+> -
+> -	if (gic_irq_flags[irq] & GIC_TRIG_EDGE)
+> -		GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), irq);
+> -}
+> -
+> -void gic_finish_irq(struct irq_data *d)
+> -{
+> -	/* Enable interrupts. */
+> -	GIC_SET_INTR_MASK(d->irq - gic_irq_base);
+> -}
+> -
+>   void __init gic_platform_init(int irqs, struct irq_chip *irq_controller)
+>   {
+>   	int i;
+> diff --git a/arch/mips/mti-sead3/sead3-int.c b/arch/mips/mti-sead3/sead3-int.c
+> index 9d5b5bd..03f9865 100644
+> --- a/arch/mips/mti-sead3/sead3-int.c
+> +++ b/arch/mips/mti-sead3/sead3-int.c
+> @@ -85,27 +85,6 @@ void __init arch_init_irq(void)
+>   			ARRAY_SIZE(gic_intr_map), MIPS_GIC_IRQ_BASE);
+>   }
+>   
+> -void gic_irq_ack(struct irq_data *d)
+> -{
+> -	GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
+> -}
+> -
+> -void gic_finish_irq(struct irq_data *d)
+> -{
+> -	unsigned int irq = (d->irq - gic_irq_base);
+> -	unsigned int i, irq_source;
+> -
+> -	/* Clear edge detectors. */
+> -	for (i = 0; i < gic_shared_intr_map[irq].num_shared_intr; i++) {
+> -		irq_source = gic_shared_intr_map[irq].intr_list[i];
+> -		if (gic_irq_flags[irq_source] & GIC_TRIG_EDGE)
+> -			GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), irq_source);
+> -	}
+> -
+> -	/* Enable interrupts. */
+> -	GIC_SET_INTR_MASK(irq);
+> -}
+> -
+>   void __init gic_platform_init(int irqs, struct irq_chip *irq_controller)
+>   {
+>   	int i;
+> diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
+> index 9e9d8b9..0dc2972 100644
+> --- a/drivers/irqchip/irq-mips-gic.c
+> +++ b/drivers/irqchip/irq-mips-gic.c
+> @@ -237,6 +237,15 @@ static void gic_unmask_irq(struct irq_data *d)
+>   	GIC_SET_INTR_MASK(d->irq - gic_irq_base);
+>   }
+>   
+> +static void gic_ack_irq(struct irq_data *d)
+> +{
+> +	GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
+> +
+> +	/* Clear edge detector */
+> +	if (gic_irq_flags[d->irq - gic_irq_base] & GIC_TRIG_EDGE)
+> +		GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), d->irq - gic_irq_base);
+> +}
+> +
+>   #ifdef CONFIG_SMP
+>   static DEFINE_SPINLOCK(gic_lock);
+>   
+> @@ -272,11 +281,11 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *cpumask,
+>   
+>   static struct irq_chip gic_irq_controller = {
+>   	.name			=	"MIPS GIC",
+> -	.irq_ack		=	gic_irq_ack,
+> +	.irq_ack		=	gic_ack_irq,
+>   	.irq_mask		=	gic_mask_irq,
+> -	.irq_mask_ack		=	gic_mask_irq,
+> +	.irq_mask_ack		=	gic_ack_irq,
+>   	.irq_unmask		=	gic_unmask_irq,
+> -	.irq_eoi		=	gic_finish_irq,
+> +	.irq_eoi		=	gic_unmask_irq,
+>   #ifdef CONFIG_SMP
+>   	.irq_set_affinity	=	gic_set_affinity,
+>   #endif
 
-Peter, any new update on this issue?
+I'm no expert in irq_chip api but I think providing irq_mask_ack and 
+irq_eoi makes no sense to GIC and can be removed.
 
-Recently we also found a similar deadlock in our box, but with
-3.4-stable kernel.
-
-<0>[177064.149832] BUG: spinlock recursion on CPU#11, current: IVS_RcvReq1/16444
-<0>[177064.149840]  lock: <NULL>/0xffff88017afd5640, .magic: dead4ead,
-.owner: IVS_RcvReq1/16444, .owner_cpu: 14
-
-Thanks.
-
-Jovi
+Qais
