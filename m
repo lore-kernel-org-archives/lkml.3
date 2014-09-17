@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792AbaIQQeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:34:13 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:38076 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347AbaIQQeL (ORCPT
+	id S1755940AbaIQQew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:34:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49928 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755744AbaIQQeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:34:11 -0400
-Date: Wed, 17 Sep 2014 09:34:05 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 9/9] mfd: syscon: add Atmel GPBR DT bindings
- documention
-Message-ID: <20140917163405.GM30918@lee--X1>
-References: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
- <1410441525-25258-10-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 17 Sep 2014 12:34:50 -0400
+Message-ID: <5419B825.5000201@linutronix.de>
+Date: Wed, 17 Sep 2014 18:34:45 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de>
+In-Reply-To: <54118AAB.2010205@linutronix.de>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410441525-25258-10-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Boris BREZILLON wrote:
-
-> The GPBR block provides a set of battery-backed registers that can be used
-> to save data which need to be kept when the system is powered down and
-> VDD-core is maintained by an external battery.
+On 09/11/2014 01:42 PM, Sebastian Andrzej Siewior wrote:
+>> We should add hooks like tx_dma and rx_dma to struct uart_8250_dma so
+>> that the probe drivers can replace serial8250_tx_dma and
+>> seria8250_rx_dma, like I think Alan already suggested.
 > 
-> A typical usage is the RTT block (when used as an RTC) which needs one of
-> those registers to save the current time.
+> Okay. Wasn't aware that Alan already suggested that.
+> I also need a watchdog timer for TX since it seems that on omap3 the
+> DMA engine suddenly forgets to continue with DMA…
 > 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  Documentation/devicetree/bindings/mfd/atmel,gpbr.txt | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+> If this is really what we want, I would need to refactor a few things…
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-> new file mode 100644
-> index 0000000..a285695
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-> @@ -0,0 +1,15 @@
-> +* Device tree bindings for Atmel GPBR (General Purpose Backup Registers)
-> +
-> +The GPBR are a set of battery-backed registers.
-> +
-> +Required properties:
-> +- compatible:		"atmel,at91sam9260-gpbr", "syscon"
-> +- reg:			contains offset/length value of the GPBR memory
-> +			region.
-> +
-> +Example:
-> +
-> +gpbr: gpbr@fffffd50 {
+>> Let's keep serial8250_tx_dma/rx_dma as the default, and not add any
+>> quirks to them. Only if there is a very common case should it be
+>> handled in those. The case of RX req needing to be sent before data in
+>> FIFO maybe one of those, but I'm no sure.
+> 
+> keep in mind that both (RX & TX bugs/hacks) need also a bit of handling
+> in the 8250-core so it works together (like the tx_err member so we
+> fall back to manual xmit)
 
-Is something referencing this node via phandle?  If not, please remove
-the label.
+Done. I've kept the RX workarounds in the 8250_dma and moved the TX
+part into the omap driver.
+I needed to add the 8250_core pieces of patch #10 [0]. Now If you say,
+couldn't this done in an other way then I could move the RX workarounds
+pieces to the omap driver as well as the interrupt routine. Any
+preferences?
 
-> +	compatible = "atmel,at91sam9260-gpbr", "syscon";
-> +	reg = <0xfffffd50 0x10>;
-> +};
+[0] [PATCH 10/16] tty: serial: 8250_dma: optimize the xmit path due to
+    UART_BUG_DMA_TX
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Sebastian
+
