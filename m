@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835AbaIQPea (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 11:34:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42116 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215AbaIQPe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 11:34:28 -0400
-Date: Wed, 17 Sep 2014 10:34:00 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with the vfs tree
-Message-ID: <20140917153400.GA8140@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140917161658.2e4eb3f1@canb.auug.org.au>
+	id S1755739AbaIQPgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 11:36:18 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:40803 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401AbaIQPgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 11:36:16 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
-Content-Disposition: inline
-In-Reply-To: <20140917161658.2e4eb3f1@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [95.23.61.81]
+In-Reply-To: <1409946775-24076-1-git-send-email-nm@ti.com>
+References: <1409946775-24076-1-git-send-email-nm@ti.com>
+Date: Wed, 17 Sep 2014 17:36:15 +0200
+Message-ID: <CABxcv=k1vz2-hi34mGBGNjuYorrppW1Zez0xmASWDAdKgN4Dhg@mail.gmail.com>
+Subject: Re: [RESEND PATCH] gpio: omap: Fix interrupt names
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>, Alexandre Courbot <gnurou@gmail.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux GPIO List <linux-gpio@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1yeeQ81UyVL57Vl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Linus,
 
-On Wed, Sep 17, 2014 at 04:16:58PM +1000, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> drivers/usb/gadget/function/f_fs.c between commit 8322215aa91c ("f_fs:
+On Fri, Sep 5, 2014 at 9:52 PM, Nishanth Menon <nm@ti.com> wrote:
+> When viewing the /proc/interrupts, there is no information about which
+> GPIO bank a specific gpio interrupt is hooked on to. This is more than a
+> bit irritating as such information can esily be provided back to the
+> user and at times, can be crucial for debug.
+>
+> So, instead of displaying something like:
+> 31:     0       0  GPIO   0  palmas
+> 32:     0       0  GPIO  27  mmc0
+>
+> Display the following with appropriate device name:
+> 31:     0       0  4ae10000.gpio   0  palmas
+> 32:     0       0  4805d000.gpio  27  mmc0
+>
+> This requires that we create irq_chip instance specific for each GPIO
+> bank which is trivial to achieve.
+>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Acked-by: Kevin Hilman <khilman@linaro.org>
+> ---
+> Requested to be resend by Javier with linux-gpio maintainers in CC.
+>
+> Original V1 of the patch: https://patchwork.kernel.org/patch/4757891/
+>
+> Probably belongs to 3.18 kernel series at this point in time.
+>
 
-I can't find this commit on linux-usb. In fact, googling for it the only
-reference I find to that commit is this very thread. I would strong
-suggest that it be removed from the tree as it, apparently, went in
-without any review. Sure, it's a simple change, but it needs to be
-reviewed and needs to be sent to proper maintainers.
+I've no other patches for the GPIO OMAP driver for 3.18, could you
+please pick this patch?
 
-Unless I'm missing something, of course, but I could not find any other
-references to this commit.
-
-Al, was this commit sent to any mailing list ?
-
-cheers
-
---=20
-balbi
-
---1yeeQ81UyVL57Vl7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUGannAAoJEIaOsuA1yqREYEcP/1Brn0hWk/ThZsjQ1KXH2q+3
-uWZkbhf43dYwzUAppWb0mlWl+Y1HmDSB37CQ/ov3C4ptxf7IpoXD2NkWOC/fMOjw
-CiOsiW6Te9K7QHiyUzYwGCCcuEuzTcICLpJKmJFktNq2JH2dTs5YPabFfAaxEVPN
-VojuJBL2PZ/fLq5irVf0nV8O46PKJCgFKCzW/AAAWMPV9enWU+I2iIjSzFBE4Car
-Naj8NlloVRJq8ixI2iwqUZEANRVvw7ZojJcVev/6mVti+x07SvChRps984hwza2h
-n5KGTj2L+9099Oe9ZzPOceZ1No5r16gFbkdFNeDjEfu64S18TomcLq//q6nWBfX2
-tWdpzJWYyp2NCBurWEwmKjuGCt1q76aRqWB+t7sCqlC94tapr20tmxmcH/RrZ4Ja
-PVQfm08xD9Ho0/zG4WQnXlnBirO/h9U5Zqvr3OD/PlAklmH3DhBtjMMM75beSfk0
-vLSp/nWOx+/PoAVcBPMS4J7R0TA2KXxVwu9RlikOSev4MXo1Aj+wGCa2YkTGKdZA
-dQCHmT4YxtOHV1n27oDD8Gy/zgA9UtYPQMXi8BHQF5yWyAkV3K6qeK5fErRBD9Vn
-R+KD1R4WLpBiJUa+0DiYbbr0C0PSpQtQltPnBTY6qygKVk37/kHhFCaB/6rKd8ZU
-j1Rsg/x/kgzO9U8RKuc5
-=NL5U
------END PGP SIGNATURE-----
-
---1yeeQ81UyVL57Vl7--
+Thanks a lot and best regards,
+Javier
