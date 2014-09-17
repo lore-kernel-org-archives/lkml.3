@@ -1,140 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116AbaIQUEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:04:40 -0400
-Received: from mail-ob0-f201.google.com ([209.85.214.201]:54287 "EHLO
-	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682AbaIQT7e (ORCPT
+	id S1757224AbaIQUFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:05:07 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:38263 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153AbaIQT7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:59:34 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v4 0/9] Tegra xHCI support
-Date: Wed, 17 Sep 2014 12:59:21 -0700
-Message-Id: <1410983970-7043-1-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 17 Sep 2014 15:59:32 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com, konrad.wilk@oracle.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v3 3/5] x86, mm, asm-gen: Add ioremap_wt() for WT
+Date: Wed, 17 Sep 2014 13:48:39 -0600
+Message-Id: <1410983321-15162-4-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1410983321-15162-1-git-send-email-toshi.kani@hp.com>
+References: <1410983321-15162-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for xHCI on NVIDIA Tegra SoCs.  This includes:
- - patches 1 and 2: adding a driver for the mailbox used to communicate
-   with the xHCI controller's firmware,
- - patches 3 and 4: extending the XUSB pad controller driver to support
-   the USB PHY types (UTMI, HSIC, and USB3),
- - patches 5 and 6: adding a xHCI host-controller driver, and
- - patches 7, 8, and 9: updating the relevant DT files.
+This patch adds ioremap_wt() for creating WT mapping on x86.
+It follows the same model as ioremap_wc() for multi-architecture
+support.  ARCH_HAS_IOREMAP_WT is defined in the x86 version of
+io.h to indicate that ioremap_wt() is implemented on x86.
 
-The PHY and host drivers have compile-time dependencies on the mailbox
-driver, and the host driver has compile-time dependencies on the PHY
-driver.  It is probably best if these all get merged through the Tegra
-tree.  This series still needs ACKs from the relevant maintainers for
-the mailbox and XHCI host drivers and their device-tree bindings.
+Also update the PAT documentation file to cover ioremap_wt().
 
-Based on 3.17-rc5, Jassi Brar's common mailbox framework [0], and my
-xHCI modules series [1].  I've published a branch [2] with all the
-dependencies for those that want to test this.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ Documentation/x86/pat.txt   |    4 +++-
+ arch/x86/include/asm/io.h   |    2 ++
+ arch/x86/mm/ioremap.c       |   24 ++++++++++++++++++++++++
+ include/asm-generic/io.h    |    4 ++++
+ include/asm-generic/iomap.h |    4 ++++
+ 5 files changed, 37 insertions(+), 1 deletion(-)
 
-Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
-USB3.0 memory sticks and ethernet dongles using controller firmware
-recently posted by Andrew Chew [3].
-
-Notes:
- - HSIC support is mostly untested and I think there are still some issues
-   to work out there.  I do have a Tegra124 board with a HSIC hub so I'll
-   try to sort those out later.
- - The XUSB padctl driver doesn't play nice with the existing Tegra USB2.0
-   PHY driver, so all ports should be assigned to the XHCI controller.
-
-Based on work by:
-  a lot of people, but from what I can tell from the L4T tree [4], the
-  original authors of the Tegra xHCI driver are:
-    Ajay Gupta <ajayg@nvidia.com>
-    Bharath Yadav <byadav@nvidia.com>
-
-Changes from v3:
- - Fixed USB2.0 flakiness on Jetson-TK1.
- - Switched to 32-bit DMA mask for host.
- - Addressed Stephen's review comments.
-
-Chagnes from v2:
- - Dropped mailbox channel specifier.  The mailbox driver allocates virtual
-   channels backed by the single physical channel.
- - Added support for HS_CURR_LEVEL adjustment pinconfig property, which
-   will be required for the Blaze board.
- - Addressed Stephen's review comments.
-
-Changes from v1:
- - Converted mailbox driver to use the common mailbox framework.
- - Fixed up host driver so that it can now be built and used as a module.
- - Addressed Stephen's review comments.
- - Misc. cleanups.
-
-Changes from RFC:
- - Dropped Tegra114 support.
- - Split out mailbox into separate driver.
- - Stopped using child xhci-plat device in xHCI host-controller driver.
- - Added PHY support to Thierry's XUSB padctl driver instead of in a separate
-   USB PHY driver.
- - Added Jetson TK1 support.
- - Misc. cleanups.
-
-[0] https://lkml.org/lkml/2014/8/1/200
-[1] https://lkml.org/lkml/2014/8/18/504
-[2] https://github.com/abrestic/linux/tree/tegra-xhci-v4
-[3] https://patchwork.ozlabs.org/patch/384013/
-[4] git://nv-tegra.nvidia.com/linux-3.10.git
-
-Andrew Bresticker (9):
-  of: Add NVIDIA Tegra XUSB mailbox binding
-  mailbox: Add NVIDIA Tegra XUSB mailbox driver
-  of: Update Tegra XUSB pad controller binding for USB
-  pinctrl: tegra-xusb: Add USB PHY support
-  of: Add NVIDIA Tegra xHCI controller binding
-  usb: xhci: Add NVIDIA Tegra xHCI host-controller driver
-  ARM: tegra: Add Tegra124 XUSB mailbox and xHCI controller
-  ARM: tegra: jetson-tk1: Add xHCI support
-  ARM: tegra: venice2: Add xHCI support
-
- .../bindings/mailbox/nvidia,tegra124-xusb-mbox.txt |   32 +
- .../pinctrl/nvidia,tegra124-xusb-padctl.txt        |   56 +-
- .../bindings/usb/nvidia,tegra124-xhci.txt          |  104 ++
- arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   48 +-
- arch/arm/boot/dts/tegra124-venice2.dts             |   79 +-
- arch/arm/boot/dts/tegra124.dtsi                    |   41 +
- drivers/mailbox/Kconfig                            |    3 +
- drivers/mailbox/Makefile                           |    2 +
- drivers/mailbox/tegra-xusb-mailbox.c               |  290 +++++
- drivers/pinctrl/Kconfig                            |    1 +
- drivers/pinctrl/pinctrl-tegra-xusb.c               | 1233 +++++++++++++++++++-
- drivers/usb/host/Kconfig                           |    9 +
- drivers/usb/host/Makefile                          |    1 +
- drivers/usb/host/xhci-tegra.c                      |  907 ++++++++++++++
- include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   |   20 +
- include/soc/tegra/xusb.h                           |   53 +
- 16 files changed, 2798 insertions(+), 81 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
- create mode 100644 Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
- create mode 100644 drivers/mailbox/tegra-xusb-mailbox.c
- create mode 100644 drivers/usb/host/xhci-tegra.c
- create mode 100644 include/soc/tegra/xusb.h
-
--- 
-2.1.0.rc2.206.gedb03e5
-
+diff --git a/Documentation/x86/pat.txt b/Documentation/x86/pat.txt
+index cf08c9f..be7b8c2 100644
+--- a/Documentation/x86/pat.txt
++++ b/Documentation/x86/pat.txt
+@@ -12,7 +12,7 @@ virtual addresses.
+ 
+ PAT allows for different types of memory attributes. The most commonly used
+ ones that will be supported at this time are Write-back, Uncached,
+-Write-combined and Uncached Minus.
++Write-combined, Write-through and Uncached Minus.
+ 
+ 
+ PAT APIs
+@@ -38,6 +38,8 @@ ioremap_nocache        |    --    |    UC-     |       UC-        |
+                        |          |            |                  |
+ ioremap_wc             |    --    |    --      |       WC         |
+                        |          |            |                  |
++ioremap_wt             |    --    |    --      |       WT         |
++                       |          |            |                  |
+ set_memory_uc          |    UC-   |    --      |       --         |
+  set_memory_wb         |          |            |                  |
+                        |          |            |                  |
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 71b9e65..c813c86 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -35,6 +35,7 @@
+   */
+ 
+ #define ARCH_HAS_IOREMAP_WC
++#define ARCH_HAS_IOREMAP_WT
+ 
+ #include <linux/string.h>
+ #include <linux/compiler.h>
+@@ -316,6 +317,7 @@ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				enum page_cache_mode pcm);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
++extern void __iomem *ioremap_wt(resource_size_t offset, unsigned long size);
+ 
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 885fe44..952f4b4 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -155,6 +155,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		prot = __pgprot(pgprot_val(prot) |
+ 				cachemode2protval(_PAGE_CACHE_MODE_WC));
+ 		break;
++	case _PAGE_CACHE_MODE_WT:
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_WT));
++		break;
+ 	case _PAGE_CACHE_MODE_WB:
+ 		break;
+ 	}
+@@ -249,6 +253,26 @@ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
+ }
+ EXPORT_SYMBOL(ioremap_wc);
+ 
++/**
++ * ioremap_wt	-	map memory into CPU space write through
++ * @phys_addr:	bus address of the memory
++ * @size:	size of the resource to map
++ *
++ * This version of ioremap ensures that the memory is marked write through.
++ * Write through writes data into memory while keeping the cache up-to-date.
++ *
++ * Must be freed with iounmap.
++ */
++void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
++{
++	if (pat_enabled)
++		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
++					__builtin_return_address(0));
++	else
++		return ioremap_nocache(phys_addr, size);
++}
++EXPORT_SYMBOL(ioremap_wt);
++
+ void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
+ {
+ 	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 975e1cc..405d418 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -322,6 +322,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ioremap_wt
++#define ioremap_wt ioremap_nocache
++#endif
++
+ static inline void iounmap(void __iomem *addr)
+ {
+ }
+diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
+index 1b41011..d8f8622 100644
+--- a/include/asm-generic/iomap.h
++++ b/include/asm-generic/iomap.h
+@@ -66,6 +66,10 @@ extern void ioport_unmap(void __iomem *);
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ARCH_HAS_IOREMAP_WT
++#define ioremap_wt ioremap_nocache
++#endif
++
+ #ifdef CONFIG_PCI
+ /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
+ struct pci_dev;
