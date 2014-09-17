@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343AbaIQMJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:09:34 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:32608 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653AbaIQMJb (ORCPT
+	id S1755321AbaIQMNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:13:12 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:48581 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720AbaIQMNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:09:31 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-9d-541979f9733f
-From: Kukjin Kim <kgene@kernel.org>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>
-Cc: "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Seungwon Jeon'" <tgih.jun@samsung.com>,
-        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Kevin Hilman'" <khilman@linaro.org>,
-        "'Naveen Krishna Chatradhi'" <ch.naveen@samsung.com>
-References: <1410857409-24767-1-git-send-email-gautam.vivek@samsung.com>
- <CAD=FV=U4rPsfGkTcSY3OYHPgCFOccaHTjG1qC6WAekOEV09Q7A@mail.gmail.com>
-In-reply-to: <CAD=FV=U4rPsfGkTcSY3OYHPgCFOccaHTjG1qC6WAekOEV09Q7A@mail.gmail.com>
-Subject: RE: [PATCH RESEND] ARM: DTS: correct the capability string for mmc0
-Date: Wed, 17 Sep 2014 21:09:28 +0900
-Message-id: <01ce01cfd270$3b3d31b0$b1b79510$@kernel.org>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Content-language: ko
-Thread-index: AQGMSCxrGC5M56ETkSxArld9MZCVZQK1b0XpnHakOvA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zI92flZIhBs8u8VjcfX6Y0WL+kXOs
-	FmeXHWSzaLtykN3i6O8Cixu/2lgtvh5ewWhxedccNosZ5/cxWXy4f5HZgctjdsNFFo+/z6+z
-	eNy5tofNo2/LKkaPz5vkAlijuGxSUnMyy1KL9O0SuDJubt7JXLCUs+L49eXMDYwL2LsYOTkk
-	BEwkFv6bzgZhi0lcuLceyObiEBJYxijxaPFXFpiiWxNXMoLYQgLTGSU2TVCDsP8ySsx4wdnF
-	yMHBJqAs0dikDxIWFtCSWLilCaxVRCBCYk7vXlYQm1ngFZPE17tQ8/sZJXY9u8kMkuAUCJZY
-	8/ELC0Szj8TT1U/AbBYBVYkrny4ygdi8AhYSM6+cYYawBSV+TL7HAjFUXWLSvEXMELa8xOY1
-	b5khblaQ2HH2NSNEXERi34t3jBAHWUns336cCeQICYFODokN/zpZIZYJSHybfIgF5BkJAVmJ
-	TQeg5khKHFxxg2UCo+QsJKtnIVk9C8nqWUjWLWBkWcUomlqQXFCclF5kqFecmFtcmpeul5yf
-	u4kREvG9OxhvH7A+xCjAwajEw7vhskSIEGtiWXFl7iFGU6CLJjJLiSbnA9NKXkm8obGZkYWp
-	iamxkbmlmZI4r6LUz2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjIEljxiYtrP0TyhcGnGz
-	ato6QcdDq/iuXJ0UeODyg51v7syJKTpp4r+6ZOmtUqMoY+42Ff+vvI33zVRj55yQfv3HqMg/
-	yJklfN2uNsVNTr/b3T4uSSu0+TLzvknGrdO/vZauYpFt939i+0Lzz11uxb1vsi5sd1O+aCo3
-	dbfVixp5xzT+nH1VukosxRmJhlrMRcWJAC4UgQvzAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd2flZIhBt1dHBZ3nx9mtJh/5Byr
-	xdllB9ks2q4cZLc4+rvA4savNlaLr4dXMFpc3jWHzWLG+X1MFh/uX2R24PKY3XCRxePv8+ss
-	Hneu7WHz6NuyitHj8ya5ANaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWF
-	vMTcVFslF58AXbfMHKCrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZ
-	NzfvZC5Yyllx/Ppy5gbGBexdjJwcEgImErcmrmSEsMUkLtxbzwZiCwlMZ5TYNEENwv7LKDHj
-	BWcXIwcHm4CyRGOTPkhYWEBLYuGWJhYQW0QgQmJO715WEJtZ4BWTxNe7QGO4gFr7GSV2PbvJ
-	DJLgFAiWWPPxCwtEs4/E09VPwGwWAVWJK58uMoHYvAIWEjOvnGGGsAUlfky+xwIxVF1i0rxF
-	zBC2vMTmNW+ZIW5WkNhx9jUjRFxEYt+Ld4wQB1lJ7N9+nGkCo/AsJKNmIRk1C8moWUjaFzCy
-	rGIUTS1ILihOSs810itOzC0uzUvXS87P3cQITifPpHcwrmqwOMQowMGoxMO74bJEiBBrYllx
-	Ze4hRgkOZiUR3r5gyRAh3pTEyqrUovz4otKc1OJDjKZAn05klhJNzgemurySeENjEzMjSyMz
-	CyMTc3Mlcd6DrdaBQgLpiSWp2ampBalFMH1MHJxSDYwzGnM66i5OkBTZ81EwbtX9z3onT9xZ
-	oRieW37/2xbR7yfsOs9eT5mp+eCS1ZTmxXc8oibaOH16/fV73kWjRPYp4Yb6YnekwowYb0rG
-	aqmfl3H/8k+CP+fDQdOaUlGee6/YzYoz97tdmCOT+ocxqUPFWC/6/7SGBdGvZj2xcExiPMOp
-	znDKX12JpTgj0VCLuag4EQCmaq9cPQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 17 Sep 2014 08:13:08 -0400
+X-ASG-Debug-ID: 1410955984-0759e76129127c10002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Wed, 17 Sep 2014 14:13:03 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexey Pelykh <alexey.pelykh@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+Message-ID: <20140917121303.GB20438@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+References: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com>
+ <1410789610-23059-4-git-send-email-frans.klaver@xsens.com>
+ <54170823.7040801@hurleysoftware.com>
+ <5417228C.5070503@hurleysoftware.com>
+ <20140916085037.GI28458@ci00147.xsens-tech.local>
+ <54197804.3020302@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <54197804.3020302@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1410955984
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9579
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
+On Wed, Sep 17, 2014 at 08:01:08AM -0400, Peter Hurley wrote:
+> On 09/16/2014 04:50 AM, Frans Klaver wrote:
+> > On Mon, Sep 15, 2014 at 01:31:56PM -0400, Peter Hurley wrote:
+> >> On 09/15/2014 11:39 AM, Peter Hurley wrote:
+> >>> On 09/15/2014 10:00 AM, Frans Klaver wrote:
+> >>>> At 3.6Mbaud, with slightly over 2Mbit/s data coming in, we see 1600 uart
+> >>>> rx buffer overflows within 30 seconds. Threading the interrupt handling reduces
+> >>>> this to about 170 overflows in 10 minutes.
+> >>>
+> >>> Why is the threadirqs kernel boot option not sufficient?
+> >>> Or conversely, shouldn't this be selectable?
+> >>
+> > 
+> > I wasn't aware of the threadirqs boot option. I also wouldn't know if
+> > this should be selectable. What would be a reason to favor the
+> > non-threaded irq over the threaded irq?
 > 
-> Vivek,
+> Not everyone cares enough about serial to dedicate kthreads to it :)
+
+Fair enough. In that light, we might not care enough about other
+subsystems to dedicate kthreads to it :). Selectable seems reasonable in
+that case.
+
+
+> >> Also, do you see the same performance differential when you implement this
+> >> in the 8250 driver (that is, on top of Sebastian's omap->8250 conversion)?
+> >>
+> > 
+> > I haven't gotten Sebastian's driver to work properly yet on the console.
+> > There was no reason for me yet to throw my omap changes on top of
+> > Sebastian's queue.
+> > 
+> >>> PS - To overflow the 64 byte RX FIFO at those data rates means interrupt
+> >>> latency in excess of 250us?
+> > 
+> > At 3686400 baud it should take about 174 us to fill a 64 byte buffer. I
+> > haven't done any measurements on the interrupt latency though. If you
+> > consider that we're sending about 1kB of data, 240 times a second, we're
+> > spending a lot of time reading data from the uart. I can imagine the
+> > system has other work to do as well.
 > 
-Hi,
+> System work should not keep irqs from being serviced. Even 174us is a long
+> time not to service an interrupt. Maybe console writes are keeping the isr
+> from running?
 
-> On Tue, Sep 16, 2014 at 1:50 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> > From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> >
-> > MMC capability for HS200 is parsed in mmc/core/host.c as
-> > dts string "mmc-hs200-1_8v".
-> >
-> > This patch corrects the dts string for Exynos5420 based peach-pit
-> > and Exynos5800 based peach-pi boards.
-> >
-> > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+That's quite possible. I'll have to redo the test setup I had for this to
+give you a decent answer. I'll have to do that anyway as Sebastian's
+8250 conversion improves.
 
-In this case, Vivek's sign is required here.
-
-> > ---
-> >
-> > Hi Kukjin,
-> >
-> > As commented by Doug earlier for this patch, the two patches required
-> >   -- mmc: dw_mmc: Make sure we don't get stuck when we get an error
-> >   -- mmc: dw_mmc: change to use recommended reset procedure
-> > are now merged in upstream.
-> > So you can go ahead and pick this change.
-> >
-> >  arch/arm/boot/dts/exynos5420-peach-pit.dts |    2 +-
-> >  arch/arm/boot/dts/exynos5800-peach-pi.dts  |    2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-
-Thanks, I will take this patch once Vivek replies his sign on this patch.
-
-- Kukjin
-
+Thanks for the comments,
+Frans
