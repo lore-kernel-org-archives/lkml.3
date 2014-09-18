@@ -1,99 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaIROeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:34:17 -0400
-Received: from thoros.lunarpages.com ([67.210.120.70]:57259 "EHLO
-	thoros.lunarpages.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380AbaIROeQ (ORCPT
+	id S1756304AbaIROer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:34:47 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49713 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682AbaIROeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:34:16 -0400
-X-Greylist: delayed 61691 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Sep 2014 10:34:16 EDT
-From: "Ragnar B. Johannsson" <ragnar@igo.is>
-To: dan.carpenter@oracle.com, gregkh@linuxfoundation.org, gdonald@gmail.com,
-        himangi774@gmail.com, joe@perches.com, joelpelaez@gmail.com,
-        arnd@arndb.de, jmmahler@gmail.com, peter.p.waskiewicz.jr@intel.com,
-        antoine@schweitzer-chaput.fr, anarey@gmail.com, c@24.io,
-        rickard_strandqvist@spectrumdigital.se, teobaluta@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Ragnar B. Johannsson" <ragnar@igo.is>
-Subject: [PATCH v2 1/1] staging: rtl8192u: Move ieee80211_crypto_* declarations to ieee80211/ieee80211.h
-Date: Thu, 18 Sep 2014 14:33:25 +0000
-Message-Id: <1411050805-61907-1-git-send-email-ragnar@igo.is>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <20140917214027.GM17875@mwanda>
-References: <20140917214027.GM17875@mwanda>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - thoros.lunarpages.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - igo.is
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 18 Sep 2014 10:34:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <541A7F35.2010804@redhat.com>
+References: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
+	<1410914370-29883-8-git-send-email-ast@plumgrid.com>
+	<54192F66.8020200@redhat.com>
+	<CAMEtUuxK68ZoJ-izjLoygv0f+rLtPmMLUUq1=BJ+_ZBGfynkdA@mail.gmail.com>
+	<5419BED8.5020309@redhat.com>
+	<5419DE51.1060904@redhat.com>
+	<CAMEtUuzhcmZiYZL8TR008or8uaefDBrEKDjqA-tOrRLEZsm95A@mail.gmail.com>
+	<CAMEtUuw0aDPpQhd13ssk2PDLffBJNeef9jicOnhQLH6KtJ8gsQ@mail.gmail.com>
+	<541A7F35.2010804@redhat.com>
+Date: Thu, 18 Sep 2014 07:34:43 -0700
+Message-ID: <CAMEtUuyZCHh7SGeLF+g0ye3OrEFWnTZCn3SBeK0-8qz-y8U30w@mail.gmail.com>
+Subject: Re: [PATCH v13 net-next 07/11] bpf: verifier (add ability to receive
+ verification log)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move ieee80211_crypto*_init and _exit prototype declarations from r8192U_core.c to ieee80211/ieee80211.h. This fixes the following sparse warnings:
+On Wed, Sep 17, 2014 at 11:44 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 09/18/2014 01:45 AM, Alexei Starovoitov wrote:
+>>
+>> On Wed, Sep 17, 2014 at 12:37 PM, Alexei Starovoitov <ast@plumgrid.com>
+>> wrote:
+>>>
+>>>
+>>>> Hm, thinking out loudly ... perhaps this could be made a library
+>>>> problem.
+>>>> Such that the library which wraps the syscall needs to be aware of a
+>>>> marker where the initial version ends, and if the application doesn't
+>>>> make use of any of the new features, it would just pass in the length up
+>>>> to the marker as size attribute into the syscall. Similarly, if new
+>>>> features are always added to the end of a structure and the library
+>>>> truncates the overall-length after the last used member we might have
+>>>> a chance to load something on older kernels, haven't tried that though.
+>>>
+>>>
+>>> that's a 3rd option. I think it's cleaner than 2nd, since it solves it
+>>> completely from user space.
+>>> It can even be smarter than that. If this syscall wrapper library
+>>> sees that newer features are used and it can workaround them:
+>>> it can chop size and pass older fields into the older kernel
+>>> and when it returns, do a workaround based on newer fields.
+>>
+>>
+>> the more I think about 'new user space + old kernel' problem,
+>> the more certain I am that kernel should not try to help
+>> user space, since most of the time it's not going to be enough,
+>> but additional code in kernel would need to be maintained.
+>>
+>> syscall commands and size of bpf_attr is the least of problems.
+>> New map_type and prog_type will be added, new helper
+>> functions will be available to programs.
+>> One would think that md5 of uapi/linux/bpf.h would be
+>> enough to say that user app is compatible... In reality,
+>> it's not. The 'state pruning' verifier optimization I've talked
+>> about will not change a single bit in bpf.h, but it will be
+>> able to recognize more programs as safe.
+>> A program developed on a new kernel with more
+>> advanced verifier will load just fine on new kernel, but
+>> this valid program will not load on old kernel, only because
+>> verifier is not smart enough. Now we would need a version
+>> of verifier exposed all the way to user space?!
+>> imo that's too much. I think for eBPF infra kernel
+>> should only guarantee backwards compatibility
+>> (old user space must work with new kernel) and that's it.
+>> That's what this patch is trying to do.
+>> Thoughts?
+>
+>
+> Sure, you will never get a full compatibility on that regard
+> while backwards compatibility needs to be guaranteed on the
+> other hand. I looked at perf_copy_attr() implementation and I
+> think that we should mimic it in a very similar way as it
+> exactly solves what we need.
+>
+> For example, it will return with -EINVAL for (size > PAGE_SIZE)
+> and (size < PERF_ATTR_SIZE_VER0) where PAGE_SIZE has been chosen
+> as an arbitrary hard upper limit where it is believed that it will
+> never grow beyond that large limit in future.
+>
+> So this is a more loose constraint than what we currently do,
+> that is, -EINVAL on (size > sizeof(attr)) where attr is the
+> currently known size of a specific kernel. That would at least
+> be a start, you won't be able to cover everything though, but
+> it would allow to address the issue raised when running with
+> a basic feature set.
 
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c:203:12: warning: symbol 'ieee80211_crypto_init' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c:223:13: warning: symbol 'ieee80211_crypto_deinit' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt_tkip.c:764:12: warning: symbol 'ieee80211_crypto_tkip_init' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt_tkip.c:769:13: warning: symbol 'ieee80211_crypto_tkip_exit' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt_ccmp.c:467:12: warning: symbol 'ieee80211_crypto_ccmp_init' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt_ccmp.c:472:13: warning: symbol 'ieee80211_crypto_ccmp_exit' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt_wep.c:281:12: warning: symbol 'ieee80211_crypto_wep_init' was not declared. Should it be static?
-drivers/staging/rtl8192u/ieee80211/ieee80211_crypt_wep.c:286:13: warning: symbol 'ieee80211_crypto_wep_exit' was not declared. Should it be static?
-
-Signed-off-by: Ragnar B. Johannsson <ragnar@igo.is>
----
-Changes in v2: Remove extern, as suggested by Dan Carpenter.
-
- drivers/staging/rtl8192u/ieee80211/ieee80211.h |    9 +++++++++
- drivers/staging/rtl8192u/r8192U_core.c         |   10 ----------
- 2 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-index bdad3a2..d56c3aac 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-@@ -2445,6 +2445,15 @@ extern void ieee80211_tkip_null(void);
- extern void ieee80211_wep_null(void);
- extern void ieee80211_ccmp_null(void);
- 
-+int ieee80211_crypto_init(void);
-+void ieee80211_crypto_deinit(void);
-+int ieee80211_crypto_tkip_init(void);
-+void ieee80211_crypto_tkip_exit(void);
-+int ieee80211_crypto_ccmp_init(void);
-+void ieee80211_crypto_ccmp_exit(void);
-+int ieee80211_crypto_wep_init(void);
-+void ieee80211_crypto_wep_exit(void);
-+
- /* ieee80211_softmac_wx.c */
- 
- extern int ieee80211_wx_get_wap(struct ieee80211_device *ieee,
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index a4e1d6b..e8447b1 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -4798,16 +4798,6 @@ static void rtl8192_usb_disconnect(struct usb_interface *intf)
- 	RT_TRACE(COMP_DOWN, "wlan driver removed\n");
- }
- 
--/* fun with the built-in ieee80211 stack... */
--extern int ieee80211_crypto_init(void);
--extern void ieee80211_crypto_deinit(void);
--extern int ieee80211_crypto_tkip_init(void);
--extern void ieee80211_crypto_tkip_exit(void);
--extern int ieee80211_crypto_ccmp_init(void);
--extern void ieee80211_crypto_ccmp_exit(void);
--extern int ieee80211_crypto_wep_init(void);
--extern void ieee80211_crypto_wep_exit(void);
--
- static int __init rtl8192_usb_module_init(void)
- {
- 	int ret;
--- 
-1.7.10.4
-
+you missed my point. We should not 'do a start', since it
+doesn't help user space in the long run and only makes
+kernel more complex.
