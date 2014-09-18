@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763AbaIROXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:23:55 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:35558 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696AbaIROXx (ORCPT
+	id S1756782AbaIROY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:24:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55639 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755660AbaIROY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:23:53 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Thu, 18 Sep 2014 16:21:29 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20140918142129.GC26817@localhost>
-References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
- <1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
+	Thu, 18 Sep 2014 10:24:26 -0400
+Date: Thu, 18 Sep 2014 10:24:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Petr Mladek <pmladek@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] usb: hub: rename khubd to hub_wq in documentation
+ and comments
+In-Reply-To: <20140917212238.GB15795@mtj.dyndns.org>
+Message-ID: <Pine.LNX.4.44L0.1409181013550.1326-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 10:24:44PM +0300, Octavian Purdila wrote:
+On Thu, 18 Sep 2014, Tejun Heo wrote:
 
-> +MODULE_AUTHOR("Octavian Purdila <octavian.purdila@intel.com>");
-> +MODULE_DESCRIPTION(DRIVER_NAME " driver");
-> +MODULE_LICENSE("GPL");
+> Hello, Alan, Petr.
+> 
+> On Wed, Sep 17, 2014 at 01:36:26PM -0400, Alan Stern wrote:
+> > > -	/* If khubd ever becomes multithreaded, this will need a lock */
+> > > +	/* If hub_wq ever becomes multithreaded, this will need a lock */
+> > >  	if (udev->wusb) {
+> > >  		devnum = udev->portnum + 1;
+> > >  		BUG_ON(test_bit(devnum, bus->devmap.devicemap));
+> > 
+> > You probably didn't notice when changing this comment.  But in fact,
+> > workqueues _are_ multithreaded.  Therefore you need to add a lock to 
+> > this routine.
+> 
+> Haven't read the code but if this function is called from a single
+> work_struct, workqueue guarantees that there's only single thread of
+> execution at any given time.  A work item is never executed
+> concurrently no matter what.
 
-Just noticed both the i2c and gpio driver is lacking a MODULE_ALIAS to
-enable module auto-loading.
+This routine can be called from multiple work_structs, because a USB 
+bus can have multiple hubs.
 
-Johan
+Alan Stern
+
