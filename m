@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbaIRBce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:32:34 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54529 "EHLO
+	id S1757463AbaIRBek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:34:40 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54886 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757229AbaIRBcH (ORCPT
+	by vger.kernel.org with ESMTP id S1757441AbaIRBei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 21:32:07 -0400
+	Wed, 17 Sep 2014 21:34:38 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
         Rob Herring <robh+dt@kernel.org>,
@@ -26,104 +26,99 @@ Cc: Tanmay Inamdar <tinamdar@apm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Device Tree ML <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v11 10/10] PCI: Introduce pci_remap_iospace() for remapping PCI I/O bus resources into CPU space
-Date: Thu, 18 Sep 2014 02:30:25 +0100
-Message-Id: <1411003825-21521-11-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v11] Add support for PCI in AArch64
+Date: Thu, 18 Sep 2014 02:31:12 +0100
+Message-Id: <1411003873-21574-1-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a default implementation for remapping PCI bus I/O resources
-onto the CPU address space. Architectures with special needs may
-provide their own version, but most should be able to use this one.
+Hi,
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robh+dt@kernel.org>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
----
- drivers/pci/pci.c             | 33 +++++++++++++++++++++++++++++++++
- include/asm-generic/pgtable.h |  4 ++++
- include/linux/pci.h           |  3 +++
- 3 files changed, 40 insertions(+)
+This patch adds support for PCIe to AArch64. It depends on my v11 patch
+that adds support for creating generic host bridge resources from device
+trees. With that in place, I was able to boot a platform that
+has PCIe host bridge support and use a PCIe network card.
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 2c9ac70..654b44c 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2704,6 +2704,39 @@ int pci_request_regions_exclusive(struct pci_dev *pdev, const char *res_name)
- }
- EXPORT_SYMBOL(pci_request_regions_exclusive);
- 
-+/**
-+ *	pci_remap_iospace - Remap the memory mapped I/O space
-+ *	@res: Resource describing the I/O space
-+ *	@phys_addr: physical address where the range will be mapped.
-+ *
-+ *	Remap the memory mapped I/O space described by the @res
-+ *	into the CPU physical address space. Only architectures
-+ *	that have memory mapped IO defined (and hence PCI_IOBASE)
-+ *	should call this function.
-+ */
-+int __weak pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr)
-+{
-+	int err = -ENODEV;
-+
-+#ifdef PCI_IOBASE
-+	if (!(res->flags & IORESOURCE_IO))
-+		return -EINVAL;
-+
-+	if (res->end > IO_SPACE_LIMIT)
-+		return -EINVAL;
-+
-+	err = ioremap_page_range(res->start + (unsigned long)PCI_IOBASE,
-+				res->end + 1 + (unsigned long)PCI_IOBASE,
-+				phys_addr, pgprot_device(PAGE_KERNEL));
-+#else
-+	/* this architecture does not have memory mapped I/O space,
-+	   so this function should never be called */
-+	WARN_ON(1);
-+#endif
-+
-+	return err;
-+}
-+
- static void __pci_set_master(struct pci_dev *dev, bool enable)
- {
- 	u16 old_cmd, cmd;
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 53b2acc..977e545 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -249,6 +249,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
- #define pgprot_writecombine pgprot_noncached
- #endif
- 
-+#ifndef pgprot_device
-+#define pgprot_device pgprot_noncached
-+#endif
-+
- /*
-  * When walking page tables, get the address of the next boundary,
-  * or the end address of the range if that comes earlier.  Although no
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index a494e5d..fc8c529 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1100,6 +1100,9 @@ int __must_check pci_bus_alloc_resource(struct pci_bus *bus,
- 						  resource_size_t),
- 			void *alignf_data);
- 
-+
-+int pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr);
-+
- static inline dma_addr_t pci_bus_address(struct pci_dev *pdev, int bar)
- {
- 	struct pci_bus_region region;
+Changes from v10:
+ - Added Catalin's Acked-by
+
+Changes from v9:
+ - Moved the pcibios_add_device() patch that parses the IRQ number from DT into here.
+ - Moved the arm64-specific redefine of pgprot_device here from the generic patchset.
+ - Readability fix for definition of IO_SPACE_LIMIT
+
+Changes from v8:
+  - Added support for generic PCI domains
+
+Changes from v7:
+  - Rebased to v3.16-rc3
+  - Removed pci_ioremap_io() function as it is provided by my v8 generic
+    PCI host bridge patches under a different name.
+
+Changes from v6:
+  - Guard the pci_domain_nr() inline implementation with #ifdef CONFIG_PCI as
+    to avoid conflict with default empty version present in include/linux/pci.h.
+    Thanks to Jingoo Han for catching this.
+
+Changes from v5:
+  - Removed pcibios_fixup_bridge_ranges() as the week default version is fine.
+  - Removed the ALIGN() call in pcibios_align_resource()
+  - Stopped exporting pcibios_align_resource()
+
+Changes from v4:
+  - Fixed the pci_domain_nr() implementation for arm64. Now we use
+    find_pci_host_bride() to find the host bridge before we retrieve
+    the domain number.
+
+Changes from v3:
+  - Added Acks accumulated so far ;)
+  - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
+    lands in linux-next or mainline, in order to ease applying the series
+
+Changes from v2:
+  - Implement an arch specific version of pci_register_io_range() and
+    pci_address_to_pio().
+  - Return 1 from pci_proc_domain().
+
+Changes from v1:
+  - Added Catalin's patch for moving the PCI_IO_BASE location and extend
+    its size to 16MB
+  - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
+    keeping track of assigned IO space and returns an io_offset. At the
+    moment the code is added in arch/arm64 but it can be moved in drivers/pci.
+  - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
+    as suggested by Arnd.
+
+v10 thread here: https://lkml.org/lkml/2014/9/8/325
+v9 thread here: https://lkml.org/lkml/2014/8/12/394
+v8 thread here: https://lkml.org/lkml/2014/7/1/705
+v7 thread here: https://lkml.org/lkml/2014/3/14/320
+v6 thread here: https://lkml.org/lkml/2014/3/5/41
+v5 thread here: https://lkml.org/lkml/2014/3/4/307
+v4 thread here: https://lkml.org/lkml/2014/3/3/298
+v3 thread here: https://lkml.org/lkml/2014/2/28/211
+v2 thread here: https://lkml.org/lkml/2014/2/27/255
+v1 thread here: https://lkml.org/lkml/2014/2/3/389
+
+Best regards,
+Liviu
+
+Liviu Dudau (1):
+  arm64: Add architectural support for PCIe
+
+ arch/arm64/Kconfig               | 22 ++++++++++++++-
+ arch/arm64/include/asm/Kbuild    |  1 +
+ arch/arm64/include/asm/io.h      |  3 +-
+ arch/arm64/include/asm/pci.h     | 37 +++++++++++++++++++++++++
+ arch/arm64/include/asm/pgtable.h |  2 ++
+ arch/arm64/kernel/Makefile       |  1 +
+ arch/arm64/kernel/pci.c          | 59 ++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 123 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm64/include/asm/pci.h
+ create mode 100644 arch/arm64/kernel/pci.c
+
 -- 
 2.1.0
 
