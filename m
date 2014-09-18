@@ -1,94 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229AbaIRPs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:48:58 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38619 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417AbaIRPs4 (ORCPT
+	id S1757246AbaIRPvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:51:07 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:60782 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175AbaIRPvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:48:56 -0400
-Message-ID: <541AFEE4.1040700@codeaurora.org>
-Date: Thu, 18 Sep 2014 11:48:52 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 18 Sep 2014 11:51:04 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>
+Subject: [PATCH 2/2] memcg: move memcg_update_cache_size to slab_common.c
+Date: Thu, 18 Sep 2014 19:50:20 +0400
+Message-ID: <0689062e28e13375241dcc64df2a398c9d606c64.1411054735.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
+References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: [PATCH 0/2] perf: User/kernel time correlation and event generation
-References: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>  <541AF40B.7070604@codeaurora.org> <1411052837.8965.6.camel@hornet>
-In-Reply-To: <1411052837.8965.6.camel@hornet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 11:07 AM, Pawel Moll wrote:
-> On Thu, 2014-09-18 at 16:02 +0100, Christopher Covington wrote:
->> Hi Pawel,
->>
->> On 09/18/2014 10:34 AM, Pawel Moll wrote:
->>> Greetings,
->>>
->>> This is a second spin of the short series posted last week:
->>>
->>> http://www.spinics.net/lists/kernel/msg1824419.html
->>>
->>> The first patch adds an additional timestamp field in the perf
->>> sample data, which can be requested for any perf event along
->>> with normal PERF_SAMPLE_TIME. Events with both values appearing
->>> periodically in the perf data allow user code to translate
->>> raw monotonic time (obtained via POSIX clock API) to sched_clock
->>> domain. Although any perf event can be used, the natural choice
->>> would be a sched_switch trace event (for processes with root
->>> permissions) or a hrtimer-based PERF_COUNT_SW_CPU_CLOCK.
->>>
->>> It didn't attract any comments previously, so is just re-posted
->>> without any changes.
->>>
->>> The second patch, functionally orthogonal but complementing
->>> the first one, builds on the ftrace "trace_maker" idea. It adds
->>> a ioctl that can be used to inject a userspace-generated data
->>> into the perf buffer. It provides base for printf-like
->>> functionality in perf world. If used with the previous patch,
->>> it can be also used to provide synchronisation points for sched
->>> vs. raw monotonic time stamps correlation.
->>>
->>> First version of the patch was taking a zero-terminated string
->>> as an argument. Now it is taking a custom structure with "type"
->>> and "size" integer fields followed by data. Type value "0"
->>> is defined as a zero-terminated string (although size, including
->>> the NULL character, must still be provided), but meaning of data
->>> for other types is of no interest for the kernel. The intention
->>> is to host a list of "well known" types (with reference parsers
->>> for them) in the user perf tool code.
->>
->> Would it be possible for you to also update the corresponding man pages?
->>
->> https://www.kernel.org/doc/man-pages/
-> 
-> I must admit I haven't thought of that, but of course - if the changes
-> are accepted I'll send patches to the perf_event_open(2) man page. Any
-> others you had in mind?
+The only reason why this function lives in memcontrol.c is that it
+depends on memcg_caches_array_size. However, we can pass the new array
+size immediately to it instead of new_id+1 so that it will be free of
+any memcontrol.c dependencies.
 
-Nope--reading that page and trying out examples is pretty much how I learned
-to use perf events. Another great Vince Weaver perf events contribution is the
-test suite, if you're not already using it.
+So let's move this function to slab_common.c and make it static.
 
-https://github.com/deater/perf_event_tests
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Christoph Lameter <cl@linux.com>
+---
+ include/linux/memcontrol.h |    1 -
+ mm/memcontrol.c            |  114 ++++++++++++++------------------------------
+ mm/slab_common.c           |   30 +++++++++++-
+ 3 files changed, 65 insertions(+), 80 deletions(-)
 
-Christopher
-
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 4d17242eeff7..19df5d857411 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -440,7 +440,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+ 
+ int memcg_cache_id(struct mem_cgroup *memcg);
+ 
+-int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
+ void memcg_update_array_size(int num_groups);
+ 
+ struct kmem_cache *
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b6bbb1e3e2ab..9431024e490c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -646,11 +646,13 @@ int memcg_limited_groups_array_size;
+ struct static_key memcg_kmem_enabled_key;
+ EXPORT_SYMBOL(memcg_kmem_enabled_key);
+ 
++static void memcg_free_cache_id(int id);
++
+ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+ {
+ 	if (memcg_kmem_is_active(memcg)) {
+ 		static_key_slow_dec(&memcg_kmem_enabled_key);
+-		ida_simple_remove(&kmem_limited_groups, memcg->kmemcg_id);
++		memcg_free_cache_id(memcg->kmemcg_id);
+ 	}
+ 	/*
+ 	 * This check can't live in kmem destruction function,
+@@ -2892,19 +2894,45 @@ int memcg_cache_id(struct mem_cgroup *memcg)
+ 	return memcg ? memcg->kmemcg_id : -1;
+ }
+ 
+-static size_t memcg_caches_array_size(int num_groups)
++static int memcg_alloc_cache_id(void)
+ {
+-	ssize_t size;
+-	if (num_groups <= 0)
+-		return 0;
++	int id, size;
++	int err;
++
++	id = ida_simple_get(&kmem_limited_groups,
++			    0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
++	if (id < 0)
++		return id;
+ 
+-	size = 2 * num_groups;
++	if (id < memcg_limited_groups_array_size)
++		return id;
++
++	/*
++	 * There's no space for the new id in memcg_caches arrays,
++	 * so we have to grow them.
++	 */
++
++	size = 2 * (id + 1);
+ 	if (size < MEMCG_CACHES_MIN_SIZE)
+ 		size = MEMCG_CACHES_MIN_SIZE;
+ 	else if (size > MEMCG_CACHES_MAX_SIZE)
+ 		size = MEMCG_CACHES_MAX_SIZE;
+ 
+-	return size;
++	mutex_lock(&memcg_slab_mutex);
++	err = memcg_update_all_caches(size);
++	mutex_unlock(&memcg_slab_mutex);
++
++	if (err) {
++		ida_simple_remove(&kmem_limited_groups, id);
++		return err;
++	}
++	return id;
++
++}
++
++static void memcg_free_cache_id(int id)
++{
++	ida_simple_remove(&kmem_limited_groups, id);
+ }
+ 
+ /*
+@@ -2914,60 +2942,7 @@ static size_t memcg_caches_array_size(int num_groups)
+  */
+ void memcg_update_array_size(int num)
+ {
+-	if (num > memcg_limited_groups_array_size)
+-		memcg_limited_groups_array_size = memcg_caches_array_size(num);
+-}
+-
+-int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+-{
+-	struct memcg_cache_params *cur_params = s->memcg_params;
+-
+-	VM_BUG_ON(!is_root_cache(s));
+-
+-	if (num_groups > memcg_limited_groups_array_size) {
+-		int i;
+-		struct memcg_cache_params *new_params;
+-		ssize_t size = memcg_caches_array_size(num_groups);
+-
+-		size *= sizeof(void *);
+-		size += offsetof(struct memcg_cache_params, memcg_caches);
+-
+-		new_params = kzalloc(size, GFP_KERNEL);
+-		if (!new_params)
+-			return -ENOMEM;
+-
+-		new_params->is_root_cache = true;
+-
+-		/*
+-		 * There is the chance it will be bigger than
+-		 * memcg_limited_groups_array_size, if we failed an allocation
+-		 * in a cache, in which case all caches updated before it, will
+-		 * have a bigger array.
+-		 *
+-		 * But if that is the case, the data after
+-		 * memcg_limited_groups_array_size is certainly unused
+-		 */
+-		for (i = 0; i < memcg_limited_groups_array_size; i++) {
+-			if (!cur_params->memcg_caches[i])
+-				continue;
+-			new_params->memcg_caches[i] =
+-						cur_params->memcg_caches[i];
+-		}
+-
+-		/*
+-		 * Ideally, we would wait until all caches succeed, and only
+-		 * then free the old one. But this is not worth the extra
+-		 * pointer per-cache we'd have to have for this.
+-		 *
+-		 * It is not a big deal if some caches are left with a size
+-		 * bigger than the others. And all updates will reset this
+-		 * anyway.
+-		 */
+-		rcu_assign_pointer(s->memcg_params, new_params);
+-		if (cur_params)
+-			kfree_rcu(cur_params, rcu_head);
+-	}
+-	return 0;
++	memcg_limited_groups_array_size = num;
+ }
+ 
+ static void memcg_register_cache(struct mem_cgroup *memcg,
+@@ -4167,23 +4142,12 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
+ 	if (err)
+ 		goto out;
+ 
+-	memcg_id = ida_simple_get(&kmem_limited_groups,
+-				  0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
++	memcg_id = memcg_alloc_cache_id();
+ 	if (memcg_id < 0) {
+ 		err = memcg_id;
+ 		goto out;
+ 	}
+ 
+-	/*
+-	 * Make sure we have enough space for this cgroup in each root cache's
+-	 * memcg_params.
+-	 */
+-	mutex_lock(&memcg_slab_mutex);
+-	err = memcg_update_all_caches(memcg_id + 1);
+-	mutex_unlock(&memcg_slab_mutex);
+-	if (err)
+-		goto out_rmid;
+-
+ 	memcg->kmemcg_id = memcg_id;
+ 	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
+ 
+@@ -4204,10 +4168,6 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
+ out:
+ 	memcg_resume_kmem_account();
+ 	return err;
+-
+-out_rmid:
+-	ida_simple_remove(&kmem_limited_groups, memcg_id);
+-	goto out;
+ }
+ 
+ static int memcg_activate_kmem(struct mem_cgroup *memcg,
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 9c29ba792368..800314e2a075 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -120,6 +120,33 @@ static void memcg_free_cache_params(struct kmem_cache *s)
+ 	kfree(s->memcg_params);
+ }
+ 
++static int memcg_update_cache_params(struct kmem_cache *s, int num_memcgs)
++{
++	int size;
++	struct memcg_cache_params *new_params, *cur_params;
++
++	BUG_ON(!is_root_cache(s));
++
++	size = offsetof(struct memcg_cache_params, memcg_caches);
++	size += num_memcgs * sizeof(void *);
++
++	new_params = kzalloc(size, GFP_KERNEL);
++	if (!new_params)
++		return -ENOMEM;
++
++	cur_params = s->memcg_params;
++	memcpy(new_params->memcg_caches, cur_params->memcg_caches,
++	       memcg_limited_groups_array_size * sizeof(void *));
++
++	new_params->is_root_cache = true;
++
++	rcu_assign_pointer(s->memcg_params, new_params);
++	if (cur_params)
++		kfree_rcu(cur_params, rcu_head);
++
++	return 0;
++}
++
+ int memcg_update_all_caches(int num_memcgs)
+ {
+ 	struct kmem_cache *s;
+@@ -130,9 +157,8 @@ int memcg_update_all_caches(int num_memcgs)
+ 		if (!is_root_cache(s))
+ 			continue;
+ 
+-		ret = memcg_update_cache_size(s, num_memcgs);
++		ret = memcg_update_cache_params(s, num_memcgs);
+ 		/*
+-		 * See comment in memcontrol.c, memcg_update_cache_size:
+ 		 * Instead of freeing the memory, we'll just leave the caches
+ 		 * up to this point in an updated state.
+ 		 */
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+1.7.10.4
+
