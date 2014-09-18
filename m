@@ -1,124 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587AbaIRMtG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 08:49:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294AbaIRMtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 08:49:04 -0400
-Date: Thu, 18 Sep 2014 20:47:45 +0800
-From: Amos Kong <akong@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        herbert@gondor.apana.org.au, m@bues.ch, mb@bu3sch.de, mpm@selenic.com,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2 2/3] hw_random: fix stuck in catting hwrng attributes
-Message-ID: <20140918124745.GB29803@air.redhat.com>
-References: <1410796949-2221-1-git-send-email-akong@redhat.com>
- <1410796949-2221-3-git-send-email-akong@redhat.com>
- <87wq91odhf.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wq91odhf.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755276AbaIRMwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 08:52:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:58757 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaIRMwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 08:52:04 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-a3-541ad57162ba
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jason Cooper <jason@lakedaemon.net>, Christoph Lameter <cl@linux.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+Date: Thu, 18 Sep 2014 14:51:58 +0200
+Message-id: <2658039.e4sTF9AQmc@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140914054055.GI21986@titan.lakedaemon.net>
+References: <20140901230728.GM29327@sirena.org.uk>
+ <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+ <20140914054055.GI21986@titan.lakedaemon.net>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jQd3Cq1IhBlcXGllMffiEzeL6tzeM
+	Fo1LLrNYnG16w25xedccNouDC9sYLT49+8dusfnDSzaLX8uPMjpwerQ097B5bFrVyebRcOA8
+	i8eda3vYPJ5cmc7k0bdlFaPH501yAexRXDYpqTmZZalF+nYJXBkzn59mLHglVLF4/0nWBsat
+	/F2MnBwSAiYSd9t3s0DYYhIX7q1n62Lk4hASmM4osf7fMRYIp4VJYvn2PrAqNgEriYntqxhB
+	bBEBWYkr0x4yghQxC8xlkpj0ZBozSEJYQF3i8Mw17CA2i4CqxOdLL8GaeQU0JU4vOgdmiwp4
+	SuzYvpINxOYEGrq87ygjxLYpjBK/mpYyQzQISvyYfA+sgVlAXmLf/qmsELaWxPqdx5kmMArM
+	QlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEx8QzqR2MKxssDjEKcDAq
+	8fAe4JUKEWJNLCuuzD3EKMHBrCTCy3cRKMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBA
+	emJJanZqakFqEUyWiYNTqoHxRPEquY6eqp5J9km1iZJ96ce92X5558UHv+7l+9Sx6PY29/Sw
+	r3l5fvPP/LNs13xQvMw41FcstONQbcYGw305vLcTYjky5Ryt5B55r3/HLDSl9+bVjjvHVkgw
+	fWiJP3Z9/n/rUwev+nw67Muwvi7EvUNI8YmNwPkIvbrliUJ7cwKST7mvva/EUpyRaKjFXFSc
+	CADJwxZyhQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 12:13:08PM +0930, Rusty Russell wrote:
-> Amos Kong <akong@redhat.com> writes:
+
+Tejun,
+
+Could you please merge Christoph's patch to your percpu tree
+(the patch is attached below for your convenience, it is a fixup
+for "irqchips: Replace __this_cpu_ptr uses" patch present in
+for-3.18-consistent-ops and for-next branches)?
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+On Sunday, September 14, 2014 01:40:55 AM Jason Cooper wrote:
+> Christoph,
 > 
-> > I started a QEMU (non-smp) guest with one virtio-rng device, and read
-> > random data from /dev/hwrng by dd:
-> >
-> >  # dd if=/dev/hwrng of=/dev/null &
-> >
-> > In the same time, if I check hwrng attributes from sysfs by cat:
-> >
-> >  # cat /sys/class/misc/hw_random/rng_*
-> >
-> > The cat process always gets stuck with slow backend (5 k/s), if we
-> > use a quick backend (1.2 M/s), the cat process will cost 1 to 2
-> > minutes. The stuck doesn't exist for smp guest.
-> >
-> > Reading syscall enters kernel and call rng_dev_read(), it's user
-> > context. We used need_resched() to check if other tasks need to
-> > be run, but it almost always return false, and re-hold the mutex
-> > lock. The attributes accessing process always fails to hold the
-> > lock, so the cat gets stuck.
-> >
-> > User context doesn't allow other user contexts run on that CPU,
-> > unless the kernel code sleeps for some reason. This is why the
-> > need_reshed() always return false here.
-> >
-> > This patch removed need_resched() and always schedule other tasks
-> > then other tasks can have chance to hold the lock and execute
-> > protected code.
- 
-Hi Rusty,
-
-> OK, this is going to be a rant.
+> On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
+> > On Tue, 2 Sep 2014, Christoph Lameter wrote:
+> > 
+> > > Oww.. This is double indirection deal there. A percpu offset pointing to
+> > > a pointer?
+> > >
+> > > Generally the following is true (definition from
+> > > include/asm-generic/percpu.h that is used for ARM for raw_cpu_read):
+> > >
+> > > #define raw_cpu_read_4(pcp)             (*raw_cpu_ptr(&(pcp)))
+> > 
+> > I think what the issue is that we dropped the fetch of the percpu offset
+> > in the patch. Instead we are using the address of the variable that
+> > contains the offset. Does this patch fix it?
+> > 
+> > 
+> > Subject: irqchip: Properly fetch the per cpu offset
+> > 
+> > The raw_cpu_read() conversion dropped the fetch of the offset
+> > from base->percpu_base in gic_get_percpu_base.
+> > 
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
 > 
-> Your explanation doesn't make sense at all.  Worse, your solution breaks
-> the advice of Kernighan & Plaugher: "Don't patch bad code - rewrite
-> it.".
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
 > 
-> But worst of all, this detailed explanation might have convinced me you
-> understood the problem better than I did, and applied your patch.
- 
-I'm sorry about the misleading.
-
-> I did some tests.  For me, as expected, the process spends its time
-> inside the virtio rng read function, holding the mutex and thus blocking
-> sysfs access; it's not a failure of this code at all.
-
-Got it now.
-
-The catting hang bug was found when I try to fix unhotplug issue, the
-unhotplug issue can't be reproduced if I try to debug by gdb or
-printk. So I forgot to debug cat hang ... but spend time to misunderstand
-schedle code :(
-
-> Your schedule_timeout() "fix" probably just helps by letting the host
-> refresh entropy, so we spend less time waiting in the read fn.
+> thx,
 > 
-> I will post a series, which unfortunately is only lightly tested, then
-> I'm going to have some beer to begin my holiday.  That may help me
-> forget my disappointment at seeing respected fellow developers
-> monkey-patching random code they don't understand.
+> Jason.
 
-I just posted a V2 with two additional fixes, hotunplugging works well now :)
+From: Christoph Lameter <cl@linux.com>
+Subject: [PATCH] irqchip: Properly fetch the per cpu offset
 
-> Grrr....
+The raw_cpu_read() conversion dropped the fetch of the offset
+from base->percpu_base in gic_get_percpu_base.
 
-Enjoy your holiday!
-Amos
+b.zolnierkie:
+This fixes kernel panic on ARM Exynos4 SoCs (i.e. ODROID U3
+board).
 
-> Rusty.
->
-> > Signed-off-by: Amos Kong <akong@redhat.com>
-> > ---
-> >  drivers/char/hw_random/core.c | 3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> > index c591d7e..263a370 100644
-> > --- a/drivers/char/hw_random/core.c
-> > +++ b/drivers/char/hw_random/core.c
-> > @@ -195,8 +195,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
-> >  
-> >  		mutex_unlock(&rng_mutex);
-> >  
-> > -		if (need_resched())
-> > -			schedule_timeout_interruptible(1);
-> > +		schedule_timeout_interruptible(1);
-> >  
-> >  		if (signal_pending(current)) {
-> >  			err = -ERESTARTSYS;
-> > -- 
-> > 1.9.3
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Reported-and-tested-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
 
--- 
-			Amos.
+Index: linux/drivers/irqchip/irq-gic.c
+===================================================================
+--- linux.orig/drivers/irqchip/irq-gic.c
++++ linux/drivers/irqchip/irq-gic.c
+@@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+ #ifdef CONFIG_GIC_NON_BANKED
+ static void __iomem *gic_get_percpu_base(union gic_base *base)
+ {
+-	return raw_cpu_read(base->percpu_base);
++	return raw_cpu_read(*base->percpu_base);
+ }
+
+ static void __iomem *gic_get_common_base(union gic_base *base)
+
+
+
