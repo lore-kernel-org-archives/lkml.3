@@ -1,132 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaIRMnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 08:43:11 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:47408 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043AbaIRMnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 08:43:09 -0400
+	id S1755400AbaIRMpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 08:45:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41765 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254AbaIRMpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 08:45:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,547,1406617200"; 
+   d="scan'208";a="593230059"
+Date: Thu, 18 Sep 2014 20:45:31 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Petr =?utf-8?Q?Ml=C3=A1dek?= <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tibor Billes <tbilles@gmx.com>, Josh Triplett <josh@joshtriplett.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: rcu: Throttle rcu_try_advance_all_cbs() execution causes visible
+ slowdown in ftrace switching
+Message-ID: <20140918124531.GA7546@localhost>
+References: <1383326384.6788.49.camel@pathway.suse.cz>
+ <20140822033529.GA7541@localhost>
+ <20140822083257.GI17334@pathway.suse.cz>
+ <20140822114302.GG27650@localhost>
+ <20140917104251.0a3b29c9@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20140918105458.GA2337@localhost>
-References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
-	<1410290686-6680-4-git-send-email-octavian.purdila@intel.com>
-	<20140918105458.GA2337@localhost>
-Date: Thu, 18 Sep 2014 15:43:07 +0300
-Message-ID: <CAE1zot+_hX6TVkW-B6H9NzgyLhF54oQJZt+x_xXGjEB6A5dAZA@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] gpio: add support for the Diolan DLN-2 USB GPIO driver
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140917104251.0a3b29c9@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 1:54 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Tue, Sep 09, 2014 at 10:24:46PM +0300, Octavian Purdila wrote:
->
-> <snip>
->
->> +#define DLN2_GPIO_DIRECTION_IN               0
->> +#define DLN2_GPIO_DIRECTION_OUT              1
->> +
->> +static int dln2_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
->> +{
->> +     int ret;
->> +     struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
->> +     struct dln2_gpio_pin req = {
->> +             .pin = cpu_to_le16(offset),
->> +     };
->> +     struct dln2_gpio_pin_val rsp;
->> +     int len = sizeof(rsp);
->> +
->> +     if (test_bit(offset, dln2->pin_dir_set)) {
->> +             rsp.value = !!test_bit(offset, dln2->pin_dir);
->> +             goto report;
->> +     }
->> +
->> +     ret = dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_GET_DIRECTION,
->> +                         &req, sizeof(req), &rsp, &len);
->> +     if (ret < 0)
->> +             return ret;
->> +     if (len < sizeof(rsp) || req.pin != rsp.pin)
->> +             return -EPROTO;
->> +     set_bit(offset, dln2->pin_dir_set);
->
-> You shouldn't set this flag until you've stored the direction.
->
->> +
->> +report:
->> +     switch (rsp.value) {
->> +     case DLN2_GPIO_DIRECTION_IN:
->> +             clear_bit(offset, dln2->pin_dir);
->> +             return 1;
->> +     case DLN2_GPIO_DIRECTION_OUT:
->> +             set_bit(offset, dln2->pin_dir);
->> +             return 0;
->> +     default:
->> +             return -EPROTO;
->> +     }
->> +}
->> +
->> +static int dln2_gpio_get(struct gpio_chip *chip, unsigned int offset)
->> +{
->> +     struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
->> +     int dir;
->> +
->> +     dir = dln2_gpio_get_direction(chip, offset);
->> +     if (dir < 0)
->> +             return dir;
->> +
->> +     if (dir)
->> +             return dln2_gpio_pin_get_in_val(dln2, offset);
->> +
->> +     return dln2_gpio_pin_get_out_val(dln2, offset);
->> +}
->> +
->> +static void dln2_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
->> +{
->> +     struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
->> +
->> +     dln2_gpio_pin_set_out_val(dln2, offset, value);
->> +}
->> +
->> +static int dln2_gpio_set_direction(struct gpio_chip *chip, unsigned offset,
->> +                                unsigned dir)
->> +{
->> +     struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
->> +     struct dln2_gpio_pin_val req = {
->> +             .pin = cpu_to_le16(offset),
->> +             .value = cpu_to_le16(dir),
->> +     };
->> +
->> +     set_bit(offset, dln2->pin_dir_set);
->
-> Set flag after you store the direction below.
->
->> +     if (dir == DLN2_GPIO_DIRECTION_OUT)
->> +             set_bit(offset, dln2->pin_dir);
->> +     else
->> +             clear_bit(offset, dln2->pin_dir);
->
-> Either way, it looks like this could race with get_direction() if you
-> get a set_direction() while get_direction() is retrieving the direction
-> from the device.
->
-> This would break gpio_get().
->
+HI Steven,
 
-I don't think gpio_set_direction() and gpio_get() are allowed to race.
-I think the user must make sure the right direction is set before
-issuing gpio_get(), otherwise it can read invalid values even if
-gpio_get() would not depend on get_direction().
+On Wed, Sep 17, 2014 at 10:42:51AM -0400, Steven Rostedt wrote:
+> On Fri, 22 Aug 2014 19:43:02 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > On Fri, Aug 22, 2014 at 10:32:57AM +0200, Petr Mládek wrote:
+> > > On Fri 2014-08-22 11:35:29, Fengguang Wu wrote:
+> > > > Hi Petr,
+> > > > 
+> > > > Sorry for picking up this old thread, but I noticed your attached
+> > > > ftrace test script and would like to ask for your permission to
+> > > > include it in
+> > > > 
+> > > >         https://git.kernel.org/cgit/linux/kernel/git/wfg/lkp-tests.git
+> > > > 
+> > > > which is GPLv2. If you kindly agree, I'll run it actively for testing
+> > > > the upstream linux kernels.
+> > > 
+> > > Sure. Feel free to use the test script under GPLv2 license.
+> > 
+> > Great, thank you very much!
+> > 
+> > Fengguang
+> 
+> Sorry for the very late reply, I've been on vacation and then had some
+> medical issues.
+> 
+> Note, I'm working with Masami to include lots of ftrace tests that will
+> supersede this script. The tests will be included in
+> tools/testing/selftests. Look for the subject "ftracetest".
 
-I will fix the calls to pin_dir_set to be made after the pin_dir calls.
+Yes I just see the patches from Masami. We'll add them to the LKP
+test suites. Thank you very much for letting me know!
+
+Regards,
+Fengguang
+
