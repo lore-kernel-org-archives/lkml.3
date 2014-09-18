@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaIRK6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 06:58:49 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33968 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756307AbaIRK6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 06:58:48 -0400
-Date: Thu, 18 Sep 2014 12:03:29 +0100
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: [Intel-gfx] External monitor issues with 3.17-rc4 and i915	module
-Message-ID: <20140918110329.GA4687@linux-g29b.site>
-References: <20140909215430.GA3710@linux-g29b.site>
- <20140916095419.GA8548@linux-g29b.site>
- <87vbomvdwi.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vbomvdwi.fsf@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756845AbaIRLEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 07:04:51 -0400
+Received: from [62.141.66.39] ([62.141.66.39]:47382 "EHLO beacon.altlinux.org"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755987AbaIRLEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 07:04:49 -0400
+X-Greylist: delayed 565 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Sep 2014 07:04:49 EDT
+From: Mikhail Efremov <sem@altlinux.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mikhail Efremov <sem@altlinux.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] vfs: Don't exchange filenames unconditionally.
+Date: Thu, 18 Sep 2014 14:55:00 +0400
+Message-Id: <1411037700-28966-1-git-send-email-sem@altlinux.org>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014 at 11:39:57 +0300, Jani Nikula wrote:
-> On Tue, 16 Sep 2014, "Carlos R. Mafra" <crmafra@gmail.com> wrote:
-> > Hi, the same happens with 3.17-rc5. The kernel is unfortunately
-> > unusable with my external monitor because after some plug, unplug
-> > and suspend to RAM cycles the behaviour is not good (sometimes
-> > it freezes, sometimes X needs a restart).
-> >
-> > Sorry to ask, but is there someone looking at this? I can provide
-> > more information if necessary.
-> 
-> Please file a new bug against DRM/Intel at [1] so we don't lose track of
-> it.
+Only exchange source and destination filenames
+if flags contain RENAME_EXCHANGE.
+In case if executable file was running and replaced by
+other file /proc/PID/exe should still show correct file name,
+not the old name of the file by which it was replaced.
 
-https://bugs.freedesktop.org/show_bug.cgi?id=84038
+The scenario when this bug manifests itself was like this:
+* ALT Linux uses rpm and start-stop-daemon;
+* during a package upgrade rpm creates a temporary file
+  for an executable to rename it upon successful unpacking;
+* start-stop-daemon is run subsequently and it obtains
+  the (nonexistant) temporary filename via /proc/PID/exe
+  thus failing to identify the running process.
 
-> Is this a regression? Which version worked? Can you do a bisect?
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
 
-On v3.16.1 the warning is different and I get fewer. On v3.12.18 it works,
-but the kernel has other issues there related to wireless so I don't use
-it that often.
+Fixes: da1ce0670c14 "vfs: add cross-rename"
+Signed-off-by: Mikhail Efremov <sem@altlinux.org>
+---
+ fs/dcache.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
 
-I could try to bisect the first appearance of any warning, but it would
-require some time (this is my work laptop).
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 7a5b514..3218570 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2372,7 +2372,8 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
+ }
+ EXPORT_SYMBOL(dentry_update_name_case);
+ 
+-static void switch_names(struct dentry *dentry, struct dentry *target)
++static void switch_names(struct dentry *dentry, struct dentry *target,
++			 bool exchange)
+ {
+ 	if (dname_external(target)) {
+ 		if (dname_external(dentry)) {
+@@ -2404,11 +2405,21 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
+ 			/*
+ 			 * Both are internal.
+ 			 */
+-			unsigned int i;
+-			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
+-			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
+-				swap(((long *) &dentry->d_iname)[i],
+-				     ((long *) &target->d_iname)[i]);
++			if (exchange) {
++				unsigned int i;
++
++				BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN,
++							 sizeof(long)));
++				for (i = 0; i < DNAME_INLINE_LEN / sizeof(long);
++									i++) {
++					swap(((long *) &dentry->d_iname)[i],
++					     ((long *) &target->d_iname)[i]);
++				}
++			} else {
++				memcpy(dentry->d_iname, target->d_name.name,
++						target->d_name.len + 1);
++				dentry->d_name.len = target->d_name.len;
++				return;
+ 			}
+ 		}
+ 	}
+@@ -2510,7 +2521,7 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
+ 	list_del(&target->d_u.d_child);
+ 
+ 	/* Switch the names.. */
+-	switch_names(dentry, target);
++	switch_names(dentry, target, exchange);
+ 	swap(dentry->d_name.hash, target->d_name.hash);
+ 
+ 	/* ... and switch the parents */
+@@ -2649,7 +2660,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
+ 
+ 	dparent = dentry->d_parent;
+ 
+-	switch_names(dentry, anon);
++	switch_names(dentry, anon, false);
+ 	swap(dentry->d_name.hash, anon->d_name.hash);
+ 
+ 	dentry->d_parent = dentry;
+-- 
+1.8.5.5
 
-> Please attach full dmesg with drm.debug=0xe module parameter set from
-> early boot to the problem.
-
-It is attached in the bug report at freedesktop now.
