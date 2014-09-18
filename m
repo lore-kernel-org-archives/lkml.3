@@ -1,125 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaIRDL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 23:11:27 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:48663 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757415AbaIRDLY (ORCPT
+	id S1757415AbaIRDUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 23:20:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54277 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756686AbaIRDUm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 23:11:24 -0400
-Message-ID: <541A4D4F.1090307@linux.vnet.ibm.com>
-Date: Thu, 18 Sep 2014 08:41:11 +0530
-From: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 17 Sep 2014 23:20:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,543,1406617200"; 
+   d="scan'208";a="574839506"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: "'David Miller'" <davem@davemloft.net>
+CC: "'peppe.cavallaro@st.com'" <peppe.cavallaro@st.com>,
+        "'rayagond@vayavyalabs.com'" <rayagond@vayavyalabs.com>,
+        "'vbridgers2013@gmail.com'" <vbridgers2013@gmail.com>,
+        "'srinivas.kandagatla@st.com'" <srinivas.kandagatla@st.com>,
+        "'wens@csie.org'" <wens@csie.org>,
+        "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+ [RESEND TO MAILING LIST]
+Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+ [RESEND TO MAILING LIST]
+Thread-Index: Ac/S7zD0SCYjIjn2SySE/xjw5hY7Xw==
+Date: Thu, 18 Sep 2014 03:18:18 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7EA173@PGSMSX102.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Srivatsa S. Bhat" <srivatsa@MIT.EDU>,
-        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
-References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
-In-Reply-To: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091803-0005-0000-0000-000000B68E76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Wednesday, September 17, 2014 12:56 PM
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+> Date: Wed, 17 Sep 2014 02:41:39 +0000
+> 
+> > Thanks for the pointer. I did a quickly checking on the class number 
+> > to see if I could use it for differentiation the ports number. 
+> > Whereas I found them both have the same class number as well. Below 
+> > shows the "lspci" dump to all the PCI devices on Quark X1000 Galileo 
+> > board (Ethernet controllers are
+> > 00:14.6 and 00:14.7). Very unfortunately we are unlikely to use the 
+> > class number as well as pci_device_id for the differentiation.
+>  ...
+> > 00:14.6 "Class 0200" "8086" "0937" "8086" "0937"
+> > 00:14.7 "Class 0200" "8086" "0937" "8086" "0937"
+> 
+> Are you kidding me?  It's a perfect way to identify this device, it 
+> properly uses PCI_CLASS_NETWORK_ETHERNET (0x0200) in both cases and 
+> this will not match any other function on this PCI device at all.
+> 
+> Please do as I suggested and use the PCI class for the differentiation 
+> and matching during probing.
 
-In this patch series we use winkle for offlined cores. I successfully
-tested the working of this with subcore functionality.
+Hi David,
 
-Test scenario was as follows:
-1. Set SMT mode to 1, Set subores-per-core to 1
-2. Offline a core, in this case cpu 32 (sending it to winkle)
-3. Set subcores-per-core to 4
-4. Online the core
-5. Start a guest (Topology 1 core 2 threads) on a subcore, in this case
-on cpu 36
+Thanks for your feedback so far. Appreciate it.
 
-This works without any glitch.
+Sorry to my poorly written description that may have caused some confusion. My sincere apology here. 
+Unfortunately, I don't really grasp your idea clearly based on your responses which I appreciate them a lot. 
+Sorry for the long description below but I hope to clearly pen down my thinking process so that you can follow my thinking incrementally without being confused.
 
-Thanks,
-Shreyas
+So, let's roll back a bit so that with my following description, you can help correct me if my understanding of using PCI function ID to differentiate PHY port that is associated with each Ethernet controller is wrong:
 
-On Monday 25 August 2014 11:31 PM, Shreyas B. Prabhu wrote:
-> Fast sleep is an idle state, where the core and the L1 and L2
-> caches are brought down to a threshold voltage. This also means that
-> the communication between L2 and L3 caches have to be fenced. However
-> the current P8 chips have a bug wherein this fencing between L2 and
-> L3 caches get delayed by a cpu cycle. This can delay L3 response to
-> the other cpus if they request for data during this time. Thus they
-> would fetch the same data from the memory which could lead to data
-> corruption if L3 cache is not flushed.
-> Patch 4 adds support to work around this.
-> 
-> 'Deep Winkle' is a deeper idle state where core and private L2 are powered
-> off. While it offers higher power savings, it is at the cost of losing
-> hypervisor register state and higher latency.
-> Patch 5-9 adds support for winkle and uses it for offline cpus.
-> 
-> Patch 1 - Moves parameters required discover idle states to a location 
-> common to both cpuidle driver and powernv core code
-> Patch 2 - Populates idle state details from device tree
-> Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
-> 
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Michael Ellerman <mpe@ellerman.id.au>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
-> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
-> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> 
-> Preeti U Murthy (2):
->   cpuidle/powernv: Populate cpuidle state details by querying the
->     device-tree
->   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
-> 
-> Shreyas B. Prabhu (6):
->   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
->     fast-sleep
->   powerpc/powernv: Add OPAL call to save and restore
->   powerpc: Adding macro for accessing Thread Switch Control Register
->   powerpc/powernv: Add winkle infrastructure
->   powerpc/powernv: Discover and enable winkle
->   powerpc/powernv: Enter deepest supported idle state in offline
-> 
-> Srivatsa S. Bhat (1):
->   powerpc/powernv: Enable Offline CPUs to enter deep idle states
-> 
->  arch/powerpc/include/asm/machdep.h             |   4 +
->  arch/powerpc/include/asm/opal.h                |  10 ++
->  arch/powerpc/include/asm/paca.h                |   3 +
->  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
->  arch/powerpc/include/asm/processor.h           |   6 +-
->  arch/powerpc/include/asm/reg.h                 |   1 +
->  arch/powerpc/kernel/asm-offsets.c              |   1 +
->  arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
->  arch/powerpc/kernel/idle.c                     |  30 ++++
->  arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
->  arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
->  arch/powerpc/platforms/powernv/powernv.h       |   8 +
->  arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
->  arch/powerpc/platforms/powernv/smp.c           |  13 +-
->  arch/powerpc/platforms/powernv/subcore.c       |  15 ++
->  drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
->  16 files changed, 439 insertions(+), 33 deletions(-)
-> 
+The high-level idea about the change that I made for STMMAC IP inside Quark is as follow:
 
+(1) Based on Quark-specific PCI ID declared inside stmmac_id_table[],  the probe() function is
+       called to continue setting-up STMMAC for Quark.
+
+@@ -228,11 +303,13 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
+ 
+ #define STMMAC_VENDOR_ID 0x700
+ #define STMMAC_DEVICE_ID 0x1108
++#define STMMAC_QUARK_X1000_ID 0x0937
+ 
+ static const struct pci_device_id stmmac_id_table[] = {
+ 	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID), PCI_ANY_ID,
+ 			PCI_ANY_ID, CHIP_STMICRO},
+ 	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_MAC), CHIP_STMICRO},
++	{PCI_VDEVICE(INTEL, STMMAC_QUARK_X1000_ID), CHIP_QUARK_X1000},
+ 	{}
+ };
+
+(2) Back-ground on STMMAC hardware configuration on Intel Galileo Gen 1 & Gen 2 platforms:
+Intel Quark SoC has 2 MAC controller as described by lspci output below:
+
+00:14.6 Class 0200: 8086:0937    ====> 1st MAC controller
+00:14.7 Class 0200: 8086:0937    ====> 2nd MAC controller
+
+These Galileo boards use the same Intel Quark SoC and there is only one PHY connect to the 1st MAC [00:14.6 Class 0200: 8086:0937] The 2nd MAC [00:14.7 Class 0200: 8086:0937] is NOT connected to any PHY at all.
+
+So, it appears to me that the only way that I can differentiate between 1st & 2nd MAC are based on PCI function ID, i.e. 14.6 & 14.7. Therefore, within the probe() function, for Intel Quark SoC only, the function performs next-level discovery of 1st or 2nd MAC controller through quark_run_time_config() function. 
+For other PCI ID (currently STMICRO_MAC) there is NO next-level discovery involved as rt_config is NULL.
+Changes shown below:
+
+static struct platform_data platform_info[] = { @@ -59,15 +65,76 @@ static struct platform_data platform_info[] = {
+ 		.phy_reset = NULL,
+ 		.phy_mask = 0,
+ 		.pbl = 32,
++		.fixed_burst = 0,
+ 		.burst_len = DMA_AXI_BLEN_256,
++		.rt_config = NULL,  ===================> no 2nd-level discovery for other PCI ID 
++	},
++	[CHIP_QUARK_X1000] = {
++		.phy_addr = 1,
++		.interface = PHY_INTERFACE_MODE_RMII,
++		.clk_csr = 2,
++		.has_gmac = 1,
++		.force_sf_dma_mode = 1,
++		.multicast_filter_bins = HASH_TABLE_SIZE,
++		.unicast_filter_entries = 1,
++		.phy_reset = NULL,
++		.phy_mask = 0,
++		.pbl = 16,
++		.fixed_burst = 1,
++		.burst_len = DMA_AXI_BLEN_256,
++		.rt_config = &quark_run_time_config,       ==========> Quark specific 2nd-level discovery
++	},
++};
+
+(3) Within quark_run_time_config(), due to the only way to differentiate 1st or 2nd MAC controller according to difference in function ID explained above, the following changes are made:
+
++static void quark_run_time_config(int chip_id, struct pci_dev *pdev) {
++	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
++	int i;
++	int func_num = PCI_FUNC(pdev->devfn);
++
++	if (!board_name)
++		return;
++
++	for (i = 0; i < ARRAY_SIZE(quark_x1000_phy_info); i++) {
++		if ((!strcmp(quark_x1000_phy_info[i].board_name, board_name)) &&
++		    quark_x1000_phy_info[i].pci_func_num == func_num)
++			platform_info[chip_id].phy_addr =
++				quark_x1000_phy_info[i].phy_address;
++	}
++}
+
+The reasons for the above proposed condition checks, i.e. "board name" & "pci function name" are below:
+  a) As described above, the only difference in both instance of STMMAC IP inside Intel Quark SoC is the function ID,
+       so I have proposed to use function ID to be the decision point here to differentiate 1st MAC from 2nd MAC. 
+  b) Allow future expansion of any other Intel Quark platforms with specific need to fix PHY address
+  c) A PHY address set as "-1"  is to mark that the PHY (associated with function ID) is not connected to MAC, which
+      is being used here for the 2 Galileo boards -> 2nd MAC port not connected with PHY.
+  
+
+Finally, based on the above description, it appears to me that using PCI function ID to decode seems viable for Intel Quark specific hardware configuration. 
+
+Appreciate your time and any feedback is very much appreciated.
+
+Thanks. 
+
+
+Regards,
+Wilson
