@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbaIRONA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:13:00 -0400
-Received: from mail-by2on0139.outbound.protection.outlook.com ([207.46.100.139]:62432
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753877AbaIROM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:12:59 -0400
-Date: Thu, 18 Sep 2014 22:12:49 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: dts: vf610-colibri: Add PWM support
-Message-ID: <20140918141248.GL4796@dragon>
-References: <cover.1410930820.git.bhuvanchandra.dv@toradex.com>
- <819bd3bc9541ca53f005b7cf95bc890f1a9215e5.1410930820.git.bhuvanchandra.dv@toradex.com>
+	id S1756226AbaIROQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:16:55 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42662 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755296AbaIROQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 10:16:53 -0400
+Date: Thu, 18 Sep 2014 10:16:39 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] cgroup/kmemleak: add kmemleak_free() for cgroup
+ deallocations.
+Message-ID: <20140918141639.GA17230@cmpxchg.org>
+References: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <819bd3bc9541ca53f005b7cf95bc890f1a9215e5.1410930820.git.bhuvanchandra.dv@toradex.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(189002)(199003)(97756001)(46406003)(76482002)(86362001)(110136001)(575784001)(85852003)(83072002)(80022003)(79102003)(74502003)(81542003)(77982003)(81342003)(46102003)(90102001)(33716001)(74662003)(6806004)(99396002)(85306004)(23726002)(102836001)(47776003)(54356999)(20776003)(76176999)(97736003)(64706001)(44976005)(26826002)(19580405001)(68736004)(19580395003)(83322001)(87936001)(50986999)(50466002)(57986006)(33656002)(95666004)(104016003)(21056001)(4396001)(105606002)(31966008)(83506001)(107046002)(84676001)(92566001)(106466001)(92726001)(414714003)(473944003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0635;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033857D0BD
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 01:46:29PM +0530, Bhuvanchandra DV wrote:
->  The Colibri standard defines four pins as PWM outputs, two of them (PWM
->  A and C) are routed to FTM instance 0 and the other two (PWM B and D)
->  are routed to FTM instance 1. Hence enable both FTM instances for the
->  Colibri module and mux the four pins accordingly.
+On Thu, Sep 18, 2014 at 09:38:05AM +0800, Wang Nan wrote:
+> Commit ff7ee93f4 introduces kmemleak_alloc() for alloc_page_cgroup(),
+> but corresponding kmemleak_free() is missing, which makes kmemleak be
+> wrongly disabled after memory offlining. Log is pasted at the end of
+> this commit message.
 > 
-> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-> ---
->  arch/arm/boot/dts/vf610-colibri-eval-v3.dts |    8 ++++++++
->  arch/arm/boot/dts/vf610-colibri.dtsi        |   25 +++++++++++++++++++++++++
->  2 files changed, 33 insertions(+)
+> This patch add kmemleak_free() into free_page_cgroup(). During page
+> offlining, this patch removes corresponding entries in kmemleak rbtree.
+> After that, the freed memory can be allocated again by other subsystems
+> without killing kmemleak.
 > 
-> diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-> index 7fb3066..ba98039 100644
-> --- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-> +++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-> @@ -44,3 +44,11 @@
->  &uart2 {
->  	status = "okay";
->  };
-> +
-> +&pwm0 {
-> +	status = "okay";
-> +};
-> +
-> +&pwm1 {
-> +	status = "okay";
-> +};
-
-Please sort the node alphabetically, so that we can locate them more
-easily.
-
-> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
-> index 0cd8343..9bd1415 100644
-> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
-> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
-> @@ -69,6 +69,16 @@
->  	status = "okay";
->  };
->  
-> +&pwm0 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_pwm0>;
-> +};
-> +
-> +&pwm1 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_pwm1>;
-> +};
-> +
-
-Ditto
-
->  &iomuxc {
->  	vf610-colibri {
->  		pinctrl_esdhc1: esdhc1grp {
-> @@ -119,5 +129,20 @@
->  				VF610_PAD_PTD3__UART2_CTS		0x21a1
->  			>;
->  		};
-> +
-> +		pinctrl_pwm0: pwm0grp {
-
-We also maintain the alphabetic order of pinctrl_* entries under iomuxc
-node.
-
-Shawn
-
-> +			fsl,pins = <
-> +				VF610_PAD_PTB0__FTM0_CH0		0x1182
-> +				VF610_PAD_PTB1__FTM0_CH1		0x1182
-> +			>;
-> +		};
-> +
-> +		pinctrl_pwm1: pwm1grp {
-> +			fsl,pins = <
-> +				VF610_PAD_PTB8__FTM1_CH0		0x1182
-> +				VF610_PAD_PTB9__FTM1_CH1		0x1182
-> +			>;
-> +		};
-> +
->  	};
->  };
-> -- 
-> 1.7.9.5
+> bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
+> [   45.537934] Offlined Pages 32768
+> [   46.617892] kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
+> [   46.617892] CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
+> [   46.617892] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [   46.617892]  ffff880016823d10 ffff880018bdfc38 ffffffff81725d2c ffff88001780e950
+> [   46.617892]  ffff880016969000 ffff880018bdfc88 ffffffff8117a9e6 ffff880018bdfc78
+> [   46.617892]  0000000000000096 ffff880017812800 ffffffff81c2eda0 ffff880016969000
+> [   46.617892] Call Trace:
+> [   46.617892]  [<ffffffff81725d2c>] dump_stack+0x46/0x58
+> [   46.617892]  [<ffffffff8117a9e6>] create_object+0x266/0x2c0
+> [   46.617892]  [<ffffffff8171d2f6>] kmemleak_alloc+0x26/0x50
+> [   46.617892]  [<ffffffff8116a3a3>] kmem_cache_alloc+0xd3/0x160
+> [   46.617892]  [<ffffffff81058e59>] __sigqueue_alloc+0x49/0xd0
+> [   46.617892]  [<ffffffff8105a41b>] __send_signal+0xcb/0x410
+> [   46.617892]  [<ffffffff8105a7a5>] send_signal+0x45/0x90
+> [   46.617892]  [<ffffffff8105a803>] __group_send_sig_info+0x13/0x20
+> [   46.617892]  [<ffffffff8105bd0b>] do_notify_parent+0x1bb/0x260
+> [   46.617892]  [<ffffffff81077e7a>] ? sched_move_task+0xaa/0x130
+> [   46.617892]  [<ffffffff81050917>] do_exit+0x767/0xa40
+> [   46.617892]  [<ffffffff81050c84>] do_group_exit+0x44/0xa0
+> [   46.617892]  [<ffffffff81050cf7>] SyS_exit_group+0x17/0x20
+> [   46.617892]  [<ffffffff8172cd12>] system_call_fastpath+0x16/0x1b
+> [   46.617892] kmemleak: Kernel memory leak detector disabled
+> [   46.617892] kmemleak: Object 0xffff880016900000 (size 524288):
+> [   46.617892] kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
+> [   46.617892] kmemleak:   min_count = 0
+> [   46.617892] kmemleak:   count = 0
+> [   46.617892] kmemleak:   flags = 0x1
+> [   46.617892] kmemleak:   checksum = 0
+> [   46.617892] kmemleak:   backtrace:
+> [   46.617892]      [<ffffffff81d0a7f0>] log_early+0x63/0x77
+> [   46.617892]      [<ffffffff8171d31b>] kmemleak_alloc+0x4b/0x50
+> [   46.617892]      [<ffffffff81720e4f>] init_section_page_cgroup+0x7f/0xf5
+> [   46.617892]      [<ffffffff81d0a6f0>] page_cgroup_init+0xc5/0xd0
+> [   46.617892]      [<ffffffff81ce4ed9>] start_kernel+0x333/0x408
+> [   46.617892]      [<ffffffff81ce45b2>] x86_64_start_reservations+0x2a/0x2c
+> [   46.617892]      [<ffffffff81ce46a9>] x86_64_start_kernel+0xf5/0xfc
+> [   46.617892]      [<ffffffffffffffff>] 0xffffffffffffffff
 > 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Should this go into -stable?  I'm inclined to say no, this has been
+busted since Steve's other kmemleak fix since 2011, and that change
+also didn't go into -stable.
