@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394AbaIRC0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 22:26:23 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:63530 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004AbaIRC0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 22:26:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v4 14/18] ARM64 / ACPI: Add GICv2 specific ACPI boot support
-Date: Thu, 18 Sep 2014 04:25:29 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Charles Garcia-Tobin" <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <54193AD8.3090301@linaro.org> <20140917151445.GF10392@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20140917151445.GF10392@e104818-lin.cambridge.arm.com>
+	id S1757288AbaIRCcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 22:32:47 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:53848 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753389AbaIRCcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 22:32:46 -0400
+Date: Thu, 18 Sep 2014 11:31:35 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Subject: Re: [PATCH v3 0/7] mtd: denali: A collection of trivial coding style fixes
+Cc: Jiri Kosina <trivial@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        linux-mtd@lists.infradead.org,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        Huang Shijie <shijie8@gmail.com>
+In-Reply-To: <20140917171308.GC1193@ld-irv-0074>
+References: <1410865465-17941-1-git-send-email-yamada.m@jp.panasonic.com> <20140917171308.GC1193@ld-irv-0074>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20140918113135.70D0.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201409180425.29391.arnd@arndb.de>
-X-Provags-ID: V02:K0:CHdJYXJvDFc01Gio2tasbX768mUyUA8iYsPZtj+h9D/
- REDG0jin1zq6fFbZc6vB3UkEldwjyop7YME5tSMrxO71vbNqLl
- FmN6voLGBP5ZAfg4IDOyCSgkVIzdM1vs9lbN3ZLIGoWkdUJrRO
- 1WO1Xpgzc9NogxKnhnQvchpO5P3o4IJpLUzdwyJHBJdtyesbDT
- 6inh0PmjLqn4d4UabwK04yWTfRIW6DXkSlcySUcfxSYQFmsfNk
- poAIkrMOlxCg8q8jPcWStgjOMP8+ANvJe4MLq4WXonZJ3F3gYx
- UIu19e/s8FS4pNr1jKhfODSoUOGiEZCqnEdP9mejbMClLoIQ8H
- NDBtUm0jnb3H7ABINsGE=
-X-UI-Out-Filterresults: notjunk:1;
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 September 2014, Catalin Marinas wrote:
-> > > I think it gets worse, this function is called from irqchip_init(). I
-> > > would have been slightly happier if it was called from the arm64
-> > > init_IRQ(). But putting an ARM specific GIC initialisation call in a
-> > > generic irqchip_init() just looks weird. Can we do anything better here?
+Hi Brian,
+
+
+
+On Wed, 17 Sep 2014 10:13:08 -0700
+Brian Norris <computersforpeace@gmail.com> wrote:
+
+> On Tue, Sep 16, 2014 at 08:04:18PM +0900, Masahiro Yamada wrote:
 > > 
-> > Yes this was discussed, please have a look at: 
-> > https://lkml.org/lkml/2014/9/1/555
-> > We had this in init_IRQ() in previous patch set, then we got feedback 
-> > irqchip_init() is more appropriate. We can move it back to init_IRQ() 
-> > and I am sold on this.
+> > 
+> > Masahiro Yamada (7):
+> >   mtd: denali: fix the format of comment blocks
+> >   mtd: denali: remove unnecessary variable initializations
+> >   mtd: denali: remove unnecessary casts
+> >   mtd: denali: change the type of iterators to int
+> >   mtd: denali: remove a set-but-unused variable
+> >   mtd: denali: remove unnecessary parentheses
+> >   mtd: denali: fix indents and other trivial things
 > 
-> The irqchip_init() is indeed the place to call other interrupt
-> controller initialisation functions but what I don't particularly like
-> is calling the GIC one directly while the OF ones are checked against a
-> match string. For GICv3 and later, do you plan to use the same
-> acpi_gic_init() functions? Otherwise we could do something like
-> ACPI_IRQCHIP_DECLARE() similar to the OF ones and a common function that
-> probes whatever is built into the kernel.
+> This series still doesn't apply to l2-mtd.git.
+> 
+> Brian
 
-I talked abouto this with Marc Z the other day, and I think it really
-comes down to how we expect this to develop in the future:
 
-If this is going to stay with the GICv2/v3/v4 line of interrupt controllers,
-I see the ACPI_IRQCHIP_DECLARE() as total overdesign, since we wouldn't
-ever need more than two entry points.
+I resent the last three patches as v3.
 
-Doing ACPI_IRQCHIP_DECLARE() makes it possible to deal with other
-incompatible irqchips as they come along, but also seems to invite
-those.
+v3 5/7 mtd: denali: remove a set-but-unused variable
+v3 6/7 mtd: denali: remove unnecessary parentheses
+v3 7/7 mtd: denali: fix indents and other trivial things
 
-Marc believes that it's inevitable that people will add lots of crazy
-interrupt controllers to systems using ACPI and at that point I agree
-it would be the right way to deal with it. However, I also think that
-as long as people expect to be able to add lots of crazy interrupt
-controller drivers, we are not ready to merge ACPI in the first place,
-because it must first be clear to everybody that we are not going to
-allow those nonstandard controller drivers to get merged.
 
-	Arnd
+I confirmed they are applicable onto
+commit 93e3c8adf6fcf2204ca334237b92c7f8cdafce6f
+of l2-mtd.git
+
+
+
+You said as follow:
+
+On Mon, 15 Sep 2014 22:07:32 -0700
+Brian Norris <computersforpeace@gmail.com> wrote:
+
+> > Is there a chance for me to resend 5/7 to include this fix?
+> > Or is it too late?
+> 
+> Just send a new patch, please.
+
+
+That's why I sent a new patch (v3 5/7) to replace
+commit 55ab9ec99bbfb4450dfa9bc0fd9e2c5052f4c3f7
+
+
+Did I do wrong?
+
+
+
+Best Regards
+Masahiro Yamada
+
