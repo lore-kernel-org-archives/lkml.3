@@ -1,110 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018AbaIRLbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 07:31:37 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33157 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756307AbaIRLbg (ORCPT
+	id S1757111AbaIRLeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 07:34:18 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:49016 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756906AbaIRLeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 07:31:36 -0400
-Date: Thu, 18 Sep 2014 17:01:25 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sound: pci: ctxfi: pr_* replaced with dev_*
-Message-ID: <20140918113125.GA4625@sudip-PC>
-References: <1410790181-16457-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5hvbop3qjn.wl-tiwai@suse.de>
- <20140915152554.GA26218@sudip-PC>
- <s5hwq94agtr.wl-tiwai@suse.de>
- <20140918092126.GA31651@sudip-PC>
- <s5hbnqd8c0v.wl-tiwai@suse.de>
+	Thu, 18 Sep 2014 07:34:15 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 18 Sep 2014 13:31:50 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
+        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
+        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] mfd: add support for Diolan DLN-2 devices
+Message-ID: <20140918113150.GB2337@localhost>
+References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
+ <1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hbnqd8c0v.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410290686-6680-2-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 12:21:20PM +0200, Takashi Iwai wrote:
-> At Thu, 18 Sep 2014 14:51:26 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > On Mon, Sep 15, 2014 at 08:17:52PM +0200, Takashi Iwai wrote:
-> > > At Mon, 15 Sep 2014 20:55:54 +0530,
-> > > Sudip Mukherjee wrote:
-> > > > 
-> > > > On Mon, Sep 15, 2014 at 04:29:48PM +0200, Takashi Iwai wrote:
-> > > > > At Mon, 15 Sep 2014 19:39:41 +0530,
-> > > > > Sudip Mukherjee wrote:
-> > <snip>
-> > > > > > 
-> > > > > > diff --git a/sound/pci/ctxfi/ctresource.c b/sound/pci/ctxfi/ctresource.c
-> > > > > > index e49d2be..80beecb 100644
-> > > > > > --- a/sound/pci/ctxfi/ctresource.c
-> > > > > > +++ b/sound/pci/ctxfi/ctresource.c
-> > > > > (snip)
-> > > > > > @@ -282,8 +287,9 @@ int rsc_mgr_uninit(struct rsc_mgr *mgr)
-> > > > > >  		case SUM:
-> > > > > >  			break;
-> > > > > >  		default:
-> > > > > > -			pr_err("ctxfi: Invalid resource type value %d!\n",
-> > > > > > -				mgr->type);
-> > > > > > +			dev_err(&(((struct hw *)mgr->hw)->pci->dev),
-> > > > > > +				"ctxfi: Invalid resource type value %d!\n",
-> > > > > > +				 mgr->type);
-> > > > > 
-> > > > > Did you really conclude that this is the best way?
-> > > > > Also, is it good to mix up the usages of both card->dev and &pci->dev?
-> > > > > Think again.
-> > > > > 
-> > > > 
-> > > > i have a doubt regarding this :- 
-> > > > in the snd_card_new()  card->dev is being assigned with &pci->dev , 
-> > > > then are not they the same ?
-> > > 
-> > > Yes, but how can it be guaranteed in future?  We may avoid the
-> > > problems in future by keeping the consistency at this moment.  It's
-> > > one of the good points of keeping code consistent, in addition to:
-> > > increased readability / understandability and making the bug easier to
-> > > be spotted.
-> > 
-> > understood the point.
-> > > 
-> > > > i was trying to get some way of finding out the reference of card->dev from the resource manager ,
-> > > > but ...  :( 
-> > > > i will try again and if i cant find any way i will ask for some hint from you.
-> > > 
-> > > Good!  A hint is that there is no 100% perfect way to achieve this.
-> > > It's always compromise, and you'll have to choose which one is better
-> > > than others.  For that, you'll have to evaluate multiple
-> > > implementations, and it's a really good exercise for coding.
-> > > 
-> > 
-> > i can find the rsc_mgr from the snd_card or ct_atc 
-> > but if i want to find the reference to the device from the managers , then 
-> > either i can go with
-> > 1) &(((struct hw *)mgr->hw)->pci->dev) 
-> > or
-> > 2) use pci_get_drvdata with ((struct hw *)mgr->hw)->pci
-> > or
-> > 3) using container_of with &(((struct hw *)mgr->hw)->pci->dev) to find the pointer to snd_card via card_dev , but it becomes too complicated  :( 
-> > 
-> > we can get to all the managers (rsc_mgr, amixer_mgr, src_mgr ...) using atc->rsc_mgrs[] , then there should be some simple way to go
-> > the opposite way (reaching atc from the managers)  . container_of will not work .. :( 
-> > or am i missing something?? 
-> 
-> Adding a new field pointing to card to each struct.
+On Tue, Sep 09, 2014 at 10:24:44PM +0300, Octavian Purdila wrote:
 
-i seriously did not think of that , i was under the impression that a newbie is not supposed to change or add to the designs.
-anyways, i feel that i understand the code a little better than what i understood at the the time of my first patch.
-and definitely your "writing-an-alsa-driver" has helped a lot .
+> +static int alloc_rx_slot(struct dln2_mod_rx_slots *rxs)
+> +{
+> +	int ret;
+> +	int slot;
+> +
+> +	/* No need to timeout here, the wait is bounded by the timeout
+> +	 * in _dln2_transfer
+> +	 */
+> +	ret = wait_event_interruptible(rxs->wq, find_free_slot(rxs, &slot));
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return slot;
+> +}
+> +
+> +static void free_rx_slot(struct dln2_dev *dln2, struct dln2_mod_rx_slots *rxs,
+> +			 int slot)
+> +{
+> +	struct urb *urb = NULL;
+> +	unsigned long flags;
+> +	struct dln2_rx_context *rxc;
+> +	struct device *dev = &dln2->interface->dev;
+> +	int ret;
+> +
+> +	spin_lock_irqsave(&rxs->lock, flags);
+> +
+> +	clear_bit(slot, &rxs->bmap);
+> +
+> +	rxc = &rxs->slots[slot];
+> +	rxc->connected = false;
+> +	urb = rxc->urb;
+> +	rxc->urb = NULL;
+> +	reinit_completion(&rxc->done);
+> +
+> +	spin_unlock_irqrestore(&rxs->lock, flags);
+> +
+> +	if (urb)  {
+> +		ret = usb_submit_urb(urb, GFP_KERNEL);
+> +		if (ret < 0)
+> +			dev_err(dev, "failed to re-submit RX URB: %d\n", ret);
+> +	}
+> +
+> +	wake_up_interruptible(&rxs->wq);
+> +}
 
-thanks
-sudip
-> 
-> 
-> Takashi
+> +static void dln2_rx_transfer(struct dln2_dev *dln2, struct urb *urb,
+> +			     u16 handle, u16 rx_slot)
+> +{
+> +	struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
+> +	struct dln2_rx_context *rxc;
+> +	struct device *dev = &dln2->interface->dev;
+> +	int err;
+> +
+> +	spin_lock(&rxs->lock);
+> +	rxc = &rxs->slots[rx_slot];
+> +	if (rxc->connected) {
+> +		rxc->urb = urb;
+> +		complete(&rxc->done);
+> +	} else {
+> +		dev_warn(dev, "dropping response %d/%d", handle, rx_slot);
+> +		err = usb_submit_urb(urb, GFP_ATOMIC);
+> +		if (err < 0)
+> +			dev_err(dev, "failed to re-submit RX URB: %d\n", err);
+> +	}
+> +	spin_unlock(&rxs->lock);
+> +}
+
+> +static void dln2_rx(struct urb *urb)
+> +{
+> +	int err;
+> +	struct dln2_dev *dln2 = urb->context;
+> +	struct dln2_header *hdr = urb->transfer_buffer;
+> +	struct device *dev = &dln2->interface->dev;
+> +	u16 id, echo, handle, size;
+> +	u8 *data;
+> +	int len;
+> +
+> +	switch (urb->status) {
+> +	case 0:
+> +		/* success */
+> +		break;
+> +	case -ECONNRESET:
+> +	case -ENOENT:
+> +	case -ESHUTDOWN:
+> +	case -EPIPE:
+> +		/* this urb is terminated, clean up */
+> +		dev_dbg(dev, "urb shutting down with status %d\n", urb->status);
+> +		return;
+> +	default:
+> +		dev_dbg(dev, "nonzero urb status received %d\n", urb->status);
+> +		goto out;
+> +	}
+> +
+> +	if (urb->actual_length < sizeof(struct dln2_header)) {
+> +		dev_err(dev, "short response: %d\n", urb->actual_length);
+> +		goto out;
+> +	}
+> +
+> +	handle = le16_to_cpu(hdr->handle);
+> +	id = le16_to_cpu(hdr->id);
+> +	echo = le16_to_cpu(hdr->echo);
+> +	size = le16_to_cpu(hdr->size);
+> +
+> +	if (size != urb->actual_length) {
+> +		dev_err(dev, "size mismatch: handle %x cmd %x echo %x size %d actual %d\n",
+> +			handle, id, echo, size, urb->actual_length);
+> +		goto out;
+> +	}
+> +
+> +	if (handle >= DLN2_MAX_MODULES) {
+> +		dev_warn(dev, "RX: invalid handle %d\n", handle);
+> +		goto out;
+> +	}
+> +
+> +	data = urb->transfer_buffer + sizeof(struct dln2_header);
+> +	len = urb->actual_length - sizeof(struct dln2_header);
+> +
+> +	if (handle == DLN2_HANDLE_EVENT) {
+> +		dln2_run_rx_callbacks(dln2, id, echo, data, len);
+> +		err = usb_submit_urb(urb, GFP_ATOMIC);
+> +		if (err < 0)
+> +			goto out_submit_failed;
+> +	} else {
+> +		dln2_rx_transfer(dln2, urb, handle, echo);
+> +	}
+> +
+> +	return;
+> +
+> +out:
+> +	err = usb_submit_urb(urb, GFP_ATOMIC);
+> +out_submit_failed:
+> +	if (err < 0)
+> +		dev_err(dev, "failed to re-submit RX URB: %d\n", err);
+> +}
+
+> +static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
+> +			  const void *obuf, unsigned obuf_len,
+> +			  void *ibuf, unsigned *ibuf_len)
+> +{
+> +	int ret = 0;
+> +	u16 result;
+> +	int rx_slot;
+> +	struct dln2_response *rsp;
+> +	struct dln2_rx_context *rxc;
+> +	struct device *dev = &dln2->interface->dev;
+> +	const int timeout = DLN2_USB_TIMEOUT * HZ / 1000;
+> +	struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
+> +
+> +	rx_slot = alloc_rx_slot(rxs);
+> +	if (rx_slot < 0)
+> +		return rx_slot;
+> +
+> +	ret = dln2_send_wait(dln2, handle, cmd, rx_slot, obuf, obuf_len);
+> +	if (ret < 0) {
+> +		free_rx_slot(dln2, rxs, rx_slot);
+> +		dev_err(dev, "USB write failed: %d", ret);
+> +		return ret;
+> +	}
+> +
+> +	rxc = &rxs->slots[rx_slot];
+> +
+> +	ret = wait_for_completion_interruptible_timeout(&rxc->done, timeout);
+> +	if (ret <= 0) {
+> +		if (!ret)
+> +			ret = -ETIMEDOUT;
+> +		goto out_free_rx_slot;
+> +	}
+> +
+> +	/* if we got here we know that the response header has been checked */
+> +	rsp = rxc->urb->transfer_buffer;
+> +	if (rsp->hdr.size < sizeof(*rsp)) {
+> +		ret = -EPROTO;
+> +		goto out_free_rx_slot;
+> +	}
+> +
+> +	result = le16_to_cpu(rsp->result);
+> +	if (result) {
+> +		dev_dbg(dev, "%d received response with error %d\n",
+> +			handle, result);
+> +		ret = -EREMOTEIO;
+> +		goto out_free_rx_slot;
+> +	}
+> +
+> +	if (!ibuf) {
+> +		ret = 0;
+> +		goto out_free_rx_slot;
+> +	}
+> +
+> +	if (*ibuf_len > rsp->hdr.size - sizeof(*rsp))
+> +		*ibuf_len = rsp->hdr.size - sizeof(*rsp);
+> +
+> +	memcpy(ibuf, rsp + 1, *ibuf_len);
+> +
+> +out_free_rx_slot:
+> +	free_rx_slot(dln2, rxs, rx_slot);
+> +
+> +	return ret;
+> +}
+> +
+> +int dln2_transfer(struct platform_device *pdev, u16 cmd,
+> +		  const void *obuf, unsigned obuf_len,
+> +		  void *ibuf, unsigned *ibuf_len)
+> +{
+> +	struct dln2_platform_data *dln2_pdata;
+> +	struct dln2_dev *dln2;
+> +	u16 h;
+> +
+> +	/* USB device has been disconnected, bail out */
+> +	if (!pdev)
+> +		return -ENODEV;
+
+This isn't sufficient to prevent I/O after disconnect, or worse.
+
+You set pdev to NULL in the platform device's remove callbacks, but you
+have no synchronisation.
+
+To take one example: in _dln2_transfer above you wait for completion,
+but you never wake the process up in case the urb is killed due to a
+disconnect. Hence you get a timeout much later, call free_rx_slot which
+tries to send of another urb using potentially already freed data.
+
+> +
+> +	dln2 = dev_get_drvdata(pdev->dev.parent);
+> +	dln2_pdata = dev_get_platdata(&pdev->dev);
+> +	h = dln2_pdata->handle;
+> +
+> +	return _dln2_transfer(dln2, h, cmd, obuf, obuf_len, ibuf, ibuf_len);
+> +}
+> +EXPORT_SYMBOL(dln2_transfer);
+
+> +static void dln2_free_rx_urbs(struct dln2_dev *dln2)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < DLN2_MAX_URBS; i++) {
+> +		usb_kill_urb(dln2->rx_urb[i]);
+> +		usb_free_urb(dln2->rx_urb[i]);
+> +		kfree(dln2->rx_buf[i]);
+> +	}
+> +}
+> +
+> +static void dln2_free(struct dln2_dev *dln2)
+> +{
+> +	dln2_free_rx_urbs(dln2);
+> +	usb_put_dev(dln2->usb_dev);
+> +	kfree(dln2);
+> +}
+
+> +static void dln2_disconnect(struct usb_interface *interface)
+> +{
+> +	struct dln2_dev *dln2 = usb_get_intfdata(interface);
+> +
+> +	mfd_remove_devices(&interface->dev);
+
+You need to make sure all I/O has stopped here.
+
+> +	dln2_free(dln2);
+> +}
+
+Johan
