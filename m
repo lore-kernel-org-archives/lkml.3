@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585AbaIRVrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:47:41 -0400
-Received: from mail-oi0-f74.google.com ([209.85.218.74]:54001 "EHLO
-	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083AbaIRVrh (ORCPT
+	id S932626AbaIRVw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:52:27 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:33639 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555AbaIRVrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:47:37 -0400
+	Thu, 18 Sep 2014 17:47:40 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
         Jason Cooper <jason@lakedaemon.net>
@@ -17,9 +17,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 01/24] MIPS: Always use IRQ domains for CPU IRQs
-Date: Thu, 18 Sep 2014 14:47:07 -0700
-Message-Id: <1411076851-28242-2-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V2 07/24] MIPS: smp-cps: Enable all hardware interrupts on secondary CPUs
+Date: Thu, 18 Sep 2014 14:47:13 -0700
+Message-Id: <1411076851-28242-8-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
@@ -27,7 +27,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use an IRQ domain for the 8 CPU IRQs in both the DT and non-DT cases.
+Currently interrupt vectors 2 and 5 are left disabled on secondary CPUs.
+Since systems using CPS must also have a GIC, which is responsible for
+routing all external interrupts and can map them to any hardware interrupt
+vector, enable the remaining vectors.  The two software interrupt vectors
+are left disabled since they are not used with CPS.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
@@ -35,83 +39,24 @@ Tested-by: Qais Yousef <qais.yousef@imgtec.com>
 ---
 No changes from v1.
 ---
- arch/mips/Kconfig          |  1 +
- arch/mips/kernel/irq_cpu.c | 36 +++++++++++-------------------------
- 2 files changed, 12 insertions(+), 25 deletions(-)
+ arch/mips/kernel/smp-cps.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 900c7e5..9fc335c 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1051,6 +1051,7 @@ config MIPS_HUGE_TLB_SUPPORT
+diff --git a/arch/mips/kernel/smp-cps.c b/arch/mips/kernel/smp-cps.c
+index e6e16a1..cd20aca 100644
+--- a/arch/mips/kernel/smp-cps.c
++++ b/arch/mips/kernel/smp-cps.c
+@@ -273,8 +273,8 @@ static void cps_init_secondary(void)
+ 	if (cpu_has_mipsmt)
+ 		dmt();
  
- config IRQ_CPU
- 	bool
-+	select IRQ_DOMAIN
- 
- config IRQ_CPU_RM7K
- 	bool
-diff --git a/arch/mips/kernel/irq_cpu.c b/arch/mips/kernel/irq_cpu.c
-index e498f2b..b097f7d 100644
---- a/arch/mips/kernel/irq_cpu.c
-+++ b/arch/mips/kernel/irq_cpu.c
-@@ -94,28 +94,6 @@ static struct irq_chip mips_mt_cpu_irq_controller = {
- 	.irq_eoi	= unmask_mips_irq,
- };
- 
--void __init mips_cpu_irq_init(void)
--{
--	int irq_base = MIPS_CPU_IRQ_BASE;
--	int i;
--
--	/* Mask interrupts. */
--	clear_c0_status(ST0_IM);
--	clear_c0_cause(CAUSEF_IP);
--
--	/* Software interrupts are used for MT/CMT IPI */
--	for (i = irq_base; i < irq_base + 2; i++)
--		irq_set_chip_and_handler(i, cpu_has_mipsmt ?
--					 &mips_mt_cpu_irq_controller :
--					 &mips_cpu_irq_controller,
--					 handle_percpu_irq);
--
--	for (i = irq_base + 2; i < irq_base + 8; i++)
--		irq_set_chip_and_handler(i, &mips_cpu_irq_controller,
--					 handle_percpu_irq);
--}
--
--#ifdef CONFIG_IRQ_DOMAIN
- static int mips_cpu_intc_map(struct irq_domain *d, unsigned int irq,
- 			     irq_hw_number_t hw)
- {
-@@ -138,8 +116,7 @@ static const struct irq_domain_ops mips_cpu_intc_irq_domain_ops = {
- 	.xlate = irq_domain_xlate_onecell,
- };
- 
--int __init mips_cpu_intc_init(struct device_node *of_node,
--			      struct device_node *parent)
-+static void __init __mips_cpu_irq_init(struct device_node *of_node)
- {
- 	struct irq_domain *domain;
- 
-@@ -151,7 +128,16 @@ int __init mips_cpu_intc_init(struct device_node *of_node,
- 				       &mips_cpu_intc_irq_domain_ops, NULL);
- 	if (!domain)
- 		panic("Failed to add irqdomain for MIPS CPU");
-+}
-+
-+void __init mips_cpu_irq_init(void)
-+{
-+	__mips_cpu_irq_init(NULL);
-+}
- 
-+int __init mips_cpu_intc_init(struct device_node *of_node,
-+			      struct device_node *parent)
-+{
-+	__mips_cpu_irq_init(of_node);
- 	return 0;
+-	change_c0_status(ST0_IM, STATUSF_IP3 | STATUSF_IP4 |
+-				 STATUSF_IP6 | STATUSF_IP7);
++	change_c0_status(ST0_IM, STATUSF_IP2 | STATUSF_IP3 | STATUSF_IP4 |
++				 STATUSF_IP5 | STATUSF_IP6 | STATUSF_IP7);
  }
--#endif /* CONFIG_IRQ_DOMAIN */
+ 
+ static void cps_smp_finish(void)
 -- 
 2.1.0.rc2.206.gedb03e5
 
