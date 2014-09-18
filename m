@@ -1,377 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223AbaIROqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:46:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47425 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755653AbaIROqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:46:13 -0400
-Date: Thu, 18 Sep 2014 09:46:11 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: [GIT PULL v2] USB changes for v3.18 merge window
-Message-ID: <20140918144611.GC4537@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410976602-1536-1-git-send-email-balbi@ti.com>
- <20140918144113.GB4537@saruman.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TiqCXmo5T1hvSQQg"
-Content-Disposition: inline
-In-Reply-To: <20140918144113.GB4537@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756636AbaIROtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:49:50 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:60463 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888AbaIROtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 10:49:46 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>
+Subject: [PATCH 2/2] drbd: use RB_DECLARE_CALLBACKS() to define augment callbacks
+Date: Thu, 18 Sep 2014 16:49:42 +0200
+Message-Id: <1411051782-23375-3-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411051782-23375-1-git-send-email-philipp.reisner@linbit.com>
+References: <1411051782-23375-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TiqCXmo5T1hvSQQg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Hi Greg,
+The original code are the same as RB_DECLARE_CALLBACKS().
 
-Here you go. This one should be good to go. Sorry for the last minute
-change but it was better to revert those patches than having a broken
-v3.17 final. Let me know if you want any changes.
+CC: Michel Lespinasse <walken@google.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+---
+ drivers/block/drbd/drbd_interval.c | 36 ++----------------------------------
+ 1 file changed, 2 insertions(+), 34 deletions(-)
 
-cheers
+diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
+index 04a14e0..51b25ad 100644
+--- a/drivers/block/drbd/drbd_interval.c
++++ b/drivers/block/drbd/drbd_interval.c
+@@ -37,40 +37,8 @@ compute_subtree_last(struct drbd_interval *node)
+ 	return max;
+ }
+ 
+-static void augment_propagate(struct rb_node *rb, struct rb_node *stop)
+-{
+-	while (rb != stop) {
+-		struct drbd_interval *node = rb_entry(rb, struct drbd_interval, rb);
+-		sector_t subtree_last = compute_subtree_last(node);
+-		if (node->end == subtree_last)
+-			break;
+-		node->end = subtree_last;
+-		rb = rb_parent(&node->rb);
+-	}
+-}
+-
+-static void augment_copy(struct rb_node *rb_old, struct rb_node *rb_new)
+-{
+-	struct drbd_interval *old = rb_entry(rb_old, struct drbd_interval, rb);
+-	struct drbd_interval *new = rb_entry(rb_new, struct drbd_interval, rb);
+-
+-	new->end = old->end;
+-}
+-
+-static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
+-{
+-	struct drbd_interval *old = rb_entry(rb_old, struct drbd_interval, rb);
+-	struct drbd_interval *new = rb_entry(rb_new, struct drbd_interval, rb);
+-
+-	new->end = old->end;
+-	old->end = compute_subtree_last(old);
+-}
+-
+-static const struct rb_augment_callbacks augment_callbacks = {
+-	augment_propagate,
+-	augment_copy,
+-	augment_rotate,
+-};
++RB_DECLARE_CALLBACKS(static, augment_callbacks, struct drbd_interval, rb,
++		     sector_t, end, compute_subtree_last);
+ 
+ /**
+  * drbd_insert_interval  -  insert a new interval into a tree
+-- 
+1.9.1
 
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
-
-  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/usb-for-=
-v3.18
-
-for you to fetch changes up to 72a65a0d19c16de36e970ca6981732b5e8f7f4c4:
-
-  Revert "usb: gadget: composite: dequeue cdev->req before free its buffer"=
- (2014-09-18 09:42:49 -0500)
-
-----------------------------------------------------------------
-usb: changes for v3.18 merge window
-
-Quite big pull request this time. Audio and UVC gadgets
-can now be used with our configfs-based binding. We have
-three PHY drivers being removed because a new one has been
-added using new PHY framework.
-
-Gadget framework got a new ->reset callback preparing for
-some other changes to come on next merge window.
-
-A few new drivers came in as well; among those we have a
-new UDC driver from Xilinx and two new glue layers for
-DWC3 (ST and Qualcomm).
-
-DWC3 also learned about tracepoints which will help debugging
-quite a bit.
-
-Other than that, a big series of non-critical fixes and
-cleanups.
-
-All patches have been on linux-next for quite a bit of time
-and I boot tested these changes on platforms I have access
-to and work with mainline.
-
-Signed-of-by: Felipe Balbi <balbi@ti.com>
-
-----------------------------------------------------------------
-Amit Virdi (3):
-      usb: gadget: zero: Add support for interrupt EP
-      usbtest: Add interrupt EP testcases
-      usb: gadget: zero: Fix warning generated by kbuild
-
-Andreas Larsson (2):
-      usb: gadget: udc_core: Use right kobj when calling sysfs_notify
-      usb: gadget: gr_udc: Add bounce buffer to handle odd sized OUT reques=
-ts
-
-Andrzej Pietrasiewicz (23):
-      usb: gadget: audio: Use container_of to free audio_dev
-      usb: gadget: f_uac2: convert to new function interface with backward =
-compatibility
-      usb: gadget: audio: convert to new interface of f_uac2
-      usb: gadget: f_uac2: remove compatibility layer
-      usb: gadget: f_uac2: use usb_gstrings_attach
-      usb: gadget: f_uac2: use defined constants as defaults
-      usb: gadget: f_uac2: add configfs support
-      usb: gadget: f_uac1: add function strings
-      usb: gadget: f_uac1: prepare for separate compilation
-      usb: gadget: f_uac1: convert to new function interface with backward =
-compatibility
-      usb: gadget: audio: convert to new interface of f_uac1
-      usb: gadget: f_uac1: remove compatibility layer
-      usb: gadget: f_uac1: use usb_gstrings_attach
-      usb: gadget: f_uac1: use defined constants as defaults
-      usb: gadget: f_uac1: add configfs support
-      usb: gadget: f_uvc: fix potential memory leak
-      usb: gadget: uvc: move module parameters from f_uvc
-      usb: gadget: uvc: rename functions to avoid conflicts with host uvc
-      usb: gadget: uvc: separately compile some components of f_uvc
-      usb: gadget: f_uvc: convert f_uvc to new function interface
-      usb: gadget: webcam: convert webcam to new interface of f_uvc
-      usb: gadget: f_uvc: remove compatibility layer
-      usb: gadget: f_uvc: use usb_gstrings_attach
-
-Bartlomiej Zolnierkiewicz (3):
-      usb: phy: samsung: remove old USB 2.0 PHY driver
-      usb: phy: samsung: remove old USB 3.0 PHY driver
-      usb: phy: samsung: remove old common USB PHY code
-
-Dan Carpenter (1):
-      usb: gadget: f_fs: signedness bug in __ffs_func_bind_do_descs()
-
-Daniel Mack (6):
-      usb: gadget: f_uac2: restructure some code in afunc_set_alt()
-      usb: gadget: f_uac2: add short-hand for 'dev'
-      usb: gadget: f_uac2: introduce agdev_to_uac2_opts
-      usb: gadget: f_uac2: handle partial dma area wrap
-      usb: gadget: f_uac2: send reasonably sized packets
-      usb: musb: cppi41: tweak hrtimer values
-
-Felipe Balbi (9):
-      usb: phy: msm: mark msm_otg_mode_fops static
-      usb: dwc3: move all string helper functions to debug.h
-      usb: dwc3: debug: add dwc3_gadget_event_type_string
-      usb: dwc3: gadget: cmd argument should always be unsigned
-      usb: dwc3: add tracepoints to aid debugging
-      Merge tag 'v3.17-rc4' into next
-      Merge tag 'v3.17-rc5' into next
-      usb: musb: dsps: kill OTG timer on suspend
-      Revert "usb: gadget: composite: dequeue cdev->req before free its buf=
-fer"
-
-Fengguang Wu (1):
-      usb: gadget: uvc: uvc_alloc() can be static
-
-Geert Uytterhoeven (1):
-      usb: gadget: USB_RENESAS_USBHS_UDC should depend on HAS_DMA
-
-Himangi Saraogi (1):
-      usb: gadget: udc: use USB API functions rather than constants
-
-Ivan T. Ivanov (2):
-      usb: dwc3: qcom: Add device tree binding
-      usb: dwc3: Add Qualcomm DWC3 glue layer driver
-
-Jingoo Han (2):
-      usb: dwc3: remove unnecessary OOM messages
-      usb: phy: samsung: Remove unnecessary lines of register bit definitio=
-ns
-
-Laurent Pinchart (4):
-      usb: gadget: f_uvc: Store EP0 control request state during setup stage
-      usb: gadget: f_uvc: Move to video_ioctl2
-      usb: gadget: uvc: Fix endianness mismatches
-      usb: gadget: uvc: Simplify uvcg_video_pump by using local variable
-
-Li Jun (1):
-      usb: gadget: composite: dequeue cdev->req before free its buffer
-
-Michael Grzeschik (2):
-      usb: gadget: uvc: Change KERN_INFO to KERN_DEBUG on request shutdown
-      usb: gadget: uvc: remove DRIVER_VERSION{,_NUMBER}
-
-Michal Nazarewicz (5):
-      usb: gadget: f_fs: add usb_functionfs_descs_head_v2 structure
-      tools: ffs-test: convert to new descriptor format
-      tools: ffs-test: add compatibility code for old kernels
-      usb: gadget: f_mass_storage: simplify start_transfer slightly
-      usb: f_fs: replace BUG in dead-code with less serious WARN_ON
-
-Paul Zimmerman (1):
-      usb: gadget: document a usb_ep_dequeue() requirement
-
-Peter Chen (6):
-      usb: gadget: add reset API at usb_gadget_driver
-      usb: gadget: composite: add reset API at usb_gadget_driver
-      usb: gadget: configfs: add reset API at usb_gadget_driver
-      usb: gadget: gadgetfs: add reset API at usb_gadget_driver
-      usb: gadget: dbgp: add reset API at usb_gadget_driver
-      usb: gadget: udc-core: add utility for bus reset
-
-Peter Griffin (3):
-      usb: dwc3: add ST dwc3 glue layer to manage dwc3 HC
-      usb: dwc3: dwc3-st: Add st-dwc3 devicetree bindings documentation
-      MAINTAINERS: Add dwc3-st.c file to ARCH/STI architecture
-
-Philipp Zabel (1):
-      usb: gadget: uvc: Add support for DMABUF importing
-
-Richard Leitner (2):
-      usb: gadget: serial: replace {V,}DBG macro with dev_{v,}dbg
-      usb: gadget: serial: remove PREFIX macro
-
-Robert Baldyga (2):
-      usb: gadget: f_fs: add ioctl returning ep descriptor
-      usb: gadget: f_fs: virtual endpoint address mapping
-
-Srinivas Kandagatla (1):
-      usb: phy: msm: Make phy_reset clk and reset line optional.
-
-Stefan Agner (1):
-      usb: phy: mxs: Add VF610 USB PHY support
-
-Subbaraya Sundeep Bhatta (2):
-      usb: doc: udc-xilinx: Add devicetree bindings
-      usb: gadget: Add xilinx usb2 device support
-
-Tony Lindgren (1):
-      usb: phy: twl6030-usb: Remove unused irq_enabled
-
-Wei Yongjun (1):
-      usb: gadget: Remove redundant dev_err call in r8a66597_sudmac_ioremap=
-()
-
-Yegor Yefremov (1):
-      usb: gadget: use $(srctree) instead of $(PWD) for includes
-
-Yoshihiro Shimoda (2):
-      usb: renesas_usbhs: Add device tree bindings documentation
-      usb: renesas_usbhs: Add device tree support for R-Car H2 and M2
-
- Documentation/ABI/testing/configfs-usb-gadget-uac1 |   12 +
- Documentation/ABI/testing/configfs-usb-gadget-uac2 |   12 +
- .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 +
- Documentation/devicetree/bindings/usb/dwc3-st.txt  |   68 +
- Documentation/devicetree/bindings/usb/mxs-phy.txt  |    1 +
- .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 +
- .../devicetree/bindings/usb/renesas_usbhs.txt      |   24 +
- .../devicetree/bindings/usb/udc-xilinx.txt         |   18 +
- MAINTAINERS                                        |    3 +-
- drivers/usb/dwc3/Kconfig                           |   17 +
- drivers/usb/dwc3/Makefile                          |    7 +-
- drivers/usb/dwc3/core.c                            |    9 +-
- drivers/usb/dwc3/core.h                            |    4 +-
- drivers/usb/dwc3/debug.c                           |   32 +
- drivers/usb/dwc3/debug.h                           |  200 +-
- drivers/usb/dwc3/dwc3-exynos.c                     |    4 +-
- drivers/usb/dwc3/dwc3-omap.c                       |    4 +-
- drivers/usb/dwc3/dwc3-pci.c                        |    4 +-
- drivers/usb/dwc3/dwc3-qcom.c                       |  131 ++
- drivers/usb/dwc3/dwc3-st.c                         |  367 ++++
- drivers/usb/dwc3/ep0.c                             |   65 +-
- drivers/usb/dwc3/gadget.c                          |  138 +-
- drivers/usb/dwc3/gadget.h                          |   56 -
- drivers/usb/dwc3/io.h                              |   30 +-
- drivers/usb/dwc3/trace.c                           |   19 +
- drivers/usb/dwc3/trace.h                           |  220 ++
- drivers/usb/gadget/Kconfig                         |    9 +
- drivers/usb/gadget/Makefile                        |    2 +-
- drivers/usb/gadget/composite.c                     |    1 +
- drivers/usb/gadget/configfs.c                      |    1 +
- drivers/usb/gadget/function/Makefile               |   10 +-
- drivers/usb/gadget/function/f_acm.c                |   49 +-
- drivers/usb/gadget/function/f_fs.c                 |   52 +-
- drivers/usb/gadget/function/f_loopback.c           |    3 +-
- drivers/usb/gadget/function/f_mass_storage.c       |   27 +-
- drivers/usb/gadget/function/f_obex.c               |   28 +-
- drivers/usb/gadget/function/f_serial.c             |   19 +-
- drivers/usb/gadget/function/f_sourcesink.c         |  511 ++++-
- drivers/usb/gadget/function/f_uac1.c               |  337 ++-
- drivers/usb/gadget/function/f_uac2.c               |  520 +++--
- drivers/usb/gadget/function/f_uvc.c                |  274 ++-
- drivers/usb/gadget/function/f_uvc.h                |   13 +-
- drivers/usb/gadget/function/g_zero.h               |   13 +-
- drivers/usb/gadget/function/u_fs.h                 |    2 +
- drivers/usb/gadget/function/u_serial.c             |   30 +-
- drivers/usb/gadget/function/u_uac1.c               |   38 +-
- drivers/usb/gadget/function/u_uac1.h               |   31 +-
- drivers/usb/gadget/function/u_uac2.h               |   42 +
- drivers/usb/gadget/function/u_uvc.h                |   39 +
- drivers/usb/gadget/function/uvc.h                  |    4 +-
- drivers/usb/gadget/function/uvc_queue.c            |   46 +-
- drivers/usb/gadget/function/uvc_queue.h            |   33 +
- drivers/usb/gadget/function/uvc_v4l2.c             |  327 +--
- drivers/usb/gadget/function/uvc_v4l2.h             |   22 +
- drivers/usb/gadget/function/uvc_video.c            |   48 +-
- drivers/usb/gadget/function/uvc_video.h            |   24 +
- drivers/usb/gadget/legacy/Kconfig                  |    3 +
- drivers/usb/gadget/legacy/Makefile                 |    6 +-
- drivers/usb/gadget/legacy/audio.c                  |  149 +-
- drivers/usb/gadget/legacy/dbgp.c                   |    1 +
- drivers/usb/gadget/legacy/inode.c                  |    1 +
- drivers/usb/gadget/legacy/webcam.c                 |   75 +-
- drivers/usb/gadget/legacy/zero.c                   |   21 +
- drivers/usb/gadget/udc/Kconfig                     |   17 +-
- drivers/usb/gadget/udc/Makefile                    |    1 +
- drivers/usb/gadget/udc/gr_udc.c                    |   81 +-
- drivers/usb/gadget/udc/gr_udc.h                    |    7 +
- drivers/usb/gadget/udc/r8a66597-udc.c              |   10 +-
- drivers/usb/gadget/udc/udc-core.c                  |   31 +-
- drivers/usb/gadget/udc/udc-xilinx.c                | 2180 ++++++++++++++++=
-++++
- drivers/usb/misc/usbtest.c                         |  113 +-
- drivers/usb/musb/musb_cppi41.c                     |    4 +-
- drivers/usb/musb/musb_dsps.c                       |    2 +
- drivers/usb/phy/Kconfig                            |   16 -
- drivers/usb/phy/Makefile                           |    2 -
- drivers/usb/phy/phy-msm-usb.c                      |   15 +-
- drivers/usb/phy/phy-mxs-usb.c                      |    6 +
- drivers/usb/phy/phy-samsung-usb.c                  |  241 ---
- drivers/usb/phy/phy-samsung-usb.h                  |  349 ----
- drivers/usb/phy/phy-samsung-usb2.c                 |  541 -----
- drivers/usb/phy/phy-samsung-usb3.c                 |  350 ----
- drivers/usb/phy/phy-twl6030-usb.c                  |    2 -
- drivers/usb/renesas_usbhs/common.c                 |   44 +
- include/linux/platform_data/samsung-usbphy.h       |   27 -
- include/linux/usb/gadget.h                         |   18 +-
- include/uapi/linux/usb/functionfs.h                |   19 +-
- tools/usb/ffs-test.c                               |  126 +-
- 87 files changed, 5998 insertions(+), 2565 deletions(-)
- create mode 100644 Documentation/ABI/testing/configfs-usb-gadget-uac1
- create mode 100644 Documentation/ABI/testing/configfs-usb-gadget-uac2
- create mode 100644 Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy=
-=2Etxt
- create mode 100644 Documentation/devicetree/bindings/usb/dwc3-st.txt
- create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
- create mode 100644 Documentation/devicetree/bindings/usb/renesas_usbhs.txt
- create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.txt
- create mode 100644 drivers/usb/dwc3/debug.c
- create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
- create mode 100644 drivers/usb/dwc3/dwc3-st.c
- create mode 100644 drivers/usb/dwc3/trace.c
- create mode 100644 drivers/usb/dwc3/trace.h
- create mode 100644 drivers/usb/gadget/function/u_uac2.h
- create mode 100644 drivers/usb/gadget/function/u_uvc.h
- create mode 100644 drivers/usb/gadget/function/uvc_v4l2.h
- create mode 100644 drivers/usb/gadget/function/uvc_video.h
- create mode 100644 drivers/usb/gadget/udc/udc-xilinx.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb.h
- delete mode 100644 drivers/usb/phy/phy-samsung-usb2.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
- delete mode 100644 include/linux/platform_data/samsung-usbphy.h
-
---=20
-balbi
-
---TiqCXmo5T1hvSQQg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUGvAzAAoJEIaOsuA1yqRExboQAJ46Q2ktTudXlPkoZedxv3bW
-Oe8V6qjP9s4HkEK1CGrIO3EDsdVIPKSB0FDyW8Pvue0YKB8a1hCTDdM+kKC4L8CD
-TQPgEt9vGT64cJX4A7aEea4USC1nOaVxnbLNoTDGHKY3P3Q6tLKJl4j30JSf1kze
-8eitSUeE79YPVOXyrfz3IsvgzHlKEwYFygM/cIxfFRc6peR/MGET9NlLCrv+L2NE
-KFo17TwJ2yf/428Z/Mh34VjKfKkRG6z6oXjoI9X1f9wFF88vXjRIFKsyV57gRiis
-4AElBLWKoTv+Kn3rGlBBOR18bw2xSzog99BSf7kcTb5nzqh6KKhcBQ2vz86XDJgL
-fKq4bKJWK1z8wC0GC8zJkczIcvxELSRVq/dal/SBZ7LQxnjdnkW/jYnJYKqg28NY
-HKvO5sZQlPnxvNnYRprZI137e+HF2xqzn1GBEyD3lRcYtW5pNYqyjZG6GTnglhQ5
-JR+GjuSLL/t7YvQy4SCGSY0dYyUg7bC+fD+boLuBryFY6UY1F7+Sfz1kY31KcFwC
-nx+pRz9aAUM8W/xLff7KeAS+mSPa/jePSuCGXw6gd3FKlVKfT5RMgzlYH+JLMapO
-7zpeKvyzSI9k5vfLGyDuoVfo62tO1ecOHQGo52wQyaCDHx6Mccqi1q1r4zK5jWSg
-mq18Z+cC4xIKVknc6PN8
-=em+a
------END PGP SIGNATURE-----
-
---TiqCXmo5T1hvSQQg--
