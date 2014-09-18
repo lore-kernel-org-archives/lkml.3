@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198AbaIRPrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:47:00 -0400
-Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:42293 "EHLO
-	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083AbaIRPq7 (ORCPT
+	id S932419AbaIRPrr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:47:47 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:56880 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205AbaIRPrp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:46:59 -0400
-From: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
-To: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        peter.p.waskiewicz.jr@intel.com, antoine@schweitzer-chaput.fr,
-        Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
-Subject: [PATCH v2] staging: rtl8192u: delete unused function CAM_read_entry
-Date: Thu, 18 Sep 2014 17:46:23 +0200
-Message-Id: <1411055183-3535-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
-X-Mailer: git-send-email 1.9.1
+	Thu, 18 Sep 2014 11:47:45 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCHv2 1/1] bluetooth: Check for SCO type before setting retransmission effort
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
+Date: Thu, 18 Sep 2014 08:43:40 -0700
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AE7A1F22-766E-4C9B-A748-ACA5426B7DBD@holtmann.org>
+References: <8B07B86E-19D4-49E2-B471-DAF31C8D4F34@holtmann.org> <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
+To: Bernhard Thaler <bernhard.thaler@r-it.at>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the sparse warning: symbol 'CAM_read_entry' was not declared. Should it be static?
+Hi Bernhard,
 
-The function CAM_read_entry is not used and therefore deleted.
+> SCO connection cannot be setup to devices that do not support retransmission.
+> Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
+> adapted for this kernel version.
+> Code changed to check SCO/eSCO type before setting retransmission effort
+> and max. latency. The purpose of the patch is to support older devices not
+> capable of eSCO.
+> 
+> Tested on Blackberry 655+ headset which does not support retransmission.
+> Credits go to Alexander Sommerhuber.
+> 
+> Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
+> ---
+> net/bluetooth/hci_conn.c |   16 ++++++++++++----
+> 1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+> index faff624..f6e3183 100644
+> --- a/net/bluetooth/hci_conn.c
+> +++ b/net/bluetooth/hci_conn.c
+> @@ -194,10 +194,18 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
+> 		param = &sco_param_wideband[conn->attempt - 1];
+> 		break;
+> 	case SCO_AIRMODE_CVSD:
+> -		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
+> -			return false;
+> -		cp.retrans_effort = 0x01;
+> -		param = &sco_param_cvsd[conn->attempt - 1];
+> +		if (!lmp_esco_capable(conn->link)) {
+> +			/* sco_param_cvsd contains SCO in last two elements */
+> +			if ((conn->attempt + 3) > ARRAY_SIZE(sco_param_cvsd))
+> +				return false;
+> +			cp.retrans_effort = 0xff;
+> +			param = &sco_param_cvsd[(conn->attempt + 2)];
 
-Signed-off-by: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
----
-changes in v2:
-add Signed-off-by line
+so if anybody creates a new mode and forgets to update this code, we are hitting a nice crash and/or wrong behavior.
 
- drivers/staging/rtl8192u/r8192U_core.c | 28 ----------------------------
- 1 file changed, 28 deletions(-)
+I would prefer that we create separate parameter arrays here. It might means that we have to rename the current ones to esco_param_* and the introduce sco_param_cvsd.
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index a4e1d6b..3d8ad5f 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -3190,34 +3190,6 @@ RESET_START:
- 	}
- }
- 
--void CAM_read_entry(struct net_device *dev, u32 iIndex)
--{
--	u32 target_command = 0;
--	u32 target_content = 0;
--	u8 entry_i = 0;
--	u32 ulStatus;
--	s32 i = 100;
--	for (entry_i = 0; entry_i < CAM_CONTENT_COUNT; entry_i++) {
--		// polling bit, and No Write enable, and address
--		target_command = entry_i+CAM_CONTENT_COUNT*iIndex;
--		target_command = target_command | BIT31;
--
--		//Check polling bit is clear
--		while ((i--) >= 0) {
--			read_nic_dword(dev, RWCAM, &ulStatus);
--			if (ulStatus & BIT31)
--				continue;
--			else
--				break;
--		}
--		write_nic_dword(dev, RWCAM, target_command);
--		RT_TRACE(COMP_SEC, "CAM_read_entry(): WRITE A0: %x \n", target_command);
--		read_nic_dword(dev, RCAMO, &target_content);
--		RT_TRACE(COMP_SEC, "CAM_read_entry(): WRITE A8: %x \n", target_content);
--	}
--	printk("\n");
--}
--
- static void rtl819x_update_rxcounts(struct r8192_priv *priv, u32 *TotalRxBcnNum,
- 			     u32 *TotalRxDataNum)
- {
--- 
-2.1.0
+> +		} else {
+> +			if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
+> +				return false;
+> +			cp.retrans_effort = 0x01;
+> +			param = &sco_param_cvsd[conn->attempt - 1];
+> +		}
+> 		break;
+> 	default:
+> 		return false;
+
+Regards
+
+Marcel
 
