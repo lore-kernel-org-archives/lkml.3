@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609AbaIRJoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:44:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59004 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754935AbaIRJoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:44:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,546,1406617200"; 
-   d="scan'208";a="601509820"
-Date: Thu, 18 Sep 2014 11:41:13 +0200
-From: Samuel Ortiz <samuel.ortiz@intel.com>
-To: Mika Westerberg <mika.westerberg@intel.com>
-Cc: Loic Poulain <loic.poulain@intel.com>, linus.walleij@linaro.org,
-        heikki.krogerus@linux.intel.com, mathias.nyman@linux.intel.com,
-        linux-kernel@vger.kernel.org, Eric Ernst <eric.ernst@linux.intel.com>
-Subject: Re: [PATCHv2] pinctrl: baytrail: Clear DIRECT_IRQ bit
-Message-ID: <20140918094113.GC26004@zurbaran>
-References: <1410961621-15231-1-git-send-email-loic.poulain@intel.com>
- <20140918074910.GC10854@lahna.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140918074910.GC10854@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756566AbaIRJrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:47:00 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:8515 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230AbaIRJq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:46:59 -0400
+X-AuditID: cbfee690-f79ce6d00000115a-44-541aaa0d3c5f
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, gregkh@linuxfoundation.org, naushad@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH] regmap: fix NULL pointer dereference in regmap_get_val_endian
+Date: Thu, 18 Sep 2014 15:12:20 +0530
+Message-id: <1411033340-5524-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsWyRsSkWpd3lVSIwZevwhZTHz5hs2hevJ7N
+	4vKuOWwWn47+Z7VYtPULuwOrx6ZVnWwe++euYffo27KK0ePzJrkAligum5TUnMyy1CJ9uwSu
+	jOm337AW9AtUtL/Yx97AOIu3i5GTQ0LAROL49JNsELaYxIV764FsLg4hgaWMEv9vz2XsYuQA
+	K/p3tA4iPp1R4vCmU4wQzgQmiZk/9oJ1swnoSjx5P5cZxBYRUJDY3PuMFcRmFiiSmHJsJQuI
+	LSzgJ7Hw00RGEJtFQFViyZEfYDavgLtEV+c+qGUKEnMm2YDMlxB4zSbRvfMfM0S9gMS3yYdY
+	IGpkJTYdYIY4WlLi4IobLBMYBRcwMqxiFE0tSC4oTkovMtErTswtLs1L10vOz93ECAzL0/+e
+	TdjBeO+A9SFGAQ5GJR5eCQGpECHWxLLiytxDjKZAGyYyS4km5wODP68k3tDYzMjC1MTU2Mjc
+	0kxJnPe11M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYw6vqn3bvLy6XNWle+eeOvUFi4B
+	x95ujlXn5Ls92jd9StWf62J6xTywf7VHqv6qe11Pn7q6fQxNPKX+LHKdzbFqo7PPvG58WfBe
+	qOG6rPAu5t7fR2VlWsOT8yRX+xbwxEixPLfR23vm1L1TG6oW7lPU0Hjxf1tQroZHROEyriZ5
+	/YZfRWUW05RYijMSDbWYi4oTAXd5sVZGAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t9jQV3eVVIhBnOaeSymPnzCZtG8eD2b
+	xeVdc9gsPh39z2qxaOsXdgdWj02rOtk89s9dw+7Rt2UVo8fnTXIBLFENjDYZqYkpqUUKqXnJ
+	+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QIuVFMoSc0qBQgGJxcVK+naY
+	JoSGuOlawDRG6PqGBMH1GBmggYQ1jBnTb79hLegXqGh/sY+9gXEWbxcjB4eEgInEv6N1XYyc
+	QKaYxIV769m6GLk4hASmM0oc3nSKEcKZwCQx88deNpAqNgFdiSfv5zKD2CICChKbe5+xgtjM
+	AkUSU46tZAGxhQX8JBZ+msgIYrMIqEosOfIDzOYVcJfo6tzHCLFYQWLOJJsJjNwLGBlWMYqm
+	FiQXFCel5xrqFSfmFpfmpesl5+duYgQH/TOpHYwrGywOMQpwMCrx8B7glQoRYk0sK67MPcQo
+	wcGsJML7ayFQiDclsbIqtSg/vqg0J7X4EKMp0PKJzFKiyfnAiMwriTc0NjE3NTa1NLEwMbNU
+	Euc90GodKCSQnliSmp2aWpBaBNPHxMEp1cC4evfMp4KRP64r+rRM0rb5YxogwFLvIzH5p+X6
+	2CtBsx88dF3EpyW+QvKU+MWOfdp2idoROpxbPavM3U/PeV1zrnWr35lHSUbJvW+dXveUTTvJ
+	ESZziz1g/mR3t5eHWpXkdR2Nu+y3SyrXr1533naitdDmKyziurP6V6XyLji57KVIRdIL5/dK
+	LMUZiYZazEXFiQCpDpzOkAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika,
+Recents commits for getting reg endianness causing NULL pointer
+dereference if dev is passed NULL in regmap_init_mmio. This patch
+fixes this issue, and allows to parse reg endianness only if dev
+and dev->of_node exist.
 
-On Thu, Sep 18, 2014 at 10:49:43AM +0300, Mika Westerberg wrote:
-> On Wed, Sep 17, 2014 at 03:47:01PM +0200, Loic Poulain wrote:
-> > Direct Irq En bit can be initialized to a bad value.
-> > This bit has to be cleared for io access mode.
-> 
-> +Eric
-> 
-> I would like to have a bit better explanation *why* this bit needs to be
-> cleared.
-> 
-> Also want to ask Eric (who added the WARN()), is there something
-> preventing us to do this? I remember last time you said that we are not
-> supposed to change this bit runtime.
-> 
-> My preference is that we get rid of the WARN() and just unconditionally
-> clear the bit.
-I'd keep the warn though, as it most likely shows a buggy firmware
-implementation.
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ drivers/base/regmap/regmap.c |   23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
-Cheers,
-Samuel.
-
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index f2281af..455a877 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -477,7 +477,7 @@ static enum regmap_endian regmap_get_val_endian(struct device *dev,
+ 					const struct regmap_bus *bus,
+ 					const struct regmap_config *config)
+ {
+-	struct device_node *np = dev->of_node;
++	struct device_node *np;
+ 	enum regmap_endian endian;
+ 
+ 	/* Retrieve the endianness specification from the regmap config */
+@@ -487,15 +487,20 @@ static enum regmap_endian regmap_get_val_endian(struct device *dev,
+ 	if (endian != REGMAP_ENDIAN_DEFAULT)
+ 		return endian;
+ 
+-	/* Parse the device's DT node for an endianness specification */
+-	if (of_property_read_bool(np, "big-endian"))
+-		endian = REGMAP_ENDIAN_BIG;
+-	else if (of_property_read_bool(np, "little-endian"))
+-		endian = REGMAP_ENDIAN_LITTLE;
++	/* If the dev and dev->of_node exist try to get endianness from DT */
++	if (dev && dev->of_node) {
++		np = dev->of_node;
+ 
+-	/* If the endianness was specified in DT, use that */
+-	if (endian != REGMAP_ENDIAN_DEFAULT)
+-		return endian;
++		/* Parse the device's DT node for an endianness specification */
++		if (of_property_read_bool(np, "big-endian"))
++			endian = REGMAP_ENDIAN_BIG;
++		else if (of_property_read_bool(np, "little-endian"))
++			endian = REGMAP_ENDIAN_LITTLE;
++
++		/* If the endianness was specified in DT, use that */
++		if (endian != REGMAP_ENDIAN_DEFAULT)
++			return endian;
++	}
+ 
+ 	/* Retrieve the endianness specification from the bus config */
+ 	if (bus && bus->val_format_endian_default)
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
----------------------------------------------------------------------
-Intel Corporation SAS (French simplified joint stock company)
-Registered headquarters: "Les Montalets"- 2, rue de Paris, 
-92196 Meudon Cedex, France
-Registration Number:  302 456 199 R.C.S. NANTERRE
-Capital: 4,572,000 Euros
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+1.7.9.5
 
