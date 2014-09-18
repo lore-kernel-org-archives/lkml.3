@@ -1,139 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862AbaIRLWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 07:22:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38272 "EHLO mx1.redhat.com"
+	id S1756954AbaIRLYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 07:24:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21434 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755886AbaIRLWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 07:22:23 -0400
-Date: Thu, 18 Sep 2014 13:22:07 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Mikhail Efremov <sem@altlinux.org>
-Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: Don't exchange filenames unconditionally.
-Message-ID: <20140918112206.GA26866@mguzik>
-References: <1411037700-28966-1-git-send-email-sem@altlinux.org>
+	id S1755203AbaIRLYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 07:24:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,546,1406617200"; 
+   d="scan'208";a="604745944"
+Date: Thu, 18 Sep 2014 14:22:47 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
+Message-ID: <20140918112247.GN10854@lahna.fi.intel.com>
+References: <1410943745-9354-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <1410943745-9354-3-git-send-email-rebecca.swee.fun.chang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411037700-28966-1-git-send-email-sem@altlinux.org>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <1410943745-9354-3-git-send-email-rebecca.swee.fun.chang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 02:55:00PM +0400, Mikhail Efremov wrote:
-> Only exchange source and destination filenames
-> if flags contain RENAME_EXCHANGE.
-
-But names are still exchanged without RENAME_EXCHANGE, provided they are
-long enough.
-
-da1ce0670c14 introduced this behaviour also for short names and this is
-what you are reverting here.
-
-That said, I think the patch is fine as an interim change, but should
-note facts mentioned above.
-
-For more info please see https://lkml.org/lkml/2014/9/7/6
-
-I'll be posting a RFC patch for actual problem next week.
-
-> In case if executable file was running and replaced by
-> other file /proc/PID/exe should still show correct file name,
-> not the old name of the file by which it was replaced.
+On Wed, Sep 17, 2014 at 04:49:04PM +0800, Chang Rebecca Swee Fun wrote:
+> Intel Quark X1000 provides a total of 16 GPIOs. The GPIOs are split between
+> the legacy I/O bridge and the GPIO controller.
 > 
-
-
-
-
-> The scenario when this bug manifests itself was like this:
-> * ALT Linux uses rpm and start-stop-daemon;
-> * during a package upgrade rpm creates a temporary file
->   for an executable to rename it upon successful unpacking;
-> * start-stop-daemon is run subsequently and it obtains
->   the (nonexistant) temporary filename via /proc/PID/exe
->   thus failing to identify the running process.
+> GPIO-SCH is the GPIO pins on legacy bridge for Intel Quark SoC.
+> Intel Quark X1000 has 2 GPIOs powered by the core power well and 6 from
+> the suspend power well.
 > 
-> Cc: Miklos Szeredi <mszeredi@suse.cz>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: linux-fsdevel@vger.kernel.org
+> This piece of work is derived from Dan O'Donovan's initial work for Quark
+> X1000 enabling.
 > 
-> Fixes: da1ce0670c14 "vfs: add cross-rename"
-> Signed-off-by: Mikhail Efremov <sem@altlinux.org>
+> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+
+One question, see below. But in general looks good, so
+
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
 > ---
->  fs/dcache.c | 27 +++++++++++++++++++--------
->  1 file changed, 19 insertions(+), 8 deletions(-)
+>  drivers/gpio/Kconfig    |   11 +++++++++--
+>  drivers/gpio/gpio-sch.c |    6 ++++++
+>  2 files changed, 15 insertions(+), 2 deletions(-)
 > 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 7a5b514..3218570 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2372,7 +2372,8 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
->  }
->  EXPORT_SYMBOL(dentry_update_name_case);
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 690904a..64683a9 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -356,25 +356,32 @@ config GPIO_VR41XX
+>  	  Say yes here to support the NEC VR4100 series General-purpose I/O Uint
 >  
-> -static void switch_names(struct dentry *dentry, struct dentry *target)
-> +static void switch_names(struct dentry *dentry, struct dentry *target,
-> +			 bool exchange)
->  {
->  	if (dname_external(target)) {
->  		if (dname_external(dentry)) {
-> @@ -2404,11 +2405,21 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
->  			/*
->  			 * Both are internal.
->  			 */
-> -			unsigned int i;
-> -			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-> -			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
-> -				swap(((long *) &dentry->d_iname)[i],
-> -				     ((long *) &target->d_iname)[i]);
-> +			if (exchange) {
-> +				unsigned int i;
+>  config GPIO_SCH
+> -	tristate "Intel SCH/TunnelCreek/Centerton GPIO"
+> +	tristate "Intel SCH/TunnelCreek/Centerton/Quark X1000 GPIO"
+>  	depends on PCI && X86
+>  	select MFD_CORE
+>  	select LPC_SCH
+>  	help
+>  	  Say yes here to support GPIO interface on Intel Poulsbo SCH,
+> -	  Intel Tunnel Creek processor or Intel Centerton processor.
+> +	  Intel Tunnel Creek processor, Intel Centerton processor or
+> +	  Intel Quark X1000 SoC.
 > +
-> +				BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN,
-> +							 sizeof(long)));
-> +				for (i = 0; i < DNAME_INLINE_LEN / sizeof(long);
-> +									i++) {
-> +					swap(((long *) &dentry->d_iname)[i],
-> +					     ((long *) &target->d_iname)[i]);
-> +				}
-> +			} else {
-> +				memcpy(dentry->d_iname, target->d_name.name,
-> +						target->d_name.len + 1);
-> +				dentry->d_name.len = target->d_name.len;
-> +				return;
->  			}
->  		}
+>  	  The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
+>  	  powered by the core power rail and are turned off during sleep
+>  	  modes (S3 and higher). The remaining four GPIOs are powered by
+>  	  the Intel SCH suspend power supply. These GPIOs remain
+>  	  active during S3. The suspend powered GPIOs can be used to wake the
+>  	  system from the Suspend-to-RAM state.
+> +
+>  	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
+>  	  core power rail and 9 from suspend power supply.
+> +
+>  	  The Intel Centerton processor has a total of 30 GPIO pins.
+>  	  Twenty-one are powered by the core power rail and 9 from the
+>  	  suspend power supply.
+>  
+> +	  The Intel Quark X1000 SoC has 2 GPIOs powered by the core
+> +	  power well and 6 from the suspend power well.
+> +
+>  config GPIO_ICH
+>  	tristate "Intel ICH GPIO"
+>  	depends on PCI && X86
+> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+> index 2189c22..38d6e74 100644
+> --- a/drivers/gpio/gpio-sch.c
+> +++ b/drivers/gpio/gpio-sch.c
+> @@ -241,6 +241,12 @@ static int sch_gpio_probe(struct platform_device *pdev)
+>  		sch->chip.ngpio = 30;
+>  		break;
+>  
+> +	case PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB:
+
+Is this PCI ID provided by some other patch series?
+
+> +		sch->core_base = 0;
+> +		sch->resume_base = 2;
+> +		sch->chip.ngpio = 8;
+> +		break;
+> +
+>  	default:
+>  		return -ENODEV;
 >  	}
-> @@ -2510,7 +2521,7 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
->  	list_del(&target->d_u.d_child);
->  
->  	/* Switch the names.. */
-> -	switch_names(dentry, target);
-> +	switch_names(dentry, target, exchange);
->  	swap(dentry->d_name.hash, target->d_name.hash);
->  
->  	/* ... and switch the parents */
-> @@ -2649,7 +2660,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
->  
->  	dparent = dentry->d_parent;
->  
-> -	switch_names(dentry, anon);
-> +	switch_names(dentry, anon, false);
->  	swap(dentry->d_name.hash, anon->d_name.hash);
->  
->  	dentry->d_parent = dentry;
 > -- 
-> 1.8.5.5
+> 1.7.9.5
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Mateusz Guzik
