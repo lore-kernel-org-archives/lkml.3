@@ -1,167 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369AbaIRG4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 02:56:53 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:45811 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaIRG4u (ORCPT
+	id S1756531AbaIRG55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 02:57:57 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40683 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935AbaIRG5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 02:56:50 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8I6tXr4006112, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
-Date: Thu, 18 Sep 2014 14:55:33 +0800
-Message-ID: <1411023333-1816-1-git-send-email-micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 18 Sep 2014 02:57:55 -0400
+Message-ID: <541A8051.20207@collabora.co.uk>
+Date: Thu, 18 Sep 2014 08:48:49 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Daniel Drake <drake@endlessm.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Subject: Re: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow
+References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk>	<1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com>
+In-Reply-To: <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+Hello Doug, Andreas,
 
-Fix rts5227&5249 failed send buffer cmd after suspend,
-PM_CTRL3 should reset before send any buffer cmd after suspend.
-Otherwise, buffer cmd will failed, this will lead resume fail.
+On 09/17/2014 05:47 PM, Doug Anderson wrote:
+>>
+>>         rtc@101E0000 {
+>>                 status = "okay";
+>> +               clocks = <&clock CLK_RTC>, <&max77686 MAX77686_CLK_AP>;
+>> +               clock-names = "rtc", "rtc_src";
+> 
+> Wait, seriously?  Snow is still using the "rtc@101E0000" syntax?
+> Whatever happened to the series that Andreas worked so hard on,
+> including <https://patchwork.kernel.org/patch/4664801/>?
+>
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/mfd/Makefile         |    2 +-
- drivers/mfd/rts5227.c        |    6 ++++++
- drivers/mfd/rts5249.c        |    4 ++++
- drivers/mfd/rtsx_gops.c      |   36 ++++++++++++++++++++++++++++++++++++
- drivers/mfd/rtsx_pcr.h       |    3 +++
- include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
- 6 files changed, 62 insertions(+), 1 deletion(-)
- create mode 100644 drivers/mfd/rtsx_gops.c
+Andreas, I completely forgot about your series when writing this patch even
+though I've on my TO-DO to sync the downstream and upstream Snow DTS once your
+patches land. Sorry about that.
 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index f001487..7f45c06 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -13,7 +13,7 @@ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
- obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
- obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
- 
--rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
-+rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
- obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
- obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
- 
-diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index 9c8eec8..3240740 100644
---- a/drivers/mfd/rts5227.c
-+++ b/drivers/mfd/rts5227.c
-@@ -130,6 +130,12 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
- 
- static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
- {
-+	int err;
-+
-+	err = rtsx_gops_pm_reset(pcr);
-+	if (err < 0)
-+		return err;
-+
- 	/* Optimize RX sensitivity */
- 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
- }
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 573de7b..cf425cc 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
- {
- 	int err;
- 
-+	err = rtsx_gops_pm_reset(pcr);
-+	if (err < 0)
-+		return err;
-+
- 	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
- 			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
- 			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
-diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
-new file mode 100644
-index 0000000..3cf596f
---- /dev/null
-+++ b/drivers/mfd/rtsx_gops.c
-@@ -0,0 +1,36 @@
-+/* Driver for Realtek PCI-Express card reader
-+ *
-+ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author:
-+ *   Micky Ching <micky_ching@realsil.com.cn>
-+ */
-+
-+#include <linux/mfd/rtsx_pci.h>
-+#include "rtsx_pcr.h"
-+
-+int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
-+{
-+	int err;
-+
-+	/* init aspm */
-+	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
-+	if (err < 0)
-+		return err;
-+
-+	/* reset PM_CTRL3 before send buffer cmd */
-+	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
-+}
-diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-index 07e4c2e..fe2bbb6 100644
---- a/drivers/mfd/rtsx_pcr.h
-+++ b/drivers/mfd/rtsx_pcr.h
-@@ -72,4 +72,7 @@ do {									\
- 	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
- } while (0)
- 
-+/* generic operations */
-+int rtsx_gops_pm_reset(struct rtsx_pcr *pcr);
-+
- #endif
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 74346d5..b34fec8 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
- 	return (u8 *)(pcr->host_cmds_ptr);
- }
- 
-+static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
-+		u8 mask, u8 append)
-+{
-+	int err;
-+	u8 val;
-+
-+	err = pci_read_config_byte(pcr->pci, addr, &val);
-+	if (err < 0)
-+		return err;
-+	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
-+}
-+
- #endif
--- 
-1.7.9.5
+> 
+> In any case, there's nothing wrong with Javier's patch other than the
+> fact that it will eventually need to get merged with Andreas's, so:
+> 
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> 
 
+Thanks, I'll re-spin and post again once Kukjin merges Andreas series.
+
+Best regards,
+Javier
