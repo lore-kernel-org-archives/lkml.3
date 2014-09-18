@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaIRI7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:59:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54445 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155AbaIRI7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:59:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,546,1406617200"; 
-   d="scan'208";a="604685500"
-Message-ID: <541A9EAB.3060000@linux.intel.com>
-Date: Thu, 18 Sep 2014 16:58:19 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: "Joe.C" <srv_yingjoe.chen@mediatek.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Tony Luck <tony.luck@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC Part2 v1 01/21] irqdomain: Introduce new interfaces to support
- hierarchy irqdomains
-References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>	 <1410444228-3134-2-git-send-email-jiang.liu@linux.intel.com> <1411030087.14746.2.camel@mtksdaap41>
-In-Reply-To: <1411030087.14746.2.camel@mtksdaap41>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755801AbaIRJEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:04:09 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:43229 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185AbaIRJEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:04:07 -0400
+From: Gernot Vormayr <gvormayr@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>, linux-gpio@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Gernot Vormayr <gvormayr@gmail.com>
+Subject: [PATCH 1/1] gpio: Fix ngpio in gpio-xilinx driver
+Date: Thu, 18 Sep 2014 11:03:52 +0200
+Message-Id: <1411031032-20649-1-git-send-email-gvormayr@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/18 16:48, Joe.C wrote:
-> On Thu, 2014-09-11 at 22:03 +0800, Jiang Liu wrote:
->> +#else	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
->> +static inline int irq_domain_activate_irq(struct irq_data *data) { return 0; }
->> +static inline int irq_domain_deactivate_irq(struct irq_data *data) { return 0; }
->> +#endif	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
->> +
-> 
-> I get the following build warnings on these lines:
-> 
-> ../include/linux/irqdomain.h:75:47: warning: 'struct irq_data' declared
-> inside parameter list [enabled by default]
-> ../include/linux/irqdomain.h:75:47: warning: its scope is only this
-> definition or declaration, which is probably not what you want [enabled
-> by default]
-> ../include/linux/irqdomain.h:76:49: warning: 'struct irq_data' declared
-> inside parameter list [enabled by default
-Hi Joe,
-	Thanks for testing. We should add a forward declaration of
-struct irq_data to the top of include/linux/irqdomain.h.
-Will fix it in next version.
-Regards!
-Gerry
-> 
-> Joe.C
-> 
-> 
+If one adds 'gpio-controller;' to the chip in the devicetree, then
+initialization fails with 'gpiochip_find_base: cannot find free range',
+because ngpio is 0. This patch fixes the bug.
+
+Tested on ml507 board.
+
+Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
+---
+ drivers/gpio/gpio-xilinx.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+index 1248186..4606ad2 100644
+--- a/drivers/gpio/gpio-xilinx.c
++++ b/drivers/gpio/gpio-xilinx.c
+@@ -197,6 +197,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 	struct xgpio_instance *chip;
+ 	int status = 0;
+ 	const u32 *tree_info;
++	u32 ngpio;
+ 
+ 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+ 	if (!chip)
+@@ -215,8 +216,9 @@ static int xgpio_of_probe(struct device_node *np)
+ 	chip->mmchip.gc.ngpio = 32;
+ 
+ 	/* Check device node and parent device node for device width */
+-	of_property_read_u32(np, "xlnx,gpio-width",
+-			      (u32 *)&chip->mmchip.gc.ngpio);
++	status = of_property_read_u32(np, "xlnx,gpio-width", &ngpio);
++	if (status == 0)
++		chip->mmchip.gc.ngpio = (u16)ngpio;
+ 
+ 	spin_lock_init(&chip->gpio_lock);
+ 
+@@ -262,8 +264,9 @@ static int xgpio_of_probe(struct device_node *np)
+ 		chip->mmchip.gc.ngpio = 32;
+ 
+ 		/* Check device node and parent device node for device width */
+-		of_property_read_u32(np, "xlnx,gpio2-width",
+-				     (u32 *)&chip->mmchip.gc.ngpio);
++		status = of_property_read_u32(np, "xlnx,gpio2-width", &ngpio);
++		if (status == 0)
++			chip->mmchip.gc.ngpio = (u16)ngpio;
+ 
+ 		spin_lock_init(&chip->gpio_lock);
+ 
+-- 
+2.1.0
+
