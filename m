@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaIROQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:16:55 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42662 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296AbaIROQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:16:53 -0400
-Date: Thu, 18 Sep 2014 10:16:39 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] cgroup/kmemleak: add kmemleak_free() for cgroup
- deallocations.
-Message-ID: <20140918141639.GA17230@cmpxchg.org>
-References: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
+	id S1756412AbaIRORX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:17:23 -0400
+Received: from mail-bn1bon0118.outbound.protection.outlook.com ([157.56.111.118]:22624
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755799AbaIRORV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 10:17:21 -0400
+Date: Thu, 18 Sep 2014 22:17:06 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ARM: dts: vf610-colibri: Add backlight support
+Message-ID: <20140918141705.GM4796@dragon>
+References: <cover.1410930820.git.bhuvanchandra.dv@toradex.com>
+ <cea494421deefe0b862e31b08685074715acf8d6.1410930820.git.bhuvanchandra.dv@toradex.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <cea494421deefe0b862e31b08685074715acf8d6.1410930820.git.bhuvanchandra.dv@toradex.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(24454002)(199003)(189002)(54356999)(85852003)(102836001)(90102001)(44976005)(81342003)(76482002)(4396001)(84676001)(19580395003)(106466001)(19580405001)(46102003)(74662003)(68736004)(97756001)(47776003)(92726001)(6806004)(83506001)(87936001)(46406003)(85306004)(31966008)(23726002)(80022003)(74502003)(81542003)(50986999)(105606002)(64706001)(26826002)(33656002)(110136001)(86362001)(99396002)(107046002)(76176999)(95666004)(33716001)(83072002)(79102003)(104016003)(83322001)(50466002)(21056001)(97736003)(92566001)(20776003)(77982003)(57986006);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0628;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 033857D0BD
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 09:38:05AM +0800, Wang Nan wrote:
-> Commit ff7ee93f4 introduces kmemleak_alloc() for alloc_page_cgroup(),
-> but corresponding kmemleak_free() is missing, which makes kmemleak be
-> wrongly disabled after memory offlining. Log is pasted at the end of
-> this commit message.
+On Wed, Sep 17, 2014 at 01:46:30PM +0530, Bhuvanchandra DV wrote:
 > 
-> This patch add kmemleak_free() into free_page_cgroup(). During page
-> offlining, this patch removes corresponding entries in kmemleak rbtree.
-> After that, the freed memory can be allocated again by other subsystems
-> without killing kmemleak.
+> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+> ---
+>  arch/arm/boot/dts/vf610-colibri-eval-v3.dts |    6 ++++++
+>  arch/arm/boot/dts/vf610-colibri.dtsi        |    7 +++++++
+>  2 files changed, 13 insertions(+)
 > 
-> bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
-> [   45.537934] Offlined Pages 32768
-> [   46.617892] kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
-> [   46.617892] CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
-> [   46.617892] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [   46.617892]  ffff880016823d10 ffff880018bdfc38 ffffffff81725d2c ffff88001780e950
-> [   46.617892]  ffff880016969000 ffff880018bdfc88 ffffffff8117a9e6 ffff880018bdfc78
-> [   46.617892]  0000000000000096 ffff880017812800 ffffffff81c2eda0 ffff880016969000
-> [   46.617892] Call Trace:
-> [   46.617892]  [<ffffffff81725d2c>] dump_stack+0x46/0x58
-> [   46.617892]  [<ffffffff8117a9e6>] create_object+0x266/0x2c0
-> [   46.617892]  [<ffffffff8171d2f6>] kmemleak_alloc+0x26/0x50
-> [   46.617892]  [<ffffffff8116a3a3>] kmem_cache_alloc+0xd3/0x160
-> [   46.617892]  [<ffffffff81058e59>] __sigqueue_alloc+0x49/0xd0
-> [   46.617892]  [<ffffffff8105a41b>] __send_signal+0xcb/0x410
-> [   46.617892]  [<ffffffff8105a7a5>] send_signal+0x45/0x90
-> [   46.617892]  [<ffffffff8105a803>] __group_send_sig_info+0x13/0x20
-> [   46.617892]  [<ffffffff8105bd0b>] do_notify_parent+0x1bb/0x260
-> [   46.617892]  [<ffffffff81077e7a>] ? sched_move_task+0xaa/0x130
-> [   46.617892]  [<ffffffff81050917>] do_exit+0x767/0xa40
-> [   46.617892]  [<ffffffff81050c84>] do_group_exit+0x44/0xa0
-> [   46.617892]  [<ffffffff81050cf7>] SyS_exit_group+0x17/0x20
-> [   46.617892]  [<ffffffff8172cd12>] system_call_fastpath+0x16/0x1b
-> [   46.617892] kmemleak: Kernel memory leak detector disabled
-> [   46.617892] kmemleak: Object 0xffff880016900000 (size 524288):
-> [   46.617892] kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
-> [   46.617892] kmemleak:   min_count = 0
-> [   46.617892] kmemleak:   count = 0
-> [   46.617892] kmemleak:   flags = 0x1
-> [   46.617892] kmemleak:   checksum = 0
-> [   46.617892] kmemleak:   backtrace:
-> [   46.617892]      [<ffffffff81d0a7f0>] log_early+0x63/0x77
-> [   46.617892]      [<ffffffff8171d31b>] kmemleak_alloc+0x4b/0x50
-> [   46.617892]      [<ffffffff81720e4f>] init_section_page_cgroup+0x7f/0xf5
-> [   46.617892]      [<ffffffff81d0a6f0>] page_cgroup_init+0xc5/0xd0
-> [   46.617892]      [<ffffffff81ce4ed9>] start_kernel+0x333/0x408
-> [   46.617892]      [<ffffffff81ce45b2>] x86_64_start_reservations+0x2a/0x2c
-> [   46.617892]      [<ffffffff81ce46a9>] x86_64_start_kernel+0xf5/0xfc
-> [   46.617892]      [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
+> diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
+> index ba98039..f1988a0 100644
+> --- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
+> +++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
+> @@ -52,3 +52,9 @@
+>  &pwm1 {
+>  	status = "okay";
+>  };
+> +
+> +&backlight {
+> +	brightness-levels = <0 4 8 16 32 64 128 255>;
+> +	default-brightness-level = <6>;
+> +	status  = "okay";
+> +};
+> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
+> index 9bd1415..e725306 100644
+> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
+> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
+> @@ -25,6 +25,13 @@
+>  		};
+>  	};
+>  
+> +	backlight: bl {
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+I would suggest we name the node following the example in
+Documentation/devicetree/bindings/pwm/pwm.txt, i.e. bl: backlight.
 
-Should this go into -stable?  I'm inclined to say no, this has been
-busted since Steve's other kmemleak fix since 2011, and that change
-also didn't go into -stable.
+> +		compitable = "pwm-backlight";
+> +		pwms = <&pwm0 0 5000000 0>;
+> +		pwm-names = " backlight";
+
+Drop the leading space in the string.
+
+Shawn
+
+> +		status = "disabled";
+> +	};
+> +
+>  };
+>  
+>  &esdhc1 {
+> -- 
+> 1.7.9.5
+> 
