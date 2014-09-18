@@ -1,242 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543AbaIRFjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 01:39:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43347 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574AbaIRFji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 01:39:38 -0400
-Date: Wed, 17 Sep 2014 22:39:34 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Changman Lee <cm224.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 04/10] f2fs: give an option to enable
- in-place-updates during fsync to users
-Message-ID: <20140918053934.GA1982@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1410732864-53069-1-git-send-email-jaegeuk@kernel.org>
- <1410732864-53069-4-git-send-email-jaegeuk@kernel.org>
- <20140915021251.GA2946@lcm>
+	id S1757572AbaIRFkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 01:40:17 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:46565 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757545AbaIRFkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 01:40:14 -0400
+Date: Wed, 17 Sep 2014 22:39:26 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v4 1/3] mfd/axp20x: extend axp20x to support axp288 pmic
+Message-ID: <20140918053926.GC8740@lee--X1>
+References: <1410912715-25903-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410912715-25903-2-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140915021251.GA2946@lcm>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410912715-25903-2-git-send-email-jacob.jun.pan@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 11:13:15AM +0900, Changman Lee wrote:
-> Hi JK,
-> 
-> I think it' nicer if this can be used as 'OR' with other policy
-> together. If so, we can also cover the weakness in high utilization.
+On Tue, 16 Sep 2014, Jacob Pan wrote:
 
-Agreed.
-I'll send another patch for that.
-Thanks,
+> X-Powers AXP288 is a customized PMIC for Intel Baytrail-CR platforms. Similar
+> to AXP202/209, AXP288 comes with USB charger, more LDO and BUCK channels, and
+> AD converters. It also provides extended status and interrupt reporting
+> capabilities than the devices currently supported in axp20x.c.
+> 
+> In addition to feature extension, this patch also adds ACPI binding for
+> enumeration.
+> 
+> This consolidated driver should support more X-Powers' PMICs in both device
+> tree and ACPI enumerated platforms.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  drivers/mfd/Kconfig        |   3 +-
+>  drivers/mfd/axp20x.c       | 353 +++++++++++++++++++++++++++++++++++++--------
+>  include/linux/mfd/axp20x.h |  58 ++++++++
+>  3 files changed, 354 insertions(+), 60 deletions(-)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index de5abf2..c183edb 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -74,7 +74,8 @@ config MFD_AXP20X
+>  	select REGMAP_IRQ
+>  	depends on I2C=y
+>  	help
+> -	  If you say Y here you get support for the X-Powers AXP202 and AXP209.
+> +	  If you say Y here you get support for the X-Powers AXP202, AXP209 and
+> +	  AXP288 power management IC (PMIC).
+>  	  This driver include only the core APIs. You have to select individual
+>  	  components like regulators or the PEK (Power Enable Key) under the
+>  	  corresponding menus.
 
-> 
-> Regard,
-> Changman
-> 
-> On Sun, Sep 14, 2014 at 03:14:18PM -0700, Jaegeuk Kim wrote:
-> > If user wrote F2FS_IPU_FSYNC:4 in /sys/fs/f2fs/ipu_policy, f2fs_sync_file
-> > only starts to try in-place-updates.
-> > And, if the number of dirty pages is over /sys/fs/f2fs/min_fsync_blocks, it
-> > keeps out-of-order manner. Otherwise, it triggers in-place-updates.
-> > 
-> > This may be used by storage showing very high random write performance.
-> > 
-> > For example, it can be used when,
-> > 
-> > Seq. writes (Data) + wait + Seq. writes (Node)
-> > 
-> > is pretty much slower than,
-> > 
-> > Rand. writes (Data)
-> > 
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > ---
-> >  Documentation/ABI/testing/sysfs-fs-f2fs |  7 +++++++
-> >  Documentation/filesystems/f2fs.txt      |  9 ++++++++-
-> >  fs/f2fs/f2fs.h                          |  1 +
-> >  fs/f2fs/file.c                          |  7 +++----
-> >  fs/f2fs/segment.c                       |  3 ++-
-> >  fs/f2fs/segment.h                       | 14 ++++++++++----
-> >  fs/f2fs/super.c                         |  2 ++
-> >  7 files changed, 33 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-fs-f2fs b/Documentation/ABI/testing/sysfs-fs-f2fs
-> > index 62dd725..6f9157f 100644
-> > --- a/Documentation/ABI/testing/sysfs-fs-f2fs
-> > +++ b/Documentation/ABI/testing/sysfs-fs-f2fs
-> > @@ -44,6 +44,13 @@ Description:
-> >  		 Controls the FS utilization condition for the in-place-update
-> >  		 policies.
-> >  
-> > +What:		/sys/fs/f2fs/<disk>/min_fsync_blocks
-> > +Date:		September 2014
-> > +Contact:	"Jaegeuk Kim" <jaegeuk@kernel.org>
-> > +Description:
-> > +		 Controls the dirty page count condition for the in-place-update
-> > +		 policies.
-> > +
-> >  What:		/sys/fs/f2fs/<disk>/max_small_discards
-> >  Date:		November 2013
-> >  Contact:	"Jaegeuk Kim" <jaegeuk.kim@samsung.com>
-> > diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-> > index a2046a7..d010da8 100644
-> > --- a/Documentation/filesystems/f2fs.txt
-> > +++ b/Documentation/filesystems/f2fs.txt
-> > @@ -194,13 +194,20 @@ Files in /sys/fs/f2fs/<devname>
-> >                                updates in f2fs. There are five policies:
-> >                                 0: F2FS_IPU_FORCE, 1: F2FS_IPU_SSR,
-> >                                 2: F2FS_IPU_UTIL,  3: F2FS_IPU_SSR_UTIL,
-> > -                               4: F2FS_IPU_DISABLE.
-> > +                               4: F2FS_IPU_FSYNC, 5: F2FS_IPU_DISABLE.
-> >  
-> >   min_ipu_util                 This parameter controls the threshold to trigger
-> >                                in-place-updates. The number indicates percentage
-> >                                of the filesystem utilization, and used by
-> >                                F2FS_IPU_UTIL and F2FS_IPU_SSR_UTIL policies.
-> >  
-> > + min_fsync_blocks             This parameter controls the threshold to trigger
-> > +                              in-place-updates when F2FS_IPU_FSYNC mode is set.
-> > +			      The number indicates the number of dirty pages
-> > +			      when fsync needs to flush on its call path. If
-> > +			      the number is less than this value, it triggers
-> > +			      in-place-updates.
-> > +
-> >   max_victim_search	      This parameter controls the number of trials to
-> >  			      find a victim segment when conducting SSR and
-> >  			      cleaning operations. The default value is 4096
-> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> > index 2756c16..4f84d2a 100644
-> > --- a/fs/f2fs/f2fs.h
-> > +++ b/fs/f2fs/f2fs.h
-> > @@ -386,6 +386,7 @@ struct f2fs_sm_info {
-> >  
-> >  	unsigned int ipu_policy;	/* in-place-update policy */
-> >  	unsigned int min_ipu_util;	/* in-place-update threshold */
-> > +	unsigned int min_fsync_blocks;	/* threshold for fsync */
-> >  
-> >  	/* for flush command control */
-> >  	struct flush_cmd_control *cmd_control_info;
-> > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > index 77426c7..af06e22 100644
-> > --- a/fs/f2fs/file.c
-> > +++ b/fs/f2fs/file.c
-> > @@ -154,12 +154,11 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
-> >  	trace_f2fs_sync_file_enter(inode);
-> >  
-> >  	/* if fdatasync is triggered, let's do in-place-update */
-> > -	if (datasync)
-> > +	if (get_dirty_pages(inode) <= SM_I(sbi)->min_fsync_blocks)
-> >  		set_inode_flag(fi, FI_NEED_IPU);
-> > -
-> >  	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
-> > -	if (datasync)
-> > -		clear_inode_flag(fi, FI_NEED_IPU);
-> > +	clear_inode_flag(fi, FI_NEED_IPU);
-> > +
-> >  	if (ret) {
-> >  		trace_f2fs_sync_file_exit(inode, need_cp, datasync, ret);
-> >  		return ret;
-> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> > index e158d63..c6f627b 100644
-> > --- a/fs/f2fs/segment.c
-> > +++ b/fs/f2fs/segment.c
-> > @@ -1928,8 +1928,9 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
-> >  	sm_info->ssa_blkaddr = le32_to_cpu(raw_super->ssa_blkaddr);
-> >  	sm_info->rec_prefree_segments = sm_info->main_segments *
-> >  					DEF_RECLAIM_PREFREE_SEGMENTS / 100;
-> > -	sm_info->ipu_policy = F2FS_IPU_DISABLE;
-> > +	sm_info->ipu_policy = F2FS_IPU_FSYNC;
-> >  	sm_info->min_ipu_util = DEF_MIN_IPU_UTIL;
-> > +	sm_info->min_fsync_blocks = DEF_MIN_FSYNC_BLOCKS;
-> >  
-> >  	INIT_LIST_HEAD(&sm_info->discard_list);
-> >  	sm_info->nr_discards = 0;
-> > diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-> > index bed0dc9..013aed2 100644
-> > --- a/fs/f2fs/segment.h
-> > +++ b/fs/f2fs/segment.h
-> > @@ -472,15 +472,20 @@ static inline int utilization(struct f2fs_sb_info *sbi)
-> >   * F2FS_IPU_UTIL - if FS utilization is over threashold,
-> >   * F2FS_IPU_SSR_UTIL - if SSR mode is activated and FS utilization is over
-> >   *                     threashold,
-> > + * F2FS_IPU_FSYNC - activated in fsync path only for high performance flash
-> > + *                     storages. IPU will be triggered only if the # of dirty
-> > + *                     pages over min_fsync_blocks.
-> >   * F2FS_IPUT_DISABLE - disable IPU. (=default option)
-> >   */
-> >  #define DEF_MIN_IPU_UTIL	70
-> > +#define DEF_MIN_FSYNC_BLOCKS	8
-> >  
-> >  enum {
-> >  	F2FS_IPU_FORCE,
-> >  	F2FS_IPU_SSR,
-> >  	F2FS_IPU_UTIL,
-> >  	F2FS_IPU_SSR_UTIL,
-> > +	F2FS_IPU_FSYNC,
-> >  	F2FS_IPU_DISABLE,
-> >  };
-> >  
-> > @@ -492,10 +497,6 @@ static inline bool need_inplace_update(struct inode *inode)
-> >  	if (S_ISDIR(inode->i_mode))
-> >  		return false;
-> >  
-> > -	/* this is only set during fdatasync */
-> > -	if (is_inode_flag_set(F2FS_I(inode), FI_NEED_IPU))
-> > -		return true;
-> > -
-> >  	switch (SM_I(sbi)->ipu_policy) {
-> >  	case F2FS_IPU_FORCE:
-> >  		return true;
-> > @@ -511,6 +512,11 @@ static inline bool need_inplace_update(struct inode *inode)
-> >  		if (need_SSR(sbi) && utilization(sbi) > SM_I(sbi)->min_ipu_util)
-> >  			return true;
-> >  		break;
-> > +	case F2FS_IPU_FSYNC:
-> > +		/* this is only set during fdatasync */
-> > +		if (is_inode_flag_set(F2FS_I(inode), FI_NEED_IPU))
-> > +			return true;
-> > +		break;
-> >  	case F2FS_IPU_DISABLE:
-> >  		break;
-> >  	}
-> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> > index b5af9be..ed4095e 100644
-> > --- a/fs/f2fs/super.c
-> > +++ b/fs/f2fs/super.c
-> > @@ -190,6 +190,7 @@ F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, reclaim_segments, rec_prefree_segments);
-> >  F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, max_small_discards, max_discards);
-> >  F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, ipu_policy, ipu_policy);
-> >  F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, min_ipu_util, min_ipu_util);
-> > +F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, min_fsync_blocks, min_fsync_blocks);
-> >  F2FS_RW_ATTR(NM_INFO, f2fs_nm_info, ram_thresh, ram_thresh);
-> >  F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, max_victim_search, max_victim_search);
-> >  F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, dir_level, dir_level);
-> > @@ -204,6 +205,7 @@ static struct attribute *f2fs_attrs[] = {
-> >  	ATTR_LIST(max_small_discards),
-> >  	ATTR_LIST(ipu_policy),
-> >  	ATTR_LIST(min_ipu_util),
-> > +	ATTR_LIST(min_fsync_blocks),
-> >  	ATTR_LIST(max_victim_search),
-> >  	ATTR_LIST(dir_level),
-> >  	ATTR_LIST(ram_thresh),
-> > -- 
-> > 1.8.5.2 (Apple Git-48)
-> > 
-> > 
-> > ------------------------------------------------------------------------------
-> > Want excitement?
-> > Manually upgrade your production database.
-> > When you want reliability, choose Perforce
-> > Perforce version control. Predictably reliable.
-> > http://pubads.g.doubleclick.net/gampad/clk?id=157508191&iu=/4140/ostg.clktrk
-> > _______________________________________________
-> > Linux-f2fs-devel mailing list
-> > Linux-f2fs-devel@lists.sourceforge.net
-> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+[...]
+
+> -static const struct regmap_config axp20x_regmap_config = {
+
+[...]
+
+> +static struct regmap_config axp20x_regmap_config = {
+
+Why have you removed const status?
+
+>  	.reg_bits	= 8,
+>  	.val_bits	= 8,
+>  	.wr_table	= &axp20x_writeable_table,
+> @@ -70,47 +129,96 @@ static const struct regmap_config axp20x_regmap_config = {
+>  	.cache_type	= REGCACHE_RBTREE,
+>  };
+>  
+> -#define AXP20X_IRQ(_irq, _off, _mask) \
+> -	[AXP20X_IRQ_##_irq] = { .reg_offset = (_off), .mask = BIT(_mask) }
+> +static struct regmap_config axp288_regmap_config = {
+
+const?
+
+> +	.reg_bits	= 8,
+> +	.val_bits	= 8,
+> +	.wr_table	= &axp288_writeable_table,
+> +	.volatile_table	= &axp288_volatile_table,
+> +	.max_register	= AXP288_FG_TUNE5,
+> +	.cache_type	= REGCACHE_RBTREE,
+> +};
+
+[...]
+
+> -static const struct regmap_irq_chip axp20x_regmap_irq_chip = {
+> +static struct acpi_device_id axp20x_acpi_match[] = {
+> +	{
+> +		.id = "INT33F4",
+> +		.driver_data = (kernel_ulong_t)AXP288_ID,
+
+Why do you need to cast this?
+
+> +	},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(acpi, axp20x_acpi_match);
+> +
+> +/* common irq chip attributes only */
+> +static struct regmap_irq_chip axp20x_regmap_irq_chip = {
+>  	.name			= "axp20x_irq_chip",
+>  	.status_base		= AXP20X_IRQ1_STATE,
+>  	.ack_base		= AXP20X_IRQ1_STATE,
+>  	.mask_base		= AXP20X_IRQ1_EN,
+> -	.num_regs		= 5,
+> -	.irqs			= axp20x_regmap_irqs,
+> -	.num_irqs		= ARRAY_SIZE(axp20x_regmap_irqs),
+>  	.mask_invert		= true,
+>  	.init_ack_masked	= true,
+>  };
+> @@ -161,36 +276,155 @@ static struct mfd_cell axp20x_cells[] = {
+>  	},
+>  };
+
+[...]
+
+> +static int axp20x_match_device(struct axp20x_dev *axp20x, struct device *dev)
+> +{
+> +	const struct acpi_device_id *acpi_id;
+> +	const struct of_device_id *of_id;
+> +
+> +	of_id = of_match_device(axp20x_of_match, dev);
+> +	if (of_id)
+> +		axp20x->variant = (long) of_id->data;
+> +	else {
+> +		acpi_id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> +		if (!acpi_id || !acpi_id->driver_data) {
+> +			dev_err(dev, "Unable to determine ID\n");
+> +			return -ENODEV;
+> +		}
+> +		axp20x->variant = (long) acpi_id->driver_data;
+> +	}
+
+We can do better error handling here and give the user a better sense
+of what happened if anything were to go wrong.  Do:
+
+if (dev->of_node)
+  of_id = of_match_device()
+  if (!of_id)
+    error()
+  variant = of_id->data;
+else
+  acpi_id = acpi_match_device()
+  if (!acpi_id)
+    error()
+  variant = acpi_id->driver_data;
+
+> +	switch (axp20x->variant) {
+> +	case AXP202_ID:
+> +	case AXP209_ID:
+> +		axp20x->nr_cells = ARRAY_SIZE(axp20x_cells);
+> +		axp20x->cells = axp20x_cells;
+> +		axp20x->regmap_cfg = &axp20x_regmap_config;
+> +		axp20x_regmap_irq_chip.num_regs	= 5;
+> +		axp20x_regmap_irq_chip.irqs = axp20x_regmap_irqs;
+> +		axp20x_regmap_irq_chip.num_irqs	=
+> +			ARRAY_SIZE(axp20x_regmap_irqs);
+> +		break;
+> +	case AXP288_ID:
+> +		axp20x->cells = axp288_cells;
+> +		axp20x->nr_cells = ARRAY_SIZE(axp288_cells);
+> +		axp20x->regmap_cfg = &axp288_regmap_config;
+> +		axp20x_regmap_irq_chip.irqs = axp288_regmap_irqs;
+> +		axp20x_regmap_irq_chip.num_irqs	=
+> +			ARRAY_SIZE(axp288_regmap_irqs);
+> +		axp20x_regmap_irq_chip.num_regs	= 6;
+> +		break;
+> +	default:
+> +		dev_err(dev, "unsupported AXP20X ID %lu\n", axp20x->variant);
+> +		return -ENODEV;
+
+-EINVAL might be better here.
+
+> +	}
+> +	dev_info(dev, "AXP20x variant %s found\n",
+> +		axp20x_model_names[axp20x->variant]);
+> +
+> +	return 0;
+> +}
+> +
+>  static int axp20x_i2c_probe(struct i2c_client *i2c,
+> -			 const struct i2c_device_id *id)
+> +			const struct i2c_device_id *id)
+
+Sneaky. ;)
+
+>  {
+>  	struct axp20x_dev *axp20x;
+> -	const struct of_device_id *of_id;
+>  	int ret;
+>  
+>  	axp20x = devm_kzalloc(&i2c->dev, sizeof(*axp20x), GFP_KERNEL);
+>  	if (!axp20x)
+>  		return -ENOMEM;
+>  
+> -	of_id = of_match_device(axp20x_of_match, &i2c->dev);
+> -	if (!of_id) {
+> -		dev_err(&i2c->dev, "Unable to setup AXP20X data\n");
+> -		return -ENODEV;
+> -	}
+> -	axp20x->variant = (long) of_id->data;
+> +	ret = axp20x_match_device(axp20x, &i2c->dev);
+> +	if (ret)
+> +		return ret;
+>  
+>  	axp20x->i2c_client = i2c;
+>  	axp20x->dev = &i2c->dev;
+>  	dev_set_drvdata(axp20x->dev, axp20x);
+>  
+> -	axp20x->regmap = devm_regmap_init_i2c(i2c, &axp20x_regmap_config);
+> +	axp20x->regmap = devm_regmap_init_i2c(i2c, axp20x->regmap_cfg);
+>  	if (IS_ERR(axp20x->regmap)) {
+>  		ret = PTR_ERR(axp20x->regmap);
+>  		dev_err(&i2c->dev, "regmap init failed: %d\n", ret);
+> @@ -206,8 +440,8 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
+>  		return ret;
+>  	}
+>  
+> -	ret = mfd_add_devices(axp20x->dev, -1, axp20x_cells,
+> -			      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
+> +	ret = mfd_add_devices(axp20x->dev, -1, axp20x->cells,
+> +			axp20x->nr_cells, NULL, 0, NULL);
+>  
+>  	if (ret) {
+>  		dev_err(&i2c->dev, "failed to add MFD devices: %d\n", ret);
+
+[...]
+
+> diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
+> index d0e31a2..ffc69e2 100644
+> --- a/include/linux/mfd/axp20x.h
+> +++ b/include/linux/mfd/axp20x.h
+
+[...]
+
+>  struct axp20x_dev {
+>  	struct device			*dev;
+>  	struct i2c_client		*i2c_client;
+>  	struct regmap			*regmap;
+>  	struct regmap_irq_chip_data	*regmap_irqc;
+>  	long				variant;
+> +	int                             nr_cells;
+> +	struct mfd_cell                 *cells;
+> +	struct regmap_config            *regmap_cfg;
+
+const?
+
+>  };
+>  
+>  #endif /* __LINUX_MFD_AXP20X_H */
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
