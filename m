@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710AbaIRVrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:47:52 -0400
-Received: from mail-qg0-f74.google.com ([209.85.192.74]:61087 "EHLO
-	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757663AbaIRVrs (ORCPT
+	id S1757690AbaIRVru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:47:50 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:45806 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757580AbaIRVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:47:48 -0400
+	Thu, 18 Sep 2014 17:47:41 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
         Jason Cooper <jason@lakedaemon.net>
@@ -17,9 +17,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 22/24] irqchip: mips-gic: Remove unnecessary globals
-Date: Thu, 18 Sep 2014 14:47:28 -0700
-Message-Id: <1411076851-28242-23-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V2 10/24] MIPS: sead3: Do not overlap CPU/GIC IRQ ranges
+Date: Thu, 18 Sep 2014 14:47:16 -0700
+Message-Id: <1411076851-28242-11-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
@@ -27,127 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all GIC interrupt routing and handling logic is in the GIC
-driver itself, un-export variables/functions which are no longer used
-outside the GIC driver.  This also allows us to remove gic_compare_int
-and combine gic_get_int_mask with gic_get_int since these interfaces
-are no longer used.
+In preparation for GIC IRQ domain support, assign a GIC IRQ base
+that does not overlap with the CPU IRQs.
+
+Note that this breaks SEAD-3 when the GIC is in EIC mode, though
+I'm not convinced it was working before either.  It will be fixed
+in the following patches.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
 Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
 Tested-by: Qais Yousef <qais.yousef@imgtec.com>
 ---
 No changes from v1.
 ---
- arch/mips/include/asm/gic.h    |  5 -----
- drivers/irqchip/irq-mips-gic.c | 28 ++++------------------------
- 2 files changed, 4 insertions(+), 29 deletions(-)
+ arch/mips/include/asm/mips-boards/sead3int.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/mips/include/asm/gic.h b/arch/mips/include/asm/gic.h
-index 6b99610..727b7bf 100644
---- a/arch/mips/include/asm/gic.h
-+++ b/arch/mips/include/asm/gic.h
-@@ -364,13 +364,11 @@
- extern unsigned int gic_present;
- extern unsigned int gic_frequency;
- extern unsigned long _gic_base;
--extern unsigned int gic_cpu_pin;
+diff --git a/arch/mips/include/asm/mips-boards/sead3int.h b/arch/mips/include/asm/mips-boards/sead3int.h
+index 6b17aaf..2320331 100644
+--- a/arch/mips/include/asm/mips-boards/sead3int.h
++++ b/arch/mips/include/asm/mips-boards/sead3int.h
+@@ -14,6 +14,6 @@
+ #define GIC_BASE_ADDR		0x1b1c0000
+ #define GIC_ADDRSPACE_SZ	(128 * 1024)
  
- extern void gic_init(unsigned long gic_base_addr,
- 	unsigned long gic_addrspace_size, unsigned int cpu_vec,
- 	unsigned int irqbase);
- extern void gic_clocksource_init(unsigned int);
--extern unsigned int gic_compare_int (void);
- extern cycle_t gic_read_count(void);
- extern cycle_t gic_read_compare(void);
- extern void gic_write_compare(cycle_t cnt);
-@@ -378,10 +376,7 @@ extern void gic_write_cpu_compare(cycle_t cnt, int cpu);
- extern void gic_send_ipi(unsigned int intr);
- extern unsigned int plat_ipi_call_int_xlate(unsigned int);
- extern unsigned int plat_ipi_resched_int_xlate(unsigned int);
--extern void gic_bind_eic_interrupt(int irq, int set);
- extern unsigned int gic_get_timer_pending(void);
--extern void gic_get_int_mask(unsigned long *dst, const unsigned long *src);
--extern unsigned int gic_get_int(void);
- extern int gic_get_c0_compare_int(void);
- extern int gic_get_c0_perfcount_int(void);
- #endif /* _ASM_GICREGS_H */
-diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
-index b28f7ad..02c7d2a 100644
---- a/drivers/irqchip/irq-mips-gic.c
-+++ b/drivers/irqchip/irq-mips-gic.c
-@@ -24,7 +24,6 @@
- unsigned int gic_frequency;
- unsigned int gic_present;
- unsigned long _gic_base;
--unsigned int gic_cpu_pin;
+-#define MIPS_GIC_IRQ_BASE	(MIPS_CPU_IRQ_BASE + 0)
++#define MIPS_GIC_IRQ_BASE	(MIPS_CPU_IRQ_BASE + 8)
  
- struct gic_pcpu_mask {
- 	DECLARE_BITMAP(pcpu_mask, GIC_MAX_INTRS);
-@@ -45,6 +44,7 @@ static DEFINE_SPINLOCK(gic_lock);
- static struct irq_domain *gic_irq_domain;
- static int gic_shared_intrs;
- static int gic_vpes;
-+static unsigned int gic_cpu_pin;
- static struct irq_chip gic_level_irq_controller, gic_edge_irq_controller;
- 
- static void __gic_irq_dispatch(void);
-@@ -129,7 +129,7 @@ unsigned int gic_get_timer_pending(void)
- 	return (vpe_pending & GIC_VPE_PEND_TIMER_MSK);
- }
- 
--void gic_bind_eic_interrupt(int irq, int set)
-+static void gic_bind_eic_interrupt(int irq, int set)
- {
- 	/* Convert irq vector # to hw int # */
- 	irq -= GIC_PIN_TO_VEC_OFFSET;
-@@ -143,17 +143,6 @@ void gic_send_ipi(unsigned int intr)
- 	GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), 0x80000000 | intr);
- }
- 
--unsigned int gic_compare_int(void)
--{
--	unsigned int pending;
--
--	GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_PEND), pending);
--	if (pending & GIC_VPE_PEND_CMP_MSK)
--		return 1;
--	else
--		return 0;
--}
--
- int gic_get_c0_compare_int(void)
- {
- 	if (!gic_local_irq_is_routable(GIC_LOCAL_INT_TIMER))
-@@ -174,7 +163,7 @@ int gic_get_c0_perfcount_int(void)
- 				  GIC_LOCAL_TO_HWIRQ(GIC_LOCAL_INT_PERFCTR));
- }
- 
--void gic_get_int_mask(unsigned long *dst, const unsigned long *src)
-+static unsigned int gic_get_int(void)
- {
- 	unsigned int i;
- 	unsigned long *pending, *intrmask, *pcpu_mask;
-@@ -199,17 +188,8 @@ void gic_get_int_mask(unsigned long *dst, const unsigned long *src)
- 
- 	bitmap_and(pending, pending, intrmask, gic_shared_intrs);
- 	bitmap_and(pending, pending, pcpu_mask, gic_shared_intrs);
--	bitmap_and(dst, src, pending, gic_shared_intrs);
--}
--
--unsigned int gic_get_int(void)
--{
--	DECLARE_BITMAP(interrupts, GIC_MAX_INTRS);
--
--	bitmap_fill(interrupts, gic_shared_intrs);
--	gic_get_int_mask(interrupts, interrupts);
- 
--	return find_first_bit(interrupts, gic_shared_intrs);
-+	return find_first_bit(pending, gic_shared_intrs);
- }
- 
- static void gic_mask_irq(struct irq_data *d)
+ #endif /* !(_MIPS_SEAD3INT_H) */
 -- 
 2.1.0.rc2.206.gedb03e5
 
