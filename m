@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512AbaIRVrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:47:39 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:39434 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919AbaIRVrh (ORCPT
+	id S1757821AbaIRVxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:53:48 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:39177 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757449AbaIRVri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:47:37 -0400
+	Thu, 18 Sep 2014 17:47:38 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
         Jason Cooper <jason@lakedaemon.net>
@@ -17,111 +17,60 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 00/24] MIPS GIC cleanup, part 1
-Date: Thu, 18 Sep 2014 14:47:06 -0700
-Message-Id: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V2 03/24] MIPS: Provide a generic plat_irq_dispatch
+Date: Thu, 18 Sep 2014 14:47:09 -0700
+Message-Id: <1411076851-28242-4-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
+References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current MIPS GIC driver and the platform code using it are rather
-ugly and could use a good cleanup before adding device-tree support [0].
-This major issues addressed in this series are converting the GIC (and
-platforms using it) to use IRQ domains and properly mapping interrupts
-through the GIC instead of using it transparently.  For part 2 I plan
-on: updating the driver to use proper iomem accessors, cleaning up and
-moving the GIC clocksource driver to drivers/clocksource/, adding DT
-support, and possibly converting the GIC driver to use generic irqchip.
+For platforms which boot with device-tree or have correctly chained
+all external interrupt controllers, a generic plat_irq_dispatch() can
+be used.  Implement a plat_irq_dispatch() which simply handles all the
+pending interrupts as reported by C0_Cause.
 
-Patches 1-16 are cleanups for the existing GIC driver and prepare platforms
-using it for the switch to IRQ domains and using the GIC in a non-transparent
-way.
-
-Patches 17-24 convert the GIC driver to use IRQ domains and updates the
-platforms using it to properly map GIC interrupts instead of using the static
-routing tables to make the GIC appear transparent.
-
-I've tested this series on Malta and, with additional patches, on the
-DT-enabled Pistachio (formerly known as Danube) platform.  Unfortunately
-I do not have SEAD-3 hardware, but Qais Yousef has tested V1 of this series
-on a SEAD-3.  Compile tested on all other affected architectures (ath79,
-ralink, lantiq).
-
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
+Tested-by: Qais Yousef <qais.yousef@imgtec.com>
+---
 Changes from v1:
- - handle core interrupts in descending order
- - dropped unnecessary irq_chip callbacks when possible
- - used separate irq_chip to deal with C0 timer/perf interrupts
- - added locking around potentially concurrent r-m-w operations
+ - handle interrupts in descending order
+---
+ arch/mips/kernel/irq_cpu.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-[0] https://lkml.org/lkml/2014/9/5/542
-
-Andrew Bresticker (24):
-  MIPS: Always use IRQ domains for CPU IRQs
-  MIPS: Rename mips_cpu_intc_init() -> mips_cpu_irq_of_init()
-  MIPS: Provide a generic plat_irq_dispatch
-  MIPS: Set vint handler when mapping CPU interrupts
-  MIPS: i8259: Use IRQ domains
-  MIPS: Add hook to get C0 performance counter interrupt
-  MIPS: smp-cps: Enable all hardware interrupts on secondary CPUs
-  MIPS: Remove gic_{enable,disable}_interrupt()
-  MIPS: sead3: Remove sead3-serial.c
-  MIPS: sead3: Do not overlap CPU/GIC IRQ ranges
-  MIPS: Malta: Move MSC01 interrupt base
-  MIPS: Move MIPS_GIC_IRQ_BASE into platform irq.h
-  MIPS: Move GIC to drivers/irqchip/
-  irqchip: mips-gic: Remove platform irq_ack/irq_eoi callbacks
-  irqchip: mips-gic: Implement irq_set_type callback
-  irqchip: mips-gic: Fix gic_set_affinity() return value
-  irqchip: mips-gic: Use IRQ domains
-  irqchip: mips-gic: Stop using per-platform mapping tables
-  irqchip: mips-gic: Probe for number of external interrupts
-  irqchip: mips-gic: Use separate edge/level irq_chips
-  irqchip: mips-gic: Support local interrupts
-  irqchip: mips-gic: Remove unnecessary globals
-  MIPS: Malta: Use generic plat_irq_dispatch
-  MIPS: sead3: Use generic plat_irq_dispatch
-
- Documentation/devicetree/bindings/mips/cpu_irq.txt |   4 +-
- arch/mips/Kconfig                                  |  12 +-
- arch/mips/ath79/irq.c                              |   1 -
- arch/mips/ath79/setup.c                            |   5 +
- arch/mips/include/asm/gic.h                        |  82 ++-
- arch/mips/include/asm/irq_cpu.h                    |   4 +-
- arch/mips/include/asm/mach-generic/irq.h           |   6 +
- arch/mips/include/asm/mach-malta/irq.h             |   1 -
- arch/mips/include/asm/mach-sead3/irq.h             |   1 -
- arch/mips/include/asm/mips-boards/maltaint.h       |  24 +-
- arch/mips/include/asm/mips-boards/sead3int.h       |  15 +-
- arch/mips/include/asm/time.h                       |   1 +
- arch/mips/kernel/Makefile                          |   1 -
- arch/mips/kernel/cevt-gic.c                        |  14 +-
- arch/mips/kernel/cevt-r4k.c                        |   4 +-
- arch/mips/kernel/i8259.c                           |  24 +-
- arch/mips/kernel/irq-gic.c                         | 402 -------------
- arch/mips/kernel/irq_cpu.c                         |  48 +-
- arch/mips/kernel/perf_event_mipsxx.c               |  23 +-
- arch/mips/kernel/smp-cps.c                         |   4 +-
- arch/mips/kernel/smp-mt.c                          |   4 +-
- arch/mips/lantiq/irq.c                             |   8 +-
- arch/mips/mti-malta/malta-int.c                    | 307 +---------
- arch/mips/mti-malta/malta-time.c                   |  39 +-
- arch/mips/mti-sead3/sead3-ehci.c                   |   8 +-
- arch/mips/mti-sead3/sead3-int.c                    | 121 +---
- arch/mips/mti-sead3/sead3-net.c                    |  14 +-
- arch/mips/mti-sead3/sead3-platform.c               |  18 +-
- arch/mips/mti-sead3/sead3-serial.c                 |  45 --
- arch/mips/mti-sead3/sead3-time.c                   |  35 +-
- arch/mips/oprofile/op_model_mipsxx.c               |  18 +-
- arch/mips/ralink/irq.c                             |  10 +-
- drivers/irqchip/Kconfig                            |   4 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-mips-gic.c                     | 646 +++++++++++++++++++++
- 35 files changed, 919 insertions(+), 1035 deletions(-)
- delete mode 100644 arch/mips/kernel/irq-gic.c
- delete mode 100644 arch/mips/mti-sead3/sead3-serial.c
- create mode 100644 drivers/irqchip/irq-mips-gic.c
-
+diff --git a/arch/mips/kernel/irq_cpu.c b/arch/mips/kernel/irq_cpu.c
+index ca98a9f..531b11c 100644
+--- a/arch/mips/kernel/irq_cpu.c
++++ b/arch/mips/kernel/irq_cpu.c
+@@ -94,6 +94,24 @@ static struct irq_chip mips_mt_cpu_irq_controller = {
+ 	.irq_eoi	= unmask_mips_irq,
+ };
+ 
++asmlinkage void __weak plat_irq_dispatch(void)
++{
++	unsigned long pending = read_c0_cause() & read_c0_status() & ST0_IM;
++	int irq;
++
++	if (!pending) {
++		spurious_interrupt();
++		return;
++	}
++
++	pending >>= CAUSEB_IP;
++	while (pending) {
++		irq = fls(pending) - 1;
++		do_IRQ(MIPS_CPU_IRQ_BASE + irq);
++		pending &= ~BIT(irq);
++	}
++}
++
+ static int mips_cpu_intc_map(struct irq_domain *d, unsigned int irq,
+ 			     irq_hw_number_t hw)
+ {
 -- 
 2.1.0.rc2.206.gedb03e5
 
