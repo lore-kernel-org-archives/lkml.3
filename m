@@ -1,240 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448AbaIRRde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 13:33:34 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:49590 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932231AbaIRRdc (ORCPT
+	id S932507AbaIRRhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 13:37:40 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60996 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaIRRhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 13:33:32 -0400
-Date: Thu, 18 Sep 2014 10:33:27 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
-        Mark Brown <broonie@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 3/3] mfd: palmas: Add support for optional wakeup
-Message-ID: <20140918173327.GD8740@lee--X1>
-References: <1409950311-25236-1-git-send-email-nm@ti.com>
- <1409950311-25236-4-git-send-email-nm@ti.com>
- <alpine.DEB.2.10.1409052311210.5472@nanos>
- <20140908154109.GA12336@kahuna>
- <541AE40F.1090101@ti.com>
+	Thu, 18 Sep 2014 13:37:38 -0400
+Date: Thu, 18 Sep 2014 10:37:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 1/2] sched: let the scheduler see CPU idle states
+Message-ID: <20140918173733.GQ4723@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
+ <1409844730-12273-2-git-send-email-nicolas.pitre@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <541AE40F.1090101@ti.com>
+In-Reply-To: <1409844730-12273-2-git-send-email-nicolas.pitre@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091817-1542-0000-0000-000004EC54E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014, Nishanth Menon wrote:
-
-> On 09/08/2014 10:41 AM, Nishanth Menon wrote:
-> > On 23:13-20140905, Thomas Gleixner wrote:
-> >> On Fri, 5 Sep 2014, Nishanth Menon wrote:
-> >>> +	if (!palmas->wakeirq)
-> >>> +		goto no_wake_irq;
-> >>> +
-> >>> +	ret = devm_request_irq(palmas->dev, palmas->wakeirq,
-> >>> +			       palmas_wake_irq,
-> >>> +			       IRQF_ONESHOT | pdata->irq_flags,
-> >>
-> >> Why is this marked IRQF_ONESHOT?
-> > 
-> > Uggh.. should have dropped it. my bad.. removed in the revision below.
-> > Thanks for catching it.
-> >>
-> >>> +			       dev_name(palmas->dev),
-> >>> +			       &palmas);
-> >>> +	if (ret < 0)
-> >>> +		goto err_i2c;
-> >>
-> >> Why err and not doing the obvious clearing of palmas->wakeirq and
-> >> keep at least the i2c functional?
-> > Hmmm.. true.. we can stay alive even though without wakeup capability if
-> > someone messes up configuration..
-> > 
-> > Fixed version below. Let me know if you are ok with the following.
+On Thu, Sep 04, 2014 at 11:32:09AM -0400, Nicolas Pitre wrote:
+> From: Daniel Lezcano <daniel.lezcano@linaro.org>
 > 
-> Gentle ping. Would you like me to repost this series over again?
-
-Yes, always.
-
-> > ----8<----
-> > From 6da58ac66eedea46cf7282c6644c76c8f328f5ee Mon Sep 17 00:00:00 2001
-> > From: Nishanth Menon <nm@ti.com>
-> > Date: Tue, 12 Aug 2014 12:00:52 -0500
-> > Subject: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
-> > 
-> > With the recent pinctrl-single changes, omaps can treat wake-up events
-> > from deeper power  states as interrupts.
-> > 
-> > This is to handle the case where the system needs two interrupt
-> > sources when SoC is in deep sleep(1 to exit from deep power mode such
-> > as sleep, and other from the module handling the actual event during
-> > system active state). This is not the same as threaded interrupts as the
-> > wakeup interrupt source is used only as part of deeper power saving
-> > mode.
-> > 
-> > Let's add support for the optional second interrupt for wake-up
-> > events. And then SoC can wakeup and handle the event using it's
-> > regular handler.
-> > 
-> > This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
-> > support for optional wake-up")
-> > 
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > ---
-> >  drivers/mfd/palmas.c       |   62 ++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/palmas.h |    2 ++
-> >  2 files changed, 64 insertions(+)
-> > 
-> > diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> > index 28cb048..de7d204 100644
-> > --- a/drivers/mfd/palmas.c
-> > +++ b/drivers/mfd/palmas.c
-> > @@ -24,6 +24,7 @@
-> >  #include <linux/mfd/core.h>
-> >  #include <linux/mfd/palmas.h>
-> >  #include <linux/of_device.h>
-> > +#include <linux/of_irq.h>
-> >  
-> >  static const struct regmap_config palmas_regmap_config[PALMAS_NUM_CLIENTS] = {
-> >  	{
-> > @@ -326,6 +327,16 @@ static struct regmap_irq_chip tps65917_irq_chip = {
-> >  			PALMAS_INT1_MASK),
-> >  };
-> >  
-> > +static irqreturn_t palmas_wake_irq(int irq, void *_palmas)
-> > +{
-> > +	/*
-> > +	 * Return Not handled so that interrupt is disabled.
-> > +	 * Level event ensures that the event is eventually handled
-> > +	 * by the appropriate chip handler already registered
-> > +	 */
-> > +	return IRQ_NONE;
-> > +}
-> > +
-> >  int palmas_ext_control_req_config(struct palmas *palmas,
-> >  	enum palmas_external_requestor_id id,  int ext_ctrl, bool enable)
-> >  {
-> > @@ -409,6 +420,7 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
-> >  		pdata->mux_from_pdata = 1;
-> >  		pdata->pad2 = prop;
-> >  	}
-> > +	pdata->wakeirq = irq_of_parse_and_map(node, 1);
-> >  
-> >  	/* The default for this register is all masked */
-> >  	ret = of_property_read_u32(node, "ti,power-ctrl", &prop);
-> > @@ -521,6 +533,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
-> >  	i2c_set_clientdata(i2c, palmas);
-> >  	palmas->dev = &i2c->dev;
-> >  	palmas->irq = i2c->irq;
-> > +	palmas->wakeirq = pdata->wakeirq;
-> >  
-> >  	match = of_match_device(of_palmas_match_tbl, &i2c->dev);
-> >  
-> > @@ -587,6 +600,25 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
-> >  	if (ret < 0)
-> >  		goto err_i2c;
-> >  
-> > +	if (!palmas->wakeirq)
-> > +		goto no_wake_irq;
-> > +
-> > +	ret = devm_request_irq(palmas->dev, palmas->wakeirq,
-> > +			       palmas_wake_irq,
-> > +			       pdata->irq_flags,
-> > +			       dev_name(palmas->dev),
-> > +			       &palmas);
-> > +	if (ret < 0) {
-> > +		dev_err(palmas->dev, "Invalid wakeirq(%d) (res: %d), skiping\n",
-> > +			palmas->wakeirq, ret);
-> > +		palmas->wakeirq = 0;
-> > +	} else {
-> > +		/* We use wakeirq only during suspend-resume path */
-> > +		device_set_wakeup_capable(palmas->dev, true);
-> > +		disable_irq_nosync(palmas->wakeirq);
-> > +	}
-> > +
-> > +no_wake_irq:
-> >  no_irq:
-> >  	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
-> >  	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
-> > @@ -706,6 +738,34 @@ static int palmas_i2c_remove(struct i2c_client *i2c)
-> >  	return 0;
-> >  }
-> >  
-> > +static int palmas_i2c_suspend(struct i2c_client *i2c,  pm_message_t mesg)
-> > +{
-> > +	struct palmas *palmas = i2c_get_clientdata(i2c);
-> > +	struct device *dev = &i2c->dev;
-> > +
-> > +	if (!palmas->wakeirq)
-> > +		return 0;
-> > +
-> > +	if (device_may_wakeup(dev))
-> > +		enable_irq(palmas->wakeirq);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int palmas_i2c_resume(struct i2c_client *i2c)
-> > +{
-> > +	struct palmas *palmas = i2c_get_clientdata(i2c);
-> > +	struct device *dev = &i2c->dev;
-> > +
-> > +	if (!palmas->wakeirq)
-> > +		return 0;
-> > +
-> > +	if (device_may_wakeup(dev))
-> > +		disable_irq_nosync(palmas->wakeirq);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> >  static const struct i2c_device_id palmas_i2c_id[] = {
-> >  	{ "palmas", },
-> >  	{ "twl6035", },
-> > @@ -721,6 +781,8 @@ static struct i2c_driver palmas_i2c_driver = {
-> >  		   .of_match_table = of_palmas_match_tbl,
-> >  		   .owner = THIS_MODULE,
-> >  	},
-> > +	.suspend = palmas_i2c_suspend,
-> > +	.resume = palmas_i2c_resume,
-> >  	.probe = palmas_i2c_probe,
-> >  	.remove = palmas_i2c_remove,
-> >  	.id_table = palmas_i2c_id,
-> > diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-> > index fb0390a..e8cf4c2 100644
-> > --- a/include/linux/mfd/palmas.h
-> > +++ b/include/linux/mfd/palmas.h
-> > @@ -75,6 +75,7 @@ struct palmas {
-> >  	/* IRQ Data */
-> >  	int irq;
-> >  	u32 irq_mask;
-> > +	int wakeirq;
-> >  	struct mutex irq_lock;
-> >  	struct regmap_irq_chip_data *irq_data;
-> >  
-> > @@ -377,6 +378,7 @@ struct palmas_clk_platform_data {
-> >  
-> >  struct palmas_platform_data {
-> >  	int irq_flags;
-> > +	int wakeirq;
-> >  	int gpio_base;
-> >  
-> >  	/* bit value to be loaded to the POWER_CTRL register */
-> > 
+> When the cpu enters idle, it stores the cpuidle state pointer in its
+> struct rq instance which in turn could be used to make a better decision
+> when balancing tasks.
 > 
+> As soon as the cpu exits its idle state, the struct rq reference is
+> cleared.
+> 
+> There are a couple of situations where the idle state pointer could be changed
+> while it is being consulted:
+> 
+> 1. For x86/acpi with dynamic c-states, when a laptop switches from battery
+>    to AC that could result on removing the deeper idle state. The acpi driver
+>    triggers:
+> 	'acpi_processor_cst_has_changed'
+> 		'cpuidle_pause_and_lock'
+> 			'cpuidle_uninstall_idle_handler'
+> 				'kick_all_cpus_sync'.
+> 
+> All cpus will exit their idle state and the pointed object will be set to
+> NULL.
+> 
+> 2. The cpuidle driver is unloaded. Logically that could happen but not
+> in practice because the drivers are always compiled in and 95% of them are
+> not coded to unregister themselves.  In any case, the unloading code must
+> call 'cpuidle_unregister_device', that calls 'cpuidle_pause_and_lock'
+> leading to 'kick_all_cpus_sync' as mentioned above.
+> 
+> A race can happen if we use the pointer and then one of these two scenarios
+> occurs at the same moment.
+> 
+> In order to be safe, the idle state pointer stored in the rq must be
+> used inside a rcu_read_lock section where we are protected with the
+> 'rcu_barrier' in the 'cpuidle_uninstall_idle_handler' function. The
+> idle_get_state() and idle_put_state() accessors should be used to that
+> effect.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> ---
+>  drivers/cpuidle/cpuidle.c |  6 ++++++
+>  kernel/sched/idle.c       |  6 ++++++
+>  kernel/sched/sched.h      | 39 +++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 51 insertions(+)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index ee9df5e3f5..530e3055a2 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -225,6 +225,12 @@ void cpuidle_uninstall_idle_handler(void)
+>  		initialized = 0;
+>  		kick_all_cpus_sync();
+>  	}
+> +
+> +	/*
+> +	 * Make sure external observers (such as the scheduler)
+> +	 * are done looking at pointed idle states.
+> +	 */
+> +	rcu_barrier();
+
+Actually, all rcu_barrier() does is to make sure that all previously
+queued RCU callbacks have been invoked.  And given the current
+implementation, if there are no callbacks queued anywhere in the system,
+rcu_barrier() is an extended no-op.  "Has CPU 0 any callbacks?" "Nope!"
+"Has CPU 1 any callbacks?"  "Nope!" ... "Has CPU nr_cpu_ids-1 any
+callbacks?"  "Nope!"  "OK, done!"
+
+This is all done with the current task looking at per-CPU data structures,
+with no interaction with the scheduler and with no need to actually make
+those other CPUs do anything.
+
+So what is it that you really need to do here?
+
+A synchronize_sched() will wait for all non-idle online CPUs to pass
+through the scheduler, where "idle" includes usermode execution in
+CONFIG_NO_HZ_FULL=y kernels.  But it won't wait for CPUs executing
+in the idle loop.
+
+A synchronize_rcu_tasks() will wait for all non-idle tasks that are
+currently on a runqueue to do a voluntary context switch.  There has
+been some discussion about extending this to idle tasks, but the current
+prospective users can live without this.  But if you need it, I can push
+on getting it set up.  (Current plans are that synchronize_rcu_tasks()
+goes into the v3.18 merge window.)  And one caveat: There is long
+latency associated with synchronize_rcu_tasks() by design.  Grace
+periods are measured in seconds.
+
+A stop_cpus() will force a context switch on all CPUs, though it is
+a rather big hammer.
+
+So again, what do you really need?
+
+							Thanx, Paul
+
+>  }
+> 
+>  /**
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index 11e7bc434f..c47fce75e6 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -147,6 +147,9 @@ use_default:
+>  	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
+>  		goto use_default;
+> 
+> +	/* Take note of the planned idle state. */
+> +	idle_set_state(this_rq(), &drv->states[next_state]);
+> +
+>  	/*
+>  	 * Enter the idle state previously returned by the governor decision.
+>  	 * This function will block until an interrupt occurs and will take
+> @@ -154,6 +157,9 @@ use_default:
+>  	 */
+>  	entered_state = cpuidle_enter(drv, dev, next_state);
+> 
+> +	/* The cpu is no longer idle or about to enter idle. */
+> +	idle_set_state(this_rq(), NULL);
+> +
+>  	if (broadcast)
+>  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+> 
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 579712f4e9..aea8baa7a5 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -14,6 +14,7 @@
+>  #include "cpuacct.h"
+> 
+>  struct rq;
+> +struct cpuidle_state;
+> 
+>  extern __read_mostly int scheduler_running;
+> 
+> @@ -636,6 +637,11 @@ struct rq {
+>  #ifdef CONFIG_SMP
+>  	struct llist_head wake_list;
+>  #endif
+> +
+> +#ifdef CONFIG_CPU_IDLE
+> +	/* Must be inspected within a rcu lock section */
+> +	struct cpuidle_state *idle_state;
+> +#endif
+>  };
+> 
+>  static inline int cpu_of(struct rq *rq)
+> @@ -1180,6 +1186,39 @@ static inline void idle_exit_fair(struct rq *rq) { }
+> 
+>  #endif
+> 
+> +#ifdef CONFIG_CPU_IDLE
+> +static inline void idle_set_state(struct rq *rq,
+> +				  struct cpuidle_state *idle_state)
+> +{
+> +	rq->idle_state = idle_state;
+> +}
+> +
+> +static inline struct cpuidle_state *idle_get_state(struct rq *rq)
+> +{
+> +	rcu_read_lock();
+> +	return rq->idle_state;
+> +}
+> +
+> +static inline void cpuidle_put_state(struct rq *rq)
+> +{
+> +	rcu_read_unlock();
+> +}
+> +#else
+> +static inline void idle_set_state(struct rq *rq,
+> +				  struct cpuidle_state *idle_state)
+> +{
+> +}
+> +
+> +static inline struct cpuidle_state *idle_get_state(struct rq *rq)
+> +{
+> +	return NULL;
+> +}
+> +
+> +static inline void cpuidle_put_state(struct rq *rq)
+> +{
+> +}
+> +#endif
+> +
+>  extern void sysrq_sched_debug_show(void);
+>  extern void sched_init_granularity(void);
+>  extern void update_max_interval(void);
+> -- 
+> 1.8.4.108.g55ea5f6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
