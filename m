@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316AbaIRVqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:46:39 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34437 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaIRVqi (ORCPT
+	id S1757638AbaIRVrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:47:45 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:54414 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919AbaIRVrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:46:38 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches\@linaro.org" <patches@linaro.org>,
-        "linaro-kernel\@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
+	Thu, 18 Sep 2014 17:47:39 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
         Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH 3.17-rc4 v7 4/6] irqchip: gic: Add support for IPI FIQ
-In-Reply-To: <20140917185138.GX12361@n2100.arm.linux.org.uk> (Russell King's
-	message of "Wed, 17 Sep 2014 19:51:38 +0100")
-Organization: ARM Ltd
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
-	<1410970218-28847-5-git-send-email-daniel.thompson@linaro.org>
-	<20140917185138.GX12361@n2100.arm.linux.org.uk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 18 Sep 2014 22:46:22 +0100
-Message-ID: <867g10vbyp.fsf@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2 05/24] MIPS: i8259: Use IRQ domains
+Date: Thu, 18 Sep 2014 14:47:11 -0700
+Message-Id: <1411076851-28242-6-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
+References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17 2014 at 07:51:38 PM, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Create a legacy IRQ domain for the 16 i8259 interrupts.
 
-Hi Russell,
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
+Tested-by: Qais Yousef <qais.yousef@imgtec.com>
+---
+No changes from v1.
+---
+ arch/mips/Kconfig        |  1 +
+ arch/mips/kernel/i8259.c | 24 +++++++++++++++++++-----
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-> On Wed, Sep 17, 2014 at 09:10:16AM -0700, Daniel Thompson wrote:
->> This patch provides support for arm's newly added IPI FIQ. It works
->> by placing all interrupt sources *except* IPI FIQ in group 1 and
->> then flips a configuration bit in the GIC such that group 1
->> interrupts use IRQ and group 0 interrupts use FIQ.
->>
->> All GIC hardware except GICv1-without-TrustZone support provides a means
->> to group exceptions into group 0 and group 1. However the hardware
->> functionality is unavailable to the kernel when a secure monitor is
->> present because access to the grouping registers are prohibited outside
->> "secure world" (a feature that allows grouping to be used to allow
->> hardware peripherals to send interrupts into the secure world). However
->> when grouping is not available we can rely on the GIC's RAZ/WI semantics
->> and avoid conditional code.
->
-> I've been chasing a bug with this on the Versatile Express CT9x4.  It
-> seems that the GIC there is a GICv1, with secure extensions.  It seems
-> to support interrupt grouping.
->
-> However, setting SPIs to group 1, with the control registers enabling
-> both group 0 and group 1 (such that both groups are treated as IRQs)
-> results in no SPIs being delivered to the kernel.  In other words,
-> setting GIC_DIST_IGROUP for SPIs, and setting both GIC_CPU_CTRL and
-> GIC_DIST_CTRL to 3.
->
-> This is rather worrying, because we seem to have a GIC which for all
-> intents and purposes appears to be compatible with what we want to do,
-> appears to conform with the GIC architecture specifications, but doesn't
-> actually work.
->
-> I suspect that running the Versatile Express CT9x4 in non-secure mode
-> wouldn't work (because in non-secure mode, the GIC only allows access
-> to group 1 interrupts.)
->
-> I've added Will and Mark to this to see whether they have any comment.
-
-I'm rather far away from my VE-A9 board (and won't be to get back to it
-for another two weeks), so this is all a shot in the dark...
-
-Can you have a look at the GICC_AIAR register (located at GICC_IAR +
-0x14)? It *shouldn't* exist on this HW, assuming this is a real
-GICv1. But what you describe makes me think of something like this.
-
-Thanks,
-
-	M.
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 9fc335c..de72c92 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -971,6 +971,7 @@ config SYS_SUPPORTS_HOTPLUG_CPU
+ 
+ config I8259
+ 	bool
++	select IRQ_DOMAIN
+ 
+ config MIPS_BONITO64
+ 	bool
+diff --git a/arch/mips/kernel/i8259.c b/arch/mips/kernel/i8259.c
+index 50b3648..a74ec3a 100644
+--- a/arch/mips/kernel/i8259.c
++++ b/arch/mips/kernel/i8259.c
+@@ -12,6 +12,7 @@
+ #include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/interrupt.h>
++#include <linux/irqdomain.h>
+ #include <linux/kernel.h>
+ #include <linux/spinlock.h>
+ #include <linux/syscore_ops.h>
+@@ -308,6 +309,19 @@ static struct resource pic2_io_resource = {
+ 	.flags = IORESOURCE_BUSY
+ };
+ 
++static int i8259A_irq_domain_map(struct irq_domain *d, unsigned int virq,
++				 irq_hw_number_t hw)
++{
++	irq_set_chip_and_handler(virq, &i8259A_chip, handle_level_irq);
++	irq_set_probe(virq);
++	return 0;
++}
++
++static struct irq_domain_ops i8259A_ops = {
++	.map = i8259A_irq_domain_map,
++	.xlate = irq_domain_xlate_onecell,
++};
++
+ /*
+  * On systems with i8259-style interrupt controllers we assume for
+  * driver compatibility reasons interrupts 0 - 15 to be the i8259
+@@ -315,17 +329,17 @@ static struct resource pic2_io_resource = {
+  */
+ void __init init_i8259_irqs(void)
+ {
+-	int i;
++	struct irq_domain *domain;
+ 
+ 	insert_resource(&ioport_resource, &pic1_io_resource);
+ 	insert_resource(&ioport_resource, &pic2_io_resource);
+ 
+ 	init_8259A(0);
+ 
+-	for (i = I8259A_IRQ_BASE; i < I8259A_IRQ_BASE + 16; i++) {
+-		irq_set_chip_and_handler(i, &i8259A_chip, handle_level_irq);
+-		irq_set_probe(i);
+-	}
++	domain = irq_domain_add_legacy(NULL, 16, I8259A_IRQ_BASE, 0,
++				       &i8259A_ops, NULL);
++	if (!domain)
++		panic("Failed to add i8259 IRQ domain");
+ 
+ 	setup_irq(I8259A_IRQ_BASE + PIC_CASCADE_IR, &irq2);
+ }
 -- 
-Jazz is not dead. It just smells funny.
+2.1.0.rc2.206.gedb03e5
+
