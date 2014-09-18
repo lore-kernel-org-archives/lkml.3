@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562AbaIRR4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 13:56:03 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50871 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaIRR4A (ORCPT
+	id S932583AbaIRSJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 14:09:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48918 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932532AbaIRSJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 13:56:00 -0400
-Date: Thu, 18 Sep 2014 10:55:33 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        naushad@samsung.com
-Message-ID: <20140918175533.GB7960@sirena.org.uk>
-References: <1411033340-5524-1-git-send-email-pankaj.dubey@samsung.com>
+	Thu, 18 Sep 2014 14:09:28 -0400
+Date: Thu, 18 Sep 2014 19:09:21 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
+Subject: Re: linux-next: manual merge of the usb-gadget tree with the vfs tree
+Message-ID: <20140918180921.GA7996@ZenIV.linux.org.uk>
+References: <20140917161658.2e4eb3f1@canb.auug.org.au>
+ <20140917153400.GA8140@saruman.home>
+ <20140918171226.GE4537@saruman.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UrcmHL2XoDAE6/CM"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411033340-5524-1-git-send-email-pankaj.dubey@samsung.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: fix NULL pointer dereference in
- regmap_get_val_endian
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140918171226.GE4537@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 18, 2014 at 12:12:26PM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Sep 17, 2014 at 10:34:00AM -0500, Felipe Balbi wrote:
+> > On Wed, Sep 17, 2014 at 04:16:58PM +1000, Stephen Rothwell wrote:
+> > > Hi Felipe,
+> > > 
+> > > Today's linux-next merge of the usb-gadget tree got a conflict in
+> > > drivers/usb/gadget/function/f_fs.c between commit 8322215aa91c ("f_fs:
+> > 
+> > I can't find this commit on linux-usb. In fact, googling for it the only
+> > reference I find to that commit is this very thread. I would strong
+> > suggest that it be removed from the tree as it, apparently, went in
+> > without any review. Sure, it's a simple change, but it needs to be
+> > reviewed and needs to be sent to proper maintainers.
+> > 
+> > Unless I'm missing something, of course, but I could not find any other
+> > references to this commit.
+> > 
+> > Al, was this commit sent to any mailing list ?
+> 
+> a gentle ping here
 
---UrcmHL2XoDAE6/CM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+<looks at #for-next>
 
-On Thu, Sep 18, 2014 at 03:12:20PM +0530, Pankaj Dubey wrote:
-> Recents commits for getting reg endianness causing NULL pointer
-> dereference if dev is passed NULL in regmap_init_mmio. This patch
-> fixes this issue, and allows to parse reg endianness only if dev
-> and dev->of_node exist.
+Oh, bugger...  I see what has happened - there's a local queue with a lot
+of pending cleanups; this (and several around it) got into the wrong queue
+and leaked into #for-next.  My apologies; I can certainly take this stuff
+out.  It is an obvious patch, and the only reason why it's there at all
+is that it's a part of preliminary cleanups for sorting the
+d_add/d_splice_alias/d_materialise_unique/d_instantiate/d_add_unique
+mess out.  That almost certainly will be a part of the next cycle, in
+the first place, and this particular commit isn't even a prereq - it's just
+something that fell out of grep while sorting out the calling conventions
+for those guys (what's locked, what is or isn't hashed, etc.)
 
-Applied, thanks.
-
---UrcmHL2XoDAE6/CM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUGxyUAAoJECTWi3JdVIfQjXMH/AqEGqEpBr2FvMPgMhUuuBIV
-T4qIHtS0rIC9cB3fpibOtSwwuGRKDCKV7qKknEPir4UBryzshWtwCjGvUSJucmnq
-egtAuplIal7D+DuvPjWWoK8ztn+CUHyrfm/V2fDxi2zKYQEJ5P4yVMqZq4XK70fd
-I73AHj9mOjraLqMi77hZDHhE5Yphwskie+e81A8X8r7bANkbsHKxn1uLwc3a/uex
-vOurJzZjuj/g/L42E3DB41YZ/wV42Uvv/gDIumW468BdlSLLqcJd08a3cxXvMoPl
-I+8FBdq8paONFMXaEobg5hWqa58EYxyKXd7dm+FOsYRSJ6wAQG5xNC9iTh/w18A=
-=GrsV
------END PGP SIGNATURE-----
-
---UrcmHL2XoDAE6/CM--
+So I've no problems whatsoever either with ripping it out of -next and moving
+it to the local queue until the next cycle, or throwing it your way and waiting
+for it to hit the mainline.  Both f_fs and gadgetfs commits should go your
+way, right?  Just tell which way you prefer them handled...  Again, I hadn't
+planned to push those; there's no reason not to, but they can certainly sit
+around for longer.  Sorry about the mess...
