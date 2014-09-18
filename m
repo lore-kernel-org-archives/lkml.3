@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136AbaIROlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:41:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47913 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755712AbaIROlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:41:15 -0400
-Date: Thu, 18 Sep 2014 09:41:13 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB changes for v3.18 merge window
-Message-ID: <20140918144113.GB4537@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410976602-1536-1-git-send-email-balbi@ti.com>
+	id S1756332AbaIROma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:42:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48251 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678AbaIROm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 10:42:29 -0400
+Date: Thu, 18 Sep 2014 16:42:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jeff Layton <jeff.layton@primarydata.com>
+Subject: Re: [PATCH 1/4] SCHED: add some "wait..on_bit...timeout()"
+ interfaces.
+Message-ID: <20140918144222.GP2840@worktop.localdomain>
+References: <20140916051911.22257.24658.stgit@notabene.brown>
+ <20140916053134.22257.28841.stgit@notabene.brown>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410976602-1536-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140916053134.22257.28841.stgit@notabene.brown>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 16, 2014 at 03:31:35PM +1000, NeilBrown wrote:
+> In commit c1221321b7c25b53204447cff9949a6d5a7ddddc
+>    sched: Allow wait_on_bit_action() functions to support a timeout
+> 
+> I suggested that a "wait_on_bit_timeout()" interface would not meet my
+> need.  This isn't true - I was just over-engineering.
+> 
+> Including a 'private' field in wait_bit_key instead of a focused
+> "timeout" field was just premature generalization.  If some other
+> use is ever found, it can be generalized or added later.
+> 
+> So this patch renames "private" to "timeout" with a meaning "stop
+> waiting when "jiffies" reaches or passes "timeout",
+> and adds two of the many possible wait..bit..timeout() interfaces:
+> 
+> wait_on_page_bit_killable_timeout(), which is the one I want to use,
+> and out_of_line_wait_on_bit_timeout() which is a reasonably general
+> example.  Others can be added as needed.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  include/linux/pagemap.h |    2 ++
+>  include/linux/wait.h    |    5 ++++-
+>  kernel/sched/wait.c     |   36 ++++++++++++++++++++++++++++++++++++
+>  mm/filemap.c            |   13 +++++++++++++
+>  4 files changed, 55 insertions(+), 1 deletion(-)
+> 
 
-On Wed, Sep 17, 2014 at 12:56:42PM -0500, Felipe Balbi wrote:
-> Hi Greg,
->=20
-> Here's my pull request for v3.18. Now I'll ignore linux-usb for a while a=
-nd get
-> a beer or two.
->=20
-> Anyway, let me know if you want anything to be changed, but I tested these
-> patches with beaglebone black and am437x SK.
-
-Wait a second on this one...
-
-[...]
-
-> Li Jun (1):
->       usb: gadget: composite: dequeue cdev->req before free its buffer
-
-I need to revert this commit too.
-
---=20
-balbi
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUGu8JAAoJEIaOsuA1yqREa8cP/0TCgehkkUsAWHTcMvQvxHVv
-rNPs9BhdukCUoYm3WulNzlxhb00qBRCaBBxoJumUPcJSUtvRs32+mVXMSu/zid6s
-ghXPM2TVXngGp7qb/ZYwceL1om+1Yg9vzJJoA+p4URmEE3O9fv+8FuIIVm+Kxlb8
-9mSG1PpwKWaYL+uNc9Z1qIi9BDc3DM1eKdeFgjEtXbP/dj12j197UM/6nvbpys1G
-gs41pIG55PObk3GgvutxhV4vamSqjJy7UUIgrR3ndQl6NjNeoxAmxKcgkNJstpSW
-ifFtDJObZAcOz19YvWy8CftIVl2m2o4OgS4ChVlw3z+xbEACGE7hKn2h9jCYOA+6
-EQ2YgmDmlTTrQhPKliL/IJHgUubNretxsuHjqDHpoT0jw8MVijepMeFJW2wR9msj
-k3JVajhUFCQTJJ0Z1Fk66U4EtjZpjywQ40DWy44O4HulSOPovADo3jrSrpHXifMF
-JOym5tHCt7tZ2/xqqYGs/Ui/3Eg9cfILTJXwkkBU9o2ao/B4NkjnZNZO6KK/O/Ea
-DnVMj7xvPKVk3+6IZgovO5R1mbK9yIKooaw/VPlxoP/KdHjpDk8mFWlg5Bu9oY6W
-AZvhKfcBk/YfFHEOSLcAYZr4F3AWDaQw+yMUCK2gAmaK+XHQwBbbsgDGUFhV4rvG
-QqcXGXVPbCUvE337opxH
-=I8m2
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
