@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615AbaIRS37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 14:29:59 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:14300 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932117AbaIRS35 (ORCPT
+	id S932653AbaIRSbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 14:31:32 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:65123 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932117AbaIRSbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 14:29:57 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvcNAGYkG1RbsHJU/2dsb2JhbABggw2BKrURAQEEBQFxmwqBCxcBeYQxLyOBGjeIQgGyEZBFhgmJCmQdhDUFnQyVSINgOy+BBoFEAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH 1/1 linux-next] jbd2: Fix sparse context imbalance warning
-Date: Thu, 18 Sep 2014 20:29:34 +0200
-Message-Id: <1411064974-18304-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Thu, 18 Sep 2014 14:31:31 -0400
+Message-ID: <1411065089.2017.72.camel@x220>
+Subject: [PATCH 0/5] MN10300: Remove dead code depending on DEPRECATED
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Sep 2014 20:31:29 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Sep 2014 18:31:29.0389 (UTC) FILETIME=[C352F1D0:01CFD36E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-spin_unlock after spin_lock only.
+0) Raised before in
+https://www.redhat.com/archives/linux-am33-list/2011-November/msg00007.html .
 
-This fixes the following sparse warning:
-fs/jbd2/transaction.c:1102:20: warning: context imbalance
-in 'jbd2_journal_get_create_access' - different lock contexts for basic block
+1) Discussed, at length, in https://lkml.org/lkml/2014/2/9/164 .
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/jbd2/transaction.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+2) Compile tested only (on top of next-20140918, using
+arch/mn10300/configs/asb2303_defconfig).
 
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 5f09370..edb7f59 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1091,6 +1091,7 @@ int jbd2_journal_get_create_access(handle_t *handle, struct buffer_head *bh)
- 		JBUFFER_TRACE(jh, "file as BJ_Reserved");
- 		spin_lock(&journal->j_list_lock);
- 		__jbd2_journal_file_buffer(jh, transaction, BJ_Reserved);
-+		spin_unlock(&journal->j_list_lock);
- 	} else if (jh->b_transaction == journal->j_committing_transaction) {
- 		/* first access by this transaction */
- 		jh->b_modified = 0;
-@@ -1098,8 +1099,8 @@ int jbd2_journal_get_create_access(handle_t *handle, struct buffer_head *bh)
- 		JBUFFER_TRACE(jh, "set next transaction");
- 		spin_lock(&journal->j_list_lock);
- 		jh->b_next_transaction = transaction;
-+		spin_unlock(&journal->j_list_lock);
- 	}
--	spin_unlock(&journal->j_list_lock);
- 	jbd_unlock_bh_state(bh);
- 
- 	/*
+3) Logically this should be one humongous patch. It is split into five
+patches to ease review. Review, or actually any reaction whatsoever,
+would be appreciated.
+
+4) The last patch was basically done by checking the output of
+    git grep -i gdb.*stub arch/mn10300
+
+and make educated guesses.
+
+Paul Bolle (5):
+  MN10300: Remove Kconfig symbol GDBSTUB
+  MN10300: Remove Kconfig symbols depending on GDBSTUB
+  MN10300: Remove all checks for CONFIG_GDBSTUB
+  MN10300: Remove checks for GDBSTUB related Kconfig macros
+  MN10300: Remove remnants of gdbstub
+
+ arch/mn10300/Kconfig                            |    6 +-
+ arch/mn10300/Kconfig.debug                      |  120 +-
+ arch/mn10300/boot/compressed/misc.c             |    9 -
+ arch/mn10300/include/asm/exceptions.h           |    7 -
+ arch/mn10300/include/asm/gdb-stub.h             |  182 ---
+ arch/mn10300/kernel/Makefile                    |    3 -
+ arch/mn10300/kernel/entry.S                     |   21 -
+ arch/mn10300/kernel/gdb-io-serial-low.S         |   91 --
+ arch/mn10300/kernel/gdb-io-serial.c             |  174 --
+ arch/mn10300/kernel/gdb-io-ttysm-low.S          |   93 --
+ arch/mn10300/kernel/gdb-io-ttysm.c              |  303 ----
+ arch/mn10300/kernel/gdb-low.S                   |  115 --
+ arch/mn10300/kernel/gdb-stub.c                  | 1923 -----------------------
+ arch/mn10300/kernel/head.S                      |   10 -
+ arch/mn10300/kernel/mn10300-serial.c            |   28 +-
+ arch/mn10300/kernel/mn10300-serial.h            |   15 -
+ arch/mn10300/kernel/mn10300-watchdog.c          |   14 +-
+ arch/mn10300/kernel/process.c                   |   11 -
+ arch/mn10300/kernel/profile.c                   |    2 -
+ arch/mn10300/kernel/smp-low.S                   |    4 -
+ arch/mn10300/kernel/smp.c                       |    7 -
+ arch/mn10300/kernel/traps.c                     |    4 +-
+ arch/mn10300/mm/fault.c                         |    9 -
+ arch/mn10300/mm/misalignment.c                  |    1 -
+ arch/mn10300/mm/tlb-mn10300.S                   |   14 -
+ arch/mn10300/unit-asb2303/include/unit/serial.h |   85 -
+ arch/mn10300/unit-asb2303/unit-init.c           |    4 +-
+ arch/mn10300/unit-asb2305/include/unit/serial.h |   78 -
+ arch/mn10300/unit-asb2305/unit-init.c           |    6 +-
+ arch/mn10300/unit-asb2364/include/unit/serial.h |   66 -
+ arch/mn10300/unit-asb2364/unit-init.c           |    4 +-
+ 31 files changed, 16 insertions(+), 3393 deletions(-)
+ delete mode 100644 arch/mn10300/include/asm/gdb-stub.h
+ delete mode 100644 arch/mn10300/kernel/gdb-io-serial-low.S
+ delete mode 100644 arch/mn10300/kernel/gdb-io-serial.c
+ delete mode 100644 arch/mn10300/kernel/gdb-io-ttysm-low.S
+ delete mode 100644 arch/mn10300/kernel/gdb-io-ttysm.c
+ delete mode 100644 arch/mn10300/kernel/gdb-low.S
+ delete mode 100644 arch/mn10300/kernel/gdb-stub.c
+
 -- 
-1.9.1
+1.9.3
 
