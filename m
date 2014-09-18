@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275AbaIRBha (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:37:30 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:53213 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756684AbaIRBh3 (ORCPT
+	id S1757494AbaIRBhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:37:50 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:45336 "EHLO
+	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757342AbaIRBht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 21:37:29 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8I1ZwT2025495, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
-Date: Thu, 18 Sep 2014 09:35:56 +0800
-Message-ID: <1411004156-9057-1-git-send-email-micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 17 Sep 2014 21:37:49 -0400
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: dianders@chromium.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <91155370b52893a355bebca801139f68>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <541A3765.50606@rock-chips.com>
+Date: Thu, 18 Sep 2014 09:37:41 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+To: Doug Anderson <dianders@chromium.org>, Mark Brown <broonie@kernel.org>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: st-pwm: get voltage and duty table from
+ dts
+References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>	<1410959280-29662-2-git-send-email-zyw@rock-chips.com>	<20140917165109.GM7960@sirena.org.uk> <CAD=FV=UYdBDf+dvUp8U6qbW3CgrMP3vtF_yDamBYwSjZVJ42Qw@mail.gmail.com>
+In-Reply-To: <CAD=FV=UYdBDf+dvUp8U6qbW3CgrMP3vtF_yDamBYwSjZVJ42Qw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
 
-Fix rts5227&5249 failed send buffer cmd after suspend,
-PM_CTRL3 should reset before send any buffer cmd after suspend.
-Otherwise, buffer cmd will failed, this will lead resume fail.
-
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/mfd/rts5227.c        |   19 +++++++++++++++++++
- drivers/mfd/rts5249.c        |    4 ++++
- drivers/mfd/rtsx_pcr.h       |    1 +
- include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
- 4 files changed, 36 insertions(+)
-
-diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index 9c8eec8..8222a31 100644
---- a/drivers/mfd/rts5227.c
-+++ b/drivers/mfd/rts5227.c
-@@ -128,8 +128,27 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
- 
-+int rts5227_pm_reset(struct rtsx_pcr *pcr)
-+{
-+	int err;
-+
-+	/* init aspm */
-+	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
-+	if (err < 0)
-+		return err;
-+
-+	/* reset PM_CTRL3 before send buffer cmd */
-+	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
-+}
-+
- static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
- {
-+	int err;
-+
-+	err = rts5227_pm_reset(pcr);
-+	if (err < 0)
-+		return err;
-+
- 	/* Optimize RX sensitivity */
- 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
- }
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 573de7b..0f1b0e6 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
- {
- 	int err;
- 
-+	err = rts5227_pm_reset(pcr);
-+	if (err < 0)
-+		return err;
-+
- 	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
- 			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
- 			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
-diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-index 07e4c2e..acc7a1e 100644
---- a/drivers/mfd/rtsx_pcr.h
-+++ b/drivers/mfd/rtsx_pcr.h
-@@ -72,4 +72,5 @@ do {									\
- 	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
- } while (0)
- 
-+int rts5227_pm_reset(struct rtsx_pcr *pcr);
- #endif
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 74346d5..b34fec8 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
- 	return (u8 *)(pcr->host_cmds_ptr);
- }
- 
-+static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
-+		u8 mask, u8 append)
-+{
-+	int err;
-+	u8 val;
-+
-+	err = pci_read_config_byte(pcr->pci, addr, &val);
-+	if (err < 0)
-+		return err;
-+	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
-+}
-+
- #endif
--- 
-1.7.9.5
-
+On 09/18/2014 12:54 AM, Doug Anderson wrote:
+> Hi,
+>
+> On Wed, Sep 17, 2014 at 9:51 AM, Mark Brown <broonie@kernel.org> wrote:
+>> On Wed, Sep 17, 2014 at 09:07:59PM +0800, Chris Zhong wrote:
+>>> Get voltage & duty table from device tree might be better, other platforms can also use this
+>>> driver without any modify.
+>>>
+>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>>> ---
+>>>
+>>>   drivers/regulator/Kconfig  |    1 -
+>>>   drivers/regulator/st-pwm.c |   80 +++++++++++++++++++++++---------------------
+>> You need to update the binding document if you're updating the DT
+>> bindings.
+> Mark: See part 2 <https://patchwork.kernel.org/patch/4924381/>.
+> Unfortunately you weren't CCed on that.  It also should have been
+> patch #1, not patch #2.
+>
+> Chris: please change the order and make sure Mark is CCed on the
+> bindings.  Probably anyone CCed on the code change should be on the
+> bindings change (and probably vice versa, but maybe not as critical).
+>
+> -Doug
+>
+>
+Thanks.
+I should not only use patman's script to created cc list.
