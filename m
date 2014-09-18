@@ -1,90 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318AbaIRGyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 02:54:06 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:3563 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751313AbaIRGyC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 02:54:02 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: =?iso-8859-1?Q?=27Uwe_Kleine-K=F6nig=27?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Date: Thu, 18 Sep 2014 14:53:57 +0800
-Subject: RE: [PATCH Resend] arm:extend the reserved mrmory for initrd to be
- page aligned
-Thread-Topic: [PATCH Resend] arm:extend the reserved mrmory for initrd to be
- page aligned
-Thread-Index: Ac/TBT5h3WDV41xlTzSTHeNXj2NlKgAB/mbA
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB491619@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB491616@CNBJMBX05.corpusers.net>
- <20140918055553.GO3755@pengutronix.de>
-In-Reply-To: <20140918055553.GO3755@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1756369AbaIRG4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 02:56:53 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:45811 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaIRG4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 02:56:50 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8I6tXr4006112, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
+Date: Thu, 18 Sep 2014 14:55:33 +0800
+Message-ID: <1411023333-1816-1-git-send-email-micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends the start and end address of initrd to be page aligned,
-so that we can free all memory including the un-page aligned head or tail
-page of initrd, if the start or end address of initrd are not page
-aligned, the page can't be freed by free_initrd_mem() function.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+Fix rts5227&5249 failed send buffer cmd after suspend,
+PM_CTRL3 should reset before send any buffer cmd after suspend.
+Otherwise, buffer cmd will failed, this will lead resume fail.
+
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- arch/arm/mm/init.c   | 5 +++++
- arch/arm64/mm/init.c | 8 +++++++-
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/mfd/Makefile         |    2 +-
+ drivers/mfd/rts5227.c        |    6 ++++++
+ drivers/mfd/rts5249.c        |    4 ++++
+ drivers/mfd/rtsx_gops.c      |   36 ++++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h       |    3 +++
+ include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
+ 6 files changed, 62 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mfd/rtsx_gops.c
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 659c75d..9221645 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -636,6 +636,11 @@ static int keep_initrd;
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
- 	if (!keep_initrd) {
-+		if (start == initrd_start)
-+			start = round_down(start, PAGE_SIZE);
-+		if (end == initrd_end)
-+			end = round_up(end, PAGE_SIZE);
-+
- 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
- 		free_reserved_area((void *)start, (void *)end, -1, "initrd");
- 	}
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 5472c24..c5512f6 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -334,8 +334,14 @@ static int keep_initrd;
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index f001487..7f45c06 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -13,7 +13,7 @@ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+ obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+ obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
  
- void free_initrd_mem(unsigned long start, unsigned long end)
+-rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
++rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+ obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+ obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
+ 
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index 9c8eec8..3240740 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -130,6 +130,12 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ 
+ static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
  {
--	if (!keep_initrd)
-+	if (!keep_initrd) {
-+		if (start == initrd_start)
-+			start = round_down(start, PAGE_SIZE);
-+		if (end == initrd_end)
-+			end = round_up(end, PAGE_SIZE);
++	int err;
 +
- 		free_reserved_area((void *)start, (void *)end, 0, "initrd");
-+	}
++	err = rtsx_gops_pm_reset(pcr);
++	if (err < 0)
++		return err;
++
+ 	/* Optimize RX sensitivity */
+ 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
+ }
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 573de7b..cf425cc 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
+ 
++	err = rtsx_gops_pm_reset(pcr);
++	if (err < 0)
++		return err;
++
+ 	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
+ 			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
+ 			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
+diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
+new file mode 100644
+index 0000000..3cf596f
+--- /dev/null
++++ b/drivers/mfd/rtsx_gops.c
+@@ -0,0 +1,36 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Micky Ching <micky_ching@realsil.com.cn>
++ */
++
++#include <linux/mfd/rtsx_pci.h>
++#include "rtsx_pcr.h"
++
++int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
++{
++	int err;
++
++	/* init aspm */
++	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
++	if (err < 0)
++		return err;
++
++	/* reset PM_CTRL3 before send buffer cmd */
++	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
++}
+diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+index 07e4c2e..fe2bbb6 100644
+--- a/drivers/mfd/rtsx_pcr.h
++++ b/drivers/mfd/rtsx_pcr.h
+@@ -72,4 +72,7 @@ do {									\
+ 	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
+ } while (0)
+ 
++/* generic operations */
++int rtsx_gops_pm_reset(struct rtsx_pcr *pcr);
++
+ #endif
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 74346d5..b34fec8 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+ 	return (u8 *)(pcr->host_cmds_ptr);
  }
  
- static int __init keepinitrd_setup(char *__unused)
++static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
++		u8 mask, u8 append)
++{
++	int err;
++	u8 val;
++
++	err = pci_read_config_byte(pcr->pci, addr, &val);
++	if (err < 0)
++		return err;
++	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
++}
++
+ #endif
 -- 
-2.1.0
+1.7.9.5
+
