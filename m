@@ -1,207 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601AbaIRJi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:38:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37637 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129AbaIRJiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:38:24 -0400
-X-AuditID: cbfee691-f79546d0000011a1-87-541aa80e51d8
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: Li.Xiubo@freescale.com, Aisheng.Dong@freescale.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, arnd@arndb.de, naushad@samsung.com,
-        tomasz.figa@gmail.com, joshi@samsung.com, thomas.ab@samsung.com,
-        vikas.sajjan@samsung.com, chow.kim@samsung.com, lee.jones@linaro.org,
-        "'Boris BREZILLON'" <boris.brezillon@free-electrons.com>,
-        "'Geert Uytterhoeven'" <geert+renesas@glider.be>,
-        "'Stephen Warren'" <swarren@nvidia.com>
-References: <1410935510-1567-1-git-send-email-pankaj.dubey@samsung.com>
- <20140917085818.GA10285@shlinux1.ap.freescale.net>
- <000401cfd269$922dfc40$b689f4c0$@samsung.com>
- <20140918030552.GA26661@shlinux1.ap.freescale.net>
- <000701cfd306$4d3e8080$e7bb8180$@samsung.com>
- <20140918075516.GB15363@shlinux1.ap.freescale.net>
- <1c762cb71a5245f19fdcec8266fd45b6@BY2PR0301MB0613.namprd03.prod.outlook.com>
-In-reply-to: <1c762cb71a5245f19fdcec8266fd45b6@BY2PR0301MB0613.namprd03.prod.outlook.com>
-Subject: RE: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
- devices
-Date: Thu, 18 Sep 2014 15:10:43 +0530
-Message-id: <000d01cfd324$a2db05e0$e89111a0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGAgvNtQpXjUZMClJmM9wWnjoVNAgMenyfbAIibLDoCPoOsEAI7E69pAJ14hxECRhVLU5xNH+rQ
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsWyRsSkTpdvhVSIwYGpahYLlr5lsfg76Ri7
-	xYEXC1kslk26y2Yxd/YkRovvu76wW/QuuMpmcf/rUUaLzgsdrBabHl9jtbi8aw6bxYzz+5gs
-	bl/mtfh09D+rxY3pLawWHcsYLVbt+sNocfPZdiYHIY+W5h42j9+/JjF6PNl0kdHj3+F+Jo+J
-	Z3U9ds66y+5x59oeNo/NS+o9epvfsXn0bVnF6PF5k1wAdxSXTUpqTmZZapG+XQJXxoaOw2wF
-	75UqpnWFNzBekupi5OSQEDCRWDhxIiOELSZx4d56NhBbSGApo8S92ZYwNf9+PmHqYuQCik9n
-	lLh/AaQBxPkL5BzcBdbNJqAr8eT9XGYQW0TATKL/zSp2kCJmgXvMEhM/HWKD6JjKLLHrwR8W
-	kCpOgWiJu+e/gnUIC4RJXO09zw5iswioSmx4f58VxOYVsJSYuPQIlC0o8WPyPbBeZgEtifU7
-	jzNB2PISm9e8ZYa4VUFix9nXjBBXxEg8aj3HDFEjLjHpwUOwiyQE7nBIPDx3ixFimYDEt8mH
-	gIZyACVkJTYdgJojKXFwxQ2WCYwSs5CsnoVk9Swkq2chWbGAkWUVo2hqQXJBcVJ6kalecWJu
-	cWleul5yfu4mRmCKOf3v2cQdjPcPWB9iFOBgVOLhlRCQChFiTSwrrsw9xGgKdNFEZinR5Hxg
-	IssriTc0NjOyMDUxNTYytzRTEufVkf4ZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRYBv/
-	Mcu6vQGG2oH1dXtmVMfoNuxY/Pjb5iQ5kdWvLH8v3M9c3zir69yJ9LUVzodDrqy7qq4RdXP3
-	bo8oj+aC15LaGTMUZix8x/D8880DqW5uLzdNW/rG+uDtEws2mSQXysVf8Um6uLe6yPK39pX9
-	CY4v4zx9DYWDnaZwphbLM2udE2LKPsyjxFKckWioxVxUnAgA9gK8WSwDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCKsWRmVeSWpSXmKPExsVy+t9jQV2+FVIhBivPyFgsWPqWxeLvpGPs
-	FgdeLGSxWDbpLpvF3NmTGC2+7/rCbtG74Cqbxf2vRxktOi90sFpsenyN1eLyrjlsFjPO72Oy
-	uH2Z1+LT0f+sFjemt7BadCxjtFi16w+jxc1n25kchDxamnvYPH7/msTo8WTTRUaPf4f7mTwm
-	ntX12DnrLrvHnWt72Dw2L6n36G1+x+bRt2UVo8fnTXIB3FENjDYZqYkpqUUKqXnJ+SmZeem2
-	St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QI8pKZQl5pQChQISi4uV9O0wTQgNcdO1
-	gGmM0PUNCYLrMTJAAwlrGDM2dBxmK3ivVDGtK7yB8ZJUFyMnh4SAicS/n0+YIGwxiQv31rN1
-	MXJxCAlMZ5S4f2EiI4TzF8g5uIsRpIpNQFfiyfu5zCC2iICZRP+bVewgRcwC95glJn46BNU+
-	lVli14M/LCBVnALREnfPfwXrEBYIk7jae54dxGYRUJXY8P4+K4jNK2ApMXHpEShbUOLH5Htg
-	vcwCWhLrdx5ngrDlJTavecsMcauCxI6zrxkhroiReNR6jhmiRlxi0oOH7BMYhWYhGTULyahZ
-	SEbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwCnsmvYNxVYPFIUYBDkYlHt4D
-	vFIhQqyJZcWVuYcYJTiYlUR4fy0ECvGmJFZWpRblxxeV5qQWH2I0Bfp0IrOUaHI+ML3mlcQb
-	GpuYmxqbWppYmJhZKonzHmy1DhQSSE8sSc1OTS1ILYLpY+LglGpgZGiceedMUbzcypX/e4+F
-	u3Nac3sbGN227Qw1i9n379XmaceKkg59vLsvxPvidrUL1fzdy+37ja8eTV/+vUPXwfL89UJl
-	mQWCSzfyH9bx6mfrfTzlx5I/B9vCr3czcax9ELHfeqbzlj+vFpc+kphRGpN5LrbpxOv9NR++
-	6m0JibJfm5ynslAhTYmlOCPRUIu5qDgRAHIotE13AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756619AbaIRJi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:38:58 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5706 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755886AbaIRJi5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:38:57 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 18 Sep 2014 17:38:54 +0800
+Subject: RE: [PATCH] arm64:free_initrd_mem should also free the memblock
+Thread-Topic: [PATCH] arm64:free_initrd_mem should also free the memblock
+Thread-Index: Ac/Sowg9kT8qstkfTGqbNgzcT/H+aAAP/3nQ
+Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB49161B@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103CDBFBFB029@CNBJMBX05.corpusers.net>
+ <20140915183334.GA30737@arm.com>
+ <20140915184023.GF12361@n2100.arm.linux.org.uk>
+ <20140915185027.GC30737@arm.com>
+ <35FD53F367049845BC99AC72306C23D103D6DB49160C@CNBJMBX05.corpusers.net>
+ <20140917162822.GB15261@e104818-lin.cambridge.arm.com>
+ <20140917181254.GW12361@n2100.arm.linux.org.uk>
+In-Reply-To: <20140917181254.GW12361@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Russell,
 
-On September 18, 2014, Li.Xiubo wrote,
-> Subject: RE: [PATCH v3] mfd: syscon: Decouple syscon interface from
-platform
-> devices
-> 
-> [...]
-> > > I think there should have been a check for NULL on "dev" in
-> > > "regmap_get_val_endian", so that if dev pointer exist then only it
-> > > makes sense to get endianness property from DT.
-> > >
-> > > I will suggest following fix in regmap.c for this. With following
-> > > fix I tested it and it works well on linux-next also. So if you can
-> > > confirm following fix is working for you then I can post this patch.
-> > >
-> >
-> > I tested the patch work.
-> > But as Xiubo pointed in another mail, it may still cause other issues.
-> > Looking at regmap.c, there're still some other places using the device
-> > pointer, e.g. dev_xxx debug information and some tracepoints also take
-> > device pointer as parameter(not sure if it will break if dev is NULL).
-> > Another thing is that if dev is NULL, we may not be able to use regmap
-> > debugfs feature which seems also not as our expected.
-> >
-> > Maybe we could consider create device structure for each syscon
-> > compatible device in syscon driver in of_syscon_register in first time
-> > which seems to be reasonable.
-> >
-> > Regards
-> > Dong Aisheng
-> >
-> > > --------------------------------------------
-> > > Subject: [PATCH] regmap: fix NULL pointer dereference in
-> > > regmap_get_val_endian
-> > >
-> > > Recent commits for getting reg endianess causing NULL pointer
-> > > dereference if dev is passed NULL in regmap_init_mmio. This patch
-> > > fixes this issue, and allows to parse reg endianess only if dev and
-> > > dev->of_node exist.
-> > >
-> > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > > ---
-> > >  drivers/base/regmap/regmap.c |   23 ++++++++++++++---------
-> > >  1 file changed, 14 insertions(+), 9 deletions(-)
-> > >
-> > > diff --git a/drivers/base/regmap/regmap.c
-> > > b/drivers/base/regmap/regmap.c index f2281af..455a877 100644
-> > > --- a/drivers/base/regmap/regmap.c
-> > > +++ b/drivers/base/regmap/regmap.c
-> > > @@ -477,7 +477,7 @@ static enum regmap_endian
-> > > regmap_get_val_endian(struct device *dev,
-> > >  					const struct regmap_bus *bus,
-> > >  					const struct regmap_config *config)
-{
-> > > -	struct device_node *np = dev->of_node;
-> > > +	struct device_node *np;
-> 
-> And the 'np' must be NULL as default.
-> 
-> Isn't it ?
-> 
+mm..
+I see your meaning,
+But how to debug reserved memory,
+I mean how to know which physical memory are reserved in kernel if 
+Not use /sys/kernel/debug/memblock/reserved  debug file ?
+
+I think memblock provides a debug interface, so it should keep it 
+Correct for debug .
+
+For Catalin 's suggestion,
+I am not sure if it is always true to call memblock_free() in
+free_reserved_area() , maybe some caller don't want this
+behaviors .
+So maybe we can introduce another function like free_reserved_area_and_memblock() to implement it.
 
 
-Yes. 
+-----Original Message-----
+From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] 
+Sent: Thursday, September 18, 2014 2:13 AM
+To: Catalin Marinas
+Cc: Wang, Yalin; Will Deacon; 'linux-mm@kvack.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: Re: [PATCH] arm64:free_initrd_mem should also free the memblock
 
-Thanks,
-Pankaj Dubey
-
-> Thanks,
+On Wed, Sep 17, 2014 at 05:28:23PM +0100, Catalin Marinas wrote:
+> On Tue, Sep 16, 2014 at 02:53:55AM +0100, Wang, Yalin wrote:
+> > The reason that a want merge this patch is that It confuse me when I 
+> > debug memory issue by /sys/kernel/debug/memblock/reserved  debug 
+> > file, It show lots of un-correct reserved memory.
+> > In fact, I also send a patch to cma driver part For this issue too:
+> > http://ozlabs.org/~akpm/mmots/broken-out/free-the-reserved-memblock-
+> > when-free-cma-pages.patch
+> > 
+> > I want to remove these un-correct memblock parts as much as 
+> > possible, so that I can see more correct info from 
+> > /sys/kernel/debug/memblock/reserved
+> > debug file .
 > 
-> BRs
-> Xiubo
-> 
-> > >  	enum regmap_endian endian;
-> > >
-> > >  	/* Retrieve the endianness specification from the regmap config */
-> > > @@ -487,15 +487,20 @@ static enum regmap_endian
-> > > regmap_get_val_endian(struct device *dev,
-> > >  	if (endian != REGMAP_ENDIAN_DEFAULT)
-> > >  		return endian;
-> > >
-> > > -	/* Parse the device's DT node for an endianness specification */
-> > > -	if (of_property_read_bool(np, "big-endian"))
-> > > -		endian = REGMAP_ENDIAN_BIG;
-> > > -	else if (of_property_read_bool(np, "little-endian"))
-> > > -		endian = REGMAP_ENDIAN_LITTLE;
-> > > +	/* If the dev and dev->of_node exist try to get endianness from DT
-> > > */
-> > > +	if (dev && dev->of_node) {
-> > > +		np = dev->of_node;
-> > >
-> > > -	/* If the endianness was specified in DT, use that */
-> > > -	if (endian != REGMAP_ENDIAN_DEFAULT)
-> > > -		return endian;
-> > > +		/* Parse the device's DT node for an endianness
-> > > specification */
-> > > +		if (of_property_read_bool(np, "big-endian"))
-> > > +			endian = REGMAP_ENDIAN_BIG;
-> > > +		else if (of_property_read_bool(np, "little-endian"))
-> > > +			endian = REGMAP_ENDIAN_LITTLE;
-> > > +
-> > > +		/* If the endianness was specified in DT, use that */
-> > > +		if (endian != REGMAP_ENDIAN_DEFAULT)
-> > > +			return endian;
-> > > +	}
-> > >
-> > >  	/* Retrieve the endianness specification from the bus config */
-> > >  	if (bus && bus->val_format_endian_default)
-> > > --
-> > >
-> > > Thanks,
-> > > Pankaj Dubey
-> > >
-> > > > Regards
-> > > > Dong Aisheng
-> > > >
-> > > > >
-> > > > > Thanks,
-> > > > > Pankaj Dubey
-> > > > >
-> > > > > > Regards
-> > > > > > Dong Aisheng
-> > > > > >
-> > > > > > >
-> > > > > > >
-> > > > > > > _______________________________________________
-> > > > > > > linux-arm-kernel mailing list
-> > > > > > > linux-arm-kernel@lists.infradead.org
-> > > > > > > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > > > >
-> > >
+> Could we not always call memblock_free() from free_reserved_area() 
+> (with a dummy definition when !CONFIG_HAVE_MEMBLOCK)?
 
+Why bother?
+
+The next thing is that people will want to have memblock's reserved areas track whether the kernel allocates a page so that the memblock debugging follows the kernel's allocation state.
+
+This is utterly rediculous.  Memblock is purely a method to get the system up and running.  Once it hands memory over to the normal kernel allocators, the reservation information in memblock is no longer valid.
+
+The /useful/ information that it provides is the state of memory passed over to the kernel allocators, which in itself is valuable information.
+Destroying it by freeing stuff after that point is not useful.
+
+--
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up according to speedtest.net.
