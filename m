@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481AbaIRWcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 18:32:53 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33822 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754380AbaIRWcw (ORCPT
+	id S932252AbaIRWdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 18:33:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38921 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757484AbaIRWdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 18:32:52 -0400
-Date: Thu, 18 Sep 2014 23:32:41 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Krait VFP fixes
-Message-ID: <20140918223241.GE5182@n2100.arm.linux.org.uk>
-References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 18 Sep 2014 18:33:15 -0400
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org
+Subject: [PATCH 2/3] watchdog: qcom: document device tree bindings
+Date: Thu, 18 Sep 2014 17:27:00 -0500
+Message-Id: <2fb34baf36df6c5ca086c2bb496474e4bf28f0ba.1411078426.git.joshc@codeaurora.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1411078425.git.joshc@codeaurora.org>
+References: <cover.1411078425.git.joshc@codeaurora.org>
+In-Reply-To: <cover.1411078425.git.joshc@codeaurora.org>
+References: <cover.1411078425.git.joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It would be nice to be copied on these patches, as the VFP code is
-entirely my creation...  I'll review these patches shortly.
+The Qualcomm Krait Processor Sub-system (KPSS) contains one or more
+instances of the WDT.  Provide documentation on how to describe these in
+the device tree.
 
-On Thu, Sep 18, 2014 at 02:43:09PM -0700, Stephen Boyd wrote:
-> These changes allow us to support VFP correctly on Krait processors.
-> They also fix short vector emulation for Cortex-A15 and Krait.
-> 
-> Stepan Moskovchenko (1):
->   arm: vfp: Bounce undefined instructions in vectored mode
-> 
-> Stephen Boyd (2):
->   ARM: vfp: Workaround bad MVFR1 register on some Kraits
->   ARM: vfp: fix VFPv3 hwcap detection on non-ARM vfp implementations
-> 
->  arch/arm/include/asm/cputype.h | 1 +
->  arch/arm/include/asm/vfp.h     | 2 +-
->  arch/arm/mm/proc-v7.S          | 5 +++--
->  arch/arm/vfp/vfphw.S           | 6 ++++++
->  arch/arm/vfp/vfpmodule.c       | 7 +++++++
->  5 files changed, 18 insertions(+), 3 deletions(-)
-> 
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+---
+ .../devicetree/bindings/watchdog/qcom-wdt.txt       | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
 
+diff --git a/Documentation/devicetree/bindings/watchdog/qcom-wdt.txt b/Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
+new file mode 100644
+index 0000000..e65cb8e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
+@@ -0,0 +1,21 @@
++Qualcomm Krait Processor Sub-system (KPSS) Watchdog
++---------------------------------------------------
++
++Required properties :
++- compatible : shall contain only one of the following:
++
++			"qcom,kpss-wdt-msm8960"
++			"qcom,kpss-wdt-apq8064"
++			"qcom,kpss-wdt-ipq8064"
++
++- reg : shall contain base register location and length
++- clock-frequency : shall contain the frequency at which the watchdog ticks
++- timeout-sec : shall contain the default watchdog timeout in seconds
++
++Example:
++	watchdog@208a038 {
++		compatible = "qcom,kpss-wdt-ipq8064";
++		reg = <0x0208a038 0x40>;
++		clock-frequency = <32768>;
++		timeout-sec = <10>;
++	};
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
