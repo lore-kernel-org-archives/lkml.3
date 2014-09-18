@@ -1,195 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539AbaIRSxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 14:53:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45125 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755032AbaIRSxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 14:53:52 -0400
-Date: Thu, 18 Sep 2014 15:53:45 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf session: Add option to copy events when queueing
-Message-ID: <20140918185345.GJ2770@kernel.org>
-References: <1411060059-23589-1-git-send-email-yarygin@linux.vnet.ibm.com>
- <1411060059-23589-2-git-send-email-yarygin@linux.vnet.ibm.com>
+	id S1755716AbaIRSz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 14:55:58 -0400
+Received: from relay05.mycloudmailbox.com ([199.244.76.202]:57683 "EHLO
+	relay05.mycloudmailbox.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755032AbaIRSz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 14:55:56 -0400
+Message-ID: <541B2AB8.7020308@uplogix.com>
+Date: Thu, 18 Sep 2014 13:55:52 -0500
+From: David Barksdale <dbarksdale@uplogix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411060059-23589-2-git-send-email-yarygin@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Meerwald <pmeerw@pmeerw.net>
+CC: Jonathan Cameron <jic23@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH] IIO: add si701x driver
+References: <1411056475-22283-1-git-send-email-dbarksdale@uplogix.com> <alpine.DEB.2.01.1409181926001.30983@pmeerw.net>
+In-Reply-To: <alpine.DEB.2.01.1409181926001.30983@pmeerw.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: S05-CAS002.S05.local (10.30.32.23) To
+ S05-MLT01-07.S05.local (10.30.32.218)
+X-RoutingAgent: Treated
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 18, 2014 at 09:07:38PM +0400, Alexander Yarygin escreveu:
-> From: David Ahern <dsahern@gmail.com>
-> When processing events the session code has an ordered samples queue which is
-> used to time-sort events coming in across multiple mmaps. At a later point in
-> time samples on the queue are flushed up to some timestamp at which point the
-> event is actually processed.
-> 
-> When analyzing events live (ie., record/analysis path in the same command)
-> there is a race that leads to corrupted events and parse errors which cause
-> perf to terminate. The problem is that when the event is placed in the ordered
-> samples queue it is only a reference to the event which is really sitting in
-> the mmap buffer. Even though the event is queued for later processing the mmap
-> tail pointer is updated which indicates to the kernel that the event has been
-> processed. The race is flushing the event from the queue before it gets
-> overwritten by some other event. For commands trying to process events live
-> (versus just writing to a file) and processing a high rate of events this leads
-> to parse failures and perf terminates.
-> 
-> Examples hitting this problem are 'perf kvm stat live', especially with nested
-> VMs which generate 100,000+ traces per second, and a command processing
-> scheduling events with a high rate of context switching -- e.g., running
-> 'perf bench sched pipe'.
-> 
-> This patch offers live commands an option to copy the event when it is placed in
-> the ordered samples queue.
 
-If nobody objects I'll merge this patch, as it fixes problems, but I
-wonder if the best wouldn't be simply not calling
-perf_evlist__mmap_consume() till the last event there is in fact
-consumed... I.e. as we _really_ consume the events, we remove it from
-there.
 
-Instead of consuming the event at perf_tool->sample() time, we would
-do it at perf_tool->finished_round(), would that be feasible? Has anyone
-tried this?
+On 09/18/2014 12:43 PM, Peter Meerwald wrote:
+>
+>> This patch adds support to the Industrial IO subsystem
+>> for the Silicon Labs Si701x/2x Relative Humidity and
+>> Temperature Sensors.
+>
+> the name si701x is problematic; the si7015 for example is supported by
+> the si7005 driver
+>
+> how about calling the driver si7020 and stating that it also supports
+> si7013, si7021 -- the x notation in driver names always leads to touble...
 
-David? Is this a st00pid idea?
+Sounds good.
 
-- Arnaldo
+> the additional features of the si7013 are not supported by the driver
+>
+>> Website: http://www.silabs.com/products/sensors/humidity-sensors/Pages/si7013-20-21.aspx
+>>
+>> These are i2c devices which measure relative humidity
+>> and temperature and all use the same protocol. The
+>> Si7013 has an additional input with programmable
+>> linearization which is not supported because that's
+>> complicated and I didn't need it.
+>>
+>> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
+>>
+>> ---
+>>   drivers/iio/humidity/Kconfig  |  10 +++
+>>   drivers/iio/humidity/Makefile |   1 +
+>>   drivers/iio/humidity/si701x.c | 159 ++++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 170 insertions(+)
+>>
+>> diff --git a/drivers/iio/humidity/Kconfig b/drivers/iio/humidity/Kconfig
+>> index e116bd8..ba0ef61 100644
+>> --- a/drivers/iio/humidity/Kconfig
+>> +++ b/drivers/iio/humidity/Kconfig
+>> @@ -22,4 +22,14 @@ config SI7005
+>>   	  To compile this driver as a module, choose M here: the module
+>>   	  will be called si7005.
+>>
+>> +config SI701X
+>> +	tristate "Si701x/2x Relative Humidity and Temperature Sensors"
+>> +	depends on I2C
+>> +	help
+>> +	  Say yes here to build support for the Silicon Labs Si701x/2x Relative
+>> +	  Humidity and Temperature Sensors.
+>> +
+>> +	  To compile this driver as a module, choose M here: the module
+>> +	  will be called si701x.
+>> +
+>>   endmenu
+>> diff --git a/drivers/iio/humidity/Makefile b/drivers/iio/humidity/Makefile
+>> index e3f3d94..d2e9645 100644
+>> --- a/drivers/iio/humidity/Makefile
+>> +++ b/drivers/iio/humidity/Makefile
+>> @@ -4,3 +4,4 @@
+>>
+>>   obj-$(CONFIG_DHT11) += dht11.o
+>>   obj-$(CONFIG_SI7005) += si7005.o
+>> +obj-$(CONFIG_SI701X) += si701x.o
+>> diff --git a/drivers/iio/humidity/si701x.c b/drivers/iio/humidity/si701x.c
+>> new file mode 100644
+>> index 0000000..1a2ee22
+>> --- /dev/null
+>> +++ b/drivers/iio/humidity/si701x.c
+>> @@ -0,0 +1,159 @@
+>> +/*
+>> + * si701x.c - Silicon Labs Si701x/2x Relative Humidity and Temperature Sensors
+>> + * Copyright (c) 2013,2014  Uplogix, Inc.
+>> + * David Barksdale <dbarksdale@uplogix.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +/*
+>> + * The Silicon Labs Si701x/2x Relative Humidity and Temperature Sensors
+>> + * are i2c devices which have an identical programming interface for
+>> + * measuring relative humidity and temperature. The Si7013 has an additional
+>> + * temperature input which this driver does not support.
+>> + *
+>> + * Data Sheets:
+>> + *   Si7013: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7013.pdf
+>> + *   Si7020: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7020.pdf
+>> + *   Si7021: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7021.pdf
+>> + */
+>> +
+>> +#include <linux/i2c.h>
+>> +#include <linux/module.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/sysfs.h>
+>> +
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +enum {
+>> +	/* Measure Relative Humidity, Hold Master Mode */
+>> +	SI701XCMD_RH_HOLD	= 0xE5,
+>> +	/* Measure Temperature, Hold Master Mode */
+>> +	SI701XCMD_TEMP_HOLD	= 0xE3,
+>> +};
+>> +
+>> +struct si701x_data {
+>> +	struct i2c_client *client;
+>> +	struct mutex lock;
+>> +};
+>> +
+>> +static int si701x_read_raw(struct iio_dev *indio_dev,
+>> +			   struct iio_chan_spec const *chan, int *val,
+>> +			   int *val2, long mask)
+>> +{
+>> +	struct si701x_data *data = iio_priv(indio_dev);
+>> +	int ret;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_RAW:
+>> +		mutex_lock(&data->lock);
+>
+> is the locking needed? what is protected?
 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Namhyung Kim <namhyung.kim@lge.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-> ---
->  tools/perf/util/ordered-events.c | 12 +++++++++---
->  tools/perf/util/ordered-events.h |  2 +-
->  tools/perf/util/session.c        | 12 +++++++++---
->  tools/perf/util/session.h        |  1 +
->  4 files changed, 20 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-> index 706ce1a..5b51de5 100644
-> --- a/tools/perf/util/ordered-events.c
-> +++ b/tools/perf/util/ordered-events.c
-> @@ -140,11 +140,15 @@ static int __ordered_events__flush(struct perf_session *s,
->  			break;
->  
->  		ret = perf_evlist__parse_sample(s->evlist, iter->event, &sample);
-> -		if (ret)
-> +		if (ret) {
->  			pr_err("Can't parse sample, err = %d\n", ret);
-> -		else {
-> +			if (s->copy_on_queue)
-> +				free(iter->event);
-> +		} else {
->  			ret = perf_session__deliver_event(s, iter->event, &sample, tool,
->  							  iter->file_offset);
-> +			if (s->copy_on_queue)
-> +				free(iter->event);
->  			if (ret)
->  				return ret;
->  		}
-> @@ -233,13 +237,15 @@ void ordered_events__init(struct ordered_events *oe)
->  	oe->cur_alloc_size = 0;
->  }
->  
-> -void ordered_events__free(struct ordered_events *oe)
-> +void ordered_events__free(struct perf_session *s, struct ordered_events *oe)
->  {
->  	while (!list_empty(&oe->to_free)) {
->  		struct ordered_event *event;
->  
->  		event = list_entry(oe->to_free.next, struct ordered_event, list);
->  		list_del(&event->list);
-> +		if (s->copy_on_queue)
-> +			free(event->event);
->  		free(event);
->  	}
->  }
-> diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-> index 3b2f205..a156b0e 100644
-> --- a/tools/perf/util/ordered-events.h
-> +++ b/tools/perf/util/ordered-events.h
-> @@ -41,7 +41,7 @@ void ordered_events__delete(struct ordered_events *oe, struct ordered_event *eve
->  int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
->  			  enum oe_flush how);
->  void ordered_events__init(struct ordered_events *oe);
-> -void ordered_events__free(struct ordered_events *oe);
-> +void ordered_events__free(struct perf_session *s, struct ordered_events *oe);
->  
->  static inline
->  void ordered_events__set_alloc_size(struct ordered_events *oe, u64 size)
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 6d2d50d..40d3aec 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -542,7 +542,13 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
->  		return -ENOMEM;
->  
->  	new->file_offset = file_offset;
-> -	new->event = event;
-> +
-> +	if (s->copy_on_queue) {
-> +		new->event = malloc(event->header.size);
-> +		memcpy(new->event, event, event->header.size);
-> +	} else
-> +		new->event = event;
-> +
->  	return 0;
->  }
->  
-> @@ -1164,7 +1170,7 @@ done:
->  out_err:
->  	free(buf);
->  	perf_session__warn_about_errors(session, tool);
-> -	ordered_events__free(&session->ordered_events);
-> +	ordered_events__free(session, &session->ordered_events);
->  	return err;
->  }
->  
-> @@ -1309,7 +1315,7 @@ out:
->  out_err:
->  	ui_progress__finish();
->  	perf_session__warn_about_errors(session, tool);
-> -	ordered_events__free(&session->ordered_events);
-> +	ordered_events__free(session, &session->ordered_events);
->  	session->one_mmap = false;
->  	return err;
->  }
-> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-> index 8dd41ca..137f77f 100644
-> --- a/tools/perf/util/session.h
-> +++ b/tools/perf/util/session.h
-> @@ -27,6 +27,7 @@ struct perf_session {
->  	void			*one_mmap_addr;
->  	u64			one_mmap_offset;
->  	struct ordered_events	ordered_events;
-> +	bool			copy_on_queue;
->  	struct perf_data_file	*file;
->  };
->  
-> -- 
-> 1.9.1
+I copied this from the si7005 driver. I assumed because calls to 
+read_raw were not serialized and calls to i2c_smbus_read_word_data on 
+the same client need to be serialized.
+
+>> +		ret = i2c_smbus_read_word_data(data->client,
+>> +					       chan->type == IIO_TEMP ?
+>> +					       SI701XCMD_TEMP_HOLD :
+>> +					       SI701XCMD_RH_HOLD);
+>> +		mutex_unlock(&data->lock);
+>> +		if (ret < 0)
+>> +			return ret;
+>> +		*val = ret;
+>> +		return IIO_VAL_INT;
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		if (chan->type == IIO_TEMP) {
+>> +			*val = 175.72 * 1000;
+>
+> floating-point constants in kernel space makes me nervous
+>
+
+I was trying to make this easy to compare to constants that appear in 
+the data sheets: 175.72, 125, 65536, -6, and -46.85. I figured the 
+compiler would transform them to integers, but I suppose that's not a 
+great assumption. I'll precompute them and explain them in a comment.
+
+>> +			*val2 = 65536;
+>
+> could set val2 once after the if
+>
+>> +		} else {
+>> +			*val = 125 * 1000;
+>> +			*val2 = 65536;
+>> +		}
+>> +		return IIO_VAL_FRACTIONAL;
+>> +	case IIO_CHAN_INFO_OFFSET:
+>> +		if (chan->type == IIO_TEMP)
+>> +			*val = -46.85 * 65536 / 175.72;
+>> +		else
+>> +			*val = -6 * 65536 / 125;
+>> +		return IIO_VAL_INT;
+>> +	default:
+>> +		break;
+>> +	}
+>> +
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static const struct iio_chan_spec si701x_channels[] = {
+>> +	{
+>> +		.type = IIO_HUMIDITYRELATIVE,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+>> +	},
+>> +	{
+>> +		.type = IIO_TEMP,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+>> +	}
+>> +};
+>> +
+>> +static const struct iio_info si701x_info = {
+>> +	.read_raw = si701x_read_raw,
+>> +	.driver_module = THIS_MODULE,
+>> +};
+>> +
+>> +static int si701x_probe(struct i2c_client *client,
+>> +			const struct i2c_device_id *id)
+>> +{
+>> +	struct iio_dev *dev;
+>> +	struct si701x_data *data;
+>> +
+>> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA))
+>> +		return -ENODEV;
+>> +
+>> +	dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>> +	if (!dev)
+>> +		return -ENOMEM;
+>> +
+>> +	data = iio_priv(dev);
+>> +	i2c_set_clientdata(client, dev);
+>> +	data->client = client;
+>> +	mutex_init(&data->lock);
+>> +
+>> +	dev->dev.parent = &client->dev;
+>> +	dev->name = dev_name(&client->dev);
+>> +	dev->modes = INDIO_DIRECT_MODE;
+>> +	dev->info = &si701x_info;
+>> +	dev->channels = si701x_channels;
+>> +	dev->num_channels = ARRAY_SIZE(si701x_channels);
+>> +
+>> +	return devm_iio_device_register(&client->dev, dev);
+>> +}
+>> +
+>> +static const unsigned short si701x_address_list[] = {
+>> +	0x40,
+>
+> the alternate address is 0x41
+>
+
+Thanks.
+
+>> +	I2C_CLIENT_END
+>> +};
+>> +
+>> +static const struct i2c_device_id si701x_id[] = {
+>> +	{ "si701x", 0 },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, si701x_id);
+>> +
+>> +static struct i2c_driver si701x_driver = {
+>> +	.class		= I2C_CLASS_HWMON,
+>> +	.driver.name	= "si701x",
+>> +	.probe		= si701x_probe,
+>> +	.address_list	= si701x_address_list,
+>> +	.id_table	= si701x_id,
+>
+> address_list and I2C_CLASS_HWMON -- what for?
+>
+> if doing auto-probing, I'd check the chip's ID
+>
+
+Oops. This was originally an hwmon driver but I ported it to iio when I 
+saw that's where si7005 landed.
+
+>> +};
+>> +
+>> +module_i2c_driver(si701x_driver);
+>> +MODULE_DESCRIPTION("Silicon Labs Si701x/2x "
+>> +		   "Relative Humidity and Temperature Sensors");
+>> +MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
+>> +MODULE_LICENSE("GPL");
+>> +
+>>
+>
