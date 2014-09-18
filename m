@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462AbaIRP32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:29:28 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14598 "EHLO
+	id S932483AbaIRP3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:29:35 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:14622 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaIRP3O (ORCPT
+	with ESMTP id S932464AbaIRP3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:29:14 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-c4-541afa4811fe
+	Thu, 18 Sep 2014 11:29:30 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-8b-541afa582b54
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -17,33 +17,29 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 13/33] thermal: exynos: replace threshold_falling check by
- Exynos SoC type one
-Date: Thu, 18 Sep 2014 17:27:30 +0200
-Message-id: <1411054070-25757-14-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 17/33] thermal: exynos: add get_th_reg() helper
+Date: Thu, 18 Sep 2014 17:27:34 +0200
+Message-id: <1411054070-25757-18-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAV3PX1IhBve62CwaroZYbJyxntXi
-	7vPDjBbzr1xjtTjb9Ibd4s3DzYwWl3fNYbP43HuE0WLG+X1MFk8e9rE5cHnsnHWX3WPxnpdM
-	Hn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXR+e0yc8E17orHz3exNDC+5+xi5OSQEDCROHNo
-	CTOELSZx4d56NhBbSGARo8T2m+ldjFxAdheTxOreRywgCTYBK4mJ7asYQWwRAS2JE5e2M4EU
-	MQvcYpJ4fWMyUIKDQ1ggQeL3EQuQGhYBVYnHKz8ygdi8Ap4S/zrOskEsU5TofjYBzOYEijfc
-	2sQOsdhDom3LXeYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgSH2TPpHYyrGiwO
-	MQpwMCrx8B7glQoRYk0sK67MPcQowcGsJML75yNQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/B
-	VutAIYH0xJLU7NTUgtQimCwTB6dUA6NT2LeLHa5yutvKDxnOsbacwBxoKqNx5s/1f2G8fMe0
-	exb087w3e7Fh72P7pHVlNxTc39zZyxPftpTFV3ny6cqIpOMFMx7fbw1WFN+z1Gfnb59t0u+c
-	LUx+zi0pnuq//MCc/5J7D1txqQjeu13tmDLnipu6UIXipjKt9P3smXEhb14XCWjJHFNiKc5I
-	NNRiLipOBADpkZLBLwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t9jAd3IX1IhBvs3sVs0XA2x2DhjPavF
+	3eeHGS3mX7nGanG26Q27xZuHmxktLu+aw2bxufcIo8WM8/uYLJ487GNz4PLYOesuu8fiPS+Z
+	PPq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSujZXZ0wQ7xirv9h1gaGHcJdzFyckgImEgc+dHL
+	AmGLSVy4t56ti5GLQ0hgEaPEuf9roZwuJokbXx+AVbEJWElMbF/FCGKLCGhJnLi0nQmkiFng
+	FpPE6xuTwRLCAvYSV6YfYgKxWQRUJaYuP8YMYvMKeEp0Hr7FCrFOUaL72QQ2EJsTKN5waxM7
+	iC0k4CHRtuUu8wRG3gWMDKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxggPtmdQOxpUNFocY
+	BTgYlXh4D/BKhQixJpYVV+YeYpTgYFYS4f3zESjEm5JYWZValB9fVJqTWnyIUZqDRUmc90Cr
+	daCQQHpiSWp2ampBahFMlomDU6qBca7urinlXcknvxhukzERaHu2qDphVovXIi/OAi511m/9
+	yivTnqXuFrYXiz98teRW2iyrjb0zhJ27Mu2t/5QKfI2JmN36QmZPddyhLy8mRm01KwpTEaze
+	EjRNUuJ92B5R3w0H71h0uAZ8njx1unhMxhae2tSqTyct+GfySi7sdbt128pyb4iDEktxRqKh
+	FnNRcSIAq4ddJjACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace pdata->threshold_falling check for non-zero value in
-exynos_tmu_initialize() by an explicit check for a SoC type
-(all SoC types except Exynos5440 have pdata->threshold_falling
-assigned to non-zero value in their struct exynos_tmu_registers
-instances).
+Factor out code for preparing threshold register value from
+exynos_tmu_initialize() into get_th_reg().
 
 This is a preparation for introducing per-SoC type tmu_initialize
 method.
@@ -58,22 +54,71 @@ Cc: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/thermal/samsung/exynos_tmu.c | 37 ++++++++++++++++++++++--------------
+ 1 file changed, 23 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index f02e65d..641a77a 100644
+index a32ca04..80b781d 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -214,7 +214,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 						pdata->trigger_levels[i]);
- 			rising_threshold &= ~(0xff << 8 * i);
- 			rising_threshold |= threshold_code << 8 * i;
--			if (pdata->threshold_falling) {
-+			if (data->soc != SOC_ARCH_EXYNOS5440) {
- 				threshold_code = temp_to_code(data,
- 						pdata->trigger_levels[i] -
- 						pdata->threshold_falling);
+@@ -141,6 +141,25 @@ static void sanitize_temp_error(struct exynos_tmu_data *data, u32 trim_info)
+ 			EXYNOS_TMU_TEMP_MASK;
+ }
+ 
++static u32 get_th_reg(struct exynos_tmu_data *data, u32 threshold, bool falling)
++{
++	struct exynos_tmu_platform_data *pdata = data->pdata;
++	int i;
++
++	for (i = 0; i < pdata->non_hw_trigger_levels; i++) {
++		u8 temp = pdata->trigger_levels[i];
++
++		if (falling)
++			temp -= pdata->threshold_falling;
++		else
++			threshold &= ~(0xff << 8 * i);
++
++		threshold |= temp_to_code(data, temp) << 8 * i;
++	}
++
++	return threshold;
++}
++
+ static int exynos_tmu_initialize(struct platform_device *pdev)
+ {
+ 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+@@ -204,8 +223,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	}
+ 	sanitize_temp_error(data, trim_info);
+ 
+-	rising_threshold = readl(data->base + reg->threshold_th0);
+-
+ 	if (data->soc == SOC_ARCH_EXYNOS4210) {
+ 		/* Write temperature code for threshold */
+ 		threshold_code = temp_to_code(data, pdata->threshold);
+@@ -218,18 +235,10 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		writel(reg->intclr_rise_mask, data->base + reg->tmu_intclear);
+ 	} else {
+ 		/* Write temperature code for rising and falling threshold */
+-		for (i = 0; i < pdata->non_hw_trigger_levels; i++) {
+-			threshold_code = temp_to_code(data,
+-						pdata->trigger_levels[i]);
+-			rising_threshold &= ~(0xff << 8 * i);
+-			rising_threshold |= threshold_code << 8 * i;
+-			if (data->soc != SOC_ARCH_EXYNOS5440) {
+-				threshold_code = temp_to_code(data,
+-						pdata->trigger_levels[i] -
+-						pdata->threshold_falling);
+-				falling_threshold |= threshold_code << 8 * i;
+-			}
+-		}
++		rising_threshold = readl(data->base + reg->threshold_th0);
++		rising_threshold = get_th_reg(data, rising_threshold, false);
++		if (data->soc != SOC_ARCH_EXYNOS5440)
++			falling_threshold = get_th_reg(data, 0, true);
+ 
+ 		writel(rising_threshold,
+ 				data->base + reg->threshold_th0);
 -- 
 1.8.2.3
 
