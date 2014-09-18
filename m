@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419AbaIRPrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:47:47 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:56880 "EHLO
+	id S932510AbaIRPrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:47:55 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:56979 "EHLO
 	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205AbaIRPrp convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932440AbaIRPrx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:47:45 -0400
+	Thu, 18 Sep 2014 11:47:53 -0400
 Content-Type: text/plain; charset=us-ascii
 Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
 Subject: Re: [PATCHv2 1/1] bluetooth: Check for SCO type before setting retransmission effort
 From: Marcel Holtmann <marcel@holtmann.org>
 In-Reply-To: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
-Date: Thu, 18 Sep 2014 08:43:40 -0700
+Date: Thu, 18 Sep 2014 08:48:48 -0700
 Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
         Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
@@ -20,7 +20,7 @@ Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
         Network Development <netdev@vger.kernel.org>,
         linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-Message-Id: <AE7A1F22-766E-4C9B-A748-ACA5426B7DBD@holtmann.org>
+Message-Id: <A8855298-3814-4E46-B106-167C05366E2B@holtmann.org>
 References: <8B07B86E-19D4-49E2-B471-DAF31C8D4F34@holtmann.org> <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
 To: Bernhard Thaler <bernhard.thaler@r-it.at>
 X-Mailer: Apple Mail (2.1878.6)
