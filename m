@@ -1,330 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaIRStg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 14:49:36 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45933 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaIRStf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 14:49:35 -0400
-Date: Thu, 18 Sep 2014 11:48:23 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC v2 2/5] Define new syscalls readv2,preadv2,writev2,pwritev2
-Message-ID: <20140918184823.GA10155@birch.djwong.org>
-References: <cover.1410983998.git.milosz@adfin.com>
- <a5d46efa590f0d32cf209495cdb897ffadb859c5.1410983999.git.milosz@adfin.com>
+	id S1755048AbaIRSwU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 14:52:20 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:52461 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751427AbaIRSwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 14:52:19 -0400
+Message-ID: <541B29DE.5090804@c-s.fr>
+Date: Thu, 18 Sep 2014 20:52:14 +0200
+From: christophe leroy <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a5d46efa590f0d32cf209495cdb897ffadb859c5.1410983999.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+CC: scottwood@freescale.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH v3 03/21] powerpc/8xx: exception InstructionAccess does
+ not exist on MPC8xx
+References: <20140917163657.7737D1AB032@localhost.localdomain> <OF3CC96BF2.DF7CB060-ONC1257D57.00533ED7-C1257D57.0053CADF@transmode.se> <541B0B66.8030405@c-s.fr>
+In-Reply-To: <541B0B66.8030405@c-s.fr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Antivirus: avast! (VPS 140917-1, 17/09/2014), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 10:20:47PM +0000, Milosz Tanski wrote:
-> New syscalls with an extra flag argument. For now all flags except for 0 are
-> not supported.
-> 
-> Signed-off-by: Milosz Tanski <milosz@adfin.com>
-> ---
->  fs/read_write.c                   | 80 +++++++++++++++++++++++++++++++++------
->  include/linux/syscalls.h          | 12 ++++++
->  include/uapi/asm-generic/unistd.h | 10 ++++-
->  mm/filemap.c                      |  2 +-
->  4 files changed, 90 insertions(+), 14 deletions(-)
-> 
-> diff --git a/fs/read_write.c b/fs/read_write.c
-> index 9f6d13d..3db2e87 100644
-> --- a/fs/read_write.c
-> +++ b/fs/read_write.c
-> @@ -864,6 +864,8 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
->  		return -EBADF;
->  	if (!(file->f_mode & FMODE_CAN_READ))
->  		return -EINVAL;
-> +	if (flags & ~0)
-> +		return -EINVAL;
->  
->  	return do_readv_writev(READ, file, vec, vlen, pos, flags);
->  }
-> @@ -877,21 +879,23 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
->  		return -EBADF;
->  	if (!(file->f_mode & FMODE_CAN_WRITE))
->  		return -EINVAL;
-> +	if (flags & ~0)
-> +		return -EINVAL;
->  
->  	return do_readv_writev(WRITE, file, vec, vlen, pos, flags);
->  }
->  
->  EXPORT_SYMBOL(vfs_writev);
->  
-> -SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
-> -		unsigned long, vlen)
-> +static ssize_t do_readv(unsigned long fd, const struct iovec __user *vec,
-> +			unsigned long vlen, int flags)
->  {
->  	struct fd f = fdget_pos(fd);
->  	ssize_t ret = -EBADF;
->  
->  	if (f.file) {
->  		loff_t pos = file_pos_read(f.file);
-> -		ret = vfs_readv(f.file, vec, vlen, &pos, 0);
-> +		ret = vfs_readv(f.file, vec, vlen, &pos, flags);
->  		if (ret >= 0)
->  			file_pos_write(f.file, pos);
->  		fdput_pos(f);
-> @@ -903,15 +907,15 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
->  	return ret;
->  }
->  
-> -SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
-> -		unsigned long, vlen)
-> +static ssize_t do_writev(unsigned long fd, const struct iovec __user *vec,
-> +			 unsigned long vlen, int flags)
->  {
->  	struct fd f = fdget_pos(fd);
->  	ssize_t ret = -EBADF;
->  
->  	if (f.file) {
->  		loff_t pos = file_pos_read(f.file);
-> -		ret = vfs_writev(f.file, vec, vlen, &pos, 0);
-> +		ret = vfs_writev(f.file, vec, vlen, &pos, flags);
->  		if (ret >= 0)
->  			file_pos_write(f.file, pos);
->  		fdput_pos(f);
-> @@ -929,8 +933,9 @@ static inline loff_t pos_from_hilo(unsigned long high, unsigned long low)
->  	return (((loff_t)high << HALF_LONG_BITS) << HALF_LONG_BITS) | low;
->  }
->  
-> -SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
-> -		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-> +static ssize_t do_preadv(unsigned long fd, const struct iovec __user *vec,
-> +			 unsigned long vlen, unsigned long pos_l,
-> +			 unsigned long pos_h, int flags)
->  {
->  	loff_t pos = pos_from_hilo(pos_h, pos_l);
->  	struct fd f;
-> @@ -943,7 +948,7 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
->  	if (f.file) {
->  		ret = -ESPIPE;
->  		if (f.file->f_mode & FMODE_PREAD)
-> -			ret = vfs_readv(f.file, vec, vlen, &pos, 0);
-> +			ret = vfs_readv(f.file, vec, vlen, &pos, flags);
->  		fdput(f);
->  	}
->  
-> @@ -953,8 +958,9 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
->  	return ret;
->  }
->  
-> -SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
-> -		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-> +static ssize_t do_pwritev(unsigned long fd, const struct iovec __user *vec,
-> +			  unsigned long vlen, unsigned long pos_l,
-> +			  unsigned long pos_h, int flags)
->  {
->  	loff_t pos = pos_from_hilo(pos_h, pos_l);
->  	struct fd f;
-> @@ -967,7 +973,7 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
->  	if (f.file) {
->  		ret = -ESPIPE;
->  		if (f.file->f_mode & FMODE_PWRITE)
-> -			ret = vfs_writev(f.file, vec, vlen, &pos, 0);
-> +			ret = vfs_writev(f.file, vec, vlen, &pos, flags);
->  		fdput(f);
->  	}
->  
-> @@ -977,6 +983,56 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
->  	return ret;
->  }
->  
-> +SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen)
-> +{
-> +	return do_readv(fd, vec, vlen, 0);
-> +}
-> +
-> +SYSCALL_DEFINE4(readv2, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen, int, flags)
-> +{
-> +	return do_readv(fd, vec, vlen, flags);
-> +}
-> +
-> +SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen)
-> +{
-> +	return do_writev(fd, vec, vlen, 0);
-> +}
-> +
-> +SYSCALL_DEFINE4(writev2, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen, int, flags)
-> +{
-> +	return do_writev(fd, vec, vlen, flags);
-> +}
-> +
-> +SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-> +{
-> +	return do_preadv(fd, vec,  vlen, pos_l, pos_h, 0);
-> +}
-> +
-> +SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-> +		int, flags)
-> +{
-> +	return do_preadv(fd, vec,  vlen, pos_l, pos_h, flags);
-> +}
-> +
-> +SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-> +{
-> +	return do_pwritev(fd, vec, vlen, pos_l, pos_h, 0);
-> +}
-> +
-> +SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
-> +		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-> +		int, flags)
-> +{
-> +	return do_pwritev(fd, vec, vlen, pos_l, pos_h, flags);
-> +}
-> +
 
-A few months ago I was working on extending these interfaces (well, the
-p{read,write}* ones and AIO) to tack on an IO extension buffer at the end of
-the syscall arguments.
+Le 18/09/2014 18:42, leroy christophe a écrit :
+>
+> Le 18/09/2014 17:15, Joakim Tjernlund a écrit :
+>> Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2014/09/17 18:36:57:
+>>> Exception InstructionAccess does not exist on MPC8xx. No need to branch
+>> there from somewhere else.
+>>> Handling can be done directly in InstructionTLBError Exception.
+>>>
+>>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>>
+>>> ---
+>>> Changes in v2:
+>>> - None
+>>>
+>>> Changes in v3:
+>>> - arch/powerpc/mm/fault.c uses the vector number, so make sure it
+>> understand
+>>> the new ones.
+>>>
+>>>   arch/powerpc/kernel/head_8xx.S | 17 +++++++----------
+>>>   arch/powerpc/mm/fault.c        |  1 +
+>>>   2 files changed, 8 insertions(+), 10 deletions(-)
+[...]
+>>> Still don't like that you change the vector number, every other ppc 
+>>> uses
+>> the
+>> standard number.
+>>
+>> Can you not just lie here(EXC_XFER_LITE(0x400, handle_page_fault))?
+>> Move the code to InstructionAccess too and let TLBError branch there.
+> My issue was that if I do EXC_XFER_LITE(0x400, handle_page_fault), I 
+> can't leave the
+>     EXCEPTION(0x400, InstructionAccess, unknown_exception, 
+> EXC_XFER_STD) at address .400
+> Otherwise, I get twice the same label.
+>
+> What about the following patch then ? Would this be acceptable ?
+I don't like what I propose two hours ago indeed.
+Is it really worth trying to implement code for vectors 0x300 and 0x400 
+which are clearly stated in the Reference Manual as never being 
+generated by the HW ?.
+If I just don't put anything at 0x300 and 0x400 is that OK ?
+Otherwise I have to put some code that will branch to TLBerror code, but 
+writing dead code doesn't enchant me.
 
-Hrmm, I guess I never /did/ send out a v2 after LSF.  The last time we
-discussed this[1], the discussion ended with the creation of a structure that
-looked something like this:
+Christophe
+>
+> @@ -234,15 +234,13 @@ DataAccess:
+>      EXC_XFER_LITE(0x300, handle_page_fault)
+>
+>  /* Instruction access exception.
+> - * This is "never generated" by the MPC8xx.  We jump to it for other
+> - * translation errors.
+> + * This is "never generated" by the MPC8xx.
+>   */
+>      . = 0x400
+>  InstructionAccess:
+>      EXCEPTION_PROLOG
+> -    mr    r4,r12
+> -    mr    r5,r9
+> -    EXC_XFER_LITE(0x400, handle_page_fault)
+> +    addi    r3,r1,STACK_FRAME_OVERHEAD
+> +    EXC_XFER_STD(0x401, unknown_exception)
+>
+>  /* External interrupt */
+>      EXCEPTION(0x500, HardwareInterrupt, do_IRQ, EXC_XFER_LITE)
+> @@ -382,7 +380,7 @@ InstructionTLBMiss:
+>  #endif
+>      mfspr    r10, SPRN_SPRG_SCRATCH2
+>      EXCEPTION_EPILOG_0
+> -    b    InstructionAccess
+> +    b    InstructionTLBError
+>
+>      . = 0x1200
+>  DataStoreTLBMiss:
+> @@ -477,7 +475,11 @@ DataStoreTLBMiss:
+>   */
+>      . = 0x1300
+>  InstructionTLBError:
+> -    b    InstructionAccess
+> +    EXCEPTION_PROLOG
+> +    mr    r4,r12
+> +    mr    r5,r9
+> +    /* 0x400 is InstructionAccess exception, needed by 
+> bad_page_fault() */
+> +    EXC_XFER_LITE(0x400, handle_page_fault)
+>
+>  /* This is the data TLB error on the MPC8xx.  This could be due to
+>   * many reasons, including a dirty update to a pte.  We can catch that
+>
+>
+>>
+>> If not I think you should keep the old/current way?
+>>
+>> Same for DataTLB Miss/Error
+>>
+>>>   /* This is the data TLB error on the MPC8xx.  This could be due to
+>>>    * many reasons, including a dirty update to a pte.  We can catch 
+>>> that
+>>> diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+>>> index 51ab9e7..4d63c96 100644
+>>> --- a/arch/powerpc/mm/fault.c
+>>> +++ b/arch/powerpc/mm/fault.c
+>>> @@ -526,6 +526,7 @@ void bad_page_fault(struct pt_regs *regs, unsigned
+>> long address, int sig)
+>>>         break;
+>>>      case 0x400:
+>>>      case 0x480:
+>>> +   case 0x1300:
+>>>         printk(KERN_ALERT "Unable to handle kernel paging request for "
+>>>            "instruction fetch\n");
+>>>         break;
+>>> -- 
+>>> 2.1.0
+>>>
+>
 
-/* IO extension flags */
-#define IO_EXT_PI	(1)	/* protection info (checksums, etc) */
-#define IO_EXT_REPLICA	(0x2)	/* replica */
-#define IO_EXT_ALL	(IO_EXT_PI | IO_EXT_REPLICA)
 
-/* IO extension descriptor */
-struct io_extension {
-	__u64 ie_has;
+---
+Ce courrier électronique ne contient aucun virus ou logiciel malveillant parce que la protection avast! Antivirus est active.
+http://www.avast.com
 
-	/* PI stuff */
-	__u64 ie_pi_buf;
-	__u32 ie_pi_buflen;
-	__u64 ie_pi_flags;
-
-	/* which replica do you want? */
-	__u32 ie_replica;
-};
-
-Given the suggestion of avoiding an explosion of syscalls (here by stuffing all
-these bits into a structure), I wonder what people think of moving 'int flags'
-into this structure?  At least for the pread/pwrite variants since they already
-have a lot of parameters, and for AIO whose struct iocb only has enough room
-left for one pointer.
-
-(For anyone paying attention to the original IO extension discussion: I've been
-working on plumbing in the ie_replica parameter -- if your FS/blockdev/whatever
-can store/fetch alternate copies of a data block, you can request a specific
-copy.  Or I suppose one could interpret it as a "desperation" parameter; the
-higher the number, the more extraordinary measures the storage can take to
-recover data.)
-
---D
-
-[1] http://article.gmane.org/gmane.linux.kernel.aio.general/3904
-
->  #ifdef CONFIG_COMPAT
->  
->  static ssize_t compat_do_readv_writev(int type, struct file *file,
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index 0f86d85..0c49ae4 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -559,19 +559,31 @@ asmlinkage long sys_readahead(int fd, loff_t offset, size_t count);
->  asmlinkage long sys_readv(unsigned long fd,
->  			  const struct iovec __user *vec,
->  			  unsigned long vlen);
-> +asmlinkage long sys_readv2(unsigned long fd,
-> +			  const struct iovec __user *vec,
-> +			  unsigned long vlen, int flags);
->  asmlinkage long sys_write(unsigned int fd, const char __user *buf,
->  			  size_t count);
->  asmlinkage long sys_writev(unsigned long fd,
->  			   const struct iovec __user *vec,
->  			   unsigned long vlen);
-> +asmlinkage long sys_writev2(unsigned long fd,
-> +			    const struct iovec __user *vec,
-> +			    unsigned long vlen, int flags);
->  asmlinkage long sys_pread64(unsigned int fd, char __user *buf,
->  			    size_t count, loff_t pos);
->  asmlinkage long sys_pwrite64(unsigned int fd, const char __user *buf,
->  			     size_t count, loff_t pos);
->  asmlinkage long sys_preadv(unsigned long fd, const struct iovec __user *vec,
->  			   unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
-> +asmlinkage long sys_preadv2(unsigned long fd, const struct iovec __user *vec,
-> +			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
-> +			    int flags);
->  asmlinkage long sys_pwritev(unsigned long fd, const struct iovec __user *vec,
->  			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
-> +asmlinkage long sys_pwritev2(unsigned long fd, const struct iovec __user *vec,
-> +			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
-> +			    int flags);
->  asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
->  asmlinkage long sys_mkdir(const char __user *pathname, umode_t mode);
->  asmlinkage long sys_chdir(const char __user *filename);
-> diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-> index 11d11bc..75ad687 100644
-> --- a/include/uapi/asm-generic/unistd.h
-> +++ b/include/uapi/asm-generic/unistd.h
-> @@ -213,6 +213,14 @@ __SC_COMP(__NR_pwrite64, sys_pwrite64, compat_sys_pwrite64)
->  __SC_COMP(__NR_preadv, sys_preadv, compat_sys_preadv)
->  #define __NR_pwritev 70
->  __SC_COMP(__NR_pwritev, sys_pwritev, compat_sys_pwritev)
-> +#define __NR_readv2 280
-> +__SC_COMP(__NR_readv2, sys_readv2)
-> +#define __NR_writev2 281
-> +__SC_COMP(__NR_writev2, sys_writev2)
-> +#define __NR_preadv2 282
-> +__SC_COMP(__NR_preadv2, sys_preadv2)
-> +#define __NR_pwritev2 283
-> +__SC_COMP(__NR_pwritev2, sys_pwritev2)
->  
->  /* fs/sendfile.c */
->  #define __NR3264_sendfile 71
-> @@ -707,7 +715,7 @@ __SYSCALL(__NR_getrandom, sys_getrandom)
->  __SYSCALL(__NR_memfd_create, sys_memfd_create)
->  
->  #undef __NR_syscalls
-> -#define __NR_syscalls 280
-> +#define __NR_syscalls 284
->  
->  /*
->   * All syscalls below here should go away really,
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 6e3ba07..e0919ba 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -1726,7 +1726,7 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
->  		}
->  	}
->  
-> -	retval = do_generic_file_read(file, ppos, iter, retval);
-> +	retval = do_generic_file_read(file, ppos, iter, retval, iocb->ki_rwflags);
->  out:
->  	return retval;
->  }
-> -- 
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
