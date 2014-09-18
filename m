@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907AbaIRN6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:58:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51620 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaIRN6G (ORCPT
+	id S1755998AbaIRN7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 09:59:12 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:53163 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136AbaIRN7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:58:06 -0400
-Message-ID: <541AE4E9.2040904@gmail.com>
-Date: Thu, 18 Sep 2014 21:58:01 +0800
+	Thu, 18 Sep 2014 09:59:11 -0400
+Message-ID: <541AE536.4080006@gmail.com>
+Date: Thu, 18 Sep 2014 21:59:18 +0800
 From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -17,24 +17,37 @@ To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
         mukesh.rathor@oracle.com
 CC: xen-devel@lists.xenproject.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3 v2] xen/xenbus: Several improvements for 'xenbus_client.c'
+Subject: [PATCH 1/3 v2] xen/xenbus: Correct the comments for xenbus_grant_ring()
+References: <541AE4E9.2040904@gmail.com>
+In-Reply-To: <541AE4E9.2040904@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+A grant reference (which is a positive number) can indicate success, so
+the original comments need be improved.
 
-Please help check when you have time. Thanks.
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/xen/xenbus/xenbus_client.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Chen Gang (3):
-  xen/xenbus: Correct the comments for xenbus_grant_ring()
-  xen/xenbus: Remove BUG_ON() when error string trucated
-  xen/xenbus: Improve failure processing code for __xenbus_switch_state()
-
- drivers/xen/xenbus/xenbus_client.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
-
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index 439c9dc..aa9b2fc 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -361,8 +361,8 @@ static void xenbus_switch_fatal(struct xenbus_device *dev, int depth, int err,
+  * @ring_mfn: mfn of ring to grant
+ 
+  * Grant access to the given @ring_mfn to the peer of the given device.  Return
+- * 0 on success, or -errno on error.  On error, the device will switch to
+- * XenbusStateClosing, and the error will be saved in the store.
++ * a grant reference on success, or -errno on error. On error, the device will
++ * switch to XenbusStateClosing, and the error will be saved in the store.
+  */
+ int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn)
+ {
 -- 
 1.9.3
