@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459AbaIRW5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 18:57:49 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:55963 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaIRW5s (ORCPT
+	id S1751298AbaIRXBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 19:01:21 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57799 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750705AbaIRXBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 18:57:48 -0400
-Date: Thu, 18 Sep 2014 15:57:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140918225742.GV4723@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
- <541A8698.9040905@intel.com>
- <20140918123845.GO4723@linux.vnet.ibm.com>
- <2028813.2ZT7cSJ4eY@vostro.rjw.lan>
+	Thu, 18 Sep 2014 19:01:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Graeme Gregory <graeme.gregory@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+Date: Fri, 19 Sep 2014 01:20:52 +0200
+Message-ID: <6318202.hl003vettj@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140917234036.GC2464@xora-yoga-13>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <201409180122.10631.arnd@arndb.de> <20140917234036.GC2464@xora-yoga-13>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2028813.2ZT7cSJ4eY@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091822-1344-0000-0000-00000450AF9C
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 12:55:11AM +0200, Rafael J. Wysocki wrote:
-> On Thursday, September 18, 2014 05:38:45 AM Paul E. McKenney wrote:
-> > On Thu, Sep 18, 2014 at 03:15:36PM +0800, Lan Tianyu wrote:
-> > > On 2014年09月17日 21:10, Paul E. McKenney wrote:
-> > > > On Wed, Sep 17, 2014 at 03:11:42PM +0800, Lan Tianyu wrote:
-> > > >> On 2014年08月29日 03:47, Paul E. McKenney wrote:
-> > > >>> Currently, the expedited grace-period primitives do get_online_cpus().
-> > > >>> This greatly simplifies their implementation, but means that calls to
-> > > >>> them holding locks that are acquired by CPU-hotplug notifiers (to say
-> > > >>> nothing of calls to these primitives from CPU-hotplug notifiers) can
-> > > >>> deadlock.  But this is starting to become inconvenient:
-> > > >>> https://lkml.org/lkml/2014/8/5/754
-> > > >>>
-> > > >>> This commit avoids the deadlock and retains the simplicity by creating
-> > > >>> a try_get_online_cpus(), which returns false if the get_online_cpus()
-> > > >>> reference count could not immediately be incremented.  If a call to
-> > > >>> try_get_online_cpus() returns true, the expedited primitives operate
-> > > >>> as before.  If a call returns false, the expedited primitives fall back
-> > > >>> to normal grace-period operations.  This falling back of course results
-> > > >>> in increased grace-period latency, but only during times when CPU
-> > > >>> hotplug operations are actually in flight.  The effect should therefore
-> > > >>> be negligible during normal operation.
-> > > >>>
-> > > >>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > >>> Cc: Josh Triplett <josh@joshtriplett.org>
-> > > >>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> > > >>> Cc: Lan Tianyu <tianyu.lan@intel.com>
-> > > >>
-> > > >> Hi Paul:
-> > > >> 	What's the status of the patch? Will you push it? Thanks.
-> > > > 
-> > > > By default, it would go into 3.19.  Do you need it earlier?
+On Wednesday, September 17, 2014 04:40:36 PM Graeme Gregory wrote:
+> On Thu, Sep 18, 2014 at 01:22:10AM +0200, Arnd Bergmann wrote:
+> > On Wednesday 17 September 2014, Graeme Gregory wrote:
+> > > It sounds like from the discussions in other threads that ARM64 should
+> > > be following x86 and re-using DT bindings here. In which case there is
+> > > not need to submit things to UEFI organisation.
 > > > 
-> > > IMO, this is a dead lock bug which is hard to reproduce and the patch
-> > > should go into v3.17 and stable tree?
+> > > What I got a little lost in has there been a formal decision about DT
+> > > bindings in _DSD?
 > > 
-> > The problem with pushing for v3.17 is that I would have to rebase
-> > that commit to the bottom of my current stack and redo all my testing.
-> > If there were any problems, I could not only miss v3.17, but also miss
-> > the v3.18 merge window.
+> > I think this is a discussion that still needs to happen: either we should
+> > recommend everyone to use _DSD in favor of the alternatives, or we
+> > should prohibit the use of _DSD. I have heard arguments both ways, but
+> > hopefully we can find an easy answer.
 > > 
-> > So, given that the next merge window happens pretty soon, how about
-> > v3.18 and the stable tree?
 > 
-> That sounds good to me.
+> This discussion is just not going to happen until people at @redhat.com
+> and people who have currently announced/released hardware are actually
+> willing to start talking about it.
+> 
+> Id love to be able to put my foot down and ban the use of _DSD for
+> servers but I suspect that will not happen.
 
-Very good, I have added it to my v3.18 queue.
+I'll probably should stay away from this discussion, but I can't resist. :-)
 
-							Thanx, Paul
+Please imagine the situation in which the same IP block is included in an ARM64
+SoC and in an x86 SoC that ships with ACPI tables and a _DSD for that device in
+them.  What benefit would be there from disallowing systems based on the ARM64
+SoC in question to ship the same _DSD in their ACPI tables?
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
