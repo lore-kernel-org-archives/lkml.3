@@ -1,794 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496AbaIRCP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 22:15:29 -0400
-Received: from mail-bl2on0120.outbound.protection.outlook.com ([65.55.169.120]:23424
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1757435AbaIRCO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 22:14:58 -0400
+Received: from mail-by2on0111.outbound.protection.outlook.com ([207.46.100.111]:4153
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756264AbaIRCPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 22:15:25 -0400
-X-WSS-ID: 0NC2RLE-08-G1U-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>
-CC: <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
-        <liviu.dudau@arm.com>, <tglx@linutronix.de>,
-        <Harish.Kasiviswanathan@amd.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: [PATCH 2/2 V7] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
-Date: Wed, 17 Sep 2014 19:14:46 -0700
-Message-ID: <1411006486-17513-3-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411006486-17513-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1411006486-17513-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1757000AbaIRCO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 22:14:56 -0400
+Date: Thu, 18 Sep 2014 10:21:27 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "sre@kernel.org" <sre@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>
+Subject: Re: [PATCH v3 2/3] power: reset: imx-snvs-poweroff: add power off
+ driver for i.mx6
+Message-ID: <20140918022125.GA8150@Robin-OptiPlex-780>
+References: <1410947881-7345-1-git-send-email-b38343@freescale.com>
+ <1410947881-7345-3-git-send-email-b38343@freescale.com>
+ <20140917175244.GC7983@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140917175244.GC7983@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(2201001)(106466001)(92726001)(31966008)(50226001)(47776003)(97736003)(101416001)(84676001)(21056001)(87936001)(62966002)(92566001)(87286001)(86362001)(88136002)(36756003)(33646002)(93916002)(99396002)(229853001)(20776003)(53416004)(86152002)(90102001)(89996001)(4396001)(50986999)(19580395003)(77096002)(44976005)(107046002)(64706001)(85306004)(77156001)(105586002)(81542003)(80022003)(81342003)(79102003)(83322001)(76176999)(77982003)(104166001)(46102003)(74502003)(19580405001)(85852003)(68736004)(83072002)(74662003)(95666004)(48376002)(50466002)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(24454002)(189002)(83506001)(76176999)(80022003)(33656002)(79102003)(105606002)(20776003)(47776003)(15975445006)(74502003)(19580395003)(107046002)(92726001)(64706001)(81342003)(4396001)(77982003)(83072002)(19580405001)(23726002)(81542003)(46102003)(44976005)(74662003)(83322001)(99396002)(6806004)(110136001)(106466001)(15202345003)(68736004)(26826002)(76482002)(90102001)(54356999)(50986999)(21056001)(87936001)(84676001)(85852003)(92566001)(104016003)(85306004)(95666004)(97736003)(97756001)(33716001)(102836001)(46406003)(50466002)(230783001)(31966008)(2004002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB352;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 033857D0BD
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-
-ARM GICv2m specification extends GICv2 to support MSI(-X) with
-a new set of register frame. This patch introduces support for
-the non-secure GICv2m register frame. Currently, GICV2m is available
-in certain version of GIC-400.
-
-The patch introduces a new property in ARM gic binding, the v2m subnode.
-It is optional.
-
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>
----
- Documentation/devicetree/bindings/arm/gic.txt |  55 ++++
- arch/arm64/Kconfig                            |   1 +
- drivers/irqchip/Kconfig                       |   7 +
- drivers/irqchip/Makefile                      |   1 +
- drivers/irqchip/irq-gic-common.c              |  12 +
- drivers/irqchip/irq-gic-common.h              |   4 +
- drivers/irqchip/irq-gic-v2m.c                 | 356 ++++++++++++++++++++++++++
- drivers/irqchip/irq-gic.c                     |  82 +++---
- drivers/irqchip/irq-gic.h                     |  54 ++++
- 9 files changed, 542 insertions(+), 30 deletions(-)
- create mode 100644 drivers/irqchip/irq-gic-v2m.c
- create mode 100644 drivers/irqchip/irq-gic.h
-
-diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-index c7d2fa1..38b2156 100644
---- a/Documentation/devicetree/bindings/arm/gic.txt
-+++ b/Documentation/devicetree/bindings/arm/gic.txt
-@@ -96,3 +96,58 @@ Example:
- 		      <0x2c006000 0x2000>;
- 		interrupts = <1 9 0xf04>;
- 	};
-+
-+
-+* GICv2m extension for MSI/MSI-x support (Optional)
-+
-+Certain revision of GIC-400 supports MSI/MSI-x via V2M register frame.
-+This is enabled by specifying v2m sub-node.
-+
-+Required properties:
-+
-+- compatible        : The value here should be "arm,gic-v2m-frame".
-+
-+- msi-controller    : Identifies the node as an MSI controller.
-+
-+- reg               : GICv2m MSI interface register base and size
-+
-+Optional properties:
-+
-+- arm,msi-base-spi  : Specify base SPI the MSI frame.
-+                      The SPI base value can be from 32 to 1019.
-+
-+- arm,msi-num-spi   : Returns the number of contiguous SPIs assigned
-+		      to the frame.
-+
-+Note: "arm,msi-base-spi" and "arm,msi-num-spi" are used mainly for
-+       providing HW workaround in the case where the MSI_TYPER register
-+       is corrupted.
-+
-+Example:
-+
-+	interrupt-controller@e1101000 {
-+		compatible = "arm,gic-400";
-+		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		interrupt-controller;
-+		interrupts = <1 8 0xf04>;
-+		ranges = <0 0 0 0xe1100000 0 0x100000>;
-+		reg = <0x0 0xe1110000 0 0x01000>,
-+		      <0x0 0xe112f000 0 0x02000>,
-+		      <0x0 0xe1140000 0 0x10000>,
-+		      <0x0 0xe1160000 0 0x10000>;
-+		v2m0: v2m@0x8000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x80000 0 0x1000>;
-+		};
-+
-+		....
-+
-+		v2mN: v2m@0x9000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x90000 0 0x1000>;
-+		};
-+	};
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index fd4e81a..83d5556 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -12,6 +12,7 @@ config ARM64
- 	select ARM_ARCH_TIMER
- 	select ARM_GIC
- 	select AUDIT_ARCH_COMPAT_GENERIC
-+	select ARM_GIC_V2M
- 	select ARM_GIC_V3
- 	select BUILDTIME_EXTABLE_SORT
- 	select CLONE_BACKWARDS
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index b8632bf..ddb31ee 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -7,6 +7,13 @@ config ARM_GIC
- 	select IRQ_DOMAIN
- 	select MULTI_IRQ_HANDLER
- 
-+config ARM_GIC_V2M
-+	bool
-+	select IRQ_DOMAIN
-+	select MULTI_IRQ_HANDLER
-+	depends on ARM_GIC
-+	depends on PCI && PCI_MSI
-+
- config GIC_NON_BANKED
- 	bool
- 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 73052ba..3bda951 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi-nmi.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o irq-gic-common.o
-+obj-$(CONFIG_ARM_GIC_V2M)		+= irq-gic-v2m.o
- obj-$(CONFIG_ARM_GIC_V3)		+= irq-gic-v3.o irq-gic-common.o
- obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
- obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
-diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
-index 60ac704..4b8cff2 100644
---- a/drivers/irqchip/irq-gic-common.c
-+++ b/drivers/irqchip/irq-gic-common.c
-@@ -113,3 +113,15 @@ void gic_cpu_config(void __iomem *base, void (*sync_access)(void))
- 	if (sync_access)
- 		sync_access();
- }
-+
-+int gic_msi_get_vec_count(struct pci_dev *pdev, struct msi_desc *desc)
-+{
-+	int ret = -EINVAL;
-+#ifdef CONFIG_PCI_MSI
-+	if (desc->msi_attrib.is_msix)
-+		ret = pci_msix_vec_count(pdev);
-+	else
-+		ret = pci_msi_vec_count(pdev);
-+#endif
-+	return ret;
-+}
-diff --git a/drivers/irqchip/irq-gic-common.h b/drivers/irqchip/irq-gic-common.h
-index b41f024..95049e5 100644
---- a/drivers/irqchip/irq-gic-common.h
-+++ b/drivers/irqchip/irq-gic-common.h
-@@ -19,6 +19,8 @@
- 
- #include <linux/of.h>
- #include <linux/irqdomain.h>
-+#include <linux/pci.h>
-+#include <linux/msi.h>
- 
- void gic_configure_irq(unsigned int irq, unsigned int type,
-                        void __iomem *base, void (*sync_access)(void));
-@@ -26,4 +28,6 @@ void gic_dist_config(void __iomem *base, int gic_irqs,
- 		     void (*sync_access)(void));
- void gic_cpu_config(void __iomem *base, void (*sync_access)(void));
- 
-+int gic_msi_get_vec_count(struct pci_dev *pdev, struct msi_desc *desc);
-+
- #endif /* _IRQ_GIC_COMMON_H */
-diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
-new file mode 100644
-index 0000000..1df5b37
---- /dev/null
-+++ b/drivers/irqchip/irq-gic-v2m.c
-@@ -0,0 +1,356 @@
-+/*
-+ * ARM GIC v2m MSI(-X) support
-+ * Support for Message Signaled Interrupts for systems that
-+ * implement ARM Generic Interrupt Controller: GICv2m.
-+ *
-+ * Copyright (C) 2014 Advanced Micro Devices, Inc.
-+ * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-+ *          Harish Kasiviswanathan <harish.kasiviswanathan@amd.com>
-+ *          Brandon Anderson <brandon.anderson@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#define pr_fmt(fmt) "GICv2m: " fmt
-+
-+#include <linux/bitmap.h>
-+#include <linux/irq.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_pci.h>
-+#include <linux/pci.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+#include "irqchip.h"
-+#include "irq-gic.h"
-+#include "irq-gic-common.h"
-+
-+/*
-+* MSI_TYPER:
-+*     [31:26] Reserved
-+*     [25:16] lowest SPI assigned to MSI
-+*     [15:10] Reserved
-+*     [9:0]   Numer of SPIs assigned to MSI
-+*/
-+#define V2M_MSI_TYPER			0x008
-+#define V2M_MSI_TYPER_BASE_SHIFT	16
-+#define V2M_MSI_TYPER_BASE_MASK		0x3FF
-+#define V2M_MSI_TYPER_NUM_MASK		0x3FF
-+#define V2M_MSI_SETSPI_NS		0x040
-+#define V2M_MIN_SPI			32
-+#define V2M_MAX_SPI			1019
-+
-+#define V2M_MSI_TYPER_BASE_SPI(x)	\
-+		((x >> V2M_MSI_TYPER_BASE_SHIFT) & V2M_MSI_TYPER_BASE_MASK)
-+
-+#define V2M_MSI_TYPER_NUM_SPI(x)	(x & V2M_MSI_TYPER_NUM_MASK)
-+
-+/*
-+ * alloc_msi_irq - Allocate MSIs from available MSI bitmap.
-+ * @data: Pointer to v2m_data
-+ * @nvec: Number of interrupts to allocate
-+ * @irq: Pointer to the allocated irq
-+ *
-+ * Allocates interrupts only if the contiguous range of MSIs
-+ * with specified nvec are available. Otherwise return the number
-+ * of available interrupts. If none are available, then returns -ENOENT.
-+ */
-+static int alloc_msi_irq(struct v2m_data *data, int nvec, int *irq)
-+{
-+	int size = data->nr_spis;
-+	int next = size, i = nvec, ret;
-+
-+	/* We should never allocate more than available nr_spis */
-+	if (i >= size)
-+		i = size;
-+
-+	spin_lock(&data->msi_cnt_lock);
-+
-+	for (; i > 0; i--) {
-+		next = bitmap_find_next_zero_area(data->bm,
-+					size, 0, i, 0);
-+		if (next < size)
-+			break;
-+	}
-+
-+	if (i != nvec) {
-+		ret = i ? : -ENOENT;
-+	} else {
-+		bitmap_set(data->bm, next, nvec);
-+		*irq = data->spi_start + next;
-+		ret = 0;
-+	}
-+
-+	spin_unlock(&data->msi_cnt_lock);
-+
-+	return ret;
-+}
-+
-+static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
-+{
-+	int pos;
-+	struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
-+
-+	spin_lock(&data->msi_cnt_lock);
-+
-+	pos = irq - data->spi_start;
-+	if (pos >= 0 && pos < data->nr_spis)
-+		bitmap_clear(data->bm, pos, 1);
-+
-+	spin_unlock(&data->msi_cnt_lock);
-+}
-+
-+bool gicv2m_check_msi_range(struct gic_chip_data *gic, irq_hw_number_t hw)
-+{
-+	struct v2m_data *v2m = NULL;
-+
-+	list_for_each_entry(v2m, &gic->v2m_list, list) {
-+		if (hw >= v2m->spi_start &&
-+		    hw <  v2m->spi_start + v2m->nr_spis)
-+			return true;
-+	}
-+	return false;
-+}
-+
-+static int gicv2m_setup_msi_irq(struct msi_chip *chip,
-+				struct pci_dev *pdev,
-+				struct msi_desc *desc)
-+{
-+	int i, irq, nvec, avail;
-+	struct msi_msg msg;
-+	phys_addr_t addr;
-+	struct msi_desc *entry;
-+	struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
-+
-+	if (!desc) {
-+		dev_err(&pdev->dev,
-+			"MSI setup failed. Invalid msi descriptor\n");
-+		return -EINVAL;
-+	}
-+
-+	if (desc->msi_attrib.is_msix) {
-+		/**
-+		 * For MSIx:
-+		 * We allocate one irq at a time
-+		 */
-+		avail = alloc_msi_irq(data, 1, &irq);
-+		if (avail != 0) {
-+			dev_err(&pdev->dev,
-+				"MSI setup failed. Cannnot allocate IRQ\n");
-+			return -ENOSPC;
-+		}
-+
-+		irq_set_chip_data(irq, chip);
-+		irq_set_msi_desc(irq, desc);
-+		irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-+	} else {
-+		/**
-+		 * For MSI and Multi-MSI:
-+		 * All requested irqs are allocated and setup at
-+		 * once. Subsequent calls to this function would simply return
-+		 * success. This is to avoid having to implement a separate
-+		 * function for setting up multiple irqs.
-+		 */
-+		BUG_ON(list_empty(&pdev->msi_list));
-+		WARN_ON(!list_is_singular(&pdev->msi_list));
-+
-+		nvec = gic_msi_get_vec_count(pdev, desc);
-+		if (WARN_ON(nvec <= 0))
-+			return nvec;
-+
-+		entry = list_first_entry(&pdev->msi_list,
-+					 struct msi_desc, list);
-+
-+		if ((nvec > 1) && (entry->msi_attrib.multiple))
-+			return 0;
-+
-+		avail = alloc_msi_irq(data, nvec, &irq);
-+		if (avail != 0) {
-+			dev_err(&pdev->dev,
-+				"Failed to allocate %d irqs.\n", nvec);
-+			return avail;
-+		}
-+
-+		if (nvec > 1) {
-+			/* Set lowest of the new interrupts assigned
-+			 * to the PCI device
-+			 */
-+			entry->nvec_used = nvec;
-+			entry->msi_attrib.multiple = ilog2(
-+						__roundup_pow_of_two(nvec));
-+		}
-+
-+		for (i = 0; i < nvec; i++) {
-+			irq_set_chip_data(irq+i, chip);
-+			if (irq_set_msi_desc_off(irq, i, entry)) {
-+				dev_err(&pdev->dev,
-+					"Failed to set up MSI irq %d\n",
-+					(irq+i));
-+				return -EINVAL;
-+			}
-+
-+			irq_set_irq_type((irq+i), IRQ_TYPE_EDGE_RISING);
-+		}
-+	}
-+
-+	addr = data->res.start + V2M_MSI_SETSPI_NS;
-+	msg.address_hi = (u32)(addr >> 32);
-+	msg.address_lo = (u32)(addr);
-+	msg.data = irq;
-+	write_msi_msg(irq, &msg);
-+
-+	return 0;
-+}
-+
-+static void gicv2m_mask_irq(struct irq_data *d)
-+{
-+	gic_mask_irq(d);
-+	if (d->msi_desc)
-+		mask_msi_irq(d);
-+}
-+
-+static void gicv2m_unmask_irq(struct irq_data *d)
-+{
-+	gic_unmask_irq(d);
-+	if (d->msi_desc)
-+		unmask_msi_irq(d);
-+}
-+
-+static bool is_msi_spi_valid(u32 base, u32 num)
-+{
-+	if (base < V2M_MIN_SPI) {
-+		pr_err("Invalid MSI base SPI (base:%u)\n", base);
-+		return false;
-+	}
-+
-+	if ((num == 0) || (base + num > V2M_MAX_SPI)) {
-+		pr_err("Number of SPIs (%u) exceed maximum (%u)\n",
-+		       num, V2M_MAX_SPI - V2M_MIN_SPI + 1);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static int __init
-+gicv2m_init_one(struct device_node *node, struct v2m_data **v,
-+		struct gic_chip_data *gic)
-+{
-+	int ret;
-+	struct v2m_data *v2m = NULL;
-+
-+	*v = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
-+	if (!*v) {
-+		pr_err("Failed to allocate struct v2m_data.\n");
-+		return -ENOMEM;
-+	}
-+
-+	v2m = *v;
-+	v2m->gic = gic;
-+	v2m->msi_chip.owner = THIS_MODULE;
-+	v2m->msi_chip.of_node = node;
-+	v2m->msi_chip.setup_irq = gicv2m_setup_msi_irq;
-+	v2m->msi_chip.teardown_irq = gicv2m_teardown_msi_irq;
-+	ret = of_address_to_resource(node, 0, &v2m->res);
-+	if (ret) {
-+		pr_err("Failed to allocate v2m resource.\n");
-+		goto err_out;
-+	}
-+
-+	v2m->base = ioremap(v2m->res.start, resource_size(&v2m->res));
-+	if (!v2m->base) {
-+		pr_err("Failed to map GICv2m resource\n");
-+		ret = -EINVAL;
-+		goto err_out;
-+	}
-+
-+	ret = of_pci_msi_chip_add(&v2m->msi_chip);
-+	if (ret) {
-+		pr_info("Failed to add msi_chip.\n");
-+		goto err_out;
-+	}
-+
-+	if (!of_property_read_u32(node, "arm,msi-base-spi", &v2m->spi_start) &&
-+	    !of_property_read_u32(node, "arm,msi-num-spi", &v2m->nr_spis)) {
-+		pr_info("Overwriting V2M MSI_TYPER (base:%u, num:%u)\n",
-+			v2m->spi_start, v2m->nr_spis);
-+	} else {
-+		u32 typer = readl_relaxed(v2m->base + V2M_MSI_TYPER);
-+
-+		v2m->spi_start = V2M_MSI_TYPER_BASE_SPI(typer);
-+		v2m->nr_spis = V2M_MSI_TYPER_NUM_SPI(typer);
-+	}
-+
-+	if (!is_msi_spi_valid(v2m->spi_start, v2m->nr_spis)) {
-+		ret = -EINVAL;
-+		goto err_out;
-+	}
-+
-+	v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
-+			  GFP_KERNEL);
-+	if (!v2m->bm) {
-+		pr_err("Failed to allocate MSI bitmap\n");
-+		ret = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	spin_lock_init(&v2m->msi_cnt_lock);
-+
-+	pr_info(" Node %s: range[%#lx : %#lx], SPI[%d:%d]\n", node->name,
-+		(unsigned long)v2m->res.start, (unsigned long)v2m->res.end,
-+		v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
-+
-+	return 0;
-+err_out:
-+	of_pci_msi_chip_remove(&v2m->msi_chip);
-+	if (v2m->base)
-+		iounmap(v2m->base);
-+	kfree(v2m);
-+	return ret;
-+}
-+
-+int __init gicv2m_of_init(struct device_node *node,
-+			  struct gic_chip_data *gic,
-+			  struct irq_chip *v2m_chip)
-+{
-+	int ret = 0;
-+	struct v2m_data *v2m;
-+	struct device_node *child = NULL;
-+
-+	INIT_LIST_HEAD(&gic->v2m_list);
-+
-+	v2m_chip->irq_mask = gicv2m_mask_irq;
-+	v2m_chip->irq_unmask = gicv2m_unmask_irq;
-+
-+	for (;;) {
-+		child = of_get_next_child(node, child);
-+		if (!child)
-+			break;
-+
-+		if (!of_device_is_compatible(child, "arm,gic-v2m-frame"))
-+			continue;
-+
-+		if (!of_find_property(child, "msi-controller", NULL))
-+			continue;
-+
-+		ret = gicv2m_init_one(child, &v2m, gic);
-+		if (ret) {
-+			of_node_put(node);
-+			break;
-+		}
-+
-+		list_add_tail(&v2m->list, &gic->v2m_list);
-+	}
-+
-+	if (ret && list_empty(&gic->v2m_list)) {
-+		pr_warn("Warning: Failed to enable GICv2m support.\n");
-+		return -EINVAL;
-+	}
-+
-+	return ret;
-+}
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4b959e6..9f8e1e0 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -46,30 +46,9 @@
- #include <asm/smp_plat.h>
- 
- #include "irq-gic-common.h"
-+#include "irq-gic.h"
- #include "irqchip.h"
- 
--union gic_base {
--	void __iomem *common_base;
--	void __percpu * __iomem *percpu_base;
--};
--
--struct gic_chip_data {
--	union gic_base dist_base;
--	union gic_base cpu_base;
--#ifdef CONFIG_CPU_PM
--	u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
--	u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
--	u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
--	u32 __percpu *saved_ppi_enable;
--	u32 __percpu *saved_ppi_conf;
--#endif
--	struct irq_domain *domain;
--	unsigned int gic_irqs;
--#ifdef CONFIG_GIC_NON_BANKED
--	void __iomem *(*get_base)(union gic_base *);
--#endif
--};
--
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- 
- /*
-@@ -131,15 +110,36 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
- #define gic_set_base_accessor(d, f)
- #endif
- 
-+static inline
-+struct gic_chip_data *irq_data_get_gic_chip_data(struct irq_data *d)
-+{
-+	struct gic_chip_data *gic_data;
-+	struct msi_chip *mchip;
-+	struct v2m_data *v2mdat;
-+
-+	/*
-+	 * For MSI, irq_data.chip_data points to struct msi_chip.
-+	 * For non-MSI, irq_data.chip_data points to struct gic_chip_data.
-+	 */
-+	if (d->msi_desc) {
-+		mchip = irq_data_get_irq_chip_data(d);
-+		v2mdat = container_of(mchip, struct v2m_data, msi_chip);
-+		gic_data = v2mdat->gic;
-+	} else {
-+		gic_data = irq_data_get_irq_chip_data(d);
-+	}
-+	return gic_data;
-+}
-+
- static inline void __iomem *gic_dist_base(struct irq_data *d)
- {
--	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-+	struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
- 	return gic_data_dist_base(gic_data);
- }
- 
- static inline void __iomem *gic_cpu_base(struct irq_data *d)
- {
--	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-+	struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
- 	return gic_data_cpu_base(gic_data);
- }
- 
-@@ -151,7 +151,7 @@ static inline unsigned int gic_irq(struct irq_data *d)
- /*
-  * Routines to acknowledge, disable and enable interrupts
-  */
--static void gic_mask_irq(struct irq_data *d)
-+void gic_mask_irq(struct irq_data *d)
- {
- 	u32 mask = 1 << (gic_irq(d) % 32);
- 
-@@ -162,7 +162,7 @@ static void gic_mask_irq(struct irq_data *d)
- 	raw_spin_unlock(&irq_controller_lock);
- }
- 
--static void gic_unmask_irq(struct irq_data *d)
-+void gic_unmask_irq(struct irq_data *d)
- {
- 	u32 mask = 1 << (gic_irq(d) % 32);
- 
-@@ -325,6 +325,15 @@ static struct irq_chip gic_chip = {
- 	.irq_set_wake		= gic_set_wake,
- };
- 
-+static struct irq_chip v2m_chip = {
-+	.name			= "GICv2m",
-+	.irq_eoi		= gic_eoi_irq,
-+	.irq_set_type		= gic_set_type,
-+#ifdef CONFIG_SMP
-+	.irq_set_affinity	= gic_set_affinity,
-+#endif
-+};
-+
- void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
- {
- 	if (gic_nr >= MAX_GIC_NR)
-@@ -767,19 +776,29 @@ void __init gic_init_physaddr(struct device_node *node)
- static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
- 				irq_hw_number_t hw)
- {
-+	struct gic_chip_data *gic = d->host_data;
-+
-+	irq_set_chip_data(irq, gic);
-+
- 	if (hw < 32) {
-+		/* PPIs */
- 		irq_set_percpu_devid(irq);
- 		irq_set_chip_and_handler(irq, &gic_chip,
- 					 handle_percpu_devid_irq);
- 		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
- 	} else {
--		irq_set_chip_and_handler(irq, &gic_chip,
--					 handle_fasteoi_irq);
-+		/* SPIs */
- 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
- 
--		gic_routable_irq_domain_ops->map(d, irq, hw);
-+		if (!gicv2m_check_msi_range(gic, hw)) {
-+			irq_set_chip_and_handler(irq, &gic_chip,
-+						 handle_fasteoi_irq);
-+			gic_routable_irq_domain_ops->map(d, irq, hw);
-+		} else {
-+			irq_set_chip_and_handler(irq, &v2m_chip,
-+					 handle_fasteoi_irq);
-+		}
- 	}
--	irq_set_chip_data(irq, d->host_data);
- 	return 0;
- }
- 
-@@ -1010,6 +1029,9 @@ gic_of_init(struct device_node *node, struct device_node *parent)
- 	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
- 		percpu_offset = 0;
- 
-+	if (IS_ENABLED(CONFIG_ARM_GIC_V2M))
-+		gicv2m_of_init(node, &gic_data[gic_cnt], &v2m_chip);
-+
- 	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
- 	if (!gic_cnt)
- 		gic_init_physaddr(node);
-diff --git a/drivers/irqchip/irq-gic.h b/drivers/irqchip/irq-gic.h
-new file mode 100644
-index 0000000..3021665
---- /dev/null
-+++ b/drivers/irqchip/irq-gic.h
-@@ -0,0 +1,54 @@
-+#ifndef _IRQ_GIC_H_
-+#define _IRQ_GIC_H_
-+
-+#include <linux/msi.h>
-+#include <linux/pci.h>
-+
-+union gic_base {
-+	void __iomem *common_base;
-+	void __percpu * __iomem *percpu_base;
-+};
-+
-+struct gic_chip_data;
-+
-+struct v2m_data {
-+#ifdef CONFIG_ARM_GIC_V2M
-+	struct list_head list;
-+	spinlock_t msi_cnt_lock;
-+	struct msi_chip msi_chip;
-+	struct resource res;      /* GICv2m resource */
-+	void __iomem *base;       /* GICv2m virt address */
-+	unsigned int spi_start;   /* The SPI number that MSIs start */
-+	unsigned int nr_spis;     /* The number of SPIs for MSIs */
-+	unsigned long *bm;        /* MSI vector bitmap */
-+	struct gic_chip_data *gic;
-+#endif
-+};
-+
-+struct gic_chip_data {
-+	union gic_base dist_base;
-+	union gic_base cpu_base;
-+#ifdef CONFIG_CPU_PM
-+	u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
-+	u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
-+	u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
-+	u32 __percpu *saved_ppi_enable;
-+	u32 __percpu *saved_ppi_conf;
-+#endif
-+	struct irq_domain *domain;
-+	unsigned int gic_irqs;
-+#ifdef CONFIG_GIC_NON_BANKED
-+	void __iomem *(*get_base)(union gic_base *);
-+#endif
-+#ifdef CONFIG_ARM_GIC_V2M
-+	struct list_head v2m_list;
-+#endif
-+};
-+
-+void gic_mask_irq(struct irq_data *d);
-+void gic_unmask_irq(struct irq_data *d);
-+int gicv2m_of_init(struct device_node *node, struct gic_chip_data *gic,
-+		   struct irq_chip *v2m_chip) __init;
-+bool gicv2m_check_msi_range(struct gic_chip_data *gic, irq_hw_number_t hw);
-+
-+#endif /* _IRQ_GIC_H_ */
--- 
-1.9.3
-
+On Wed, Sep 17, 2014 at 06:52:44PM +0100, Mark Rutland wrote:
+> On Wed, Sep 17, 2014 at 10:57:59AM +0100, Robin Gong wrote:
+> > This driver register pm_power_off with snvs power off function. If
+> > your boards NOT use PMIC_ON_REQ to turn on/off external pmic, or use
+> > other pin to do, please disable the driver in dts, otherwise, your
+> > pm_power_off maybe overwrote by this driver.
+> > 
+> > Signed-off-by: Robin Gong <b38343@freescale.com>
+> > ---
+> >  .../bindings/power_supply/imx-snvs-poweroff.txt    |   23 +++++++
+> >  drivers/power/reset/Kconfig                        |    9 +++
+> >  drivers/power/reset/Makefile                       |    1 +
+> >  drivers/power/reset/imx-snvs-poweroff.c            |   66 ++++++++++++++++++++
+> >  4 files changed, 99 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
+> >  create mode 100644 drivers/power/reset/imx-snvs-poweroff.c
+> > 
+> > diff --git a/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt b/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
+> > new file mode 100644
+> > index 0000000..6caf64e
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
+> > @@ -0,0 +1,23 @@
+> > +i.mx6 Poweroff Driver
+> > +
+> > +SNVS_LPCR in SNVS module can power off the whole system by pull
+> > +PMIC_ON_REQ low if PMIC_ON_REQ is connected with external PMIC.
+> > +If you don't want to use PMIC_ON_REQ as power on/off control,
+> > +please set status='disabled' to disable this driver.
+> > +
+> > +Required Properties:
+> > +-compatible: "fsl,sec-v4.0-poweroff"
+> > +-reg: Specifies the physical address of the SNVS_LPCR register
+> 
+> As you describe above, this is part of the SNVS module. So why does this
+> need a separate node?
+> 
+> Surely there should just be a property on the SNVS node that desribers
+> whether or not this can be used?
+> 
+> Mark.
+>
+Yes, put this function in rtc-snvs make things easier, honestly,this is our way
+in internal tree. But looks more and more power off driver put in drivers/power
+/reset,so we decided to add new power off driver. If it is ok to register
+pm_power_off hook in drivers/rtc/rtc-snvs.c, I can drop this patch.
+> > +
+> > +Example:
+> > +	snvs@020cc000 {
+> > +		compatible = "fsl,sec-v4.0-mon", "simple-bus";
+> > +		#address-cells = <1>;
+> > +		#size-cells = <1>;
+> > +		ranges = <0 0x020cc000 0x4000>;
+> > +		.....
+> > +		snvs-poweroff@38 {
+> > +			compatible = "fsl,sec-v4.0-poweroff";
+> > +			reg = <0x38 0x4>;
+> > +		};
+> > +	}
+> > diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> > index ca41523..b26c547 100644
+> > --- a/drivers/power/reset/Kconfig
+> > +++ b/drivers/power/reset/Kconfig
+> > @@ -45,6 +45,15 @@ config POWER_RESET_HISI
+> >  	help
+> >  	  Reboot support for Hisilicon boards.
+> >  
+> > +config POWER_RESET_IMX
+> > +	bool "IMX6 power-off driver"
+> > +	depends on POWER_RESET && SOC_IMX6
+> > +	help
+> > +	  This driver support power off external PMIC by PMIC_ON_REQ on i.mx6
+> > +	  boards.If you want to use other pin to control external power,please
+> > +	  say N here or disable in dts to make sure pm_power_off never be
+> > +	  overwrote wrongly by this driver.
+> > +
+> >  config POWER_RESET_MSM
+> >  	bool "Qualcomm MSM power-off driver"
+> >  	depends on POWER_RESET && ARCH_QCOM
+> > diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+> > index a42e70e..2524daf 100644
+> > --- a/drivers/power/reset/Makefile
+> > +++ b/drivers/power/reset/Makefile
+> > @@ -3,6 +3,7 @@ obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
+> >  obj-$(CONFIG_POWER_RESET_BRCMSTB) += brcmstb-reboot.o
+> >  obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+> >  obj-$(CONFIG_POWER_RESET_HISI) += hisi-reboot.o
+> > +obj-$(CONFIG_POWER_RESET_IMX) += imx-snvs-poweroff.o
+> >  obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+> >  obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
+> >  obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
+> > diff --git a/drivers/power/reset/imx-snvs-poweroff.c b/drivers/power/reset/imx-snvs-poweroff.c
+> > new file mode 100644
+> > index 0000000..d726ac4
+> > --- /dev/null
+> > +++ b/drivers/power/reset/imx-snvs-poweroff.c
+> > @@ -0,0 +1,66 @@
+> > +/* Power off driver for i.mx6
+> > + * Copyright (c) 2014, FREESCALE CORPORATION.  All rights reserved.
+> > + *
+> > + * based on msm-poweroff.c
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 and
+> > + * only version 2 as published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + */
+> > +
+> > +#include <linux/err.h>
+> > +#include <linux/init.h>
+> > +#include <linux/io.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/platform_device.h>
+> > +
+> > +static void __iomem *snvs_base;
+> > +
+> > +static void do_imx_poweroff(void)
+> > +{
+> > +	u32 value = readl(snvs_base);
+> > +
+> > +	/* set TOP and DP_EN bit */
+> > +	writel(value | 0x60, snvs_base);
+> > +}
+> > +
+> > +static int imx_poweroff_probe(struct platform_device *pdev)
+> > +{
+> > +	snvs_base = of_iomap(pdev->dev.of_node, 0);
+> > +	if (!snvs_base) {
+> > +		dev_err(&pdev->dev, "failed to get memory\n");
+> > +		return -EIO;
+> > +	}
+> > +
+> > +	pm_power_off = do_imx_poweroff;
+> > +	return 0;
+> > +}
+> > +
+> > +static const struct of_device_id of_imx_poweroff_match[] = {
+> > +	{ .compatible = "fsl,sec-v4.0-poweroff", },
+> > +	{},
+> > +};
+> > +MODULE_DEVICE_TABLE(of, of_imx_poweroff_match);
+> > +
+> > +static struct platform_driver imx_poweroff_driver = {
+> > +	.probe = imx_poweroff_probe,
+> > +	.driver = {
+> > +		.name = "imx-snvs-poweroff",
+> > +		.of_match_table = of_match_ptr(of_imx_poweroff_match),
+> > +	},
+> > +};
+> > +
+> > +static int __init imx_poweroff_init(void)
+> > +{
+> > +	return platform_driver_register(&imx_poweroff_driver);
+> > +}
+> > +device_initcall(imx_poweroff_init);
+> > -- 
+> > 1.7.9.5
+> > 
+> > 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
