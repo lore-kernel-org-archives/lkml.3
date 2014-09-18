@@ -1,146 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222AbaIRT7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 15:59:52 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:53486 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756327AbaIRT7v convert rfc822-to-8bit (ORCPT
+	id S1757241AbaIRUBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 16:01:31 -0400
+Received: from relay05.mycloudmailbox.com ([199.244.76.204]:38951 "EHLO
+	relay05.mycloudmailbox.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756085AbaIRUB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 15:59:51 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "matthijs@stdin.nl" <matthijs@stdin.nl>,
-        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv4 01/12] usb: dwc2: Update Kconfig to support dual-role
-Thread-Topic: [PATCHv4 01/12] usb: dwc2: Update Kconfig to support dual-role
-Thread-Index: AQHPwUoTG0V0UOa4iEiY4yP+9i85Ppv+NSoAgAlvPQD//8e9sA==
-Date: Thu, 18 Sep 2014 19:59:47 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844D968C@US01WEMBX2.internal.synopsys.com>
-References: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
- <1409070003-21195-2-git-send-email-dinguyen@opensource.altera.com>
- <2539965.N1OFkvgc6j@amdc1032> <541B0030.3000904@opensource.altera.com>
-In-Reply-To: <541B0030.3000904@opensource.altera.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Sep 2014 16:01:29 -0400
+From: David Barksdale <dbarksdale@uplogix.com>
+To: Jonathan Cameron <jic23@kernel.org>
+CC: David Barksdale <dbarksdale@uplogix.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>
+Subject: [PATCH v2] IIO: add si7020 driver
+Date: Thu, 18 Sep 2014 15:01:10 -0500
+Message-ID: <1411070470-24348-1-git-send-email-dbarksdale@uplogix.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
+Content-Type: text/plain
+X-ClientProxiedBy: S05-CAS001.S05.local (10.30.32.22) To
+ S05-MLT01-07.S05.local (10.30.32.218)
+X-RoutingAgent: Treated
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dinh Nguyen [mailto:dinguyen@opensource.altera.com]
-> Sent: Thursday, September 18, 2014 8:54 AM
-> 
-> On 09/12/2014 10:49 AM, Bartlomiej Zolnierkiewicz wrote:
-> >
-> > [ added linux-kernel ML to cc: ]
-> >
-> > Hi,
-> >
-> > On Tuesday, August 26, 2014 11:19:52 AM dinguyen@opensource.altera.com wrote:
-> >> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> >>
-> >> Update DWC2 kconfig and makefile to support dual-role mode. The platform
-> >> file will always get compiled for the case where the controller is directly
-> >> connected to the CPU. So for loadable modules, only dwc2.ko is needed.
-> >
-> > Kconfig and Makefile changes should be done after (or at the same time as)
-> > driver code itself is modified to support dual-role mode.  Each individual
-> > patch of the patchset should be correct itself (not cause any breakages)
-> > in order to keep the whole patchset bisectable.
-> >
-> 
-> Paulz mentioned this in v1 of this patch series and ever since then, I
-> have been careful to test each patch on it's own, and each version since
-> then has passed 0-Day kbuild testing. But I may have missed something in
-> v4. Will try to move the edits to Kconfig/Makefile to end for v5.
+This patch adds support to the Industrial IO subsystem
+for the Silicon Labs Si7013/20/21 Relative Humidity and
+Temperature Sensors.
 
-As I said in another email, try building with ARM multi_v7_defconfig,
-you should see the problems then (it defines CONFIG_PCI for example).
-Also be sure to test building with all variations of the DWC2 config.
+Website: http://www.silabs.com/products/sensors/humidity-sensors/Pages/si7013-20-21.aspx
 
-I would suggest deleting all of the object files in the dwc2/ directory
-between builds, that will make it more obvious if something is missing
-(for example, platform.o doesn't get built if CONFIG_PCI is defined).
+These are i2c devices which measure relative humidity
+and temperature and all use the same protocol. The
+Si7013 has an additional input with programmable
+linearization which is not supported because that's
+complicated and I didn't need it.
 
-> >> diff --git a/drivers/usb/dwc2/Kconfig b/drivers/usb/dwc2/Kconfig
-> >> index f93807b..4396a1f 100644
-> >> --- a/drivers/usb/dwc2/Kconfig
-> >> +++ b/drivers/usb/dwc2/Kconfig
-> >> @@ -1,40 +1,29 @@
-> >>  config USB_DWC2
-> >> -	bool "DesignWare USB2 DRD Core Support"
-> >> +	tristate "DesignWare USB2 DRD Core Support"
-> >>  	depends on USB
-> >>  	help
-> >>  	  Say Y here if your system has a Dual Role Hi-Speed USB
-> >>  	  controller based on the DesignWare HSOTG IP Core.
-> >>
-> >> -	  For host mode, if you choose to build the driver as dynamically
-> >> -	  linked modules, the core module will be called dwc2.ko, the PCI
-> >> -	  bus interface module (if you have a PCI bus system) will be
-> >> -	  called dwc2_pci.ko, and the platform interface module (for
-> >> -	  controllers directly connected to the CPU) will be called
-> >> -	  dwc2_platform.ko. For gadget mode, there will be a single
-> >> -	  module called dwc2_gadget.ko.
-> >> -
-> >> -	  NOTE: The s3c-hsotg driver is now renamed to dwc2_gadget. The
-> >> -	  host and gadget drivers are still currently separate drivers.
-> >> -	  There are plans to merge the dwc2_gadget driver with the dwc2
-> >> -	  host driver in the near future to create a dual-role driver.
-> >> +	  If you choose to build the driver as dynamically
-> >> +	  linked modules, a single dwc2.ko(regardless of mode of operation)
-> >
-> > minort nitpick: " " is missing after dwc2.ko
-> >
-> >> +	  will get built for both platform IPs and PCI.
-> >
-> > Why do you want ot merge both platform and PCI drivers into one?
-> >
-> > To do it properly you need to modify module_init/exit() of the final
-> > module to properly handle both PCI and platform devices.  It should
-> > be easier to leave separate dwc2_pci/platform drivers and just put
-> > the common code into dwc2.ko.
-> 
-> I need to rework to the comment. I think it should say, "will get built
-> for either platform IPs or PCI." I am not merging both platform and PCI
-> drivers into one.
+Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
 
-It looks to me like you are building the platform code into the main
-dwc2.ko module, with a separate dwc2_pci.ko module. That might work
-(I'm not sure), but as Bartlomiej said, I think it would be better to
-have just the common code in dwc2.ko, with separate modules for pci
-and platform. This is the pattern that DWC3 follows.
+--
+Changes since v1:
+* Renamed to si7020 and replaced Si701x/2x with Si7013/20/21.
+* Removed unneeded mutex.
+* Pre-computed floating-point constant expressions.
+* Removed address_list and I2C_CLASS_HWMON.
 
-> > You've also left the "depends on USB_DWC2_HOST && PCI" unmodified
-> > which causes DWC2 PCI support to show up only if "Host only mode"
-> > is selected (it is not available if "Dual Role mode" is selected).
-> >
-> 
-> Does PCI support gadget? I left it unmodified because I didn't think the
-> PCI driver supported Gadget.
+---
+ drivers/iio/humidity/Kconfig  |  10 +++
+ drivers/iio/humidity/Makefile |   1 +
+ drivers/iio/humidity/si7020.c | 142 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 153 insertions(+)
 
-PCI can support gadget, but currently it is not implemented. I plan to
-add that after this series goes in, since I think I have the only PCI
-platform for DWC2. So I think it's fine to leave this as-is for now,
-and I will change it later.
+diff --git a/drivers/iio/humidity/Kconfig b/drivers/iio/humidity/Kconfig
+index e116bd8..4813b79 100644
+--- a/drivers/iio/humidity/Kconfig
++++ b/drivers/iio/humidity/Kconfig
+@@ -22,4 +22,14 @@ config SI7005
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called si7005.
  
++config SI7020
++	tristate "Si7013/20/21 Relative Humidity and Temperature Sensors"
++	depends on I2C
++	help
++	  Say yes here to build support for the Silicon Labs Si7013/20/21
++	  Relative Humidity and Temperature Sensors.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called si7020.
++
+ endmenu
+diff --git a/drivers/iio/humidity/Makefile b/drivers/iio/humidity/Makefile
+index e3f3d94..86e2d26 100644
+--- a/drivers/iio/humidity/Makefile
++++ b/drivers/iio/humidity/Makefile
+@@ -4,3 +4,4 @@
+ 
+ obj-$(CONFIG_DHT11) += dht11.o
+ obj-$(CONFIG_SI7005) += si7005.o
++obj-$(CONFIG_SI7020) += si7020.o
+diff --git a/drivers/iio/humidity/si7020.c b/drivers/iio/humidity/si7020.c
+new file mode 100644
+index 0000000..cabdb7d
+--- /dev/null
++++ b/drivers/iio/humidity/si7020.c
+@@ -0,0 +1,142 @@
++/*
++ * si7020.c - Silicon Labs Si7013/20/21 Relative Humidity and Temp Sensors
++ * Copyright (c) 2013,2014  Uplogix, Inc.
++ * David Barksdale <dbarksdale@uplogix.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/*
++ * The Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors
++ * are i2c devices which have an identical programming interface for
++ * measuring relative humidity and temperature. The Si7013 has an additional
++ * temperature input which this driver does not support.
++ *
++ * Data Sheets:
++ *   Si7013: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7013.pdf
++ *   Si7020: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7020.pdf
++ *   Si7021: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7021.pdf
++ */
++
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/sysfs.h>
++
++#include <linux/iio/iio.h>
++#include <linux/iio/sysfs.h>
++
++enum {
++	/* Measure Relative Humidity, Hold Master Mode */
++	SI7020CMD_RH_HOLD	= 0xE5,
++	/* Measure Temperature, Hold Master Mode */
++	SI7020CMD_TEMP_HOLD	= 0xE3,
++};
++
++static int si7020_read_raw(struct iio_dev *indio_dev,
++			   struct iio_chan_spec const *chan, int *val,
++			   int *val2, long mask)
++{
++	struct i2c_client **client = iio_priv(indio_dev);
++	int ret;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		ret = i2c_smbus_read_word_data(*client,
++					       chan->type == IIO_TEMP ?
++					       SI7020CMD_TEMP_HOLD :
++					       SI7020CMD_RH_HOLD);
++		if (ret < 0)
++			return ret;
++		*val = ret;
++		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_SCALE:
++		if (chan->type == IIO_TEMP)
++			*val = 175720; /* = 175.72 * 1000 */
++		else
++			*val = 125 * 1000;
++		*val2 = 65536;
++		return IIO_VAL_FRACTIONAL;
++	case IIO_CHAN_INFO_OFFSET:
++		if (chan->type == IIO_TEMP)
++			*val = -17473; /* = -46.85 * 65536 / 175.72 */
++		else
++			*val = -3146; /* = -6 * 65536 / 125 */
++		return IIO_VAL_INT;
++	default:
++		break;
++	}
++
++	return -EINVAL;
++}
++
++static const struct iio_chan_spec si7020_channels[] = {
++	{
++		.type = IIO_HUMIDITYRELATIVE,
++		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
++			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
++	},
++	{
++		.type = IIO_TEMP,
++		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
++			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
++	}
++};
++
++static const struct iio_info si7020_info = {
++	.read_raw = si7020_read_raw,
++	.driver_module = THIS_MODULE,
++};
++
++static int si7020_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct iio_dev *dev;
++	struct i2c_client **data;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA))
++		return -ENODEV;
++
++	dev = devm_iio_device_alloc(&client->dev, sizeof(*client));
++	if (!dev)
++		return -ENOMEM;
++
++	data = iio_priv(dev);
++	*data = client;
++	i2c_set_clientdata(client, dev);
++
++	dev->dev.parent = &client->dev;
++	dev->name = dev_name(&client->dev);
++	dev->modes = INDIO_DIRECT_MODE;
++	dev->info = &si7020_info;
++	dev->channels = si7020_channels;
++	dev->num_channels = ARRAY_SIZE(si7020_channels);
++
++	return devm_iio_device_register(&client->dev, dev);
++}
++
++static const struct i2c_device_id si7020_id[] = {
++	{ "si7020", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, si7020_id);
++
++static struct i2c_driver si7020_driver = {
++	.driver.name	= "si7020",
++	.probe		= si7020_probe,
++	.id_table	= si7020_id,
++};
++
++module_i2c_driver(si7020_driver);
++MODULE_DESCRIPTION("Silicon Labs Si7013/20/21 "
++		   "Relative Humidity and Temperature Sensors");
++MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
++MODULE_LICENSE("GPL");
++
 -- 
-Paul
-
+tg: (59753a8..) upstream/si7020 (depends on: upstream/master)
