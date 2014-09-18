@@ -1,166 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415AbaIRDUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 23:20:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54277 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756686AbaIRDUm convert rfc822-to-8bit (ORCPT
+	id S1757453AbaIRDVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 23:21:54 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:35822 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154AbaIRDVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 23:20:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,543,1406617200"; 
-   d="scan'208";a="574839506"
-From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-To: "'David Miller'" <davem@davemloft.net>
-CC: "'peppe.cavallaro@st.com'" <peppe.cavallaro@st.com>,
-        "'rayagond@vayavyalabs.com'" <rayagond@vayavyalabs.com>,
-        "'vbridgers2013@gmail.com'" <vbridgers2013@gmail.com>,
-        "'srinivas.kandagatla@st.com'" <srinivas.kandagatla@st.com>,
-        "'wens@csie.org'" <wens@csie.org>,
-        "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
- [RESEND TO MAILING LIST]
-Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
- [RESEND TO MAILING LIST]
-Thread-Index: Ac/S7zD0SCYjIjn2SySE/xjw5hY7Xw==
-Date: Thu, 18 Sep 2014 03:18:18 +0000
-Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7EA173@PGSMSX102.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 17 Sep 2014 23:21:52 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC PATCH 0/3] Early boot self tests for RCU
+Date: Wed, 17 Sep 2014 23:21:45 -0400
+Message-Id: <1411010509-31927-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Wednesday, September 17, 2014 12:56 PM
-> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-> Date: Wed, 17 Sep 2014 02:41:39 +0000
-> 
-> > Thanks for the pointer. I did a quickly checking on the class number 
-> > to see if I could use it for differentiation the ports number. 
-> > Whereas I found them both have the same class number as well. Below 
-> > shows the "lspci" dump to all the PCI devices on Quark X1000 Galileo 
-> > board (Ethernet controllers are
-> > 00:14.6 and 00:14.7). Very unfortunately we are unlikely to use the 
-> > class number as well as pci_device_id for the differentiation.
->  ...
-> > 00:14.6 "Class 0200" "8086" "0937" "8086" "0937"
-> > 00:14.7 "Class 0200" "8086" "0937" "8086" "0937"
-> 
-> Are you kidding me?  It's a perfect way to identify this device, it 
-> properly uses PCI_CLASS_NETWORK_ETHERNET (0x0200) in both cases and 
-> this will not match any other function on this PCI device at all.
-> 
-> Please do as I suggested and use the PCI class for the differentiation 
-> and matching during probing.
+Hi Paul,
 
-Hi David,
+Please find the following patches which enable RCU early boot tests. For now
+all we do in these tests are enqueue test callbacks and check if they are being
+invoked or not.
 
-Thanks for your feedback so far. Appreciate it.
+I was able to reproduce the hang which Amit reported after reverting the fix. So
+this should catch such errors if they occur in the future.
 
-Sorry to my poorly written description that may have caused some confusion. My sincere apology here. 
-Unfortunately, I don't really grasp your idea clearly based on your responses which I appreciate them a lot. 
-Sorry for the long description below but I hope to clearly pen down my thinking process so that you can follow my thinking incrementally without being confused.
+I enabled the selftests in a few rcutorture configurations.
 
-So, let's roll back a bit so that with my following description, you can help correct me if my understanding of using PCI function ID to differentiate PHY port that is associated with each Ethernet controller is wrong:
+Thanks!
+--
+Pranith
 
-The high-level idea about the change that I made for STMMAC IP inside Quark is as follow:
+Pranith Kumar (3):
+  rcu: Add early boot self tests
+  doc: Document RCU self test boot params
+  rcutorture: Enable RCU self test in configs
 
-(1) Based on Quark-specific PCI ID declared inside stmmac_id_table[],  the probe() function is
-       called to continue setting-up STMMAC for Quark.
+ Documentation/kernel-parameters.txt                | 12 +++
+ kernel/rcu/rcu.h                                   |  2 +
+ kernel/rcu/tiny.c                                  |  4 +-
+ kernel/rcu/tree.c                                  |  2 +
+ kernel/rcu/update.c                                | 91 ++++++++++++++++++++++
+ .../selftests/rcutorture/configs/rcu/TINY02        |  2 +
+ .../selftests/rcutorture/configs/rcu/TINY02.boot   |  2 +
+ .../selftests/rcutorture/configs/rcu/TREE05.boot   |  1 +
+ .../selftests/rcutorture/configs/rcu/TREE06.boot   |  4 +
+ .../selftests/rcutorture/configs/rcu/TREE08        |  2 +
+ .../selftests/rcutorture/configs/rcu/TREE08.boot   |  2 +
+ 11 files changed, 123 insertions(+), 1 deletion(-)
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
 
-@@ -228,11 +303,13 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
- 
- #define STMMAC_VENDOR_ID 0x700
- #define STMMAC_DEVICE_ID 0x1108
-+#define STMMAC_QUARK_X1000_ID 0x0937
- 
- static const struct pci_device_id stmmac_id_table[] = {
- 	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID), PCI_ANY_ID,
- 			PCI_ANY_ID, CHIP_STMICRO},
- 	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_MAC), CHIP_STMICRO},
-+	{PCI_VDEVICE(INTEL, STMMAC_QUARK_X1000_ID), CHIP_QUARK_X1000},
- 	{}
- };
+-- 
+2.1.0
 
-(2) Back-ground on STMMAC hardware configuration on Intel Galileo Gen 1 & Gen 2 platforms:
-Intel Quark SoC has 2 MAC controller as described by lspci output below:
-
-00:14.6 Class 0200: 8086:0937    ====> 1st MAC controller
-00:14.7 Class 0200: 8086:0937    ====> 2nd MAC controller
-
-These Galileo boards use the same Intel Quark SoC and there is only one PHY connect to the 1st MAC [00:14.6 Class 0200: 8086:0937] The 2nd MAC [00:14.7 Class 0200: 8086:0937] is NOT connected to any PHY at all.
-
-So, it appears to me that the only way that I can differentiate between 1st & 2nd MAC are based on PCI function ID, i.e. 14.6 & 14.7. Therefore, within the probe() function, for Intel Quark SoC only, the function performs next-level discovery of 1st or 2nd MAC controller through quark_run_time_config() function. 
-For other PCI ID (currently STMICRO_MAC) there is NO next-level discovery involved as rt_config is NULL.
-Changes shown below:
-
-static struct platform_data platform_info[] = { @@ -59,15 +65,76 @@ static struct platform_data platform_info[] = {
- 		.phy_reset = NULL,
- 		.phy_mask = 0,
- 		.pbl = 32,
-+		.fixed_burst = 0,
- 		.burst_len = DMA_AXI_BLEN_256,
-+		.rt_config = NULL,  ===================> no 2nd-level discovery for other PCI ID 
-+	},
-+	[CHIP_QUARK_X1000] = {
-+		.phy_addr = 1,
-+		.interface = PHY_INTERFACE_MODE_RMII,
-+		.clk_csr = 2,
-+		.has_gmac = 1,
-+		.force_sf_dma_mode = 1,
-+		.multicast_filter_bins = HASH_TABLE_SIZE,
-+		.unicast_filter_entries = 1,
-+		.phy_reset = NULL,
-+		.phy_mask = 0,
-+		.pbl = 16,
-+		.fixed_burst = 1,
-+		.burst_len = DMA_AXI_BLEN_256,
-+		.rt_config = &quark_run_time_config,       ==========> Quark specific 2nd-level discovery
-+	},
-+};
-
-(3) Within quark_run_time_config(), due to the only way to differentiate 1st or 2nd MAC controller according to difference in function ID explained above, the following changes are made:
-
-+static void quark_run_time_config(int chip_id, struct pci_dev *pdev) {
-+	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
-+	int i;
-+	int func_num = PCI_FUNC(pdev->devfn);
-+
-+	if (!board_name)
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(quark_x1000_phy_info); i++) {
-+		if ((!strcmp(quark_x1000_phy_info[i].board_name, board_name)) &&
-+		    quark_x1000_phy_info[i].pci_func_num == func_num)
-+			platform_info[chip_id].phy_addr =
-+				quark_x1000_phy_info[i].phy_address;
-+	}
-+}
-
-The reasons for the above proposed condition checks, i.e. "board name" & "pci function name" are below:
-  a) As described above, the only difference in both instance of STMMAC IP inside Intel Quark SoC is the function ID,
-       so I have proposed to use function ID to be the decision point here to differentiate 1st MAC from 2nd MAC. 
-  b) Allow future expansion of any other Intel Quark platforms with specific need to fix PHY address
-  c) A PHY address set as "-1"  is to mark that the PHY (associated with function ID) is not connected to MAC, which
-      is being used here for the 2 Galileo boards -> 2nd MAC port not connected with PHY.
-  
-
-Finally, based on the above description, it appears to me that using PCI function ID to decode seems viable for Intel Quark specific hardware configuration. 
-
-Appreciate your time and any feedback is very much appreciated.
-
-Thanks. 
-
-
-Regards,
-Wilson
