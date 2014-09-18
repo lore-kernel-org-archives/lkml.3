@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461AbaIRRTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 13:19:44 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:34224 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406AbaIRRTn (ORCPT
+	id S932477AbaIRRVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 13:21:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51034 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756218AbaIRRVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 13:19:43 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Bo Shen <voice.shen@atmel.com>, <evanluijk@interact.nl>,
-        <mark.roszko@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [GIT PULL] at91: dt for 3.18 #3
-Date: Thu, 18 Sep 2014 19:19:39 +0200
-Message-ID: <1411060779-32090-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Thu, 18 Sep 2014 13:21:39 -0400
+Date: Thu, 18 Sep 2014 13:21:38 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] usb: hub: rename khubd to hub_wq in documentation
+ and comments
+In-Reply-To: <20140918161501.GG2168@dhcp128.suse.cz>
+Message-ID: <Pine.LNX.4.44L0.1409181307550.894-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Thu, 18 Sep 2014, Petr [iso-8859-1] Mládek wrote:
 
-A third DT update for AT91 during this 3.18 dev. phase. Interesting updates and
-also new features used: the NFC clock and the changes in pinctrl new the driver
-updates that are already queued in mtd and pinctrl trees. No build dependency
-but the NFC clock need the modification in the driver to be able to actually
-boot: a kind of "runtime" dependency. But I don't know if you want to pull the
-mtd or l2-mtd trees... Tell me if I need to do something for this.
+> > This routine can be called from multiple work_structs, because a USB 
+> > bus can have multiple hubs.
+> 
+> The easiest solution would be to allocate the work queue with
+> the flag WQ_UNBOUND and max_active = 1. It will force serialization
+> of all work items.
+> 
+> Alternatively, we might add the locking. But to be honest, I am not
+> sure that I am brave enough to do so.
+> 
+> 
+> First, I am not sure if this is the only location that might be
+> affected by the parallel execution of hub_event().
+> 
+> Second, there are used so many locks and the code is so complex that I
+> would need many days and maybe weeks to understand it.
 
-It is on top of what you already have in at91/dt2.
+In the past I have considered making khubd multithreaded.  But it
+didn't seem especially important.  Apart from initial device discovery
+while the system is starting up (which works out well enough now, even  
+if it could be faster) there usually is activity on only one USB hub
+and port at a time.
 
-Thanks, best regards,
+On the whole, I would be happy if we can simply guarantee that
+max_active never gets higher than 1.  As Tejun recommended,
+alloc_ordered_workqueue should be enough.
 
-The following changes since commit 5f8157309624929e05ece846d3ca8a3a64988378:
+> Well, if we assume that this is the only problematic location, here
+> are the ideas how to prevent the parallel execution:
+> 
+> 1. Use some brand new lock, e.g. call it hub_devnum_lock, and do:
+> 
+>    static void choose_devnum(struct usb_device *udev)
+>    {
+> 	spin_lock_irq(&hub_devnum_lock);
+> 	[...]
+> 	spin_unlock_irq(&hub_event_lock);
+>    }
+> 
+>    This looks clean but it creates another lock.
 
-  ARM: at91: remove phy fixup for sama5d3xek boards (2014-09-01 19:30:44 +0200)
+That would be okay.  It shouldn't be a spinlock; a mutex would be
+better.  And adding a new lock doesn't hurt if it is private to this
+one routine, since this is a leaf routine.
 
-are available in the git repository at:
+Or if you want, you could reuse udev->bus->usb_address0_mutex.  That 
+would make sense, because that mutex is already associated with device 
+address assignment.
 
-  git://github.com/at91linux/linux-at91.git tags/at91-dt3
+> 2. Alternatively, we could use an existing global lock the same way,
+>    for example usb_bus_list_lock.
+> 
+>    But this looks like a hack and I do not like it much.
+> 
+> 
+> 3. Alternatively, it seems the the function affects one
+>    "struct usb_device" and one "struct usb_bus". It might
+>    be enough to take the appropriate locks for these
+>    structures.
+> 
+>    This would mean to take two locks. It would be slower
+>    and we would need to make sure that it does not cause
+>    a dead lock.
 
-for you to fetch changes up to 4dd7933ad606af457bc85b1afdaaac68aa993abf:
+The right answer is to use either a private mutex or the bus-specific
+usb_address0_mutex.  As far as I know, this is the only place that 
+relies on khubd being a single thread.
 
-  ARM: at91/dt: at91sam9m10g45ek add rtc node (2014-09-18 18:14:48 +0200)
+Alan Stern
 
-----------------------------------------------------------------
-More AT91 DT material for 3.18:
-- specify DMA channels for USART on sama5d3 and choose peripherals
-  that will use them on the EK boards
-- SSC update for audio on at91sam9rl and at91sam9g20
-- addition of the NFC clock and new pinctrl compatible string
-  to use enhancements that will land in drivers during this release
-- several new nodes and fixes
-
-----------------------------------------------------------------
-Alexandre Belloni (1):
-      ARM: at91/dt: sama5d3: add the nfc clock
-
-Bo Shen (3):
-      ARM: at91: sama5d3xek: reserve dma channel for audio
-      ARM: at91/dt: at91sam9rl: switch ssc compatible string
-      ARM: at91/dt: at91sam9g20: switch ssc compatible string
-
-Boris BREZILLON (1):
-      ARM: at91/dt: declare sckc node on at91sam9g45
-
-David Dueck (1):
-      ARM: at91/dt: Fix typo regarding can0_clk
-
-Erik van Luijk (1):
-      ARM: at91/dt: at91sam9m10g45ek add rtc node
-
-Ludovic Desroches (1):
-      ARM: at91: sama5d3: add usart dma configurations
-
-Marek Roszko (1):
-      ARM: at91/dt: sama5d3: use new pinctrl compatible string
-
- arch/arm/boot/dts/at91sam9g20.dtsi     |  4 ++++
- arch/arm/boot/dts/at91sam9g45.dtsi     | 37 ++++++++++++++++++++++++++++++++--
- arch/arm/boot/dts/at91sam9m10g45ek.dts |  4 ++++
- arch/arm/boot/dts/at91sam9rl.dtsi      |  4 ++--
- arch/arm/boot/dts/sama5d3.dtsi         | 23 ++++++++++++++++++++-
- arch/arm/boot/dts/sama5d3_can.dtsi     |  2 +-
- arch/arm/boot/dts/sama5d3xmb.dtsi      |  4 ++++
- 7 files changed, 72 insertions(+), 6 deletions(-)
-
--- 
-Nicolas Ferre
