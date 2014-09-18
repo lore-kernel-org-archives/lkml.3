@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354AbaIRVOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:14:23 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:48525 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757313AbaIRVOV (ORCPT
+	id S1757416AbaIRVUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:20:53 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:41943 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaIRVUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:14:21 -0400
+	Thu, 18 Sep 2014 17:20:51 -0400
+Message-ID: <541B4CB0.8040705@linaro.org>
+Date: Thu, 18 Sep 2014 14:20:48 -0700
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <1411024883.27455.11.camel@debian-rtk5880>
-References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
-	<CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-	<54195036.2010409@realsil.com.cn>
-	<CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
-	<1411024883.27455.11.camel@debian-rtk5880>
-Date: Thu, 18 Sep 2014 23:14:20 +0200
-Message-ID: <CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Wei_wang <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH 3.17-rc4 v7 4/6] irqchip: gic: Add support for IPI FIQ
+References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org> <1410970218-28847-5-git-send-email-daniel.thompson@linaro.org> <20140918081739.GA5182@n2100.arm.linux.org.uk>
+In-Reply-To: <20140918081739.GA5182@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+On 18/09/14 01:17, Russell King - ARM Linux wrote:
+> On Wed, Sep 17, 2014 at 09:10:16AM -0700, Daniel Thompson wrote:
+>> @@ -604,8 +731,19 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  {
+>>  	int cpu;
+>>  	unsigned long flags, map = 0;
+>> +	unsigned long softint;
+>>  
+>> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+>> +	/*
+>> +	 * The locking in this function ensures we don't use stale cpu mappings
+>> +	 * and thus we never route an IPI to the wrong physical core during a
+>> +	 * big.LITTLE switch. The switch code takes both of these locks meaning
+>> +	 * we can choose whichever lock is safe to use from our current calling
+>> +	 * context.
+>> +	 */
+>> +	if (in_nmi())
+>> +		raw_spin_lock(&fiq_safe_migration_lock);
+>> +	else
+>> +		raw_spin_lock_irqsave(&irq_controller_lock, flags);
+> 
+> BTW, I see this code is still here...
 
->>
->> In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
->>
->> >
->> > if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
->> > then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
->> > return.
->>
->> Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
->> that path at all.
->>
->> Hmm, I think we should change the behavior in mmc_start_host(), like below:
->> 1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
->> should be assigned to at allocation.
->> 2 ) From mmc_start_host(), invoke mmc_power_off() when
->> MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
->>
->> Would that work?
-> Yes. I have confirmed this by following changes. The MMC_POWER_UNDEFINED
-> designation in mmc_start_host() will eventually cause a power-off
-> operation.
->
-> But I wonder if we need to additionally check MMC_CAP2_FULL_PWR_CYCLE
-> before calling mmc_power_off()?
+Quite so.
 
-The intent from my side was to keep the current behaviour for those
-that already used MMC_CAP2_NO_PRESCAN_POWERUP, but it's s not a big
-deal.
+I'm afraid I haven't yet re-written it to use r/w locks (as proposed in
+mails from the weekend) but I had to respin the default FIQ handler
+patch to fix the CONFIG_FIQ build problem I introduced.
 
-So, let's try your proposal, thus don't check MMC_CAP2_FULL_PWR_CYCLE.
 
-Can you repost new version of your patches and please split them up on
-core and host separately.
 
-Kind regards
-Uffe
+
