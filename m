@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030AbaIRHTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 03:19:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:40420 "EHLO mga01.intel.com"
+	id S1756229AbaIRHT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 03:19:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42687 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaIRHTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 03:19:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,545,1406617200"; 
-   d="scan'208";a="478364184"
-Message-ID: <541A8698.9040905@intel.com>
-Date: Thu, 18 Sep 2014 15:15:36 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756113AbaIRHT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 03:19:57 -0400
+Date: Thu, 18 Sep 2014 09:19:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Ingo Molnar <mingo@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+Message-ID: <20140918071945.GA24842@nazgul.tnic>
+References: <20140917124501.GC5358@nazgul.tnic>
+ <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
+ <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il>
+ <20140917132141.GD5358@nazgul.tnic>
+ <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com>
+ <20140917140601.GE5358@nazgul.tnic>
+ <20140917150433.GC1273@potion.brq.redhat.com>
+ <20140917152221.GF5358@nazgul.tnic>
+ <20140918002953.GA6918@potion.redhat.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-References: <20140828194745.GA3761@linux.vnet.ibm.com> <5419342E.60602@intel.com> <20140917131013.GU4723@linux.vnet.ibm.com>
-In-Reply-To: <20140917131013.GU4723@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140918002953.GA6918@potion.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年09月17日 21:10, Paul E. McKenney wrote:
-> On Wed, Sep 17, 2014 at 03:11:42PM +0800, Lan Tianyu wrote:
->> On 2014年08月29日 03:47, Paul E. McKenney wrote:
->>> Currently, the expedited grace-period primitives do get_online_cpus().
->>> This greatly simplifies their implementation, but means that calls to
->>> them holding locks that are acquired by CPU-hotplug notifiers (to say
->>> nothing of calls to these primitives from CPU-hotplug notifiers) can
->>> deadlock.  But this is starting to become inconvenient:
->>> https://lkml.org/lkml/2014/8/5/754
->>>
->>> This commit avoids the deadlock and retains the simplicity by creating
->>> a try_get_online_cpus(), which returns false if the get_online_cpus()
->>> reference count could not immediately be incremented.  If a call to
->>> try_get_online_cpus() returns true, the expedited primitives operate
->>> as before.  If a call returns false, the expedited primitives fall back
->>> to normal grace-period operations.  This falling back of course results
->>> in increased grace-period latency, but only during times when CPU
->>> hotplug operations are actually in flight.  The effect should therefore
->>> be negligible during normal operation.
->>>
->>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>> Cc: Josh Triplett <josh@joshtriplett.org>
->>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
->>> Cc: Lan Tianyu <tianyu.lan@intel.com>
->>
->> Hi Paul:
->> 	What's the status of the patch? Will you push it? Thanks.
-> 
-> By default, it would go into 3.19.  Do you need it earlier?
+On Thu, Sep 18, 2014 at 02:29:54AM +0200, Radim Krčmář wrote:
+> I think you proposed to use magic constant in place of of MASK_FAM_X, so
 
-IMO, this is a dead lock bug which is hard to reproduce and the patch
-should go into v3.17 and stable tree?
+Huh, what?
 
-> 
-> 							Thanx, Paul
-> 
+> Second problem:  Most elements don't begin at offset 0, so the usual
+> retrieval would add a shift, (repurposing max_monitor_line_size)
 
+So what?
+
+>  max_monitor_line_size = (cpuid & MASK_FAM_X) >> OFFSET_FAM_X;
+> 
+> and it's not better when we write it back after doing stuff.
+
+Writing back CPUID on baremetal? You can't be serious.
+
+Ok, this is getting ridiculous so I'll stop wasting time. I stand by my
+initial statement - this is a bad idea.
 
 -- 
-Best regards
-Tianyu Lan
+Regards/Gruss,
+    Boris.
+--
