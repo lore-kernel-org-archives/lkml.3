@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998AbaIRN7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:59:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53163 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136AbaIRN7L (ORCPT
+	id S1756075AbaIROAK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:00:10 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:51573 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755524AbaIROAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:59:11 -0400
-Message-ID: <541AE536.4080006@gmail.com>
-Date: Thu, 18 Sep 2014 21:59:18 +0800
+	Thu, 18 Sep 2014 10:00:08 -0400
+Message-ID: <541AE56F.8040005@gmail.com>
+Date: Thu, 18 Sep 2014 22:00:15 +0800
 From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -17,7 +17,7 @@ To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
         mukesh.rathor@oracle.com
 CC: xen-devel@lists.xenproject.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3 v2] xen/xenbus: Correct the comments for xenbus_grant_ring()
+Subject: [PATCH 2/3 v2] xen/xenbus: Remove BUG_ON() when error string trucated
 References: <541AE4E9.2040904@gmail.com>
 In-Reply-To: <541AE4E9.2040904@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -26,28 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A grant reference (which is a positive number) can indicate success, so
-the original comments need be improved.
+xenbus_va_dev_error() is for printing error, so when error string is
+too long to be trancated, need not BUG_ON(), still return truncation
+string is OK.
 
 Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 ---
- drivers/xen/xenbus/xenbus_client.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/xenbus/xenbus_client.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
 diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index 439c9dc..aa9b2fc 100644
+index aa9b2fc..ca74410 100644
 --- a/drivers/xen/xenbus/xenbus_client.c
 +++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -361,8 +361,8 @@ static void xenbus_switch_fatal(struct xenbus_device *dev, int depth, int err,
-  * @ring_mfn: mfn of ring to grant
- 
-  * Grant access to the given @ring_mfn to the peer of the given device.  Return
-- * 0 on success, or -errno on error.  On error, the device will switch to
-- * XenbusStateClosing, and the error will be saved in the store.
-+ * a grant reference on success, or -errno on error. On error, the device will
-+ * switch to XenbusStateClosing, and the error will be saved in the store.
-  */
- int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn)
+@@ -259,7 +259,6 @@ static char *error_path(struct xenbus_device *dev)
+ static void xenbus_va_dev_error(struct xenbus_device *dev, int err,
+ 				const char *fmt, va_list ap)
  {
+-	int ret;
+ 	unsigned int len;
+ 	char *printf_buffer = NULL;
+ 	char *path_buffer = NULL;
+@@ -270,9 +269,7 @@ static void xenbus_va_dev_error(struct xenbus_device *dev, int err,
+ 		goto fail;
+ 
+ 	len = sprintf(printf_buffer, "%i ", -err);
+-	ret = vsnprintf(printf_buffer+len, PRINTF_BUFFER_SIZE-len, fmt, ap);
+-
+-	BUG_ON(len + ret > PRINTF_BUFFER_SIZE-1);
++	vsnprintf(printf_buffer+len, PRINTF_BUFFER_SIZE-len, fmt, ap);
+ 
+ 	dev_err(&dev->dev, "%s\n", printf_buffer);
+ 
 -- 
 1.9.3
