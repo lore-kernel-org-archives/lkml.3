@@ -1,135 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaIREx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 00:53:29 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44034 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaIREx2 (ORCPT
+	id S1751515AbaIRFBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 01:01:38 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:48187 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaIRFBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 00:53:28 -0400
-Date: Wed, 17 Sep 2014 21:53:16 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
-Message-ID: <20140918045316.GB8740@lee--X1>
-References: <1411004156-9057-1-git-send-email-micky_ching@realsil.com.cn>
+	Thu, 18 Sep 2014 01:01:36 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1410991612.4290.10.camel@joe-AO725>
+References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com> <1410990447-3210-2-git-send-email-fransklaver@gmail.com> <1410991612.4290.10.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411004156-9057-1-git-send-email-micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 1/9] eeepc-laptop: clean up coding style
+From: Frans Klaver <fransklaver@gmail.com>
+Date: Thu, 18 Sep 2014 07:01:25 +0200
+To: Joe Perches <joe@perches.com>
+CC: Darren Hart <dvhart@infradead.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <642509cf-05f2-47f4-be2e-a3cfb9a93a04@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014, micky_ching@realsil.com.cn wrote:
+On 18 September 2014 00:06:52 CEST, Joe Perches <joe@perches.com> wrote:
+>On Wed, 2014-09-17 at 23:47 +0200, Frans Klaver wrote:
+>> Correct indentation and brace usage to comply with
+>> Documentation/CodingStyle.
+>> 
+>> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+>> ---
+>>  drivers/platform/x86/eeepc-laptop.c | 8 +++++---
+>>  1 file changed, 5 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/drivers/platform/x86/eeepc-laptop.c
+>b/drivers/platform/x86/eeepc-laptop.c
+>> index 3095d38..653999e 100644
+>> --- a/drivers/platform/x86/eeepc-laptop.c
+>> +++ b/drivers/platform/x86/eeepc-laptop.c
+>> @@ -544,7 +544,7 @@ static int eeepc_led_init(struct eeepc_laptop
+>*eeepc)
+>>  	eeepc->tpd_led.name = "eeepc::touchpad";
+>>  	eeepc->tpd_led.brightness_set = tpd_led_set;
+>>  	if (get_acpi(eeepc, CM_ASL_TPD) >= 0) /* if method is available */
+>> -	  eeepc->tpd_led.brightness_get = tpd_led_get;
+>> +		eeepc->tpd_led.brightness_get = tpd_led_get;
+>>  	eeepc->tpd_led.max_brightness = 1;
+>>  
+>>  	rv = led_classdev_register(&eeepc->platform_device->dev,
+>> @@ -692,8 +692,9 @@ static int eeepc_register_rfkill_notifier(struct
+>eeepc_laptop *eeepc,
+>>  		 * changed during setup.
+>>  		 */
+>>  		eeepc_rfkill_hotplug(eeepc, handle);
+>> -	} else
+>> +	} else {
+>>  		return -ENODEV;
+>> +	}
+>>  
+>>  	return 0;
+>>  }
+>
+>This sort of code:
+>
+>	if (foo) {
+>		[ do_something ]
+>	} else
+>		return -ERRVAL;
+>
+>is generally better rewritten as:
+>
+>	if (!foo)
+>		return -ERRVAL;
+>
+>	[ do_something ]
+>
+>This gives immediacy to the error handler and
+>as well reduces unnecessary indentation.
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Fix rts5227&5249 failed send buffer cmd after suspend,
-> PM_CTRL3 should reset before send any buffer cmd after suspend.
-> Otherwise, buffer cmd will failed, this will lead resume fail.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/rts5227.c        |   19 +++++++++++++++++++
->  drivers/mfd/rts5249.c        |    4 ++++
->  drivers/mfd/rtsx_pcr.h       |    1 +
->  include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
->  4 files changed, 36 insertions(+)
+I fully agree. 
 
-I think you'll find you just broke the build.
+Darren, do you still take this in one patch? 
 
-What happens when you compile these as modules?
+Frans
 
-> diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-> index 9c8eec8..8222a31 100644
-> --- a/drivers/mfd/rts5227.c
-> +++ b/drivers/mfd/rts5227.c
-> @@ -128,8 +128,27 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
->  	return rtsx_pci_send_cmd(pcr, 100);
->  }
->  
-> +int rts5227_pm_reset(struct rtsx_pcr *pcr)
-> +{
-> +	int err;
-> +
-> +	/* init aspm */
-> +	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	/* reset PM_CTRL3 before send buffer cmd */
-> +	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
-> +}
-> +
->  static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
->  {
-> +	int err;
-> +
-> +	err = rts5227_pm_reset(pcr);
-> +	if (err < 0)
-> +		return err;
-> +
->  	/* Optimize RX sensitivity */
->  	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
->  }
-> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-> index 573de7b..0f1b0e6 100644
-> --- a/drivers/mfd/rts5249.c
-> +++ b/drivers/mfd/rts5249.c
-> @@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
->  {
->  	int err;
->  
-> +	err = rts5227_pm_reset(pcr);
-> +	if (err < 0)
-> +		return err;
-
-I don't like this.  Place rts52xx_pm_reset() somewhere more central.
-Perhaps an inline function in the header would be better?
-
->  	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
->  			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
->  			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
-> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-> index 07e4c2e..acc7a1e 100644
-> --- a/drivers/mfd/rtsx_pcr.h
-> +++ b/drivers/mfd/rtsx_pcr.h
-> @@ -72,4 +72,5 @@ do {									\
->  	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
->  } while (0)
->  
-> +int rts5227_pm_reset(struct rtsx_pcr *pcr);
->  #endif
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..b34fec8 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->  	return (u8 *)(pcr->host_cmds_ptr);
->  }
->  
-> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
-> +		u8 mask, u8 append)
-> +{
-> +	int err;
-> +	u8 val;
-> +
-> +	err = pci_read_config_byte(pcr->pci, addr, &val);
-> +	if (err < 0)
-> +		return err;
-> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
-> +}
-> +
->  #endif
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
