@@ -1,53 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188AbaIRUVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 16:21:43 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:44898 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139AbaIRUVl (ORCPT
+	id S1757206AbaIRU2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 16:28:07 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:41296
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756604AbaIRU2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 16:21:41 -0400
-Message-ID: <541B3ECD.8000706@gmail.com>
-Date: Thu, 18 Sep 2014 14:21:33 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf session: Add option to copy events when queueing
-References: <1411060059-23589-1-git-send-email-yarygin@linux.vnet.ibm.com> <1411060059-23589-2-git-send-email-yarygin@linux.vnet.ibm.com> <20140918185345.GJ2770@kernel.org>
-In-Reply-To: <20140918185345.GJ2770@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Sep 2014 16:28:06 -0400
+X-IronPort-AV: E=Sophos;i="5.04,549,1406584800"; 
+   d="scan'208";a="79973359"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        HPDD-discuss@ml01.01.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH] Use kzalloc and rewrite null tests
+Date: Thu, 18 Sep 2014 22:24:01 +0200
+Message-Id: <1411071842-24714-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/18/14, 12:53 PM, Arnaldo Carvalho de Melo wrote:
-> If nobody objects I'll merge this patch, as it fixes problems, but I
-> wonder if the best wouldn't be simply not calling
-> perf_evlist__mmap_consume() till the last event there is in fact
-> consumed... I.e. as we _really_ consume the events, we remove it from
-> there.
->
-> Instead of consuming the event at perf_tool->sample() time, we would
-> do it at perf_tool->finished_round(), would that be feasible? Has anyone
-> tried this?
+The following patch removes some kzalloc-related macros and rewrites the
+associated null tests to use !x rather than x == NULL.  The complete
+semantic patch used for this transformation is as follows:
 
-Hmmm... haven't tried this.  Conceptually it should work - at least 
-nothing comes to mind at the moment.
+// <smpl>
+@disable unlikely@
+expression ptr;
+statement S,S1;
+@@
 
+  \(OBD_ALLOC\|OBD_ALLOC_WAIT\|OBD_ALLOC_PTR\|OBD_ALLOC_PTR_WAIT\)(ptr,...);
+  if (unlikely(
++     !
+      ptr
+-      == NULL
+     )) S else S1
 
-Patch looked ok to me: Reviewed-by: David Ahern <dsahern@gmail.com>
+@@
+expression ptr;
+statement S,S1;
+@@
 
-Jiri should review based on his recent changes for ordered events.
+  \(OBD_ALLOC\|OBD_ALLOC_WAIT\|OBD_ALLOC_PTR\|OBD_ALLOC_PTR_WAIT\)(ptr,...);
+  if (
++     !
+      ptr
+-      == NULL
+     ) S else S1
 
-David
+@disable unlikely@
+expression ptr;
+statement S,S1;
+@@
+
+  \(OBD_ALLOC\|OBD_ALLOC_WAIT\|OBD_ALLOC_PTR\|OBD_ALLOC_PTR_WAIT\)(ptr,...);
+  if (likely(
+      ptr
+-      != NULL
+     )) S else S1
+
+@@
+expression ptr;
+statement S,S1;
+@@
+
+  \(OBD_ALLOC\|OBD_ALLOC_WAIT\|OBD_ALLOC_PTR\|OBD_ALLOC_PTR_WAIT\)(ptr,...);
+  if (
+      ptr
+-      != NULL
+     ) S else S1
+
+// -----------------------------------------------------------------------
+
+@@
+expression ptr,size;
+@@
+
+- OBD_ALLOC(ptr,size)
++ ptr = kzalloc(size, GFP_NOFS)
+
+@@
+expression ptr,size;
+@@
+
+- OBD_ALLOC_WAIT(ptr,size)
++ ptr = kzalloc(size, GFP_KERNEL)
+
+@@
+expression ptr,size;
+@@
+
+- OBD_ALLOC_PTR(ptr)
++ ptr = kzalloc(sizeof(*ptr), GFP_NOFS)
+
+@@
+expression ptr,size;
+@@
+
+- OBD_ALLOC_PTR_WAIT(ptr,size)
++ ptr = kzalloc(sizeof(*ptr), GFP_KERNEL)
+// </smpl>
+
