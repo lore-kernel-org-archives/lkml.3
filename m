@@ -1,440 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897AbaIRLb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 07:31:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14629 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756307AbaIRLb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 07:31:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,546,1406617200"; 
-   d="scan'208";a="601552653"
-Date: Thu, 18 Sep 2014 14:31:22 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+	id S1757018AbaIRLbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 07:31:37 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:33157 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756307AbaIRLbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 07:31:36 -0400
+Date: Thu, 18 Sep 2014 17:01:25 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] gpio: sch: Enable IRQ support for Quark X1000
-Message-ID: <20140918113122.GO10854@lahna.fi.intel.com>
-References: <1410943745-9354-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1410943745-9354-4-git-send-email-rebecca.swee.fun.chang@intel.com>
+Subject: Re: [PATCH v2] sound: pci: ctxfi: pr_* replaced with dev_*
+Message-ID: <20140918113125.GA4625@sudip-PC>
+References: <1410790181-16457-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5hvbop3qjn.wl-tiwai@suse.de>
+ <20140915152554.GA26218@sudip-PC>
+ <s5hwq94agtr.wl-tiwai@suse.de>
+ <20140918092126.GA31651@sudip-PC>
+ <s5hbnqd8c0v.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410943745-9354-4-git-send-email-rebecca.swee.fun.chang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <s5hbnqd8c0v.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 04:49:05PM +0800, Chang Rebecca Swee Fun wrote:
-> Intel Quark X1000 GPIO controller supports interrupt handling for
-> both core power well and resume power well. This patch is to enable
-> the IRQ support and provide IRQ handling for Intel Quark X1000
-> GPIO-SCH device driver.
+On Thu, Sep 18, 2014 at 12:21:20PM +0200, Takashi Iwai wrote:
+> At Thu, 18 Sep 2014 14:51:26 +0530,
+> Sudip Mukherjee wrote:
+> > 
+> > On Mon, Sep 15, 2014 at 08:17:52PM +0200, Takashi Iwai wrote:
+> > > At Mon, 15 Sep 2014 20:55:54 +0530,
+> > > Sudip Mukherjee wrote:
+> > > > 
+> > > > On Mon, Sep 15, 2014 at 04:29:48PM +0200, Takashi Iwai wrote:
+> > > > > At Mon, 15 Sep 2014 19:39:41 +0530,
+> > > > > Sudip Mukherjee wrote:
+> > <snip>
+> > > > > > 
+> > > > > > diff --git a/sound/pci/ctxfi/ctresource.c b/sound/pci/ctxfi/ctresource.c
+> > > > > > index e49d2be..80beecb 100644
+> > > > > > --- a/sound/pci/ctxfi/ctresource.c
+> > > > > > +++ b/sound/pci/ctxfi/ctresource.c
+> > > > > (snip)
+> > > > > > @@ -282,8 +287,9 @@ int rsc_mgr_uninit(struct rsc_mgr *mgr)
+> > > > > >  		case SUM:
+> > > > > >  			break;
+> > > > > >  		default:
+> > > > > > -			pr_err("ctxfi: Invalid resource type value %d!\n",
+> > > > > > -				mgr->type);
+> > > > > > +			dev_err(&(((struct hw *)mgr->hw)->pci->dev),
+> > > > > > +				"ctxfi: Invalid resource type value %d!\n",
+> > > > > > +				 mgr->type);
+> > > > > 
+> > > > > Did you really conclude that this is the best way?
+> > > > > Also, is it good to mix up the usages of both card->dev and &pci->dev?
+> > > > > Think again.
+> > > > > 
+> > > > 
+> > > > i have a doubt regarding this :- 
+> > > > in the snd_card_new()  card->dev is being assigned with &pci->dev , 
+> > > > then are not they the same ?
+> > > 
+> > > Yes, but how can it be guaranteed in future?  We may avoid the
+> > > problems in future by keeping the consistency at this moment.  It's
+> > > one of the good points of keeping code consistent, in addition to:
+> > > increased readability / understandability and making the bug easier to
+> > > be spotted.
+> > 
+> > understood the point.
+> > > 
+> > > > i was trying to get some way of finding out the reference of card->dev from the resource manager ,
+> > > > but ...  :( 
+> > > > i will try again and if i cant find any way i will ask for some hint from you.
+> > > 
+> > > Good!  A hint is that there is no 100% perfect way to achieve this.
+> > > It's always compromise, and you'll have to choose which one is better
+> > > than others.  For that, you'll have to evaluate multiple
+> > > implementations, and it's a really good exercise for coding.
+> > > 
+> > 
+> > i can find the rsc_mgr from the snd_card or ct_atc 
+> > but if i want to find the reference to the device from the managers , then 
+> > either i can go with
+> > 1) &(((struct hw *)mgr->hw)->pci->dev) 
+> > or
+> > 2) use pci_get_drvdata with ((struct hw *)mgr->hw)->pci
+> > or
+> > 3) using container_of with &(((struct hw *)mgr->hw)->pci->dev) to find the pointer to snd_card via card_dev , but it becomes too complicated  :( 
+> > 
+> > we can get to all the managers (rsc_mgr, amixer_mgr, src_mgr ...) using atc->rsc_mgrs[] , then there should be some simple way to go
+> > the opposite way (reaching atc from the managers)  . container_of will not work .. :( 
+> > or am i missing something?? 
 > 
-> This piece of work is derived from Dan O'Donovan's initial work for
-> Quark X1000 enabling.
+> Adding a new field pointing to card to each struct.
+
+i seriously did not think of that , i was under the impression that a newbie is not supposed to change or add to the designs.
+anyways, i feel that i understand the code a little better than what i understood at the the time of my first patch.
+and definitely your "writing-an-alsa-driver" has helped a lot .
+
+thanks
+sudip
 > 
-> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> ---
->  drivers/gpio/gpio-sch.c |  267 ++++++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 253 insertions(+), 14 deletions(-)
 > 
-> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
-> index 38d6e74..c6c64a5 100644
-> --- a/drivers/gpio/gpio-sch.c
-> +++ b/drivers/gpio/gpio-sch.c
-> @@ -28,17 +28,30 @@
->  #include <linux/pci_ids.h>
->  
->  #include <linux/gpio.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  
->  #define GEN	0x00
->  #define GIO	0x04
->  #define GLV	0x08
-> +#define GTPE	0x0C
-> +#define GTNE	0x10
-> +#define GGPE	0x14
-> +#define GSMI	0x18
-> +#define GTS	0x1C
-> +#define CGNMIEN	0x40
-> +#define RGNMIEN	0x44
->  
->  struct sch_gpio {
->  	struct gpio_chip chip;
-> +	struct irq_data data;
->  	spinlock_t lock;
->  	unsigned short iobase;
->  	unsigned short core_base;
->  	unsigned short resume_base;
-> +	int irq_base;
-> +	int irq_num;
-> +	int irq_support;
->  };
->  
->  #define to_sch_gpio(c)	container_of(c, struct sch_gpio, chip)
-> @@ -67,10 +80,11 @@ static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
->  
->  static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio, unsigned reg)
->  {
-> +	unsigned long flags;
->  	unsigned short offset, bit;
->  	u8 enable;
->  
-> -	spin_lock(&sch->lock);
-> +	spin_lock_irqsave(&sch->lock, flags);
->  
->  	offset = sch_gpio_offset(sch, gpio, reg);
->  	bit = sch_gpio_bit(sch, gpio);
-> @@ -79,15 +93,16 @@ static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio, unsigned reg)
->  	if (!(enable & BIT(bit)))
->  		outb(enable | BIT(bit), sch->iobase + offset);
->  
-> -	spin_unlock(&sch->lock);
-> +	spin_unlock_irqrestore(&sch->lock, flags);
->  }
->  
->  static void sch_gpio_disable(struct sch_gpio *sch, unsigned gpio, unsigned reg)
->  {
-> +	unsigned long flags;
->  	unsigned short offset, bit;
->  	u8 disable;
->  
-> -	spin_lock(&sch->lock);
-> +	spin_lock_irqsave(&sch->lock, flags);
->  
->  	offset = sch_gpio_offset(sch, gpio, reg);
->  	bit = sch_gpio_bit(sch, gpio);
-> @@ -96,7 +111,7 @@ static void sch_gpio_disable(struct sch_gpio *sch, unsigned gpio, unsigned reg)
->  	if (disable & BIT(bit))
->  		outb(disable & ~BIT(bit), sch->iobase + offset);
->  
-> -	spin_unlock(&sch->lock);
-> +	spin_unlock_irqrestore(&sch->lock, flags);
->  }
->  
->  static int sch_gpio_reg_get(struct gpio_chip *gc, unsigned gpio, unsigned reg)
-> @@ -134,10 +149,11 @@ static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned reg,
->  static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
->  {
->  	struct sch_gpio *sch = to_sch_gpio(gc);
-> +	unsigned long flags;
->  
-> -	spin_lock(&sch->lock);
-> +	spin_lock_irqsave(&sch->lock, flags);
->  	sch_gpio_enable(sch, gpio_num, GIO);
-> -	spin_unlock(&sch->lock);
-> +	spin_unlock_irqrestore(&sch->lock, flags);
->  	return 0;
->  }
->  
-> @@ -145,10 +161,11 @@ static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
->  				  int val)
->  {
->  	struct sch_gpio *sch = to_sch_gpio(gc);
-> +	unsigned long flags;
->  
-> -	spin_lock(&sch->lock);
-> +	spin_lock_irqsave(&sch->lock, flags);
->  	sch_gpio_disable(sch, gpio_num, GIO);
-> -	spin_unlock(&sch->lock);
-> +	spin_unlock_irqrestore(&sch->lock, flags);
->  
->  	/*
->  	 * according to the datasheet, writing to the level register has no
-> @@ -171,10 +188,18 @@ static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
->  static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
->  {
->  	struct sch_gpio *sch = to_sch_gpio(gc);
-> +	unsigned long flags;
->  
-> -	spin_lock(&sch->lock);
-> +	spin_lock_irqsave(&sch->lock, flags);
->  	sch_gpio_reg_set(gc, gpio_num, GLV, val);
-> -	spin_unlock(&sch->lock);
-> +	spin_unlock_irqrestore(&sch->lock, flags);
-> +}
-> +
-> +static int sch_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct sch_gpio *sch = to_sch_gpio(gc);
-> +
-> +	return sch->irq_base + offset;
->  }
->  
->  static struct gpio_chip sch_gpio_chip = {
-> @@ -184,12 +209,160 @@ static struct gpio_chip sch_gpio_chip = {
->  	.get			= sch_gpio_get,
->  	.direction_output	= sch_gpio_direction_out,
->  	.set			= sch_gpio_set,
-> +	.to_irq			= sch_gpio_to_irq,
-> +};
-> +
-> +static void sch_gpio_irq_enable(struct irq_data *d)
-> +{
-> +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> +	u32 gpio_num;
-> +
-> +	gpio_num = d->irq - sch->irq_base;
-> +	sch_gpio_enable(sch, gpio_num, GGPE);
-> +}
-> +
-> +static void sch_gpio_irq_disable(struct irq_data *d)
-> +{
-> +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> +	u32 gpio_num;
-> +
-> +	gpio_num = d->irq - sch->irq_base;
-> +	sch_gpio_disable(sch, gpio_num, GGPE);
-> +}
-> +
-> +static void sch_gpio_irq_ack(struct irq_data *d)
-> +{
-> +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> +	u32 gpio_num;
-> +
-> +	gpio_num = d->irq - sch->irq_base;
-> +	sch_gpio_reg_set(&(sch->chip), gpio_num, GTS, 1);
-> +}
-> +
-> +static int sch_gpio_irq_type(struct irq_data *d, unsigned type)
-> +{
-> +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> +	unsigned long flags;
-> +	u32 gpio_num;
-> +
-> +	if (d == NULL)
-> +		return -EINVAL;
-> +
-> +	gpio_num = d->irq - sch->irq_base;
-> +
-> +	spin_lock_irqsave(&sch->lock, flags);
-> +
-> +	switch (type) {
-> +	case IRQ_TYPE_EDGE_RISING:
-> +		sch_gpio_enable(sch, gpio_num, GTPE);
-> +		sch_gpio_disable(sch, gpio_num, GTNE);
-> +		break;
-> +
-> +	case IRQ_TYPE_EDGE_FALLING:
-> +		sch_gpio_enable(sch, gpio_num, GTNE);
-> +		sch_gpio_disable(sch, gpio_num, GTPE);
-> +		break;
-> +
-> +	case IRQ_TYPE_EDGE_BOTH:
-> +		sch_gpio_enable(sch, gpio_num, GTPE);
-> +		sch_gpio_enable(sch, gpio_num, GTNE);
-> +		break;
-> +
-> +	case IRQ_TYPE_NONE:
-> +		sch_gpio_disable(sch, gpio_num, GTPE);
-> +		sch_gpio_disable(sch, gpio_num, GTNE);
-> +		break;
-> +
-> +	default:
-> +		spin_unlock_irqrestore(&sch->lock, flags);
-> +		return -EINVAL;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&sch->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct irq_chip sch_irq_chip = {
-> +	.irq_enable	= sch_gpio_irq_enable,
-> +	.irq_disable	= sch_gpio_irq_disable,
-> +	.irq_ack	= sch_gpio_irq_ack,
-> +	.irq_set_type	= sch_gpio_irq_type,
->  };
->  
-> +static void sch_gpio_irqs_init(struct sch_gpio *sch, unsigned int num)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < num; i++) {
-> +		irq_set_chip_data(i + sch->irq_base, sch);
-> +		irq_set_chip_and_handler_name(i + sch->irq_base,
-> +					      &sch_irq_chip,
-> +					      handle_simple_irq,
-> +					      "sch_gpio_irq_chip");
-> +	}
-> +}
-> +
-> +static void sch_gpio_irqs_deinit(struct sch_gpio *sch, unsigned int num)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < num; i++) {
-> +		irq_set_chip_data(i + sch->irq_base, 0);
-> +		irq_set_chip_and_handler_name(i + sch->irq_base, 0, 0, 0);
-> +	}
-> +}
-> +
-> +static void sch_gpio_irq_disable_all(struct sch_gpio *sch, unsigned int num)
-> +{
-> +	unsigned long flags;
-> +	unsigned int gpio_num;
-> +
-> +	spin_lock_irqsave(&sch->lock, flags);
-> +
-> +	for (gpio_num = 0; gpio_num < num; gpio_num++) {
-> +		sch_gpio_disable(sch, gpio_num, GTPE);
-> +		sch_gpio_disable(sch, gpio_num, GTNE);
-> +		sch_gpio_disable(sch, gpio_num, GGPE);
-> +		sch_gpio_disable(sch, gpio_num, GSMI);
-> +
-> +		if (gpio_num >= 2)
-> +			sch_gpio_disable(sch, gpio_num, RGNMIEN);
-> +		else
-> +			sch_gpio_disable(sch, gpio_num, CGNMIEN);
-> +
-> +		/* clear any pending interrupts */
-> +		sch_gpio_reg_set(&sch->chip, gpio_num, GTS, 1);
-> +	}
-> +
-> +	spin_unlock_irqrestore(&sch->lock, flags);
-> +}
-> +
-> +static irqreturn_t sch_gpio_irq_handler(int irq, void *dev_id)
-> +{
-> +	struct sch_gpio *sch = dev_id;
-> +	int res;
-> +	unsigned int i;
-> +	int ret = IRQ_NONE;
-> +
-> +	for (i = 0; i < sch->chip.ngpio; i++) {
-> +		res = sch_gpio_reg_get(&sch->chip, i, GTS);
-> +		if (res) {
-> +			/* clear by setting GTS to 1 */
-> +			sch_gpio_reg_set(&sch->chip, i, GTS, 1);
-> +			generic_handle_irq(sch->irq_base + i);
-> +			ret = IRQ_HANDLED;
-> +		}
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  static int sch_gpio_probe(struct platform_device *pdev)
->  {
->  	struct sch_gpio *sch;
-> -	struct resource *res;
-> +	struct resource *res, *irq;
-> +	int err;
->  
->  	sch = devm_kzalloc(&pdev->dev, sizeof(*sch), GFP_KERNEL);
->  	if (!sch)
-> @@ -203,6 +376,17 @@ static int sch_gpio_probe(struct platform_device *pdev)
->  				 pdev->name))
->  		return -EBUSY;
->  
-> +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> +	sch->irq_support = !!irq;
-> +	if (sch->irq_support) {
-> +		sch->irq_num = irq->start;
-> +		if (sch->irq_num < 0) {
-> +			dev_warn(&pdev->dev,
-> +				 "failed to obtain irq number for device\n");
-> +			sch->irq_support = 0;
-> +		}
-> +	}
-> +
->  	spin_lock_init(&sch->lock);
->  	sch->iobase = res->start;
->  	sch->chip = sch_gpio_chip;
-> @@ -251,17 +435,72 @@ static int sch_gpio_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> +	err = gpiochip_add(&sch->chip);
-> +	if (err < 0)
-> +		goto err_sch_gpio;
-> +
-> +	if (sch->irq_support) {
-> +		sch->irq_base = irq_alloc_descs(-1, 0, sch->chip.ngpio,
-> +						NUMA_NO_NODE);
-> +		if (sch->irq_base < 0) {
-> +			dev_err(&pdev->dev,
-> +				"failed to add GPIO IRQ descs\n");
-> +			sch->irq_base = -1;
-> +			goto err_sch_intr_chip;
-> +		}
-
-Was there some reason why you can't use gpiochip_irqchip_* helpers here?
-
-> +
-> +		/* disable interrupts */
-> +		sch_gpio_irq_disable_all(sch, sch->chip.ngpio);
-> +
-> +		err = request_irq(sch->irq_num, sch_gpio_irq_handler,
-> +				  IRQF_SHARED, KBUILD_MODNAME, sch);
-
-This seems weird, typically irqchip drivers don't call request_irq()
-directly but instead irq_set_chained_handler() or similar. With
-gpiochip_irqchip_* stuff you don't need even that.
-
-> +		if (err) {
-> +			dev_err(&pdev->dev,
-> +				"%s failed to request IRQ\n", __func__);
-> +			goto err_sch_request_irq;
-> +		}
-> +
-> +		sch_gpio_irqs_init(sch, sch->chip.ngpio);
-> +	}
-> +
->  	platform_set_drvdata(pdev, sch);
->  
-> -	return gpiochip_add(&sch->chip);
-> +	return 0;
-> +
-> +err_sch_request_irq:
-> +	irq_free_descs(sch->irq_base, sch->chip.ngpio);
-> +
-> +err_sch_intr_chip:
-> +	if (gpiochip_remove(&sch->chip))
-> +		dev_err(&pdev->dev,
-> +			"%s gpiochip_remove() failed\n", __func__);
-> +
-> +err_sch_gpio:
-> +	release_region(res->start, resource_size(res));
-> +
-> +	return err;
->  }
->  
->  static int sch_gpio_remove(struct platform_device *pdev)
->  {
->  	struct sch_gpio *sch = platform_get_drvdata(pdev);
-> +	int err;
->  
-> -	gpiochip_remove(&sch->chip);
-> -	return 0;
-> +	if (sch->irq_support) {
-> +		sch_gpio_irqs_deinit(sch, sch->chip.ngpio);
-> +
-> +		if (sch->irq_num >= 0)
-> +			free_irq(sch->irq_num, sch);
-> +
-> +		irq_free_descs(sch->irq_base, sch->chip.ngpio);
-> +	}
-> +
-> +	err = gpiochip_remove(&sch->chip);
-> +	if (err)
-> +		dev_err(&pdev->dev,
-> +			"%s gpiochip_remove() failed\n", __func__);
-> +
-> +	return err;
->  }
->  
->  static struct platform_driver sch_gpio_driver = {
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Takashi
