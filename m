@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238AbaIRVCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:02:24 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33774 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756203AbaIRVCX (ORCPT
+	id S1757354AbaIRVOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:14:23 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48525 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757313AbaIRVOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:02:23 -0400
-Date: Thu, 18 Sep 2014 22:02:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wenyou Yang <wenyou.yang@atmel.com>
-Subject: Re: [PATCH] ARM: at91: sama5: configure L2 cache
-Message-ID: <20140918210212.GD5182@n2100.arm.linux.org.uk>
-References: <1411072716-20769-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Thu, 18 Sep 2014 17:14:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411072716-20769-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1411024883.27455.11.camel@debian-rtk5880>
+References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
+	<CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
+	<54195036.2010409@realsil.com.cn>
+	<CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
+	<1411024883.27455.11.camel@debian-rtk5880>
+Date: Thu, 18 Sep 2014 23:14:20 +0200
+Message-ID: <CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Wei_wang <wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 10:38:36PM +0200, Alexandre Belloni wrote:
-> From: Wenyou Yang <wenyou.yang@atmel.com>
-> 
-> Ensure that the L2 cache configuration is optimal to avoid depending on the
-> bootloader to set it correctly.
-> 
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/mach-at91/board-dt-sama5.c | 47 ++++++++++++++++++++++++++++++++++++-
->  1 file changed, 46 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-> index 548de4ad6937..7cbe0d9daf2b 100644
-> --- a/arch/arm/mach-at91/board-dt-sama5.c
-> +++ b/arch/arm/mach-at91/board-dt-sama5.c
-> @@ -13,12 +13,14 @@
->  #include <linux/gpio.h>
->  #include <linux/micrel_phy.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/phy.h>
->  #include <linux/clk-provider.h>
->  
->  #include <asm/setup.h>
-> +#include <asm/hardware/cache-l2x0.h>
->  #include <asm/irq.h>
->  #include <asm/mach/arch.h>
->  #include <asm/mach/map.h>
-> @@ -35,8 +37,52 @@ static void __init sama5_dt_timer_init(void)
->  	at91sam926x_pit_init();
->  }
->  
-> +static void __init at91_l2x0_init(void)
-> +{
-> +	struct device_node *np;
-> +	void __iomem *l2cc_base;
-> +	u32 reg;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
-> +	if (!np)
-> +		return;
-> +
-> +	l2cc_base = of_iomap(np, 0);
-> +	of_node_put(np);
-> +
-> +	if (!l2cc_base) {
-> +		pr_err("L2C-310 unable to map registers\n");
-> +		return;
-> +	}
-> +
-> +	/* Prefetch Control */
-> +	reg = readl_relaxed(l2cc_base + L310_PREFETCH_CTRL);
-> +	reg &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-> +	reg |= 0x01 & L310_PREFETCH_CTRL_OFFSET_MASK;
-> +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-> +	reg |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-> +	reg |= L310_PREFETCH_CTRL_DATA_PREFETCH;
-> +	reg |= L310_PREFETCH_CTRL_INSTR_PREFETCH;
-> +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-> +	writel_relaxed(reg, l2cc_base + L310_PREFETCH_CTRL);
-> +
-> +	/* Power Control */
-> +	reg = readl_relaxed(l2cc_base + L310_POWER_CTRL);
-> +	reg |= L310_STNDBY_MODE_EN;
-> +	reg |= L310_DYNAMIC_CLK_GATING_EN;
-> +	writel_relaxed(reg, l2cc_base + L310_POWER_CTRL);
-> +
-> +	/* Disable interrupts */
-> +	writel_relaxed(0x00, l2cc_base + L2X0_INTR_MASK);
-> +	writel_relaxed(0x01ff, l2cc_base + L2X0_INTR_CLEAR);
-> +
-> +	l2x0_of_init(0, ~0UL);
+[...]
 
-NAK.  Really, nak.  Stop this mentality of working around shortcomings
-of generic code by adding yet more platform junk.  Such approaches are
-not acceptable.
+>>
+>> In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
+>>
+>> >
+>> > if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
+>> > then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
+>> > return.
+>>
+>> Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
+>> that path at all.
+>>
+>> Hmm, I think we should change the behavior in mmc_start_host(), like below:
+>> 1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
+>> should be assigned to at allocation.
+>> 2 ) From mmc_start_host(), invoke mmc_power_off() when
+>> MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
+>>
+>> Would that work?
+> Yes. I have confirmed this by following changes. The MMC_POWER_UNDEFINED
+> designation in mmc_start_host() will eventually cause a power-off
+> operation.
+>
+> But I wonder if we need to additionally check MMC_CAP2_FULL_PWR_CYCLE
+> before calling mmc_power_off()?
 
-The power control is already done by generic code.  I know that you've
-developed the above code against the exact copy of generic code which
-has this, because you're using the new symbols.
+The intent from my side was to keep the current behaviour for those
+that already used MMC_CAP2_NO_PRESCAN_POWERUP, but it's s not a big
+deal.
 
-You shouldn't need to disable interrupts; the interrupts should already
-be disabled unless your bootloaders are doing something weird with them.
+So, let's try your proposal, thus don't check MMC_CAP2_FULL_PWR_CYCLE.
 
-There have been DT bindings proposed for prefetch control register.  I
-suggest that you search this mailing list for that patch, and check
-whether it is acceptable for your platform.
+Can you repost new version of your patches and please split them up on
+core and host separately.
 
-Taking all that together, you should need /zero/ code in your platform
-for L2 caches, which is *the way it should be*.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Kind regards
+Uffe
