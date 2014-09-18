@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422AbaIRP3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:29:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:29217 "EHLO
+	id S932444AbaIRP3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:29:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:29237 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372AbaIRP3K (ORCPT
+	with ESMTP id S932372AbaIRP3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:29:10 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-72-541afa44245f
+	Thu, 18 Sep 2014 11:29:19 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-7d-541afa4da7b7
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -17,33 +17,34 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 12/33] thermal: exynos: simplify HW_TRIP level setting
-Date: Thu, 18 Sep 2014 17:27:29 +0200
-Message-id: <1411054070-25757-13-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 14/33] thermal: exynos: remove TMU_SUPPORT_READY_STATUS flag
+Date: Thu, 18 Sep 2014 17:27:31 +0200
+Message-id: <1411054070-25757-15-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHLMWRmVeSWpSXmKPExsVy+t9jAV2XX1IhBlvXSFk0XA2x2DhjPavF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAV3fX1IhBtd+yFo0XA2x2DhjPavF
 	3eeHGS3mX7nGanG26Q27xZuHmxktLu+aw2bxufcIo8WM8/uYLJ487GNz4PLYOesuu8fiPS+Z
-	PPq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvjwMYZbAWPlCqOTzjF0sC4VbaLkZNDQsBEYu3p
-	/4wQtpjEhXvr2boYuTiEBBYxShw+NIkZwulikri7rhesik3ASmJi+yowW0RAS+LEpe1MIEXM
-	AreYJF7fmAyWEBZwk7h+cRIriM0ioCrR8fwlC4jNK+Ap0dC+jwVinaJE97MJbCA2J0j81iZ2
-	EFtIwEOibctd5gmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBIfaM6kdjCsbLA4x
-	CnAwKvHwHuCVChFiTSwrrsw9xCjBwawkwvvnI1CINyWxsiq1KD++qDQntfgQozQHi5I474FW
-	60AhgfTEktTs1NSC1CKYLBMHp1QDo7VTsYHBd72HPBO8uU62L7aoTDe3nrNR4vWPvnMPyrm/
-	XRffXxcjU9vUnvasY9Vk/8nJfWpl8yecaBR1mDSXX4V1C8ffWadkpifdndgSeueajo2e/QW5
-	7LlTljEGHZCS4bj1PTkzaXfw3mW8XauCu6cvnn79KWMWp99pnRT/8lOeYpzzgjjFlViKMxIN
-	tZiLihMBpgooQjECAAA=
+	PPq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj1NkPbAWP1SteXOBsYLys2MXIySEhYCIxf20f
+	I4QtJnHh3nq2LkYuDiGBRYwS81o6wRJCAl1MEmtm1oPYbAJWEhPbV4HFRQS0JE5c2s4E0sAs
+	cItJ4vWNyWAJYQEfiS97v7OA2CwCqhKP7nxhA7F5BTwl5i3/zw6xTVGi+9kEsDgnULzh1iZ2
+	iGUeEm1b7jJPYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4zJ5J7WBc2WBxiFGA
+	g1GJh/cAr1SIEGtiWXFl7iFGCQ5mJRHePx+BQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoH
+	CgmkJ5akZqemFqQWwWSZODilGhg9JTdOyAxoPnPty1kto+5jvNkSL23kC35a79687L/8isxt
+	CqrWl8sUmeMNf3VyHDltIeKjsntbQvaa9UqvRN75PNq04p83857cLs2Sm1d8JFqDvd4xJ15t
+	vpsm8VWGpX//EW6BBJVOlUmnkjh7Dz9dYZbgs5PlxHnJXWnvwhtbi8P4J4Z3ViixFGckGmox
+	FxUnAgBTJaieLwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify HW_TRIP level setting in exynos_tmu_initialize() (don't
-pretend that the current code is hardware and configuration
-independent and just do SoC type check explicitly).  Then remove
-no longer needed reg->threshold_[th2,th3_l0_shift] abstractions
-(only assigned for Exynos5440 in exynos5440_tmu_registers) and
-EXYNOS_MAX_TRIGGER_PER_REG define.
+Replace TMU_SUPPORT_READY_STATUS flag check in
+exynos_tmu_initialize() by an explicit check for a SoC type
+(all SoC types except Exynos5440 have TMU_SUPPORT_READY_STATUS
+flag set in their struct exynos_tmu_init_data instances).
+
+This is a preparation for introducing per-SoC type tmu_initialize
+method.
 
 There should be no functional changes caused by this patch.
 
@@ -55,88 +56,107 @@ Cc: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      | 10 +++++-----
- drivers/thermal/samsung/exynos_tmu.h      |  4 ----
- drivers/thermal/samsung/exynos_tmu_data.c |  2 --
- drivers/thermal/samsung/exynos_tmu_data.h |  2 --
- 4 files changed, 5 insertions(+), 13 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c      |  2 +-
+ drivers/thermal/samsung/exynos_tmu.h      |  7 ++-----
+ drivers/thermal/samsung/exynos_tmu_data.c | 14 +++++---------
+ 3 files changed, 8 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index f009a04..f02e65d 100644
+index 641a77a..d9fa49a 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -237,18 +237,18 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 				(pdata->trigger_type[i] == HW_TRIP)) {
- 			threshold_code = temp_to_code(data,
- 						pdata->trigger_levels[i]);
--			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
-+			if (data->soc != SOC_ARCH_EXYNOS5440) {
- 				/* 1-4 level to be assigned in th0 reg */
- 				rising_threshold &= ~(0xff << 8 * i);
- 				rising_threshold |= threshold_code << 8 * i;
- 				writel(rising_threshold,
--					data->base + reg->threshold_th0);
--			} else if (i == EXYNOS_MAX_TRIGGER_PER_REG) {
-+					data->base + EXYNOS_THD_TEMP_RISE);
-+			} else {
- 				/* 5th level to be assigned in th2 reg */
- 				rising_threshold =
--				threshold_code << reg->threshold_th3_l0_shift;
-+				threshold_code << EXYNOS5440_TMU_TH_RISE4_SHIFT;
- 				writel(rising_threshold,
--					data->base + reg->threshold_th2);
-+					data->base + EXYNOS5440_TMU_S0_7_TH2);
- 			}
- 			con = readl(data->base + reg->tmu_ctrl);
- 			con |= (1 << EXYNOS_TMU_THERM_TRIP_EN_SHIFT);
+@@ -136,7 +136,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	if (!IS_ERR(data->clk_sec))
+ 		clk_enable(data->clk_sec);
+ 
+-	if (TMU_SUPPORTS(pdata, READY_STATUS)) {
++	if (data->soc != SOC_ARCH_EXYNOS5440) {
+ 		status = readb(data->base + EXYNOS_TMU_REG_STATUS);
+ 		if (!status) {
+ 			ret = -EBUSY;
 diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 7098e37..3430852 100644
+index 3430852..400f10d 100644
 --- a/drivers/thermal/samsung/exynos_tmu.h
 +++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -80,8 +80,6 @@ enum soc_type {
-  * @tmu_cur_temp: register containing the current temperature of the TMU.
-  * @threshold_th0: Register containing first set of rising levels.
-  * @threshold_th1: Register containing second set of rising levels.
-- * @threshold_th2: Register containing third set of rising levels.
-- * @threshold_th3_l0_shift: shift bits of level0 threshold temperature.
-  * @tmu_inten: register containing the different threshold interrupt
- 	enable bits.
-  * @inten_rise0_shift: shift bits of rising 0 interrupt bits.
-@@ -104,8 +102,6 @@ struct exynos_tmu_registers {
+@@ -54,8 +54,6 @@ enum soc_type {
+  *			be reloaded.
+  * TMU_SUPPORT_FALLING_TRIP - This features shows that interrupt can
+  *			be registered for falling trips also.
+- * TMU_SUPPORT_READY_STATUS - This feature tells that the TMU current
+- *			state(active/idle) can be checked.
+  * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
+  *			sample time.
+  * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
+@@ -66,9 +64,8 @@ enum soc_type {
+ #define TMU_SUPPORT_MULTI_INST			BIT(1)
+ #define TMU_SUPPORT_TRIM_RELOAD			BIT(2)
+ #define TMU_SUPPORT_FALLING_TRIP		BIT(3)
+-#define TMU_SUPPORT_READY_STATUS		BIT(4)
+-#define TMU_SUPPORT_EMUL_TIME			BIT(5)
+-#define TMU_SUPPORT_ADDRESS_MULTIPLE		BIT(6)
++#define TMU_SUPPORT_EMUL_TIME			BIT(4)
++#define TMU_SUPPORT_ADDRESS_MULTIPLE		BIT(5)
  
- 	u32	threshold_th0;
- 	u32	threshold_th1;
--	u32	threshold_th2;
--	u32	threshold_th3_l0_shift;
+ #define TMU_SUPPORTS(a, b)	(a->features & TMU_SUPPORT_ ## b)
  
- 	u32	tmu_inten;
- 	u32	inten_rise0_shift;
 diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 23beb70..a63d945 100644
+index a63d945..af886e3 100644
 --- a/drivers/thermal/samsung/exynos_tmu_data.c
 +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -408,8 +408,6 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
- 	.tmu_cur_temp = EXYNOS5440_TMU_S0_7_TEMP,
- 	.threshold_th0 = EXYNOS5440_TMU_S0_7_TH0,
- 	.threshold_th1 = EXYNOS5440_TMU_S0_7_TH1,
--	.threshold_th2 = EXYNOS5440_TMU_S0_7_TH2,
--	.threshold_th3_l0_shift = EXYNOS5440_TMU_TH_RISE4_SHIFT,
- 	.tmu_inten = EXYNOS5440_TMU_S0_7_IRQEN,
- 	.inten_rise0_shift = EXYNOS5440_TMU_INTEN_RISE0_SHIFT,
- 	.inten_rise1_shift = EXYNOS5440_TMU_INTEN_RISE1_SHIFT,
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index 96cf369..3ae42cd 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.h
-+++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -80,8 +80,6 @@
- #define EXYNOS_EMUL_DATA_MASK	0xFF
- #define EXYNOS_EMUL_ENABLE	0x1
+@@ -74,7 +74,6 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 		.freq_tab_count = 2,
+ 		.type = SOC_ARCH_EXYNOS4210,
+ 		.registers = &exynos4210_tmu_registers,
+-		.features = TMU_SUPPORT_READY_STATUS,
+ 		},
+ 	},
+ 	.tmu_count = 1,
+@@ -138,8 +137,7 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
+ 	.freq_tab_count = 2, \
+ 	.registers = &exynos3250_tmu_registers, \
+ 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+-			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+-			TMU_SUPPORT_EMUL_TIME)
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_EMUL_TIME)
+ #endif
  
--#define EXYNOS_MAX_TRIGGER_PER_REG	4
--
- /* Exynos5260 specific */
- #define EXYNOS5260_TMU_REG_INTEN		0xC0
- #define EXYNOS5260_TMU_REG_INTSTAT		0xC4
+ #if defined(CONFIG_SOC_EXYNOS3250)
+@@ -213,8 +211,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.freq_tab_count = 2, \
+ 	.registers = &exynos4412_tmu_registers, \
+ 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+-			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+-			TMU_SUPPORT_EMUL_TIME)
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_EMUL_TIME)
+ #endif
+ 
+ #if defined(CONFIG_SOC_EXYNOS4412)
+@@ -304,7 +301,7 @@ static const struct exynos_tmu_registers exynos5260_tmu_registers = {
+ 	__EXYNOS5260_TMU_DATA \
+ 	.type = SOC_ARCH_EXYNOS5260, \
+ 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
+-			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME)
++			TMU_SUPPORT_EMUL_TIME)
+ 
+ struct exynos_tmu_init_data const exynos5260_default_tmu_data = {
+ 	.tmu_data = {
+@@ -381,14 +378,13 @@ static const struct exynos_tmu_registers exynos5420_tmu_registers = {
+ 	__EXYNOS5420_TMU_DATA \
+ 	.type = SOC_ARCH_EXYNOS5250, \
+ 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
+-			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME)
++			TMU_SUPPORT_EMUL_TIME)
+ 
+ #define EXYNOS5420_TMU_DATA_SHARED \
+ 	__EXYNOS5420_TMU_DATA \
+ 	.type = SOC_ARCH_EXYNOS5420_TRIMINFO, \
+ 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
+-			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME | \
+-			TMU_SUPPORT_ADDRESS_MULTIPLE)
++			TMU_SUPPORT_EMUL_TIME | TMU_SUPPORT_ADDRESS_MULTIPLE)
+ 
+ struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
+ 	.tmu_data = {
 -- 
 1.8.2.3
 
