@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaIRNTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:19:10 -0400
-Received: from ni.piap.pl ([195.187.100.4]:33766 "EHLO ni.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753877AbaIRNTI convert rfc822-to-8bit (ORCPT
+	id S1755576AbaIRNX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 09:23:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34996 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389AbaIRNX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:19:08 -0400
-X-Greylist: delayed 424 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Sep 2014 09:19:08 EDT
-From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Sep 2014 15:12:02 +0200
+	Thu, 18 Sep 2014 09:23:27 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: sama5d3xek: reserve dma channel for audio
+Date: Thu, 18 Sep 2014 15:23:22 +0200
+Message-ID: <1411046602-4864-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Message-ID: <m3tx4513a5.fsf@t19.piap.pl>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] Fix unbalanced mutex in dma_pool_create().
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
-	 bases: 20140401 #7726142, check: 20140918 clean
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_pool_create() needs to unlock the mutex in error case.
-The bug has been present starting with v3.16-rc1 (cc6b664a).
+From: Bo Shen <voice.shen@atmel.com>
 
-Signed-off-by: Krzysztof Hałasa <khc@piap.pl>
-Cc: stable@vger.kernel.org
+We set the DMA configuration on USARTs in the SoC DT in (ARM: at91: sama5d3:
+add usart dma configurations). As the audio must work with DMA channels, we
+reserve some dma channels for audio, or else audio won't work.
 
---- a/mm/dmapool.c
-+++ b/mm/dmapool.c
-@@ -174,11 +174,11 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+[nicolas.ferre@atmel.com: move to the sama5d3xmb.dtsi to cover all board variants]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/boot/dts/sama5d3xmb.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
+index b8c6f20e780c..49c10d33df30 100644
+--- a/arch/arm/boot/dts/sama5d3xmb.dtsi
++++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
+@@ -25,6 +25,8 @@
+ 			};
  
- 	mutex_lock(&pools_lock);
- 	if (list_empty(&dev->dma_pools) &&
- 	    device_create_file(dev, &dev_attr_pools)) {
- 		kfree(retval);
--		return NULL;
-+		retval = NULL;
- 	} else
- 		list_add(&retval->pools, &dev->dma_pools);
- 	mutex_unlock(&pools_lock);
+ 			spi0: spi@f0004000 {
++				dmas = <0>, <0>;	/*  Do not use DMA for spi0 */
++
+ 				m25p80@0 {
+ 					compatible = "atmel,at25df321a";
+ 					spi-max-frequency = <50000000>;
+@@ -51,6 +53,7 @@
+ 			};
  
- 	return retval;
-
+ 			usart1: serial@f0020000 {
++				dmas = <0>, <0>;	/*  Do not use DMA for usart1 */
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart1 &pinctrl_usart1_rts_cts>;
+ 				status = "okay";
+@@ -132,6 +135,7 @@
+ 			};
+ 
+ 			dbgu: serial@ffffee00 {
++				dmas = <0>, <0>;	/*  Do not use DMA for dbgu */
+ 				status = "okay";
+ 			};
+ 
 -- 
-Krzysztof Halasa
+1.8.2.2
 
-Research Institute for Automation and Measurements PIAP
-Al. Jerozolimskie 202, 02-486 Warsaw, Poland
