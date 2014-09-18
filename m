@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173AbaIRI13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:27:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:57551 "EHLO ozlabs.org"
+	id S1756648AbaIRI3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:29:14 -0400
+Received: from ozlabs.org ([103.22.144.67]:46667 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314AbaIRI1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:27:19 -0400
+	id S1756071AbaIRI12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 04:27:28 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
 Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH 05/15] powerpc/powernv: Split out set MSI IRQ chip code
-Date: Thu, 18 Sep 2014 18:26:50 +1000
-Message-Id: <1411028820-29933-6-git-send-email-mikey@neuling.org>
+Subject: [PATCH 13/15] cxl: Userspace header file.
+Date: Thu, 18 Sep 2014 18:26:58 +1000
+Message-Id: <1411028820-29933-14-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411028820-29933-1-git-send-email-mikey@neuling.org>
 References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
@@ -24,84 +24,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-Some of the MSI IRQ code in pnv_pci_ioda_msi_setup() is generically useful so
-split it out.
+This defines structs and magic numbers required for userspace to interact with
+the kernel cxl driver via /dev/cxl/afu0.0.
 
-This will be used by some of the cxl PCIe code later.
+It adds this header file Kbuild so it's exported when doing make
+headers_installs.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c | 43 ++++++++++++++++++-------------
- 1 file changed, 25 insertions(+), 18 deletions(-)
+ include/uapi/Kbuild      |  1 +
+ include/uapi/misc/Kbuild |  2 ++
+ include/uapi/misc/cxl.h  | 88 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 91 insertions(+)
+ create mode 100644 include/uapi/misc/Kbuild
+ create mode 100644 include/uapi/misc/cxl.h
 
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index df241b1..194f90a 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -1306,14 +1306,36 @@ static void pnv_ioda2_msi_eoi(struct irq_data *d)
- 	icp_native_eoi(d);
- }
- 
+diff --git a/include/uapi/Kbuild b/include/uapi/Kbuild
+index 81d2106..245aa6e 100644
+--- a/include/uapi/Kbuild
++++ b/include/uapi/Kbuild
+@@ -12,3 +12,4 @@ header-y += video/
+ header-y += drm/
+ header-y += xen/
+ header-y += scsi/
++header-y += misc/
+diff --git a/include/uapi/misc/Kbuild b/include/uapi/misc/Kbuild
+new file mode 100644
+index 0000000..e96cae7
+--- /dev/null
++++ b/include/uapi/misc/Kbuild
+@@ -0,0 +1,2 @@
++# misc Header export list
++header-y += cxl.h
+diff --git a/include/uapi/misc/cxl.h b/include/uapi/misc/cxl.h
+new file mode 100644
+index 0000000..6a394b5
+--- /dev/null
++++ b/include/uapi/misc/cxl.h
+@@ -0,0 +1,88 @@
++/*
++ * Copyright 2014 IBM Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
 +
-+static void set_msi_irq_chip(struct pnv_phb *phb, unsigned int virq)
-+{
-+	struct irq_data *idata;
-+	struct irq_chip *ichip;
++#ifndef _UAPI_ASM_CXL_H
++#define _UAPI_ASM_CXL_H
 +
-+	/*
-+	 * Change the IRQ chip for the MSI interrupts on PHB3.
-+	 * The corresponding IRQ chip should be populated for
-+	 * the first time.
-+	 */
-+	if (phb->type == PNV_PHB_IODA2) {
-+		if (!phb->ioda.irq_chip_init) {
-+			idata = irq_get_irq_data(virq);
-+			ichip = irq_data_get_irq_chip(idata);
-+			phb->ioda.irq_chip_init = 1;
-+			phb->ioda.irq_chip = *ichip;
-+			phb->ioda.irq_chip.irq_eoi = pnv_ioda2_msi_eoi;
-+		}
++#include <linux/types.h>
++#include <linux/ioctl.h>
 +
-+		irq_set_chip(virq, &phb->ioda.irq_chip);
-+	}
-+}
++/* ioctls */
++struct cxl_ioctl_start_work {
++	__u64 wed;
++	__u64 amr;
++	__u64 reserved1;
++	__u32 reserved2;
++	__s16 num_interrupts; /* -1 = use value from afu descriptor */
++	__u16 process_element; /* returned from kernel */
++	__u64 reserved3;
++	__u64 reserved4;
++	__u64 reserved5;
++	__u64 reserved6;
++};
 +
- static int pnv_pci_ioda_msi_setup(struct pnv_phb *phb, struct pci_dev *dev,
- 				  unsigned int hwirq, unsigned int virq,
- 				  unsigned int is_64, struct msi_msg *msg)
- {
- 	struct pnv_ioda_pe *pe = pnv_ioda_get_pe(dev);
- 	struct pci_dn *pdn = pci_get_pdn(dev);
--	struct irq_data *idata;
--	struct irq_chip *ichip;
- 	unsigned int xive_num = hwirq - phb->msi_base;
- 	__be32 data;
- 	int rc;
-@@ -1365,22 +1387,7 @@ static int pnv_pci_ioda_msi_setup(struct pnv_phb *phb, struct pci_dev *dev,
- 	}
- 	msg->data = be32_to_cpu(data);
- 
--	/*
--	 * Change the IRQ chip for the MSI interrupts on PHB3.
--	 * The corresponding IRQ chip should be populated for
--	 * the first time.
--	 */
--	if (phb->type == PNV_PHB_IODA2) {
--		if (!phb->ioda.irq_chip_init) {
--			idata = irq_get_irq_data(virq);
--			ichip = irq_data_get_irq_chip(idata);
--			phb->ioda.irq_chip_init = 1;
--			phb->ioda.irq_chip = *ichip;
--			phb->ioda.irq_chip.irq_eoi = pnv_ioda2_msi_eoi;
--		}
--
--		irq_set_chip(virq, &phb->ioda.irq_chip);
--	}
-+	set_msi_irq_chip(phb, virq);
- 
- 	pr_devel("%s: %s-bit MSI on hwirq %x (xive #%d),"
- 		 " address=%x_%08x data=%x PE# %d\n",
++#define CXL_MAGIC 0xCA
++#define CXL_IOCTL_START_WORK      _IOWR(CXL_MAGIC, 0x00, struct cxl_ioctl_start_work)
++#define CXL_IOCTL_CHECK_ERROR     _IO(CXL_MAGIC,   0x02)
++
++/* events from read() */
++
++enum cxl_event_type {
++	CXL_EVENT_READ_FAIL     = -1,
++	CXL_EVENT_RESERVED      = 0,
++	CXL_EVENT_AFU_INTERRUPT = 1,
++	CXL_EVENT_DATA_STORAGE  = 2,
++	CXL_EVENT_AFU_ERROR     = 3,
++};
++
++struct cxl_event_header {
++	__u32 type;
++	__u16 size;
++	__u16 process_element;
++	__u64 reserved1;
++	__u64 reserved2;
++	__u64 reserved3;
++};
++
++struct cxl_event_afu_interrupt {
++	struct cxl_event_header header;
++	__u16 irq; /* Raised AFU interrupt number */
++	__u16 reserved1;
++	__u32 reserved2;
++	__u64 reserved3;
++	__u64 reserved4;
++	__u64 reserved5;
++};
++
++struct cxl_event_data_storage {
++	struct cxl_event_header header;
++	__u64 addr;
++	__u64 reserved1;
++	__u64 reserved2;
++	__u64 reserved3;
++};
++
++struct cxl_event_afu_error {
++	struct cxl_event_header header;
++	__u64 err;
++	__u64 reserved1;
++	__u64 reserved2;
++	__u64 reserved3;
++};
++
++struct cxl_event {
++	union {
++		struct cxl_event_header header;
++		struct cxl_event_afu_interrupt irq;
++		struct cxl_event_data_storage fault;
++		struct cxl_event_afu_error afu_err;
++	};
++};
++
++#endif
 -- 
 1.9.1
 
