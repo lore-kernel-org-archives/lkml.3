@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653AbaIRSbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 14:31:32 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:65123 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932117AbaIRSbb (ORCPT
+	id S932678AbaIRScE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 14:32:04 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:56892 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932117AbaIRScB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 14:31:31 -0400
-Message-ID: <1411065089.2017.72.camel@x220>
-Subject: [PATCH 0/5] MN10300: Remove dead code depending on DEPRECATED
+	Thu, 18 Sep 2014 14:32:01 -0400
+Message-ID: <1411065119.2017.73.camel@x220>
+Subject: [PATCH 1/5] MN10300: Remove Kconfig symbol GDBSTUB
 From: Paul Bolle <pebolle@tiscali.nl>
 To: David Howells <dhowells@redhat.com>,
         Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 Cc: Richard Weinberger <richard@nod.at>,
         Geert Uytterhoeven <geert@linux-m68k.org>, linux-am33-list@redhat.com,
         linux-kernel@vger.kernel.org
-Date: Thu, 18 Sep 2014 20:31:29 +0200
+Date: Thu, 18 Sep 2014 20:31:59 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Sep 2014 18:31:29.0389 (UTC) FILETIME=[C352F1D0:01CFD36E]
+X-OriginalArrivalTime: 18 Sep 2014 18:31:59.0991 (UTC) FILETIME=[D5907070:01CFD36E]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0) Raised before in
-https://www.redhat.com/archives/linux-am33-list/2011-November/msg00007.html .
+Commit 1a8d59e529d0 ("MN10300: Deprecate gdbstub") made the Kconfig
+symbol GDBSTUB depend on DEPRECATED. Since that Kconfig symbol doesn't
+exist, this Kconfig entry has been dead since v2.6.39. Remove it.
 
-1) Discussed, at length, in https://lkml.org/lkml/2014/2/9/164 .
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ arch/mn10300/Kconfig.debug | 15 ---------------
+ 1 file changed, 15 deletions(-)
 
-2) Compile tested only (on top of next-20140918, using
-arch/mn10300/configs/asb2303_defconfig).
-
-3) Logically this should be one humongous patch. It is split into five
-patches to ease review. Review, or actually any reaction whatsoever,
-would be appreciated.
-
-4) The last patch was basically done by checking the output of
-    git grep -i gdb.*stub arch/mn10300
-
-and make educated guesses.
-
-Paul Bolle (5):
-  MN10300: Remove Kconfig symbol GDBSTUB
-  MN10300: Remove Kconfig symbols depending on GDBSTUB
-  MN10300: Remove all checks for CONFIG_GDBSTUB
-  MN10300: Remove checks for GDBSTUB related Kconfig macros
-  MN10300: Remove remnants of gdbstub
-
- arch/mn10300/Kconfig                            |    6 +-
- arch/mn10300/Kconfig.debug                      |  120 +-
- arch/mn10300/boot/compressed/misc.c             |    9 -
- arch/mn10300/include/asm/exceptions.h           |    7 -
- arch/mn10300/include/asm/gdb-stub.h             |  182 ---
- arch/mn10300/kernel/Makefile                    |    3 -
- arch/mn10300/kernel/entry.S                     |   21 -
- arch/mn10300/kernel/gdb-io-serial-low.S         |   91 --
- arch/mn10300/kernel/gdb-io-serial.c             |  174 --
- arch/mn10300/kernel/gdb-io-ttysm-low.S          |   93 --
- arch/mn10300/kernel/gdb-io-ttysm.c              |  303 ----
- arch/mn10300/kernel/gdb-low.S                   |  115 --
- arch/mn10300/kernel/gdb-stub.c                  | 1923 -----------------------
- arch/mn10300/kernel/head.S                      |   10 -
- arch/mn10300/kernel/mn10300-serial.c            |   28 +-
- arch/mn10300/kernel/mn10300-serial.h            |   15 -
- arch/mn10300/kernel/mn10300-watchdog.c          |   14 +-
- arch/mn10300/kernel/process.c                   |   11 -
- arch/mn10300/kernel/profile.c                   |    2 -
- arch/mn10300/kernel/smp-low.S                   |    4 -
- arch/mn10300/kernel/smp.c                       |    7 -
- arch/mn10300/kernel/traps.c                     |    4 +-
- arch/mn10300/mm/fault.c                         |    9 -
- arch/mn10300/mm/misalignment.c                  |    1 -
- arch/mn10300/mm/tlb-mn10300.S                   |   14 -
- arch/mn10300/unit-asb2303/include/unit/serial.h |   85 -
- arch/mn10300/unit-asb2303/unit-init.c           |    4 +-
- arch/mn10300/unit-asb2305/include/unit/serial.h |   78 -
- arch/mn10300/unit-asb2305/unit-init.c           |    6 +-
- arch/mn10300/unit-asb2364/include/unit/serial.h |   66 -
- arch/mn10300/unit-asb2364/unit-init.c           |    4 +-
- 31 files changed, 16 insertions(+), 3393 deletions(-)
- delete mode 100644 arch/mn10300/include/asm/gdb-stub.h
- delete mode 100644 arch/mn10300/kernel/gdb-io-serial-low.S
- delete mode 100644 arch/mn10300/kernel/gdb-io-serial.c
- delete mode 100644 arch/mn10300/kernel/gdb-io-ttysm-low.S
- delete mode 100644 arch/mn10300/kernel/gdb-io-ttysm.c
- delete mode 100644 arch/mn10300/kernel/gdb-low.S
- delete mode 100644 arch/mn10300/kernel/gdb-stub.c
-
+diff --git a/arch/mn10300/Kconfig.debug b/arch/mn10300/Kconfig.debug
+index 94efb3ed223f..6a8c7e8d6156 100644
+--- a/arch/mn10300/Kconfig.debug
++++ b/arch/mn10300/Kconfig.debug
+@@ -30,21 +30,6 @@ config KPROBES
+ 	  for kernel debugging, non-intrusive instrumentation and testing.
+ 	  If in doubt, say "N".
+ 
+-config GDBSTUB
+-	bool "Remote GDB kernel debugging"
+-	depends on DEBUG_KERNEL && DEPRECATED
+-	select DEBUG_INFO
+-	select FRAME_POINTER
+-	help
+-	  If you say Y here, it will be possible to remotely debug the kernel
+-	  using gdb. This enlarges your kernel ELF image disk size by several
+-	  megabytes and requires a machine with more than 16 MB, better 32 MB
+-	  RAM to avoid excessive linking time. This is only useful for kernel
+-	  hackers. If unsure, say N.
+-
+-	  This is deprecated in favour of KGDB and will be removed in a later
+-	  version.
+-
+ config GDBSTUB_IMMEDIATE
+ 	bool "Break into GDB stub immediately"
+ 	depends on GDBSTUB
 -- 
 1.9.3
 
