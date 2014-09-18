@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363AbaIRBux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:50:53 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:45576 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154AbaIRBuv (ORCPT
+	id S1757404AbaIRBva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:51:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38997 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154AbaIRBv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 21:50:51 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] cgroup/kmemleak: add kmemleak_free() for cgroup deallocations.
-Date: Thu, 18 Sep 2014 09:38:05 +0800
-Message-ID: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Wed, 17 Sep 2014 21:51:28 -0400
+Message-ID: <541A3A8D.9010908@oracle.com>
+Date: Wed, 17 Sep 2014 21:51:09 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+CC: Ming Lei <ming.lei@canonical.com>, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>, linux-doc@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 2/7] test: add firmware_class loader test
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org> <1405373897-31671-3-git-send-email-keescook@chromium.org>
+In-Reply-To: <1405373897-31671-3-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ff7ee93f4 introduces kmemleak_alloc() for alloc_page_cgroup(),
-but corresponding kmemleak_free() is missing, which makes kmemleak be
-wrongly disabled after memory offlining. Log is pasted at the end of
-this commit message.
+On 07/14/2014 05:38 PM, Kees Cook wrote:
+> This provides a simple interface to trigger the firmware_class loader
+> to test built-in, filesystem, and user helper modes. Additionally adds
+> tests via the new interface to the selftests tree.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-This patch add kmemleak_free() into free_page_cgroup(). During page
-offlining, this patch removes corresponding entries in kmemleak rbtree.
-After that, the freed memory can be allocated again by other subsystems
-without killing kmemleak.
+Hi folks,
 
-bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
-[   45.537934] Offlined Pages 32768
-[   46.617892] kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
-[   46.617892] CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
-[   46.617892] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   46.617892]  ffff880016823d10 ffff880018bdfc38 ffffffff81725d2c ffff88001780e950
-[   46.617892]  ffff880016969000 ffff880018bdfc88 ffffffff8117a9e6 ffff880018bdfc78
-[   46.617892]  0000000000000096 ffff880017812800 ffffffff81c2eda0 ffff880016969000
-[   46.617892] Call Trace:
-[   46.617892]  [<ffffffff81725d2c>] dump_stack+0x46/0x58
-[   46.617892]  [<ffffffff8117a9e6>] create_object+0x266/0x2c0
-[   46.617892]  [<ffffffff8171d2f6>] kmemleak_alloc+0x26/0x50
-[   46.617892]  [<ffffffff8116a3a3>] kmem_cache_alloc+0xd3/0x160
-[   46.617892]  [<ffffffff81058e59>] __sigqueue_alloc+0x49/0xd0
-[   46.617892]  [<ffffffff8105a41b>] __send_signal+0xcb/0x410
-[   46.617892]  [<ffffffff8105a7a5>] send_signal+0x45/0x90
-[   46.617892]  [<ffffffff8105a803>] __group_send_sig_info+0x13/0x20
-[   46.617892]  [<ffffffff8105bd0b>] do_notify_parent+0x1bb/0x260
-[   46.617892]  [<ffffffff81077e7a>] ? sched_move_task+0xaa/0x130
-[   46.617892]  [<ffffffff81050917>] do_exit+0x767/0xa40
-[   46.617892]  [<ffffffff81050c84>] do_group_exit+0x44/0xa0
-[   46.617892]  [<ffffffff81050cf7>] SyS_exit_group+0x17/0x20
-[   46.617892]  [<ffffffff8172cd12>] system_call_fastpath+0x16/0x1b
-[   46.617892] kmemleak: Kernel memory leak detector disabled
-[   46.617892] kmemleak: Object 0xffff880016900000 (size 524288):
-[   46.617892] kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
-[   46.617892] kmemleak:   min_count = 0
-[   46.617892] kmemleak:   count = 0
-[   46.617892] kmemleak:   flags = 0x1
-[   46.617892] kmemleak:   checksum = 0
-[   46.617892] kmemleak:   backtrace:
-[   46.617892]      [<ffffffff81d0a7f0>] log_early+0x63/0x77
-[   46.617892]      [<ffffffff8171d31b>] kmemleak_alloc+0x4b/0x50
-[   46.617892]      [<ffffffff81720e4f>] init_section_page_cgroup+0x7f/0xf5
-[   46.617892]      [<ffffffff81d0a6f0>] page_cgroup_init+0xc5/0xd0
-[   46.617892]      [<ffffffff81ce4ed9>] start_kernel+0x333/0x408
-[   46.617892]      [<ffffffff81ce45b2>] x86_64_start_reservations+0x2a/0x2c
-[   46.617892]      [<ffffffff81ce46a9>] x86_64_start_kernel+0xf5/0xfc
-[   46.617892]      [<ffffffffffffffff>] 0xffffffffffffffff
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel, I've stumbled on the following spew:
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- mm/page_cgroup.c | 1 +
- 1 file changed, 1 insertion(+)
+[  413.999779] misc test_firmware: Falling back to user helper
+[  414.003728] WARNING: CPU: 25 PID: 9860 at lib/kobject.c:209 kobject_add_internal+0x3a3/0x450()
+[  414.006815] kobject: (ffff8807b4ef5dc8): attempted to be registered with empty name!
+[  414.009482] Modules linked in:
+[  414.010818] CPU: 25 PID: 9860 Comm: trinity-c662 Tainted: G        W      3.17.0-rc5-next-20140917-sasha-00041-gd01267b #1198
+[  414.014626]  0000000000000009 ffff880236547a68 ffffffff9d56d655 0000000000000000
+[  414.017585]  ffff880236547ab8 ffff880236547aa8 ffffffff9a15f3d1 00000000001e3540
+[  414.020733]  ffff8807b4ef5dc8 00000000ffffffea ffff88043d114108 ffff8807b4ef5db8
+[  414.023345] Call Trace:
+[  414.024254] dump_stack (lib/dump_stack.c:52)
+[  414.026232] warn_slowpath_common (kernel/panic.c:432)
+[  414.028355] warn_slowpath_fmt (kernel/panic.c:446)
+[  414.030366] ? __raw_spin_lock_init (kernel/locking/spinlock_debug.c:24)
+[  414.032369] kobject_add_internal (lib/kobject.c:211 (discriminator 1))
+[  414.034313] ? __dynamic_pr_debug (lib/dynamic_debug.c:561)
+[  414.036254] kobject_add (lib/kobject.c:403)
+[  414.038017] ? device_private_init (drivers/base/core.c:929)
+[  414.040340] ? klist_init (lib/klist.c:90)
+[  414.044729] device_add (drivers/base/core.c:1010)
+[  414.049854] ? dev_set_name (drivers/base/core.c:876)
+[  414.060790] _request_firmware (drivers/base/firmware_class.c:892 drivers/base/firmware_class.c:957 drivers/base/firmware_class.c:1139)
+[  414.062814] request_firmware (drivers/base/firmware_class.c:1189)
+[  414.064796] trigger_request_store (lib/test_firmware.c:68)
+[  414.066774] dev_attr_store (drivers/base/core.c:138)
+[  414.068531] sysfs_kf_write (fs/sysfs/file.c:115)
+[  414.070826] kernfs_fop_write (fs/kernfs/file.c:308)
+[  414.074648] ? kernfs_vma_page_mkwrite (fs/kernfs/file.c:267)
+[  414.076864] do_loop_readv_writev (fs/read_write.c:710)
+[  414.078947] ? kernfs_vma_page_mkwrite (fs/kernfs/file.c:267)
+[  414.081269] do_readv_writev (fs/read_write.c:842)
+[  414.083281] ? preempt_count_sub (kernel/sched/core.c:2634)
+[  414.085380] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:599 kernel/locking/mutex.c:616)
+[  414.087401] ? __fdget_pos (fs/file.c:714)
+[  414.089286] vfs_writev (fs/read_write.c:881)
+[  414.091243] SyS_writev (fs/read_write.c:914 fs/read_write.c:905)
+[  414.093053] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
 
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 3708264..5331c2b 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -171,6 +171,7 @@ static void free_page_cgroup(void *addr)
- 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
- 
- 		BUG_ON(PageReserved(page));
-+		kmemleak_free(addr);
- 		free_pages_exact(addr, table_size);
- 	}
- }
--- 
-1.8.4
 
+Thanks,
+Sasha
