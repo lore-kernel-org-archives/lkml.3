@@ -1,105 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102AbaIRJVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:21:45 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:39180 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbaIRJVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:21:43 -0400
-Date: Thu, 18 Sep 2014 14:51:26 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sound: pci: ctxfi: pr_* replaced with dev_*
-Message-ID: <20140918092126.GA31651@sudip-PC>
-References: <1410790181-16457-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5hvbop3qjn.wl-tiwai@suse.de>
- <20140915152554.GA26218@sudip-PC>
- <s5hwq94agtr.wl-tiwai@suse.de>
+	id S1756158AbaIRJZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:25:18 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:7976 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755301AbaIRJZQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:25:16 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'grant.likely@linaro.org'" <grant.likely@linaro.org>,
+        "'robh+dt@kernel.org'" <robh+dt@kernel.org>,
+        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
+        "'pawel.moll@arm.com'" <pawel.moll@arm.com>,
+        "'mark.rutland@arm.com'" <mark.rutland@arm.com>,
+        "'ijc+devicetree@hellion.org.uk'" <ijc+devicetree@hellion.org.uk>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Thu, 18 Sep 2014 17:25:12 +0800
+Subject: [RFC] fdt:free the fdt reserved memory
+Thread-Topic: [RFC] fdt:free the fdt reserved memory
+Thread-Index: Ac/TInKgkwKH4jVNQR2pQQG69j5FwA==
+Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB49161A@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hwq94agtr.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 08:17:52PM +0200, Takashi Iwai wrote:
-> At Mon, 15 Sep 2014 20:55:54 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > On Mon, Sep 15, 2014 at 04:29:48PM +0200, Takashi Iwai wrote:
-> > > At Mon, 15 Sep 2014 19:39:41 +0530,
-> > > Sudip Mukherjee wrote:
-<snip>
-> > > > 
-> > > > diff --git a/sound/pci/ctxfi/ctresource.c b/sound/pci/ctxfi/ctresource.c
-> > > > index e49d2be..80beecb 100644
-> > > > --- a/sound/pci/ctxfi/ctresource.c
-> > > > +++ b/sound/pci/ctxfi/ctresource.c
-> > > (snip)
-> > > > @@ -282,8 +287,9 @@ int rsc_mgr_uninit(struct rsc_mgr *mgr)
-> > > >  		case SUM:
-> > > >  			break;
-> > > >  		default:
-> > > > -			pr_err("ctxfi: Invalid resource type value %d!\n",
-> > > > -				mgr->type);
-> > > > +			dev_err(&(((struct hw *)mgr->hw)->pci->dev),
-> > > > +				"ctxfi: Invalid resource type value %d!\n",
-> > > > +				 mgr->type);
-> > > 
-> > > Did you really conclude that this is the best way?
-> > > Also, is it good to mix up the usages of both card->dev and &pci->dev?
-> > > Think again.
-> > > 
-> > 
-> > i have a doubt regarding this :- 
-> > in the snd_card_new()  card->dev is being assigned with &pci->dev , 
-> > then are not they the same ?
-> 
-> Yes, but how can it be guaranteed in future?  We may avoid the
-> problems in future by keeping the consistency at this moment.  It's
-> one of the good points of keeping code consistent, in addition to:
-> increased readability / understandability and making the bug easier to
-> be spotted.
+This patch make some change to unflatten_dt_node(), make sure the
+device_node don't reference to fdt raw blob memory, so that we can
+free the raw blob reserved memory after initcalls.
 
-understood the point.
-> 
-> > i was trying to get some way of finding out the reference of card->dev from the resource manager ,
-> > but ...  :( 
-> > i will try again and if i cant find any way i will ask for some hint from you.
-> 
-> Good!  A hint is that there is no 100% perfect way to achieve this.
-> It's always compromise, and you'll have to choose which one is better
-> than others.  For that, you'll have to evaluate multiple
-> implementations, and it's a really good exercise for coding.
-> 
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ drivers/of/fdt.c       | 27 +++++++++++++++++++++++----
+ include/linux/of_fdt.h |  2 ++
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
-i can find the rsc_mgr from the snd_card or ct_atc 
-but if i want to find the reference to the device from the managers , then 
-either i can go with
-1) &(((struct hw *)mgr->hw)->pci->dev) 
-or
-2) use pci_get_drvdata with ((struct hw *)mgr->hw)->pci
-or
-3) using container_of with &(((struct hw *)mgr->hw)->pci->dev) to find the pointer to snd_card via card_dev , but it becomes too complicated  :( 
-
-we can get to all the managers (rsc_mgr, amixer_mgr, src_mgr ...) using atc->rsc_mgrs[] , then there should be some simple way to go
-the opposite way (reaching atc from the managers)  . container_of will not work .. :( 
-or am i missing something?? 
-
-thanks
-sudip
-
-
-> > i am still a newbie , and started this  pr_* to dev_* on your inspiration , and i hope
-> > you will not be irritated by my patches . :)
-> 
-> No problem.  I left these driver codes just because of laziness, as I
-> knew to work more on the code than the simple scripting :)
-> 
-> 
-> Takashi
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 79cb831..e891ef6 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -240,6 +240,7 @@ static void * unflatten_dt_node(void *blob,
+ 	     (offset = fdt_next_property_offset(blob, offset))) {
+ 		const char *pname;
+ 		u32 sz;
++		int name_len;
+ 
+ 		if (!(p = fdt_getprop_by_offset(blob, offset, &pname, &sz))) {
+ 			offset = -FDT_ERR_INTERNAL;
+@@ -250,10 +251,12 @@ static void * unflatten_dt_node(void *blob,
+ 			pr_info("Can't find property name in list !\n");
+ 			break;
+ 		}
++		name_len = strlen(pname);
+ 		if (strcmp(pname, "name") == 0)
+ 			has_name = 1;
+-		pp = unflatten_dt_alloc(&mem, sizeof(struct property),
+-					__alignof__(struct property));
++		pp = unflatten_dt_alloc(&mem,
++				ALIGN(sizeof(struct property) + name_len + 1, 4)
++				+ sz, __alignof__(struct property));
+ 		if (allnextpp) {
+ 			/* We accept flattened tree phandles either in
+ 			 * ePAPR-style "phandle" properties, or the
+@@ -270,9 +273,11 @@ static void * unflatten_dt_node(void *blob,
+ 			 * stuff */
+ 			if (strcmp(pname, "ibm,phandle") == 0)
+ 				np->phandle = be32_to_cpup(p);
+-			pp->name = (char *)pname;
++			pp->name = (char *)memcpy(pp + 1, pname, name_len + 1);
+ 			pp->length = sz;
+-			pp->value = (__be32 *)p;
++			pp->value = (__be32 *)memcpy((void *)pp +
++					ALIGN(sizeof(struct property) +
++						name_len + 1, 4), p, sz);
+ 			*prev_pp = pp;
+ 			prev_pp = &pp->next;
+ 		}
+@@ -564,6 +569,20 @@ void __init early_init_fdt_scan_reserved_mem(void)
+ 	fdt_init_reserved_mem();
+ }
+ 
++void __init free_early_init_fdt_scan_reserved_mem(void)
++{
++	unsigned long start, end, size;
++	if (!initial_boot_params)
++		return;
++
++	size = fdt_totalsize(initial_boot_params);
++	memblock_free(__pa(initial_boot_params), size);
++	start = round_down((unsigned long)initial_boot_params, PAGE_SIZE);
++	end = round_up((unsigned long)initial_boot_params + size, PAGE_SIZE);
++	free_reserved_area((void *)start, (void *)end, 0, "fdt");
++	initial_boot_params = 0;
++}
++
+ /**
+  * of_scan_flat_dt - scan flattened tree blob and call callback on each.
+  * @it: callback function
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index 0ff360d..21d51ce 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -62,6 +62,7 @@ extern int early_init_dt_scan_chosen(unsigned long node, const char *uname,
+ extern int early_init_dt_scan_memory(unsigned long node, const char *uname,
+ 				     int depth, void *data);
+ extern void early_init_fdt_scan_reserved_mem(void);
++extern void free_early_init_fdt_scan_reserved_mem(void);
+ extern void early_init_dt_add_memory_arch(u64 base, u64 size);
+ extern int early_init_dt_reserve_memory_arch(phys_addr_t base, phys_addr_t size,
+ 					     bool no_map);
+@@ -89,6 +90,7 @@ extern u64 fdt_translate_address(const void *blob, int node_offset);
+ extern void of_fdt_limit_memory(int limit);
+ #else /* CONFIG_OF_FLATTREE */
+ static inline void early_init_fdt_scan_reserved_mem(void) {}
++static inline void free_early_init_fdt_scan_reserved_mem(void) {}
+ static inline const char *of_flat_dt_get_machine_name(void) { return NULL; }
+ static inline void unflatten_device_tree(void) {}
+ static inline void unflatten_and_copy_device_tree(void) {}
+-- 
+2.1.0
