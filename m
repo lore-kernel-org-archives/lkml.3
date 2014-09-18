@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494AbaIRBhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:37:50 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:45336 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757342AbaIRBht (ORCPT
+	id S1757096AbaIRBsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:48:37 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:11764 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755705AbaIRBsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 21:37:49 -0400
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: dianders@chromium.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <91155370b52893a355bebca801139f68>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <541A3765.50606@rock-chips.com>
-Date: Thu, 18 Sep 2014 09:37:41 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 17 Sep 2014 21:48:35 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Bjorn Andersson'" <bjorn@kryo.se>
+CC: "linux-arm-msm-owner@vger.kernel.org" 
+	<linux-arm-msm-owner@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        "dwalker@fifo99.com" <dwalker@fifo99.com>,
+        "bryanh@codeaurora.org" <bryanh@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Date: Thu, 18 Sep 2014 09:48:31 +0800
+Subject: RE: [RFC] msm:rpm-smd:change msm_rpm_smd_work method
+Thread-Topic: [RFC] msm:rpm-smd:change msm_rpm_smd_work method
+Thread-Index: Ac/Sl16wupcSOUaFRi6lT5Xs+7wxlAASzFwg
+Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB491615@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103D6DB491612@CNBJMBX05.corpusers.net>
+ <CAJAp7OjeAuH3=VygJLSdNfp-kiQCfuVy54QVw7_-iDVs2n4QBw@mail.gmail.com>
+In-Reply-To: <CAJAp7OjeAuH3=VygJLSdNfp-kiQCfuVy54QVw7_-iDVs2n4QBw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Mark Brown <broonie@kernel.org>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] regulator: st-pwm: get voltage and duty table from
- dts
-References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>	<1410959280-29662-2-git-send-email-zyw@rock-chips.com>	<20140917165109.GM7960@sirena.org.uk> <CAD=FV=UYdBDf+dvUp8U6qbW3CgrMP3vtF_yDamBYwSjZVJ42Qw@mail.gmail.com>
-In-Reply-To: <CAD=FV=UYdBDf+dvUp8U6qbW3CgrMP3vtF_yDamBYwSjZVJ42Qw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8I1mwuJ006746
 
+Hi Bjorn,
 
-On 09/18/2014 12:54 AM, Doug Anderson wrote:
-> Hi,
->
-> On Wed, Sep 17, 2014 at 9:51 AM, Mark Brown <broonie@kernel.org> wrote:
->> On Wed, Sep 17, 2014 at 09:07:59PM +0800, Chris Zhong wrote:
->>> Get voltage & duty table from device tree might be better, other platforms can also use this
->>> driver without any modify.
->>>
->>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->>> ---
->>>
->>>   drivers/regulator/Kconfig  |    1 -
->>>   drivers/regulator/st-pwm.c |   80 +++++++++++++++++++++++---------------------
->> You need to update the binding document if you're updating the DT
->> bindings.
-> Mark: See part 2 <https://patchwork.kernel.org/patch/4924381/>.
-> Unfortunately you weren't CCed on that.  It also should have been
-> patch #1, not patch #2.
->
-> Chris: please change the order and make sure Mark is CCed on the
-> bindings.  Probably anyone CCed on the code change should be on the
-> bindings change (and probably vice versa, but maybe not as critical).
->
-> -Doug
->
->
-Thanks.
-I should not only use patman's script to created cc list.
+I see,
+Thanks for your kind remind :)
+
+-----Original Message-----
+On Tue, Sep 16, 2014 at 7:05 PM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
+[..]
+> diff --git a/arch/arm/mach-msm/rpm-smd.c b/arch/arm/mach-msm/rpm-smd.c
+
+Hi Yalin,
+
+This file does not exist in mainline and this is not the forum for sending patches to codeaurora.
+Also note that your commit messages may not include "Change-id" when sending to LKML.
+
+Regards,
+Bjorn
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
