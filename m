@@ -1,118 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286AbaIRP2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:28:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:20317 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932241AbaIRP2g (ORCPT
+	id S1757084AbaIRPqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:46:11 -0400
+Received: from mail-bl2on0120.outbound.protection.outlook.com ([65.55.169.120]:44976
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756415AbaIRPqI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:28:36 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-24-541afa21f84c
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 05/33] thermal: exynos: remove needless test_mux_addr_shift
- abstraction
-Date: Thu, 18 Sep 2014 17:27:22 +0200
-Message-id: <1411054070-25757-6-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1411054070-25757-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHLMWRmVeSWpSXmKPExsVy+t9jAV2lX1IhBm/mM1o0XA2x2DhjPavF
-	3eeHGS3mX7nGanG26Q27xZuHmxktLu+aw2bxufcIo8WM8/uYLJ487GNz4PLYOesuu8fiPS+Z
-	PPq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj84WvzAVXZSrOzljP1sD4VKKLkZNDQsBEYueD
-	aSwQtpjEhXvr2boYuTiEBBYxSuw/84wZwuliklh7bR4rSBWbgJXExPZVjCC2iICWxIlL25lA
-	ipgFbjFJvL4xGSwhLBAp8XbqPLCxLAKqEmdb5jOB2LwCHhKdvQuYINYpSnQ/m8AGYnMKeEo0
-	3NrEDmILAdW0bbnLPIGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4FB7JrWDcWWD
-	xSFGAQ5GJR7eA7xSIUKsiWXFlbmHGCU4mJVEeP98BArxpiRWVqUW5ccXleakFh9ilOZgURLn
-	PdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgXCBxR/voNgONKb7fLsqxnpww7dndY98e7mr8Gngl
-	bt1MFY+oJaKtdX8/Tp8V+H/98rfP+pklu/7r6/kVq3NpB/kf2/9l1oww/vmc+/LcC69OcFL+
-	l3j+6NqG+P9LbxkUnAg/4PqUc7711j9B+5pdq34ovwl7pv+Re22W3cynygmdm5KO+nZzOSmx
-	FGckGmoxFxUnAgCI7DBMMQIAAA==
+	Thu, 18 Sep 2014 11:46:08 -0400
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Marek Vasut <marex@denx.de>
+CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "LW@karo-electronics.de" <LW@karo-electronics.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c
+ driver
+Thread-Index: AQHPtuKa1yGA2bLpA0aZlDBgfnstDpvxLheAgADaxYCAAHUPAIAGMlDggAuW1wCAAISEIIABHeIAgAFV2dg=
+Date: Thu, 18 Sep 2014 15:46:04 +0000
+Message-ID: <1411055145666.72178@freescale.com>
+References: <1407923215-3749-1-git-send-email-yao.yuan@freescale.com>
+ <201409162017.06439.marex@denx.de>
+ <1410965416759.91038@freescale.com>,<201409172114.36617.marex@denx.de>
+In-Reply-To: <201409172114.36617.marex@denx.de>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [124.205.104.251]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 033857D0BD
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(24454002)(377454003)(199003)(189002)(85852003)(92566001)(74502003)(81542003)(106116001)(46102003)(20776003)(110136001)(107046002)(105586002)(95666004)(90102001)(80022003)(117636001)(66066001)(76482002)(54356999)(83322001)(81342003)(99396002)(31966008)(101416001)(87936001)(19580395003)(64706001)(50986999)(21056001)(86362001)(2656002)(4396001)(85306004)(36756003)(92726001)(83072002)(77982003)(74662003)(79102003)(76176999)(93886004)(97736003)(106356001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB369;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-reg->test_mux_addr_shift is used only if pdata->test_mux is
-non-zero.  pdata->test_mux is defined only on Exynos3250 and
-Exynos4412 (other SoC types don't even have pdata->test_mux
-entry assigned in their struct exynos_tmu_registers instances)
-so the abstraction is not needed and can be removed.
 
-There should be no functional changes caused by this patch.
+Marek Vasut wrote:
+> On Wednesday, September 17, 2014 at 04:50:34 PM, Yao Yuan wrote:
+> [...]
+> > > > > Would that mean that the "crashed" DMA would be running until the
+> > > > > next transmission is scheduled ?
+> > > >
+> > > > [Yuan Yao] No, In fact any DMA timeout will result the failure of I2C
+> > > > transmission and then it will turn to report the exception and wait
+> > > > for next transmission.
+> > >
+> > > Can you tell when the next transmission will happen? What if I issue a
+> > > single transmission and that one fails ? Will the DMA run until who knows
+> > > when ?
+> >
+> > [Yuan Yao]
+> > Sorry for my unclear description. In fact, During the DMA transmission  if
+> > an error happened or time out, DMA will stop at once and be disabled.
+> > I just continue to route the TX and RX request to signal the DMA
+> > controller. Because the DMA is disabled, it will ignore those signals.
+> >
+> > In a word, I just want to block the I2C TX, RX and interrupt signal when
+> > DMA mode failed until the next I2C transmission start.
 
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/thermal/samsung/exynos_tmu.c      | 2 +-
- drivers/thermal/samsung/exynos_tmu.h      | 2 --
- drivers/thermal/samsung/exynos_tmu_data.c | 2 --
- 3 files changed, 1 insertion(+), 5 deletions(-)
+> So the I2C block is in error state until you clean it up upon next transmission?
+[Yuan Yao]
+No, just DMAEN bit.
+Other I2C error state will clean soon.
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 52bcc23..1527b25 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -280,7 +280,7 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 	con = readl(data->base + reg->tmu_ctrl);
- 
- 	if (pdata->test_mux)
--		con |= (pdata->test_mux << reg->test_mux_addr_shift);
-+		con |= (pdata->test_mux << EXYNOS4412_MUX_ADDR_SHIFT);
- 
- 	con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK << EXYNOS_TMU_REF_VOLTAGE_SHIFT);
- 	con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index d12e242..5bcf7a8 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -77,7 +77,6 @@ enum soc_type {
-  * bitfields. The register validity, offsets and bitfield values may vary
-  * slightly across different exynos SOC's.
-  * @tmu_ctrl: TMU main controller register.
-- * @test_mux_addr_shift: shift bits of test mux address.
-  * @therm_trip_mode_shift: shift bits of tripping mode in tmu_ctrl register.
-  * @therm_trip_mode_mask: mask bits of tripping mode in tmu_ctrl register.
-  * @therm_trip_en_shift: shift bits of tripping enable in tmu_ctrl register.
-@@ -107,7 +106,6 @@ enum soc_type {
-  */
- struct exynos_tmu_registers {
- 	u32	tmu_ctrl;
--	u32     test_mux_addr_shift;
- 	u32	therm_trip_mode_shift;
- 	u32	therm_trip_mode_mask;
- 	u32	therm_trip_en_shift;
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 04f1d71..988e327 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -84,7 +84,6 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
- #if defined(CONFIG_SOC_EXYNOS3250)
- static const struct exynos_tmu_registers exynos3250_tmu_registers = {
- 	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
--	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
- 	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
- 	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
- 	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
-@@ -164,7 +163,6 @@ struct exynos_tmu_init_data const exynos3250_default_tmu_data = {
- #if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
- static const struct exynos_tmu_registers exynos4412_tmu_registers = {
- 	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
--	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
- 	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
- 	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
- 	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
--- 
-1.8.2.3
+> > In fact, the bit "I2CR_DMAEN" is a switch which decide whether I2C route
+> > the TX, RX and interrupt signal to DMA controller.
+> >
+> > > The only thing I worried about is I2C may still receive some feedbacks
+> > > after DMA timeout. In this case the feedbacks may lead to abnormal
+> > > state in PIO mode.But it will be ignored in DMA model.
+> > > That's why I tend to delay force-disable DMA until the next
+> > > transmission begin. Could you please give me some suggestion?
+> >
+> > > No, this design just seems flawed to me. You should stop the DMA
+> > > immediatelly if there is an error to avoid wasting resources and prevent
+> > > possible other adverse effects.
+> >
+> > [Yuan Yao]
+> > Yes, I have stopped the DMA immediately. However I keep the I2C DMA
+> > single route.
+> >
+> > I don't have the exact evidence to prove that my design is acceptable.
+> > So if you are sure it's flawed, I will change it in the next version(V8).
 
+> I'm just trying to understand it.
+
+[Yuan Yao]
+Both of us know that we should stop DMA immediately when issue happened.
+The only argument is that I want to set the DMAEN bit just before the next 
+transmission starts. But you think when I stop the DMA I should set it at the same
+time. The bit is the switch which is used to decide whether Rx and Tx signal can
+be routed to DMA. In fact, I deeply think about what is the difference between
+our arguments for those days. I think the two ways are almost the same.
+Your way is more acceptable because people tend to clear the DMA status
+just after stopping it. So I think your way is better.
+
+Best regards,
+Yuan Yao
