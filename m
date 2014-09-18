@@ -1,72 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121AbaIROBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:01:34 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61294 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232AbaIROBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:01:33 -0400
-Message-ID: <541AE5C4.2070409@gmail.com>
-Date: Thu, 18 Sep 2014 22:01:40 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755917AbaIROHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:07:07 -0400
+Received: from mail.efficios.com ([78.47.125.74]:43198 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877AbaIROHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 10:07:04 -0400
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Sep 2014 10:07:04 EDT
+Date: Thu, 18 Sep 2014 14:03:10 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Message-ID: <39127609.24822.1411048990717.JavaMail.zimbra@efficios.com>
+In-Reply-To: <1411032491-26813-1-git-send-email-osandov@osandov.com>
+References: <1411032491-26813-1-git-send-email-osandov@osandov.com>
+Subject: Re: [PATCH] Move BTRFS RCU string to common library
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
-        mukesh.rathor@oracle.com
-CC: xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3 v2] xen/xenbus: Improve failure processing code for __xenbus_switch_state()
-References: <541AE4E9.2040904@gmail.com>
-In-Reply-To: <541AE4E9.2040904@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.246.22.116]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Move BTRFS RCU string to common library
+Thread-Index: 3P0Mgq5sSgvgxjxtfeE5+rz5KmYU4w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When failure occurs, need return failure code instead of 0, or some of
-indirect upper callers may misunderstand.
+----- Original Message -----
+> From: "Omar Sandoval" <osandov@osandov.com>
+> To: "Chris Mason" <clm@fb.com>, "Josef Bacik" <jbacik@fb.com>, linux-btrfs@vger.kernel.org, "Paul E. McKenney"
+> <paulmck@linux.vnet.ibm.com>, "Josh Triplett" <josh@joshtriplett.org>, "Steven Rostedt" <rostedt@goodmis.org>,
+> "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Lai Jiangshan" <laijs@cn.fujitsu.com>,
+> linux-kernel@vger.kernel.org
+> Sent: Thursday, September 18, 2014 5:28:11 AM
+> Subject: [PATCH] Move BTRFS RCU string to common library
+> 
+> The RCU-friendy string API used internally by BTRFS is generic enough for
+> common use. This doesn't add any new functionality, but instead just moves
+> the
+> code and documents the existing API.
+> 
+> Signed-off-by: Omar Sandoval <osandov@osandov.com>
 
-e.g. in "block/xen-blkback/xenbus.c":
+[...]
+> --- /dev/null
+> +++ b/include/linux/rcustring.h
+> @@ -0,0 +1,84 @@
+> +/*
+> + * RCU-friendly strings
+> + *
+> + * Copyright (C) 2012 Red Hat.  All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, you can access it online at
+> + * http://www.gnu.org/licenses/gpl-2.0.html.
+> + */
+> +
+> +#ifndef _LINUX_RCUSTRING_H
+> +#define _LINUX_RCUSTRING_H
+> +
+> +struct rcu_string {
+> +	struct rcu_head rcu;
+> +	char str[0];
+> +};
+> +
+> +/**
+> + * rcu_string_strdup() - create an RCU string from a string
+> + * @src: The string to copy
+> + * @flags: Flags for kmalloc
+> + */
+> +static inline struct rcu_string *rcu_string_strdup(const char *src, gfp_t
+> flags)
+> +{
+> +	size_t len = strlen(src) + 1;
+> +	struct rcu_string *ret = kmalloc(sizeof(struct rcu_string) +
+> +					 (len * sizeof(char)), flags);
 
-    connect() -> xenbus_switch_state() -> __xenbus_switch_state().
+Just a nit: not sure if we want that much code within declarations ?
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/xen/xenbus/xenbus_client.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Splitting declarations and non-trivial initial assignments might be a
+bit clearer in this case.
 
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index ca74410..642a476 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -36,6 +36,7 @@
- #include <linux/spinlock.h>
- #include <linux/vmalloc.h>
- #include <linux/export.h>
-+#include <linux/delay.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/page.h>
- #include <xen/interface/xen.h>
-@@ -196,7 +197,7 @@ again:
- 	err = xenbus_transaction_start(&xbt);
- 	if (err) {
- 		xenbus_switch_fatal(dev, depth, err, "starting transaction");
--		return 0;
-+		return err;
- 	}
- 
- 	err = xenbus_scanf(xbt, dev->nodename, "state", "%d", &current_state);
-@@ -219,7 +220,7 @@ abort:
- 	} else
- 		dev->state = state;
- 
--	return 0;
-+	return err;
- }
- 
- /**
+
+> +	if (!ret)
+> +		return ret;
+> +	memcpy(ret->str, src, len);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * rcu_string_free() - free an RCU string
+> + * @str: The string
+> + */
+> +static inline void rcu_string_free(struct rcu_string *str)
+> +{
+> +	if (str)
+> +		kfree_rcu(str, rcu);
+> +}
+> +
+> +/*
+> + * rcu_string_dereference() - dereference an RCU string
+> + * @str: The string
+> + *
+> + * Like rcu_dereference, this must be done in an RCU critical section.
+> + */
+> +static inline char *rcu_string_dereference(struct rcu_string *rcu_str)
+> +{
+> +	return rcu_dereference(rcu_str)->str;
+> +}
+> +
+> +/**
+> + * printk_in_rcu() - printk in an RCU read-side critical section
+
+printk returns an integer, perhaps this macro should take it into
+account ?
+
+> + */
+> +#define printk_in_rcu(fmt, ...) do {	\
+> +	rcu_read_lock();		\
+> +	printk(fmt, __VA_ARGS__);	\
+> +	rcu_read_unlock();		\
+> +} while (0)
+
+The usual coding style for those define (using tabs to end lines):
+
+#define printk_in_rcu(fmt, ...)    \
+do {                               \
+   ....                            \
+} while (0)
+
+> +
+> +/**
+> + * printk_ratelimited_in_rcu() - printk in an RCU read-side critical section
+
+Same as above: printk_ratelimit returns an integer.
+
+Thanks,
+
+Mathieu
+
+> + */
+> +#define printk_ratelimited_in_rcu(fmt, ...) do {	\
+> +	rcu_read_lock();				\
+> +	printk_ratelimited(fmt, __VA_ARGS__);		\
+> +	rcu_read_unlock();				\
+> +} while (0)
+> +
+> +#endif
+> --
+> 2.1.0
+> 
+> 
+
 -- 
-1.9.3
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
