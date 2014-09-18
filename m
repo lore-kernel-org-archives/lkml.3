@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801AbaIRJEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:04:09 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:43229 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbaIRJEH (ORCPT
+	id S1756308AbaIRJEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:04:42 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:43419 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987AbaIRJEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:04:07 -0400
-From: Gernot Vormayr <gvormayr@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-gpio@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Gernot Vormayr <gvormayr@gmail.com>
-Subject: [PATCH 1/1] gpio: Fix ngpio in gpio-xilinx driver
-Date: Thu, 18 Sep 2014 11:03:52 +0200
-Message-Id: <1411031032-20649-1-git-send-email-gvormayr@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Thu, 18 Sep 2014 05:04:39 -0400
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: tom.leiming@gmail.com, axboe@kernel.dk
+Cc: kvm@vger.kernel.org, stable@vger.kernel.org, borntraeger@de.ibm.com,
+        rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        mst@redhat.com, dahi@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] blk-mq: Avoid race condition with uninitialized requests
+Date: Thu, 18 Sep 2014 11:04:31 +0200
+Message-Id: <1411031071-40390-2-git-send-email-dahi@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1411031071-40390-1-git-send-email-dahi@linux.vnet.ibm.com>
+References: <1411031071-40390-1-git-send-email-dahi@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091809-2966-0000-0000-0000012BAA85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If one adds 'gpio-controller;' to the chip in the devicetree, then
-initialization fails with 'gpiochip_find_base: cannot find free range',
-because ngpio is 0. This patch fixes the bug.
+This patch should fix the bug reported in https://lkml.org/lkml/2014/9/11/249.
 
-Tested on ml507 board.
+We have to initialize at least the atomic_flags and the cmd_flags when
+allocating storage for the requests.
 
-Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
+Otherwise blk_mq_timeout_check() might dereference uninitialized pointers when
+racing with the creation of a request.
+
+Also move the reset of cmd_flags for the initializing code to the point where a
+request is freed. So we will never end up with pending flush request indicators
+that might trigger dereferences of invalid pointers in blk_mq_timeout_check().
+
+Cc: stable@vger.kernel.org
+Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 ---
- drivers/gpio/gpio-xilinx.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ block/blk-mq.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-index 1248186..4606ad2 100644
---- a/drivers/gpio/gpio-xilinx.c
-+++ b/drivers/gpio/gpio-xilinx.c
-@@ -197,6 +197,7 @@ static int xgpio_of_probe(struct device_node *np)
- 	struct xgpio_instance *chip;
- 	int status = 0;
- 	const u32 *tree_info;
-+	u32 ngpio;
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 383ea0c..eed6340 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -203,7 +203,6 @@ __blk_mq_alloc_request(struct blk_mq_alloc_data *data, int rw)
+ 	if (tag != BLK_MQ_TAG_FAIL) {
+ 		rq = data->hctx->tags->rqs[tag];
  
- 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
- 	if (!chip)
-@@ -215,8 +216,9 @@ static int xgpio_of_probe(struct device_node *np)
- 	chip->mmchip.gc.ngpio = 32;
+-		rq->cmd_flags = 0;
+ 		if (blk_mq_tag_busy(data->hctx)) {
+ 			rq->cmd_flags = REQ_MQ_INFLIGHT;
+ 			atomic_inc(&data->hctx->nr_active);
+@@ -258,6 +257,7 @@ static void __blk_mq_free_request(struct blk_mq_hw_ctx *hctx,
  
- 	/* Check device node and parent device node for device width */
--	of_property_read_u32(np, "xlnx,gpio-width",
--			      (u32 *)&chip->mmchip.gc.ngpio);
-+	status = of_property_read_u32(np, "xlnx,gpio-width", &ngpio);
-+	if (status == 0)
-+		chip->mmchip.gc.ngpio = (u16)ngpio;
+ 	if (rq->cmd_flags & REQ_MQ_INFLIGHT)
+ 		atomic_dec(&hctx->nr_active);
++	rq->cmd_flags = 0;
  
- 	spin_lock_init(&chip->gpio_lock);
- 
-@@ -262,8 +264,9 @@ static int xgpio_of_probe(struct device_node *np)
- 		chip->mmchip.gc.ngpio = 32;
- 
- 		/* Check device node and parent device node for device width */
--		of_property_read_u32(np, "xlnx,gpio2-width",
--				     (u32 *)&chip->mmchip.gc.ngpio);
-+		status = of_property_read_u32(np, "xlnx,gpio2-width", &ngpio);
-+		if (status == 0)
-+			chip->mmchip.gc.ngpio = (u16)ngpio;
- 
- 		spin_lock_init(&chip->gpio_lock);
- 
+ 	clear_bit(REQ_ATOM_STARTED, &rq->atomic_flags);
+ 	blk_mq_put_tag(hctx, tag, &ctx->last_tag);
+@@ -1404,6 +1404,8 @@ static struct blk_mq_tags *blk_mq_init_rq_map(struct blk_mq_tag_set *set,
+ 		left -= to_do * rq_size;
+ 		for (j = 0; j < to_do; j++) {
+ 			tags->rqs[i] = p;
++			tags->rqs[i]->atomic_flags = 0;
++			tags->rqs[i]->cmd_flags = 0;
+ 			if (set->ops->init_request) {
+ 				if (set->ops->init_request(set->driver_data,
+ 						tags->rqs[i], hctx_idx, i,
 -- 
-2.1.0
+1.8.5.5
 
