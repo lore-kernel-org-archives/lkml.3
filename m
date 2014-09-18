@@ -1,207 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaIRH6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 03:58:22 -0400
-Received: from mail-by2on0138.outbound.protection.outlook.com ([207.46.100.138]:62048
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750834AbaIRH6V convert rfc822-to-8bit (ORCPT
+	id S1753086AbaIRIDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:03:35 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:61847 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaIRIDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 03:58:21 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "Aisheng.Dong@freescale.com" <Aisheng.Dong@freescale.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "naushad@samsung.com" <naushad@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "joshi@samsung.com" <joshi@samsung.com>,
-        "thomas.ab@samsung.com" <thomas.ab@samsung.com>,
-        "vikas.sajjan@samsung.com" <vikas.sajjan@samsung.com>,
-        "chow.kim@samsung.com" <chow.kim@samsung.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "'Boris BREZILLON'" <boris.brezillon@free-electrons.com>,
-        "'Geert Uytterhoeven'" <geert+renesas@glider.be>,
-        "'Stephen Warren'" <swarren@nvidia.com>
-Subject: RE: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
- devices
-Thread-Topic: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
- devices
-Thread-Index: AQHP0kIqUorD0T+DMkOGT4aDDQhODZwFBqQAgAAntgCAAQgOgIAAMZkAgAAddKA=
-Date: Thu, 18 Sep 2014 07:58:17 +0000
-Message-ID: <7154374a11f94c868e551bfe8bb8ecb6@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1410935510-1567-1-git-send-email-pankaj.dubey@samsung.com>
- <20140917085818.GA10285@shlinux1.ap.freescale.net>
- <000401cfd269$922dfc40$b689f4c0$@samsung.com>
- <20140918030552.GA26661@shlinux1.ap.freescale.net>
- <000701cfd306$4d3e8080$e7bb8180$@samsung.com>
-In-Reply-To: <000701cfd306$4d3e8080$e7bb8180$@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB334;
-x-forefront-prvs: 033857D0BD
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(199003)(164054003)(95666004)(99286002)(77096002)(76176999)(97736003)(106356001)(106116001)(105586002)(33646002)(86362001)(83072002)(54356999)(83322001)(76482002)(19580405001)(15975445006)(19580395003)(74316001)(21056001)(4396001)(107046002)(64706001)(20776003)(50986999)(99396002)(87936001)(74662003)(31966008)(2656002)(90102001)(93886004)(81542003)(46102003)(81342003)(85852003)(92566001)(76576001)(108616004)(80022003)(74502003)(79102003)(15202345003)(77982003)(101416001)(66066001)(85306004)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB334;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Sep 2014 04:03:31 -0400
+Message-ID: <541A91C3.9000305@huawei.com>
+Date: Thu, 18 Sep 2014 16:03:15 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Tejun Heo <tj@kernel.org>
+CC: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] cgroup: simplify proc_cgroup_show()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.541A91CC.00FF,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 1fbc8e91ce6a126f05ab1af8bd15e1d0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Use the ONE macro instead of REG, and we can simplify proc_cgroup_show().
 
-[...]
-> > please see regmap_get_val_endian called in regmap_init function.
-> > static enum regmap_endian regmap_get_val_endian(struct device *dev,
-> >                                         const struct regmap_bus *bus,
-> >                                         const struct regmap_config
-> *config) {
-> >         struct device_node *np = dev->of_node;
-> >         enum regmap_endian endian;
-> > ...
-> > }
-> > It will crash at the first line of dev->of_node if dev is NULL.
-> >
-> > Can you check if you're using the same code as mine?
-> 
-> No, it's not same.
-> My bad that I was not using linux-next for testing this patch.
-> We tested on kgene/for-next where these changes still have not come.
-> Just now I checked linux-next and found that it will crash at first line of
-> "regmap_get_val_endian" as there is no check for NULL on dev.
-> 
-> I checked git history of regmap.c file and found recently this file has been
-> modified
-> for adding DT endianness binding support. Following are set of patches gone
-> for this
-> 
-> cf673fb regmap: Split regmap_get_endian() in two functions
-> 5844a8b regmap: Fix handling of volatile registers for format_write() chips
-> 45e1a27 regmap: of_regmap_get_endian() cleanup
-> ba1b53f regmap: Fix DT endianess parsing logic
-> d647c19 regmap: add DT endianness binding support.
-> 
-> I think there should have been a check for NULL on "dev" in
-> "regmap_get_val_endian", so that if dev pointer exist then only it makes
-> sense to get
-> endianness property from DT.
-> 
-> I will suggest following fix in regmap.c for this. With following fix I
-> tested it and it works well
-> on linux-next also. So if you can confirm following fix is working for you
-> then I can post this
-> patch.
-> 
-> --------------------------------------------
-> Subject: [PATCH] regmap: fix NULL pointer dereference in
->  regmap_get_val_endian
-> 
-> Recent commits for getting reg endianess causing NULL pointer
-> dereference if dev is passed NULL in regmap_init_mmio. This patch
-> fixes this issue, and allows to parse reg endianess only if dev
-> and dev->of_node exist.
-> 
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ fs/proc/base.c         | 19 ++-----------------
+ include/linux/cgroup.h |  3 ++-
+ kernel/cgroup.c        | 18 +++---------------
+ 3 files changed, 7 insertions(+), 33 deletions(-)
 
-Another question:
-
-Then the regmap core cannot deal with the following issue:
-Like the patch adding the endianness support for syscon:
-    [PATCH] mfd: syscon: binding: Add syscon endianness support.
-
-So here just register one dummy syscon device is a good choice I do
-think.
-:)
-
-
-Thanks,
-
-BRs
-Xiubo
-
-
-
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  drivers/base/regmap/regmap.c |   23 ++++++++++++++---------
->  1 file changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> index f2281af..455a877 100644
-> --- a/drivers/base/regmap/regmap.c
-> +++ b/drivers/base/regmap/regmap.c
-> @@ -477,7 +477,7 @@ static enum regmap_endian regmap_get_val_endian(struct
-> device *dev,
->  					const struct regmap_bus *bus,
->  					const struct regmap_config *config)
->  {
-> -	struct device_node *np = dev->of_node;
-> +	struct device_node *np;
->  	enum regmap_endian endian;
-> 
->  	/* Retrieve the endianness specification from the regmap config */
-> @@ -487,15 +487,20 @@ static enum regmap_endian regmap_get_val_endian(struct
-> device *dev,
->  	if (endian != REGMAP_ENDIAN_DEFAULT)
->  		return endian;
-> 
-> -	/* Parse the device's DT node for an endianness specification */
-> -	if (of_property_read_bool(np, "big-endian"))
-> -		endian = REGMAP_ENDIAN_BIG;
-> -	else if (of_property_read_bool(np, "little-endian"))
-> -		endian = REGMAP_ENDIAN_LITTLE;
-> +	/* If the dev and dev->of_node exist try to get endianness from DT
-> */
-> +	if (dev && dev->of_node) {
-> +		np = dev->of_node;
-> 
-> -	/* If the endianness was specified in DT, use that */
-> -	if (endian != REGMAP_ENDIAN_DEFAULT)
-> -		return endian;
-> +		/* Parse the device's DT node for an endianness
-> specification */
-> +		if (of_property_read_bool(np, "big-endian"))
-> +			endian = REGMAP_ENDIAN_BIG;
-> +		else if (of_property_read_bool(np, "little-endian"))
-> +			endian = REGMAP_ENDIAN_LITTLE;
-> +
-> +		/* If the endianness was specified in DT, use that */
-> +		if (endian != REGMAP_ENDIAN_DEFAULT)
-> +			return endian;
-> +	}
-> 
->  	/* Retrieve the endianness specification from the bus config */
->  	if (bus && bus->val_format_endian_default)
-> --
-> 
-> Thanks,
-> Pankaj Dubey
-> 
-> > Regards
-> > Dong Aisheng
-> >
-> > >
-> > > Thanks,
-> > > Pankaj Dubey
-> > >
-> > > > Regards
-> > > > Dong Aisheng
-> > > >
-> > > > >
-> > > > >
-> > > > > _______________________________________________
-> > > > > linux-arm-kernel mailing list
-> > > > > linux-arm-kernel@lists.infradead.org
-> > > > > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > >
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index baf852b..6b96892 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -376,21 +376,6 @@ static const struct file_operations proc_lstats_operations = {
+ 
+ #endif
+ 
+-#ifdef CONFIG_CGROUPS
+-static int cgroup_open(struct inode *inode, struct file *file)
+-{
+-	struct pid *pid = PROC_I(inode)->pid;
+-	return single_open(file, proc_cgroup_show, pid);
+-}
+-
+-static const struct file_operations proc_cgroup_operations = {
+-	.open		= cgroup_open,
+-	.read		= seq_read,
+-	.llseek		= seq_lseek,
+-	.release	= single_release,
+-};
+-#endif
+-
+ #ifdef CONFIG_PROC_PID_CPUSET
+ 
+ static int cpuset_open(struct inode *inode, struct file *file)
+@@ -2576,7 +2561,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("cpuset",     S_IRUGO, proc_cpuset_operations),
+ #endif
+ #ifdef CONFIG_CGROUPS
+-	REG("cgroup",  S_IRUGO, proc_cgroup_operations),
++	ONE("cgroup",  S_IRUGO, proc_cgroup_show),
+ #endif
+ 	ONE("oom_score",  S_IRUGO, proc_oom_score),
+ 	REG("oom_adj",    S_IRUGO|S_IWUSR, proc_oom_adj_operations),
+@@ -2922,7 +2907,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	REG("cpuset",    S_IRUGO, proc_cpuset_operations),
+ #endif
+ #ifdef CONFIG_CGROUPS
+-	REG("cgroup",  S_IRUGO, proc_cgroup_operations),
++	ONE("cgroup",  S_IRUGO, proc_cgroup_show),
+ #endif
+ 	ONE("oom_score", S_IRUGO, proc_oom_score),
+ 	REG("oom_adj",   S_IRUGO|S_IWUSR, proc_oom_adj_operations),
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index f7898e0..a5d9b8f 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -37,7 +37,8 @@ extern void cgroup_exit(struct task_struct *p);
+ extern int cgroupstats_build(struct cgroupstats *stats,
+ 				struct dentry *dentry);
+ 
+-extern int proc_cgroup_show(struct seq_file *, void *);
++extern int proc_cgroup_show(struct seq_file *m, struct pid_namespace *ns,
++			    struct pid *pid, struct task_struct *tsk);
+ 
+ /* define the enumeration of all cgroup subsystems */
+ #define SUBSYS(_x) _x ## _cgrp_id,
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1abb554..e91bc3c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5040,12 +5040,9 @@ core_initcall(cgroup_wq_init);
+  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
+  *  - Used for /proc/<pid>/cgroup.
+  */
+-
+-/* TODO: Use a proper seq_file iterator */
+-int proc_cgroup_show(struct seq_file *m, void *v)
++int proc_cgroup_show(struct seq_file *m, struct pid_namespace *ns,
++		     struct pid *pid, struct task_struct *tsk)
+ {
+-	struct pid *pid;
+-	struct task_struct *tsk;
+ 	char *buf, *path;
+ 	int retval;
+ 	struct cgroup_root *root;
+@@ -5055,14 +5052,6 @@ int proc_cgroup_show(struct seq_file *m, void *v)
+ 	if (!buf)
+ 		goto out;
+ 
+-	retval = -ESRCH;
+-	pid = m->private;
+-	tsk = get_pid_task(pid, PIDTYPE_PID);
+-	if (!tsk)
+-		goto out_free;
+-
+-	retval = 0;
+-
+ 	mutex_lock(&cgroup_mutex);
+ 	down_read(&css_set_rwsem);
+ 
+@@ -5092,11 +5081,10 @@ int proc_cgroup_show(struct seq_file *m, void *v)
+ 		seq_putc(m, '\n');
+ 	}
+ 
++	retval = 0;
+ out_unlock:
+ 	up_read(&css_set_rwsem);
+ 	mutex_unlock(&cgroup_mutex);
+-	put_task_struct(tsk);
+-out_free:
+ 	kfree(buf);
+ out:
+ 	return retval;
+-- 
+1.8.0.2
 
