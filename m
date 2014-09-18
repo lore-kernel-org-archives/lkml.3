@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014AbaIRQcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 12:32:01 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:40278 "EHLO
+	id S932236AbaIRQeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 12:34:17 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:33293 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298AbaIRQb7 (ORCPT
+	with ESMTP id S1756947AbaIRQeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 12:31:59 -0400
-Date: Thu, 18 Sep 2014 12:31:47 -0400
+	Thu, 18 Sep 2014 12:34:15 -0400
+Date: Thu, 18 Sep 2014 12:34:12 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] usb: hub: rename khubd to hub_wq in documentation
- and comments
-Message-ID: <20140918163147.GA13573@mtj.dyndns.org>
-References: <20140917212238.GB15795@mtj.dyndns.org>
- <Pine.LNX.4.44L0.1409181013550.1326-100000@iolanthe.rowland.org>
- <20140918161501.GG2168@dhcp128.suse.cz>
+To: Zefan Li <lizefan@huawei.com>
+Cc: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix unbalanced locking
+Message-ID: <20140918163412.GB13573@mtj.dyndns.org>
+References: <541AA5CE.8040006@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140918161501.GG2168@dhcp128.suse.cz>
+In-Reply-To: <541AA5CE.8040006@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 06:15:02PM +0200, Petr Mládek wrote:
-> The easiest solution would be to allocate the work queue with
-> the flag WQ_UNBOUND and max_active = 1. It will force serialization
-> of all work items.
+On Thu, Sep 18, 2014 at 05:28:46PM +0800, Zefan Li wrote:
+> cgroup_pidlist_start() holds cgrp->pidlist_mutex and then calls
+> pidlist_array_load(), and cgroup_pidlist_stop() releases the mutex.
+> 
+> It is wrong that we release the mutex in the failure path in
+> pidlist_array_load(), because cgroup_pidlist_stop() will be called
+> no matter if cgroup_pidlist_start() returns errno or not.
+> 
+> Fixes: 4bac00d16a8760eae7205e41d2c246477d42a210
+> Cc: <stable@vger.kernel.org> # 3.14+
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
 
-Please use alloc_ordered_workqueue() for that purpose.  WQ_UNBOUND +
-max_active == 1 no longer guarantees single thread of execution.
+Applied to cgroup/for-3.17-fixes.
 
 Thanks.
 
