@@ -1,430 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668AbaIRVwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:52:33 -0400
-Received: from mout.gmx.net ([212.227.15.19]:61348 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932633AbaIRVw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:52:29 -0400
-Message-ID: <541B5401.1010707@gmx.de>
-Date: Thu, 18 Sep 2014 23:52:01 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
-MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Fugang Duan <B38611@freescale.com>, Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v4 2/3] iio/adc: add support for axp288 adc
-References: <1410912715-25903-1-git-send-email-jacob.jun.pan@linux.intel.com>	<1410912715-25903-3-git-send-email-jacob.jun.pan@linux.intel.com>	<541A0910.90806@gmx.de> <20140917161322.7cc7e061@ultegra>
-In-Reply-To: <20140917161322.7cc7e061@ultegra>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:adARUZVZgEDIdyXAgCCNc7+s7zRF6xfqhOCeIv9EkBLNpr7euIC
- +rnjy4lTJ+L+HwJWbQbrDUDk3/gulOdZXAONw7wlYN0tyX7ePDDPcsbrLzAqgowfyjdDO41
- H/4xsYo2JXXiv3SlmgQpq8R6jh3+hiWm/Jw2i2cSyo7+n3Sn14tX0e0fy/Tpw1mXNtmgpnN
- NTDUXb3BktnfxCcGmoE5Q==
-X-UI-Out-Filterresults: notjunk:1;
+	id S932597AbaIRVwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:52:25 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:35442 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757567AbaIRVrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 17:47:40 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2 08/24] MIPS: Remove gic_{enable,disable}_interrupt()
+Date: Thu, 18 Sep 2014 14:47:14 -0700
+Message-Id: <1411076851-28242-9-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
+References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jacob Pan schrieb, Am 18.09.2014 01:13:
-> On Thu, 18 Sep 2014 00:20:00 +0200
-> Hartmut Knaack <knaack.h@gmx.de> wrote:
-> 
->> Jacob Pan schrieb, Am 17.09.2014 02:11:
->>> Platform driver for X-Powers AXP288 ADC, which is a sub-device of
->>> the customized AXP288 PMIC for Intel Baytrail-CR platforms. GPADC
->>> device enumerates as one of the MFD cell devices. It uses IIO
->>> infrastructure to communicate with userspace and consumer drivers.
->>>
->>> Usages of ADC channels include battery charging and thermal sensors.
->>>
->> You are progressing, but still a few issues left. One thing is
->> indentation in some places (I feel like being pretty annoying about
->> this), others are commented in line.
-> I don't see the indentation issue, perhaps it is the difference in the
-> editors we use?
-> 
->>> Based on initial work by:
->>> Ramakrishna Pallala <ramakrishna.pallala@intel.com>
->>>
->>> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
->>> ---
->>>  drivers/iio/adc/Kconfig      |   8 ++
->>>  drivers/iio/adc/Makefile     |   1 +
->>>  drivers/iio/adc/axp288_adc.c | 254
->>> +++++++++++++++++++++++++++++++++++++++++++ 3 files changed, 263
->>> insertions(+) create mode 100644 drivers/iio/adc/axp288_adc.c
->>>
->>> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
->>> index 11b048a..db2681b 100644
->>> --- a/drivers/iio/adc/Kconfig
->>> +++ b/drivers/iio/adc/Kconfig
->>> @@ -127,6 +127,14 @@ config AT91_ADC
->>>  	help
->>>  	  Say yes here to build support for Atmel AT91 ADC.
->>>  
->>> +config AXP288_ADC
->>> +	tristate "X-Powers AXP288 ADC driver"
->>> +	depends on MFD_AXP20X
->>> +	help
->>> +	  Say yes here to have support for X-Powers power
->>> management IC (PMIC) ADC
->>> +	  device. Depending on platform configuration, this
->>> general purpose ADC can
->>> +	  be used for sampling sensors such as thermal resistors.
->>> +
->>>  config EXYNOS_ADC
->>>  	tristate "Exynos ADC driver support"
->>>  	depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
->>> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
->>> index ad81b51..19640f9 100644
->>> --- a/drivers/iio/adc/Makefile
->>> +++ b/drivers/iio/adc/Makefile
->>> @@ -14,6 +14,7 @@ obj-$(CONFIG_AD7793) += ad7793.o
->>>  obj-$(CONFIG_AD7887) += ad7887.o
->>>  obj-$(CONFIG_AD799X) += ad799x.o
->>>  obj-$(CONFIG_AT91_ADC) += at91_adc.o
->>> +obj-$(CONFIG_AXP288_ADC) += axp288_adc.o
->>>  obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
->>>  obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
->>>  obj-$(CONFIG_MAX1027) += max1027.o
->>> diff --git a/drivers/iio/adc/axp288_adc.c
->>> b/drivers/iio/adc/axp288_adc.c new file mode 100644
->>> index 0000000..333c624
->>> --- /dev/null
->>> +++ b/drivers/iio/adc/axp288_adc.c
->>> @@ -0,0 +1,254 @@
->>> +/*
->>> + * axp288_adc.c - X-Powers AXP288 PMIC ADC Driver
->>> + *
->>> + * Copyright (C) 2014 Intel Corporation
->>> + *
->>> + *
->>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->>> + *
->>> + * This program is free software; you can redistribute it and/or
->>> modify
->>> + * it under the terms of the GNU General Public License as
->>> published by
->>> + * the Free Software Foundation; version 2 of the License.
->>> + *
->>> + * This program is distributed in the hope that it will be useful,
->>> but
->>> + * WITHOUT ANY WARRANTY; without even the implied warranty of
->>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See
->>> the GNU
->>> + * General Public License for more details.
->>> + *
->>> + */
->>> +
->>> +#include <linux/module.h>
->>> +#include <linux/kernel.h>
->>> +#include <linux/device.h>
->>> +#include <linux/regmap.h>
->>> +#include <linux/mfd/axp20x.h>
->>> +#include <linux/platform_device.h>
->>> +
->>> +#include <linux/iio/iio.h>
->>> +#include <linux/iio/machine.h>
->>> +#include <linux/iio/driver.h>
->>> +
->>> +#define AXP288_ADC_EN_MASK		0xF1
->>> +#define AXP288_ADC_TS_PIN_GPADC		0xF2
->>> +#define AXP288_ADC_TS_PIN_ON		0xF3
->>> +
->>> +enum axp288_adc_id {
->>> +	AXP288_ADC_TS,
->>> +	AXP288_ADC_PMIC,
->>> +	AXP288_ADC_GP,
->>> +	AXP288_ADC_BATT_CHRG_I,
->>> +	AXP288_ADC_BATT_DISCHRG_I,
->>> +	AXP288_ADC_BATT_V,
->>> +	AXP288_ADC_NR_CHAN,
->>> +};
->>> +
->>> +struct axp288_adc_info {
->>> +	int irq;
->>> +	struct device *dev;
->>> +	struct regmap *regmap;
->>> +};
->>> +
->>> +static const struct iio_chan_spec const axp288_adc_channels[] = {
->>> +	{
->>> +		.indexed = 1,
->>> +		.type = IIO_TEMP,
->>> +		.channel = 0,
->>> +		.address = AXP288_TS_ADC_H,
->>> +		.datasheet_name = "CH0",
->>> +	}, {
->>> +		.indexed = 1,
->>> +		.type = IIO_TEMP,
->>> +		.channel = 1,
->>> +		.address = AXP288_PMIC_ADC_H,
->>> +		.datasheet_name = "CH1",
->>> +	}, {
->>> +		.indexed = 1,
->>> +		.type = IIO_TEMP,
->>> +		.channel = 2,
->>> +		.address = AXP288_GP_ADC_H,
->>> +		.datasheet_name = "CH2",
->>> +	}, {
->>> +		.indexed = 1,
->>> +		.type = IIO_CURRENT,
->>> +		.channel = 3,
->>> +		.address = AXP20X_BATT_CHRG_I_H,
->>> +		.datasheet_name = "CH3",
->>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
->>> +	}, {
->>> +		.indexed = 1,
->>> +		.type = IIO_CURRENT,
->>> +		.channel = 4,
->>> +		.address = AXP20X_BATT_DISCHRG_I_H,
->>> +		.datasheet_name = "CH4",
->>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
->>> +	}, {
->>> +		.indexed = 1,
->>> +		.type = IIO_VOLTAGE,
->>> +		.channel = 5,
->>> +		.address = AXP20X_BATT_V_H,
->>> +		.datasheet_name = "CH5",
->>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
->>> +	},
->>> +};
->>> +
->>> +#define AXP288_ADC_MAP(_adc_channel_label,
->>> _consumer_dev_name,	\
->>> +		_consumer_channel)				\
->>> +	{							\
->>> +		.adc_channel_label = _adc_channel_label,	\
->>> +		.consumer_dev_name = _consumer_dev_name,	\
->>> +		.consumer_channel =
->>> _consumer_channel,		\
->>> +	}
->>> +
->>> +/* for consumer drivers */
->>> +static struct iio_map axp288_adc_default_maps[] = {
->>> +	AXP288_ADC_MAP("TS_PIN", "axp288-batt",
->>> "axp288-batt-temp"),
->>> +	AXP288_ADC_MAP("PMIC_TEMP", "axp288-pmic",
->>> "axp288-pmic-temp"),
->>> +	AXP288_ADC_MAP("GPADC", "axp288-gpadc",
->>> "axp288-system-temp"),
->>> +	AXP288_ADC_MAP("BATT_CHG_I", "axp288-chrg",
->>> "axp288-chrg-curr"),
->>> +	AXP288_ADC_MAP("BATT_DISCHRG_I", "axp288-chrg",
->>> "axp288-chrg-d-curr"),
->>> +	AXP288_ADC_MAP("BATT_V", "axp288-batt",
->>> "axp288-batt-volt"),
->>> +	{},
->>> +};
->>> +
->>> +static int axp288_adc_read_raw(struct iio_dev *indio_dev,
->>> +			struct iio_chan_spec const *chan,
->>> +			int *val, int *val2, long mask)
-Here is an indentation issue. See [1] how it can look like (although it is fine to have several parameters in every line).
+Nothing calls gic_{enable,disable}_interrupt() any more.
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/jic23/iio.git/tree/drivers/iio/adc/max1363.c?h=testing#n414
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
+Tested-by: Qais Yousef <qais.yousef@imgtec.com>
+---
+No changes from v1.
+---
+ arch/mips/include/asm/gic.h     |  2 --
+ arch/mips/mti-malta/malta-int.c | 10 ----------
+ arch/mips/mti-sead3/sead3-int.c | 34 ----------------------------------
+ 3 files changed, 46 deletions(-)
 
->>> +{
->>> +	int ret;
->>> +	struct axp288_adc_info *info = iio_priv(indio_dev);
->>> +	u8 buf[2];
->> You could use __be16 instead. Then you just need to use
->> be16_to_cpu(), shift 4 bits to the right and mask the result with
->> 0xFF.
->>> +
->>> +	mutex_lock(&indio_dev->mlock);
->>> +	switch (mask) {
->>> +	case IIO_CHAN_INFO_RAW:
->>> +		/* special case for GPADC sample */
->>> +		if (chan->address == AXP288_GP_ADC_H) {
->>> +			ret = regmap_write(info->regmap,
->>> AXP288_ADC_TS_PIN_CTRL,
->>> +					AXP288_ADC_TS_PIN_GPADC);
->>> +			if (ret) {
->>> +				dev_err(&indio_dev->dev, "GPADC
->>> mode\n");
->>> +				mutex_unlock(&indio_dev->mlock);
->>> +				return ret;
->> You may even just goto the mutex_unlock at the end of the function.
->> Would safe a few bytes here in the source - up to you. More
->> interesting is, if the error message is required, as you don't have
->> one below, when switching to TS_PIN_ON.
-> i don't have preference, the previous reviews don't like goto.
-Yeah, that's probably always a decision between quick exit path vs. low code duplication. They weight pretty equal in this case.
->>> +			}
->>> +		}
->>> +	case IIO_CHAN_INFO_PROCESSED:
->>> +		ret = regmap_bulk_read(info->regmap,
->>> chan->address, buf, 2);
->>> +		if (ret) {
->>> +			dev_err(&indio_dev->dev, "sample raw data
->>> failed\n");
->>> +			break;
->>> +		}
->>> +		*val = (buf[0] << 4) + ((buf[1] >> 4) & 0x0F);
->>> +		ret = IIO_VAL_INT;
->>> +		break;
->>> +	default:
->>> +		ret = -EINVAL;
->>> +	}
->>> +
->>> +	if (mask == IIO_CHAN_INFO_RAW && chan->address ==
->>> AXP288_GP_ADC_H)
->>> +		ret = regmap_write(info->regmap,
->>> AXP288_ADC_TS_PIN_CTRL,
->>> +			AXP288_ADC_TS_PIN_ON);
->>> +
->>> +	mutex_unlock(&indio_dev->mlock);
->>> +
->>> +	return ret;
->>> +}
->>> +
->>> +static int axp288_adc_enable(struct regmap *regmap, bool enable)
->>> +{
->>> +	unsigned int pin_on, adc_en;
->>> +
->>> +	if (enable) {
->>> +		pin_on = AXP288_ADC_TS_PIN_ON;
->>> +		adc_en = AXP288_ADC_EN_MASK;
-This one, adc_en ^^^^^ is what I meant. It gets set here and below, but not used again.
-I would expect, that you intended to write it to AXP20X_ADC_EN1 at the end of this function.
->>> +	} else {
->>> +		pin_on = ~AXP288_ADC_TS_PIN_ON;
->>> +		adc_en = ~AXP288_ADC_EN_MASK;
->>> +	}
->>> +	if (regmap_write(regmap, AXP288_ADC_TS_PIN_CTRL, pin_on))
->>> +		return -EIO;
->>> +
->>> +	return regmap_write(regmap, AXP20X_ADC_EN1,
->>> ~AXP288_ADC_EN_MASK);
->> So, what's the deal about the variable adc_en?
-> well, I am trying to be consistent with the data sheet. in axp202
-> datasheet, register 82h is named "ADC Enable 1". In axp288 datasheet,
-> the same register 82h is named ADC Enable. I am going with adc_en1 to
-> better scale for more "ADC Enable X".
->>> +}
->>> +
->>> +static const struct iio_info axp288_adc_iio_info = {
->>> +	.read_raw = &axp288_adc_read_raw,
->>> +	.driver_module = THIS_MODULE,
->>> +};
->>> +
->>> +static int axp288_adc_probe(struct platform_device *pdev)
->>> +{
->>> +	int ret;
->>> +	struct axp288_adc_info *info;
->>> +	struct iio_dev *indio_dev;
->>> +	struct axp20x_dev *axp20x =
->>> dev_get_drvdata(pdev->dev.parent); +
->>> +	indio_dev = devm_iio_device_alloc(&pdev->dev,
->>> sizeof(*info));
->>> +	if (!indio_dev)
->>> +		return -ENOMEM;
->>> +
->>> +	info = iio_priv(indio_dev);
->>> +	info->irq = platform_get_irq(pdev, 0);
->>> +	if (info->irq < 0) {
->>> +		dev_err(&pdev->dev, "no irq resource?\n");
->>> +		return info->irq;
->>> +	}
->>> +	platform_set_drvdata(pdev, indio_dev);
->>> +	info->regmap = axp20x->regmap;
->>> +	ret = axp288_adc_enable(axp20x->regmap, true);
->>> +	if (ret) {
->>> +		dev_err(&pdev->dev, "Unable to enable ADC
->>> device\n");
->>> +		return ret;
->>> +	}
->>> +
->>> +	indio_dev->dev.parent = &pdev->dev;
->>> +	indio_dev->name = pdev->name;
->>> +	indio_dev->channels = axp288_adc_channels;
->>> +	indio_dev->num_channels = ARRAY_SIZE(axp288_adc_channels);
->>> +	indio_dev->info = &axp288_adc_iio_info;
->>> +	indio_dev->modes = INDIO_DIRECT_MODE;
->>> +	ret = iio_map_array_register(indio_dev,
->>> axp288_adc_default_maps);
->>> +	if (ret < 0)
->>> +		goto err_disable_dev;
->>> +
->>> +	ret = iio_device_register(indio_dev);
->>> +	if (ret < 0) {
->>> +		dev_err(&pdev->dev, "unable to register iio
->>> device\n");
->>> +		goto err_array_unregister;
->>> +	}
->>> +
->>> +	return 0;
->>> +
->>> +err_array_unregister:
->>> +	iio_map_array_unregister(indio_dev);
->>> +err_disable_dev:
->>> +	ret = axp288_adc_enable(axp20x->regmap, false);
->> Don't set ret here. We want to return the error code from the
->> function that failed above.
->>> +
-> good point. thanks for the review.
-> 
->>> +	return ret;
->>> +}
->>> +
->>> +static int axp288_adc_remove(struct platform_device *pdev)
->>> +{
->>> +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
->>> +	struct axp20x_dev *axp20x =
->>> dev_get_drvdata(pdev->dev.parent); +
->>> +	if (axp288_adc_enable(axp20x->regmap, false))
->>> +		dev_err(&pdev->dev, "Unable to disable ADC
->>> device\n");
->>> +	iio_device_unregister(indio_dev);
->>> +	iio_map_array_unregister(indio_dev);
->>> +
->>> +	return 0;
->>> +}
->>> +
->>> +static struct platform_driver axp288_adc_driver = {
->>> +	.probe = axp288_adc_probe,
->>> +	.remove = axp288_adc_remove,
->>> +	.driver = {
->>> +		.name = "axp288_adc",
->>> +		.owner = THIS_MODULE,
->>> +	},
->>> +};
->>> +
->>> +module_platform_driver(axp288_adc_driver);
->>> +
->>> +MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@linux.intel.com>");
->>> +MODULE_DESCRIPTION("X-Powers AXP288 ADC Driver");
->>> +MODULE_LICENSE("GPL");
->>>
->>
-> 
-> [Jacob Pan]
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/arch/mips/include/asm/gic.h b/arch/mips/include/asm/gic.h
+index d7699cf..022d831 100644
+--- a/arch/mips/include/asm/gic.h
++++ b/arch/mips/include/asm/gic.h
+@@ -376,8 +376,6 @@ extern void gic_bind_eic_interrupt(int irq, int set);
+ extern unsigned int gic_get_timer_pending(void);
+ extern void gic_get_int_mask(unsigned long *dst, const unsigned long *src);
+ extern unsigned int gic_get_int(void);
+-extern void gic_enable_interrupt(int irq_vec);
+-extern void gic_disable_interrupt(int irq_vec);
+ extern void gic_irq_ack(struct irq_data *d);
+ extern void gic_finish_irq(struct irq_data *d);
+ extern void gic_platform_init(int irqs, struct irq_chip *irq_controller);
+diff --git a/arch/mips/mti-malta/malta-int.c b/arch/mips/mti-malta/malta-int.c
+index e4f43ba..5c31208 100644
+--- a/arch/mips/mti-malta/malta-int.c
++++ b/arch/mips/mti-malta/malta-int.c
+@@ -715,16 +715,6 @@ int malta_be_handler(struct pt_regs *regs, int is_fixup)
+ 	return retval;
+ }
+ 
+-void gic_enable_interrupt(int irq_vec)
+-{
+-	GIC_SET_INTR_MASK(irq_vec);
+-}
+-
+-void gic_disable_interrupt(int irq_vec)
+-{
+-	GIC_CLR_INTR_MASK(irq_vec);
+-}
+-
+ void gic_irq_ack(struct irq_data *d)
+ {
+ 	int irq = (d->irq - gic_irq_base);
+diff --git a/arch/mips/mti-sead3/sead3-int.c b/arch/mips/mti-sead3/sead3-int.c
+index 6a560ac..9d5b5bd 100644
+--- a/arch/mips/mti-sead3/sead3-int.c
++++ b/arch/mips/mti-sead3/sead3-int.c
+@@ -85,40 +85,6 @@ void __init arch_init_irq(void)
+ 			ARRAY_SIZE(gic_intr_map), MIPS_GIC_IRQ_BASE);
+ }
+ 
+-void gic_enable_interrupt(int irq_vec)
+-{
+-	unsigned int i, irq_source;
+-
+-	/* enable all the interrupts associated with this vector */
+-	for (i = 0; i < gic_shared_intr_map[irq_vec].num_shared_intr; i++) {
+-		irq_source = gic_shared_intr_map[irq_vec].intr_list[i];
+-		GIC_SET_INTR_MASK(irq_source);
+-	}
+-	/* enable all local interrupts associated with this vector */
+-	if (gic_shared_intr_map[irq_vec].local_intr_mask) {
+-		GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_OTHER_ADDR), 0);
+-		GICWRITE(GIC_REG(VPE_OTHER, GIC_VPE_SMASK),
+-			gic_shared_intr_map[irq_vec].local_intr_mask);
+-	}
+-}
+-
+-void gic_disable_interrupt(int irq_vec)
+-{
+-	unsigned int i, irq_source;
+-
+-	/* disable all the interrupts associated with this vector */
+-	for (i = 0; i < gic_shared_intr_map[irq_vec].num_shared_intr; i++) {
+-		irq_source = gic_shared_intr_map[irq_vec].intr_list[i];
+-		GIC_CLR_INTR_MASK(irq_source);
+-	}
+-	/* disable all local interrupts associated with this vector */
+-	if (gic_shared_intr_map[irq_vec].local_intr_mask) {
+-		GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_OTHER_ADDR), 0);
+-		GICWRITE(GIC_REG(VPE_OTHER, GIC_VPE_RMASK),
+-			gic_shared_intr_map[irq_vec].local_intr_mask);
+-	}
+-}
+-
+ void gic_irq_ack(struct irq_data *d)
+ {
+ 	GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
+-- 
+2.1.0.rc2.206.gedb03e5
 
