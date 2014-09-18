@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576AbaIRNX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:23:28 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:34996 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389AbaIRNX1 (ORCPT
+	id S1755806AbaIRNX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 09:23:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10994 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755679AbaIRNX4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:23:27 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91: sama5d3xek: reserve dma channel for audio
-Date: Thu, 18 Sep 2014 15:23:22 +0200
-Message-ID: <1411046602-4864-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	Thu, 18 Sep 2014 09:23:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <alpine.LRH.2.11.1409181712020.1998@namei.org>
+References: <alpine.LRH.2.11.1409181712020.1998@namei.org> <alpine.LRH.2.11.1409180922540.31048@namei.org> <23655.1410874187@warthog.procyon.org.uk> <24647.1410876063@warthog.procyon.org.uk> <2171.1410996444@warthog.procyon.org.uk>
+To: James Morris <jmorris@namei.org>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] KEYS: Fixes for keyrings
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <20015.1411046628.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Sep 2014 14:23:48 +0100
+Message-ID: <20016.1411046628@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bo Shen <voice.shen@atmel.com>
+James Morris <jmorris@namei.org> wrote:
 
-We set the DMA configuration on USARTs in the SoC DT in (ARM: at91: sama5d3:
-add usart dma configurations). As the audio must work with DMA channels, we
-reserve some dma channels for audio, or else audio won't work.
+> > > No, if they go direct to Linus, they don't go into -next.
+> > 
+> > Can you then sync your -next branch to Linus after Linus takes them please?
+> 
+> Nope, I only want to sync on point releases unless absolutely necessary.
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-[nicolas.ferre@atmel.com: move to the sama5d3xmb.dtsi to cover all board variants]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/sama5d3xmb.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+In that case, can you please just pull the request in this message that I sent
+you:
 
-diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
-index b8c6f20e780c..49c10d33df30 100644
---- a/arch/arm/boot/dts/sama5d3xmb.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
-@@ -25,6 +25,8 @@
- 			};
- 
- 			spi0: spi@f0004000 {
-+				dmas = <0>, <0>;	/*  Do not use DMA for spi0 */
-+
- 				m25p80@0 {
- 					compatible = "atmel,at25df321a";
- 					spi-max-frequency = <50000000>;
-@@ -51,6 +53,7 @@
- 			};
- 
- 			usart1: serial@f0020000 {
-+				dmas = <0>, <0>;	/*  Do not use DMA for usart1 */
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart1 &pinctrl_usart1_rts_cts>;
- 				status = "okay";
-@@ -132,6 +135,7 @@
- 			};
- 
- 			dbgu: serial@ffffee00 {
-+				dmas = <0>, <0>;	/*  Do not use DMA for dbgu */
- 				status = "okay";
- 			};
- 
--- 
-1.8.2.2
+	[GIT PULL] KEYS: Changes for keyrings for security/next
 
+It has the aforementioned fixes and the stuff for -next both.  If you can just
+pull the lot into your -next branch rather than sending the fixes upstream at
+this point.
+
+David
