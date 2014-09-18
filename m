@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900AbaIRIcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:32:08 -0400
-Received: from ozlabs.org ([103.22.144.67]:45899 "EHLO ozlabs.org"
+	id S1756852AbaIRIcG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:32:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:57551 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222AbaIRI1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:27:21 -0400
+	id S1755264AbaIRI1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 04:27:22 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
 Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH 07/15] powerpc/powerpc: Add new PCIe functions for allocating cxl interrupts
-Date: Thu, 18 Sep 2014 18:26:52 +1000
-Message-Id: <1411028820-29933-8-git-send-email-mikey@neuling.org>
+Subject: [PATCH 08/15] powerpc/mm: Add new hash_page_mm()
+Date: Thu, 18 Sep 2014 18:26:53 +1000
+Message-Id: <1411028820-29933-9-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411028820-29933-1-git-send-email-mikey@neuling.org>
 References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
@@ -24,260 +24,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This adds a number of functions for allocating IRQs under powernv PCIe for cxl.
+This adds a new function hash_page_mm() based on the existing hash_page().
+This version allows any struct mm to be passed in, rather than assuming
+current.  This is useful for servicing co-processor faults which are not in the
+context of the current running process.
+
+We need to be careful here as the current hash_page() assumes current in a few
+places.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/include/asm/pnv-pci.h        |  27 +++++
- arch/powerpc/platforms/powernv/pci-ioda.c | 186 ++++++++++++++++++++++++++++++
- 2 files changed, 213 insertions(+)
- create mode 100644 arch/powerpc/include/asm/pnv-pci.h
+ arch/powerpc/include/asm/mmu-hash64.h |  1 +
+ arch/powerpc/mm/hash_utils_64.c       | 20 +++++++++++++-------
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pnv-pci.h b/arch/powerpc/include/asm/pnv-pci.h
-new file mode 100644
-index 0000000..71717b5
---- /dev/null
-+++ b/arch/powerpc/include/asm/pnv-pci.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright 2014 IBM Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _ASM_PNV_PCI_H
-+#define _ASM_PNV_PCI_H
-+
-+#include <linux/pci.h>
-+#include <misc/cxl.h>
-+
-+int pnv_phb_to_cxl(struct pci_dev *dev);
-+int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
-+			   unsigned int virq);
-+int pnv_cxl_alloc_hwirqs(struct pci_dev *dev, int num);
-+void pnv_cxl_release_hwirqs(struct pci_dev *dev, int hwirq, int num);
-+int pnv_cxl_alloc_hwirq_ranges(struct cxl_irq_ranges *irqs,
-+			       struct pci_dev *dev, int num);
-+void pnv_cxl_release_hwirq_ranges(struct cxl_irq_ranges *irqs,
-+				  struct pci_dev *dev);
-+int pnv_cxl_get_irq_count(struct pci_dev *dev);
-+
-+#endif
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index 194f90a..80919f8 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -38,6 +38,8 @@
- #include <asm/debug.h>
- #include <asm/firmware.h>
+diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
+index fd19a53..a3b85e9 100644
+--- a/arch/powerpc/include/asm/mmu-hash64.h
++++ b/arch/powerpc/include/asm/mmu-hash64.h
+@@ -319,6 +319,7 @@ extern int __hash_page_64K(unsigned long ea, unsigned long access,
+ 			   unsigned int local, int ssize);
+ struct mm_struct;
+ unsigned int hash_page_do_lazy_icache(unsigned int pp, pte_t pte, int trap);
++extern int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap);
+ extern int hash_page(unsigned long ea, unsigned long access, unsigned long trap);
+ int __hash_page_huge(unsigned long ea, unsigned long access, unsigned long vsid,
+ 		     pte_t *ptep, unsigned long trap, int local, int ssize,
+diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+index 0f73367..66071af 100644
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -991,26 +991,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
+  * -1 - critical hash insertion error
+  * -2 - access not permitted by subpage protection mechanism
+  */
+-int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
++int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
+ {
+ 	enum ctx_state prev_state = exception_enter();
+ 	pgd_t *pgdir;
+ 	unsigned long vsid;
+-	struct mm_struct *mm;
+ 	pte_t *ptep;
+ 	unsigned hugeshift;
+ 	const struct cpumask *tmp;
+ 	int rc, user_region = 0, local = 0;
+ 	int psize, ssize;
  
-+#include <misc/cxl.h>
-+
- #include "powernv.h"
- #include "pci.h"
+-	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
+-		ea, access, trap);
++	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
++		__func__, ea, access, trap);
  
-@@ -503,6 +505,163 @@ static struct pnv_ioda_pe *pnv_ioda_get_pe(struct pci_dev *dev)
- 		return NULL;
- 	return &phb->ioda.pe_array[pdn->pe_number];
- }
-+
-+struct device_node *pnv_pci_to_phb_node(struct pci_dev *dev)
-+{
-+	struct device_node *np;
-+	struct property *prop = NULL;
-+
-+	np = of_node_get(pci_device_to_OF_node(dev));
-+
-+	/* Scan up the tree looking for the PHB node */
-+	while (np) {
-+		if ((prop = of_find_property(np, "ibm,opal-phbid", NULL)))
-+			break;
-+		np = of_get_next_parent(np);
-+	}
-+
-+	if (!prop) {
-+		of_node_put(np);
-+		return NULL;
-+	}
-+
-+	return np;
-+}
-+EXPORT_SYMBOL(pnv_pci_to_phb_node);
-+
-+#ifdef CONFIG_CXL_BASE
-+int pnv_phb_to_cxl(struct pci_dev *dev)
-+{
-+	struct device_node *np;
-+	struct pnv_ioda_pe *pe;
-+	const u64 *prop64;
-+	u64 phb_id;
-+	int rc;
-+
-+	dev_info(&dev->dev, "switch PHB to CXL\n");
-+
-+	if (!(np = pnv_pci_to_phb_node(dev)))
-+		return -ENODEV;
-+
-+	prop64 = of_get_property(np, "ibm,opal-phbid", NULL);
-+
-+	phb_id = be64_to_cpup(prop64);
-+	dev_info(&dev->dev, "PHB-ID  : 0x%016llx\n", phb_id);
-+
-+	if (!(pe = pnv_ioda_get_pe(dev))) {
-+		rc = -ENODEV;
-+		goto out;
-+	}
-+	dev_info(&dev->dev, "     pe : %i\n", pe->pe_number);
-+
-+	if ((rc = opal_pci_set_phb_cxl_mode(phb_id, 1, pe->pe_number)))
-+		dev_err(&dev->dev, "opal_pci_set_phb_cxl_mode failed: %i\n", rc);
-+
-+out:
-+	of_node_put(np);
-+	return rc;
-+}
-+EXPORT_SYMBOL(pnv_phb_to_cxl);
-+
-+int pnv_cxl_alloc_hwirqs(struct pci_dev *dev, int num)
-+{
-+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-+	struct pnv_phb *phb = hose->private_data;
-+	int hwirq = msi_bitmap_alloc_hwirqs(&phb->msi_bmp, num);
-+
-+	if (hwirq < 0) {
-+		dev_warn(&dev->dev, "Failed to find a free MSI\n");
-+		return -ENOSPC;
-+	}
-+
-+	return phb->msi_base + hwirq;
-+}
-+EXPORT_SYMBOL(pnv_cxl_alloc_hwirqs);
-+
-+void pnv_cxl_release_hwirqs(struct pci_dev *dev, int hwirq, int num)
-+{
-+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-+	struct pnv_phb *phb = hose->private_data;
-+
-+	msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq - phb->msi_base, num);
-+}
-+EXPORT_SYMBOL(pnv_cxl_release_hwirqs);
-+
-+
-+int pnv_cxl_alloc_hwirq_ranges(struct cxl_irq_ranges *irqs,
-+			       struct pci_dev *dev, int num)
-+{
-+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-+	struct pnv_phb *phb = hose->private_data;
-+	int range = 0;
-+	int hwirq;
-+	int try;
-+
-+	memset(irqs, 0, sizeof(struct cxl_irq_ranges));
-+
-+	for (range = 1; range < CXL_IRQ_RANGES && num; range++) {
-+		try = num;
-+		while (try) {
-+			hwirq = msi_bitmap_alloc_hwirqs(&phb->msi_bmp, try);
-+			if (hwirq >= 0)
-+				break;
-+			try /= 2;
-+		}
-+		if (!try)
-+			goto fail;
-+
-+		irqs->offset[range] = phb->msi_base + hwirq;
-+		irqs->range[range] = try;
-+		pr_devel("cxl alloc irq range 0x%x: offset: 0x%lx  limit: %li\n",
-+			 range, irqs->offset[range], irqs->range[range]);
-+		num -= try;
-+	}
-+	if (num)
-+		goto fail;
-+
-+	return 0;
-+fail:
-+	for (range--; range >= 0; range--) {
-+		hwirq = irqs->offset[range] - phb->msi_base;
-+		msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq,
-+				       irqs->range[range]);
-+		irqs->range[range] = 0;
-+	}
-+	return -ENOSPC;
-+}
-+EXPORT_SYMBOL(pnv_cxl_alloc_hwirq_ranges);
-+
-+void pnv_cxl_release_hwirq_ranges(struct cxl_irq_ranges *irqs,
-+				  struct pci_dev *dev)
-+{
-+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-+	struct pnv_phb *phb = hose->private_data;
-+	int range = 0;
-+	int hwirq;
-+
-+	for (range = 0; range < 4; range++) {
-+		hwirq = irqs->offset[range] - phb->msi_base;
-+		if (irqs->range[range]) {
-+			pr_devel("cxl release irq range 0x%x: offset: 0x%lx  limit: %ld\n",
-+				 range, irqs->offset[range],
-+				 irqs->range[range]);
-+			msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq,
-+					       irqs->range[range]);
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(pnv_cxl_release_hwirq_ranges);
-+
-+int pnv_cxl_get_irq_count(struct pci_dev *dev)
-+{
-+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-+        struct pnv_phb *phb = hose->private_data;
-+
-+	return phb->msi_bmp.irq_count;
-+}
-+EXPORT_SYMBOL(pnv_cxl_get_irq_count);
-+
-+#endif /* CONFIG_CXL_BASE */
- #endif /* CONFIG_PCI_MSI */
+ 	/* Get region & vsid */
+  	switch (REGION_ID(ea)) {
+ 	case USER_REGION_ID:
+ 		user_region = 1;
+-		mm = current->mm;
+ 		if (! mm) {
+ 			DBG_LOW(" user region with no mm !\n");
+ 			rc = 1;
+@@ -1106,7 +1104,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 			WARN_ON(1);
+ 		}
+ #endif
+-		check_paca_psize(ea, mm, psize, user_region);
++		if (current->mm == mm)
++			check_paca_psize(ea, mm, psize, user_region);
  
- static int pnv_ioda_configure_pe(struct pnv_phb *phb, struct pnv_ioda_pe *pe)
-@@ -1330,6 +1489,33 @@ static void set_msi_irq_chip(struct pnv_phb *phb, unsigned int virq)
+ 		goto bail;
  	}
- }
+@@ -1149,7 +1148,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 		}
+ 	}
  
-+#ifdef CONFIG_CXL_BASE
-+int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
-+			   unsigned int virq)
+-	check_paca_psize(ea, mm, psize, user_region);
++	if (current->mm == mm)
++		check_paca_psize(ea, mm, psize, user_region);
+ #endif /* CONFIG_PPC_64K_PAGES */
+ 
+ #ifdef CONFIG_PPC_HAS_HASH_64K
+@@ -1184,6 +1184,12 @@ bail:
+ 	exception_exit(prev_state);
+ 	return rc;
+ }
++EXPORT_SYMBOL_GPL(hash_page_mm);
++
++int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
 +{
-+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-+	struct pnv_phb *phb = hose->private_data;
-+	unsigned int xive_num = hwirq - phb->msi_base;
-+	struct pnv_ioda_pe *pe;
-+	int rc;
-+
-+	if (!(pe = pnv_ioda_get_pe(dev)))
-+		return -ENODEV;
-+
-+	/* Assign XIVE to PE */
-+	rc = opal_pci_set_xive_pe(phb->opal_id, pe->pe_number, xive_num);
-+	if (rc) {
-+		pr_warn("%s: OPAL error %d setting msi_base 0x%x hwirq 0x%x XIVE 0x%x PE\n",
-+			pci_name(dev), rc, phb->msi_base, hwirq, xive_num);
-+		return -EIO;
-+	}
-+	set_msi_irq_chip(phb, virq);
-+
-+	return 0;
++	return hash_page_mm(current->mm, ea, access, trap);
 +}
-+EXPORT_SYMBOL(pnv_cxl_ioda_msi_setup);
-+#endif
-+
- static int pnv_pci_ioda_msi_setup(struct pnv_phb *phb, struct pci_dev *dev,
- 				  unsigned int hwirq, unsigned int virq,
- 				  unsigned int is_64, struct msi_msg *msg)
+ EXPORT_SYMBOL_GPL(hash_page);
+ 
+ void hash_preload(struct mm_struct *mm, unsigned long ea,
 -- 
 1.9.1
 
