@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356AbaIRWd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 18:33:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38930 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510AbaIRWdQ (ORCPT
+	id S1757215AbaIRWff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 18:35:35 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50214 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755864AbaIRWfe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 18:33:16 -0400
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] watchdog: qcom: register a restart notifier
-Date: Thu, 18 Sep 2014 17:27:01 -0500
-Message-Id: <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1411078425.git.joshc@codeaurora.org>
-References: <cover.1411078425.git.joshc@codeaurora.org>
-In-Reply-To: <cover.1411078425.git.joshc@codeaurora.org>
-References: <cover.1411078425.git.joshc@codeaurora.org>
+	Thu, 18 Sep 2014 18:35:34 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug and expedited grace periods
+Date: Fri, 19 Sep 2014 00:55:11 +0200
+Message-ID: <2028813.2ZT7cSJ4eY@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140918123845.GO4723@linux.vnet.ibm.com>
+References: <20140828194745.GA3761@linux.vnet.ibm.com> <541A8698.9040905@intel.com> <20140918123845.GO4723@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
-resort mechanism for triggering chip reset.  Usually, other restart
-methods (such as PS_HOLD) are preferrable for issuing a more complete
-reset of the chip.  As such, keep the priority of the watchdog notifier
-low.
+On Thursday, September 18, 2014 05:38:45 AM Paul E. McKenney wrote:
+> On Thu, Sep 18, 2014 at 03:15:36PM +0800, Lan Tianyu wrote:
+> > On 2014年09月17日 21:10, Paul E. McKenney wrote:
+> > > On Wed, Sep 17, 2014 at 03:11:42PM +0800, Lan Tianyu wrote:
+> > >> On 2014年08月29日 03:47, Paul E. McKenney wrote:
+> > >>> Currently, the expedited grace-period primitives do get_online_cpus().
+> > >>> This greatly simplifies their implementation, but means that calls to
+> > >>> them holding locks that are acquired by CPU-hotplug notifiers (to say
+> > >>> nothing of calls to these primitives from CPU-hotplug notifiers) can
+> > >>> deadlock.  But this is starting to become inconvenient:
+> > >>> https://lkml.org/lkml/2014/8/5/754
+> > >>>
+> > >>> This commit avoids the deadlock and retains the simplicity by creating
+> > >>> a try_get_online_cpus(), which returns false if the get_online_cpus()
+> > >>> reference count could not immediately be incremented.  If a call to
+> > >>> try_get_online_cpus() returns true, the expedited primitives operate
+> > >>> as before.  If a call returns false, the expedited primitives fall back
+> > >>> to normal grace-period operations.  This falling back of course results
+> > >>> in increased grace-period latency, but only during times when CPU
+> > >>> hotplug operations are actually in flight.  The effect should therefore
+> > >>> be negligible during normal operation.
+> > >>>
+> > >>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > >>> Cc: Josh Triplett <josh@joshtriplett.org>
+> > >>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> > >>> Cc: Lan Tianyu <tianyu.lan@intel.com>
+> > >>
+> > >> Hi Paul:
+> > >> 	What's the status of the patch? Will you push it? Thanks.
+> > > 
+> > > By default, it would go into 3.19.  Do you need it earlier?
+> > 
+> > IMO, this is a dead lock bug which is hard to reproduce and the patch
+> > should go into v3.17 and stable tree?
+> 
+> The problem with pushing for v3.17 is that I would have to rebase
+> that commit to the bottom of my current stack and redo all my testing.
+> If there were any problems, I could not only miss v3.17, but also miss
+> the v3.18 merge window.
+> 
+> So, given that the next merge window happens pretty soon, how about
+> v3.18 and the stable tree?
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- drivers/watchdog/qcom-wdt.c | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+That sounds good to me.
 
-diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
-index e9409f5..710ab43 100644
---- a/drivers/watchdog/qcom-wdt.c
-+++ b/drivers/watchdog/qcom-wdt.c
-@@ -15,6 +15,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/reboot.h>
- #include <linux/watchdog.h>
- 
- #define WDT_RST		0x0
-@@ -24,6 +25,7 @@
- struct qcom_wdt {
- 	struct watchdog_device	wdd;
- 	unsigned long		freq;
-+	struct notifier_block	restart_nb;
- 	void __iomem		*base;
- };
- 
-@@ -82,6 +84,24 @@ static const struct watchdog_info qcom_wdt_info = {
- 	.identity	= KBUILD_MODNAME,
- };
- 
-+static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
-+			    void *data)
-+{
-+	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
-+
-+	/*
-+	 * Trigger watchdog bite:
-+	 *    Setup BITE_TIME to be very low, and enable WDT.
-+	 */
-+	mutex_lock(&wdt->wdd.lock);
-+	writel_relaxed(0, wdt->base + WDT_EN);
-+	writel_relaxed(1, wdt->base + WDT_RST);
-+	writel_relaxed(0x31F3, wdt->base + WDT_BITE_TIME);
-+	writel_relaxed(1, wdt->base + WDT_EN);
-+	mutex_unlock(&wdt->wdd.lock);
-+	return NOTIFY_DONE;
-+}
-+
- static int qcom_watchdog_probe(struct platform_device *pdev)
- {
- 	struct qcom_wdt *wdt;
-@@ -121,6 +141,17 @@ static int qcom_watchdog_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/*
-+	 * WDT restart notifier has priority 0 (use as a last resort)
-+	 */
-+	wdt->restart_nb.notifier_call = qcom_wdt_restart;
-+	ret = register_restart_handler(&wdt->restart_nb);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to setup restart handler\n");
-+		watchdog_unregister_device(&wdt->wdd);
-+		return ret;
-+	}
-+
- 	return 0;
- }
- 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Rafael
 
