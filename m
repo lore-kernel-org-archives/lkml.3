@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480AbaIRJzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:55:11 -0400
-Received: from mga14.intel.com ([192.55.52.115]:18480 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755203AbaIRJzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:55:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,546,1406617200"; 
-   d="scan'208";a="593161439"
-Date: Thu, 18 Sep 2014 12:55:05 +0300
-From: Mika Westerberg <mika.westerberg@intel.com>
-To: Samuel Ortiz <samuel.ortiz@intel.com>
-Cc: Loic Poulain <loic.poulain@intel.com>, linus.walleij@linaro.org,
-        heikki.krogerus@linux.intel.com, mathias.nyman@linux.intel.com,
-        linux-kernel@vger.kernel.org, Eric Ernst <eric.ernst@linux.intel.com>
-Subject: Re: [PATCHv2] pinctrl: baytrail: Clear DIRECT_IRQ bit
-Message-ID: <20140918095505.GI10854@lahna.fi.intel.com>
-References: <1410961621-15231-1-git-send-email-loic.poulain@intel.com>
- <20140918074910.GC10854@lahna.fi.intel.com>
- <20140918094113.GC26004@zurbaran>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140918094113.GC26004@zurbaran>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756708AbaIRJ46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:56:58 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:51159 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660AbaIRJ44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:56:56 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-d9-541aac65c2e5
+Message-id: <541AAC64.4080904@samsung.com>
+Date: Thu, 18 Sep 2014 11:56:52 +0200
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Paul.Zimmerman@synopsys.com, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] usb: dwc2/gadget: improvements for gadget driver
+References: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
+ <20140910203459.GA2350@kroah.com>
+In-reply-to: <20140910203459.GA2350@kroah.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xy7qpa6RCDL53alocvF9v0bx4PZvF
+	5V1z2CwWLWtltnj0cCurA6vH/rlr2D227P/M6HH8xnYmj8+b5AJYorhsUlJzMstSi/TtErgy
+	rva8ZC74wVmx+dw+xgbGH+xdjBwcEgImEvN/J3QxcgKZYhIX7q1n62Lk4hASWMooMfvtalYI
+	5yOjxIJd39lAqngFtCSWr1zDCmKzCKhKHF94iQnEZhPQkdjyfQIjiC0qECbx7NdBJoh6QYkf
+	k++xgNgiAhoSL4/eArOZBTIkvt17DDZTWMBTYuWdZWC2kECmxKLvM8HmcwroSVzcfQ/sUGYg
+	+/5FLYhWeYnNa94yT2AUmIVkwyyEqllIqhYwMq9iFE0tTS4oTkrPNdIrTswtLs1L10vOz93E
+	CAngrzsYlx6zOsQowMGoxMMrISAVIsSaWFZcmXuIUYKDWUmE99dCoBBvSmJlVWpRfnxRaU5q
+	8SFGJg5OqQbGGfb/XtxUkr3qM9lzE1eNCrPD/Z2TxH89ERHZ4n2gedU8P53LF1fc1y3ax7RC
+	cG337dyi5Y9+8v0zS/u1ZNquuPe/jY42f7Z7zDFnYUvv941+WQ0dBcXy0RefvLrr9aM3W/nd
+	0UBv+9fXVqjL/flcKaOZOntG+WnfK9wSW0718D19sGSR2LGyFUosxRmJhlrMRcWJANUrihQ+	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 11:41:13AM +0200, Samuel Ortiz wrote:
-> Hi Mika,
+Hi Greg,
+
+On 09/10/2014 10:34 PM, Greg KH wrote:
+> On Tue, Sep 09, 2014 at 10:44:51AM +0200, Robert Baldyga wrote:
+>> Hi,
+>>
+>> I have splitted my patchset "usb: dwc2/gadget: fix series" into two series.
+>> This patch series contains improvements for dwc2/gadget driver. It's intended
+>> for 3.18.
+>>
+>> Andrzej Pietrasiewicz (1):
+>>   usb: dwc2/gadget: Fix comment text
+>>
+>> Kamil Debski (1):
+>>   usb: dwc2/gadget: move phy bus legth initialization
+>>
+>> Marek Szyprowski (2):
+>>   usb: dwc2/gadget: hide some not really needed debug messages
+>>   usb: dwc2/gadget: ensure that all fifos have correct memory buffers
+>>
+>> Robert Baldyga (2):
+>>   usb: dwc2/gadget: assign TX FIFO dynamically
+>>   usb: dwc2/gadget: disable clock when it's not needed
+>>
+>>  drivers/usb/dwc2/core.h   |   3 ++
+>>  drivers/usb/dwc2/gadget.c | 132 +++++++++++++++++++++++++++++-----------------
+>>  2 files changed, 86 insertions(+), 49 deletions(-)
 > 
-> On Thu, Sep 18, 2014 at 10:49:43AM +0300, Mika Westerberg wrote:
-> > On Wed, Sep 17, 2014 at 03:47:01PM +0200, Loic Poulain wrote:
-> > > Direct Irq En bit can be initialized to a bad value.
-> > > This bit has to be cleared for io access mode.
-> > 
-> > +Eric
-> > 
-> > I would like to have a bit better explanation *why* this bit needs to be
-> > cleared.
-> > 
-> > Also want to ask Eric (who added the WARN()), is there something
-> > preventing us to do this? I remember last time you said that we are not
-> > supposed to change this bit runtime.
-> > 
-> > My preference is that we get rid of the WARN() and just unconditionally
-> > clear the bit.
-> I'd keep the warn though, as it most likely shows a buggy firmware
-> implementation.
+> As these depend on your previous changes, I'll wait until after those
+> get merged into Linus's tree before applying them.  Probably sometime
+> next week.
 
-Fair enough :)
+As my first patch series already got merged into Linus' tree, I would
+like to remind you about my second patch set :)
 
-Maybe it could be more informative.
+Thanks
+Robert Baldyga
