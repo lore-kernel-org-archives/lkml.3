@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaIRRVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 13:21:40 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51034 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756218AbaIRRVj (ORCPT
+	id S932498AbaIRRWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 13:22:52 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34436 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756714AbaIRRWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 13:21:39 -0400
-Date: Thu, 18 Sep 2014 13:21:38 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] usb: hub: rename khubd to hub_wq in documentation
- and comments
-In-Reply-To: <20140918161501.GG2168@dhcp128.suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1409181307550.894-100000@iolanthe.rowland.org>
+	Thu, 18 Sep 2014 13:22:51 -0400
+From: bsegall@google.com
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: NULL ptr deref in update_blocked_averages
+References: <5419FD5F.7090407@oracle.com>
+Date: Thu, 18 Sep 2014 10:22:48 -0700
+In-Reply-To: <5419FD5F.7090407@oracle.com> (Sasha Levin's message of "Wed, 17
+	Sep 2014 17:30:07 -0400")
+Message-ID: <xm26fvforggn.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014, Petr [iso-8859-1] Mládek wrote:
+Sasha Levin <sasha.levin@oracle.com> writes:
 
-> > This routine can be called from multiple work_structs, because a USB 
-> > bus can have multiple hubs.
-> 
-> The easiest solution would be to allocate the work queue with
-> the flag WQ_UNBOUND and max_active = 1. It will force serialization
-> of all work items.
-> 
-> Alternatively, we might add the locking. But to be honest, I am not
-> sure that I am brave enough to do so.
-> 
-> 
-> First, I am not sure if this is the only location that might be
-> affected by the parallel execution of hub_event().
-> 
-> Second, there are used so many locks and the code is so complex that I
-> would need many days and maybe weeks to understand it.
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following spew:
+>
+> [  688.177091] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e0
+> [  688.184049] IP: update_blocked_averages (kernel/sched/fair.c:5512 (discriminator 17) kernel/sched/fair.c:5557 (discriminator 17))
+> [  688.186981] PGD 66fe03067 PUD 66f550067 PMD 0
+> [  688.186981] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  688.186981] Dumping ftrace buffer:
+> [  688.186981]    (ftrace buffer empty)
+> [  688.186981] Modules linked in:
+> [  688.186981] CPU: 2 PID: 14377 Comm: trinity-c269 Tainted: G        W      3.17.0-rc5-next-20140917-sasha-00041-gd01267b #1198
+> [  688.186981] task: ffff88068c02b000 ti: ffff8806478ec000 task.ti: ffff8806478ec000
+> [  688.186981] RIP: update_blocked_averages (kernel/sched/fair.c:5512 (discriminator 17) kernel/sched/fair.c:5557 (discriminator 17))
+...
+> [ 688.186981] Code: 30 09 00 00 4d 8d a5 40 ff ff ff 4d 39 ef 0f 84 95 02 00 00 0f 1f 84 00 00 00 00 00 49 8b 84 24 d0 00 00 00 48 63 93 f8 09 00 00 <48> 8b 88 e0 00 00 00 4c 8b 2c d1 66 66 66 66 90 48 8b 80 d8 00
+> All code
+> ========
+>    0:	30 09                	xor    %cl,(%rcx)
+>    2:	00 00                	add    %al,(%rax)
+>    4:	4d 8d a5 40 ff ff ff 	lea    -0xc0(%r13),%r12
+>    b:	4d 39 ef             	cmp    %r13,%r15
+>    e:	0f 84 95 02 00 00    	je     0x2a9
+>   14:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+>   1b:	00
+>   1c:	49 8b 84 24 d0 00 00 	mov    0xd0(%r12),%rax
+>   23:	00
+>   24:	48 63 93 f8 09 00 00 	movslq 0x9f8(%rbx),%rdx
+>   2b:*	48 8b 88 e0 00 00 00 	mov    0xe0(%rax),%rcx		<-- trapping instruction
+>   32:	4c 8b 2c d1          	mov    (%rcx,%rdx,8),%r13
+>   36:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
 
-In the past I have considered making khubd multithreaded.  But it
-didn't seem especially important.  Apart from initial device discovery
-while the system is starting up (which works out well enough now, even  
-if it could be faster) there usually is activity on only one USB hub
-and port at a time.
-
-On the whole, I would be happy if we can simply guarantee that
-max_active never gets higher than 1.  As Tejun recommended,
-alloc_ordered_workqueue should be enough.
-
-> Well, if we assume that this is the only problematic location, here
-> are the ideas how to prevent the parallel execution:
-> 
-> 1. Use some brand new lock, e.g. call it hub_devnum_lock, and do:
-> 
->    static void choose_devnum(struct usb_device *udev)
->    {
-> 	spin_lock_irq(&hub_devnum_lock);
-> 	[...]
-> 	spin_unlock_irq(&hub_event_lock);
->    }
-> 
->    This looks clean but it creates another lock.
-
-That would be okay.  It shouldn't be a spinlock; a mutex would be
-better.  And adding a new lock doesn't hurt if it is private to this
-one routine, since this is a leaf routine.
-
-Or if you want, you could reuse udev->bus->usb_address0_mutex.  That 
-would make sense, because that mutex is already associated with device 
-address assignment.
-
-> 2. Alternatively, we could use an existing global lock the same way,
->    for example usb_bus_list_lock.
-> 
->    But this looks like a hack and I do not like it much.
-> 
-> 
-> 3. Alternatively, it seems the the function affects one
->    "struct usb_device" and one "struct usb_bus". It might
->    be enough to take the appropriate locks for these
->    structures.
-> 
->    This would mean to take two locks. It would be slower
->    and we would need to make sure that it does not cause
->    a dead lock.
-
-The right answer is to use either a private mutex or the bus-specific
-usb_address0_mutex.  As far as I know, this is the only place that 
-relies on khubd being a single thread.
-
-Alan Stern
-
+I believe this is the tg->cfs_rq deference failing in
+__update_blocked_averages_cpu, ie tg == NULL, which means that some
+cfs_rq->tg is NULL, but tg is set on cgroup creation and never cleared.
+I don't see a plausible use-after-free, but I don't know the cgroup rules.
