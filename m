@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaIRNHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:07:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013AbaIRNHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:07:47 -0400
-Message-ID: <541AD8F3.5010700@redhat.com>
-Date: Thu, 18 Sep 2014 15:06:59 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755640AbaIRNJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 09:09:23 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62566 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaIRNJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 09:09:21 -0400
+Message-ID: <541AD97D.2090304@gmail.com>
+Date: Thu, 18 Sep 2014 15:09:17 +0200
+From: Matthias Brugger <matthias.bgg@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Nadav Amit <namit@cs.technion.ac.il>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
-References: <20140917124501.GC5358@nazgul.tnic> <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il> <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il> <20140917132141.GD5358@nazgul.tnic> <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com> <20140917140601.GE5358@nazgul.tnic>
-In-Reply-To: <20140917140601.GE5358@nazgul.tnic>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: "Joe.C" <srv_yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
+        arm@kernel.org
+CC: linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
+        yingjoe.chen@gmail.com, yingjoe.chen@mediatek.com, hc.yen@mediatek.com,
+        eddie.huang@mediatek.com, nathan.chung@mediatek.com,
+        yh.chen@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Anders Berg <anders.berg@lsi.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/7] dt-bindings: add more chips in documentation for
+ Mediatek SoC
+References: <1410963854-17154-1-git-send-email-srv_yingjoe.chen@mediatek.com> <1410963854-17154-6-git-send-email-srv_yingjoe.chen@mediatek.com>
+In-Reply-To: <1410963854-17154-6-git-send-email-srv_yingjoe.chen@mediatek.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/09/2014 16:06, Borislav Petkov ha scritto:
->> > AFAIK backward compatibility is usually maintained in x86. I did not
->> > see in Intel SDM anything that says "this CPUID field means something
->> > for CPU X and something else for CPU Y". Anyhow, it is not different
->> > than bitmasks in this respect.
-> You still don't get my point: what are you going to do when
-> min_monitor_line_size needs to be 17 bits all of a sudden?
+Sorry I just saw some more issues:
 
-The extra bit used to be reserved and thus will be zero on older
-families.  So, nothing?
+On 17/09/14 16:24, Joe.C wrote:
+> From: "Joe.C" <yingjoe.chen@mediatek.com>
+> 
+> Add MT8127 & MT8135 from Mediatek.
+> 
+> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
+> ---
+>  Documentation/devicetree/bindings/arm/mediatek.txt | 9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/mediatek.txt b/Documentation/devicetree/bindings/arm/mediatek.txt
+> index fa25226..40a9745 100644
+> --- a/Documentation/devicetree/bindings/arm/mediatek.txt
+> +++ b/Documentation/devicetree/bindings/arm/mediatek.txt
+> @@ -1,10 +1,13 @@
+> -Mediatek MT6589 Platforms Device Tree Bindings
+> +Mediatek Platforms Device Tree Bindings
+>  
+> -Boards with a SoC of the Mediatek MT6589 shall have the following property:
+> +Boards with a SoC of the Mediatek shall have the following property:
+>  
+>  Required root node property:
+>  
+> -compatible: must contain "mediatek,mt6589"
+> +compatible: Must contain one of
+> +   "mediatek,mt6589"
+> +   "mediatek,mt8127"
+> +   "mediatek,mt8135"
+>  
+>  
+>  Supported boards:
 
-Paolo
+Please document the supported boards and add a compatible string in the
+dts files for moose and evbp1 boards.
+
+Thanks,
+Matthias
+
+> 
