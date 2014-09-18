@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaIRTVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 15:21:21 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:49642 "EHLO smtp.outflux.net"
+	id S1756324AbaIRTVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 15:21:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40625 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125AbaIRTVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 15:21:20 -0400
+	id S1751125AbaIRTVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 15:21:22 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Rob Herring <robh@kernel.org>,
+Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
         Will Deacon <will.deacon@arm.com>, Rabin Vincent <rabin@rab.in>,
-        Laura Abbott <lauraa@codeaurora.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
         Nikolay Borisov <Nikolay.Borisov@arm.com>,
@@ -20,9 +20,9 @@ Cc: Kees Cook <keescook@chromium.org>, Rob Herring <robh@kernel.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 2/8] ARM: expand fixmap region to 3MB
-Date: Thu, 18 Sep 2014 12:19:03 -0700
-Message-Id: <1411067949-10913-3-git-send-email-keescook@chromium.org>
+Subject: [PATCH v6 6/8] arm: kgdb: Handle read-only text / modules
+Date: Thu, 18 Sep 2014 12:19:07 -0700
+Message-Id: <1411067949-10913-7-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411067949-10913-1-git-send-email-keescook@chromium.org>
 References: <1411067949-10913-1-git-send-email-keescook@chromium.org>
@@ -31,122 +31,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+From: Doug Anderson <dianders@chromium.org>
 
-With commit a05e54c103b0 ("ARM: 8031/2: change fixmap mapping region to
-support 32 CPUs"), the fixmap region was expanded to 2MB, but it
-precluded any other uses of the fixmap region. In order to support other
-uses the fixmap region needs to be expanded beyond 2MB. Fortunately, the
-adjacent 1MB range 0xffe00000-0xfff00000 is availabe.
+Handle the case where someone has set the text segment of the kernel
+as read-only by using the newly introduced "patch" mechanism.
 
-Remove fixmap_page_table ptr and lookup the page table via the virtual
-address so that the fixmap region can span more that one pmd. The 2nd
-pmd is already created since it is shared with the vector page.
-
-Signed-off-by: Rob Herring <robh@kernel.org>
-[kees: fixed CONFIG_DEBUG_HIGHMEM get_fixmap() calls]
-[kees: moved pte allocation outside of CONFIG_HIGHMEM]
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+[kees: switched structure size check to BUILD_BUG_ON (sboyd)]
 Signed-off-by: Kees Cook <keescook@chromium.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- Documentation/arm/memory.txt  |  2 +-
- arch/arm/include/asm/fixmap.h |  2 +-
- arch/arm/mm/highmem.c         | 15 ++++++++-------
- arch/arm/mm/mmu.c             |  6 +++---
- 4 files changed, 13 insertions(+), 12 deletions(-)
+ arch/arm/kernel/Makefile |  2 +-
+ arch/arm/kernel/kgdb.c   | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/arm/memory.txt b/Documentation/arm/memory.txt
-index 38dc06d0a791..4178ebda6e66 100644
---- a/Documentation/arm/memory.txt
-+++ b/Documentation/arm/memory.txt
-@@ -41,7 +41,7 @@ fffe8000	fffeffff	DTCM mapping area for platforms with
- fffe0000	fffe7fff	ITCM mapping area for platforms with
- 				ITCM mounted inside the CPU.
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f83d0e..70b730766330 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -67,7 +67,7 @@ test-kprobes-objs		+= kprobes-test-arm.o
+ endif
+ obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+-obj-$(CONFIG_KGDB)		+= kgdb.o
++obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
+ obj-$(CONFIG_OF)		+= devtree.o
+diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+index a74b53c1b7df..07db2f8a1b45 100644
+--- a/arch/arm/kernel/kgdb.c
++++ b/arch/arm/kernel/kgdb.c
+@@ -12,8 +12,12 @@
+ #include <linux/irq.h>
+ #include <linux/kdebug.h>
+ #include <linux/kgdb.h>
++#include <linux/uaccess.h>
++
+ #include <asm/traps.h>
  
--ffc00000	ffdfffff	Fixmap mapping region.  Addresses provided
-+ffc00000	ffefffff	Fixmap mapping region.  Addresses provided
- 				by fix_to_virt() will be located here.
- 
- fee00000	feffffff	Mapping of PCI I/O space. This is a static
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index a7add6f9315d..d984ca69ce19 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -2,7 +2,7 @@
- #define _ASM_FIXMAP_H
- 
- #define FIXADDR_START		0xffc00000UL
--#define FIXADDR_END		0xffe00000UL
-+#define FIXADDR_END		0xfff00000UL
- #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
- 
- #include <asm/kmap_types.h>
-diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
-index 45aeaaca9052..81061987ac45 100644
---- a/arch/arm/mm/highmem.c
-+++ b/arch/arm/mm/highmem.c
-@@ -18,19 +18,20 @@
- #include <asm/tlbflush.h>
- #include "mm.h"
- 
--pte_t *fixmap_page_table;
--
- static inline void set_fixmap_pte(int idx, pte_t pte)
++#include "patch.h"
++
+ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
  {
- 	unsigned long vaddr = __fix_to_virt(idx);
--	set_pte_ext(fixmap_page_table + idx, pte, 0);
-+	pte_t *ptep = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
-+
-+	set_pte_ext(ptep, pte, 0);
- 	local_flush_tlb_kernel_page(vaddr);
+ 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
+@@ -244,6 +248,31 @@ void kgdb_arch_exit(void)
+ 	unregister_die_notifier(&kgdb_notifier);
  }
  
- static inline pte_t get_fixmap_pte(unsigned long vaddr)
- {
--	unsigned long idx = __virt_to_fix(vaddr);
--	return *(fixmap_page_table + idx);
-+	pte_t *ptep = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
++int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
++{
++	int err;
 +
-+	return *ptep;
- }
- 
- void *kmap(struct page *page)
-@@ -84,7 +85,7 @@ void *kmap_atomic(struct page *page)
- 	 * With debugging enabled, kunmap_atomic forces that entry to 0.
- 	 * Make sure it was indeed properly unmapped.
- 	 */
--	BUG_ON(!pte_none(*(fixmap_page_table + idx)));
-+	BUG_ON(!pte_none(get_fixmap_pte(vaddr)));
- #endif
- 	/*
- 	 * When debugging is off, kunmap_atomic leaves the previous mapping
-@@ -134,7 +135,7 @@ void *kmap_atomic_pfn(unsigned long pfn)
- 	idx = type + KM_TYPE_NR * smp_processor_id();
- 	vaddr = __fix_to_virt(idx);
- #ifdef CONFIG_DEBUG_HIGHMEM
--	BUG_ON(!pte_none(*(fixmap_page_table + idx)));
-+	BUG_ON(!pte_none(get_fixmap_pte(vaddr)));
- #endif
- 	set_fixmap_pte(idx, pfn_pte(pfn, kmap_prot));
- 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 8348ed6b2efe..7fa0966cd15f 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1326,10 +1326,10 @@ static void __init kmap_init(void)
- #ifdef CONFIG_HIGHMEM
- 	pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
- 		PKMAP_BASE, _PAGE_KERNEL_TABLE);
--
--	fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
--		FIXADDR_START, _PAGE_KERNEL_TABLE);
- #endif
++	/* patch_text() only supports int-sized breakpoints */
++	BUILD_BUG_ON(sizeof(int) != BREAK_INSTR_SIZE);
 +
-+	early_pte_alloc(pmd_off_k(FIXADDR_START), FIXADDR_START,
-+			_PAGE_KERNEL_TABLE);
- }
- 
- static void __init map_lowmem(void)
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++
++	patch_text((void *)bpt->bpt_addr,
++		   *(unsigned int *)arch_kgdb_ops.gdb_bpt_instr);
++
++	return err;
++}
++
++int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
++{
++	patch_text((void *)bpt->bpt_addr, *(unsigned int *)bpt->saved_instr);
++
++	return 0;
++}
++
+ /*
+  * Register our undef instruction hooks with ARM undef core.
+  * We regsiter a hook specifically looking for the KGB break inst
 -- 
 1.9.1
 
