@@ -1,185 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029AbaIRI6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:58:39 -0400
-Received: from mail-bl2on0141.outbound.protection.outlook.com ([65.55.169.141]:53910
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751415AbaIRI6f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:58:35 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "Aisheng.Dong@freescale.com" <Aisheng.Dong@freescale.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "naushad@samsung.com" <naushad@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "joshi@samsung.com" <joshi@samsung.com>,
-        "thomas.ab@samsung.com" <thomas.ab@samsung.com>,
-        "vikas.sajjan@samsung.com" <vikas.sajjan@samsung.com>,
-        "chow.kim@samsung.com" <chow.kim@samsung.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "'Boris BREZILLON'" <boris.brezillon@free-electrons.com>,
-        "'Geert Uytterhoeven'" <geert+renesas@glider.be>,
-        "'Stephen Warren'" <swarren@nvidia.com>
-Subject: RE: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
- devices
-Thread-Topic: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
- devices
-Thread-Index: AQHP0kIqUorD0T+DMkOGT4aDDQhODZwFBqQAgAAntgCAAQgOgIAAMZkAgAAfVACAABDNQA==
-Date: Thu, 18 Sep 2014 08:58:31 +0000
-Message-ID: <1c762cb71a5245f19fdcec8266fd45b6@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1410935510-1567-1-git-send-email-pankaj.dubey@samsung.com>
- <20140917085818.GA10285@shlinux1.ap.freescale.net>
- <000401cfd269$922dfc40$b689f4c0$@samsung.com>
- <20140918030552.GA26661@shlinux1.ap.freescale.net>
- <000701cfd306$4d3e8080$e7bb8180$@samsung.com>
- <20140918075516.GB15363@shlinux1.ap.freescale.net>
-In-Reply-To: <20140918075516.GB15363@shlinux1.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 033857D0BD
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(164054003)(199003)(189002)(51704005)(15202345003)(108616004)(87936001)(74316001)(21056001)(76482002)(33646002)(76576001)(93886004)(20776003)(85306004)(64706001)(90102001)(66066001)(97736003)(83072002)(85852003)(77096002)(31966008)(107046002)(15975445006)(86362001)(92566001)(101416001)(2656002)(95666004)(99286002)(81542003)(74662003)(80022003)(79102003)(81342003)(4396001)(19580395003)(74502003)(50986999)(46102003)(77982003)(76176999)(54356999)(99396002)(106356001)(83322001)(19580405001)(105586002)(106116001)(21314002)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB326;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755996AbaIRI7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:59:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54445 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155AbaIRI7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 04:59:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,546,1406617200"; 
+   d="scan'208";a="604685500"
+Message-ID: <541A9EAB.3060000@linux.intel.com>
+Date: Thu, 18 Sep 2014 16:58:19 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: "Joe.C" <srv_yingjoe.chen@mediatek.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Tony Luck <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC Part2 v1 01/21] irqdomain: Introduce new interfaces to support
+ hierarchy irqdomains
+References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>	 <1410444228-3134-2-git-send-email-jiang.liu@linux.intel.com> <1411030087.14746.2.camel@mtksdaap41>
+In-Reply-To: <1411030087.14746.2.camel@mtksdaap41>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> > I think there should have been a check for NULL on "dev" in
-> > "regmap_get_val_endian", so that if dev pointer exist then only it makes
-> > sense to get
-> > endianness property from DT.
-> >
-> > I will suggest following fix in regmap.c for this. With following fix I
-> > tested it and it works well
-> > on linux-next also. So if you can confirm following fix is working for you
-> > then I can post this
-> > patch.
-> >
+On 2014/9/18 16:48, Joe.C wrote:
+> On Thu, 2014-09-11 at 22:03 +0800, Jiang Liu wrote:
+>> +#else	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
+>> +static inline int irq_domain_activate_irq(struct irq_data *data) { return 0; }
+>> +static inline int irq_domain_deactivate_irq(struct irq_data *data) { return 0; }
+>> +#endif	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
+>> +
 > 
-> I tested the patch work.
-> But as Xiubo pointed in another mail, it may still cause other issues.
-> Looking at regmap.c, there're still some other places using the device pointer,
-> e.g. dev_xxx debug information and some tracepoints also take device pointer
-> as parameter(not sure if it will break if dev is NULL).
-> Another thing is that if dev is NULL, we may not be able to use regmap debugfs
-> feature which seems also not as our expected.
+> I get the following build warnings on these lines:
 > 
-> Maybe we could consider create device structure for each syscon compatible
-> device in syscon driver in of_syscon_register in first time which seems to
-> be reasonable.
+> ../include/linux/irqdomain.h:75:47: warning: 'struct irq_data' declared
+> inside parameter list [enabled by default]
+> ../include/linux/irqdomain.h:75:47: warning: its scope is only this
+> definition or declaration, which is probably not what you want [enabled
+> by default]
+> ../include/linux/irqdomain.h:76:49: warning: 'struct irq_data' declared
+> inside parameter list [enabled by default
+Hi Joe,
+	Thanks for testing. We should add a forward declaration of
+struct irq_data to the top of include/linux/irqdomain.h.
+Will fix it in next version.
+Regards!
+Gerry
 > 
-> Regards
-> Dong Aisheng
+> Joe.C
 > 
-> > --------------------------------------------
-> > Subject: [PATCH] regmap: fix NULL pointer dereference in
-> >  regmap_get_val_endian
-> >
-> > Recent commits for getting reg endianess causing NULL pointer
-> > dereference if dev is passed NULL in regmap_init_mmio. This patch
-> > fixes this issue, and allows to parse reg endianess only if dev
-> > and dev->of_node exist.
-> >
-> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > ---
-> >  drivers/base/regmap/regmap.c |   23 ++++++++++++++---------
-> >  1 file changed, 14 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> > index f2281af..455a877 100644
-> > --- a/drivers/base/regmap/regmap.c
-> > +++ b/drivers/base/regmap/regmap.c
-> > @@ -477,7 +477,7 @@ static enum regmap_endian regmap_get_val_endian(struct
-> > device *dev,
-> >  					const struct regmap_bus *bus,
-> >  					const struct regmap_config *config)
-> >  {
-> > -	struct device_node *np = dev->of_node;
-> > +	struct device_node *np;
-
-And the 'np' must be NULL as default.
-
-Isn't it ?
-
-Thanks,
-
-BRs
-Xiubo
-
-> >  	enum regmap_endian endian;
-> >
-> >  	/* Retrieve the endianness specification from the regmap config */
-> > @@ -487,15 +487,20 @@ static enum regmap_endian regmap_get_val_endian(struct
-> > device *dev,
-> >  	if (endian != REGMAP_ENDIAN_DEFAULT)
-> >  		return endian;
-> >
-> > -	/* Parse the device's DT node for an endianness specification */
-> > -	if (of_property_read_bool(np, "big-endian"))
-> > -		endian = REGMAP_ENDIAN_BIG;
-> > -	else if (of_property_read_bool(np, "little-endian"))
-> > -		endian = REGMAP_ENDIAN_LITTLE;
-> > +	/* If the dev and dev->of_node exist try to get endianness from DT
-> > */
-> > +	if (dev && dev->of_node) {
-> > +		np = dev->of_node;
-> >
-> > -	/* If the endianness was specified in DT, use that */
-> > -	if (endian != REGMAP_ENDIAN_DEFAULT)
-> > -		return endian;
-> > +		/* Parse the device's DT node for an endianness
-> > specification */
-> > +		if (of_property_read_bool(np, "big-endian"))
-> > +			endian = REGMAP_ENDIAN_BIG;
-> > +		else if (of_property_read_bool(np, "little-endian"))
-> > +			endian = REGMAP_ENDIAN_LITTLE;
-> > +
-> > +		/* If the endianness was specified in DT, use that */
-> > +		if (endian != REGMAP_ENDIAN_DEFAULT)
-> > +			return endian;
-> > +	}
-> >
-> >  	/* Retrieve the endianness specification from the bus config */
-> >  	if (bus && bus->val_format_endian_default)
-> > --
-> >
-> > Thanks,
-> > Pankaj Dubey
-> >
-> > > Regards
-> > > Dong Aisheng
-> > >
-> > > >
-> > > > Thanks,
-> > > > Pankaj Dubey
-> > > >
-> > > > > Regards
-> > > > > Dong Aisheng
-> > > > >
-> > > > > >
-> > > > > >
-> > > > > > _______________________________________________
-> > > > > > linux-arm-kernel mailing list
-> > > > > > linux-arm-kernel@lists.infradead.org
-> > > > > > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > > >
-> >
+> 
