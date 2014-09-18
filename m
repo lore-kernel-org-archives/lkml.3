@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380AbaIRUpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 16:45:00 -0400
-Received: from imap.thunk.org ([74.207.234.97]:36358 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755AbaIRUo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 16:44:59 -0400
-Date: Thu, 18 Sep 2014 16:44:55 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/1 linux-next] jbd2: Fix sparse context imbalance warning
-Message-ID: <20140918204455.GA26995@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
-References: <1411064974-18304-1-git-send-email-fabf@skynet.be>
+	id S1757238AbaIRVCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:02:24 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33774 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756203AbaIRVCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 17:02:23 -0400
+Date: Thu, 18 Sep 2014 22:02:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Wenyou Yang <wenyou.yang@atmel.com>
+Subject: Re: [PATCH] ARM: at91: sama5: configure L2 cache
+Message-ID: <20140918210212.GD5182@n2100.arm.linux.org.uk>
+References: <1411072716-20769-1-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411064974-18304-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1411072716-20769-1-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 08:29:34PM +0200, Fabian Frederick wrote:
-> spin_unlock after spin_lock only.
+On Thu, Sep 18, 2014 at 10:38:36PM +0200, Alexandre Belloni wrote:
+> From: Wenyou Yang <wenyou.yang@atmel.com>
 > 
-> This fixes the following sparse warning:
-> fs/jbd2/transaction.c:1102:20: warning: context imbalance
-> in 'jbd2_journal_get_create_access' - different lock contexts for basic block
+> Ensure that the L2 cache configuration is optimal to avoid depending on the
+> bootloader to set it correctly.
 > 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/board-dt-sama5.c | 47 ++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 46 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+> index 548de4ad6937..7cbe0d9daf2b 100644
+> --- a/arch/arm/mach-at91/board-dt-sama5.c
+> +++ b/arch/arm/mach-at91/board-dt-sama5.c
+> @@ -13,12 +13,14 @@
+>  #include <linux/gpio.h>
+>  #include <linux/micrel_phy.h>
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+>  #include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/phy.h>
+>  #include <linux/clk-provider.h>
+>  
+>  #include <asm/setup.h>
+> +#include <asm/hardware/cache-l2x0.h>
+>  #include <asm/irq.h>
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach/map.h>
+> @@ -35,8 +37,52 @@ static void __init sama5_dt_timer_init(void)
+>  	at91sam926x_pit_init();
+>  }
+>  
+> +static void __init at91_l2x0_init(void)
+> +{
+> +	struct device_node *np;
+> +	void __iomem *l2cc_base;
+> +	u32 reg;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
+> +	if (!np)
+> +		return;
+> +
+> +	l2cc_base = of_iomap(np, 0);
+> +	of_node_put(np);
+> +
+> +	if (!l2cc_base) {
+> +		pr_err("L2C-310 unable to map registers\n");
+> +		return;
+> +	}
+> +
+> +	/* Prefetch Control */
+> +	reg = readl_relaxed(l2cc_base + L310_PREFETCH_CTRL);
+> +	reg &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
+> +	reg |= 0x01 & L310_PREFETCH_CTRL_OFFSET_MASK;
+> +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
+> +	reg |= L310_PREFETCH_CTRL_PREFETCH_DROP;
+> +	reg |= L310_PREFETCH_CTRL_DATA_PREFETCH;
+> +	reg |= L310_PREFETCH_CTRL_INSTR_PREFETCH;
+> +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL;
+> +	writel_relaxed(reg, l2cc_base + L310_PREFETCH_CTRL);
+> +
+> +	/* Power Control */
+> +	reg = readl_relaxed(l2cc_base + L310_POWER_CTRL);
+> +	reg |= L310_STNDBY_MODE_EN;
+> +	reg |= L310_DYNAMIC_CLK_GATING_EN;
+> +	writel_relaxed(reg, l2cc_base + L310_POWER_CTRL);
+> +
+> +	/* Disable interrupts */
+> +	writel_relaxed(0x00, l2cc_base + L2X0_INTR_MASK);
+> +	writel_relaxed(0x01ff, l2cc_base + L2X0_INTR_CLEAR);
+> +
+> +	l2x0_of_init(0, ~0UL);
 
-NAK, this is a case where I think it's better to make the static
-analyzers better.  In any case sparse gives a lot of false positives
-for this particular warning, so adding lines of code to try to shut up
-sparse for every single false positive seems to be a losing
-proposition.
+NAK.  Really, nak.  Stop this mentality of working around shortcomings
+of generic code by adding yet more platform junk.  Such approaches are
+not acceptable.
 
-I'll note that these sorts of bugs are much more easily picked up
-using lockdep in any case, so we're probably better of just ignoring
-these sorts of warnings.  Better to let the 0day kernel tester warn
-for new sparse warnings, instead of trying to drive sparse warnings
-down to zero.
+The power control is already done by generic code.  I know that you've
+developed the above code against the exact copy of generic code which
+has this, because you're using the new symbols.
 
-Cheers,
+You shouldn't need to disable interrupts; the interrupts should already
+be disabled unless your bootloaders are doing something weird with them.
 
-					- Ted
+There have been DT bindings proposed for prefetch control register.  I
+suggest that you search this mailing list for that patch, and check
+whether it is acceptable for your platform.
+
+Taking all that together, you should need /zero/ code in your platform
+for L2 caches, which is *the way it should be*.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
