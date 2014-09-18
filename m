@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453AbaIRDVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 23:21:54 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:35822 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154AbaIRDVw (ORCPT
+	id S1757492AbaIRDV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 23:21:56 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:64630 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154AbaIRDVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 23:21:52 -0400
+	Wed, 17 Sep 2014 23:21:54 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org (open list)
+To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
 Subject: [RFC PATCH 0/3] Early boot self tests for RCU
-Date: Wed, 17 Sep 2014 23:21:45 -0400
-Message-Id: <1411010509-31927-1-git-send-email-bobby.prani@gmail.com>
+Date: Wed, 17 Sep 2014 23:21:46 -0400
+Message-Id: <1411010509-31927-2-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411010509-31927-1-git-send-email-bobby.prani@gmail.com>
+References: <1411010509-31927-1-git-send-email-bobby.prani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
