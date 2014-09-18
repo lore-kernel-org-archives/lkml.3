@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084AbaIRNel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:34:41 -0400
-Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:49696
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755267AbaIRNek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:34:40 -0400
-Date: Thu, 18 Sep 2014 21:34:27 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Sanchayan Maity <maitysanchayan@gmail.com>
-CC: <stefan@agner.ch>, <jic23@kernel.org>, <B38611@freescale.com>,
-        <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] Implement temperature sensor for vf610-adc
-Message-ID: <20140918133426.GI4796@dragon>
-References: <cover.1411039381.git.maitysanchayan@gmail.com>
+	id S1755791AbaIRNhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 09:37:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874AbaIRNhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 09:37:23 -0400
+Message-ID: <541ADFEB.6030801@redhat.com>
+Date: Thu, 18 Sep 2014 15:36:43 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1411039381.git.maitysanchayan@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51704005)(24454002)(21056001)(19580405001)(84676001)(86362001)(4396001)(85306004)(87936001)(46406003)(104016003)(64706001)(50986999)(68736004)(33716001)(19580395003)(97756001)(106466001)(83506001)(76176999)(97736003)(83072002)(69596002)(92726001)(79102003)(74662003)(77982003)(107046002)(110136001)(57986006)(20776003)(46102003)(23726002)(50466002)(44976005)(102836001)(92566001)(6806004)(47776003)(85852003)(105606002)(81542003)(74502003)(54356999)(1411001)(83322001)(31966008)(99396002)(76482002)(81342003)(81156004)(33656002)(95666004)(90102001)(26826002)(80022003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB369;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033857D0BD
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Borislav Petkov <bp@alien8.de>
+CC: Nadav Amit <namit@cs.technion.ac.il>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+References: <20140917124501.GC5358@nazgul.tnic> <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il> <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il> <20140917132141.GD5358@nazgul.tnic> <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com> <20140917140601.GE5358@nazgul.tnic> <541AD8F3.5010700@redhat.com> <20140918132635.GB27008@nazgul.tnic>
+In-Reply-To: <20140918132635.GB27008@nazgul.tnic>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 05:23:22PM +0530, Sanchayan Maity wrote:
-> Vybrid ADC peripheral includes a temperature sensor
-> which is connected to channel number 26. The patch
-> adds support for the sensor. The raw value is read
-> and the temperature calculated in milli degree Celsius,
-> which is returned using IIO_CHAN_INFO_PROCESSED option.
+Il 18/09/2014 15:26, Borislav Petkov ha scritto:
+> On Thu, Sep 18, 2014 at 03:06:59PM +0200, Paolo Bonzini wrote:
+>> The extra bit used to be reserved and thus will be zero on older
+>> families.  So, nothing?
 > 
-> Sanchayan Maity (1):
->   ARM: imx: vf610-adc: Add temperature sensor support
+> "thus will be zero" is unfortunately simply not true.
+> 
+> From the SDM:
+> 
+> "1.3.2 Reserved Bits and Software Compatibility
+> 
+> In many register and memory layout descriptions, certain bits are marked
+> as reserved. When bits are marked as reserved, it is essential for
+> compatibility with future processors that software treat these bits as
+> having a future, though unknown, effect. The behavior of reserved bits
+> should be regarded as not only undefined, but unpredict- able. Software
+> should follow these guidelines in dealing with reserved bits:
 
-This is not an arch/arm/mach-imx patch, so shouldn't be prefixed with
-"ARM: imx: ".  And also it's more appropriate to put Jonathan Cameron
-<jic23@kernel.org> on "To:", since he is responsible for picking
-drivers/iio/adc patches.
+We're talking about the case where the field is not reserved anymore and
+we _know_ that the vendor has just decided to grow the bitfield that
+precedes it.
 
-Shawn
+As soon as we know that the field is not reserved anymore, we obviously
+rely on reserved bits being zero in older processors, and in future
+processors from other vendors.  The trivial example is feature bits like
+XSAVE.  We query them all the time without checking the family when they
+were first introduced, don't we?
 
+> * Do not depend on the states of any reserved bits when testing the values of registers that contain such bits.
+> Mask out the reserved bits before testing.
+
+Done by the bitfields.
+
+> *  Do not depend on the states of any reserved bits when storing to memory or to a register.
+
+Doesn't apply to CPUID.
+
+> * Do not depend on the ability to retain information written into any reserved bits.
+
+Doesn't apply to CPUID.
+
+> * When loading a register, always load the reserved bits with the values indicated in the documentation, if any,
+> or reload them with values previously read from the same register."
+
+Only applies to KVM, where it can be done with the bitfields too.
+
+> And so on and so on.
 > 
->  drivers/iio/adc/vf610_adc.c |   28 ++++++++++++++++++++++++++--
->  1 file changed, 26 insertions(+), 2 deletions(-)
+> Aaanyway, I see kvm folks are strongly determined to do this so I'll
+> propose you do it for kvm only and not touch the rest of arch/x86/.
 > 
-> -- 
-> 1.7.9.5
-> 
+> I really really disagree with casting CPUID words in stone and with
+> touching code which is perfectly fine.
+
+It's not really the KVM folks.  I actually kinda agree with you about
+"touching code that works", which is why I hadn't yet commented on the
+series.  But Ingo and Peter like it, so I can accept the patch as well.
+
+> But this is just me and the final word lies with x86 people so it'll
+> happen whatever they say.
+
+Yep, same with me---KVM will just follow suit.
+
+Paolo
