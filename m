@@ -1,59 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067AbaIRWh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 18:37:56 -0400
-Received: from hauke-m.de ([5.39.93.123]:59757 "EHLO hauke-m.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754604AbaIRWhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 18:37:55 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Sep 2014 18:37:54 EDT
-Message-ID: <541B5D5A.10800@hauke-m.de>
-Date: Fri, 19 Sep 2014 00:31:54 +0200
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Jonathan Richardson <jonathar@broadcom.com>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
-CC: devicetree@vger.kernel.org, Scott Branden <sbranden@broadcom.com>,
-        Ray Jui <rjui@broadcom.com>, linux-kernel@vger.kernel.org,
-        bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: Re: [PATCH 0/6] Add initial support for Broadcom Cygnus SoC
-References: <Jonathan Richardson <jonathar@broadcom.com> <1410897497-27527-1-git-send-email-jonathar@broadcom.com>
-In-Reply-To: <1410897497-27527-1-git-send-email-jonathar@broadcom.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1757372AbaIRWjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 18:39:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39883 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532AbaIRWjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 18:39:11 -0400
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] pinctrl: qcom: use restart_notifier mechanism for ps_hold
+Date: Thu, 18 Sep 2014 17:32:59 -0500
+Message-Id: <1411079579-10172-1-git-send-email-joshc@codeaurora.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 09:58 PM, Jonathan Richardson wrote:
-> Hi,
-> 
-> This patchset contains initial support for Broadcom's Cygnus SoC based on our
-> iProc architecture. Initial support is minimal and includes just the mach
-> platform code, clock driver, and a basic device tree configuration. Peripheral
-> drivers will be submitted soon, as will device tree configurations for other
-> Cygnus board variants.
+By converting to the restart_notifier mechanism for restart, we allow
+for other mechanisms, like the watchdog, to be used for restart in the
+case where PS_HOLD has failed to reset the chip.
 
-This SoC looks similar to the BCM5301X (Northstar) SoCs even some cores
-are at the same memory addresses. Does this SoC use an AXI bus with
-Broadcom Plugins at address 0x18000000 ?
+Choose priority 128, as according to documentation, this mechanism "is
+sufficient to restart the entire system".
 
-The BCM5301X (Northstar) SoCs also has an iProc Clock Control Unit and I
-will try to use your driver for that SoC.
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+---
+ drivers/pinctrl/qcom/pinctrl-msm.c | 38 ++++++++++++++++++++++++++------------
+ 1 file changed, 26 insertions(+), 12 deletions(-)
 
-Is Broadcom Cygnus similar to BCM563XX or is it actually the same SoC?
+diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+index d5ed127..9fced3b 100644
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -27,8 +27,7 @@
+ #include <linux/gpio.h>
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+-
+-#include <asm/system_misc.h>
++#include <linux/reboot.h>
+ 
+ #include "../core.h"
+ #include "../pinconf.h"
+@@ -43,6 +42,7 @@
+  * @dev:            device handle.
+  * @pctrl:          pinctrl handle.
+  * @chip:           gpiochip handle.
++ * @restart_nb:     restart notifier block.
+  * @irq:            parent irq for the TLMM irq_chip.
+  * @lock:           Spinlock to protect register resources as well
+  *                  as msm_pinctrl data structures.
+@@ -56,6 +56,7 @@ struct msm_pinctrl {
+ 	struct device *dev;
+ 	struct pinctrl_dev *pctrl;
+ 	struct gpio_chip chip;
++	struct notifier_block restart_nb;
+ 	int irq;
+ 
+ 	spinlock_t lock;
+@@ -852,13 +853,14 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_ARM
+-static void __iomem *msm_ps_hold;
+-
+-static void msm_reset(enum reboot_mode reboot_mode, const char *cmd)
++static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
++			       void *data)
+ {
+-	writel(0, msm_ps_hold);
++	struct msm_pinctrl *pctrl = container_of(nb, struct msm_pinctrl, restart_nb);
++
++	writel(0, pctrl->regs + PS_HOLD_OFFSET);
+ 	mdelay(10000);
++	return NOTIFY_DONE;
+ }
+ 
+ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
+@@ -868,13 +870,16 @@ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
+ 
+ 	for (; i <= pctrl->soc->nfunctions; i++)
+ 		if (!strcmp(func[i].name, "ps_hold")) {
+-			msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
+-			arm_pm_restart = msm_reset;
++			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
++			pctrl->restart_nb.priority = 128;
++			if (register_restart_handler(&pctrl->restart_nb)) {
++				dev_err(pctrl->dev,
++					"failed to setup restart handler.\n");
++				pctrl->restart_nb.notifier_call = NULL;
++			}
++			break;
+ 		}
+ }
+-#else
+-static void msm_pinctrl_setup_pm_reset(const struct msm_pinctrl *pctrl) {}
+-#endif
+ 
+ int msm_pinctrl_probe(struct platform_device *pdev,
+ 		      const struct msm_pinctrl_soc_data *soc_data)
+@@ -943,6 +948,15 @@ int msm_pinctrl_remove(struct platform_device *pdev)
+ 
+ 	pinctrl_unregister(pctrl->pctrl);
+ 
++	if (pctrl->restart_nb.notifier_call) {
++		ret = unregister_restart_handler(&pctrl->restart_nb);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"unable to unregister restart handler\n");
++			return ret;
++		}
++	}
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(msm_pinctrl_remove);
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Do you have some description of the hardware features of this SoC? Does
-it have PCIe, or Ethernet?
-
-Hauke
