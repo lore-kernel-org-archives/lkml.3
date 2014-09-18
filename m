@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488AbaIRCwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 22:52:08 -0400
-Received: from ozlabs.org ([103.22.144.67]:49243 "EHLO ozlabs.org"
+	id S932119AbaIRCwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 22:52:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:33545 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757004AbaIRCwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756264AbaIRCwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Sep 2014 22:52:01 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: Amos Kong <akong@redhat.com>, virtualization@lists.linux-foundation.org,
@@ -12,36 +12,132 @@ To: Amos Kong <akong@redhat.com>, virtualization@lists.linux-foundation.org,
         mb@bu3sch.de, mpm@selenic.com, amit.shah@redhat.com,
         linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 5/5] hw_random: don't init list element we're about to add to list.
-Date: Thu, 18 Sep 2014 12:18:26 +0930
-Message-Id: <1411008506-28349-5-git-send-email-rusty@rustcorp.com.au>
+Subject: [PATCH 1/5] hw_random: place mutex around read functions and buffers.
+Date: Thu, 18 Sep 2014 12:18:22 +0930
+Message-Id: <1411008506-28349-1-git-send-email-rusty@rustcorp.com.au>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411008506-28349-1-git-send-email-rusty@rustcorp.com.au>
+In-Reply-To: <87wq91odhf.fsf@rustcorp.com.au>
 References: <87wq91odhf.fsf@rustcorp.com.au>
- <1411008506-28349-1-git-send-email-rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another interesting anti-pattern.
+There's currently a big lock around everything, and it means that we
+can't query sysfs (eg /sys/devices/virtual/misc/hw_random/rng_current)
+while the rng is reading.  This is a real problem when the rng is slow,
+or blocked (eg. virtio_rng with qemu's default /dev/random backend)
+
+This doesn't help (it leaves the current lock untouched), just adds a
+lock to protect the read function and the static buffers, in preparation
+for transition.
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 ---
- drivers/char/hw_random/core.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/char/hw_random/core.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 6a34feca6b43..96fa06716e95 100644
+index aa30a25c8d49..b1b6042ad85c 100644
 --- a/drivers/char/hw_random/core.c
 +++ b/drivers/char/hw_random/core.c
-@@ -485,7 +485,6 @@ int hwrng_register(struct hwrng *rng)
+@@ -53,7 +53,10 @@
+ static struct hwrng *current_rng;
+ static struct task_struct *hwrng_fill;
+ static LIST_HEAD(rng_list);
++/* Protects rng_list and current_rng */
+ static DEFINE_MUTEX(rng_mutex);
++/* Protects rng read functions, data_avail, rng_buffer and rng_fillbuf */
++static DEFINE_MUTEX(reading_mutex);
+ static int data_avail;
+ static u8 *rng_buffer, *rng_fillbuf;
+ static unsigned short current_quality;
+@@ -81,7 +84,9 @@ static void add_early_randomness(struct hwrng *rng)
+ 	unsigned char bytes[16];
+ 	int bytes_read;
+ 
++	mutex_lock(&reading_mutex);
+ 	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
++	mutex_unlock(&reading_mutex);
+ 	if (bytes_read > 0)
+ 		add_device_randomness(bytes, bytes_read);
+ }
+@@ -128,6 +133,7 @@ static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
+ 			int wait) {
+ 	int present;
+ 
++	BUG_ON(!mutex_is_locked(&reading_mutex));
+ 	if (rng->read)
+ 		return rng->read(rng, (void *)buffer, size, wait);
+ 
+@@ -160,13 +166,14 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
  			goto out_unlock;
  		}
- 	}
--	INIT_LIST_HEAD(&rng->list);
- 	list_add_tail(&rng->list, &rng_list);
  
- 	if (old_rng && !rng->init) {
++		mutex_lock(&reading_mutex);
+ 		if (!data_avail) {
+ 			bytes_read = rng_get_data(current_rng, rng_buffer,
+ 				rng_buffer_size(),
+ 				!(filp->f_flags & O_NONBLOCK));
+ 			if (bytes_read < 0) {
+ 				err = bytes_read;
+-				goto out_unlock;
++				goto out_unlock_reading;
+ 			}
+ 			data_avail = bytes_read;
+ 		}
+@@ -174,7 +181,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
+ 		if (!data_avail) {
+ 			if (filp->f_flags & O_NONBLOCK) {
+ 				err = -EAGAIN;
+-				goto out_unlock;
++				goto out_unlock_reading;
+ 			}
+ 		} else {
+ 			len = data_avail;
+@@ -186,7 +193,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
+ 			if (copy_to_user(buf + ret, rng_buffer + data_avail,
+ 								len)) {
+ 				err = -EFAULT;
+-				goto out_unlock;
++				goto out_unlock_reading;
+ 			}
+ 
+ 			size -= len;
+@@ -194,6 +201,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
+ 		}
+ 
+ 		mutex_unlock(&rng_mutex);
++		mutex_unlock(&reading_mutex);
+ 
+ 		if (need_resched())
+ 			schedule_timeout_interruptible(1);
+@@ -208,6 +216,9 @@ out:
+ out_unlock:
+ 	mutex_unlock(&rng_mutex);
+ 	goto out;
++out_unlock_reading:
++	mutex_unlock(&reading_mutex);
++	goto out_unlock;
+ }
+ 
+ 
+@@ -348,13 +359,16 @@ static int hwrng_fillfn(void *unused)
+ 	while (!kthread_should_stop()) {
+ 		if (!current_rng)
+ 			break;
++		mutex_lock(&reading_mutex);
+ 		rc = rng_get_data(current_rng, rng_fillbuf,
+ 				  rng_buffer_size(), 1);
++		mutex_unlock(&reading_mutex);
+ 		if (rc <= 0) {
+ 			pr_warn("hwrng: no data available\n");
+ 			msleep_interruptible(10000);
+ 			continue;
+ 		}
++		/* Outside lock, sure, but y'know: randomness. */
+ 		add_hwgenerator_randomness((void *)rng_fillbuf, rc,
+ 					   rc * current_quality * 8 >> 10);
+ 	}
 -- 
 1.9.1
 
