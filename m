@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324AbaIRTVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 15:21:24 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:40625 "EHLO smtp.outflux.net"
+	id S1756489AbaIRTV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 15:21:28 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39639 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125AbaIRTVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 15:21:22 -0400
+	id S1756160AbaIRTVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 15:21:24 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
-        Will Deacon <will.deacon@arm.com>, Rabin Vincent <rabin@rab.in>,
+Cc: Kees Cook <keescook@chromium.org>, Mark Salter <msalter@redhat.com>,
         Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
+        Will Deacon <will.deacon@arm.com>, Rabin Vincent <rabin@rab.in>,
+        Leif Lindholm <leif.lindholm@linaro.org>, Liu hua <sdu.liu@huawei.com>,
         Nikolay Borisov <Nikolay.Borisov@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Doug Anderson <dianders@google.com>,
@@ -20,9 +19,9 @@ Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 6/8] arm: kgdb: Handle read-only text / modules
-Date: Thu, 18 Sep 2014 12:19:07 -0700
-Message-Id: <1411067949-10913-7-git-send-email-keescook@chromium.org>
+Subject: [PATCH v6 1/8] arm: use generic fixmap.h
+Date: Thu, 18 Sep 2014 12:19:02 -0700
+Message-Id: <1411067949-10913-2-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411067949-10913-1-git-send-email-keescook@chromium.org>
 References: <1411067949-10913-1-git-send-email-keescook@chromium.org>
@@ -31,82 +30,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+From: Mark Salter <msalter@redhat.com>
 
-Handle the case where someone has set the text segment of the kernel
-as read-only by using the newly introduced "patch" mechanism.
+ARM is different from other architectures in that fixmap pages are indexed
+with a positive offset from FIXADDR_START.  Other architectures index with
+a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
+definitions, this patch redefines FIXADDR_TOP to be inclusive of the
+useable range.  That is, FIXADDR_TOP is the virtual address of the topmost
+fixed page.  The newly defined FIXADDR_END is the first virtual address
+past the fixed mappings.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-[kees: switched structure size check to BUILD_BUG_ON (sboyd)]
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+[kees: update for a05e54c103b0 ("ARM: 8031/2: change fixmap ...")]
 Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>
+Cc: Rob Herring <robh@kernel.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/kernel/Makefile |  2 +-
- arch/arm/kernel/kgdb.c   | 29 +++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/fixmap.h | 27 +++++++++------------------
+ arch/arm/mm/init.c            |  2 +-
+ 2 files changed, 10 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f83d0e..70b730766330 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -67,7 +67,7 @@ test-kprobes-objs		+= kprobes-test-arm.o
- endif
- obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
- obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
--obj-$(CONFIG_KGDB)		+= kgdb.o
-+obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
- obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
- obj-$(CONFIG_HAVE_TCM)		+= tcm.o
- obj-$(CONFIG_OF)		+= devtree.o
-diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-index a74b53c1b7df..07db2f8a1b45 100644
---- a/arch/arm/kernel/kgdb.c
-+++ b/arch/arm/kernel/kgdb.c
-@@ -12,8 +12,12 @@
- #include <linux/irq.h>
- #include <linux/kdebug.h>
- #include <linux/kgdb.h>
-+#include <linux/uaccess.h>
-+
- #include <asm/traps.h>
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index 74124b0d0d79..a7add6f9315d 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -2,27 +2,18 @@
+ #define _ASM_FIXMAP_H
  
-+#include "patch.h"
-+
- struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
- {
- 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
-@@ -244,6 +248,31 @@ void kgdb_arch_exit(void)
- 	unregister_die_notifier(&kgdb_notifier);
- }
+ #define FIXADDR_START		0xffc00000UL
+-#define FIXADDR_TOP		0xffe00000UL
+-#define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
++#define FIXADDR_END		0xffe00000UL
++#define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
  
-+int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+	int err;
-+
-+	/* patch_text() only supports int-sized breakpoints */
-+	BUILD_BUG_ON(sizeof(int) != BREAK_INSTR_SIZE);
-+
-+	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
-+				BREAK_INSTR_SIZE);
-+	if (err)
-+		return err;
-+
-+	patch_text((void *)bpt->bpt_addr,
-+		   *(unsigned int *)arch_kgdb_ops.gdb_bpt_instr);
-+
-+	return err;
-+}
-+
-+int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+	patch_text((void *)bpt->bpt_addr, *(unsigned int *)bpt->saved_instr);
-+
-+	return 0;
-+}
-+
- /*
-  * Register our undef instruction hooks with ARM undef core.
-  * We regsiter a hook specifically looking for the KGB break inst
+-#define FIX_KMAP_NR_PTES	(FIXADDR_SIZE >> PAGE_SHIFT)
++#include <asm/kmap_types.h>
+ 
+-#define __fix_to_virt(x)	(FIXADDR_START + ((x) << PAGE_SHIFT))
+-#define __virt_to_fix(x)	(((x) - FIXADDR_START) >> PAGE_SHIFT)
++enum fixed_addresses {
++	FIX_KMAP_BEGIN,
++	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
+ 
+-extern void __this_fixmap_does_not_exist(void);
++	__end_of_fixed_addresses
++};
+ 
+-static inline unsigned long fix_to_virt(const unsigned int idx)
+-{
+-	if (idx >= FIX_KMAP_NR_PTES)
+-		__this_fixmap_does_not_exist();
+-	return __fix_to_virt(idx);
+-}
+-
+-static inline unsigned int virt_to_fix(const unsigned long vaddr)
+-{
+-	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
+-	return __virt_to_fix(vaddr);
+-}
++#include <asm-generic/fixmap.h>
+ 
+ #endif
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 659c75d808dc..ad82c05bfc3a 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -570,7 +570,7 @@ void __init mem_init(void)
+ 			MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
+ 			MLK(ITCM_OFFSET, (unsigned long) itcm_end),
+ #endif
+-			MLK(FIXADDR_START, FIXADDR_TOP),
++			MLK(FIXADDR_START, FIXADDR_END),
+ 			MLM(VMALLOC_START, VMALLOC_END),
+ 			MLM(PAGE_OFFSET, (unsigned long)high_memory),
+ #ifdef CONFIG_HIGHMEM
 -- 
 1.9.1
 
