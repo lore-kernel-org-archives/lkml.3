@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669AbaIRGWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 02:22:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33855 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaIRGWk (ORCPT
+	id S1755986AbaIRGdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 02:33:31 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:56209 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbaIRGda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 02:22:40 -0400
-Message-ID: <541A7A2B.4090305@infradead.org>
-Date: Wed, 17 Sep 2014 23:22:35 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 18 Sep 2014 02:33:30 -0400
+Date: Wed, 17 Sep 2014 23:33:26 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: denali: fix include guard and license block of
+ denali.h
+Message-ID: <20140918063326.GL7362@norris-Latitude-E6410>
+References: <1409310051-25726-1-git-send-email-yamada.m@jp.panasonic.com>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-CC: realmz6@gmail.com, tglx@linutronix.de, jason@lakedaemon.net
-Subject: Re: [PATCH] [trivial] treewide: Fix typos in Kconfig
-References: <1411009782-9070-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1411009782-9070-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409310051-25726-1-git-send-email-yamada.m@jp.panasonic.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/14 20:09, Masanari Iida wrote:
-> This patch fix spelling typos found in Kconfig.
+On Fri, Aug 29, 2014 at 08:00:51PM +0900, Masahiro Yamada wrote:
+> It looks like this header file is a concatenation of two headers.
+> Anyway, the include guard should be renamed and placed at the correct
+> postion and the license block in the middle should be deleted.
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+Pushed to l2-mtd.git. Thanks!
 
-Thanks.
-
-> ---
->  arch/blackfin/Kconfig           | 2 +-
->  arch/mips/cavium-octeon/Kconfig | 2 +-
->  drivers/i2c/busses/Kconfig      | 2 +-
->  drivers/irqchip/Kconfig         | 2 +-
->  drivers/platform/x86/Kconfig    | 8 ++++----
->  drivers/usb/host/Kconfig        | 2 +-
->  6 files changed, 9 insertions(+), 9 deletions(-)
-
-
--- 
-~Randy
+Brian
