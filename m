@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077AbaIRId2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:33:28 -0400
-Received: from ozlabs.org ([103.22.144.67]:45831 "EHLO ozlabs.org"
+	id S1756922AbaIRIdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:33:53 -0400
+Received: from ozlabs.org ([103.22.144.67]:35072 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753392AbaIRI1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:27:16 -0400
+	id S1751817AbaIRI1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 04:27:15 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
 Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH 02/15] powerpc/cell: Move data segment faulting code out of cell platform
-Date: Thu, 18 Sep 2014 18:26:47 +1000
-Message-Id: <1411028820-29933-3-git-send-email-mikey@neuling.org>
+Subject: [PATCH 01/15] powerpc/cell: Move spu_handle_mm_fault() out of cell platform
+Date: Thu, 18 Sep 2014 18:26:46 +1000
+Message-Id: <1411028820-29933-2-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411028820-29933-1-git-send-email-mikey@neuling.org>
 References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
@@ -24,158 +24,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-__spu_trap_data_seg() currently contains code to determine the VSID and ESID
-required for a particular EA and mm struct.
+Currently spu_handle_mm_fault() is in the cell platform.
 
-This code is generically useful for other co-processors.  This moves the code
-of the cell platform so it can be used by other powerpc code.
+This code is generically useful for other non-cell co-processors on powerpc.
+
+This patch moves this function out of the cell platform into arch/powerpc/mm so
+that others may use it.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/include/asm/mmu-hash64.h  |  2 ++
- arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
- arch/powerpc/mm/slb.c                  |  3 ---
- arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
- 4 files changed, 54 insertions(+), 40 deletions(-)
+ arch/powerpc/include/asm/copro.h                       | 18 ++++++++++++++++++
+ arch/powerpc/include/asm/spu.h                         |  5 ++---
+ arch/powerpc/mm/Makefile                               |  1 +
+ .../{platforms/cell/spu_fault.c => mm/copro_fault.c}   | 14 ++++++--------
+ arch/powerpc/platforms/cell/Makefile                   |  2 +-
+ arch/powerpc/platforms/cell/spufs/fault.c              |  4 ++--
+ 6 files changed, 30 insertions(+), 14 deletions(-)
+ create mode 100644 arch/powerpc/include/asm/copro.h
+ rename arch/powerpc/{platforms/cell/spu_fault.c => mm/copro_fault.c} (89%)
 
-diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-index d765144..fd19a53 100644
---- a/arch/powerpc/include/asm/mmu-hash64.h
-+++ b/arch/powerpc/include/asm/mmu-hash64.h
-@@ -180,6 +180,8 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
-  * we work in all cases including 4k page size.
-  */
- #define VPN_SHIFT	12
-+#define slb_vsid_shift(ssize)	\
-+	((ssize) == MMU_SEGSIZE_256M ? SLB_VSID_SHIFT : SLB_VSID_SHIFT_1T)
+diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
+new file mode 100644
+index 0000000..2858108
+--- /dev/null
++++ b/arch/powerpc/include/asm/copro.h
+@@ -0,0 +1,18 @@
++/*
++ * Copyright 2014 IBM Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#ifndef _ASM_POWERPC_COPRO_H
++#define _ASM_POWERPC_COPRO_H
++
++int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
++			  unsigned long dsisr, unsigned *flt);
++
++int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid);
++
++#endif /* _ASM_POWERPC_COPRO_H */
+diff --git a/arch/powerpc/include/asm/spu.h b/arch/powerpc/include/asm/spu.h
+index 37b7ca3..a6e6e2b 100644
+--- a/arch/powerpc/include/asm/spu.h
++++ b/arch/powerpc/include/asm/spu.h
+@@ -27,6 +27,8 @@
+ #include <linux/workqueue.h>
+ #include <linux/device.h>
+ #include <linux/mutex.h>
++#include <asm/reg.h>
++#include <asm/copro.h>
+ 
+ #define LS_SIZE (256 * 1024)
+ #define LS_ADDR_MASK (LS_SIZE - 1)
+@@ -277,9 +279,6 @@ void spu_remove_dev_attr(struct device_attribute *attr);
+ int spu_add_dev_attr_group(struct attribute_group *attrs);
+ void spu_remove_dev_attr_group(struct attribute_group *attrs);
+ 
+-int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+-		unsigned long dsisr, unsigned *flt);
+-
+ /*
+  * Notifier blocks:
+  *
+diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
+index d0130ff..a7f4dd7 100644
+--- a/arch/powerpc/mm/Makefile
++++ b/arch/powerpc/mm/Makefile
+@@ -34,3 +34,4 @@ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += hugepage-hash64.o
+ obj-$(CONFIG_PPC_SUBPAGE_PROT)	+= subpage-prot.o
+ obj-$(CONFIG_NOT_COHERENT_CACHE) += dma-noncoherent.o
+ obj-$(CONFIG_HIGHMEM)		+= highmem.o
++obj-$(CONFIG_SPU_BASE)		+= copro_fault.o
+diff --git a/arch/powerpc/platforms/cell/spu_fault.c b/arch/powerpc/mm/copro_fault.c
+similarity index 89%
+rename from arch/powerpc/platforms/cell/spu_fault.c
+rename to arch/powerpc/mm/copro_fault.c
+index 641e727..ba7df14 100644
+--- a/arch/powerpc/platforms/cell/spu_fault.c
++++ b/arch/powerpc/mm/copro_fault.c
+@@ -1,5 +1,5 @@
+ /*
+- * SPU mm fault handler
++ * CoProcessor (SPU/AFU) mm fault handler
+  *
+  * (C) Copyright IBM Deutschland Entwicklung GmbH 2007
+  *
+@@ -23,16 +23,14 @@
+ #include <linux/sched.h>
+ #include <linux/mm.h>
+ #include <linux/export.h>
+-
+-#include <asm/spu.h>
+-#include <asm/spu_csa.h>
++#include <asm/reg.h>
  
  /*
-  * HPTE Large Page (LP) details
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index ba7df14..4105a63 100644
---- a/arch/powerpc/mm/copro_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -90,3 +90,51 @@ out_unlock:
+  * This ought to be kept in sync with the powerpc specific do_page_fault
+  * function. Currently, there are a few corner cases that we haven't had
+  * to handle fortunately.
+  */
+-int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
++int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+ 		unsigned long dsisr, unsigned *flt)
+ {
+ 	struct vm_area_struct *vma;
+@@ -58,12 +56,12 @@ int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+ 			goto out_unlock;
+ 	}
+ 
+-	is_write = dsisr & MFC_DSISR_ACCESS_PUT;
++	is_write = dsisr & DSISR_ISSTORE;
+ 	if (is_write) {
+ 		if (!(vma->vm_flags & VM_WRITE))
+ 			goto out_unlock;
+ 	} else {
+-		if (dsisr & MFC_DSISR_ACCESS_DENIED)
++		if (dsisr & DSISR_PROTFAULT)
+ 			goto out_unlock;
+ 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
+ 			goto out_unlock;
+@@ -91,4 +89,4 @@ out_unlock:
+ 	up_read(&mm->mmap_sem);
  	return ret;
  }
- EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-+
-+int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
-+{
-+	int psize, ssize;
-+
-+	*esid = (ea & ESID_MASK) | SLB_ESID_V;
-+
-+	switch (REGION_ID(ea)) {
-+	case USER_REGION_ID:
-+		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
-+#ifdef CONFIG_PPC_MM_SLICES
-+		psize = get_slice_psize(mm, ea);
-+#else
-+		psize = mm->context.user_psize;
-+#endif
-+		ssize = user_segment_size(ea);
-+		*vsid = (get_vsid(mm->context.id, ea, ssize)
-+			<< slb_vsid_shift(ssize)) | SLB_VSID_USER
-+			| (ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
-+		break;
-+	case VMALLOC_REGION_ID:
-+		pr_devel("copro_data_segment: 0x%llx -- VMALLOC_REGION_ID\n", ea);
-+		if (ea < VMALLOC_END)
-+			psize = mmu_vmalloc_psize;
-+		else
-+			psize = mmu_io_psize;
-+		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
-+			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
-+			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
-+		break;
-+	case KERNEL_REGION_ID:
-+		pr_devel("copro_data_segment: 0x%llx -- KERNEL_REGION_ID\n", ea);
-+		psize = mmu_linear_psize;
-+		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
-+			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
-+			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
-+		break;
-+	default:
-+		/* Future: support kernel segments so that drivers can use the
-+		 * CoProcessors */
-+		pr_debug("invalid region access at %016llx\n", ea);
-+		return 1;
-+	}
-+	*vsid |= mmu_psize_defs[psize].sllp;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(copro_data_segment);
-diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
-index 0399a67..6e450ca 100644
---- a/arch/powerpc/mm/slb.c
-+++ b/arch/powerpc/mm/slb.c
-@@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
- 	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
- }
+-EXPORT_SYMBOL_GPL(spu_handle_mm_fault);
++EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+diff --git a/arch/powerpc/platforms/cell/Makefile b/arch/powerpc/platforms/cell/Makefile
+index fe053e7..2d16884 100644
+--- a/arch/powerpc/platforms/cell/Makefile
++++ b/arch/powerpc/platforms/cell/Makefile
+@@ -20,7 +20,7 @@ spu-manage-$(CONFIG_PPC_CELL_COMMON)	+= spu_manage.o
  
--#define slb_vsid_shift(ssize)	\
--	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
--
- static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
- 					 unsigned long flags)
- {
-diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
-index 2930d1e..fe004b1 100644
---- a/arch/powerpc/platforms/cell/spu_base.c
-+++ b/arch/powerpc/platforms/cell/spu_base.c
-@@ -167,45 +167,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
+ obj-$(CONFIG_SPU_BASE)			+= spu_callbacks.o spu_base.o \
+ 					   spu_notify.o \
+-					   spu_syscalls.o spu_fault.o \
++					   spu_syscalls.o \
+ 					   $(spu-priv1-y) \
+ 					   $(spu-manage-y) \
+ 					   spufs/
+diff --git a/arch/powerpc/platforms/cell/spufs/fault.c b/arch/powerpc/platforms/cell/spufs/fault.c
+index 8cb6260..e45894a 100644
+--- a/arch/powerpc/platforms/cell/spufs/fault.c
++++ b/arch/powerpc/platforms/cell/spufs/fault.c
+@@ -138,7 +138,7 @@ int spufs_handle_class1(struct spu_context *ctx)
+ 	if (ctx->state == SPU_STATE_RUNNABLE)
+ 		ctx->spu->stats.hash_flt++;
  
- static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
- {
--	struct mm_struct *mm = spu->mm;
- 	struct spu_slb slb;
--	int psize;
--
--	pr_debug("%s\n", __func__);
--
--	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
-+	int ret;
+-	/* we must not hold the lock when entering spu_handle_mm_fault */
++	/* we must not hold the lock when entering copro_handle_mm_fault */
+ 	spu_release(ctx);
  
--	switch(REGION_ID(ea)) {
--	case USER_REGION_ID:
--#ifdef CONFIG_PPC_MM_SLICES
--		psize = get_slice_psize(mm, ea);
--#else
--		psize = mm->context.user_psize;
--#endif
--		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
--				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
--		break;
--	case VMALLOC_REGION_ID:
--		if (ea < VMALLOC_END)
--			psize = mmu_vmalloc_psize;
--		else
--			psize = mmu_io_psize;
--		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
--				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
--		break;
--	case KERNEL_REGION_ID:
--		psize = mmu_linear_psize;
--		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
--				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
--		break;
--	default:
--		/* Future: support kernel segments so that drivers
--		 * can use SPUs.
--		 */
--		pr_debug("invalid region access at %016lx\n", ea);
--		return 1;
--	}
--	slb.vsid |= mmu_psize_defs[psize].sllp;
-+	ret = copro_data_segment(spu->mm, ea, &slb.esid, &slb.vsid);
-+	if (ret)
-+		return ret;
+ 	access = (_PAGE_PRESENT | _PAGE_USER);
+@@ -149,7 +149,7 @@ int spufs_handle_class1(struct spu_context *ctx)
  
- 	spu_load_slb(spu, spu->slb_replace, &slb);
+ 	/* hashing failed, so try the actual fault handler */
+ 	if (ret)
+-		ret = spu_handle_mm_fault(current->mm, ea, dsisr, &flt);
++		ret = copro_handle_mm_fault(current->mm, ea, dsisr, &flt);
  
+ 	/*
+ 	 * This is nasty: we need the state_mutex for all the bookkeeping even
 -- 
 1.9.1
 
