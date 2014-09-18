@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323AbaIROtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:49:47 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:60457 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653AbaIROtq (ORCPT
+	id S1756754AbaIROu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 10:50:29 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:57952 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756313AbaIROu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:49:46 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: [PATCH 1/2] drbd: compute the end before rb_insert_augmented()
-Date: Thu, 18 Sep 2014 16:49:41 +0200
-Message-Id: <1411051782-23375-2-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411051782-23375-1-git-send-email-philipp.reisner@linbit.com>
-References: <1411051782-23375-1-git-send-email-philipp.reisner@linbit.com>
+	Thu, 18 Sep 2014 10:50:26 -0400
+Message-ID: <541AF116.9010004@st.com>
+Date: Thu, 18 Sep 2014 16:49:58 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, <rayagond@vayavyalabs.com>
+Cc: Vince Bridgers <vbridgers2013@gmail.com>, Chen-Yu Tsai <wens@csie.org>,
+        <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ong Boon Leong <boon.leong.ong@intel.com>,
+        Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+Subject: Re: [PATCH] net: stmmac: fix stmmac_pci_probe failed when CONFIG_HAVE_CLK
+ is selected
+References: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
+In-Reply-To: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.218]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-18_05:2014-09-18,2014-09-18,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+On 9/18/2014 2:34 PM, Kweh Hock Leong wrote:
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+>
+> When the CONFIG_HAVE_CLK is selected for the system, the stmmac_pci_probe
+> will fail with dmesg:
+> [    2.167225] stmmaceth 0000:00:14.6: enabling device (0000 -> 0002)
+> [    2.178267] stmmaceth 0000:00:14.6: enabling bus mastering
+> [    2.178436] stmmaceth 0000:00:14.6: irq 24 for MSI/MSI-X
+> [    2.178703] stmmaceth 0000:00:14.6: stmmac_dvr_probe: warning: cannot
+> get CSR clock
+> [    2.186503] stmmac_pci_probe: main driver probe failed
+> [    2.194003] stmmaceth 0000:00:14.6: disabling bus mastering
+> [    2.196473] stmmaceth: probe of 0000:00:14.6 failed with error -2
+>
+> This patch fix the issue by breaking the dependency to devm_clk_get()
+> as the CSR clock can be obtained at priv->plat->clk_csr from pci driver.
+>
+> Reported-by: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
+> ---
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   13 +++++++++----
+>   1 file changed, 9 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> index 08addd6..ea3859a 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -2714,10 +2714,15 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+>
+>   	priv->stmmac_clk = devm_clk_get(priv->device, STMMAC_RESOURCE_NAME);
+>   	if (IS_ERR(priv->stmmac_clk)) {
+> -		dev_warn(priv->device, "%s: warning: cannot get CSR clock\n",
 
-Commit 98683650 "Merge branch 'drbd-8.4_ed6' into
-for-3.8-drivers-drbd-8.4_ed6" switches to the new augment API, but the
-new API requires that the tree is augmented before rb_insert_augmented()
-is called, which is missing.
 
-So we add the augment-code to drbd_insert_interval() when it travels the
-tree up to down before rb_insert_augmented().  See the example in
-include/linux/interval_tree_generic.h or Documentation/rbtree.txt.
+Hmm I am not sure this is the right fix. The driver has to fail if the
+main clock is not found. Indeed dev_warn has to be changed in dev_err.
 
-drbd_insert_interval() may cancel the insertion when traveling, in this
-case, the just added augment-code does nothing before cancel since the
-@this node is already in the subtrees in this case.
+Take a look at Documentation/networking/stmmac.txt but I will post some
+patch to improve the documentation adding further detail for clocks too.
 
-CC: Michel Lespinasse <walken@google.com>
-CC: stable@kernel.org # v3.10+
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
----
- drivers/block/drbd/drbd_interval.c | 4 ++++
- 1 file changed, 4 insertions(+)
+The the logic behind the code is that the CSR clock will be set at
+runtime if in case of priv->plat->clk_csr ==0 or it will be forced to
+a fixed value if passed from the platform instead of.
+IIRC This was required on some platforms time ago.
+For sure the driver is designed to fail in case of no main clock is
+found.
 
-diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
-index 89c497c..04a14e0 100644
---- a/drivers/block/drbd/drbd_interval.c
-+++ b/drivers/block/drbd/drbd_interval.c
-@@ -79,6 +79,7 @@ bool
- drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
- {
- 	struct rb_node **new = &root->rb_node, *parent = NULL;
-+	sector_t this_end = this->sector + (this->size >> 9);
- 
- 	BUG_ON(!IS_ALIGNED(this->size, 512));
- 
-@@ -87,6 +88,8 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
- 			rb_entry(*new, struct drbd_interval, rb);
- 
- 		parent = *new;
-+		if (here->end < this_end)
-+			here->end = this_end;
- 		if (this->sector < here->sector)
- 			new = &(*new)->rb_left;
- 		else if (this->sector > here->sector)
-@@ -99,6 +102,7 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
- 			return false;
- 	}
- 
-+	this->end = this_end;
- 	rb_link_node(&this->rb, parent, new);
- 	rb_insert_augmented(&this->rb, root, &augment_callbacks);
- 	return true;
--- 
-1.9.1
+Peppe
+
+
+> -			 __func__);
+> -		ret = PTR_ERR(priv->stmmac_clk);
+> -		goto error_clk_get;
+> +		if (!priv->plat->clk_csr) {
+> +			dev_warn(priv->device,
+> +				 "%s: warning: cannot get CSR clock\n",
+> +				 __func__);
+> +			ret = PTR_ERR(priv->stmmac_clk);
+> +			goto error_clk_get;
+> +		} else {
+> +			priv->stmmac_clk = NULL;
+> +		}
+>   	}
+>   	clk_prepare_enable(priv->stmmac_clk);
+>
+>
 
