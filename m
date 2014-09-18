@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218AbaIRPAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:00:31 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:48886 "EHLO
+	id S1756727AbaIRPAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:00:46 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:48957 "EHLO
 	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154AbaIRPA1 (ORCPT
+	with ESMTP id S932222AbaIRPAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:00:27 -0400
+	Thu, 18 Sep 2014 11:00:44 -0400
 From: Nathan Lynch <nathan_lynch@mentor.com>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>
 CC: Catalin Marinas <catalin.marinas@arm.com>,
@@ -20,9 +20,9 @@ CC: Catalin Marinas <catalin.marinas@arm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Will Deacon <will.deacon@arm.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/3] clocksource: arm_arch_timer: enable counter access for 32-bit ARM
-Date: Thu, 18 Sep 2014 09:59:34 -0500
-Message-ID: <1411052390-27238-3-git-send-email-nathan_lynch@mentor.com>
+Subject: [PATCH v2 3/3] clocksource: arm_arch_timer: consolidate arch_timer_evtstrm_enable
+Date: Thu, 18 Sep 2014 09:59:35 -0500
+Message-ID: <1411052390-27238-4-git-send-email-nathan_lynch@mentor.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
 References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
@@ -32,100 +32,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only difference between arm and arm64's implementations of
-arch_counter_set_user_access is that 32-bit ARM does not enable user
-access to the virtual counter.  We want to enable this access for the
-32-bit ARM VDSO, so copy the arm64 version to the driver itself, and
-remove the arch-specific implementations.
+The arch_timer_evtstrm_enable hooks in arm and arm64 are substantially
+similar, the only difference being a CONFIG_COMPAT-conditional section
+which is relevant only for arm64.  Copy the arm64 version to the
+driver, removing the arch-specific hooks.
 
 Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
 ---
- arch/arm/include/asm/arch_timer.h    | 14 --------------
- arch/arm64/include/asm/arch_timer.h  | 17 -----------------
- drivers/clocksource/arm_arch_timer.c | 17 +++++++++++++++++
- 3 files changed, 17 insertions(+), 31 deletions(-)
+ arch/arm/include/asm/arch_timer.h    | 11 -----------
+ arch/arm64/include/asm/arch_timer.h  | 14 --------------
+ drivers/clocksource/arm_arch_timer.c | 15 +++++++++++++++
+ 3 files changed, 15 insertions(+), 25 deletions(-)
 
 diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index 0704e0cf5571..b7ae44464231 100644
+index b7ae44464231..92793ba69c40 100644
 --- a/arch/arm/include/asm/arch_timer.h
 +++ b/arch/arm/include/asm/arch_timer.h
-@@ -99,20 +99,6 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
+@@ -99,17 +99,6 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
  }
  
--static inline void arch_counter_set_user_access(void)
+-static inline void arch_timer_evtstrm_enable(int divider)
 -{
 -	u32 cntkctl = arch_timer_get_cntkctl();
--
--	/* Disable user access to both physical/virtual counters/timers */
--	/* Also disable virtual event stream */
--	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
--			| ARCH_TIMER_USR_VT_ACCESS_EN
--			| ARCH_TIMER_VIRT_EVT_EN
--			| ARCH_TIMER_USR_VCT_ACCESS_EN
--			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+-	cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
+-	/* Set the divider and enable virtual event stream */
+-	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
+-			| ARCH_TIMER_VIRT_EVT_EN;
 -	arch_timer_set_cntkctl(cntkctl);
+-	elf_hwcap |= HWCAP_EVTSTRM;
 -}
 -
- static inline void arch_timer_evtstrm_enable(int divider)
- {
- 	u32 cntkctl = arch_timer_get_cntkctl();
+ #endif
+ 
+ #endif
 diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index 9400596a0f39..49e94c677e7a 100644
+index 49e94c677e7a..f19097134b02 100644
 --- a/arch/arm64/include/asm/arch_timer.h
 +++ b/arch/arm64/include/asm/arch_timer.h
-@@ -104,23 +104,6 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
+@@ -104,20 +104,6 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
  }
  
--static inline void arch_counter_set_user_access(void)
+-static inline void arch_timer_evtstrm_enable(int divider)
 -{
 -	u32 cntkctl = arch_timer_get_cntkctl();
--
--	/* Disable user access to the timers and the physical counter */
--	/* Also disable virtual event stream */
--	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
--			| ARCH_TIMER_USR_VT_ACCESS_EN
--			| ARCH_TIMER_VIRT_EVT_EN
--			| ARCH_TIMER_USR_PCT_ACCESS_EN);
--
--	/* Enable user access to the virtual counter */
--	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
--
+-	cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
+-	/* Set the divider and enable virtual event stream */
+-	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
+-			| ARCH_TIMER_VIRT_EVT_EN;
 -	arch_timer_set_cntkctl(cntkctl);
+-	elf_hwcap |= HWCAP_EVTSTRM;
+-#ifdef CONFIG_COMPAT
+-	compat_elf_hwcap |= COMPAT_HWCAP_EVTSTRM;
+-#endif
 -}
 -
- static inline void arch_timer_evtstrm_enable(int divider)
+ static inline u64 arch_counter_get_cntvct(void)
  {
- 	u32 cntkctl = arch_timer_get_cntkctl();
+ 	u64 cval;
 diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index c99afdf12e98..31781fdd7c19 100644
+index 31781fdd7c19..ce5f99e957b9 100644
 --- a/drivers/clocksource/arm_arch_timer.c
 +++ b/drivers/clocksource/arm_arch_timer.c
-@@ -312,6 +312,23 @@ static void arch_timer_configure_evtstream(void)
- 	arch_timer_evtstrm_enable(min(pos, 15));
+@@ -299,6 +299,21 @@ static void __arch_timer_setup(unsigned type,
+ 	clockevents_config_and_register(clk, arch_timer_rate, 0xf, 0x7fffffff);
  }
  
-+static void arch_counter_set_user_access(void)
++static void arch_timer_evtstrm_enable(int divider)
 +{
 +	u32 cntkctl = arch_timer_get_cntkctl();
 +
-+	/* Disable user access to the timers and the physical counter */
-+	/* Also disable virtual event stream */
-+	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
-+			| ARCH_TIMER_USR_VT_ACCESS_EN
-+			| ARCH_TIMER_VIRT_EVT_EN
-+			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-+
-+	/* Enable user access to the virtual counter */
-+	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
-+
++	cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
++	/* Set the divider and enable virtual event stream */
++	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++			| ARCH_TIMER_VIRT_EVT_EN;
 +	arch_timer_set_cntkctl(cntkctl);
++	elf_hwcap |= HWCAP_EVTSTRM;
++#ifdef CONFIG_COMPAT
++	compat_elf_hwcap |= COMPAT_HWCAP_EVTSTRM;
++#endif
 +}
 +
- static int arch_timer_setup(struct clock_event_device *clk)
+ static void arch_timer_configure_evtstream(void)
  {
- 	__arch_timer_setup(ARCH_CP15_TIMER, clk);
+ 	int evt_stream_div, pos;
 -- 
 1.9.3
 
