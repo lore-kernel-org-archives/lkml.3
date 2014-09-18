@@ -1,104 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaIRX1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 19:27:23 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47824 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451AbaIRX1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 19:27:21 -0400
-From: Amit Pundir <amit.pundir@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Todd Poynor <toddpoynor@google.com>, Pavel Machek <pavel@ucw.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        Amit Pundir <amit.pundir@linaro.org>
-Subject: [PATCH v2] PM: Print wall time at suspend entry and exit
-Date: Fri, 19 Sep 2014 04:57:12 +0530
-Message-Id: <1411082832-4713-1-git-send-email-amit.pundir@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1755059AbaIRX3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 19:29:17 -0400
+Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:45307
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751223AbaIRX3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 19:29:16 -0400
+Message-ID: <1411082946.13320.29.camel@snotra.buserror.net>
+Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
+From: Scott Wood <scottwood@freescale.com>
+To: Yoder Stuart-B08248 <stuart.yoder@freescale.com>
+CC: Phillips Kim-R1AAHA <Kim.Phillips@freescale.com>,
+        Alexander Graf <agraf@suse.de>,
+        Rivera Jose-B46482 <German.Rivera@freescale.com>,
+        <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 18 Sep 2014 18:29:06 -0500
+In-Reply-To: <581cd5a2ba854ef883ba488cec70ad62@CY1PR0301MB0748.namprd03.prod.outlook.com>
+References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
+	 <1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
+	 <20140915184451.962a3a19c4940792d182f10a@freescale.com>
+	 <541A5CF1.8000409@freescale.com>
+	 <C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
+	 <20140918152233.41647ee517393816bb35b72a@freescale.com>
+	 <581cd5a2ba854ef883ba488cec70ad62@CY1PR0301MB0748.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:9d2d:42ec:ad0e:7ffa]
+X-ClientProxiedBy: DM2PR04CA032.namprd04.prod.outlook.com (10.141.154.150) To
+ CY1PR0301MB0729.namprd03.prod.outlook.com (25.160.159.147)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 033857D0BD
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(377454003)(13464003)(377424004)(479174003)(189002)(199003)(50466002)(21056001)(50226001)(79102003)(81542003)(46102003)(77982003)(83322001)(19580395003)(81342003)(77096002)(62966002)(80022003)(95666004)(74662003)(74502003)(19580405001)(42186005)(23676002)(87286001)(93886004)(85306004)(77156001)(4396001)(31966008)(90102001)(107046002)(110136001)(64706001)(97736003)(103116003)(101416001)(106356001)(33646002)(99396002)(105586002)(20776003)(47776003)(92726001)(85852003)(88136002)(87976001)(86362001)(92566001)(89996001)(104166001)(83072002)(93916002)(76482002)(50986999)(76176999)(102836001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0729;H:[IPv6:2601:2:5800:3f7:9d2d:42ec:ad0e:7ffa];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Todd Poynor <toddpoynor@google.com>
+On Thu, 2014-09-18 at 18:13 -0500, Yoder Stuart-B08248 wrote:
+> 
+> > -----Original Message-----
+> > From: Kim Phillips [mailto:kim.phillips@freescale.com]
+> > Sent: Thursday, September 18, 2014 3:23 PM
+> > To: Alexander Graf
+> > Cc: Rivera Jose-B46482; <gregkh@linuxfoundation.org>; <arnd@arndb.de>; <linux-kernel@vger.kernel.org>; Yoder
+> > Stuart-B08248; Wood Scott-B07421; <linuxppc-release@linux.freescale.net>
+> > Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
+> > 
+> > On Thu, 18 Sep 2014 15:14:03 +0200
+> > Alexander Graf <agraf@suse.de> wrote:
+> > 
+> > > > Am 18.09.2014 um 06:17 schrieb German Rivera <German.Rivera@freescale.com>:
+> > > >
+> > > >> On 09/15/2014 06:44 PM, Kim Phillips wrote:
+> > > >> On Thu, 11 Sep 2014 12:34:21 -0500
+> > > >> "J. German Rivera" <German.Rivera@freescale.com> wrote:
+> > > >>
+> > > >>> From: "J. German Rivera" <German.Rivera@freescale.com>
+> > > >>>
+> > > >>> APIs to access the Management Complex (MC) hardware
+> > > >>> module of Freescale LS2 SoCs. This patch includes
+> > > >>> APIs to check the MC firmware version and to manipulate
+> > > >>> DPRC objects in the MC.
+> > > >>>
+> > > >>> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
+> > > >>> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> > > >>> ---
+> > > >>>  drivers/bus/fsl-mc/dpmng.c         |   93 +++++
+> > > >>>  drivers/bus/fsl-mc/dprc.c          |  504 +++++++++++++++++++++++
+> > > >>>  drivers/bus/fsl-mc/fsl_dpmng_cmd.h |   83 ++++
+> > > >>>  drivers/bus/fsl-mc/fsl_dprc_cmd.h  |  545 +++++++++++++++++++++++++
+> > > >>>  drivers/bus/fsl-mc/fsl_mc_sys.c    |  237 +++++++++++
+> > > >>>  include/linux/fsl_dpmng.h          |  120 ++++++
+> > > >>>  include/linux/fsl_dprc.h           |  790 ++++++++++++++++++++++++++++++++++++
+> > > >>>  include/linux/fsl_mc_cmd.h         |  182 +++++++++
+> > > >>>  include/linux/fsl_mc_sys.h         |   81 ++++
+> > > >>>  9 files changed, 2635 insertions(+)
+> > > >>>  create mode 100644 drivers/bus/fsl-mc/dpmng.c
+> > > >>>  create mode 100644 drivers/bus/fsl-mc/dprc.c
+> > > >>>  create mode 100644 drivers/bus/fsl-mc/fsl_dpmng_cmd.h
+> > > >>>  create mode 100644 drivers/bus/fsl-mc/fsl_dprc_cmd.h
+> > > >>>  create mode 100644 drivers/bus/fsl-mc/fsl_mc_sys.c
+> > > >>>  create mode 100644 include/linux/fsl_dpmng.h
+> > > >>>  create mode 100644 include/linux/fsl_dprc.h
+> > > >>>  create mode 100644 include/linux/fsl_mc_cmd.h
+> > > >>>  create mode 100644 include/linux/fsl_mc_sys.h
+> > > >>
+> > > >> the fsl prefix in the filename fsl_dpmng_cmd.h is redundant with
+> > > >> its directory name fsl-mc/.  Note that I find dashes ('-') in
+> > > >> filenames make them easier to type: is there a reason we're using
+> > > >> underscores here?
+> > > > This is a convention that we decided early on '-' for directory names
+> > > > and '_' for file names.
+> > 
+> > based on what?
+> 
+> We looked at how generally files were named in kernel source.
+> 
+> For what it's worth in my 3.16 branch:
+> 
+> $ find drivers/ -type f | grep '-' | wc -l
+> 4308
+> $ find drivers/ -type f | grep '_' | wc -l
+> 6507
+> 
+> ...it seems that there are far more files named with underscores.  If Greg
+> or Arnd wants the files renamed, fine, but other than that I see no reason
+> to change this.
 
-Existing timestamps in a dmesg only log suspend activities
-(e.g. filesystem syncs, freezing/unfreezing tasks etc) while the
-system has already started to enter/exit the suspend state.
+60% isn't "far more".  Regardless of whether we change this (dashes are
+easier to read, easier to type, and are what English normally uses --
+underscores are for when you can't use a dash for technical reasons),
+let's not start making rules based on weak statistical inferences.
 
-Sometimes it is handy to have suspend entry/exit overhead
-information while debugging suspend issues. This patch print
-markers with wall timestamps at suspend Entry and Exit in
-the kernel log. These timestamps can be used to compute how
-long the system spent in low-power suspend state plus the
-entry/exit overhead.
+Plus, why limit the search to drivers?  E.g. if you looked at arch/
+you'd reach the opposite conclusion.
 
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>
-Cc: linux-pm@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-[Amit Pundir: Reworded the commit message]
-Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
----
-Resending this patch assuming that it might have got lost in between merge
-window rush last time and now people might have some time to look at it.
+-Scott
 
- kernel/power/suspend.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 18c6219..5390c6c 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -26,6 +26,7 @@
- #include <linux/suspend.h>
- #include <linux/syscore_ops.h>
- #include <linux/ftrace.h>
-+#include <linux/rtc.h>
- #include <trace/events/power.h>
- #include <linux/compiler.h>
- 
-@@ -443,6 +444,18 @@ static int enter_state(suspend_state_t state)
- 	return error;
- }
- 
-+static void pm_suspend_marker(char *annotation)
-+{
-+	struct timespec ts;
-+	struct rtc_time tm;
-+
-+	getnstimeofday(&ts);
-+	rtc_time_to_tm(ts.tv_sec, &tm);
-+	pr_info("PM: suspend %s %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
-+		annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-+		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
-+}
-+
- /**
-  * pm_suspend - Externally visible function for suspending the system.
-  * @state: System sleep state to enter.
-@@ -457,6 +470,7 @@ int pm_suspend(suspend_state_t state)
- 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
- 		return -EINVAL;
- 
-+	pm_suspend_marker("entry");
- 	error = enter_state(state);
- 	if (error) {
- 		suspend_stats.fail++;
-@@ -464,6 +478,7 @@ int pm_suspend(suspend_state_t state)
- 	} else {
- 		suspend_stats.success++;
- 	}
-+	pm_suspend_marker("exit");
- 	return error;
- }
- EXPORT_SYMBOL(pm_suspend);
--- 
-1.9.1
 
