@@ -1,112 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaIRSc3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 14:32:29 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:62066 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaIRSc2 (ORCPT
+	id S932716AbaIRScd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 14:32:33 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:57365 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932682AbaIRSca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 14:32:28 -0400
-Date: Thu, 18 Sep 2014 14:32:25 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 1/2] sched: let the scheduler see CPU idle states
-In-Reply-To: <20140918173733.GQ4723@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.11.1409181425080.8647@knanqh.ubzr>
-References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org> <1409844730-12273-2-git-send-email-nicolas.pitre@linaro.org> <20140918173733.GQ4723@linux.vnet.ibm.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 18 Sep 2014 14:32:30 -0400
+Message-ID: <1411065148.2017.74.camel@x220>
+Subject: [PATCH 2/5] MN10300: Remove Kconfig symbols depending on GDBSTUB
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Sep 2014 20:32:28 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Sep 2014 18:32:28.0734 (UTC) FILETIME=[E6B245E0:01CFD36E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014, Paul E. McKenney wrote:
+The Kconfig symbol GDBSTUB was removed. Remove all symbols (indirectly)
+depending on it. And remove it as an (optional) dependency for the
+symbol KERNEL_DEBUGGER.
 
-> On Thu, Sep 04, 2014 at 11:32:09AM -0400, Nicolas Pitre wrote:
-> > From: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > 
-> > When the cpu enters idle, it stores the cpuidle state pointer in its
-> > struct rq instance which in turn could be used to make a better decision
-> > when balancing tasks.
-> > 
-> > As soon as the cpu exits its idle state, the struct rq reference is
-> > cleared.
-> > 
-> > There are a couple of situations where the idle state pointer could be changed
-> > while it is being consulted:
-> > 
-> > 1. For x86/acpi with dynamic c-states, when a laptop switches from battery
-> >    to AC that could result on removing the deeper idle state. The acpi driver
-> >    triggers:
-> > 	'acpi_processor_cst_has_changed'
-> > 		'cpuidle_pause_and_lock'
-> > 			'cpuidle_uninstall_idle_handler'
-> > 				'kick_all_cpus_sync'.
-> > 
-> > All cpus will exit their idle state and the pointed object will be set to
-> > NULL.
-> > 
-> > 2. The cpuidle driver is unloaded. Logically that could happen but not
-> > in practice because the drivers are always compiled in and 95% of them are
-> > not coded to unregister themselves.  In any case, the unloading code must
-> > call 'cpuidle_unregister_device', that calls 'cpuidle_pause_and_lock'
-> > leading to 'kick_all_cpus_sync' as mentioned above.
-> > 
-> > A race can happen if we use the pointer and then one of these two scenarios
-> > occurs at the same moment.
-> > 
-> > In order to be safe, the idle state pointer stored in the rq must be
-> > used inside a rcu_read_lock section where we are protected with the
-> > 'rcu_barrier' in the 'cpuidle_uninstall_idle_handler' function. The
-> > idle_get_state() and idle_put_state() accessors should be used to that
-> > effect.
-> > 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> > ---
-> >  drivers/cpuidle/cpuidle.c |  6 ++++++
-> >  kernel/sched/idle.c       |  6 ++++++
-> >  kernel/sched/sched.h      | 39 +++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 51 insertions(+)
-> > 
-> > diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> > index ee9df5e3f5..530e3055a2 100644
-> > --- a/drivers/cpuidle/cpuidle.c
-> > +++ b/drivers/cpuidle/cpuidle.c
-> > @@ -225,6 +225,12 @@ void cpuidle_uninstall_idle_handler(void)
-> >  		initialized = 0;
-> >  		kick_all_cpus_sync();
-> >  	}
-> > +
-> > +	/*
-> > +	 * Make sure external observers (such as the scheduler)
-> > +	 * are done looking at pointed idle states.
-> > +	 */
-> > +	rcu_barrier();
-> 
-> Actually, all rcu_barrier() does is to make sure that all previously
-> queued RCU callbacks have been invoked.  And given the current
-> implementation, if there are no callbacks queued anywhere in the system,
-> rcu_barrier() is an extended no-op.  "Has CPU 0 any callbacks?" "Nope!"
-> "Has CPU 1 any callbacks?"  "Nope!" ... "Has CPU nr_cpu_ids-1 any
-> callbacks?"  "Nope!"  "OK, done!"
-> 
-> This is all done with the current task looking at per-CPU data structures,
-> with no interaction with the scheduler and with no need to actually make
-> those other CPUs do anything.
-> 
-> So what is it that you really need to do here?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ arch/mn10300/Kconfig.debug | 105 +--------------------------------------------
+ 1 file changed, 1 insertion(+), 104 deletions(-)
 
-In short, we don't want the cpufreq data to go away (see the 2 scenarios 
-above) while the scheduler is looking at it.  The scheduler uses the 
-provided accessors (see patch 2/2) so we can put any protection 
-mechanism we want in them.  A simple spinlock could do just as well 
-which should be good enough.
+diff --git a/arch/mn10300/Kconfig.debug b/arch/mn10300/Kconfig.debug
+index 6a8c7e8d6156..a1acb29f6b2a 100644
+--- a/arch/mn10300/Kconfig.debug
++++ b/arch/mn10300/Kconfig.debug
+@@ -30,111 +30,8 @@ config KPROBES
+ 	  for kernel debugging, non-intrusive instrumentation and testing.
+ 	  If in doubt, say "N".
+ 
+-config GDBSTUB_IMMEDIATE
+-	bool "Break into GDB stub immediately"
+-	depends on GDBSTUB
+-	help
+-	  If you say Y here, GDB stub will break into the program as soon as
+-	  possible, leaving the program counter at the beginning of
+-	  start_kernel() in init/main.c.
+-
+-config GDBSTUB_ALLOW_SINGLE_STEP
+-	bool "Allow software single-stepping in GDB stub"
+-	depends on GDBSTUB && !SMP && !PREEMPT
+-	help
+-	  Allow GDB stub to perform software single-stepping through the
+-	  kernel.  This doesn't work very well on SMP or preemptible kernels as
+-	  it uses temporary breakpoints to emulate single-stepping.
+-
+-config GDB_CONSOLE
+-	bool "Console output to GDB"
+-	depends on GDBSTUB
+-	help
+-	  If you are using GDB for remote debugging over a serial port and
+-	  would like kernel messages to be formatted into GDB $O packets so
+-	  that GDB prints them as program output, say 'Y'.
+-
+-config GDBSTUB_DEBUGGING
+-	bool "Debug GDB stub by messages to serial port"
+-	depends on GDBSTUB
+-	help
+-	  This causes debugging messages to be displayed at various points
+-	  during execution of the GDB stub routines. Such messages will be
+-	  displayed on ttyS0 if that isn't the GDB stub's port, or ttySM0
+-	  otherwise.
+-
+-config GDBSTUB_DEBUG_ENTRY
+-	bool "Debug GDB stub entry"
+-	depends on GDBSTUB_DEBUGGING
+-	help
+-	  This option causes information to be displayed about entry to or exit
+-	  from the main GDB stub routine.
+-
+-config GDBSTUB_DEBUG_PROTOCOL
+-	bool "Debug GDB stub protocol"
+-	depends on GDBSTUB_DEBUGGING
+-	help
+-	  This option causes information to be displayed about the GDB remote
+-	  protocol messages generated exchanged with GDB.
+-
+-config GDBSTUB_DEBUG_IO
+-	bool "Debug GDB stub I/O"
+-	depends on GDBSTUB_DEBUGGING
+-	help
+-	  This option causes information to be displayed about GDB stub's
+-	  low-level I/O.
+-
+-config GDBSTUB_DEBUG_BREAKPOINT
+-	bool "Debug GDB stub breakpoint management"
+-	depends on GDBSTUB_DEBUGGING
+-	help
+-	  This option causes information to be displayed about GDB stub's
+-	  breakpoint management.
+-
+-choice
+-	prompt "GDB stub port"
+-	default GDBSTUB_ON_TTYSM0
+-	depends on GDBSTUB
+-	help
+-	  Select the serial port used for GDB-stub.
+-
+-config GDBSTUB_ON_TTYSM0
+-	bool "/dev/ttySM0 [SIF0]"
+-	depends on MN10300_TTYSM0
+-	select GDBSTUB_ON_TTYSMx
+-
+-config GDBSTUB_ON_TTYSM1
+-	bool "/dev/ttySM1 [SIF1]"
+-	depends on MN10300_TTYSM1
+-	select GDBSTUB_ON_TTYSMx
+-
+-config GDBSTUB_ON_TTYSM2
+-	bool "/dev/ttySM2 [SIF2]"
+-	depends on MN10300_TTYSM2
+-	select GDBSTUB_ON_TTYSMx
+-
+-config GDBSTUB_ON_TTYS0
+-	bool "/dev/ttyS0"
+-	select GDBSTUB_ON_TTYSx
+-
+-config GDBSTUB_ON_TTYS1
+-	bool "/dev/ttyS1"
+-	select GDBSTUB_ON_TTYSx
+-
+-endchoice
+-
+-config GDBSTUB_ON_TTYSMx
+-	bool
+-	depends on GDBSTUB_ON_TTYSM0 || GDBSTUB_ON_TTYSM1 || GDBSTUB_ON_TTYSM2
+-	default y
+-
+-config GDBSTUB_ON_TTYSx
+-	bool
+-	depends on GDBSTUB_ON_TTYS0 || GDBSTUB_ON_TTYS1
+-	default y
+-
+ endmenu
+ 
+ config KERNEL_DEBUGGER
+ 	def_bool y
+-	depends on GDBSTUB || KGDB
++	depends on KGDB
+-- 
+1.9.3
 
-
-Nicolas
