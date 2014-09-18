@@ -1,483 +1,849 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaIRNOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 09:14:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59901 "EHLO mx2.suse.de"
+	id S1755734AbaIRNP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 09:15:29 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:49575 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753340AbaIRNOI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 09:14:08 -0400
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
-From: Alexander Graf <agraf@suse.de>
-X-Mailer: iPhone Mail (11B554a)
-In-Reply-To: <541A5CF1.8000409@freescale.com>
-Date: Thu, 18 Sep 2014 15:14:03 +0200
-Cc: Kim Phillips <kim.phillips@freescale.com>,
-        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
-        "<arnd@arndb.de>" <arnd@arndb.de>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<stuart.yoder@freescale.com>" <stuart.yoder@freescale.com>,
-        "<scottwood@freescale.com>" <scottwood@freescale.com>,
-        "<linuxppc-release@linux.freescale.net>" 
-	<linuxppc-release@linux.freescale.net>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
-References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com> <1410456864-27890-2-git-send-email-German.Rivera@freescale.com> <20140915184451.962a3a19c4940792d182f10a@freescale.com> <541A5CF1.8000409@freescale.com>
-To: German Rivera <German.Rivera@freescale.com>
+	id S1751280AbaIRNP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 09:15:26 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH] iio: iadc: Qualcomm SPMI PMIC current ADC driver
+Date: Thu, 18 Sep 2014 16:15:23 +0300
+Message-Id: <1411046123-30625-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+16 bits resolution and register space inside PMIC accessible across
+SPMI bus.
 
+The driver registers itself through IIO interface.
 
-> Am 18.09.2014 um 06:17 schrieb German Rivera <German.Rivera@freescale.com>:
-> 
->> On 09/15/2014 06:44 PM, Kim Phillips wrote:
->> On Thu, 11 Sep 2014 12:34:21 -0500
->> "J. German Rivera" <German.Rivera@freescale.com> wrote:
->> 
->>> From: "J. German Rivera" <German.Rivera@freescale.com>
->>> 
->>> APIs to access the Management Complex (MC) hardware
->>> module of Freescale LS2 SoCs. This patch includes
->>> APIs to check the MC firmware version and to manipulate
->>> DPRC objects in the MC.
->>> 
->>> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
->>> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
->>> ---
->>>  drivers/bus/fsl-mc/dpmng.c         |   93 +++++
->>>  drivers/bus/fsl-mc/dprc.c          |  504 +++++++++++++++++++++++
->>>  drivers/bus/fsl-mc/fsl_dpmng_cmd.h |   83 ++++
->>>  drivers/bus/fsl-mc/fsl_dprc_cmd.h  |  545 +++++++++++++++++++++++++
->>>  drivers/bus/fsl-mc/fsl_mc_sys.c    |  237 +++++++++++
->>>  include/linux/fsl_dpmng.h          |  120 ++++++
->>>  include/linux/fsl_dprc.h           |  790 ++++++++++++++++++++++++++++++++++++
->>>  include/linux/fsl_mc_cmd.h         |  182 +++++++++
->>>  include/linux/fsl_mc_sys.h         |   81 ++++
->>>  9 files changed, 2635 insertions(+)
->>>  create mode 100644 drivers/bus/fsl-mc/dpmng.c
->>>  create mode 100644 drivers/bus/fsl-mc/dprc.c
->>>  create mode 100644 drivers/bus/fsl-mc/fsl_dpmng_cmd.h
->>>  create mode 100644 drivers/bus/fsl-mc/fsl_dprc_cmd.h
->>>  create mode 100644 drivers/bus/fsl-mc/fsl_mc_sys.c
->>>  create mode 100644 include/linux/fsl_dpmng.h
->>>  create mode 100644 include/linux/fsl_dprc.h
->>>  create mode 100644 include/linux/fsl_mc_cmd.h
->>>  create mode 100644 include/linux/fsl_mc_sys.h
->> 
->> the fsl prefix in the filename fsl_dpmng_cmd.h is redundant with
->> its directory name fsl-mc/.  Note that I find dashes ('-') in
->> filenames make them easier to type: is there a reason we're using
->> underscores here?
-> This is a convention that we decided early on '-' for directory names
-> and '_' for file names.
-> 
->> Also, any reason why these and future include files aren't being put
->> in include/linux/fsl/, so as to not pollute the top level
->> include/linux/?  That way, we can also remove the fsl- prefix from
->> those filenames, too..
-> I would like to receive opinions from others about this before making any change here.
-> 
->>> diff --git a/drivers/bus/fsl-mc/dpmng.c b/drivers/bus/fsl-mc/dpmng.c
->>> new file mode 100644
->>> index 0000000..c6ed27c
->>> --- /dev/null
->>> +++ b/drivers/bus/fsl-mc/dpmng.c
->>> @@ -0,0 +1,93 @@
->>> +/* Copyright 2013-2014 Freescale Semiconductor Inc.
->>> + *
->>> + * Redistribution and use in source and binary forms, with or without
->>> + * modification, are permitted provided that the following conditions are met:
->>> + *     * Redistributions of source code must retain the above copyright
->>> + *       notice, this list of conditions and the following disclaimer.
->>> + *     * Redistributions in binary form must reproduce the above copyright
->>> + *       notice, this list of conditions and the following disclaimer in the
->>> + *       documentation and/or other materials provided with the distribution.
->>> + *     * Neither the name of Freescale Semiconductor nor the
->>> + *       names of its contributors may be used to endorse or promote products
->>> + *       derived from this software without specific prior written permission.
->>> + *
->>> + *
->>> + * ALTERNATIVELY, this software may be distributed under the terms of the
->>> + * GNU General Public License ("GPL") as published by the Free Software
->>> + * Foundation, either version 2 of that License or (at your option) any
->>> + * later version.
->>> + *
->>> + * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
->> 
->> interesting, normally this text reads:
->> 
->> "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS"
->> 
->> ...does that mean we're excluding non-Freescale copyright holders
->> and contributors from this warranty statement?  That doesn't seem
->> appropriate for an upstream kernel submission.
-> I would like to receive opinions from others about this before making any change here.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ .../devicetree/bindings/iio/adc/qcom,spmi-iadc.txt |  61 ++
+ drivers/iio/adc/Kconfig                            |  11 +
+ drivers/iio/adc/Makefile                           |   1 +
+ drivers/iio/adc/qcom-spmi-iadc.c                   | 700 +++++++++++++++++++++
+ 4 files changed, 773 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
+ create mode 100644 drivers/iio/adc/qcom-spmi-iadc.c
 
-IANAL, but I would prefer to have this identical to the rest of Linux to be on the safe side.
-
-> 
->>> + * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
->>> + * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
->>> + * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
->>> + * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
->>> + * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
->>> + * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
->>> + * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
->>> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
->>> + * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
->>> + */
->> 
->> This dual BSD-3-clause/GPL license doesn't match that of patch 2's
->> drivers/bus/fsl-mc/fsl_mc_bus.c, GPLv2:
-> This is because the MC flib files in patch 1 can also be used in user-space code not just in the kernel. I will not make any change to the licenses of the MC flib files included in patch 1.
-> 
->> +/*
->> + * Freescale Management Complex (MC) bus driver
->> + *
->> + * Copyright (C) 2014 Freescale Semiconductor, Inc.
->> + * Author: German Rivera <German.Rivera@freescale.com>
->> + *
->> + * This file is licensed under the terms of the GNU General Public
->> + * License version 2. This program is licensed "as is" without any
->> + * warranty of any kind, whether express or implied.
->> + */
->> 
->> any reason the licenses are different?
-> Different teams wrote the files.
-> 
->>> +int mc_get_version(struct fsl_mc_io *mc_io, struct mc_version *mc_ver_info)
->>> +{
->>> +    struct mc_command cmd = { 0 };
->> 
->> we can save some cycles if this initialization is not absolutely
->> necessary: is it?  i.e., does the h/w actually look at the params
->> section when doing a get_version?  not sure to what other commands
->> this comment would apply to...at least get_container_id, but maybe
->> more - all of them?
-> I agree with the response from Scott Wood. I will not change this.
-> 
->>> diff --git a/drivers/bus/fsl-mc/fsl_mc_sys.c b/drivers/bus/fsl-mc/fsl_mc_sys.c
->> 
->>> +/**
->>> + * Map an MC portal in the kernel virtual address space
->>> + */
->>> +static int map_mc_portal(phys_addr_t mc_portal_phys_addr,
->>> +             uint32_t mc_portal_size,
->>> +             void __iomem **new_mc_portal_virt_addr)
->>> +{
->>> +    void __iomem *mc_portal_virt_addr = NULL;
->>> +    struct resource *res = NULL;
->>> +    int error = -EINVAL;
->>> +
->>> +    res =
->>> +        request_mem_region(mc_portal_phys_addr, mc_portal_size,
->>> +                   "mc_portal");
->>> +    if (res == NULL) {
->>> +        pr_err("request_mem_region() failed for MC portal %#llx\n",
->>> +               mc_portal_phys_addr);
->>> +        error = -EBUSY;
->>> +        goto error;
->>> +    }
->>> +
->>> +    mc_portal_virt_addr = ioremap_nocache(mc_portal_phys_addr,
->>> +                          mc_portal_size);
->>> +    if (mc_portal_virt_addr == NULL) {
->>> +        pr_err("ioremap_nocache() failed for MC portal %#llx\n",
->>> +               mc_portal_phys_addr);
->>> +        error = -EFAULT;
->>> +        goto error;
->>> +    }
->>> +
->>> +    *new_mc_portal_virt_addr = mc_portal_virt_addr;
->>> +    return 0;
->>> +error:
->>> +    if (mc_portal_virt_addr != NULL)
->>> +        iounmap(mc_portal_virt_addr);
->>> +
->>> +    if (res != NULL)
->>> +        release_mem_region(mc_portal_phys_addr, mc_portal_size);
->>> +
->>> +    return error;
->>> +}
->> 
->> unnecessary initializations, bad error codes (both should be
->> -ENOMEM),
-> >
-> I disagree, the ioremap_nocache() failure should not be treated
-> as ENOMEM. As Scott Wood suggested, I'll change the EFAULT error
-> to ENXIO error.
-> 
-> unnecessarily complicated error path, plus a simpler
->> implementation can be made if fn can return the mapped address, like
->> so:
->> 
->> static void __iomem *map_mc_portal(phys_addr_t mc_portal_phys_addr,
->>                                    uint32_t mc_portal_size)
->> {
->>         struct resource *res;
->>         void __iomem *mapped_addr;
->> 
->>         res = request_mem_region(mc_portal_phys_addr, mc_portal_size,
->>                                  "mc_portal");
->>         if (!res)
->>                 return NULL;
->> 
->>         mapped_addr = ioremap_nocache(mc_portal_phys_addr,
->>                                       mc_portal_size);
->>         if (!mapped_addr)
->>                 release_mem_region(mc_portal_phys_addr, mc_portal_size);
->> 
->>         return mapped_addr;
->> }
->> 
->> the callsite can return -ENOMEM to its caller if returned NULL.  This
->> can be improved even further if devm_ functions are used:  this is
->> just an example of how to simplify the code using early returns
->> instead of goto error.
-> 
-> I disagree. Having a common error return point is more maintainable than having multiple returns as having the clean-up logic in one place is more maintainable and makes the min path (non-error) more readable.
-> 
->> 
->>> +int __must_check fsl_create_mc_io(phys_addr_t mc_portal_phys_addr,
->>> +                  uint32_t mc_portal_size,
->>> +                  uint32_t flags, struct fsl_mc_io **new_mc_io)
->>> +{
->>> +    int error = -EINVAL;
->>> +    struct fsl_mc_io *mc_io = NULL;
->>> +
->>> +    mc_io = kzalloc(sizeof(*mc_io), GFP_KERNEL);
->>> +    if (mc_io == NULL) {
->>> +        error = -ENOMEM;
->>> +        pr_err("No memory to allocate mc_io\n");
->>> +        goto error;
->>> +    }
->>> +
->>> +    mc_io->magic = FSL_MC_IO_MAGIC;
->>> +    mc_io->flags = flags;
->>> +    mc_io->portal_phys_addr = mc_portal_phys_addr;
->>> +    mc_io->portal_size = mc_portal_size;
->>> +    spin_lock_init(&mc_io->spinlock);
->>> +    error = map_mc_portal(mc_portal_phys_addr,
->>> +                  mc_portal_size, &mc_io->portal_virt_addr);
->>> +    if (error < 0)
->>> +        goto error;
->>> +
->>> +    *new_mc_io = mc_io;
->>> +    return 0;
->> 
->> if a fn only returns an address or error, it can return ERR_PTR
->> (e.g., -ENOMEM), and the callsite use IS_ERR() to determine whether
->> there was an error or address returned.  This makes code much
->> simpler instead of passing address values back by reference.
-> I disagree. I don't see why the alternative you suggest makes the code "much simpler".
-> 
->>> +error:
->>> +    if (mc_io != NULL) {
->>> +        if (mc_io->portal_virt_addr != NULL) {
->>> +            unmap_mc_portal(mc_portal_phys_addr,
->>> +                    mc_portal_size,
->>> +                    mc_io->portal_virt_addr);
->>> +        }
->>> +
->>> +        kfree(mc_io);
->> 
->> kfree can handle being passed NULL, but again, might want to
->> consider using devm_ functions instead.
-> No. We cannot use devm_ functions here as there is no device passed in.
-
-Is it a good idea to lose your device context in any function? Whenever I dropped contexts in helper I usually ended up regretting it later ;).
-
-> 
->>> +    }
->>> +
->>> +    return error;
->>> +}
->>> +EXPORT_SYMBOL_GPL(fsl_create_mc_io);
->>> +
->>> +void fsl_destroy_mc_io(struct fsl_mc_io *mc_io)
->>> +{
->>> +    if (WARN_ON(mc_io->magic != FSL_MC_IO_MAGIC))
->>> +        return;
->>> +
->>> +    if (mc_io->portal_virt_addr != NULL) {
->>> +        unmap_mc_portal(mc_io->portal_phys_addr,
->>> +                mc_io->portal_size, mc_io->portal_virt_addr);
->> 
->> unmap_mc_portal already checks for virt_addr, this is another
->> example where the code goes too far checking for NULL.
-> I disagree. Having the extra check is harmless and more importantly makes the intent explicit that we should only call unmap_mc_portal if we called map_mc_portal earlier.
-> 
->>> +        mc_io->portal_virt_addr = NULL;
->>> +    }
->>> +
->>> +    mc_io->magic = 0x0;
->>> +    kfree(mc_io);
->>> +}
->>> +EXPORT_SYMBOL_GPL(fsl_destroy_mc_io);
->>> +
->>> +static int mc_status_to_error(enum mc_cmd_status status)
->>> +{
->>> +    switch (status) {
->>> +    case MC_CMD_STATUS_OK:
->>> +        return 0;
->>> +    case MC_CMD_STATUS_AUTH_ERR:
->>> +        return -EACCES;
->>> +    case MC_CMD_STATUS_NO_PRIVILEGE:
->>> +        return -EPERM;
->>> +    case MC_CMD_STATUS_DMA_ERR:
->>> +        return -EIO;
->>> +    case MC_CMD_STATUS_CONFIG_ERR:
->>> +        return -EINVAL;
->>> +    case MC_CMD_STATUS_TIMEOUT:
->>> +        return -ETIMEDOUT;
->>> +    case MC_CMD_STATUS_NO_RESOURCE:
->>> +        return -ENAVAIL;
->>> +    case MC_CMD_STATUS_NO_MEMORY:
->>> +        return -ENOMEM;
->>> +    case MC_CMD_STATUS_BUSY:
->>> +        return -EBUSY;
->>> +    case MC_CMD_STATUS_UNSUPPORTED_OP:
->>> +        return -ENOTSUP;
->>> +    case MC_CMD_STATUS_INVALID_STATE:
->>> +        return -ENODEV;
->>> +    default:
->>> +        break;
->>> +    }
->>> +
->>> +    /* Not expected to reach here */
->>> +    return -EINVAL;
->> 
->> but if it does, callsite can't disambiguate between that and e.g.,
->> MC_CMD_STATUS_CONFIG_ERR.  Also, this would be more readable as a
->> static const lookup table.
-> I will change the switch to a lookup table and fix the -EINVAL
-> ambiguity in the v2 respin.
-> 
->> 
->>> +}
->>> +
->>> +int mc_send_command(struct fsl_mc_io *mc_io, struct mc_command *cmd)
->>> +{
->>> +    enum mc_cmd_status status;
->>> +    unsigned long irqsave_flags = 0;
->>> +    int error = -EINVAL;
->>> +    bool lock_acquired = false;
->>> +    unsigned long jiffies_until_timeout =
->>> +        jiffies + MC_CMD_COMPLETION_TIMEOUT;
->>> +
->>> +    if (WARN_ON(mc_io->magic != FSL_MC_IO_MAGIC))
->>> +        goto out;
->> 
->> if the h/w signals an error on the bad magic condition, s/w doesn't
->> need to check it in its fast path.
-> As per comments from Arnd Bergmann on the RFC patch series, I removed the magic field from all structs. I just forgot to do it for this one.
-> I will remove this magic field in the v2 respin.
-> 
->>> +    if (mc_io->flags & FSL_MC_IO_PORTAL_SHARED) {
->>> +        spin_lock_irqsave(&mc_io->spinlock, irqsave_flags);
->>> +        lock_acquired = true;
->>> +    }
->>> +
->>> +    mc_write_command(mc_io->portal_virt_addr, cmd);
->>> +
->>> +    for (;;) {
->>> +        status = mc_read_response(mc_io->portal_virt_addr, cmd);
->>> +        if (status != MC_CMD_STATUS_READY)
->>> +            break;
->>> +
->>> +        /*
->>> +         * TODO: When MC command completion interrupts are supported
->>> +         * call wait function here instead of udelay()
->>> +         */
->>> +        udelay(MC_CMD_COMPLETION_POLLING_INTERVAL);
->>> +        if (time_after_eq(jiffies, jiffies_until_timeout)) {
->>> +            error = -ETIMEDOUT;
->>> +            goto out;
->>> +        }
->>> +    }
->>> +
->>> +    error = mc_status_to_error(status);
->>> +out:
->>> +    if (lock_acquired)
->>> +        spin_unlock_irqrestore(&mc_io->spinlock, irqsave_flags);
->> 
->> so if the portal is shared, we take a lock, disable interrupts, and
->> then potentially udelay for a whopping 500usec, then check to see if
->> _100_usec have passed, and thus _always_ issue a timeout error, even
->> if the device took < 100usec to consume the command???
-> That is not true. The 100 is in jiffies not in usec:
-
-If you always wait for 100 jiffies, the timeout code suddenly depends on the HZ value which is kernel configuration, no? Wouldn't it be better to base the timeout on real wall time?
-
-> 
-> /**
-> * Timeout in jiffies to wait for the completion of an MC command
-> */
-> #define MC_CMD_COMPLETION_TIMEOUT   100
-> 
-> /**
-> * Delay in microseconds between polling iterations while
-> * waiting for MC command completion
-> */
-> #define MC_CMD_COMPLETION_POLLING_INTERVAL  500
-> 
-> 
->> Not to mention this code will spin perpetually with IRQs disabled if
->> the read_response never returns ready.  I also don't see a reason
->> why IRQs are being disabled in the first place - it's not being used
->> in an IRQ handler...perhaps we need to wait until command completion
->> IRQs are supported :)
-> I agree that disabling interrupts while doing polling is not efficient. I was assuming the worst case scenario of sharing the portal: both
-> threads and interrupt handlers accessing the same portal at the same time. If only threads access the same portal, we don't need to disable interrupts and even further we can use a mutex instead of a spinlock.
-> If only interrupt handlers access a given portal (from multiple CPUs)
-> we have use a spinlock but we don't need to disabel interrupts.
-> If both threads and interrupt handlers access a given portal, then
-> we need to both use a spinlock and disable interrupts
-> 
-> I will change synchronization logic in the v2 respin to avoid
-> disabling interrupts in the first two cases above.
-> 
->>> +/**
->>> + * @brief    Management Complex firmware version information
->>> + */
->>> +#define MC_VER_MAJOR 2
->>> +#define MC_VER_MINOR 0
->> 
->> code should be adjusted to run on all *compatible* versions of h/w,
->> not strictly the one set in these defines.
-> This comment is not precise enough be actionable.
-> What exactly you want to be changed  here?
-
-I think the easy thing to do is to convert the exact version check into a ranged version check: have minimum and maximum versions you support. Or a list of exact versions you support. Or not check for the version at all - or only for the major version and guarantee that the major version indicates backwards compatibility.
-
-> 
->>> +/**
->>> + * @brief    Disconnects one endpoint to remove its network link
->>> + *
->>> + * @param[in]   mc_io        Pointer to opaque I/O object
->>> + * @param[in]    dprc_handle    Handle to the DPRC object
->>> + * @param[in]   endpoint    Endpoint configuration parameters.
->>> + *
->>> + * @returns    '0' on Success; Error code otherwise.
->>> + * */
->>> +int dprc_disconnect(struct fsl_mc_io *mc_io, uint16_t dprc_handle,
->>> +            struct dprc_endpoint *endpoint);
->>> +
->>> +/*! @} */
->> 
->> this entire file is riddled with non-kernel-doc comment markers:  see
->> Documentation/kernel-doc-nano-HOWTO.txt on how to write function and
->> other types of comments in a kernel-doc compliant format.
-> This is because this file is using doxygen comments, as it was developed
-> by another team. Unless someone else has an objection, I will leave the doxygen comments alone and not make any change here.
-
-Do you see any other source files in Linux using doxygen comments? Mixing different documentation styles can easily become a big mess, because you can't generate external documentation consistently for the whole tree.
-
-
-Alex
+diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
+new file mode 100644
+index 0000000..77be22a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
+@@ -0,0 +1,61 @@
++Qualcomm's SPMI PMIC current ADC
++
++QPNP PMIC current ADC (IADC) provides interface to clients to read current.
++A 16 bit ADC is used for current measurements.
++
++IADC node:
++
++- compatible:
++    Usage: required
++    Value type: <string>
++    Definition: Should contain "qcom,spmi-iadc".
++
++- reg:
++    Usage: required
++    Value type: <prop-encoded-array>
++    Definition: IADC base address and length in the SPMI PMIC register map.
++                TRIM_CNST_RDS register address and length(1)
++
++- interrupts:
++    Usage: optional
++    Value type: <prop-encoded-array>
++    Definition: End of conversion interrupt number. If property is
++            missing driver will use polling to detect end of conversion
++            completion.
++
++- qcom,rsense:
++    Usage: optional
++    Value type: <u32>
++    Definition: External sense register value in Ohm. Defining this
++            propery will instruct ADC to use external ADC sense channel.
++            If property is not defined ADC will use internal sense channel.
++
++- qcom,rds-trim:
++    Usage: optional
++    Value type: <u32>
++    Definition: Calaculate internal sense resistor value based TRIM_CNST_RDS,
++            IADC RDS and manufacturer type.
++            0: Read the IADC and SMBB trim register and apply the default
++               RSENSE if conditions are met.
++            1: Read the IADC, SMBB trim register and manufacturer type and
++               apply the default RSENSE if conditions are met.
++            2: Read the IADC, SMBB trim register and apply the default RSENSE
++               if conditions are met.
++            If property is not defined driver will use qcom,rsense value if
++            defined or internal sense resistor value trimmed into register.
++
++Example:
++	/* IADC node */
++	pmic_iadc: iadc@3600 {
++		compatible = "qcom,spmi-iadc";
++		reg = <0x3600 0x100>,
++			  <0x12f1 0x1>;
++		interrupts = <0x0 0x36 0x0 IRQ_TYPE_EDGE_RISING>;
++		qcom,rds-trim = <0>;
++	};
++
++	/* IIO client node */
++	bat {
++		io-channels = <&pmic_iadc 0>;
++		io-channel-names = "iadc";
++	};
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 11b048a..77274e4 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -279,4 +279,15 @@ config XILINX_XADC
+ 	  The driver can also be build as a module. If so, the module will be called
+ 	  xilinx-xadc.
+ 
++config QCOM_SPMI_IADC
++	tristate "Qualcomm SPMI PMIC current ADC"
++	select REGMAP_SPMI
++	depends on IIO
++	help
++	  This is the IIO Current ADC driver for Qualcomm QPNP IADC Chip.
++
++	  The driver supports single mode operation to read from upto seven channel
++	  configuration that include reading the external/internal Rsense, CSP_EX,
++	  CSN_EX pair along with the gain and offset calibration.
++
+ endmenu
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index ad81b51..c790543 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -30,3 +30,4 @@ obj-$(CONFIG_VF610_ADC) += vf610_adc.o
+ obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
+ xilinx-xadc-y := xilinx-xadc-core.o xilinx-xadc-events.o
+ obj-$(CONFIG_XILINX_XADC) += xilinx-xadc.o
++obj-$(CONFIG_QCOM_SPMI_IADC) += qcom-spmi-iadc.o
+diff --git a/drivers/iio/adc/qcom-spmi-iadc.c b/drivers/iio/adc/qcom-spmi-iadc.c
+new file mode 100644
+index 0000000..fef9168
+--- /dev/null
++++ b/drivers/iio/adc/qcom-spmi-iadc.c
+@@ -0,0 +1,700 @@
++/*
++ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/bitops.h>
++#include <linux/completion.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/iio/iio.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++
++/* IADC IADC register and bit definition */
++#define IADC_REVISION2				0x1
++#define IADC_REVISION2_SUPPORTED_IADC		1
++
++#define IADC_PERPH_TYPE				0x4
++#define IADC_PERPH_TYPE_ADC			8
++
++#define IADC_PERPH_SUBTYPE			0x5
++#define IADC_PERPH_SUBTYPE_IADC			3
++
++#define IADC_STATUS1				0x8
++#define IADC_STATUS1_OP_MODE			4
++#define IADC_STATUS1_REQ_STS			BIT(1)
++#define IADC_STATUS1_EOC			BIT(0)
++#define IADC_STATUS1_REQ_STS_EOC_MASK		0x3
++
++#define IADC_MODE_CTL				0x40
++#define IADC_OP_MODE_SHIFT			3
++#define IADC_OP_MODE_NORMAL			0
++#define IADC_TRIM_EN				BIT(0)
++
++#define IADC_EN_CTL1				0x46
++#define IADC_EN_CTL1_SET			BIT(7)
++
++#define IADC_CH_SEL_CTL				0x48
++
++#define IADC_DIG_PARAM				0x50
++#define IADC_DIG_DEC_RATIO_SEL_SHIFT		2
++
++#define IADC_HW_SETTLE_DELAY			0x51
++
++#define IADC_CONV_REQ				0x52
++#define IADC_CONV_REQ_SET			BIT(7)
++
++#define IADC_FAST_AVG_CTL			0x5a
++#define IADC_FAST_AVG_EN			0x5b
++#define IADC_FAST_AVG_EN_SET			BIT(7)
++
++#define IADC_PERH_RESET_CTL3			0xda
++#define IADC_FOLLOW_WARM_RB			BIT(2)
++
++#define IADC_DATA0				0x60
++#define IADC_DATA1				0x61
++
++#define IADC_SEC_ACCESS				0xd0
++#define IADC_SEC_ACCESS_DATA			0xa5
++
++#define IADC_INT_TEST_VAL			0xe1
++#define IADC_MSB_OFFSET				0xf2
++#define IADC_LSB_OFFSET				0xf3
++
++#define IADC_NOMINAL_RSENSE			0xf4
++#define IADC_NOMINAL_RSENSE_SIGN_MASK		BIT(7)
++
++#define IADC_REF_GAIN_MICRO_VOLTS		17857
++
++#define IADC_INTERNAL_RSENSE_OHMS		10000000
++#define IADC_RSENSE_OHMS_PER_BIT		15625
++
++#define IADC_TRIM_CNST_RDS_MASK			0x7
++
++#define IADC_FACTORY_GF				0
++#define IADC_FACTORY_SMIC			1
++#define IADC_FACTORY_TSMC			2
++
++#define IADC_TRIM2_FULLSCALE			127
++
++#define IADC_RSENSE_DEFAULT_VALUE		7800000
++#define IADC_RSENSE_DEFAULT_GF			9000000
++#define IADC_RSENSE_DEFAULT_SMIC		9700000
++
++#define IADC_CONV_TIME_MIN_US			2000
++#define IADC_CONV_TIME_MAX_US			2100
++
++#define IADC_DEF_PRESCALING			0 /* 1:1 */
++#define IADC_DEF_DECIMATION			0 /* 512 */
++#define IADC_DEF_HW_SETTLE_TIME			0 /* 0 us */
++#define IADC_DEF_AVG_SAMPLES			0 /* 1 sample */
++
++/* IADC IADC channel list */
++#define IADC_INTERNAL_RSENSE			0
++#define IADC_EXTERNAL_RSENSE			1
++#define IADC_ALT_LEAD_PAIR			2
++#define IADC_GAIN_17P857MV			3
++#define IADC_OFFSET_SHORT_CADC_LEADS		4
++#define IADC_OFFSET_CSP_CSN			5
++#define IADC_OFFSET_CSP2_CSN2			6
++#define IADC_CHANNEL_COUNT			7
++
++/**
++ * struct iadc_drv - IADC Current ADC device structure.
++ * @regmap: regmap for register read/write.
++ * @dev: This device pointer.
++ * @factory: Chip manufacturer.
++ * @base: base offset for the ADC peripheral.
++ * @trim_rds: Address of the Trim Constant Rds register.
++ * @rsense: Sense register in Ohms.
++ * @ext_sense: Using external sense resistor.
++ * @poll_eoc: Poll for end of conversion instead of waiting for IRQ.
++ * @offset_raw: Raw offset value for the channel.
++ * @gain_raw: Raw gain of the channel.
++ * @lock: ADC lock for access to the peripheral.
++ * @complete: ADC notification after end of conversion interrupt is received.
++ * @iio_chan: IIO channel as registered into framework.
++ */
++struct iadc_chip {
++	struct regmap *regmap;
++	struct device *dev;
++	u8 factory;
++	u16 base;
++	u16 trim_rds;
++	int rsense;
++	bool ext_sense;
++	bool poll_eoc;
++	u16 offset_raw;
++	u16 gain_raw;
++	struct mutex lock;
++	struct completion complete;
++	struct iio_chan_spec iio_chan;
++};
++
++static int iadc_read(struct iadc_chip *iadc, u16 offset, u8 *data)
++{
++	unsigned int val;
++	int ret;
++
++	ret = regmap_read(iadc->regmap, iadc->base + offset, &val);
++	if (!ret)
++		*data = val;
++
++	return ret;
++}
++
++static int iadc_write(struct iadc_chip *iadc, u16 offset, u8 data)
++{
++	return regmap_write(iadc->regmap, iadc->base + offset, data);
++}
++
++static int iadc_reset(struct iadc_chip *iadc)
++{
++	u8 data;
++	int ret;
++
++	ret = iadc_write(iadc, IADC_SEC_ACCESS, IADC_SEC_ACCESS_DATA);
++	if (ret < 0)
++		return ret;
++
++	ret = iadc_read(iadc, IADC_PERH_RESET_CTL3, &data);
++	if (ret < 0)
++		return ret;
++
++	ret = iadc_write(iadc, IADC_SEC_ACCESS, IADC_SEC_ACCESS_DATA);
++	if (ret < 0)
++		return ret;
++
++	data |= IADC_FOLLOW_WARM_RB;
++
++	return iadc_write(iadc, IADC_PERH_RESET_CTL3, data);
++}
++
++static int iadc_enable(struct iadc_chip *iadc, bool state)
++{
++	u8 data = 0;
++
++	if (state)
++		data = IADC_EN_CTL1_SET;
++
++	return iadc_write(iadc, IADC_EN_CTL1, data);
++}
++
++static void iadc_status_show(struct iadc_chip *iadc)
++{
++	u8 mode, sta1, chan, dig, en, req;
++	int ret;
++
++	ret = iadc_read(iadc, IADC_MODE_CTL, &mode);
++	if (ret < 0)
++		return;
++
++	ret = iadc_read(iadc, IADC_DIG_PARAM, &dig);
++	if (ret < 0)
++		return;
++
++	ret = iadc_read(iadc, IADC_CH_SEL_CTL, &chan);
++	if (ret < 0)
++		return;
++
++	ret = iadc_read(iadc, IADC_CONV_REQ, &req);
++	if (ret < 0)
++		return;
++
++	ret = iadc_read(iadc, IADC_STATUS1, &sta1);
++	if (ret < 0)
++		return;
++
++	ret = iadc_read(iadc, IADC_EN_CTL1, &en);
++	if (ret < 0)
++		return;
++
++	dev_warn(iadc->dev,
++		"mode:%02x en:%02x chan:%02x dig:%02x req:%02x sta1:%02x\n",
++		mode, en, chan, dig, req, sta1);
++}
++
++static int iadc_configure(struct iadc_chip *iadc, int channel)
++{
++	u8 decim, mode;
++	int ret;
++
++	/* Mode selection */
++	mode = (IADC_OP_MODE_NORMAL << IADC_OP_MODE_SHIFT) | IADC_TRIM_EN;
++	ret = iadc_write(iadc, IADC_MODE_CTL, mode);
++	if (ret < 0)
++		return ret;
++
++	/* Channel selection */
++	ret = iadc_write(iadc, IADC_CH_SEL_CTL, channel);
++	if (ret < 0)
++		return ret;
++
++	/* Digital parameter setup */
++	decim = IADC_DEF_DECIMATION << IADC_DIG_DEC_RATIO_SEL_SHIFT;
++	ret = iadc_write(iadc, IADC_DIG_PARAM, decim);
++	if (ret < 0)
++		return ret;
++
++	/* HW settle time delay */
++	ret = iadc_write(iadc, IADC_HW_SETTLE_DELAY, IADC_DEF_HW_SETTLE_TIME);
++	if (ret < 0)
++		return ret;
++
++	ret = iadc_write(iadc, IADC_FAST_AVG_CTL, IADC_DEF_AVG_SAMPLES);
++	if (ret < 0)
++		return ret;
++
++	if (IADC_DEF_AVG_SAMPLES)
++		ret = iadc_write(iadc, IADC_FAST_AVG_EN, IADC_FAST_AVG_EN_SET);
++	else
++		ret = iadc_write(iadc, IADC_FAST_AVG_EN, 0);
++
++	if (ret < 0)
++		return ret;
++
++	if (!iadc->poll_eoc)
++		reinit_completion(&iadc->complete);
++
++	ret = iadc_enable(iadc, true);
++	if (ret < 0)
++		return ret;
++
++	/* Request conversion */
++	return iadc_write(iadc, IADC_CONV_REQ, IADC_CONV_REQ_SET);
++}
++
++static int iadc_poll_wait_eoc(struct iadc_chip *iadc, int interval_us)
++{
++	int ret, count, retry;
++	u8 sta1;
++
++	retry = interval_us / IADC_CONV_TIME_MIN_US;
++
++	for (count = 0; count < retry; count++) {
++		ret = iadc_read(iadc, IADC_STATUS1, &sta1);
++		if (ret < 0)
++			return ret;
++
++		sta1 &= IADC_STATUS1_REQ_STS_EOC_MASK;
++		if (sta1 == IADC_STATUS1_EOC)
++			return 0;
++
++		usleep_range(IADC_CONV_TIME_MIN_US, IADC_CONV_TIME_MAX_US);
++	}
++
++	iadc_status_show(iadc);
++
++	return -ETIMEDOUT;
++}
++
++static int iadc_read_result(struct iadc_chip *iadc, u16 *data)
++{
++	u8 lsb, msb;
++	int ret;
++
++	ret = iadc_read(iadc, IADC_DATA0, &lsb);
++	if (ret < 0)
++		return ret;
++
++	ret = iadc_read(iadc, IADC_DATA1, &msb);
++	if (ret < 0)
++		return ret;
++
++	*data = (msb << 8) | lsb;
++
++	return 0;
++}
++
++static int iadc_do_conversion(struct iadc_chip *iadc, int chan, u16 *data)
++{
++	int wait, ret;
++
++	ret = iadc_configure(iadc, chan);
++	if (ret < 0)
++		goto exit;
++
++	wait = BIT(IADC_DEF_AVG_SAMPLES) * IADC_CONV_TIME_MIN_US * 2;
++
++	if (iadc->poll_eoc) {
++		ret = iadc_poll_wait_eoc(iadc, wait);
++	} else {
++		ret = wait_for_completion_timeout(&iadc->complete, wait);
++		if (!ret)
++			ret = -ETIMEDOUT;
++		else
++			/* double check conversion status */
++			ret = iadc_poll_wait_eoc(iadc, IADC_CONV_TIME_MIN_US);
++	}
++
++	if (!ret)
++		ret = iadc_read_result(iadc, data);
++exit:
++	iadc_enable(iadc, false);
++	if (ret < 0)
++		dev_err(iadc->dev, "conversion failed\n");
++
++	return ret;
++}
++
++static int iadc_read_raw(struct iio_dev *indio_dev,
++			 struct iio_chan_spec const *chan,
++			 int *val, int *val2, long mask)
++{
++	struct iadc_chip *iadc = iio_priv(indio_dev);
++	long rsense_ua, rsense_uv, rsense_raw;
++	int ret = -EINVAL, negative;
++	u16 adc_raw;
++
++	mutex_lock(&iadc->lock);
++
++	switch (mask) {
++	case IIO_CHAN_INFO_PROCESSED:
++		ret = iadc_do_conversion(iadc, chan->channel, &adc_raw);
++		if (ret < 0)
++			goto exit;
++
++		rsense_raw = adc_raw - iadc->offset_raw;
++
++		rsense_uv = (rsense_raw * IADC_REF_GAIN_MICRO_VOLTS);
++		rsense_uv /= iadc->gain_raw - iadc->offset_raw;
++
++		negative = 0;
++		if (rsense_uv < 0) {
++			negative = 1;
++			rsense_uv = -rsense_uv;
++		}
++
++		rsense_ua = rsense_uv;
++
++		do_div(rsense_ua, iadc->rsense);
++
++		if (negative)
++			rsense_ua = -rsense_ua;
++
++		dev_dbg(iadc->dev, "offset %d, gain %d, adc %d, V=%ld,uV, I=%ld,uA\n",
++			iadc->offset_raw, iadc->gain_raw, adc_raw,
++			rsense_uv, rsense_ua);
++
++		*val = rsense_ua;
++		ret = IIO_VAL_INT;
++		break;
++	default:
++		break;
++	}
++
++exit:
++	mutex_unlock(&iadc->lock);
++
++	return ret;
++}
++
++static const struct iio_info iadc_info = {
++	.read_raw = iadc_read_raw,
++	.driver_module = THIS_MODULE,
++};
++
++static irqreturn_t iadc_isr(int irq, void *dev_id)
++{
++	struct iadc_chip *iadc = dev_id;
++
++	complete(&iadc->complete);
++
++	return IRQ_HANDLED;
++}
++
++static int iadc_update_trim_offset(struct iadc_chip *iadc)
++{
++	u16 adc_raw;
++	u8  lsb, msb;
++	int ret, chan;
++
++	ret = iadc_do_conversion(iadc, IADC_GAIN_17P857MV, &adc_raw);
++	if (ret < 0)
++		return ret;
++
++	iadc->gain_raw = adc_raw;
++
++	chan = IADC_OFFSET_CSP2_CSN2;
++	if (iadc->ext_sense)
++		chan = IADC_OFFSET_CSP_CSN;
++
++	ret = iadc_do_conversion(iadc, chan, &adc_raw);
++	if (ret < 0)
++		return ret;
++
++	iadc->offset_raw = adc_raw;
++
++	if ((iadc->gain_raw - iadc->offset_raw) == 0) {
++		dev_err(iadc->dev, "error: offset %d gain %d\n",
++			iadc->offset_raw, iadc->gain_raw);
++		return -EINVAL;
++	}
++
++	msb = adc_raw >> 8;
++	lsb = adc_raw & 0xff;
++
++	ret = iadc_write(iadc, IADC_SEC_ACCESS, IADC_SEC_ACCESS_DATA);
++	if (ret < 0)
++		return ret;
++
++	ret = iadc_write(iadc, IADC_MSB_OFFSET, msb);
++	if (ret < 0)
++		return ret;
++
++	ret = iadc_write(iadc, IADC_SEC_ACCESS, IADC_SEC_ACCESS_DATA);
++	if (ret < 0)
++		return ret;
++
++	return iadc_write(iadc, IADC_LSB_OFFSET, lsb);
++}
++
++static int iadc_version_check(struct iadc_chip *iadc)
++{
++	u8 revision, type, subtype;
++	int ret;
++
++	ret = iadc_read(iadc, IADC_PERPH_TYPE, &type);
++	if (ret < 0)
++		return ret;
++
++	if (type < IADC_PERPH_TYPE_ADC) {
++		dev_err(iadc->dev, "%d is not ADC\n", type);
++		return -EINVAL;
++	}
++
++	ret = iadc_read(iadc, IADC_PERPH_SUBTYPE, &subtype);
++	if (ret < 0)
++		return ret;
++
++	if (subtype < IADC_PERPH_SUBTYPE_IADC) {
++		dev_err(iadc->dev, "%d is not IADC\n", subtype);
++		return -EINVAL;
++	}
++
++	ret = iadc_read(iadc, IADC_REVISION2, &revision);
++	if (ret < 0)
++		return ret;
++
++	if (revision < IADC_REVISION2_SUPPORTED_IADC) {
++		dev_err(iadc->dev, "revision %d not supported\n", revision);
++		return -EINVAL;
++	}
++
++	return iadc_read(iadc, IADC_INT_TEST_VAL, &iadc->factory);
++}
++
++static int iadc_rsense_read(struct iadc_chip *iadc, struct device_node *node)
++{
++	unsigned int trim_val;
++	u8  rsense, const_rds;
++	int ret, negative;
++	u32 trim_type;
++
++	ret = of_property_read_u32(node, "qcom,rsense", &iadc->rsense);
++	if (!ret) {
++		iadc->ext_sense = true;
++		return 0;
++	}
++
++	ret = iadc_read(iadc, IADC_NOMINAL_RSENSE, &rsense);
++	if (ret < 0)
++		return ret;
++
++	negative = 0;
++	if (rsense & IADC_NOMINAL_RSENSE_SIGN_MASK)
++		negative = 1;
++
++	rsense &= ~IADC_NOMINAL_RSENSE_SIGN_MASK;
++
++	iadc->rsense = IADC_INTERNAL_RSENSE_OHMS;
++	if (negative)
++		iadc->rsense -=	rsense * IADC_RSENSE_OHMS_PER_BIT;
++	else
++		iadc->rsense +=	rsense * IADC_RSENSE_OHMS_PER_BIT;
++
++	if (rsense < IADC_TRIM2_FULLSCALE)
++		return 0;
++	/*
++	 * Trim register is "saturated", check for specific trim value
++	 * based on manufacturer and RDS constant
++	 */
++	ret = of_property_read_u32(node, "qcom,rds-trim", &trim_type);
++	if (ret)
++		return 0;
++
++	ret = regmap_read(iadc->regmap, iadc->trim_rds, &trim_val);
++	if (ret < 0)
++		return ret;
++
++	const_rds = trim_val & IADC_TRIM_CNST_RDS_MASK;
++
++	dev_dbg(iadc->dev, "factory %d trim type %d rsense %d const %d\n",
++		iadc->factory, trim_type, rsense, const_rds);
++
++	switch (trim_type) {
++	case 0:
++		if (const_rds == 2)
++			iadc->rsense = IADC_RSENSE_DEFAULT_VALUE;
++		break;
++	case 1:
++		if (const_rds >= 2) {
++			iadc->rsense = IADC_RSENSE_DEFAULT_VALUE;
++		} else if (const_rds < 2) {
++			if (iadc->factory == IADC_FACTORY_GF)
++				iadc->rsense = IADC_RSENSE_DEFAULT_GF;
++			else if (iadc->factory == IADC_FACTORY_SMIC)
++				iadc->rsense = IADC_RSENSE_DEFAULT_SMIC;
++		}
++		break;
++	case 2:
++		if (const_rds > 0 && const_rds <= 2)
++			iadc->rsense = IADC_RSENSE_DEFAULT_VALUE;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int iadc_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct device *dev = &pdev->dev;
++	struct iio_chan_spec *iio_chan;
++	struct iio_dev *indio_dev;
++	struct iadc_chip *iadc;
++	struct resource *res;
++	struct regmap *regmap;
++	int ret, irq_eoc;
++
++	regmap = dev_get_regmap(dev->parent, NULL);
++	if (!regmap)
++		return -ENODEV;
++
++	indio_dev = devm_iio_device_alloc(dev, sizeof(*iadc));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	iadc = iio_priv(indio_dev);
++	iadc->dev = dev;
++	iadc->regmap = regmap;
++	init_completion(&iadc->complete);
++	mutex_init(&iadc->lock);
++
++	platform_set_drvdata(pdev, iadc);
++
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
++	if (!res)
++		return -ENODEV;
++
++	iadc->base = res->start;
++
++	res = platform_get_resource(pdev, IORESOURCE_REG, 1);
++	if (!res)
++		return -ENODEV;
++
++	iadc->trim_rds = res->start;
++
++	ret = iadc_version_check(iadc);
++	if (ret < 0)
++		return -ENODEV;
++
++	ret = iadc_rsense_read(iadc, node);
++	if (ret < 0)
++		return -ENODEV;
++
++	dev_dbg(iadc->dev, "%s sense resistor %d Ohm\n", iadc->ext_sense ?
++		"external" : "internal", iadc->rsense);
++
++	irq_eoc = platform_get_irq(pdev, 0);
++	if (irq_eoc == -EPROBE_DEFER)
++		return irq_eoc;
++
++	if (irq_eoc < 0)
++		iadc->poll_eoc = true;
++
++	ret = iadc_reset(iadc);
++	if (ret < 0) {
++		dev_err(dev, "reset failed\n");
++		return ret;
++	}
++
++	if (!iadc->poll_eoc) {
++		ret = devm_request_irq(dev, irq_eoc, iadc_isr, 0,
++					"spmi-iadc", iadc);
++		if (!ret)
++			enable_irq_wake(irq_eoc);
++		else
++			return ret;
++	} else {
++		device_init_wakeup(iadc->dev, 1);
++	}
++
++	ret = iadc_update_trim_offset(iadc);
++	if (ret < 0) {
++		dev_err(dev, "failed trim offset calibration\n");
++		return ret;
++	}
++
++	iio_chan = &iadc->iio_chan;
++	iio_chan->type = IIO_CURRENT;
++	iio_chan->indexed = 1;
++	iio_chan->info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED);
++	iio_chan->scan_type.sign = 's';
++	iio_chan->scan_type.realbits = 16;
++	iio_chan->scan_type.storagebits	= 16;
++
++	if (iadc->ext_sense) {
++		iio_chan->channel = 1;
++		iio_chan->datasheet_name = "EXTERNAL_RSENSE";
++	} else {
++		iio_chan->channel = 0;
++		iio_chan->datasheet_name = "INTERNAL_RSENSE";
++	}
++
++	indio_dev->dev.parent = dev;
++	indio_dev->dev.of_node = node;
++	indio_dev->name = pdev->name;
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->info = &iadc_info;
++	indio_dev->channels = iio_chan;
++	indio_dev->num_channels = 1;
++
++	return devm_iio_device_register(dev, indio_dev);
++}
++
++static const struct of_device_id iadc_match_table[] = {
++	{ .compatible = "qcom,spmi-iadc" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, iadc_match_table);
++
++static struct platform_driver iadc_driver = {
++	.driver = {
++		   .name = "spmi-iadc",
++		   .of_match_table = iadc_match_table,
++	},
++	.probe = iadc_probe,
++};
++module_platform_driver(iadc_driver);
++
++MODULE_ALIAS("platform:spmi-iadc");
++MODULE_DESCRIPTION("Qualcomm SPMI PMIC current ADC driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.9.1
 
