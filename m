@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619AbaIRJi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:38:58 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5706 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755886AbaIRJi5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:38:57 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 18 Sep 2014 17:38:54 +0800
-Subject: RE: [PATCH] arm64:free_initrd_mem should also free the memblock
-Thread-Topic: [PATCH] arm64:free_initrd_mem should also free the memblock
-Thread-Index: Ac/Sowg9kT8qstkfTGqbNgzcT/H+aAAP/3nQ
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB49161B@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103CDBFBFB029@CNBJMBX05.corpusers.net>
- <20140915183334.GA30737@arm.com>
- <20140915184023.GF12361@n2100.arm.linux.org.uk>
- <20140915185027.GC30737@arm.com>
- <35FD53F367049845BC99AC72306C23D103D6DB49160C@CNBJMBX05.corpusers.net>
- <20140917162822.GB15261@e104818-lin.cambridge.arm.com>
- <20140917181254.GW12361@n2100.arm.linux.org.uk>
-In-Reply-To: <20140917181254.GW12361@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756719AbaIRJjT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:39:19 -0400
+Received: from regular2.263xmail.com ([211.157.152.3]:45064 "EHLO
+	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756307AbaIRJjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:39:16 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <61b9d1d1eafb6d5e7a8959acc8c51917>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v2 2/5] dt-bindings: video: Add for rockchip display subsytem
+Date: Thu, 18 Sep 2014 17:37:53 +0800
+Message-Id: <1411033073-9319-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411032884-9233-1-git-send-email-mark.yao@rock-chips.com>
+References: <1411032884-9233-1-git-send-email-mark.yao@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+This add a display subsystem comprise the all display interface nodes.
 
-mm..
-I see your meaning,
-But how to debug reserved memory,
-I mean how to know which physical memory are reserved in kernel if 
-Not use /sys/kernel/debug/memblock/reserved  debug file ?
+Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
 
-I think memblock provides a debug interface, so it should keep it 
-Correct for debug .
+---
+changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
 
-For Catalin 's suggestion,
-I am not sure if it is always true to call memblock_free() in
-free_reserved_area() , maybe some caller don't want this
-behaviors .
-So maybe we can introduce another function like free_reserved_area_and_memblock() to implement it.
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+
+diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+new file mode 100644
+index 0000000..7fff582
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+@@ -0,0 +1,19 @@
++Rockchip DRM master device
++================================
++
++The Rockchip DRM master device is a virtual device needed to list all
++vop devices or other display interface nodes that comprise the
++graphics subsystem.
++
++Required properties:
++- compatible: Should be "rockchip,display-subsystem"
++- ports: Should contain a list of phandles pointing to display interface port
++  of vop devices. vop definitions as defined in
++  Documentation/devicetree/bindings/video/rockchip-vop.txt
++
++example:
++
++display-subsystem {
++	compatible = "rockchip,display-subsystem";
++	ports = <&vopl_out>, <&vopb_out>;
++};
+-- 
+1.7.9.5
 
 
------Original Message-----
-From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] 
-Sent: Thursday, September 18, 2014 2:13 AM
-To: Catalin Marinas
-Cc: Wang, Yalin; Will Deacon; 'linux-mm@kvack.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
-Subject: Re: [PATCH] arm64:free_initrd_mem should also free the memblock
-
-On Wed, Sep 17, 2014 at 05:28:23PM +0100, Catalin Marinas wrote:
-> On Tue, Sep 16, 2014 at 02:53:55AM +0100, Wang, Yalin wrote:
-> > The reason that a want merge this patch is that It confuse me when I 
-> > debug memory issue by /sys/kernel/debug/memblock/reserved  debug 
-> > file, It show lots of un-correct reserved memory.
-> > In fact, I also send a patch to cma driver part For this issue too:
-> > http://ozlabs.org/~akpm/mmots/broken-out/free-the-reserved-memblock-
-> > when-free-cma-pages.patch
-> > 
-> > I want to remove these un-correct memblock parts as much as 
-> > possible, so that I can see more correct info from 
-> > /sys/kernel/debug/memblock/reserved
-> > debug file .
-> 
-> Could we not always call memblock_free() from free_reserved_area() 
-> (with a dummy definition when !CONFIG_HAVE_MEMBLOCK)?
-
-Why bother?
-
-The next thing is that people will want to have memblock's reserved areas track whether the kernel allocates a page so that the memblock debugging follows the kernel's allocation state.
-
-This is utterly rediculous.  Memblock is purely a method to get the system up and running.  Once it hands memory over to the normal kernel allocators, the reservation information in memblock is no longer valid.
-
-The /useful/ information that it provides is the state of memory passed over to the kernel allocators, which in itself is valuable information.
-Destroying it by freeing stuff after that point is not useful.
-
---
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up according to speedtest.net.
