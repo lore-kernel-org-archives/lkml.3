@@ -1,73 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249AbaIRUNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 16:13:51 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:55169 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139AbaIRUNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 16:13:49 -0400
+	id S1757277AbaIRUPl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 16:15:41 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57304 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756232AbaIRUPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 16:15:40 -0400
+Date: Thu, 18 Sep 2014 13:14:52 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Jianguo Wu <wujianguo@huawei.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] arm, kaslr: randomize module base address
+Message-ID: <20140918201452.GA1653@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20140814210324.GA22572@earth.universe>
-References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
-	<1394052739-8589-2-git-send-email-marek@goldelico.com>
-	<20140305232513.GA9542@earth.universe>
-	<CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
-	<CAAfyv35Hi-aE+SnTiN9O39ANi63gkNMz-Bz6hqCkkxJARSFcOg@mail.gmail.com>
-	<20140814210324.GA22572@earth.universe>
-Date: Thu, 18 Sep 2014 22:13:47 +0200
-Message-ID: <CAAfyv36FUqCU=sdJ2izs0zMSNuSO4Q0TLg2e61AKkeDrdg_F4Q@mail.gmail.com>
-Subject: Re: [PATCH v2] power: twl4030-madc-battery: Convert to iio consumer.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+While we don't yet have text base address randomization in ARM, we can
+do module base address randomization. This bumps the module base by up
+to 4MiB.
 
-On Thu, Aug 14, 2014 at 11:03 PM, Sebastian Reichel <sre@kernel.org> wrote:
-> Hi Marek,
->
-> On Mon, Aug 11, 2014 at 09:52:52PM +0200, Belisko Marek wrote:
->> can you please take this series (I'll post update version with
->> removing debug code). Thanks.
->
-> mh. I will not pull this with "(dis)charging-calibration-data" as
-> DT property name without an ACK from the DT binding maintainers.
-DT maintainers ping.
->
-> I would feel fine with pulling this when they are prefixed with
-> "ti,". Otherwise the series looks good to me.
-Why it should be prefixed by "ti"? Isn't enough to have "ti" prefix for driver
-compatible property? Thanks.
->
-> -- Sebastian
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/arm/Kconfig         |  8 ++++++++
+ arch/arm/kernel/module.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 50 insertions(+), 3 deletions(-)
 
-BR,
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 32cbbd565902..47b03360aa51 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1769,6 +1769,14 @@ config XEN
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+ 
++config RANDOMIZE_BASE
++	bool "Randomize the base address of loaded modules"
++	depends on MMU
++	default n
++	---help---
++	   Randomizes the base address at which kernel modules are loaded,
++	   with 10 bits of entropy. At most, this will create a 4MiB gap
++	   at the start of the kernel modules virtual address range.
+ endmenu
+ 
+ menu "Boot options"
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index 6a4dffefd357..f7cf7e84905e 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -19,6 +19,7 @@
+ #include <linux/fs.h>
+ #include <linux/string.h>
+ #include <linux/gfp.h>
++#include <linux/random.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/sections.h>
+@@ -38,11 +39,49 @@
+ #endif
+ 
+ #ifdef CONFIG_MMU
++# ifdef CONFIG_RANDOMIZE_BASE
++static unsigned long module_load_offset;
++static int randomize_modules = 1;
++
++/* Mutex protects the module_load_offset. */
++static DEFINE_MUTEX(module_kaslr_mutex);
++
++static int __init parse_nokaslr(char *p)
++{
++	randomize_modules = 0;
++	return 0;
++}
++early_param("nokaslr", parse_nokaslr);
++
++static unsigned long int get_module_load_offset(void)
++{
++	if (randomize_modules) {
++		mutex_lock(&module_kaslr_mutex);
++		/*
++		 * Calculate the module_load_offset the first time this
++		 * code is called. Once calculated it stays the same until
++		 * reboot.
++		 */
++		if (module_load_offset == 0)
++			module_load_offset =
++				(get_random_int() % 1024 + 1) * PAGE_SIZE;
++		mutex_unlock(&module_kaslr_mutex);
++	}
++	return module_load_offset;
++}
++# else
++static unsigned long int get_module_load_offset(void)
++{
++	return 0;
++}
++# endif
++
+ void *module_alloc(unsigned long size)
+ {
+-	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+-				GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
+-				__builtin_return_address(0));
++	return __vmalloc_node_range(size, 1,
++				MODULES_VADDR + get_module_load_offset(),
++				MODULES_END, GFP_KERNEL, PAGE_KERNEL_EXEC,
++				NUMA_NO_NODE, __builtin_return_address(0));
+ }
+ #endif
+ 
+-- 
+1.9.1
 
-marek
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+Kees Cook
+Chrome OS Security
