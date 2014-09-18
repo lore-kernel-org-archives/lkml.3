@@ -1,241 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994AbaISPEj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:04:39 -0400
-Received: from services.gouders.net ([141.101.32.176]:36098 "EHLO
-	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085AbaISPEh (ORCPT
+	id S1757510AbaISPKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:10:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49437 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038AbaISPKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:04:37 -0400
-From: Dirk Gouders <dirk@gouders.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-In-Reply-To: <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
-	(Yinghai Lu's message of "Fri, 12 Sep 2014 18:59:23 -0700")
-References: <ghiol53r9u.fsf@lena.gouders.net>
-	<CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
-	<ghwq9k3m6z.fsf@lena.gouders.net>
-	<CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
-	<ghioku5l29.fsf@lena.gouders.net>
-	<CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
-	<CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
-	<ghppf15236.fsf@quad.gouders.net>
-	<CAErSpo5SVUOz+qa_x5JTC+-Y5ewTyYzA0N=jyPtK9LaguRrt=w@mail.gmail.com>
-	<ghd2b1svdw.fsf@quad.gouders.net>
-	<CAErSpo5e0GOdVbZdQYriP+aWziKELpb9BWTgJ4ERPia354CM5w@mail.gmail.com>
-	<ghvbotd8es.fsf@quad.gouders.net> <ghzje5f5zt.fsf@lena.gouders.net>
-	<ghbnqkeh9k.fsf@quad.gouders.net>
-	<CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
-	<gh4mwcef0r.fsf@quad.gouders.net>
-	<CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
-	<ghoaukcx6b.fsf@quad.gouders.net>
-	<CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
-	<ghk358crbe.fsf@quad.gouders.net>
-	<CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Fri, 19 Sep 2014 17:03:26 +0200
-Message-ID: <ghwq8zzm81.fsf@lena.gouders.net>
+	Fri, 19 Sep 2014 11:10:12 -0400
+Date: Fri, 19 Sep 2014 01:46:28 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 2/2] sched/fair: leverage the idle state info when
+ choosing the "idlest" cpu
+Message-ID: <20140918234628.GQ2848@worktop.localdomain>
+References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
+ <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+On Thu, Sep 04, 2014 at 11:32:10AM -0400, Nicolas Pitre wrote:
+> The code in find_idlest_cpu() looks for the CPU with the smallest load.
+> However, if multiple CPUs are idle, the first idle CPU is selected
+> irrespective of the depth of its idle state.
+> 
+> Among the idle CPUs we should pick the one with with the shallowest idle
+> state, or the latest to have gone idle if all idle CPUs are in the same
+> state.  The later applies even when cpuidle is configured out.
+> 
+> This patch doesn't cover the following issues:
+> 
+> - The idle exit latency of a CPU might be larger than the time needed
+>   to migrate the waking task to an already running CPU with sufficient
+>   capacity, and therefore performance would benefit from task packing
+>   in such case (in most cases task packing is about power saving).
+> 
+> - Some idle states have a non negligible and non abortable entry latency
+>   which needs to run to completion before the exit latency can start.
+>   A concurrent patch series is making this info available to the cpuidle
+>   core.  Once available, the entry latency with the idle timestamp could
+>   determine when the exit latency may be effective.
+> 
+> Those issues will be handled in due course.  In the mean time, what
+> is implemented here should improve things already compared to the current
+> state of affairs.
+> 
+> Based on an initial patch from Daniel Lezcano.
+> 
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> ---
+>  kernel/sched/fair.c | 43 ++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 36 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index bfa3c86d0d..416329e1a6 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/latencytop.h>
+>  #include <linux/sched.h>
+>  #include <linux/cpumask.h>
+> +#include <linux/cpuidle.h>
+>  #include <linux/slab.h>
+>  #include <linux/profile.h>
+>  #include <linux/interrupt.h>
+> @@ -4428,20 +4429,48 @@ static int
+>  find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 
-> On Fri, Sep 12, 2014 at 5:11 PM, Dirk Gouders <dirk@gouders.net> wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->>
->> Yes, I skip them in pci_scan_device() to get the unused bus number space
->> that 0a.0 and 0b.0 then can use when reconfiguration is triggered.
->
-> That is not right. Can not let two bridges use same bus num.
->
->>
->>> Proper simulation could be:
->>> 1. remove 07:00.0
->>>     echo 1 > /sys/bus/pci/devices/0000:07:00.0/remove
->>> 2. change bus range in 00:0a.0 bus
->>>     setpci -s 00:0a.0 0x1c.l=0x00101000
->>> 3. remove 00:0a.0
->>>     echo 1 > /sys/bus/pci/devices/0000:00:0a.0/remove
->>> 4. rescan pci
->>>     echo 1 > /sys/bus/pci/rescan
->>> 5. reset pcie link from 00:0a.0
->>>     setpci -s 00:0a.0 0xc0.b=0x18
->>>     sleep 1s
->>>     setpci -s 00:0a.0 0xc0.b=0x08
->>> 6. rescan pci bus
->>>     echo 1 > /sys/bus/pci/rescan
->>
->> OK, I did that (with 3.16) but the reconfiguration code doesn't
->> get triggered.  Here is what dmesg and lspci -tv say:
->
-> 2 should be
->    setpci -s 00:0a.0 0x18.l=0x00101000
+Ah, now I see, you use it in find_idlest_cpu(), that does not indeed
+hold rq->lock, but it does already hold rcu_read_lock(), so in that
+regard sync_rcu() should be the right primitive.
 
-I'm very sorry for the late test result, Yinghai, I totally overlooked
-this correction.
+I suppose we want the same kind of logic in select_idle_sibling() and
+that too already has rcu_read_lock().
 
-I'm not sure if it is still of interest but
-I now tried these corrected commands on the test machine with a vanilla
-3.16 kernel.  The FC adapter disappears but I cannot see the 
+So I'll replace the kick_all_cpus_sync() with sync_rcu() and add a
+WARN_ON(!rcu_read_lock_held()) to idle_get_state(), like the below.
 
-"bridge configuration invalid ..., reconfiguring" message,
+I however do think we need a few word on why we don't need
+rcu_assign_pointer() and rcu_dereference() for rq->idle_state -- and I
+do indeed think we do not because the idle state data is static.
 
-so I assume that the test situation is still not exactly matching that
-on the vx50 or am I missing something?
+---
+Subject: sched: let the scheduler see CPU idle states
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+Date: Thu, 04 Sep 2014 11:32:09 -0400
 
-lspci before and lspci + dmesg after above commands attached.
+When the cpu enters idle, it stores the cpuidle state pointer in its
+struct rq instance which in turn could be used to make a better decision
+when balancing tasks.
 
-Dirk
+As soon as the cpu exits its idle state, the struct rq reference is
+cleared.
 
-- lspci before ---------------------------------------------------------
--[0000:00]-+-01.0-[01-02]--+-0d.0-[02]--
-           |               +-0e.0  Broadcom BCM5785 [HT1000] SATA (PATA/IDE Mode)
-           |               \-0e.1  Broadcom BCM5785 [HT1000] SATA (PATA/IDE Mode)
-           +-02.0  Broadcom BCM5785 [HT1000] Legacy South Bridge
-           +-02.1  Broadcom BCM5785 [HT1000] IDE
-           +-02.2  Broadcom BCM5785 [HT1000] LPC
-           +-03.0  Broadcom BCM5785 [HT1000] USB
-           +-03.1  Broadcom BCM5785 [HT1000] USB
-           +-03.2  Broadcom BCM5785 [HT1000] USB
-           +-06.0-[03]--
-           +-07.0-[04]--+-04.0  Broadcom Corporation NetXtreme BCM5780 Gigabit Ethernet
-           |            \-04.1  Broadcom Corporation NetXtreme BCM5780 Gigabit Ethernet
-           +-08.0-[05]--
-           +-09.0-[06]--
-           +-0a.0-[07]----00.0  LSI Logic / Symbios Logic FC949ES Fibre Channel Adapter
-           +-0b.0-[08]--
-           +-0c.0  Advanced Micro Devices, Inc. [AMD/ATI] ES1000
-           +-18.0  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
-           +-18.1  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Address Map
-           +-18.2  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] DRAM Controller
-           +-18.3  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
-           +-19.0  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
-           +-19.1  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Address Map
-           +-19.2  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] DRAM Controller
-           \-19.3  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
+There are a couple of situations where the idle state pointer could be changed
+while it is being consulted:
 
-- lspci after ----------------------------------------------------------
--[0000:00]-+-01.0-[01-02]--+-0d.0-[02]--
-           |               +-0e.0  Broadcom BCM5785 [HT1000] SATA (PATA/IDE Mode)
-           |               \-0e.1  Broadcom BCM5785 [HT1000] SATA (PATA/IDE Mode)
-           +-02.0  Broadcom BCM5785 [HT1000] Legacy South Bridge
-           +-02.1  Broadcom BCM5785 [HT1000] IDE
-           +-02.2  Broadcom BCM5785 [HT1000] LPC
-           +-03.0  Broadcom BCM5785 [HT1000] USB
-           +-03.1  Broadcom BCM5785 [HT1000] USB
-           +-03.2  Broadcom BCM5785 [HT1000] USB
-           +-06.0-[03]--
-           +-07.0-[04]--+-04.0  Broadcom Corporation NetXtreme BCM5780 Gigabit Ethernet
-           |            \-04.1  Broadcom Corporation NetXtreme BCM5780 Gigabit Ethernet
-           +-08.0-[05]--
-           +-09.0-[06]--
-           +-0a.0-[10]--
-           +-0b.0-[08]--
-           +-0c.0  Advanced Micro Devices, Inc. [AMD/ATI] ES1000
-           +-18.0  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
-           +-18.1  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Address Map
-           +-18.2  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] DRAM Controller
-           +-18.3  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
-           +-19.0  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
-           +-19.1  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Address Map
-           +-19.2  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] DRAM Controller
-           \-19.3  Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
+1. For x86/acpi with dynamic c-states, when a laptop switches from battery
+   to AC that could result on removing the deeper idle state. The acpi driver
+   triggers:
+	'acpi_processor_cst_has_changed'
+		'cpuidle_pause_and_lock'
+			'cpuidle_uninstall_idle_handler'
+				'kick_all_cpus_sync'.
 
-- dmesg after ----------------------------------------------------------
-[  214.234819] pci_bus 0000:07: busn_res: [bus 07] is released
-[  214.234981] pci_scan_child_bus: pci_bus 0000:00: scanning bus
-[  214.235037] pci 0000:00:0a.0: [1166:0132] type 01 class 0x060400
-[  214.235128] pci 0000:00:0a.0: System wakeup disabled by ACPI
-[  214.235221] pci_scan_bridge: pci 0000:00:01.0: scanning [bus 01-02] behind bridge, pass 0
-[  214.235227] pci_scan_child_bus: pci_bus 0000:01: scanning bus
-[  214.235258] pci_scan_bridge: pci 0000:01:0d.0: scanning [bus 02-02] behind bridge, pass 0
-[  214.235262] pci_scan_child_bus: pci_bus 0000:02: scanning bus
-[  214.235295] pci_scan_child_bus: pci_bus 0000:02: bus scan returning with max=02
-[  214.235301] pci_scan_bridge: pci 0000:01:0d.0: scanning [bus 02-02] behind bridge, pass 1
-[  214.235306] pci_scan_child_bus: pci_bus 0000:01: bus scan returning with max=02
-[  214.235312] pci_scan_bridge: pci 0000:00:06.0: scanning [bus 03-03] behind bridge, pass 0
-[  214.235316] pci_scan_child_bus: pci_bus 0000:03: scanning bus
-[  214.235343] pci_scan_child_bus: pci_bus 0000:03: bus scan returning with max=03
-[  214.235348] pci_scan_bridge: pci 0000:00:07.0: scanning [bus 04-04] behind bridge, pass 0
-[  214.235352] pci_scan_child_bus: pci_bus 0000:04: scanning bus
-[  214.235376] pci_scan_child_bus: pci_bus 0000:04: bus scan returning with max=04
-[  214.235381] pci_scan_bridge: pcieport 0000:00:08.0: scanning [bus 05-05] behind bridge, pass 0
-[  214.235386] pci_scan_child_bus: pci_bus 0000:05: scanning bus
-[  214.235390] pci_scan_child_bus: pci_bus 0000:05: bus scan returning with max=05
-[  214.235394] pci_scan_bridge: pcieport 0000:00:09.0: scanning [bus 06-06] behind bridge, pass 0
-[  214.235398] pci_scan_child_bus: pci_bus 0000:06: scanning bus
-[  214.235402] pci_scan_child_bus: pci_bus 0000:06: bus scan returning with max=06
-[  214.235407] pci_scan_bridge: pcieport 0000:00:0b.0: scanning [bus 08-08] behind bridge, pass 0
-[  214.235411] pci_scan_child_bus: pci_bus 0000:08: scanning bus
-[  214.235415] pci_scan_child_bus: pci_bus 0000:08: bus scan returning with max=08
-[  214.235420] pci_scan_bridge: pci 0000:00:0a.0: scanning [bus 10-10] behind bridge, pass 0
-[  214.235457] pci_scan_child_bus: pci_bus 0000:10: scanning bus
-[  214.235461] pci_scan_child_bus: pci_bus 0000:10: fixups for bus
-[  214.235464] pci 0000:00:0a.0: PCI bridge to [bus 10]
-[  214.235470] pci 0000:00:0a.0:   bridge window [io  0x9000-0xbfff]
-[  214.235475] pci 0000:00:0a.0:   bridge window [mem 0xff300000-0xff5fffff]
-[  214.235480] pci 0000:00:0a.0:   bridge window [mem 0xcfe00000-0xcfefffff 64bit pref]
-[  214.235483] pci_scan_child_bus: pci_bus 0000:10: bus scan returning with max=10
-[  214.235487] pci_scan_bridge: pci 0000:00:01.0: scanning [bus 01-02] behind bridge, pass 1
-[  214.235493] pci_scan_bridge: pci 0000:00:06.0: scanning [bus 03-03] behind bridge, pass 1
-[  214.235498] pci_scan_bridge: pci 0000:00:07.0: scanning [bus 04-04] behind bridge, pass 1
-[  214.235503] pci_scan_bridge: pcieport 0000:00:08.0: scanning [bus 05-05] behind bridge, pass 1
-[  214.235508] pci_scan_bridge: pcieport 0000:00:09.0: scanning [bus 06-06] behind bridge, pass 1
-[  214.235513] pci_scan_bridge: pcieport 0000:00:0b.0: scanning [bus 08-08] behind bridge, pass 1
-[  214.235518] pci_scan_bridge: pci 0000:00:0a.0: scanning [bus 10-10] behind bridge, pass 1
-[  214.235522] pci_scan_child_bus: pci_bus 0000:00: bus scan returning with max=10
-[  214.235567] pci 0000:00:0a.0: BAR 8: assigned [mem 0x80000000-0x802fffff]
-[  214.235574] pci 0000:00:0a.0: BAR 9: assigned [mem 0x280000000-0x2800fffff 64bit pref]
-[  214.235579] pci 0000:00:0a.0: BAR 7: assigned [io  0x1000-0x3fff]
-[  214.235583] pci 0000:01:0d.0: PCI bridge to [bus 02]
-[  214.235592] pci 0000:00:06.0: PCI bridge to [bus 03]
-[  214.235599] pci 0000:00:0a.0: PCI bridge to [bus 10]
-[  214.235603] pci 0000:00:0a.0:   bridge window [io  0x1000-0x3fff]
-[  214.235607] pci 0000:00:0a.0:   bridge window [mem 0x80000000-0x802fffff]
-[  214.235610] pci 0000:00:0a.0:   bridge window [mem 0x280000000-0x2800fffff 64bit pref]
-[  214.235622] fixup_debug_start: pci 0000:00:0a.0: calling quirk_msi_ht_cap+0x0/0x50
-[  214.235627] pci 0000:00:0a.0: Found enabled HT MSI Mapping
-[  215.257656] pci_scan_child_bus: pci_bus 0000:00: scanning bus
-[  215.257713] pci_scan_bridge: pci 0000:00:01.0: scanning [bus 01-02] behind bridge, pass 0
-[  215.257720] pci_scan_child_bus: pci_bus 0000:01: scanning bus
-[  215.257750] pci_scan_bridge: pci 0000:01:0d.0: scanning [bus 02-02] behind bridge, pass 0
-[  215.257755] pci_scan_child_bus: pci_bus 0000:02: scanning bus
-[  215.257788] pci_scan_child_bus: pci_bus 0000:02: bus scan returning with max=02
-[  215.257793] pci_scan_bridge: pci 0000:01:0d.0: scanning [bus 02-02] behind bridge, pass 1
-[  215.257798] pci_scan_child_bus: pci_bus 0000:01: bus scan returning with max=02
-[  215.257803] pci_scan_bridge: pci 0000:00:06.0: scanning [bus 03-03] behind bridge, pass 0
-[  215.257807] pci_scan_child_bus: pci_bus 0000:03: scanning bus
-[  215.257834] pci_scan_child_bus: pci_bus 0000:03: bus scan returning with max=03
-[  215.257839] pci_scan_bridge: pci 0000:00:07.0: scanning [bus 04-04] behind bridge, pass 0
-[  215.257843] pci_scan_child_bus: pci_bus 0000:04: scanning bus
-[  215.257867] pci_scan_child_bus: pci_bus 0000:04: bus scan returning with max=04
-[  215.257872] pci_scan_bridge: pcieport 0000:00:08.0: scanning [bus 05-05] behind bridge, pass 0
-[  215.257876] pci_scan_child_bus: pci_bus 0000:05: scanning bus
-[  215.257880] pci_scan_child_bus: pci_bus 0000:05: bus scan returning with max=05
-[  215.257884] pci_scan_bridge: pcieport 0000:00:09.0: scanning [bus 06-06] behind bridge, pass 0
-[  215.257889] pci_scan_child_bus: pci_bus 0000:06: scanning bus
-[  215.257893] pci_scan_child_bus: pci_bus 0000:06: bus scan returning with max=06
-[  215.257897] pci_scan_bridge: pcieport 0000:00:0b.0: scanning [bus 08-08] behind bridge, pass 0
-[  215.257901] pci_scan_child_bus: pci_bus 0000:08: scanning bus
-[  215.257905] pci_scan_child_bus: pci_bus 0000:08: bus scan returning with max=08
-[  215.257910] pci_scan_bridge: pcieport 0000:00:0a.0: scanning [bus 10-10] behind bridge, pass 0
-[  215.257914] pci_scan_child_bus: pci_bus 0000:10: scanning bus
-[  215.257918] pci_scan_child_bus: pci_bus 0000:10: bus scan returning with max=10
-[  215.257922] pci_scan_bridge: pci 0000:00:01.0: scanning [bus 01-02] behind bridge, pass 1
-[  215.257928] pci_scan_bridge: pci 0000:00:06.0: scanning [bus 03-03] behind bridge, pass 1
-[  215.257933] pci_scan_bridge: pci 0000:00:07.0: scanning [bus 04-04] behind bridge, pass 1
-[  215.257938] pci_scan_bridge: pcieport 0000:00:08.0: scanning [bus 05-05] behind bridge, pass 1
-[  215.257942] pci_scan_bridge: pcieport 0000:00:09.0: scanning [bus 06-06] behind bridge, pass 1
-[  215.257947] pci_scan_bridge: pcieport 0000:00:0b.0: scanning [bus 08-08] behind bridge, pass 1
-[  215.257952] pci_scan_bridge: pcieport 0000:00:0a.0: scanning [bus 10-10] behind bridge, pass 1
-[  215.257956] pci_scan_child_bus: pci_bus 0000:00: bus scan returning with max=10
-[  215.257994] pci 0000:01:0d.0: PCI bridge to [bus 02]
-[  215.258033] pci 0000:00:06.0: PCI bridge to [bus 03]
+All cpus will exit their idle state and the pointed object will be set to
+NULL.
+
+2. The cpuidle driver is unloaded. Logically that could happen but not
+in practice because the drivers are always compiled in and 95% of them are
+not coded to unregister themselves.  In any case, the unloading code must
+call 'cpuidle_unregister_device', that calls 'cpuidle_pause_and_lock'
+leading to 'kick_all_cpus_sync' as mentioned above.
+
+A race can happen if we use the pointer and then one of these two scenarios
+occurs at the same moment.
+
+In order to be safe, the idle state pointer stored in the rq must be
+used inside a rcu_read_lock section where we are protected with the
+'rcu_barrier' in the 'cpuidle_uninstall_idle_handler' function. The
+idle_get_state() and idle_put_state() accessors should be used to that
+effect.
+
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+---
+ drivers/cpuidle/cpuidle.c |    6 ++++++
+ kernel/sched/idle.c       |    6 ++++++
+ kernel/sched/sched.h      |   30 ++++++++++++++++++++++++++++++
+ 3 files changed, 42 insertions(+)
+
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -225,6 +225,12 @@ void cpuidle_uninstall_idle_handler(void
+ 		initialized = 0;
+ 		wake_up_all_idle_cpus();
+ 	}
++
++	/*
++	 * Make sure external observers (such as the scheduler)
++	 * are done looking at pointed idle states.
++	 */
++	synchronize_rcu();
+ }
+ 
+ /**
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -147,6 +147,9 @@ static void cpuidle_idle_call(void)
+ 	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
+ 		goto use_default;
+ 
++	/* Take note of the planned idle state. */
++	idle_set_state(this_rq(), &drv->states[next_state]);
++
+ 	/*
+ 	 * Enter the idle state previously returned by the governor decision.
+ 	 * This function will block until an interrupt occurs and will take
+@@ -154,6 +157,9 @@ static void cpuidle_idle_call(void)
+ 	 */
+ 	entered_state = cpuidle_enter(drv, dev, next_state);
+ 
++	/* The cpu is no longer idle or about to enter idle. */
++	idle_set_state(this_rq(), NULL);
++
+ 	if (broadcast)
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+ 
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -14,6 +14,7 @@
+ #include "cpuacct.h"
+ 
+ struct rq;
++struct cpuidle_state;
+ 
+ /* task_struct::on_rq states: */
+ #define TASK_ON_RQ_QUEUED	1
+@@ -640,6 +641,11 @@ struct rq {
+ #ifdef CONFIG_SMP
+ 	struct llist_head wake_list;
+ #endif
++
++#ifdef CONFIG_CPU_IDLE
++	/* Must be inspected within a rcu lock section */
++	struct cpuidle_state *idle_state;
++#endif
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
+@@ -1193,6 +1199,30 @@ static inline void idle_exit_fair(struct
+ 
+ #endif
+ 
++#ifdef CONFIG_CPU_IDLE
++static inline void idle_set_state(struct rq *rq,
++				  struct cpuidle_state *idle_state)
++{
++	rq->idle_state = idle_state;
++}
++
++static inline struct cpuidle_state *idle_get_state(struct rq *rq)
++{
++	WARN_ON(!rcu_read_lock_held());
++	return rq->idle_state;
++}
++#else
++static inline void idle_set_state(struct rq *rq,
++				  struct cpuidle_state *idle_state)
++{
++}
++
++static inline struct cpuidle_state *idle_get_state(struct rq *rq)
++{
++	return NULL;
++}
++#endif
++
+ extern void sysrq_sched_debug_show(void);
+ extern void sched_init_granularity(void);
+ extern void update_max_interval(void);
