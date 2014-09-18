@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378AbaISPKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:10:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41838 "EHLO
+	id S1757318AbaISPKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:10:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41831 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232AbaISPKJ (ORCPT
+	with ESMTP id S1755372AbaISPKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 11:10:09 -0400
-Date: Thu, 18 Sep 2014 22:49:06 +0200
+Date: Fri, 19 Sep 2014 01:24:15 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
-        mingo@kernel.org, hpa@linux.intel.com, brice.goglin@gmail.com,
-        bp@alien8.de
-Subject: Re: [PATCH] x86: new topology for multi-NUMA-node CPUs
-Message-ID: <20140918204906.GM2848@worktop.localdomain>
-References: <20140918193334.C065EBCE@viggo.jf.intel.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] sched/idle : find the best idle CPU with cpuidle
+ info
+Message-ID: <20140918232415.GP2848@worktop.localdomain>
+References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
+ <alpine.LFD.2.11.1409101734470.16533@knanqh.ubzr>
+ <alpine.LFD.2.11.1409172037340.8647@knanqh.ubzr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140918193334.C065EBCE@viggo.jf.intel.com>
+In-Reply-To: <alpine.LFD.2.11.1409172037340.8647@knanqh.ubzr>
 User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 12:33:34PM -0700, Dave Hansen wrote:
+On Wed, Sep 17, 2014 at 08:39:34PM -0400, Nicolas Pitre wrote:
 > 
-> 
-> This is my third attempt to fix this.  It's definitely simpler
-> than the previous set.  This takes Peter Z's suggestion to just
-> create and use a different topology when we see these
-> "Cluster-on-Die" systems.
+> Ping-ping.
+
+Right, finally got to it. Too much travel and some time away from the
+computer with the 'usual' result :/
 
 
-> +static struct sched_domain_topology_level numa_inside_package_topology[] = {
-> +#ifdef CONFIG_SCHED_SMT
-> +	{ cpu_smt_mask, cpu_smt_flags, SD_INIT_NAME(SMT) },
-> +#endif
-> +	{ NULL, },
-> +};
-
-Yes, that looks ok. The only thing is that we need to fix the MC and DIE
-masks. But I can do that in a separate patch. This should ideally still
-contain the MC domain (as in LLC) mask, just not the DIE domain (as in
-pkg).
-
-But as you already saw, bits are somewhat icky atm.
