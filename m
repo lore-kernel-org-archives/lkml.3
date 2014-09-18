@@ -1,118 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098AbaIRQsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 12:48:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45122 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756218AbaIRQsl (ORCPT
+	id S932280AbaIRQsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 12:48:47 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:36886 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756218AbaIRQsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 12:48:41 -0400
-Message-ID: <541B0CFC.1000005@wwwdotorg.org>
-Date: Thu, 18 Sep 2014 10:49:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-CC: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mmc: don't request CD IRQ until mmc_start_host()
-References: <1410542338-24565-1-git-send-email-swarren@wwwdotorg.org> <CAPDyKFq63LKHKJ_1JD=SGU=V1eE-1105qPLy1EQtf=4k8dwKkA@mail.gmail.com> <5419E7B6.7020708@wwwdotorg.org> <541A6CAD.1020001@intel.com> <541A8062.3020008@intel.com>
-In-Reply-To: <541A8062.3020008@intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Sep 2014 12:48:45 -0400
+From: Rob Jones <rob.jones@codethink.co.uk>
+To: davem@davemloft.net
+Cc: netfilter@vger.kernel.org, coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kernel@codethink.co.uk,
+        rob.jones@codethink.co.uk
+Subject: [PATCH] net/netfilter/x_tables.c: use __seq_open_private()
+Date: Thu, 18 Sep 2014 17:48:31 +0100
+Message-Id: <1411058911-17655-1-git-send-email-rob.jones@codethink.co.uk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 12:49 AM, Adrian Hunter wrote:
-> On 09/18/2014 08:25 AM, Adrian Hunter wrote:
->> On 09/17/2014 10:57 PM, Stephen Warren wrote:
->>> On 09/17/2014 01:55 PM, Ulf Hansson wrote:
->>>> On 12 September 2014 19:18, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>>>> From: Stephen Warren <swarren@nvidia.com>
->>>>>
->>>>> As soon as the CD IRQ is requested, it can trigger, since it's an
->>>>> externally controlled event. If it does, delayed_work host->detect will
->>>>> be scheduled.
->>>>>
->>>>> Many host controller probe()s are roughly structured as:
->>>>>
->>>>> *_probe() {
->>>>>       host = sdhci_pltfm_init();
->>>>>       mmc_of_parse(host->mmc);
->>>>>       rc = sdhci_add_host(host);
->>>>>       if (rc) {
->>>>>           sdhci_pltfm_free();
->>>>>           return rc;
->>>>>       }
->>>>>
->>>>> In 3.17, CD IRQs can are enabled quite early via *_probe() ->
->>>>> mmc_of_parse() -> mmc_gpio_request_cd() -> mmc_gpiod_request_cd_irq().
->>>>>
->>>>> Note that in linux-next, mmc_of_parse() calls mmc_gpio*d*_request_cd()
->>>>> rather than mmc_gpio_request_cd(), and mmc_gpio*d*_request_cd() doesn't
->>>>> call mmc_gpiod_request_cd_irq(). However, this issue still exists for
->>>>> any other direct users of mmc_gpio_request_cd().
->>>>>
->>>>> sdhci_add_host() may fail part way through (e.g. due to deferred
->>>>> probe for a vmmc regulator), and sdhci_pltfm_free() does nothing to
->>>>> unrequest the CD IRQ nor cancel the delayed_work. sdhci_pltfm_free() is
->>>>> coded to assume that if sdhci_add_host() failed, then the delayed_work
->>>>> cannot (or should not) have been triggered.
->>>>>
->>>>> This can lead to the following with CONFIG_DEBUG_OBJECTS_* enabled, when
->>>>> kfree(host) is eventually called inside sdhci_pltfm_free():
->>>>>
->>>>> WARNING: CPU: 2 PID: 6 at lib/debugobjects.c:263
->>>>> debug_print_object+0x8c/0xb4()
->>>>> ODEBUG: free active (active state 0) object type: timer_list hint:
->>>>> delayed_work_timer_fn+0x0/0x18
->>>>>
->>>>> The object being complained about is host->detect.
->>>>>
->>>>> There's no need to request the CD IRQ so early; mmc_start_host() already
->>>>> requests it, and I *assume* that mmc_start_host() is called somehow for
->>>>> all host controllers. For SDHCI hosts at least, the typical call path
->>>>> that does this is: *_probe() -> sdhci_add_host() -> mmc_add_host() ->
->>>>> mmc_start_host(). So, remove the call to mmc_gpiod_request_cd_irq() from
->>>>> mmc_gpio_request_cd(). This matches mmc_gpio*d*_request_cd(), which
->>>>> already doesn't call mmc_gpiod_request_cd_irq().
->>>>>
->>>>> This solves the problem (eliminates the kernel error message above),
->>>>> since it guarantees that the IRQ can't trigger before mmc_start_host()
->>>>> is called.
->>>>>
->>>>> The critical point here is that once sdhci_add_host() calls
->>>>> mmc_add_host() -> mmc_start_host(), sdhci_add_host() is coded not to
->>>>> fail. In other words, if there's a chance that mmc_start_host() may have
->>>>> been called, and CD IRQs triggered, and the delayed_work scheduled,
->>>>> sdhci_add_host() won't fail, and so cleanup is no longer via
->>>>> sdhci_pltfm_free() (which doesn't free the IRQ or cancel the work queue)
->>>>> but instead must be via sdhci_remove_host(), which calls mmc_remove_host()
->>>>> -> mmc_stop_host(), which does free the IRQ and cancel the work queue.
->>>>>
->>>>> This fixes what I might conclude to be a mistake in commit 740a221ef0e5
->>>>> ("mmc: slot-gpio: Add GPIO descriptor based CD GPIO API"), which added the
->>>>> call from mmc_start_host() to mmc_gpiod_request_cd_irq(), but also added
->>>>> incorrectly added a call from mmc_gpio_request_cd() to
->>>>> mmc_gpiod_request_cd_irq().
->
-> That comment is wrong.  mmc_gpio_request_cd() has always set up the irq.
+Reduce boilerplate code by using __seq_open_private() instead of seq_open()
+in xt_match_open() and xt_target_open().
 
-Uggh, yes. I did misinterpret your patch again, so that one paragraph is 
-just wrong.
+Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+---
 
-Aside from that though, I do think my patch is a step in the correct 
-direction. It just needs some thought how to avoid the other issue you 
-mentioned - that some drivers rely on calling mmc_gpio_request_cd() 
-after the call to mmc_start().
+This patch uses an existing variant of seq_open() to reduce the kernel code
+size.
 
-Perhaps the logic should not be to remove mmc_gpio_request_cd()'s call 
-to mmc_gpiod_request_cd_irq(), but rather to make it conditional upon 
-mmc_start_host() having already been called; I assume that state that 
-can easily be checked to determine that.
+The only significant variation from the pre-existing code is the fact that
+__seq_open_private() calls kzalloc() rather than kmalloc(), which could
+conceivably have an impact on timing.
+
+ net/netfilter/x_tables.c |   30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
+
+diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+index 227aa11..89aa680 100644
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -1137,22 +1137,11 @@ static const struct seq_operations xt_match_seq_ops = {
+ 
+ static int xt_match_open(struct inode *inode, struct file *file)
+ {
+-	struct seq_file *seq;
+ 	struct nf_mttg_trav *trav;
+-	int ret;
+-
+-	trav = kmalloc(sizeof(*trav), GFP_KERNEL);
+-	if (trav == NULL)
++	trav = __seq_open_private(file, &xt_match_seq_ops, sizeof(*trav));
++	if (!trav)
+ 		return -ENOMEM;
+ 
+-	ret = seq_open(file, &xt_match_seq_ops);
+-	if (ret < 0) {
+-		kfree(trav);
+-		return ret;
+-	}
+-
+-	seq = file->private_data;
+-	seq->private = trav;
+ 	trav->nfproto = (unsigned long)PDE_DATA(inode);
+ 	return 0;
+ }
+@@ -1201,22 +1190,11 @@ static const struct seq_operations xt_target_seq_ops = {
+ 
+ static int xt_target_open(struct inode *inode, struct file *file)
+ {
+-	struct seq_file *seq;
+ 	struct nf_mttg_trav *trav;
+-	int ret;
+-
+-	trav = kmalloc(sizeof(*trav), GFP_KERNEL);
+-	if (trav == NULL)
++	trav = __seq_open_private(file, &xt_target_seq_ops, sizeof(*trav));
++	if (!trav)
+ 		return -ENOMEM;
+ 
+-	ret = seq_open(file, &xt_target_seq_ops);
+-	if (ret < 0) {
+-		kfree(trav);
+-		return ret;
+-	}
+-
+-	seq = file->private_data;
+-	seq->private = trav;
+ 	trav->nfproto = (unsigned long)PDE_DATA(inode);
+ 	return 0;
+ }
+-- 
+1.7.10.4
+
