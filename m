@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbaIRPCk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:02:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36246 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841AbaIRPCi (ORCPT
+	id S1756881AbaIRPEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:04:42 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:38845 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906AbaIRPEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:02:38 -0400
-Message-ID: <541AF40B.7070604@codeaurora.org>
-Date: Thu, 18 Sep 2014 11:02:35 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/2] perf: User/kernel time correlation and event generation
-References: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>
-In-Reply-To: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Sep 2014 11:04:38 -0400
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-nilfs <linux-nilfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andreas Rohner <andreas.rohner@gmx.net>
+Subject: [PATCH 0/1] nilfs2: fix data loss with mmap() 
+Date: Thu, 18 Sep 2014 23:56:24 +0900
+Message-Id: <1411052185-8118-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: git-send-email 1.7.9.4
+X-Dispatcher: imput version 20110525(IM151)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pawel,
+Andrew,
 
-On 09/18/2014 10:34 AM, Pawel Moll wrote:
-> Greetings,
-> 
-> This is a second spin of the short series posted last week:
-> 
-> http://www.spinics.net/lists/kernel/msg1824419.html
-> 
-> The first patch adds an additional timestamp field in the perf
-> sample data, which can be requested for any perf event along
-> with normal PERF_SAMPLE_TIME. Events with both values appearing
-> periodically in the perf data allow user code to translate
-> raw monotonic time (obtained via POSIX clock API) to sched_clock
-> domain. Although any perf event can be used, the natural choice
-> would be a sched_switch trace event (for processes with root
-> permissions) or a hrtimer-based PERF_COUNT_SW_CPU_CLOCK.
-> 
-> It didn't attract any comments previously, so is just re-posted
-> without any changes.
-> 
-> The second patch, functionally orthogonal but complementing
-> the first one, builds on the ftrace "trace_maker" idea. It adds
-> a ioctl that can be used to inject a userspace-generated data
-> into the perf buffer. It provides base for printf-like
-> functionality in perf world. If used with the previous patch,
-> it can be also used to provide synchronisation points for sched
-> vs. raw monotonic time stamps correlation.
-> 
-> First version of the patch was taking a zero-terminated string
-> as an argument. Now it is taking a custom structure with "type"
-> and "size" integer fields followed by data. Type value "0"
-> is defined as a zero-terminated string (although size, including
-> the NULL character, must still be provided), but meaning of data
-> for other types is of no interest for the kernel. The intention
-> is to host a list of "well known" types (with reference parsers
-> for them) in the user perf tool code.
+Please apply the following bugfix and send it to upstream.
 
-Would it be possible for you to also update the corresponding man pages?
+It fixes a regression of nilfs2's mmap which was brought by the commit
+136e8770cd5d1fe3 "nilfs2: fix issue of nilfs_set_page_dirty() for page
+at EOF boundary".  Andreas Rohner recently found that the commit was
+not perfect and causing reproducible silent data loss issue.
 
-https://www.kernel.org/doc/man-pages/
+Thanks in advance,
 
-Thanks,
-Christopher
+Ryusuke Konishi
+--
+Andreas Rohner (1):
+      nilfs2: fix data loss with mmap()
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+ fs/nilfs2/inode.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
