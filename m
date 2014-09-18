@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaIRM6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 08:58:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59486 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292AbaIRM6H convert rfc822-to-8bit (ORCPT
+	id S1755129AbaIRM6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 08:58:21 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:61070 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136AbaIRM6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 08:58:07 -0400
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH 0/4] drivers/bus: Freescale Management Complex bus driver patch series
-From: Alexander Graf <agraf@suse.de>
-X-Mailer: iPhone Mail (11B554a)
-In-Reply-To: <541A253F.7030305@freescale.com>
-Date: Thu, 18 Sep 2014 14:58:00 +0200
-Cc: Kim Phillips <kim.phillips@freescale.com>,
-        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
-        "<arnd@arndb.de>" <arnd@arndb.de>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<stuart.yoder@freescale.com>" <stuart.yoder@freescale.com>,
-        "<scottwood@freescale.com>" <scottwood@freescale.com>,
-        "<linuxppc-release@linux.freescale.net>" 
-	<linuxppc-release@linux.freescale.net>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B83A7221-35BF-4E20-8AC4-333A2C0A39B7@suse.de>
-References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com> <20140915184423.2189d18282c9c2030e564f7c@freescale.com> <541A253F.7030305@freescale.com>
-To: German Rivera <German.Rivera@freescale.com>
+	Thu, 18 Sep 2014 08:58:19 -0400
+Message-ID: <541AD6E9.2010609@mvista.com>
+Date: Thu, 18 Sep 2014 07:58:17 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>, minyard@acm.org
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mips: Save all registers when saving the frame
+References: <1410903925-10744-1-git-send-email-minyard@acm.org> <20140918095813.GA9804@linux-mips.org>
+In-Reply-To: <20140918095813.GA9804@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/18/2014 04:58 AM, Ralf Baechle wrote:
+> On Tue, Sep 16, 2014 at 04:45:25PM -0500, minyard@acm.org wrote:
+>
+>> From: Corey Minyard <cminyard@mvista.com>
+>>
+>> The MIPS frame save code was just saving a few registers, enough to
+>> do a backtrace if every function set up a frame.  However, this is
+>> not working if you are using DWARF unwinding, because most of the
+>> registers are wrong.  This was causing kdump backtraces to be short
+>> or bogus.
+>>
+>> So save all the registers.
+> The stratey of partial and full stack frames was developed in '97 to bring
+> down the syscall overhead.  It certaily was very effective - it brought
+> down the syscall latency to the level of Alphas running at much higher
+> clock.
+>
+> That certainly worked well back then for kernel 2.0 / 2.2.  But the syscall
+> code has become much more complex.  Since then support for 64 bit kernels,
+> two 32 bit ABIs running on a 64 bit kernels and numerous features that
+> changed the once simple syscall path have been implemented.  My gut feeling
+> is it might be worth to yank out the whole optimization to see how much
+> code complexity we get rid of in exchange for how much extra syscall
+> latency.
 
+I"m not sure I understand.  From what I can tell, this code is only
+called by
+things that print stack traces, kdb, and kexec/kdump.  So it shouldn't be in
+any normal syscall path.
 
-> Am 18.09.2014 um 02:20 schrieb German Rivera <German.Rivera@freescale.com>:
-> 
->> On 09/15/2014 06:44 PM, Kim Phillips wrote:
->> On Thu, 11 Sep 2014 12:34:20 -0500
->> "J. German Rivera" <German.Rivera@freescale.com> wrote:
->> 
->>> This patch series introduces Linux support for the Freescale
->>> Management Complex (fsl-mc) hardware.
->> 
->> here are the results of using some tools to check this patchseries:
->> 
->> make C=1 CF="-D__CHECK_ENDIAN__":
->> 
->> drivers/bus/fsl-mc/fsl_mc_sys.c:235:9: warning: context imbalance in 'mc_send_command' - different lock contexts for basic block
->> drivers/bus/fsl-mc/fsl_mc_dprc.c: In function 'dprc_add_new_devices':
->> drivers/bus/fsl-mc/fsl_mc_dprc.c:173:6: warning: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'uint32_t' [-Wformat=]
->>       region_desc.size);
->>       ^
-> I'll fix this in v2 respin.
-> 
->> When built as a module (CONFIG_FSL_MC_BUS=m):
->> 
->> ERROR: ".dprc_get_obj" [drivers/bus/fsl-mc/fsl_mc_dprc.ko] undefined!
->> ERROR: ".dprc_get_obj_count" [drivers/bus/fsl-mc/fsl_mc_dprc.ko] undefined!
->> ERROR: ".dprc_close" [drivers/bus/fsl-mc/fsl_mc_dprc.ko] undefined!
->> ERROR: ".dprc_open" [drivers/bus/fsl-mc/fsl_mc_dprc.ko] undefined!
->> ERROR: ".dprc_get_obj_region" [drivers/bus/fsl-mc/fsl_mc_dprc.ko] undefined!
->> make[1]: *** [__modpost] Error 1
->> make: *** [modules] Error 2
-> I'll fix this in v2 respin.
-> 
->> checkpatch:
->> 
->> WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
->> 
->> WARNING: DT compatible string "fsl,qoriq-mc" appears un-documented -- check ./Documentation/devicetree/bindings/
->> #690: FILE: drivers/bus/fsl-mc/fsl_mc_bus.c:528:
->> +    {.compatible = "fsl,qoriq-mc",},
->> 
->> For the former warning, I'd suggest moving patch 4/4's contents up
->> in the series.
-> I tried moving 4/4 to be 1/4 but still get the the same warning from checkpatch. So, this suggestion does not work. Besides, I took a look
-> at other commits that update the MAINTAINERS such as
-> 563da3a90364fc29cd09bed034162592e591747a, and that commit comes after the commits that added the new files.
+This patch will currently only help kdump, but it will be necessary if
+anyone
+adds MIPS support for DWARF unwinding for stack traces.  And you'd have
+to fix some things in context switching, too, I think.
 
-The alternative would be to add MAINTAINERS entries for the files you add in the patch that adds the files.
+>From what I can tell the partial save for syscalls is a good idea.  You
+don't have
+to save half the registers and it doesn't affect tracebacks, kdump, or
+anything else
+like that.
 
-
-Alex
-
+-corey
