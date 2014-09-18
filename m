@@ -1,194 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaIRRLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 13:11:08 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:62021 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932186AbaIRRLF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 13:11:05 -0400
+	id S932553AbaIRRMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 13:12:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35242 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932277AbaIRRMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 13:12:35 -0400
+Date: Thu, 18 Sep 2014 12:12:26 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Al Viro <viro@ZenIV.linux.org.uk>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: Re: linux-next: manual merge of the usb-gadget tree with the vfs tree
+Message-ID: <20140918171226.GE4537@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140917161658.2e4eb3f1@canb.auug.org.au>
+ <20140917153400.GA8140@saruman.home>
 MIME-Version: 1.0
-In-Reply-To: <CAH2r5muvhC6ww_U8o4mN119ptnNsuT+mcSmfaFbP7DqV0ZQpiw@mail.gmail.com>
-References: <CAH2r5mvTP1oGNoetuSkPdirBb1UDH6fiNCVjs_gJNKeJ1Dz5sA@mail.gmail.com>
- <5419F007.9070509@infradead.org> <5419F0D4.9090107@infradead.org>
- <CAH2r5muWCr9VLdQLGr+u-grdk=q+DfgdrRQU2dn2A37yLTAieA@mail.gmail.com> <CAH2r5muvhC6ww_U8o4mN119ptnNsuT+mcSmfaFbP7DqV0ZQpiw@mail.gmail.com>
-From: Steve French <smfrench@gmail.com>
-Date: Thu, 18 Sep 2014 10:10:43 -0700
-Message-ID: <CAH2r5muG9QYD+Kj7WHet4BMdt9RqXWfjs4QRHsPWCVQLifXg2g@mail.gmail.com>
-Subject: Re: match_token weird behavior
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
+Content-Disposition: inline
+In-Reply-To: <20140917153400.GA8140@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 2:05 PM, Steve French <smfrench@gmail.com> wrote:
-> Looking at more examples, some of which are much larger match tables
-> maybe it has to do with how the final entry is defined.  In this
-> example the NULL match is explicitly stated.
->
-> static const match_table_t cifs_secflavor_tokens = {
->     { Opt_sec_krb5, "krb5" },
->     { Opt_sec_krb5i, "krb5i" },
->     { Opt_sec_krb5p, "krb5p" },
->     { Opt_sec_ntlmsspi, "ntlmsspi" },
->     { Opt_sec_ntlmssp, "ntlmssp" },
->     { Opt_ntlm, "ntlm" },
->     { Opt_sec_ntlmi, "ntlmi" },
->     { Opt_sec_ntlmv2, "nontlm" },
->     { Opt_sec_ntlmv2, "ntlmv2" },
->     { Opt_sec_ntlmv2i, "ntlmv2i" },
->     { Opt_sec_lanman, "lanman" },
->     { Opt_sec_none, "none" },
->
->     { Opt_sec_err, NULL }
-> };
+--hwvH6HDNit2nSK4j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-Adding in a dummy entry at the end of the match_table_t did fix the problem.
+On Wed, Sep 17, 2014 at 10:34:00AM -0500, Felipe Balbi wrote:
+> On Wed, Sep 17, 2014 at 04:16:58PM +1000, Stephen Rothwell wrote:
+> > Hi Felipe,
+> >=20
+> > Today's linux-next merge of the usb-gadget tree got a conflict in
+> > drivers/usb/gadget/function/f_fs.c between commit 8322215aa91c ("f_fs:
+>=20
+> I can't find this commit on linux-usb. In fact, googling for it the only
+> reference I find to that commit is this very thread. I would strong
+> suggest that it be removed from the tree as it, apparently, went in
+> without any review. Sure, it's a simple change, but it needs to be
+> reviewed and needs to be sent to proper maintainers.
+>=20
+> Unless I'm missing something, of course, but I could not find any other
+> references to this commit.
+>=20
+> Al, was this commit sent to any mailing list ?
 
-{ Smb_version_err, NULL }
+a gentle ping here
 
-Problem solved.
+--=20
+balbi
 
-> On Wed, Sep 17, 2014 at 3:53 PM, Steve French <smfrench@gmail.com> wrote:
->> For additional information the strings that are being matched against are:
->>
->> #define SMB1_VERSION_STRING    "1.0"
->> #define SMB20_VERSION_STRING    "2.0"
->> #define SMB21_VERSION_STRING    "2.1"
->> #define SMB30_VERSION_STRING    "3.0"
->> #define SMB302_VERSION_STRING    "3.02"
->> #define SMB31_VERSION_STRING    "3.1"
->>
->>
->> The matching works as expected, e,g. specifying 3.0 gets matched to
->> Smb_30, before and/after adding the sixth element to the match_table_t
->> - except that unmatched items (picking a dialect that doesn't exist
->> like "5.1") matches to Smb_21 where it used to fall through to the
->> default (error) case.
->>
->> It got me a little worried that there MAX_OPT_ARGS is 3 and I am
->> getting the third element in the case of the error.
->>
->> Looking at other examples in the kernel were strange e.g. ext4/super.c has this
->>
->>         /*
->>          * Initialize args struct so we know whether arg was
->>          * found; some options take optional arguments.
->>          */
->>         args[0].to = args[0].from = NULL;
->>         token = match_token(p, tokens, args);
->>         (and then passes args down to a large helper function handle_mount_opt)
->>
->> Initializing args didn't seem to help in the cifs case
->>
->> On Wed, Sep 17, 2014 at 3:36 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>> On 09/17/14 13:33, Randy Dunlap wrote:
->>>> On 09/17/14 11:20, Steve French wrote:
->>>>> Noticing something very strange with match_token.   I had five strings
->>>>> I need to compare a version string (protocol dialect eg. "2.1" or
->>>>> "3.0") against, to find which it matches (if any), but adding one to
->>>>> the list (now checking for one of six strings instead of five) causes
->>>>> the error case to always default to element 3 (in my example looks as
->>>>> if it matched to the 2.1 string) instead of the error case.
->>>>>
->>>>> enum smb_version {
->>>>>     Smb_1 = 1,
->>>>>     Smb_20,
->>>>>     Smb_21,
->>>>>     Smb_30,
->>>>>     Smb_302,
->>>>> };
->>>>>
->>>>> static const match_table_t cifs_smb_version_tokens = {
->>>>>     { Smb_1, SMB1_VERSION_STRING },
->>>>>     { Smb_20, SMB20_VERSION_STRING},
->>>>>     { Smb_21, SMB21_VERSION_STRING },
->>>>>     { Smb_30, SMB30_VERSION_STRING },
->>>>>     { Smb_302, SMB302_VERSION_STRING },
->>>>> };
->>>>>
->>>>
->>>> You don't tell us what the actual string values are, but I'm guessing that
->>>> SMB302_VERSION_STRING is a subset (same in first N characters) of SMB30_VERSION_STRING. ??
->>>>
->>>> In that case I think that match_token() will return a ptr to SMB_30 instead of to
->>>> SMB_302 when the input is "3.02" (matches "3.0" due to the kernel's implementation
->>>> of strcmp() stopping at the end of string1 (where string1 is "3.0" in this case).
->>>
->>> Oops, it seems that I got the strcmp() parameters reversed.  Sorry about that.
->>> Feel free to disregard my ramblings.
->>>
->>>>
->>>> If that is all correct, then could your return value be off by 1?
->>>>
->>>>>
->>>>> When I add one entry to the lists above (going from 5 to 6 elements),
->>>>> and then add one additional case for it to the switch statement, an
->>>>> attempt to provide an unrecognized string (e.g. if I specify an illegal
->>>>> dialect string like "9" instead of "3.0" or "2.1" etc) will now match the
->>>>> third element (Smb_21) instead of "default" in the code snippet below.
->>>>> Is match_token broken? Can match token only handle tables with 5
->>>>> elements or fewer? Is there a replacement for it for this kind of thing
->>>>> (matching a string versus which from among a list of valid strings)
->>>>> other than match_token?  Is match_token just broken?
->>>>>
->>>>>     substring_t args[MAX_OPT_ARGS];
->>>>>
->>>>>     switch (match_token(value, cifs_smb_version_tokens, args)) {
->>>>>     case Smb_1:
->>>>>         vol->ops = &smb1_operations;
->>>>>         vol->vals = &smb1_values;
->>>>>         break;
->>>>>     case Smb_20:
->>>>>         vol->ops = &smb20_operations;
->>>>>         vol->vals = &smb20_values;
->>>>>         break;
->>>>>     case Smb_21:
->>>>>         vol->ops = &smb21_operations;
->>>>>         vol->vals = &smb21_values;
->>>>>         break;
->>>>>     case Smb_30:
->>>>>         vol->ops = &smb30_operations;
->>>>>         vol->vals = &smb30_values;
->>>>>         break;
->>>>>     case Smb_302:
->>>>>         vol->ops = &smb30_operations; /* currently identical with 3.0 */
->>>>>         vol->vals = &smb302_values;
->>>>>         break;
->>>>>     default:
->>>>>         cifs_dbg(VFS, "Unknown vers= option specified: %s\n", value);
->>>>>         return 1;
->>>>>
->>>>
->>>>
->>>
->>>
->>> --
->>> ~Randy
->>
->>
->>
->> --
->> Thanks,
->>
->> Steve
->
->
->
-> --
-> Thanks,
->
-> Steve
+--hwvH6HDNit2nSK4j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUGxJ6AAoJEIaOsuA1yqREReYP/RNl4N2ImMaFl0/7GcS6o6OJ
+TN9F3zuSFNlNaF7iG8nORttFXkXM2Gtc1q8OVexS7J+bVNMvvCvkOIev3LLjDd3r
+WpB3FW1kIQ9zYYzIntdoT/Zm4TDP/FZ8lyz44jMTVsUgFVT3s8igolSvv7P2ObE1
+YPHBFdnKo8FgxkEvTzrFkynO9n4J7ZvnOMBwhSSivznErjWLUcIdaLymx0/nmQDb
+mFDMP32/XhMDWygMFCYRNtxrfvR7Gs77u6lqzTaS3SBqUNc7w91ftuOYAbIM2o7K
+5tmS/F7sRN6GlWsQq4oj7rvtEUS2rh4aPqmFBi5JII9/NiYEKbIc5F903KZlpH62
+LSDDs+RiF/3YS5dsGwTAlHkla+f6hHggzzXSanvdWl/hpIj/dqr65RFwQUxH2azf
+YUyZ1yp4bYaFnoTWXtqjT5BN2s23cpKC4DU12viZmMraEvzW4SAmRps5v+2eL9ga
+CjhGTVRlmMTsQfT12qmO1Y+Rexp1iV9odbY5kY/Fg+egQ4UMS7Y2URV7xS1Ert5R
+SOugLpeC9uGwyzHiHzEtdjk8AhV3/lRn9wyeJkkkQRSEhDzeYkp1f5fSc+R9cTpo
+/s0ShKQTTrIs678p8sL6PS5yYOrnhmbFvLL1MIvZImYud7xfLuUd+wzZ97AjSWUS
+UMpdjt3X5UiBLeM3Sgh6
+=rbo2
+-----END PGP SIGNATURE-----
 
--- 
-Thanks,
-
-Steve
+--hwvH6HDNit2nSK4j--
