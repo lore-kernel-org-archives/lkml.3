@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaIRBgD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:36:03 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54522 "EHLO
+	id S932381AbaIRBg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:36:27 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54519 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756174AbaIRBcE (ORCPT
+	by vger.kernel.org with ESMTP id S1754551AbaIRBcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Sep 2014 21:32:04 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
@@ -26,9 +26,9 @@ Cc: Tanmay Inamdar <tinamdar@apm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Device Tree ML <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v11 05/10] PCI: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-Date: Thu, 18 Sep 2014 02:30:20 +0100
-Message-Id: <1411003825-21521-6-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v11 09/10] PCI: Assign unassigned bus resources in pci_scan_root_bus()
+Date: Thu, 18 Sep 2014 02:30:24 +0100
+Message-Id: <1411003825-21521-10-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
 References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
@@ -36,104 +36,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
-As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
-the creation order has been changed for no good reason. Revert the order of
-creation as we are going to depend on the pci_host_bridge structure to retrieve the
-domain number of the root bus.
+If the firmware has not assigned all the bus resources and
+we are not just probing the PCIe busses, it makes sense to
+assign the unassigned resources in pci_scan_root_bus().
 
 Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Rob Herring <robh+dt@kernel.org>
 Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: Tanmay Inamdar <tinamdar@apm.com>
 ---
- drivers/pci/probe.c | 32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
+ drivers/pci/probe.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index e3cf8a2..5ff72ec 100644
+index ef891d2..508cf61 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -515,7 +515,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
- 	kfree(bridge);
- }
+@@ -1953,6 +1953,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+ 	if (!found)
+ 		pci_bus_update_busn_res_end(b, max);
  
--static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
-+static struct pci_host_bridge *pci_alloc_host_bridge(void)
- {
- 	struct pci_host_bridge *bridge;
- 
-@@ -524,7 +524,8 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- 		return NULL;
- 
- 	INIT_LIST_HEAD(&bridge->windows);
--	bridge->bus = b;
-+	bridge->dev.release = pci_release_host_bridge_dev;
++	if (!pci_has_flag(PCI_PROBE_ONLY))
++		pci_assign_unassigned_bus_resources(b);
 +
- 	return bridge;
+ 	pci_bus_add_devices(b);
+ 	return b;
  }
- 
-@@ -1761,9 +1762,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	char bus_addr[64];
- 	char *fmt;
- 
-+	bridge = pci_alloc_host_bridge();
-+	if (!bridge)
-+		return NULL;
-+
-+	bridge->dev.parent = parent;
-+
- 	b = pci_alloc_bus();
- 	if (!b)
--		return NULL;
-+		goto err_out;
- 
- 	b->sysdata = sysdata;
- 	b->ops = ops;
-@@ -1772,26 +1779,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
- 		dev_dbg(&b2->dev, "bus already known\n");
--		goto err_out;
-+		goto err_bus_out;
- 	}
- 
--	bridge = pci_alloc_host_bridge(b);
--	if (!bridge)
--		goto err_out;
--
--	bridge->dev.parent = parent;
--	bridge->dev.release = pci_release_host_bridge_dev;
-+	bridge->bus = b;
- 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
- 	error = pcibios_root_bridge_prepare(bridge);
--	if (error) {
--		kfree(bridge);
-+	if (error)
- 		goto err_out;
--	}
- 
- 	error = device_register(&bridge->dev);
- 	if (error) {
- 		put_device(&bridge->dev);
--		goto err_out;
-+		goto err_bus_out;
- 	}
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
-@@ -1848,8 +1848,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- class_dev_reg_err:
- 	put_device(&bridge->dev);
- 	device_unregister(&bridge->dev);
--err_out:
-+err_bus_out:
- 	kfree(b);
-+err_out:
-+	kfree(bridge);
- 	return NULL;
- }
- 
 -- 
 2.1.0
 
