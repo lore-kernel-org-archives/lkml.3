@@ -1,274 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185AbaIRQF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 12:05:59 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40966 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224AbaIRQF5 (ORCPT
+	id S932170AbaIRQMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 12:12:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55600 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756463AbaIRQM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 12:05:57 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+s4qxIzqScM9OYrU1kzHVr
-Date: Thu, 18 Sep 2014 09:05:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v11 5/9] arm: omap1: Migrate debug_ll macros to use 8250.S
-Message-ID: <20140918160529.GD14505@atomide.com>
-References: <1410911877-24903-1-git-send-email-daniel.thompson@linaro.org>
- <1410911877-24903-6-git-send-email-daniel.thompson@linaro.org>
+	Thu, 18 Sep 2014 12:12:29 -0400
+Date: Thu, 18 Sep 2014 18:12:25 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Sekhar Nori <nsekhar@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] ARM: edma: unconditionally ack the error interrupt
+Message-ID: <20140918161225.GA10232@linutronix.de>
+References: <1410377960-26921-1-git-send-email-bigeasy@linutronix.de>
+ <541AA900.4080506@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410911877-24903-6-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <541AA900.4080506@ti.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Daniel Thompson <daniel.thompson@linaro.org> [140916 16:58]:
-> The omap1's debug-macro.S is similar to the generic 8250 code. Compared to
-> the 8520 code the omap1 macro automatically determines what UART to use
-> based on breadcrumbs left by the bootloader and automatically copes with
-> the eccentric register layout on OMAP7XX.
-> 
-> This patch drops both these features and relies instead on the generic
-> 8250 macros:
-> 
-> 1. Dropping support for the bootloader breadcrumbs is identical to the
->    way the migration was handled for OMAP2 (see 808b7e07464d...).
-> 
-> 2. Support for OMAP7XX still exists but it must be configured by hand
->    (DEBUG_OMAP7XXUART1/2/3) rather than handled at runtime.
+* Peter Ujfalusi | 2014-09-18 12:42:24 [+0300]:
 
-I assume you'll be queueing this along with other Kconfig.debug
-changes, so:
+>My hunch on what could be causing this that we might have unhandled dma event
+>and another comes. This will flag the EDMA_EMR register. Any change in this
+>register will assert error interrupt which can only be cleared by writing to
+>EDMA_EMRC register.
+>The EDMA_EMRC register bits also cleared on edma_start(), edma_stop() and
+>edma_clean_channel() apart from the error interrupt handler.
+>So it is possible that we have missed event on one of the channels but a stop
+>might clear the event so in the interrupt hander we do not see this.
+>I think it would be good to understand what is going on the backround...
+>Can you print out the EDMA_EMCR just before we clear it in the places I have
+>mentioned? We might get better understanding on which stage we clear it and
+>probably we can understand how to fix this properly so we are not going to
+>have missed events on channels.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Okay. For the protocol I applied this patch:
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 160460ae3a49..16598625a4d1 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -422,20 +422,24 @@ static irqreturn_t dma_ccerr_handler(int irq, void *data)
+ 	int i;
+ 	int ctlr;
+ 	unsigned int cnt = 0;
++	u32 emr0;
  
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
-> Cc: linux-omap@vger.kernel.org
-> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> ---
->  arch/arm/Kconfig.debug                         |  57 +++++++++++++-
->  arch/arm/mach-omap1/include/mach/debug-macro.S | 101 -------------------------
->  2 files changed, 56 insertions(+), 102 deletions(-)
->  delete mode 100644 arch/arm/mach-omap1/include/mach/debug-macro.S
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 97c3058..6540036 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -471,6 +471,30 @@ choice
->  		  Say Y here if you want kernel low-level debugging support
->  		  on TI-NSPIRE CX models.
->  
-> +	config DEBUG_OMAP1UART1
-> +		bool "Kernel low-level debugging via OMAP1 UART1"
-> +		depends on ARCH_OMAP1
-> +		select DEBUG_UART_8250
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on OMAP1 based platforms (except OMAP730) on the UART1.
-> +
-> +	config DEBUG_OMAP1UART2
-> +		bool "Kernel low-level debugging via OMAP1 UART2"
-> +		depends on ARCH_OMAP1
-> +		select DEBUG_UART_8250
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on OMAP1 based platforms (except OMAP730) on the UART2.
-> +
-> +	config DEBUG_OMAP1UART3
-> +		bool "Kernel low-level debugging via OMAP1 UART3"
-> +		depends on ARCH_OMAP1
-> +		select DEBUG_UART_8250
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on OMAP1 based platforms (except OMAP730) on the UART3.
-> +
->  	config DEBUG_OMAP2UART1
->  		bool "OMAP2/3/4 UART1 (omap2/3 sdp boards and some omap3 boards)"
->  		depends on ARCH_OMAP2PLUS
-> @@ -513,6 +537,30 @@ choice
->  		depends on ARCH_OMAP2PLUS
->  		select DEBUG_OMAP2PLUS_UART
->  
-> +	config DEBUG_OMAP7XXUART1
-> +		bool "Kernel low-level debugging via OMAP730 UART1"
-> +		depends on ARCH_OMAP730
-> +		select DEBUG_UART_8250
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on OMAP730 based platforms on the UART1.
-> +
-> +	config DEBUG_OMAP7XXUART2
-> +		bool "Kernel low-level debugging via OMAP730 UART2"
-> +		depends on ARCH_OMAP730
-> +		select DEBUG_UART_8250
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on OMAP730 based platforms on the UART2.
-> +
-> +	config DEBUG_OMAP7XXUART3
-> +		bool "Kernel low-level debugging via OMAP730 UART3"
-> +		depends on ARCH_OMAP730
-> +		select DEBUG_UART_8250
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on OMAP730 based platforms on the UART3.
-> +
->  	config DEBUG_TI81XXUART1
->  		bool "Kernel low-level debugging messages via TI81XX UART1 (ti8148evm)"
->  		depends on ARCH_OMAP2PLUS
-> @@ -1120,6 +1168,9 @@ config DEBUG_UART_PHYS
->  	default 0xff690000 if DEBUG_RK32_UART2
->  	default 0xffc02000 if DEBUG_SOCFPGA_UART
->  	default 0xffd82340 if ARCH_IOP13XX
-> +	default 0xfffb0000 if DEBUG_OMAP1UART1 || DEBUG_OMAP7XXUART1
-> +	default 0xfffb0800 if DEBUG_OMAP1UART2 || DEBUG_OMAP7XXUART2
-> +	default 0xfffb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
->  	default 0xfff36000 if DEBUG_HIGHBANK_UART
->  	default 0xfffff700 if ARCH_IOP33X
->  	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
-> @@ -1188,6 +1239,9 @@ config DEBUG_UART_VIRT
->  	default 0xfef00000 if ARCH_IXP4XX && !CPU_BIG_ENDIAN
->  	default 0xfef00003 if ARCH_IXP4XX && CPU_BIG_ENDIAN
->  	default 0xfef36000 if DEBUG_HIGHBANK_UART
-> +	default 0xfefb0000 if DEBUG_OMAP1UART1 || DEBUG_OMAP7XXUART1
-> +	default 0xfefb0800 if DEBUG_OMAP1UART2 || DEBUG_OMAP7XXUART2
-> +	default 0xfefb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
->  	default 0xfefff700 if ARCH_IOP33X
->  	default 0xff003000 if DEBUG_U300_UART
->  	default DEBUG_UART_PHYS if !MMU
-> @@ -1198,7 +1252,8 @@ config DEBUG_UART_VIRT
->  config DEBUG_UART_8250_SHIFT
->  	int "Register offset shift for the 8250 debug UART"
->  	depends on DEBUG_LL_UART_8250 || DEBUG_UART_8250
-> -	default 0 if FOOTBRIDGE || ARCH_IOP32X
-> +	default 0 if FOOTBRIDGE || ARCH_IOP32X || \
-> +		DEBUG_OMAP7XXUART1 || DEBUG_OMAP7XXUART2 || DEBUG_OMAP7XXUART3
->  	default 2
->  
->  config DEBUG_UART_8250_WORD
-> diff --git a/arch/arm/mach-omap1/include/mach/debug-macro.S b/arch/arm/mach-omap1/include/mach/debug-macro.S
-> deleted file mode 100644
-> index 5c1a26c..0000000
-> --- a/arch/arm/mach-omap1/include/mach/debug-macro.S
-> +++ /dev/null
-> @@ -1,101 +0,0 @@
-> -/* arch/arm/mach-omap1/include/mach/debug-macro.S
-> - *
-> - * Debugging macro include header
-> - *
-> - *  Copyright (C) 1994-1999 Russell King
-> - *  Moved from linux/arch/arm/kernel/debug.S by Ben Dooks
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 as
-> - * published by the Free Software Foundation.
-> - *
-> -*/
-> -
-> -#include <linux/serial_reg.h>
-> -
-> -#include "serial.h"
-> -
-> -		.pushsection .data
-> -omap_uart_phys:	.word	0x0
-> -omap_uart_virt:	.word	0x0
-> -		.popsection
-> -
-> -		/*
-> -		 * Note that this code won't work if the bootloader passes
-> -		 * a wrong machine ID number in r1. To debug, just hardcode
-> -		 * the desired UART phys and virt addresses temporarily into
-> -		 * the omap_uart_phys and omap_uart_virt above.
-> -		 */
-> -		.macro	addruart, rp, rv, tmp
-> -
-> -		/* Use omap_uart_phys/virt if already configured */
-> -9:		adr	\rp, 99f		@ get effective addr of 99f
-> -		ldr	\rv, [\rp]		@ get absolute addr of 99f
-> -		sub	\rv, \rv, \rp		@ offset between the two
-> -		ldr	\rp, [\rp, #4]		@ abs addr of omap_uart_phys
-> -		sub	\tmp, \rp, \rv		@ make it effective
-> -		ldr	\rp, [\tmp, #0]		@ omap_uart_phys
-> -		ldr	\rv, [\tmp, #4]		@ omap_uart_virt
-> -		cmp	\rp, #0			@ is port configured?
-> -		cmpne	\rv, #0
-> -		bne	100f			@ already configured
-> -
-> -		/* Check the debug UART configuration set in uncompress.h */
-> -		and	\rp, pc, #0xff000000
-> -		ldr	\rv, =OMAP_UART_INFO_OFS
-> -		ldr	\rp, [\rp, \rv]
-> -
-> -		/* Select the UART to use based on the UART1 scratchpad value */
-> -10:		cmp	\rp, #0			@ no port configured?
-> -		beq	11f			@ if none, try to use UART1
-> -		cmp	\rp, #OMAP1UART1
-> -		beq	11f			@ configure OMAP1UART1
-> -		cmp	\rp, #OMAP1UART2
-> -		beq	12f			@ configure OMAP1UART2
-> -		cmp	\rp, #OMAP1UART3
-> -		beq	13f			@ configure OMAP2UART3
-> -
-> -		/* Configure the UART offset from the phys/virt base */
-> -11:		mov	\rp, #0x00fb0000	@ OMAP1UART1
-> -		b	98f
-> -12:		mov	\rp, #0x00fb0000	@ OMAP1UART1
-> -		orr	\rp, \rp, #0x00000800	@ OMAP1UART2
-> -		b	98f
-> -13:		mov	\rp, #0x00fb0000	@ OMAP1UART1
-> -		orr	\rp, \rp, #0x00000800	@ OMAP1UART2
-> -		orr	\rp, \rp, #0x00009000	@ OMAP1UART3
-> -
-> -		/* Store both phys and virt address for the uart */
-> -98:		add	\rp, \rp, #0xff000000	@ phys base
-> -		str	\rp, [\tmp, #0]		@ omap_uart_phys
-> -		sub	\rp, \rp, #0xff000000	@ phys base
-> -		add	\rp, \rp, #0xfe000000	@ virt base
-> -		str	\rp, [\tmp, #4]		@ omap_uart_virt
-> -		b	9b
-> -
-> -		.align
-> -99:		.word	.
-> -		.word	omap_uart_phys
-> -		.ltorg
-> -
-> -100:
-> -		.endm
-> -
-> -		.macro	senduart,rd,rx
-> -		strb	\rd, [\rx]
-> -		.endm
-> -
-> -		.macro	busyuart,rd,rx
-> -1001:		ldrb	\rd, [\rx, #(UART_LSR << OMAP_PORT_SHIFT)]
-> -		and	\rd, \rd, #(UART_LSR_TEMT | UART_LSR_THRE)
-> -		teq	\rd, #(UART_LSR_TEMT | UART_LSR_THRE)
-> -		beq	1002f
-> -		ldrb	\rd, [\rx, #(UART_LSR << OMAP7XX_PORT_SHIFT)]
-> -		and	\rd, \rd, #(UART_LSR_TEMT | UART_LSR_THRE)
-> -		teq	\rd, #(UART_LSR_TEMT | UART_LSR_THRE)
-> -		bne	1001b
-> -1002:
-> -		.endm
-> -
-> -		.macro	waituart,rd,rx
-> -		.endm
-> -- 
-> 1.9.3
-> 
+ 	ctlr = irq2ctlr(irq);
+ 	if (ctlr < 0)
+ 		return IRQ_NONE;
+ 
+ 	dev_dbg(data, "dma_ccerr_handler\n");
++	emr0 = edma_read_array(ctlr, EDMA_EMR, 0);
+ 
+-	if ((edma_read_array(ctlr, EDMA_EMR, 0) == 0) &&
++	if ((emr0 == 0) &&
+ 	    (edma_read_array(ctlr, EDMA_EMR, 1) == 0) &&
+ 	    (edma_read(ctlr, EDMA_QEMR) == 0) &&
+ 	    (edma_read(ctlr, EDMA_CCERR) == 0)) {
+ 		edma_write(ctlr, EDMA_EEVAL, 1);
++		trace_printk("Unhandled\n");
+ 		return IRQ_NONE;
+ 	}
++	trace_printk("emr0: %x\n", emr0);
+ 
+ 	while (1) {
+ 		int j = -1;
+@@ -1310,6 +1314,9 @@ int edma_start(unsigned channel)
+ 		pr_debug("EDMA: ER%d %08x\n", j,
+ 			edma_shadow0_read_array(ctlr, SH_ER, j));
+ 		/* Clear any pending event or error */
++		trace_printk("j%d mask%x EDMA_EMCR: %x\n",
++			     j, mask,
++			     edma_read_array(ctlr, EDMA_EMCR, j));
+ 		edma_write_array(ctlr, EDMA_ECR, j, mask);
+ 		edma_write_array(ctlr, EDMA_EMCR, j, mask);
+ 		/* Clear any SER */
+@@ -1347,6 +1354,9 @@ void edma_stop(unsigned channel)
+ 		edma_shadow0_write_array(ctlr, SH_EECR, j, mask);
+ 		edma_shadow0_write_array(ctlr, SH_ECR, j, mask);
+ 		edma_shadow0_write_array(ctlr, SH_SECR, j, mask);
++		trace_printk("j%d mask%x EDMA_EMCR: %x\n",
++			     j, mask,
++			     edma_read_array(ctlr, EDMA_EMCR, j));
+ 		edma_write_array(ctlr, EDMA_EMCR, j, mask);
+ 
+ 		pr_debug("EDMA: EER%d %08x\n", j,
+@@ -1387,6 +1397,9 @@ void edma_clean_channel(unsigned channel)
+ 				edma_read_array(ctlr, EDMA_EMR, j));
+ 		edma_shadow0_write_array(ctlr, SH_ECR, j, mask);
+ 		/* Clear the corresponding EMR bits */
++		trace_printk("j%d mask%x EDMA_EMCR: %x\n",
++			     j, mask,
++			     edma_read_array(ctlr, EDMA_EMCR, j));
+ 		edma_write_array(ctlr, EDMA_EMCR, j, mask);
+ 		/* Clear any SER */
+ 		edma_shadow0_write_array(ctlr, SH_SECR, j, mask);
+
+--
+
+and the result is something like this:
+
+           <idle>-0     [000] dnh.   303.356403: edma_start: j0 mask8000000 EDMA_EMCR: 0
+           <idle>-0     [000] d.h.   303.396721: edma_stop: j0 mask8000000 EDMA_EMCR: 0
+           <idle>-0     [000] dnh.   303.557103: edma_start: j0 mask8000000 EDMA_EMCR: 0
+           <idle>-0     [000] dnh.   303.557129: edma_stop: j0 mask4000000 EDMA_EMCR: 0
+           <idle>-0     [000] dnH.   303.557142: dma_ccerr_handler: Unhandled
+             less-2612  [000] d...   303.557237: edma_start: j0 mask4000000 EDMA_EMCR: 0
+             less-2612  [000] d.h.   303.562491: edma_stop: j0 mask4000000 EDMA_EMCR: 0
+             less-2612  [000] d...   303.564475: edma_start: j0 mask4000000 EDMA_EMCR: 0
+
+The full trace is at [0]. I haven't found a single entry where EDMA_EMCR
+was != 0 at those spots. *If* there is a edma_stop() before the
+interrupt then the interrupt remains unhandled. If there is a
+edma_start() with mask 8000000 then we have dma_ccerr_handler() with a
+mask of 4000000.
+
+Fun fact: If I remove the write access to EDMA_EMCR register (the write
+access after the read out) then I haven't seen [1] a single error interrupt
+beeing "unhandled" out of 9. The former has three out of eight.
+
+[0] https://breakpoint.cc/edma_trace.txt.xz
+[1] https://breakpoint.cc/edma_trace_nowrite.txt.xz
+
+Sebastian
