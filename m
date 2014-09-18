@@ -1,76 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708AbaIRJ46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 05:56:58 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:51159 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660AbaIRJ44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 05:56:56 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-d9-541aac65c2e5
-Message-id: <541AAC64.4080904@samsung.com>
-Date: Thu, 18 Sep 2014 11:56:52 +0200
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Paul.Zimmerman@synopsys.com, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] usb: dwc2/gadget: improvements for gadget driver
-References: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
- <20140910203459.GA2350@kroah.com>
-In-reply-to: <20140910203459.GA2350@kroah.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xy7qpa6RCDL53alocvF9v0bx4PZvF
-	5V1z2CwWLWtltnj0cCurA6vH/rlr2D227P/M6HH8xnYmj8+b5AJYorhsUlJzMstSi/TtErgy
-	rva8ZC74wVmx+dw+xgbGH+xdjBwcEgImEvN/J3QxcgKZYhIX7q1n62Lk4hASWMooMfvtalYI
-	5yOjxIJd39lAqngFtCSWr1zDCmKzCKhKHF94iQnEZhPQkdjyfQIjiC0qECbx7NdBJoh6QYkf
-	k++xgNgiAhoSL4/eArOZBTIkvt17DDZTWMBTYuWdZWC2kECmxKLvM8HmcwroSVzcfQ/sUGYg
-	+/5FLYhWeYnNa94yT2AUmIVkwyyEqllIqhYwMq9iFE0tTS4oTkrPNdIrTswtLs1L10vOz93E
-	CAngrzsYlx6zOsQowMGoxMMrISAVIsSaWFZcmXuIUYKDWUmE99dCoBBvSmJlVWpRfnxRaU5q
-	8SFGJg5OqQbGGfb/XtxUkr3qM9lzE1eNCrPD/Z2TxH89ERHZ4n2gedU8P53LF1fc1y3ax7RC
-	cG337dyi5Y9+8v0zS/u1ZNquuPe/jY42f7Z7zDFnYUvv941+WQ0dBcXy0RefvLrr9aM3W/nd
-	0UBv+9fXVqjL/flcKaOZOntG+WnfK9wSW0718D19sGSR2LGyFUosxRmJhlrMRcWJANUrihQ+	AgAA
+	id S1756820AbaIRJ51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 05:57:27 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:36603 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756681AbaIRJ5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 05:57:24 -0400
+Message-ID: <541AAC80.1090708@mm-sol.com>
+Date: Thu, 18 Sep 2014 12:57:20 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Hartmut Knaack <knaack.h@gmx.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Fugang Duan <B38611@freescale.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH v2 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+References: <1410448403-19402-1-git-send-email-svarbanov@mm-sol.com> <1410448403-19402-2-git-send-email-svarbanov@mm-sol.com> <54138151.8010902@gmx.de> <54147E97.60808@kernel.org> <5416F3E2.3030009@mm-sol.com> <4dbc485f-599a-4b50-854c-c2e1c44d4810@email.android.com>
+In-Reply-To: <4dbc485f-599a-4b50-854c-c2e1c44d4810@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Jonathan,
 
-On 09/10/2014 10:34 PM, Greg KH wrote:
-> On Tue, Sep 09, 2014 at 10:44:51AM +0200, Robert Baldyga wrote:
->> Hi,
->>
->> I have splitted my patchset "usb: dwc2/gadget: fix series" into two series.
->> This patch series contains improvements for dwc2/gadget driver. It's intended
->> for 3.18.
->>
->> Andrzej Pietrasiewicz (1):
->>   usb: dwc2/gadget: Fix comment text
->>
->> Kamil Debski (1):
->>   usb: dwc2/gadget: move phy bus legth initialization
->>
->> Marek Szyprowski (2):
->>   usb: dwc2/gadget: hide some not really needed debug messages
->>   usb: dwc2/gadget: ensure that all fifos have correct memory buffers
->>
->> Robert Baldyga (2):
->>   usb: dwc2/gadget: assign TX FIFO dynamically
->>   usb: dwc2/gadget: disable clock when it's not needed
->>
->>  drivers/usb/dwc2/core.h   |   3 ++
->>  drivers/usb/dwc2/gadget.c | 132 +++++++++++++++++++++++++++++-----------------
->>  2 files changed, 86 insertions(+), 49 deletions(-)
+On 09/15/2014 07:11 PM, Jonathan Cameron wrote:
 > 
-> As these depend on your previous changes, I'll wait until after those
-> get merged into Linus's tree before applying them.  Probably sometime
-> next week.
+> 
+> On September 15, 2014 3:12:50 PM GMT+01:00, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+>> Hi Jonathan,
+>>
+>> Thanks for the review!
+>>
+>> On 09/13/2014 08:27 PM, Jonathan Cameron wrote:
+>>> On 13/09/14 00:27, Hartmut Knaack wrote:
+>>>> Stanimir Varbanov schrieb, Am 11.09.2014 17:13:
+>>>>> The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+>>>>> 15bits resolution and register space inside PMIC accessible across
+>>>>> SPMI bus.
+>>>>>
+>>>>> The vadc driver registers itself through IIO interface.
+>>>>>
+>>>> Looks already pretty good. Things you should consider in regard of
+>> common coding style are to use the variable name ret instead of rc,
+>> since it is used in almost all adc drivers and thus makes reviewing a
+>> bit easier. Besides that, you seem to use unsigned as well as unsigned
+>> int, so to be consistent, please stick to one of them. Other comments
+>> in line.
+>>>
+>>> A few additional comments from me.  My biggest question is whether
+>>> you are actually making life difficult for yourself by having
+>>> vadc_channels and vadc->channels (don't like the similar naming btw!)
+>>> in different orders.  I think you can move the ordering into the
+>> device
+>>> tree reading code rather than doing it in lots of other places. 
+>> Hence
+>>> rather than an order based on the device tree description, put the
+>>> data into a fixed ofer in vadc->channels.
+>>>
+>>> Entirely possible I'm missing something though :)
+>>>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>>>>> ---
+>>>>>  drivers/iio/adc/Kconfig                       |   11 +
+>>>>>  drivers/iio/adc/Makefile                      |    1 +
+>>>>>  drivers/iio/adc/qcom-spmi-vadc.c              |  999
+>> +++++++++++++++++++++++++
+>>>>>  include/dt-bindings/iio/qcom,spmi-pmic-vadc.h |  119 +++
+>>>>>  4 files changed, 1130 insertions(+), 0 deletions(-)
+>>>>>  create mode 100644 drivers/iio/adc/qcom-spmi-vadc.c
+>>>>>  create mode 100644 include/dt-bindings/iio/qcom,spmi-pmic-vadc.h
 
-As my first patch series already got merged into Linus' tree, I would
-like to remind you about my second patch set :)
+<snip>
 
-Thanks
-Robert Baldyga
+>>>>> +	vchan = vadc_find_channel(vadc, chan->channel);
+>>>>> +	if (!vchan)
+>>>>> +		return -EINVAL;
+>>>>> +
+>>>>> +	if (!vadc->is_ref_measured) {
+>>>>> +		rc = vadc_measure_reference_points(vadc);
+>>>>> +		if (rc)
+>>>>> +			return rc;
+>>>>> +
+>>>>> +		vadc->is_ref_measured = true;
+>>>>> +	}
+>>>>> +
+>>>>> +	switch (mask) {
+>>>>> +	case IIO_CHAN_INFO_PROCESSED:
+>>>>> +		rc = vadc_do_conversion(vadc, vchan, &result.adc_code);
+>>>>> +		if (rc)
+>>>>> +			return rc;
+>>>>> +
+>>>>> +		vadc_calibrate(vadc, vchan, &result);
+>>>>> +
+>>>>> +		*val = result.physical;
+>>> I'm a little suspicious here.  Are the resulting values in milivolts
+>> for
+>>> all the channels?  Very handy if so, but seems a little unlikely with
+>> 15 bit
+>>> ADC that you'd have no part of greater accuracy than a milivolt.
+>>
+>> In fact *val is in microvolts. What is the expected unit from IIO ADC
+>> users?
+> See Documentation/ABI/sysfs-bus-iio
+> Millivolts I think... We copied hwmon where possible.
+
+I'm a bit confused about these units. I searched references of
+iio_read_channel_processed() and found a few.
+
+The iio_hwmon expecting milivolts. On the other side lp8788-charger.c
+registers a get_property method in charger-manager.c, which expects
+microvolts in get_batt_uV().
+
+I also wonder how to implement IIO read_raw() method so as not to lose
+precision (if assume we must return millivolts). As far I can see it
+should be some combination of IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE
+masks. Any hints?
+
+>>
+>>>>> +		rc = IIO_VAL_INT;
+>>>> return IIO_VAL_INT;
+>>>>> +		break;
+>>>>> +	default:
+>>>>> +		rc = -EINVAL;
+>>>>> +		break;
+>>>> Drop default case, or leave empty.
+>>>>> +	}
+>>>>> +
+>>>>> +	return rc;
+>>>> return -EINVAL;
+>>>>> +}
+
+
+-- 
+regards,
+Stan
