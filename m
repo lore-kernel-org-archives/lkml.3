@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320AbaIRBuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:50:51 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:47742 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705AbaIRBut (ORCPT
+	id S1757363AbaIRBux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:50:53 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:45576 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154AbaIRBuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 21:50:49 -0400
-Date: Wed, 17 Sep 2014 21:50:46 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-cc: Daniel Lezcano <daniel.lezcano@linaro.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] X86: add IPI tracepoints
-Message-ID: <alpine.LFD.2.11.1409172135250.8647@knanqh.ubzr>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Wed, 17 Sep 2014 21:50:51 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] cgroup/kmemleak: add kmemleak_free() for cgroup deallocations.
+Date: Thu, 18 Sep 2014 09:38:05 +0800
+Message-ID: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit ff7ee93f4 introduces kmemleak_alloc() for alloc_page_cgroup(),
+but corresponding kmemleak_free() is missing, which makes kmemleak be
+wrongly disabled after memory offlining. Log is pasted at the end of
+this commit message.
 
-On X86 there are already tracepoints for IRQ vectors through which IPIs
-are handled.  However this is highly X86 specific, and the IPI signaling
-is not currently traced.
+This patch add kmemleak_free() into free_page_cgroup(). During page
+offlining, this patch removes corresponding entries in kmemleak rbtree.
+After that, the freed memory can be allocated again by other subsystems
+without killing kmemleak.
 
-This is an attempt at adding generic IPI tracepoints to X86.
+bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
+[   45.537934] Offlined Pages 32768
+[   46.617892] kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
+[   46.617892] CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
+[   46.617892] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[   46.617892]  ffff880016823d10 ffff880018bdfc38 ffffffff81725d2c ffff88001780e950
+[   46.617892]  ffff880016969000 ffff880018bdfc88 ffffffff8117a9e6 ffff880018bdfc78
+[   46.617892]  0000000000000096 ffff880017812800 ffffffff81c2eda0 ffff880016969000
+[   46.617892] Call Trace:
+[   46.617892]  [<ffffffff81725d2c>] dump_stack+0x46/0x58
+[   46.617892]  [<ffffffff8117a9e6>] create_object+0x266/0x2c0
+[   46.617892]  [<ffffffff8171d2f6>] kmemleak_alloc+0x26/0x50
+[   46.617892]  [<ffffffff8116a3a3>] kmem_cache_alloc+0xd3/0x160
+[   46.617892]  [<ffffffff81058e59>] __sigqueue_alloc+0x49/0xd0
+[   46.617892]  [<ffffffff8105a41b>] __send_signal+0xcb/0x410
+[   46.617892]  [<ffffffff8105a7a5>] send_signal+0x45/0x90
+[   46.617892]  [<ffffffff8105a803>] __group_send_sig_info+0x13/0x20
+[   46.617892]  [<ffffffff8105bd0b>] do_notify_parent+0x1bb/0x260
+[   46.617892]  [<ffffffff81077e7a>] ? sched_move_task+0xaa/0x130
+[   46.617892]  [<ffffffff81050917>] do_exit+0x767/0xa40
+[   46.617892]  [<ffffffff81050c84>] do_group_exit+0x44/0xa0
+[   46.617892]  [<ffffffff81050cf7>] SyS_exit_group+0x17/0x20
+[   46.617892]  [<ffffffff8172cd12>] system_call_fastpath+0x16/0x1b
+[   46.617892] kmemleak: Kernel memory leak detector disabled
+[   46.617892] kmemleak: Object 0xffff880016900000 (size 524288):
+[   46.617892] kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
+[   46.617892] kmemleak:   min_count = 0
+[   46.617892] kmemleak:   count = 0
+[   46.617892] kmemleak:   flags = 0x1
+[   46.617892] kmemleak:   checksum = 0
+[   46.617892] kmemleak:   backtrace:
+[   46.617892]      [<ffffffff81d0a7f0>] log_early+0x63/0x77
+[   46.617892]      [<ffffffff8171d31b>] kmemleak_alloc+0x4b/0x50
+[   46.617892]      [<ffffffff81720e4f>] init_section_page_cgroup+0x7f/0xf5
+[   46.617892]      [<ffffffff81d0a6f0>] page_cgroup_init+0xc5/0xd0
+[   46.617892]      [<ffffffff81ce4ed9>] start_kernel+0x333/0x408
+[   46.617892]      [<ffffffff81ce45b2>] x86_64_start_reservations+0x2a/0x2c
+[   46.617892]      [<ffffffff81ce46a9>] x86_64_start_kernel+0xf5/0xfc
+[   46.617892]      [<ffffffffffffffff>] 0xffffffffffffffff
 
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
+ mm/page_cgroup.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-This is a resent.  This patch was part of a larger series that got 
-merged during the last merge window.
-
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index be8e1bde07..d193609bea 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -31,6 +31,16 @@
- #include <asm/apic.h>
- #include <asm/nmi.h>
- #include <asm/trace/irq_vectors.h>
-+
-+#define CREATE_TRACE_POINTS
-+/*
-+ * Those were defined in <asm/trace/irq_vectors.h> and cause problems
-+ * when including <trace/events/ipi.h>.
-+ */
-+#undef TRACE_INCLUDE_PATH
-+#undef TRACE_INCLUDE_FILE
-+#include <trace/events/ipi.h>
-+
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -124,11 +134,13 @@ static void native_smp_send_reschedule(int cpu)
- 		WARN_ON(1);
- 		return;
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 3708264..5331c2b 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -171,6 +171,7 @@ static void free_page_cgroup(void *addr)
+ 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
+ 
+ 		BUG_ON(PageReserved(page));
++		kmemleak_free(addr);
+ 		free_pages_exact(addr, table_size);
  	}
-+	trace_ipi_raise(cpumask_of(cpu), tracepoint_string("RESCHEDULE"));
- 	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
  }
- 
- void native_send_call_func_single_ipi(int cpu)
- {
-+	trace_ipi_raise(cpumask_of(cpu), tracepoint_string("CALL_FUNCTION_SINGLE"));
- 	apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
- }
- 
-@@ -136,6 +148,8 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- {
- 	cpumask_var_t allbutself;
- 
-+	trace_ipi_raise(mask, tracepoint_string("CALL_FUNCTION"));
-+
- 	if (!alloc_cpumask_var(&allbutself, GFP_ATOMIC)) {
- 		apic->send_IPI_mask(mask, CALL_FUNCTION_VECTOR);
- 		return;
-@@ -252,8 +266,10 @@ finish:
-  */
- static inline void __smp_reschedule_interrupt(void)
- {
-+	trace_ipi_entry(tracepoint_string("RESCHEDULE"));
- 	inc_irq_stat(irq_resched_count);
- 	scheduler_ipi();
-+	trace_ipi_exit(tracepoint_string("RESCHEDULE"));
- }
- 
- __visible void smp_reschedule_interrupt(struct pt_regs *regs)
-@@ -291,8 +307,10 @@ __visible void smp_trace_reschedule_interrupt(struct pt_regs *regs)
- 
- static inline void __smp_call_function_interrupt(void)
- {
-+	trace_ipi_entry(tracepoint_string("CALL_FUNCTION"));
- 	generic_smp_call_function_interrupt();
- 	inc_irq_stat(irq_call_count);
-+	trace_ipi_exit(tracepoint_string("CALL_FUNCTION"));
- }
- 
- __visible void smp_call_function_interrupt(struct pt_regs *regs)
-@@ -313,8 +331,10 @@ __visible void smp_trace_call_function_interrupt(struct pt_regs *regs)
- 
- static inline void __smp_call_function_single_interrupt(void)
- {
-+	trace_ipi_entry(tracepoint_string("CALL_FUNCTION_SINGLE"));
- 	generic_smp_call_function_single_interrupt();
- 	inc_irq_stat(irq_call_count);
-+	trace_ipi_exit(tracepoint_string("CALL_FUNCTION_SINGLE"));
- }
- 
- __visible void smp_call_function_single_interrupt(struct pt_regs *regs)
+-- 
+1.8.4
+
