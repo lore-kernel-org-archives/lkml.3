@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510AbaIRPrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:47:55 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:56979 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440AbaIRPrx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:47:53 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCHv2 1/1] bluetooth: Check for SCO type before setting retransmission effort
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
-Date: Thu, 18 Sep 2014 08:48:48 -0700
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A8855298-3814-4E46-B106-167C05366E2B@holtmann.org>
-References: <8B07B86E-19D4-49E2-B471-DAF31C8D4F34@holtmann.org> <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
-To: Bernhard Thaler <bernhard.thaler@r-it.at>
-X-Mailer: Apple Mail (2.1878.6)
+	id S932541AbaIRPsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:48:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34297 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932425AbaIRPsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 11:48:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,548,1406617200"; 
+   d="scan'208";a="575150400"
+Subject: [PATCH] x86: update memory map about hypervisor-reserved area
+To: linux-kernel@vger.kernel.org
+Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
+        ryabinin.a.a@gmail.com, dvyukov@google.com, andi@firstfloor.org,
+        x86@kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com
+From: Dave Hansen <dave@sr71.net>
+Date: Thu, 18 Sep 2014 08:46:21 -0700
+Message-Id: <20140918154621.F16A2C86@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bernhard,
 
-> SCO connection cannot be setup to devices that do not support retransmission.
-> Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
-> adapted for this kernel version.
-> Code changed to check SCO/eSCO type before setting retransmission effort
-> and max. latency. The purpose of the patch is to support older devices not
-> capable of eSCO.
-> 
-> Tested on Blackberry 655+ headset which does not support retransmission.
-> Credits go to Alexander Sommerhuber.
-> 
-> Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
-> ---
-> net/bluetooth/hci_conn.c |   16 ++++++++++++----
-> 1 file changed, 12 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-> index faff624..f6e3183 100644
-> --- a/net/bluetooth/hci_conn.c
-> +++ b/net/bluetooth/hci_conn.c
-> @@ -194,10 +194,18 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
-> 		param = &sco_param_wideband[conn->attempt - 1];
-> 		break;
-> 	case SCO_AIRMODE_CVSD:
-> -		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
-> -			return false;
-> -		cp.retrans_effort = 0x01;
-> -		param = &sco_param_cvsd[conn->attempt - 1];
-> +		if (!lmp_esco_capable(conn->link)) {
-> +			/* sco_param_cvsd contains SCO in last two elements */
-> +			if ((conn->attempt + 3) > ARRAY_SIZE(sco_param_cvsd))
-> +				return false;
-> +			cp.retrans_effort = 0xff;
-> +			param = &sco_param_cvsd[(conn->attempt + 2)];
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-so if anybody creates a new mode and forgets to update this code, we are hitting a nice crash and/or wrong behavior.
+Peter Anvin says:
+> 0xffff880000000000 is the lowest usable address because we have
+> agreed to leave 0xffff800000000000-0xffff880000000000 for the
+> hypervisor or other non-OS uses.
 
-I would prefer that we create separate parameter arrays here. It might means that we have to rename the current ones to esco_param_* and the introduce sco_param_cvsd.
+Let's call this out in the documentation.
 
-> +		} else {
-> +			if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
-> +				return false;
-> +			cp.retrans_effort = 0x01;
-> +			param = &sco_param_cvsd[conn->attempt - 1];
-> +		}
-> 		break;
-> 	default:
-> 		return false;
+This came up during the kernel address sanitizer discussions
+where it was proposed to use this area for other kernel things.
 
-Regards
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: Dmitry Vyukov <dvyukov@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org
+Cc: linux-mm@kvack.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
 
-Marcel
+ b/Documentation/x86/x86_64/mm.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff -puN Documentation/x86/x86_64/mm.txt~update-x86-mm-doc Documentation/x86/x86_64/mm.txt
+--- a/Documentation/x86/x86_64/mm.txt~update-x86-mm-doc	2014-09-17 21:44:10.499781092 -0700
++++ b/Documentation/x86/x86_64/mm.txt	2014-09-17 21:44:31.852740822 -0700
+@@ -5,7 +5,7 @@ Virtual memory map with 4 level page tab
+ 
+ 0000000000000000 - 00007fffffffffff (=47 bits) user space, different per mm
+ hole caused by [48:63] sign extension
+-ffff800000000000 - ffff80ffffffffff (=40 bits) guard hole
++ffff800000000000 - ffff80ffffffffff (=40 bits) guard hole, reserved for hypervisor
+ ffff880000000000 - ffffc7ffffffffff (=64 TB) direct mapping of all phys. memory
+ ffffc80000000000 - ffffc8ffffffffff (=40 bits) hole
+ ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
+_
