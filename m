@@ -1,177 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032AbaIRKAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 06:00:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55427 "EHLO mx2.suse.de"
+	id S1757113AbaIRKBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 06:01:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44815 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756588AbaIRKAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 06:00:16 -0400
-Date: Thu, 18 Sep 2014 12:00:11 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Vagin <avagin@parallels.com>
-Cc: Jan Kara <jack@suse.cz>, Heinrich Schuchardt <xypron.debian@gmx.de>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
-Message-ID: <20140918100011.GA30826@quack.suse.cz>
-References: <1410177716-3965-1-git-send-email-avagin@openvz.org>
- <20140909012712.GV7996@ZenIV.linux.org.uk>
- <20140909085439.GB25034@quack.suse.cz>
- <20140910094318.GA19472@paralelels.com>
- <54146D8D.9090708@gmx.de>
- <20140916211211.GG1205@quack.suse.cz>
- <20140917210122.GA31893@paralelels.com>
+	id S1755786AbaIRKBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 06:01:02 -0400
+Date: Thu, 18 Sep 2014 12:00:17 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Ingo Molnar <mingo@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+Message-ID: <20140918100016.GA9260@potion.redhat.com>
+References: <20140917124501.GC5358@nazgul.tnic>
+ <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
+ <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il>
+ <20140917132141.GD5358@nazgul.tnic>
+ <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com>
+ <20140917140601.GE5358@nazgul.tnic>
+ <20140917150433.GC1273@potion.brq.redhat.com>
+ <20140917152221.GF5358@nazgul.tnic>
+ <20140918002953.GA6918@potion.redhat.com>
+ <20140918071945.GA24842@nazgul.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140917210122.GA31893@paralelels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140918071945.GA24842@nazgul.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-09-14 01:01:22, Andrew Vagin wrote:
-> From c7a79bccca1aac70f5e50fb145942b932eca79ba Mon Sep 17 00:00:00 2001
-> From: Andrey Vagin <avagin@openvz.org>
-> Date: Sat, 6 Sep 2014 08:35:24 +0400
-> Subject: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
+2014-09-18 09:19+0200, Borislav Petkov:
+> On Thu, Sep 18, 2014 at 02:29:54AM +0200, Radim Krčmář wrote:
+> > I think you proposed to use magic constant in place of of MASK_FAM_X, so
 > 
-> Currently watchers are removed in dentry_iput(), if n_link is zero.  But
-> other detries can be linked with this inode.
-> 
-> For example if we create two hard links, open the first one and set an
-> inotify watcher on one of them.  Then if we remove the opened file and
-> then another file, the inotify watcher will be removed. But we will have
-> the alive file descriptor, which allows us to generate more events.
-> 
-> And here is another behaviour, if files are removed in another order.
-> The watcher will not be removed and we will keep getting inotify events
-> for that inode.
-> 
-> This patch removes difference of behaviours for these cases. Watchers
-> are removed, only if nlink is zero and i_dentry list is empty. The
-> resulting behaviour is the same with what has been described in the
-> second case.
-> 
-> Look at a following example:
-> 
-> 	fd = inotify_init1(IN_NONBLOCK);
-> 	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
-> 	link(path, path_link);
-> 
-> 	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
-> 
-> 	unlink(path);
-> 	unlink(path_link);
-> 
-> 	printf(" --- unlink path, path_link\n");
-> 	read_evetns(fd);
-> 
-> 	close(deleted);
-> 	printf(" --- close\n");
-> 	read_evetns(fd);
-> 	printf(" --- end\n");
-> 
-> We expect to get the same set of events for this case and for the
-> case, when files are deleted in another order. But now we get the
-> different set of events.
-> 
-> Without this patch:
-> The first case, when "path" is deleted before "path_link"
->  --- unlink path, path_link
-> 4	(IN_ATTRIB)
-> 400	(IN_DELETE_SELF)
-> 8000	(IN_IGNORED)
->  --- close
->  --- end
-> 
-> and for the case, when "path_link" is deleted before "path"
->  --- unlink path_link, path
-> 4	(IN_ATTRIB)
->  --- close
-> 8	(IN_CLOSE_WRITE)
-> 400	(IN_DELETE_SELF)
-> 8000	(IN_IGNORED)
->  --- end
-> 
-> With this patch we have the same output for both cases:
->  --- unlink
-> 4	(IN_ATTRIB)
->  --- close
-> 8	(IN_CLOSE_WRITE)
-> 400	(IN_DELETE_SELF)
-> 8000	(IN_IGNORED)
->  --- end
-> PASS
-> 
-> v2: generate IN_DELETE_SELF when the last link to the file is removed
-  The patch looks good to me and the description in changelog is good so
-feel free to add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> Huh, what?
 
-								Honza
+Your example.  It cannot be verbatim MASK_FAM_X in real code.
 
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Heinrich Schuchardt <xypron.debian@gmx.de>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: John McCutchan <john@johnmccutchan.com>
-> Cc: Robert Love <rlove@rlove.org>
-> Cc: Eric Paris <eparis@parisplace.org>
-> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  fs/dcache.c | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 7a5b514..3a0e3bc 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -278,12 +278,15 @@ static void dentry_iput(struct dentry * dentry)
->  	__releases(dentry->d_inode->i_lock)
->  {
->  	struct inode *inode = dentry->d_inode;
-> +	bool last_dentry;
-> +
->  	if (inode) {
->  		dentry->d_inode = NULL;
->  		hlist_del_init(&dentry->d_alias);
-> +		last_dentry = hlist_empty(&inode->i_dentry);
->  		spin_unlock(&dentry->d_lock);
->  		spin_unlock(&inode->i_lock);
-> -		if (!inode->i_nlink)
-> +		if (!inode->i_nlink && last_dentry)
->  			fsnotify_inoderemove(inode);
->  		if (dentry->d_op && dentry->d_op->d_iput)
->  			dentry->d_op->d_iput(dentry, inode);
-> @@ -303,13 +306,16 @@ static void dentry_unlink_inode(struct dentry * dentry)
->  	__releases(dentry->d_inode->i_lock)
->  {
->  	struct inode *inode = dentry->d_inode;
-> +	bool last_dentry;
-> +
->  	__d_clear_type(dentry);
->  	dentry->d_inode = NULL;
->  	hlist_del_init(&dentry->d_alias);
->  	dentry_rcuwalk_barrier(dentry);
-> +	last_dentry = hlist_empty(&inode->i_dentry);
->  	spin_unlock(&dentry->d_lock);
->  	spin_unlock(&inode->i_lock);
-> -	if (!inode->i_nlink)
-> +	if (!inode->i_nlink && last_dentry)
->  		fsnotify_inoderemove(inode);
->  	if (dentry->d_op && dentry->d_op->d_iput)
->  		dentry->d_op->d_iput(dentry, inode);
-> -- 
-> 1.9.3
-> 
+I interpreted it to be a placeholder for 0x1ffff (first 17 bits) and
+said why I think it is not a good thing.
+The other interpretation (well named macro) was against your goal.
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> > Second problem:  Most elements don't begin at offset 0, so the usual
+> > retrieval would add a shift, (repurposing max_monitor_line_size)
+> 
+> So what?
+
+Your goal was easy parsing (last sentence of the mail).
+
+My argument is that bitfields are easier to read.  (With examples.)
+
+> >  max_monitor_line_size = (cpuid & MASK_FAM_X) >> OFFSET_FAM_X;
+> > 
+> > and it's not better when we write it back after doing stuff.
+> 
+> Writing back CPUID on baremetal? You can't be serious.
+
+We are not talking just about baremetal, see patch [3/3].
+
+There are, and will be new, use cases for modifying and storing cpuid.
+
+> Ok, this is getting ridiculous so I'll stop wasting time. I stand by my
+> initial statement - this is a bad idea.
+
+Acknowledged.
