@@ -1,329 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaIRXdV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 19:33:21 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:28115 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaIRXdT (ORCPT
+	id S1754792AbaIRXlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 19:41:16 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:42393 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbaIRXlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 19:33:19 -0400
-X-IronPort-AV: E=Sophos;i="5.04,550,1406617200"; 
-   d="scan'208";a="46201538"
-Message-ID: <541B6BB4.50301@broadcom.com>
-Date: Thu, 18 Sep 2014 16:33:08 -0700
-From: Jonathan Richardson <jonathar@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "bcm-kernel-feedback-list@broadcom.com" 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>
-Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus
- SoC
-References: <jonathar@broadcom.com> <1410897497-27527-1-git-send-email-jonathar@broadcom.com> <1410897497-27527-2-git-send-email-jonathar@broadcom.com> <20140917000018.GI14191@leverpostej>
-In-Reply-To: <20140917000018.GI14191@leverpostej>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	Thu, 18 Sep 2014 19:41:14 -0400
+Date: Fri, 19 Sep 2014 08:41:07 +0900 (JST)
+Message-Id: <20140919.084107.1306407610758412217.konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-nilfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andreas Rohner <andreas.rohner@gmx.net>
+Subject: Re: [PATCH] nilfs2: fix data loss with mmap()
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <20140918121708.c9e9678c9ea76b057377d843@linux-foundation.org>
+References: <1411052185-8118-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+	<1411052185-8118-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+	<20140918121708.c9e9678c9ea76b057377d843@linux-foundation.org>
+X-Mailer: Mew version 6.5 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-Thanks for the feedback.
-
-On 14-09-16 05:00 PM, Mark Rutland wrote:
-> On Tue, Sep 16, 2014 at 08:58:12PM +0100, Jonathan Richardson wrote:
->> Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+On Thu, 18 Sep 2014 12:17:08 -0700, Andrew Morton wrote:
+> On Thu, 18 Sep 2014 23:56:25 +0900 Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp> wrote:
+> 
+>> From: Andreas Rohner <andreas.rohner@gmx.net>
+>> 
+>> This bug leads to reproducible silent data loss, despite the use of
+>> msync(), sync() and a clean unmount of the file system. It is easily
+>> reproducible with the following script:
+>> 
+>> ...
 >>
->> Reviewed-by: Ray Jui <rjui@broadcom.com>
->> Reviewed-by: Desmond Liu <desmondl@broadcom.com>
->> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
->> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
->> Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
->> ---
->>  arch/arm/mach-bcm/Kconfig            |   34 +++++++
->>  arch/arm/mach-bcm/Makefile           |    3 +
->>  arch/arm/mach-bcm/board_bcm_cygnus.c |  166 ++++++++++++++++++++++++++++++++++
-> 
-> Is Cygnus an SoC or a board?
-
-SoC. I will rename it to bcm_cygnus.c
-
-> 
->>  3 files changed, 203 insertions(+)
->>  create mode 100644 arch/arm/mach-bcm/board_bcm_cygnus.c
->>
->> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
->> index fc93800..58e0f20 100644
->> --- a/arch/arm/mach-bcm/Kconfig
->> +++ b/arch/arm/mach-bcm/Kconfig
->> @@ -5,6 +5,40 @@ menuconfig ARCH_BCM
+>> --- a/fs/nilfs2/inode.c
+>> +++ b/fs/nilfs2/inode.c
+>> @@ -219,10 +219,10 @@ static int nilfs_writepage(struct page *page, struct writeback_control *wbc)
 >>  
->>  if ARCH_BCM
+>>  static int nilfs_set_page_dirty(struct page *page)
+>>  {
+>> +	struct inode *inode = page->mapping->host;
+>>  	int ret = __set_page_dirty_nobuffers(page);
 >>  
->> +config ARCH_BCM_IPROC
->> +	bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
->> +	select ARM_GIC
->> +	select CACHE_L2X0
->> +	select HAVE_ARM_SCU if SMP
-> 
-> I didn't spot any SMP code in this series.
-
-It's single core. Will fix.
-> 
->> +	select HAVE_ARM_TWD if LOCAL_TIMERS
->> +	select HAVE_CLK
->> +	select CLKSRC_OF
->> +	select CLKSRC_MMIO
->> +	select LOCAL_TIMERS if SMP
->> +	select GENERIC_CLOCKEVENTS_BUILD
-> 
-> You don't need to select this.
-
-Will fix.
-> 
->> +	select GENERIC_CLOCKEVENTS
->> +	select ARM_GLOBAL_TIMER
->> +	select ARCH_REQUIRE_GPIOLIB
->> +	select ARM_AMBA
->> +	select PINCTRL
->> +	select DEBUG_UART_8250
->> +	help
->> +	  This enables support for systems based on Broadcom IPROC architected SoCs.
->> +	  The IPROC complex contains one or more ARM CPUs along with common
->> +	  core periperals. Application specific SoCs are created by adding a
->> +	  uArchitecture containing peripherals outside of the IPROC complex.
->> +	  Currently supported SoCs are Cygnus.
->> +
->> +menu "iProc SoC based Machine types"
->> +	depends on ARCH_BCM_IPROC
->> +
->> +	config ARCH_BCM_CYGNUS
->> +		bool "Support Broadcom Cygnus board"
->> +		select USB_ARCH_HAS_EHCI if USB_SUPPORT
->> +		help
->> +		  Support for Broadcom Cygnus SoC.
->> +endmenu
->> +
->>  config ARCH_BCM_MOBILE
->>  	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
->>  	select ARCH_REQUIRE_GPIOLIB
->> diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
->> index b19a396..dd14a10 100644
->> --- a/arch/arm/mach-bcm/Makefile
->> +++ b/arch/arm/mach-bcm/Makefile
->> @@ -10,6 +10,9 @@
->>  # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>  # GNU General Public License for more details.
+>>  	if (page_has_buffers(page)) {
+>> -		struct inode *inode = page->mapping->host;
+>>  		unsigned nr_dirty = 0;
+>>  		struct buffer_head *bh, *head;
 >>  
->> +# Cygnus
->> +obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  board_bcm_cygnus.o
->> +
->>  # BCM281XX
->>  obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
+>> @@ -245,6 +245,10 @@ static int nilfs_set_page_dirty(struct page *page)
 >>  
->> diff --git a/arch/arm/mach-bcm/board_bcm_cygnus.c b/arch/arm/mach-bcm/board_bcm_cygnus.c
->> new file mode 100644
->> index 0000000..d67555a
->> --- /dev/null
->> +++ b/arch/arm/mach-bcm/board_bcm_cygnus.c
->> @@ -0,0 +1,166 @@
->> +/*
->> + * Copyright 2014 Broadcom Corporation.  All rights reserved.
->> + *
->> + * Unless you and Broadcom execute a separate written software license
->> + * agreement governing use of this software, this software is licensed to you
->> + * under the terms of the GNU General Public License version 2, available at
->> + * http://www.broadcom.com/licenses/GPLv2.php (the "GPL").
+>>  		if (nr_dirty)
+>>  			nilfs_set_file_dirty(inode, nr_dirty);
+>> +	} else if (ret) {
+>> +		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
 > 
-> Why don't we point at the gnu.org copy as we do elsewhere?
->
+> It's quite cosmetic, but it is conventional to use PAGE_CACHE_SHIFT here.
 
-I am enquiring.
+Agreed.
 
->> + */
->> +
->> +#include <linux/of_address.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/clocksource.h>
->> +#include <linux/clk-provider.h>
->> +#include <linux/delay.h>
->> +#include <asm/mach/arch.h>
->> +#include <asm/mach/map.h>
->> +#include <asm/proc-fns.h>
->> +#include <asm/hardware/cache-l2x0.h>
->> +
->> +#define CRMU_MAIL_BOX1      0x03024028
-> 
-> Please don't hard code addresses in board files.
-
-Would a separate header file be sufficient? I notice this approach was
-taken in vexpress A9x4 (out of date?). I couldn't find a home for them
-in dt and I don't think anyone would want to see them there. They
-shouldn't ever change.
-
-We have a couple of more addresses that will be added in future
-revisions of this file for DMA and LCD (for reset/power up procedures),
-as those drivers are added.
-
-> 
->> +#define CRMU_SOFT_RESET_CMD 0xFFFFFFFF
->> +
->> +/* CRU_RESET register */
->> +static void * __iomem crmu_mail_box1_reg;
->> +
->> +#ifdef CONFIG_NEON
->> +
->> +#define CRU_BASE                  0x1800e000
-> 
-> Another hard coded address that needs to go.
-> 
->> +#define CRU_SIZE                  0x34
->> +#define CRU_CONTROL_OFFSET        0x0
->> +#define CRU_PWRDWN_EN_OFFSET      0x4
->> +#define CRU_PWRDWN_STATUS_OFFSET  0x8
->> +#define CRU_NEON0_HW_RESET  6
->> +#define CRU_CLAMP_ON_NEON0  20
->> +#define CRU_PWRONIN_NEON0   21
->> +#define CRU_PWRONOUT_NEON0  21
->> +#define CRU_PWROKIN_NEON0   22
->> +#define CRU_PWROKOUT_NEON0  22
->> +#define CRU_STATUS_DELAY_NS 500
->> +#define CRU_MAX_RETRY_COUNT 10
->> +#define CRU_RETRY_INTVL_US  1
->> +
->> +/* Power up the NEON/VFPv3 block. */
->> +static void bcm_cygnus_powerup_neon(void)
->> +{
->> +	void * __iomem cru_base = ioremap_nocache(CRU_BASE, CRU_SIZE);
-> 
-> Why not plain ioremap?
-> 
->> +	u32 reg, i;
->> +
->> +	BUG_ON(!cru_base);
-> 
-> This seems a little extreme. Can;t we continue without NEON?
-
-We can yes. The reason for this was to prevent difficult troubleshooting
-if it ever failed. But a WARN_ON would probably be sufficient.
-
-> 
->> +
->> +	/* De-assert the neon hardware block reset */
->> +	reg = readl(cru_base + CRU_CONTROL_OFFSET);
->> +	reg &= ~(1 << CRU_NEON0_HW_RESET);
->> +	writel(reg, cru_base + CRU_CONTROL_OFFSET);
->> +
->> +	/* Assert the power ON register bit */
->> +	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
->> +	reg |= (1 << CRU_PWRONIN_NEON0);
->> +	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
->> +
->> +	/*
->> +	 * Wait up to 10 usec in 1 usec increments for the
->> +	 * status register to acknowledge the power ON assert
->> +	 */
->> +	for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
->> +		reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
->> +		if (reg & CRU_PWRONOUT_NEON0)
->> +			break;
->> +
->> +		udelay(CRU_RETRY_INTVL_US);
->> +	}
->> +
->> +	if (i == CRU_MAX_RETRY_COUNT)
->> +		panic("NEON power ON register not acknowledged\n");
-> 
-> We can't just disable NEON if we fail to enable the HW block?
-> 
-> [...]
-> 
->> +static void __init bcm_cygnus_timer_init(void)
->> +{
->> +	/* Initialize all clocks declared in device tree */
->> +	of_clk_init(NULL);
->> +
->> +	clocksource_of_init();
->> +}
-> 
-> If you take a look at time_init in arch/arm/kernel/time.c you'll see
-> this is redundant.
-
-Will fix.
-
-> 
-> Get rid of this.
-> 
->> +
->> +static void __init bcm_cygnus_init(void)
->> +{
->> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
->> +
->> +	l2x0_of_init(0, ~0UL);
->> +
->> +	crmu_mail_box1_reg = ioremap_nocache(CRMU_MAIL_BOX1, SZ_4);
-> 
-> Why not plain ioremap?
-
-I will change them to ioremap.
-
-> 
->> +	BUG_ON(!crmu_mail_box1_reg);
-> 
-> We only use this for reboot later on, so do we need to blow up so
-> spectacularly in this case?
-
-Will fix.
-
-> 
->> +
->> +#ifdef CONFIG_NEON
->> +	bcm_cygnus_powerup_neon();
->> +#endif
->> +}
->> +
->> +/*
->> + * Reset the system
->> + */
->> +void bcm_cygnus_restart(enum reboot_mode mode, const char *cmd)
->> +{
->> +	/* Send reset command to M0 via Mailbox. */
->> +	writel(CRMU_SOFT_RESET_CMD, crmu_mail_box1_reg);
->> +	iounmap(crmu_mail_box1_reg);
->> +
->> +	/* Wait for M0 to reset the chip. */
->> +	while (1)
->> +		cpu_do_idle();
->> +}
-> 
-> This doesn't have to live in the machine descriptor. It could be a
-> separate driver.
-
-I'm not sure if a separate driver is the way we want to go with this
-right now. If we had more of this M0 communication then I would agree,
-and we may in the future. But if we don't then there would just be a
-reset handler in the driver. If more interaction and a driver is
-required we would move this to a driver.
-
-Was your suggestion more related to the hard coded addresses in this
-file or the mysterious nature of the reset procedure?
-
-> 
-> Thanks,
-> Mark.
-> 
-
-Thanks.
-Jon
+Thanks,
+Ryusuke Konishi
