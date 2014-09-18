@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaIRRWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 13:22:52 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34436 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714AbaIRRWv (ORCPT
+	id S932525AbaIRRX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 13:23:29 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34359 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaIRRX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 13:22:51 -0400
-From: bsegall@google.com
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: NULL ptr deref in update_blocked_averages
-References: <5419FD5F.7090407@oracle.com>
-Date: Thu, 18 Sep 2014 10:22:48 -0700
-In-Reply-To: <5419FD5F.7090407@oracle.com> (Sasha Levin's message of "Wed, 17
-	Sep 2014 17:30:07 -0400")
-Message-ID: <xm26fvforggn.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 18 Sep 2014 13:23:28 -0400
+Date: Thu, 18 Sep 2014 18:23:18 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Will Deacon <Will.Deacon@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] arm: Handle starting up in secure mode
+Message-ID: <20140918172318.GF25330@e104818-lin.cambridge.arm.com>
+References: <1410901756-20694-1-git-send-email-cov@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410901756-20694-1-git-send-email-cov@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> writes:
+On Tue, Sep 16, 2014 at 10:09:16PM +0100, Christopher Covington wrote:
+> diff --git a/arch/arm/kernel/hyp-stub.S b/arch/arm/kernel/hyp-stub.S
+> index 2a55373..36d1a9c 100644
+> --- a/arch/arm/kernel/hyp-stub.S
+> +++ b/arch/arm/kernel/hyp-stub.S
+> @@ -20,6 +20,7 @@
+>  #include <linux/linkage.h>
+>  #include <asm/assembler.h>
+>  #include <asm/virt.h>
+> +#include <asm/opcodes-sec.h>
+>  
+>  #ifndef ZIMAGE
+>  /*
+> @@ -76,6 +77,64 @@ ENTRY(__boot_cpu_mode)
+>  #endif /* ZIMAGE */
+>  
+>  /*
+> + * Detect whether the system is in secure supervisor mode, and if it is,
+> + * switch to hypervisor mode by way of secure monitor mode.
+> + */
+> +ENTRY(__mon_stub_install)
+> +	mrs	r4, cpsr
+> +	and	r4, r4, #MODE_MASK
+> +	cmp	r4, #SVC_MODE
+> +	movne	pc, lr
+> +
+> +	/*
+> +	 * Set things up so that if an NSACR access causes an undefined
+> +	 * instruction exception, we return. safe_svcmode_maskall called
+> +	 * just after this will get us back into supervisor mode.
+> +	 */
+> +	adr	r4, __mon_stub_vectors
+> +	mcr	p15, 0, r4, c12, c0, 0	@ set vector base address (VBAR)
+> +	mov	r4, lr
+> +
+> +	/*
+> +	 * Writing the NSACR will only succeed if we're in a secure mode.
+> +	 */
+> +	mrc	p15, 0, r5, c1, c1, 2	@ get non-secure access control (NSACR)
+> +	mcr	p15, 0, r5, c1, c1, 2	@ set non-secure access control (NSACR)
 
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
->
-> [  688.177091] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e0
-> [  688.184049] IP: update_blocked_averages (kernel/sched/fair.c:5512 (discriminator 17) kernel/sched/fair.c:5557 (discriminator 17))
-> [  688.186981] PGD 66fe03067 PUD 66f550067 PMD 0
-> [  688.186981] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  688.186981] Dumping ftrace buffer:
-> [  688.186981]    (ftrace buffer empty)
-> [  688.186981] Modules linked in:
-> [  688.186981] CPU: 2 PID: 14377 Comm: trinity-c269 Tainted: G        W      3.17.0-rc5-next-20140917-sasha-00041-gd01267b #1198
-> [  688.186981] task: ffff88068c02b000 ti: ffff8806478ec000 task.ti: ffff8806478ec000
-> [  688.186981] RIP: update_blocked_averages (kernel/sched/fair.c:5512 (discriminator 17) kernel/sched/fair.c:5557 (discriminator 17))
-...
-> [ 688.186981] Code: 30 09 00 00 4d 8d a5 40 ff ff ff 4d 39 ef 0f 84 95 02 00 00 0f 1f 84 00 00 00 00 00 49 8b 84 24 d0 00 00 00 48 63 93 f8 09 00 00 <48> 8b 88 e0 00 00 00 4c 8b 2c d1 66 66 66 66 90 48 8b 80 d8 00
-> All code
-> ========
->    0:	30 09                	xor    %cl,(%rcx)
->    2:	00 00                	add    %al,(%rax)
->    4:	4d 8d a5 40 ff ff ff 	lea    -0xc0(%r13),%r12
->    b:	4d 39 ef             	cmp    %r13,%r15
->    e:	0f 84 95 02 00 00    	je     0x2a9
->   14:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
->   1b:	00
->   1c:	49 8b 84 24 d0 00 00 	mov    0xd0(%r12),%rax
->   23:	00
->   24:	48 63 93 f8 09 00 00 	movslq 0x9f8(%rbx),%rdx
->   2b:*	48 8b 88 e0 00 00 00 	mov    0xe0(%rax),%rcx		<-- trapping instruction
->   32:	4c 8b 2c d1          	mov    (%rcx,%rdx,8),%r13
->   36:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
+Since you talk about ARMv8 further down, if you run in AArch32 mode in
+secure EL1 it will trap to EL3 (if it was non-secure EL1/EL2, write
+would undef and read returns 0xc00). Therefore for ARMv8 my
+recommendation is to run Linux (whether AArch64 or AArch32) only on the
+non-secure side.
 
-I believe this is the tg->cfs_rq deference failing in
-__update_blocked_averages_cpu, ie tg == NULL, which means that some
-cfs_rq->tg is NULL, but tg is set on cgroup creation and never cleared.
-I don't see a plausible use-after-free, but I don't know the cgroup rules.
+> +	/*
+> +	 * If we get here, we know we're in secure supervisor mode, so make the
+> +	 * switch to secure monitor mode.
+> +	 *
+> +	 * TODO: make sure this doesn't trap to A64 EL3.
+> +	 */
+> +	adr	r4, __mon_stub_vectors
+> +	mcr	p15, 0, r4, c12, c0, 1	@ set monitor vector base (MVBAR)
+> +	adr	r4, mon_settings
+> +	__SMC(0)
+
+I think from secure EL1 you can switch to monitor simply by setting the
+CPSR mode bits (though IIRC on ARMv8 would also trap to EL3).
+
+> +
+> +	/*
+> +	 * Now, from non-secure supervisor mode, transition to hypervisor mode
+> +	 * and return via the exception vector.
+> +	 */
+> +	mov	r4, lr
+> +	__HVC(0)
+
+>From monitor mode can you return directly to HVC mode via ERET and avoid
+another HVC?
+
+-- 
+Catalin
