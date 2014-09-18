@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184AbaIRAcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 20:32:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:36018 "EHLO ozlabs.org"
+	id S1757258AbaIRAdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 20:33:15 -0400
+Received: from www.sr71.net ([198.145.64.142]:37628 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015AbaIRAcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 20:32:08 -0400
-Date: Thu, 18 Sep 2014 10:32:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the net tree
-Message-ID: <20140918103200.12b79941@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1755768AbaIRAdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 20:33:14 -0400
+Message-ID: <541A2848.6030308@sr71.net>
+Date: Wed, 17 Sep 2014 17:33:12 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ocP2We85YAURodjeN3VYVT="; protocol="application/pgp-signature"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@linux.intel.com,
+        ak@linux.intel.com, Alex Chiang <achiang@hp.com>,
+        Borislav Petkov <bp@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Mike Travis <travis@sgi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
+ "sane"
+References: <20140915222641.D640BD8A@viggo.jf.intel.com> <20140916032920.GH2840@worktop.localdomain> <5417F228.9060301@sr71.net> <20140916175851.GC2848@worktop.localdomain> <5418CC6F.2040803@sr71.net> <20140917225726.GH2848@worktop.localdomain>
+In-Reply-To: <20140917225726.GH2848@worktop.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ocP2We85YAURodjeN3VYVT=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/17/2014 03:57 PM, Peter Zijlstra wrote:
+>> > Another option would be to:
+>> > 1. Add a new "PKG" level and actually _build_ it with phys_proc_id
+>> > 2. Make sure to tie the sysfs 'core_siblings' file to PKG
+>> > 3. Leave the "MC" level as it is now, but define it as being the lowest-
+>> >    common-denominator of core grouping.  In other words, the "MC" group
+>> >    will stop at a NUMA node or a socket boundary, whichever it sees
+>> >    first.
+>> > 4. Chop the "COD_NUMA" level off in sched_init_numa()
+> No, we should provide an arch override for sched_domain_topology which
+> has the right setup for the detected topology.
+> 
+> See arm,powerpc and s390, which already have his.
 
-Hi all,
+I _think_ the problem here is that all of the existing topologies
+describe something below the smallest NUMA node.  With the
+cluster-on-die stuff, we've got a node boundary smack in the middle of
+the existing topology levels.
 
-After merging the net tree, today's linux-next build (powerpc
-ppc64_defconfig) produced these warnings:
+So, if we're going to do this with a new sched_domain_topology, we've
+got to make sure that we eliminate all of the levels below that first
+NUMA node.  I think that means just have a topology with the SMT level
+alone in it.
 
-warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
-& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
- has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
-40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
-unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
-BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
-NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
- && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
-nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
-40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
-unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
-& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
- has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
-BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
-NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
- && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
-nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+Does that work?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/ocP2We85YAURodjeN3VYVT=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUGigFAAoJEMDTa8Ir7ZwVN+AP/RY5st6+BAAXfnFIclokBVzy
-vOX0xA8RHkvwsv+zHGmFUpJyIEgnA8X7WPxR4l9Q8BCMi5nWounVpObsBSPhZq98
-c1E1rf33jwvpkT2d3vN7+DwBB/g2F5A8gRrHzxv9MK5TWet8MVhv7UoCFvRqbdG4
-FYu3PhfXw+D4VU9xACZan/312D1yAhJJHLUk4ZfbybqevBUEOXD+aggvm+1zr6Vm
-61r1F5B+mo5Yms9goMPmRtchgR8NnY2i3sfRZVwXzTx6CS0OYEUdu4zfZiCHRPIB
-jbzZRE2R81DVmi8DW/0zgmnXNImDIpR8/KbMdiq1uxuoeSeQ/rVmp05K/8muVqFf
-KtPIQ0cS4HO76VDPzezKyuVRotFe1Mg2eMtVv1kR7t8VY3We8acoe2sb/RinEUsS
-FIV5rO2APmkl+dfHgMmEaXjN7dvkrKTVa6OCUuVdYo9hPF1jnVIqG+wpbT6wxRu3
-mMFVeMhPoQYlqvxmbRN0lO2JKOctgR1xkXFVl3uYGBE4LOLufu9IsV7cDZF61dHE
-LOJcNu/XYf4Fbnes7Fp7jTEVesMWXidnRYdbzz1NblajyVTQe+2DfOfytRtd2xMC
-lOiOFVh2ZvrDpJ2VPms0ipzXtrcbGt3VD736o+MNTTZuGoScMEN7bxiq9CX8rY/x
-nDMZhXDh+jK2fVwRDZka
-=yMUF
------END PGP SIGNATURE-----
-
---Sig_/ocP2We85YAURodjeN3VYVT=--
