@@ -1,124 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059AbaIRX3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 19:29:17 -0400
-Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:45307
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751223AbaIRX3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 19:29:16 -0400
-Message-ID: <1411082946.13320.29.camel@snotra.buserror.net>
-Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
-From: Scott Wood <scottwood@freescale.com>
-To: Yoder Stuart-B08248 <stuart.yoder@freescale.com>
-CC: Phillips Kim-R1AAHA <Kim.Phillips@freescale.com>,
-        Alexander Graf <agraf@suse.de>,
-        Rivera Jose-B46482 <German.Rivera@freescale.com>,
-        <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Sep 2014 18:29:06 -0500
-In-Reply-To: <581cd5a2ba854ef883ba488cec70ad62@CY1PR0301MB0748.namprd03.prod.outlook.com>
-References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
-	 <1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
-	 <20140915184451.962a3a19c4940792d182f10a@freescale.com>
-	 <541A5CF1.8000409@freescale.com>
-	 <C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
-	 <20140918152233.41647ee517393816bb35b72a@freescale.com>
-	 <581cd5a2ba854ef883ba488cec70ad62@CY1PR0301MB0748.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1754469AbaIRXdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 19:33:21 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:28115 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaIRXdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 19:33:19 -0400
+X-IronPort-AV: E=Sophos;i="5.04,550,1406617200"; 
+   d="scan'208";a="46201538"
+Message-ID: <541B6BB4.50301@broadcom.com>
+Date: Thu, 18 Sep 2014 16:33:08 -0700
+From: Jonathan Richardson <jonathar@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:9d2d:42ec:ad0e:7ffa]
-X-ClientProxiedBy: DM2PR04CA032.namprd04.prod.outlook.com (10.141.154.150) To
- CY1PR0301MB0729.namprd03.prod.outlook.com (25.160.159.147)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033857D0BD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(377454003)(13464003)(377424004)(479174003)(189002)(199003)(50466002)(21056001)(50226001)(79102003)(81542003)(46102003)(77982003)(83322001)(19580395003)(81342003)(77096002)(62966002)(80022003)(95666004)(74662003)(74502003)(19580405001)(42186005)(23676002)(87286001)(93886004)(85306004)(77156001)(4396001)(31966008)(90102001)(107046002)(110136001)(64706001)(97736003)(103116003)(101416001)(106356001)(33646002)(99396002)(105586002)(20776003)(47776003)(92726001)(85852003)(88136002)(87976001)(86362001)(92566001)(89996001)(104166001)(83072002)(93916002)(76482002)(50986999)(76176999)(102836001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0729;H:[IPv6:2601:2:5800:3f7:9d2d:42ec:ad0e:7ffa];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>
+Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus
+ SoC
+References: <jonathar@broadcom.com> <1410897497-27527-1-git-send-email-jonathar@broadcom.com> <1410897497-27527-2-git-send-email-jonathar@broadcom.com> <20140917000018.GI14191@leverpostej>
+In-Reply-To: <20140917000018.GI14191@leverpostej>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-18 at 18:13 -0500, Yoder Stuart-B08248 wrote:
-> 
-> > -----Original Message-----
-> > From: Kim Phillips [mailto:kim.phillips@freescale.com]
-> > Sent: Thursday, September 18, 2014 3:23 PM
-> > To: Alexander Graf
-> > Cc: Rivera Jose-B46482; <gregkh@linuxfoundation.org>; <arnd@arndb.de>; <linux-kernel@vger.kernel.org>; Yoder
-> > Stuart-B08248; Wood Scott-B07421; <linuxppc-release@linux.freescale.net>
-> > Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
-> > 
-> > On Thu, 18 Sep 2014 15:14:03 +0200
-> > Alexander Graf <agraf@suse.de> wrote:
-> > 
-> > > > Am 18.09.2014 um 06:17 schrieb German Rivera <German.Rivera@freescale.com>:
-> > > >
-> > > >> On 09/15/2014 06:44 PM, Kim Phillips wrote:
-> > > >> On Thu, 11 Sep 2014 12:34:21 -0500
-> > > >> "J. German Rivera" <German.Rivera@freescale.com> wrote:
-> > > >>
-> > > >>> From: "J. German Rivera" <German.Rivera@freescale.com>
-> > > >>>
-> > > >>> APIs to access the Management Complex (MC) hardware
-> > > >>> module of Freescale LS2 SoCs. This patch includes
-> > > >>> APIs to check the MC firmware version and to manipulate
-> > > >>> DPRC objects in the MC.
-> > > >>>
-> > > >>> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
-> > > >>> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
-> > > >>> ---
-> > > >>>  drivers/bus/fsl-mc/dpmng.c         |   93 +++++
-> > > >>>  drivers/bus/fsl-mc/dprc.c          |  504 +++++++++++++++++++++++
-> > > >>>  drivers/bus/fsl-mc/fsl_dpmng_cmd.h |   83 ++++
-> > > >>>  drivers/bus/fsl-mc/fsl_dprc_cmd.h  |  545 +++++++++++++++++++++++++
-> > > >>>  drivers/bus/fsl-mc/fsl_mc_sys.c    |  237 +++++++++++
-> > > >>>  include/linux/fsl_dpmng.h          |  120 ++++++
-> > > >>>  include/linux/fsl_dprc.h           |  790 ++++++++++++++++++++++++++++++++++++
-> > > >>>  include/linux/fsl_mc_cmd.h         |  182 +++++++++
-> > > >>>  include/linux/fsl_mc_sys.h         |   81 ++++
-> > > >>>  9 files changed, 2635 insertions(+)
-> > > >>>  create mode 100644 drivers/bus/fsl-mc/dpmng.c
-> > > >>>  create mode 100644 drivers/bus/fsl-mc/dprc.c
-> > > >>>  create mode 100644 drivers/bus/fsl-mc/fsl_dpmng_cmd.h
-> > > >>>  create mode 100644 drivers/bus/fsl-mc/fsl_dprc_cmd.h
-> > > >>>  create mode 100644 drivers/bus/fsl-mc/fsl_mc_sys.c
-> > > >>>  create mode 100644 include/linux/fsl_dpmng.h
-> > > >>>  create mode 100644 include/linux/fsl_dprc.h
-> > > >>>  create mode 100644 include/linux/fsl_mc_cmd.h
-> > > >>>  create mode 100644 include/linux/fsl_mc_sys.h
-> > > >>
-> > > >> the fsl prefix in the filename fsl_dpmng_cmd.h is redundant with
-> > > >> its directory name fsl-mc/.  Note that I find dashes ('-') in
-> > > >> filenames make them easier to type: is there a reason we're using
-> > > >> underscores here?
-> > > > This is a convention that we decided early on '-' for directory names
-> > > > and '_' for file names.
-> > 
-> > based on what?
-> 
-> We looked at how generally files were named in kernel source.
-> 
-> For what it's worth in my 3.16 branch:
-> 
-> $ find drivers/ -type f | grep '-' | wc -l
-> 4308
-> $ find drivers/ -type f | grep '_' | wc -l
-> 6507
-> 
-> ...it seems that there are far more files named with underscores.  If Greg
-> or Arnd wants the files renamed, fine, but other than that I see no reason
-> to change this.
+Hi Mark,
 
-60% isn't "far more".  Regardless of whether we change this (dashes are
-easier to read, easier to type, and are what English normally uses --
-underscores are for when you can't use a dash for technical reasons),
-let's not start making rules based on weak statistical inferences.
+Thanks for the feedback.
 
-Plus, why limit the search to drivers?  E.g. if you looked at arch/
-you'd reach the opposite conclusion.
+On 14-09-16 05:00 PM, Mark Rutland wrote:
+> On Tue, Sep 16, 2014 at 08:58:12PM +0100, Jonathan Richardson wrote:
+>> Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+>>
+>> Reviewed-by: Ray Jui <rjui@broadcom.com>
+>> Reviewed-by: Desmond Liu <desmondl@broadcom.com>
+>> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+>> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+>> Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
+>> ---
+>>  arch/arm/mach-bcm/Kconfig            |   34 +++++++
+>>  arch/arm/mach-bcm/Makefile           |    3 +
+>>  arch/arm/mach-bcm/board_bcm_cygnus.c |  166 ++++++++++++++++++++++++++++++++++
+> 
+> Is Cygnus an SoC or a board?
 
--Scott
+SoC. I will rename it to bcm_cygnus.c
 
+> 
+>>  3 files changed, 203 insertions(+)
+>>  create mode 100644 arch/arm/mach-bcm/board_bcm_cygnus.c
+>>
+>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+>> index fc93800..58e0f20 100644
+>> --- a/arch/arm/mach-bcm/Kconfig
+>> +++ b/arch/arm/mach-bcm/Kconfig
+>> @@ -5,6 +5,40 @@ menuconfig ARCH_BCM
+>>  
+>>  if ARCH_BCM
+>>  
+>> +config ARCH_BCM_IPROC
+>> +	bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
+>> +	select ARM_GIC
+>> +	select CACHE_L2X0
+>> +	select HAVE_ARM_SCU if SMP
+> 
+> I didn't spot any SMP code in this series.
 
+It's single core. Will fix.
+> 
+>> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>> +	select HAVE_CLK
+>> +	select CLKSRC_OF
+>> +	select CLKSRC_MMIO
+>> +	select LOCAL_TIMERS if SMP
+>> +	select GENERIC_CLOCKEVENTS_BUILD
+> 
+> You don't need to select this.
+
+Will fix.
+> 
+>> +	select GENERIC_CLOCKEVENTS
+>> +	select ARM_GLOBAL_TIMER
+>> +	select ARCH_REQUIRE_GPIOLIB
+>> +	select ARM_AMBA
+>> +	select PINCTRL
+>> +	select DEBUG_UART_8250
+>> +	help
+>> +	  This enables support for systems based on Broadcom IPROC architected SoCs.
+>> +	  The IPROC complex contains one or more ARM CPUs along with common
+>> +	  core periperals. Application specific SoCs are created by adding a
+>> +	  uArchitecture containing peripherals outside of the IPROC complex.
+>> +	  Currently supported SoCs are Cygnus.
+>> +
+>> +menu "iProc SoC based Machine types"
+>> +	depends on ARCH_BCM_IPROC
+>> +
+>> +	config ARCH_BCM_CYGNUS
+>> +		bool "Support Broadcom Cygnus board"
+>> +		select USB_ARCH_HAS_EHCI if USB_SUPPORT
+>> +		help
+>> +		  Support for Broadcom Cygnus SoC.
+>> +endmenu
+>> +
+>>  config ARCH_BCM_MOBILE
+>>  	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
+>>  	select ARCH_REQUIRE_GPIOLIB
+>> diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
+>> index b19a396..dd14a10 100644
+>> --- a/arch/arm/mach-bcm/Makefile
+>> +++ b/arch/arm/mach-bcm/Makefile
+>> @@ -10,6 +10,9 @@
+>>  # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>  # GNU General Public License for more details.
+>>  
+>> +# Cygnus
+>> +obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  board_bcm_cygnus.o
+>> +
+>>  # BCM281XX
+>>  obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
+>>  
+>> diff --git a/arch/arm/mach-bcm/board_bcm_cygnus.c b/arch/arm/mach-bcm/board_bcm_cygnus.c
+>> new file mode 100644
+>> index 0000000..d67555a
+>> --- /dev/null
+>> +++ b/arch/arm/mach-bcm/board_bcm_cygnus.c
+>> @@ -0,0 +1,166 @@
+>> +/*
+>> + * Copyright 2014 Broadcom Corporation.  All rights reserved.
+>> + *
+>> + * Unless you and Broadcom execute a separate written software license
+>> + * agreement governing use of this software, this software is licensed to you
+>> + * under the terms of the GNU General Public License version 2, available at
+>> + * http://www.broadcom.com/licenses/GPLv2.php (the "GPL").
+> 
+> Why don't we point at the gnu.org copy as we do elsewhere?
+>
+
+I am enquiring.
+
+>> + */
+>> +
+>> +#include <linux/of_address.h>
+>> +#include <linux/of_platform.h>
+>> +#include <linux/clocksource.h>
+>> +#include <linux/clk-provider.h>
+>> +#include <linux/delay.h>
+>> +#include <asm/mach/arch.h>
+>> +#include <asm/mach/map.h>
+>> +#include <asm/proc-fns.h>
+>> +#include <asm/hardware/cache-l2x0.h>
+>> +
+>> +#define CRMU_MAIL_BOX1      0x03024028
+> 
+> Please don't hard code addresses in board files.
+
+Would a separate header file be sufficient? I notice this approach was
+taken in vexpress A9x4 (out of date?). I couldn't find a home for them
+in dt and I don't think anyone would want to see them there. They
+shouldn't ever change.
+
+We have a couple of more addresses that will be added in future
+revisions of this file for DMA and LCD (for reset/power up procedures),
+as those drivers are added.
+
+> 
+>> +#define CRMU_SOFT_RESET_CMD 0xFFFFFFFF
+>> +
+>> +/* CRU_RESET register */
+>> +static void * __iomem crmu_mail_box1_reg;
+>> +
+>> +#ifdef CONFIG_NEON
+>> +
+>> +#define CRU_BASE                  0x1800e000
+> 
+> Another hard coded address that needs to go.
+> 
+>> +#define CRU_SIZE                  0x34
+>> +#define CRU_CONTROL_OFFSET        0x0
+>> +#define CRU_PWRDWN_EN_OFFSET      0x4
+>> +#define CRU_PWRDWN_STATUS_OFFSET  0x8
+>> +#define CRU_NEON0_HW_RESET  6
+>> +#define CRU_CLAMP_ON_NEON0  20
+>> +#define CRU_PWRONIN_NEON0   21
+>> +#define CRU_PWRONOUT_NEON0  21
+>> +#define CRU_PWROKIN_NEON0   22
+>> +#define CRU_PWROKOUT_NEON0  22
+>> +#define CRU_STATUS_DELAY_NS 500
+>> +#define CRU_MAX_RETRY_COUNT 10
+>> +#define CRU_RETRY_INTVL_US  1
+>> +
+>> +/* Power up the NEON/VFPv3 block. */
+>> +static void bcm_cygnus_powerup_neon(void)
+>> +{
+>> +	void * __iomem cru_base = ioremap_nocache(CRU_BASE, CRU_SIZE);
+> 
+> Why not plain ioremap?
+> 
+>> +	u32 reg, i;
+>> +
+>> +	BUG_ON(!cru_base);
+> 
+> This seems a little extreme. Can;t we continue without NEON?
+
+We can yes. The reason for this was to prevent difficult troubleshooting
+if it ever failed. But a WARN_ON would probably be sufficient.
+
+> 
+>> +
+>> +	/* De-assert the neon hardware block reset */
+>> +	reg = readl(cru_base + CRU_CONTROL_OFFSET);
+>> +	reg &= ~(1 << CRU_NEON0_HW_RESET);
+>> +	writel(reg, cru_base + CRU_CONTROL_OFFSET);
+>> +
+>> +	/* Assert the power ON register bit */
+>> +	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
+>> +	reg |= (1 << CRU_PWRONIN_NEON0);
+>> +	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
+>> +
+>> +	/*
+>> +	 * Wait up to 10 usec in 1 usec increments for the
+>> +	 * status register to acknowledge the power ON assert
+>> +	 */
+>> +	for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
+>> +		reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
+>> +		if (reg & CRU_PWRONOUT_NEON0)
+>> +			break;
+>> +
+>> +		udelay(CRU_RETRY_INTVL_US);
+>> +	}
+>> +
+>> +	if (i == CRU_MAX_RETRY_COUNT)
+>> +		panic("NEON power ON register not acknowledged\n");
+> 
+> We can't just disable NEON if we fail to enable the HW block?
+> 
+> [...]
+> 
+>> +static void __init bcm_cygnus_timer_init(void)
+>> +{
+>> +	/* Initialize all clocks declared in device tree */
+>> +	of_clk_init(NULL);
+>> +
+>> +	clocksource_of_init();
+>> +}
+> 
+> If you take a look at time_init in arch/arm/kernel/time.c you'll see
+> this is redundant.
+
+Will fix.
+
+> 
+> Get rid of this.
+> 
+>> +
+>> +static void __init bcm_cygnus_init(void)
+>> +{
+>> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>> +
+>> +	l2x0_of_init(0, ~0UL);
+>> +
+>> +	crmu_mail_box1_reg = ioremap_nocache(CRMU_MAIL_BOX1, SZ_4);
+> 
+> Why not plain ioremap?
+
+I will change them to ioremap.
+
+> 
+>> +	BUG_ON(!crmu_mail_box1_reg);
+> 
+> We only use this for reboot later on, so do we need to blow up so
+> spectacularly in this case?
+
+Will fix.
+
+> 
+>> +
+>> +#ifdef CONFIG_NEON
+>> +	bcm_cygnus_powerup_neon();
+>> +#endif
+>> +}
+>> +
+>> +/*
+>> + * Reset the system
+>> + */
+>> +void bcm_cygnus_restart(enum reboot_mode mode, const char *cmd)
+>> +{
+>> +	/* Send reset command to M0 via Mailbox. */
+>> +	writel(CRMU_SOFT_RESET_CMD, crmu_mail_box1_reg);
+>> +	iounmap(crmu_mail_box1_reg);
+>> +
+>> +	/* Wait for M0 to reset the chip. */
+>> +	while (1)
+>> +		cpu_do_idle();
+>> +}
+> 
+> This doesn't have to live in the machine descriptor. It could be a
+> separate driver.
+
+I'm not sure if a separate driver is the way we want to go with this
+right now. If we had more of this M0 communication then I would agree,
+and we may in the future. But if we don't then there would just be a
+reset handler in the driver. If more interaction and a driver is
+required we would move this to a driver.
+
+Was your suggestion more related to the hard coded addresses in this
+file or the mysterious nature of the reset procedure?
+
+> 
+> Thanks,
+> Mark.
+> 
+
+Thanks.
+Jon
