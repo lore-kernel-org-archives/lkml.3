@@ -1,222 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435AbaIRCO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 22:14:58 -0400
-Received: from mail-by2on0111.outbound.protection.outlook.com ([207.46.100.111]:4153
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757000AbaIRCO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 22:14:56 -0400
-Date: Thu, 18 Sep 2014 10:21:27 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>
-Subject: Re: [PATCH v3 2/3] power: reset: imx-snvs-poweroff: add power off
- driver for i.mx6
-Message-ID: <20140918022125.GA8150@Robin-OptiPlex-780>
-References: <1410947881-7345-1-git-send-email-b38343@freescale.com>
- <1410947881-7345-3-git-send-email-b38343@freescale.com>
- <20140917175244.GC7983@leverpostej>
+	id S1757334AbaIRCT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 22:19:26 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:41592 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570AbaIRCTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 22:19:25 -0400
+Message-ID: <541A40B6.30507@huawei.com>
+Date: Thu, 18 Sep 2014 10:17:26 +0800
+From: hujianyang <hujianyang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140917175244.GC7983@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(24454002)(189002)(83506001)(76176999)(80022003)(33656002)(79102003)(105606002)(20776003)(47776003)(15975445006)(74502003)(19580395003)(107046002)(92726001)(64706001)(81342003)(4396001)(77982003)(83072002)(19580405001)(23726002)(81542003)(46102003)(44976005)(74662003)(83322001)(99396002)(6806004)(110136001)(106466001)(15202345003)(68736004)(26826002)(76482002)(90102001)(54356999)(50986999)(21056001)(87936001)(84676001)(85852003)(92566001)(104016003)(85306004)(95666004)(97736003)(97756001)(33716001)(102836001)(46406003)(50466002)(230783001)(31966008)(2004002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB352;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033857D0BD
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rgb@redhat.com>
+CC: <viro@zeniv.linux.org.uk>, <eparis@redhat.com>, <jlayton@primarydata.com>
+Subject: Re: [PATCH v2] audit: vfs: fix audit records error when write to
+ a file
+References: <540E6722.6000107@huawei.com>
+In-Reply-To: <540E6722.6000107@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.68.144]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.541A411D.001D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 65bc767b7b8d0d7597071a1427d1cd91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 06:52:44PM +0100, Mark Rutland wrote:
-> On Wed, Sep 17, 2014 at 10:57:59AM +0100, Robin Gong wrote:
-> > This driver register pm_power_off with snvs power off function. If
-> > your boards NOT use PMIC_ON_REQ to turn on/off external pmic, or use
-> > other pin to do, please disable the driver in dts, otherwise, your
-> > pm_power_off maybe overwrote by this driver.
-> > 
-> > Signed-off-by: Robin Gong <b38343@freescale.com>
-> > ---
-> >  .../bindings/power_supply/imx-snvs-poweroff.txt    |   23 +++++++
-> >  drivers/power/reset/Kconfig                        |    9 +++
-> >  drivers/power/reset/Makefile                       |    1 +
-> >  drivers/power/reset/imx-snvs-poweroff.c            |   66 ++++++++++++++++++++
-> >  4 files changed, 99 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
-> >  create mode 100644 drivers/power/reset/imx-snvs-poweroff.c
-> > 
-> > diff --git a/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt b/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
-> > new file mode 100644
-> > index 0000000..6caf64e
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/power_supply/imx-snvs-poweroff.txt
-> > @@ -0,0 +1,23 @@
-> > +i.mx6 Poweroff Driver
-> > +
-> > +SNVS_LPCR in SNVS module can power off the whole system by pull
-> > +PMIC_ON_REQ low if PMIC_ON_REQ is connected with external PMIC.
-> > +If you don't want to use PMIC_ON_REQ as power on/off control,
-> > +please set status='disabled' to disable this driver.
-> > +
-> > +Required Properties:
-> > +-compatible: "fsl,sec-v4.0-poweroff"
-> > +-reg: Specifies the physical address of the SNVS_LPCR register
-> 
-> As you describe above, this is part of the SNVS module. So why does this
-> need a separate node?
-> 
-> Surely there should just be a property on the SNVS node that desribers
-> whether or not this can be used?
-> 
-> Mark.
 >
-Yes, put this function in rtc-snvs make things easier, honestly,this is our way
-in internal tree. But looks more and more power off driver put in drivers/power
-/reset,so we decided to add new power off driver. If it is ok to register
-pm_power_off hook in drivers/rtc/rtc-snvs.c, I can drop this patch.
-> > +
-> > +Example:
-> > +	snvs@020cc000 {
-> > +		compatible = "fsl,sec-v4.0-mon", "simple-bus";
-> > +		#address-cells = <1>;
-> > +		#size-cells = <1>;
-> > +		ranges = <0 0x020cc000 0x4000>;
-> > +		.....
-> > +		snvs-poweroff@38 {
-> > +			compatible = "fsl,sec-v4.0-poweroff";
-> > +			reg = <0x38 0x4>;
-> > +		};
-> > +	}
-> > diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> > index ca41523..b26c547 100644
-> > --- a/drivers/power/reset/Kconfig
-> > +++ b/drivers/power/reset/Kconfig
-> > @@ -45,6 +45,15 @@ config POWER_RESET_HISI
-> >  	help
-> >  	  Reboot support for Hisilicon boards.
-> >  
-> > +config POWER_RESET_IMX
-> > +	bool "IMX6 power-off driver"
-> > +	depends on POWER_RESET && SOC_IMX6
-> > +	help
-> > +	  This driver support power off external PMIC by PMIC_ON_REQ on i.mx6
-> > +	  boards.If you want to use other pin to control external power,please
-> > +	  say N here or disable in dts to make sure pm_power_off never be
-> > +	  overwrote wrongly by this driver.
-> > +
-> >  config POWER_RESET_MSM
-> >  	bool "Qualcomm MSM power-off driver"
-> >  	depends on POWER_RESET && ARCH_QCOM
-> > diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-> > index a42e70e..2524daf 100644
-> > --- a/drivers/power/reset/Makefile
-> > +++ b/drivers/power/reset/Makefile
-> > @@ -3,6 +3,7 @@ obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
-> >  obj-$(CONFIG_POWER_RESET_BRCMSTB) += brcmstb-reboot.o
-> >  obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
-> >  obj-$(CONFIG_POWER_RESET_HISI) += hisi-reboot.o
-> > +obj-$(CONFIG_POWER_RESET_IMX) += imx-snvs-poweroff.o
-> >  obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
-> >  obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
-> >  obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
-> > diff --git a/drivers/power/reset/imx-snvs-poweroff.c b/drivers/power/reset/imx-snvs-poweroff.c
-> > new file mode 100644
-> > index 0000000..d726ac4
-> > --- /dev/null
-> > +++ b/drivers/power/reset/imx-snvs-poweroff.c
-> > @@ -0,0 +1,66 @@
-> > +/* Power off driver for i.mx6
-> > + * Copyright (c) 2014, FREESCALE CORPORATION.  All rights reserved.
-> > + *
-> > + * based on msm-poweroff.c
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 and
-> > + * only version 2 as published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + */
-> > +
-> > +#include <linux/err.h>
-> > +#include <linux/init.h>
-> > +#include <linux/io.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/module.h>
-> > +#include <linux/of.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/platform_device.h>
-> > +
-> > +static void __iomem *snvs_base;
-> > +
-> > +static void do_imx_poweroff(void)
-> > +{
-> > +	u32 value = readl(snvs_base);
-> > +
-> > +	/* set TOP and DP_EN bit */
-> > +	writel(value | 0x60, snvs_base);
-> > +}
-> > +
-> > +static int imx_poweroff_probe(struct platform_device *pdev)
-> > +{
-> > +	snvs_base = of_iomap(pdev->dev.of_node, 0);
-> > +	if (!snvs_base) {
-> > +		dev_err(&pdev->dev, "failed to get memory\n");
-> > +		return -EIO;
-> > +	}
-> > +
-> > +	pm_power_off = do_imx_poweroff;
-> > +	return 0;
-> > +}
-> > +
-> > +static const struct of_device_id of_imx_poweroff_match[] = {
-> > +	{ .compatible = "fsl,sec-v4.0-poweroff", },
-> > +	{},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, of_imx_poweroff_match);
-> > +
-> > +static struct platform_driver imx_poweroff_driver = {
-> > +	.probe = imx_poweroff_probe,
-> > +	.driver = {
-> > +		.name = "imx-snvs-poweroff",
-> > +		.of_match_table = of_match_ptr(of_imx_poweroff_match),
-> > +	},
-> > +};
-> > +
-> > +static int __init imx_poweroff_init(void)
-> > +{
-> > +	return platform_driver_register(&imx_poweroff_driver);
-> > +}
-> > +device_initcall(imx_poweroff_init);
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
+> Could you add me to your Cc: list on this thread, please?  I'm
+> interested in the outcome...  Thanks!
+>
+
+Hi Richard,
+
+I've resend a v2 patch and now quote it in the end of this mail
+for you.
+
+I'm sorry to say the previously work of mine seems useless. Moving
+audit_inode() to the O_CREAT case in lookup_open() may miss some
+conditions when we create a file.
+
+fs/namei.c lookup_open() line 2828
+"""
+        if ((nd->flags & LOOKUP_OPEN) && dir_inode->i_op->atomic_open) {
+                return atomic_open(nd, dentry, path, file, op, got_write,
+                                   need_lookup, opened);
+        }
+"""
+
+We will miss this branch and other potential cases if we apply my
+patch.
+
+There is something wrong with audit, I think. But I don't know where.
+One good way to solve this problem is go back to commit bfcec708 as
+Jeff mentioned in commit 33e2208a and find the reason why the audit
+of create operations is wrong. Do we have another way to fix it than
+changing the third parameter of audit_inode() to LOOKUP_PARENT which
+lead the audit of write confused?
+
+I don't know much about audit. One of my colleagues is dealing with
+this problem now. I'm very glad if someone else could help us.
+
+Thanks~!
+
+Hu
+
+
+On 2014/9/9 10:34, hujianyang wrote:
+> Changes from v1:
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>    * Move audit_inode() to the beginning of O_CREAT case in
+>      lookup_open() to avoid missing audit for ROFS error. This
+>      lack is spotted by Jeff Layton <jeff.layton@primarydata.com>
+> 
+> commit 33e2208acfc1
+> 
+> audit: vfs: fix audit_inode call in O_CREAT case of do_last
+> 
+> fix a regression in auditing of open(..., O_CREAT) syscalls but
+> introduce a new problem which lead the records of write operation
+> confusion.
+> 
+> This error can be reproduced by these steps:
+> 
+> 	touch /etc/test
+> 	echo "-w /etc/test" >>/etc/audit/audit.rules
+> 	/etc/init.d/auditd restart
+> 
+> 	echo "abc" >> /etc/test
+> 
+> audit_name records are:
+> 
+> type=PATH msg=audit(1409764556.196:67): item=0 name="/etc/" inode=5097 dev=00:01 mode=040755 ouid=0 ogid=0 rdev=00:00 nametype=PARENT
+> type=PATH msg=audit(1409764556.196:67): item=1 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+> type=PATH msg=audit(1409764556.196:67): item=2 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+> 
+> but if we revert commit 33e2208acfc1, records are correct:
+> 
+> type=PATH msg=audit(1409763058.192:219): item=0 name="/etc/test" inode=1275 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+> 
+> We shouldn't leave audit_inode(.., LOOKUP_PARENT) in O_CREAT case
+> of do_last() because this branch don't really know if vfs need to
+> create a new file. There is no need to do vfs_create() if we open
+> an existing file with O_CREAT flag and write to it. But this
+> audit_inode() in O_CREAT case will record a msg as we create a new
+> file and confuse the records of write.
+> 
+> This patch moves the audit for create operation to where a file
+> really need to be created, the O_CREAT case in lookup_open().
+> We have to add the pointer of struct filename as a parameter of
+> lookup_open(). By doing this, the records of both create and write
+> are correct.
+> 
+> Signed-off-by: hujianyang <hujianyang@huawei.com>
+> ---
+>  fs/namei.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index a996bb4..ca4a831 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2808,7 +2808,8 @@ looked_up:
+>  static int lookup_open(struct nameidata *nd, struct path *path,
+>  			struct file *file,
+>  			const struct open_flags *op,
+> -			bool got_write, int *opened)
+> +			bool got_write, int *opened,
+> +			struct filename *name)
+>  {
+>  	struct dentry *dir = nd->path.dentry;
+>  	struct inode *dir_inode = dir->d_inode;
+> @@ -2841,6 +2842,8 @@ static int lookup_open(struct nameidata *nd, struct path *path,
+>  	/* Negative dentry, just create the file */
+>  	if (!dentry->d_inode && (op->open_flag & O_CREAT)) {
+>  		umode_t mode = op->mode;
+> +
+> +		audit_inode(name, dir, LOOKUP_PARENT);
+>  		if (!IS_POSIXACL(dir->d_inode))
+>  			mode &= ~current_umask();
+>  		/*
+> @@ -2926,7 +2929,6 @@ static int do_last(struct nameidata *nd, struct path *path,
+>  		if (error)
+>  			return error;
+> 
+> -		audit_inode(name, dir, LOOKUP_PARENT);
+>  		error = -EISDIR;
+>  		/* trailing slashes? */
+>  		if (nd->last.name[nd->last.len])
+> @@ -2945,7 +2947,7 @@ retry_lookup:
+>  		 */
+>  	}
+>  	mutex_lock(&dir->d_inode->i_mutex);
+> -	error = lookup_open(nd, path, file, op, got_write, opened);
+> +	error = lookup_open(nd, path, file, op, got_write, opened, name);
+>  	mutex_unlock(&dir->d_inode->i_mutex);
+> 
+>  	if (error <= 0) {
+> 
+
+
