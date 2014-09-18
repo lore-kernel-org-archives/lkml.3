@@ -1,179 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbaIRFvX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 01:51:23 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43784 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932272AbaIRFvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 01:51:19 -0400
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>, Huang Ying <ying.huang@intel.com>
-Subject: [PATCH 3/3] f2fs: fix roll-forward missing scenarios
-Date: Wed, 17 Sep 2014 22:51:08 -0700
-Message-Id: <1411019468-2201-3-git-send-email-jaegeuk@kernel.org>
-X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
-In-Reply-To: <1411019468-2201-1-git-send-email-jaegeuk@kernel.org>
-References: <1411019468-2201-1-git-send-email-jaegeuk@kernel.org>
+	id S1757616AbaIRFvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 01:51:37 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:47056 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757597AbaIRFve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 01:51:34 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8I5nwuh013013, This message is accepted by code: ctloc85258
+Message-ID: <541A7286.1080008@realsil.com.cn>
+Date: Thu, 18 Sep 2014 13:49:58 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
+References: <1411004156-9057-1-git-send-email-micky_ching@realsil.com.cn> <20140918045316.GB8740@lee--X1>
+In-Reply-To: <20140918045316.GB8740@lee--X1>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can summarize the roll forward recovery scenarios as follows.
-
-[Term] F: fsync_mark, D: dentry_mark
-
-1. inode(x) | CP | inode(x) | dnode(F)
--> Update the latest inode(x).
-
-2. inode(x) | CP | inode(F) | dnode(F)
--> No problem.
-
-3. inode(x) | CP | dnode(F) | inode(x)
--> Recover to the latest dnode(F), and drop the last inode(x)
-
-4. inode(x) | CP | dnode(F) | inode(F)
--> No problem.
-
-5. CP | inode(x) | dnode(F)
--> The inode(DF) was missing. Should drop this dnode(F).
-
-6. CP | inode(DF) | dnode(F)
--> No problem.
-
-7. CP | dnode(F) | inode(DF)
--> If f2fs_iget fails, then goto next to find inode(DF).
-
-8. CP | dnode(F) | inode(x)
--> If f2fs_iget fails, then goto next to find inode(DF).
-   But it will fail due to no inode(DF).
-
-So, this patch adds some missing points such as #1, #5, #7, and #8.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/recovery.c | 71 +++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 60 insertions(+), 11 deletions(-)
-
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index 36d4f73..a4eb978 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -14,6 +14,37 @@
- #include "node.h"
- #include "segment.h"
- 
-+/*
-+ * Roll forward recovery scenarios.
-+ *
-+ * [Term] F: fsync_mark, D: dentry_mark
-+ *
-+ * 1. inode(x) | CP | inode(x) | dnode(F)
-+ * -> Update the latest inode(x).
-+ *
-+ * 2. inode(x) | CP | inode(F) | dnode(F)
-+ * -> No problem.
-+ *
-+ * 3. inode(x) | CP | dnode(F) | inode(x)
-+ * -> Recover to the latest dnode(F), and drop the last inode(x)
-+ *
-+ * 4. inode(x) | CP | dnode(F) | inode(F)
-+ * -> No problem.
-+ *
-+ * 5. CP | inode(x) | dnode(F)
-+ * -> The inode(DF) was missing. Should drop this dnode(F).
-+ *
-+ * 6. CP | inode(DF) | dnode(F)
-+ * -> No problem.
-+ *
-+ * 7. CP | dnode(F) | inode(DF)
-+ * -> If f2fs_iget fails, then goto next to find inode(DF).
-+ *
-+ * 8. CP | dnode(F) | inode(x)
-+ * -> If f2fs_iget fails, then goto next to find inode(DF).
-+ *    But it will fail due to no inode(DF).
-+ */
-+
- static struct kmem_cache *fsync_entry_slab;
- 
- bool space_for_roll_forward(struct f2fs_sb_info *sbi)
-@@ -110,27 +141,32 @@ out:
- 	return err;
- }
- 
--static int recover_inode(struct inode *inode, struct page *node_page)
-+static void __recover_inode(struct inode *inode, struct page *page)
- {
--	struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
-+	struct f2fs_inode *raw = F2FS_INODE(page);
-+
-+	inode->i_mode = le16_to_cpu(raw->i_mode);
-+	i_size_write(inode, le64_to_cpu(raw->i_size));
-+	inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
-+	inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
-+	inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
-+	inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-+	inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
-+	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-+}
- 
-+static int recover_inode(struct inode *inode, struct page *node_page)
-+{
- 	if (!IS_INODE(node_page))
- 		return 0;
- 
--	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
--	i_size_write(inode, le64_to_cpu(raw_inode->i_size));
--	inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
--	inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
--	inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
--	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
--	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
--	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-+	__recover_inode(inode, node_page);
- 
- 	if (is_dent_dnode(node_page))
- 		return recover_dentry(node_page, inode);
- 
- 	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
--			ino_of_node(node_page), raw_inode->i_name);
-+			ino_of_node(node_page), F2FS_INODE(node_page)->i_name);
- 	return 0;
- }
- 
-@@ -183,10 +219,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
- 				break;
- 			}
- 
-+			/*
-+			 * CP | dnode(F) | inode(DF)
-+			 * For this case, we should not give up now.
-+			 */
- 			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
- 			if (IS_ERR(entry->inode)) {
- 				err = PTR_ERR(entry->inode);
- 				kmem_cache_free(fsync_entry_slab, entry);
-+				if (err == -ENOENT)
-+					goto next;
- 				break;
- 			}
- 			list_add_tail(&entry->list, head);
-@@ -423,6 +465,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
- 		entry = get_fsync_inode(head, ino_of_node(page));
- 		if (!entry)
- 			goto next;
-+		/*
-+		 * inode(x) | CP | inode(x) | dnode(F)
-+		 * In this case, we can lose the latest inode(x).
-+		 * So, call __recover_inode for the inode update.
-+		 */
-+		if (IS_INODE(page))
-+			__recover_inode(entry->inode, page);
- 
- 		err = do_recover_data(sbi, entry->inode, page, blkaddr);
- 		if (err) {
--- 
-1.8.5.2 (Apple Git-48)
+On 09/18/2014 12:53 PM, Lee Jones wrote:
+> On Thu, 18 Sep 2014, micky_ching@realsil.com.cn wrote:
+>
+>> From: Micky Ching <micky_ching@realsil.com.cn>
+>>
+>> Fix rts5227&5249 failed send buffer cmd after suspend,
+>> PM_CTRL3 should reset before send any buffer cmd after suspend.
+>> Otherwise, buffer cmd will failed, this will lead resume fail.
+>>
+>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+>> ---
+>>   drivers/mfd/rts5227.c        |   19 +++++++++++++++++++
+>>   drivers/mfd/rts5249.c        |    4 ++++
+>>   drivers/mfd/rtsx_pcr.h       |    1 +
+>>   include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
+>>   4 files changed, 36 insertions(+)
+> I think you'll find you just broke the build.
+>
+> What happens when you compile these as modules?
+I build as modules with no warning or error, did you find anything wrong?
+>> diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+>> index 9c8eec8..8222a31 100644
+>> --- a/drivers/mfd/rts5227.c
+>> +++ b/drivers/mfd/rts5227.c
+>> @@ -128,8 +128,27 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+>>   	return rtsx_pci_send_cmd(pcr, 100);
+>>   }
+>>   
+>> +int rts5227_pm_reset(struct rtsx_pcr *pcr)
+>> +{
+>> +	int err;
+>> +
+>> +	/* init aspm */
+>> +	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
+>> +	if (err < 0)
+>> +		return err;
+>> +
+>> +	/* reset PM_CTRL3 before send buffer cmd */
+>> +	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
+>> +}
+>> +
+>>   static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+>>   {
+>> +	int err;
+>> +
+>> +	err = rts5227_pm_reset(pcr);
+>> +	if (err < 0)
+>> +		return err;
+>> +
+>>   	/* Optimize RX sensitivity */
+>>   	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
+>>   }
+>> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+>> index 573de7b..0f1b0e6 100644
+>> --- a/drivers/mfd/rts5249.c
+>> +++ b/drivers/mfd/rts5249.c
+>> @@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+>>   {
+>>   	int err;
+>>   
+>> +	err = rts5227_pm_reset(pcr);
+>> +	if (err < 0)
+>> +		return err;
+> I don't like this.  Place rts52xx_pm_reset() somewhere more central.
+> Perhaps an inline function in the header would be better?
+Thanks, I will fix later.
+>>   	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
+>>   			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
+>>   			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
+>> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+>> index 07e4c2e..acc7a1e 100644
+>> --- a/drivers/mfd/rtsx_pcr.h
+>> +++ b/drivers/mfd/rtsx_pcr.h
+>> @@ -72,4 +72,5 @@ do {									\
+>>   	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
+>>   } while (0)
+>>   
+>> +int rts5227_pm_reset(struct rtsx_pcr *pcr);
+>>   #endif
+>> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+>> index 74346d5..b34fec8 100644
+>> --- a/include/linux/mfd/rtsx_pci.h
+>> +++ b/include/linux/mfd/rtsx_pci.h
+>> @@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+>>   	return (u8 *)(pcr->host_cmds_ptr);
+>>   }
+>>   
+>> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
+>> +		u8 mask, u8 append)
+>> +{
+>> +	int err;
+>> +	u8 val;
+>> +
+>> +	err = pci_read_config_byte(pcr->pci, addr, &val);
+>> +	if (err < 0)
+>> +		return err;
+>> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
+>> +}
+>> +
+>>   #endif
 
