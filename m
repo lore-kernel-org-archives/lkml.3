@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbaIRPy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 11:54:56 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34270 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200AbaIRPyy (ORCPT
+	id S932245AbaIRP7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:59:25 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63404 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123AbaIRP7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 11:54:54 -0400
-Date: Thu, 18 Sep 2014 16:54:42 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
-Message-ID: <20140918155439.GA25330@e104818-lin.cambridge.arm.com>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <20140917014410.GC31214@srcf.ucam.org>
- <20140917160508.GA2464@xora-yoga-13>
- <201409180122.10631.arnd@arndb.de>
- <20140917234036.GC2464@xora-yoga-13>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917234036.GC2464@xora-yoga-13>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 18 Sep 2014 11:59:22 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: James Bottomley <JBottomley@parallels.com>, Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@fb.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH] scsi-mq: fix hw queue hang caused by timeout
+Date: Thu, 18 Sep 2014 23:59:10 +0800
+Message-Id: <1411055950-28657-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 12:40:36AM +0100, Graeme Gregory wrote:
-> On Thu, Sep 18, 2014 at 01:22:10AM +0200, Arnd Bergmann wrote:
-> > On Wednesday 17 September 2014, Graeme Gregory wrote:
-> > > It sounds like from the discussions in other threads that ARM64 should
-> > > be following x86 and re-using DT bindings here. In which case there is
-> > > not need to submit things to UEFI organisation.
-> > > 
-> > > What I got a little lost in has there been a formal decision about DT
-> > > bindings in _DSD?
-> > 
-> > I think this is a discussion that still needs to happen: either we should
-> > recommend everyone to use _DSD in favor of the alternatives, or we
-> > should prohibit the use of _DSD. I have heard arguments both ways, but
-> > hopefully we can find an easy answer.
-> 
-> This discussion is just not going to happen until people at @redhat.com
-> and people who have currently announced/released hardware are actually
-> willing to start talking about it.
+If there are two requests or more timed out, the dispatch queue
+is put into stopped state and never be recoverd, and there
+is no such problem in non-mq mode.
 
-OTOH, there doesn't seem to be any urgency for merging arm64 ACPI
-support, so this discussion can wait ;).
+This patch trys to recover the stopped queue when the queue
+becomes unbusy, then the following retries can move on.
 
-> Id love to be able to put my foot down and ban the use of _DSD for
-> servers but I suspect that will not happen.
+Basically this patch maintains same behavior for this situation
+with non-mq mode.
 
-And the alternative would be hard-coded platform specific configuration
-(or we assume that such configuration isn't needed)?
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/scsi/scsi_lib.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 3b92c39..dfbc028 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -142,6 +142,8 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+ 	struct scsi_device *device = cmd->device;
+ 	struct request_queue *q = device->request_queue;
+ 	unsigned long flags;
++	bool restart = false;
++	bool blocked = !!atomic_read(&device->device_blocked);
+ 
+ 	SCSI_LOG_MLQUEUE(1, scmd_printk(KERN_INFO, cmd,
+ 		"Inserting command %p into mlqueue\n", cmd));
+@@ -152,9 +154,14 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+ 	 * Decrement the counters, since these commands are no longer
+ 	 * active on the host/device.
+ 	 */
+-	if (unbusy)
++	if (unbusy) {
+ 		scsi_device_unbusy(device);
+ 
++		/* need to restart hw queue if it was stopped */
++		if (!atomic_read(&device->device_busy) && blocked)
++			restart = true;
++	}
++
+ 	/*
+ 	 * Requeue this command.  It will go before all other commands
+ 	 * that are already in the queue. Schedule requeue work under
+@@ -164,6 +171,8 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+ 	cmd->result = 0;
+ 	if (q->mq_ops) {
+ 		scsi_mq_requeue_cmd(cmd);
++		if (restart)
++			blk_mq_start_stopped_hw_queues(q, true);
+ 		return;
+ 	}
+ 	spin_lock_irqsave(q->queue_lock, flags);
 -- 
-Catalin
+1.7.9.5
+
