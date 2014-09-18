@@ -1,131 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616AbaIRFvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 01:51:37 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:47056 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757597AbaIRFve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 01:51:34 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8I5nwuh013013, This message is accepted by code: ctloc85258
-Message-ID: <541A7286.1080008@realsil.com.cn>
-Date: Thu, 18 Sep 2014 13:49:58 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1757649AbaIRFvq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 01:51:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59694 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757624AbaIRFvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 01:51:43 -0400
+Message-ID: <541A72E5.4000809@ti.com>
+Date: Thu, 18 Sep 2014 11:21:33 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
-References: <1411004156-9057-1-git-send-email-micky_ching@realsil.com.cn> <20140918045316.GB8740@lee--X1>
-In-Reply-To: <20140918045316.GB8740@lee--X1>
-Content-Type: text/plain; charset="utf-8"; format=flowed
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <dri-devel@lists.freedesktop.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <inki.dae@samsung.com>, Sean Paul <seanpaul@google.com>,
+        Jingoo Han <jg1.han@samsung.com>, <ajaykumar.rs@samsung.com>
+Subject: Re: [PATCH v3 1/3] phy: exynos-dp-video: Use syscon support to control
+ pmu register
+References: <1410840408-19954-1-git-send-email-gautam.vivek@samsung.com>	<1410843726-4235-1-git-send-email-gautam.vivek@samsung.com>	<5419BCC9.6000607@ti.com> <CAFp+6iGNNygVrpQFaEao+aGAad=vgb6EDpJqRj8cA+5XSC8ZSg@mail.gmail.com>
+In-Reply-To: <CAFp+6iGNNygVrpQFaEao+aGAad=vgb6EDpJqRj8cA+5XSC8ZSg@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 12:53 PM, Lee Jones wrote:
-> On Thu, 18 Sep 2014, micky_ching@realsil.com.cn wrote:
->
->> From: Micky Ching <micky_ching@realsil.com.cn>
->>
->> Fix rts5227&5249 failed send buffer cmd after suspend,
->> PM_CTRL3 should reset before send any buffer cmd after suspend.
->> Otherwise, buffer cmd will failed, this will lead resume fail.
->>
->> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
->> ---
->>   drivers/mfd/rts5227.c        |   19 +++++++++++++++++++
->>   drivers/mfd/rts5249.c        |    4 ++++
->>   drivers/mfd/rtsx_pcr.h       |    1 +
->>   include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
->>   4 files changed, 36 insertions(+)
-> I think you'll find you just broke the build.
->
-> What happens when you compile these as modules?
-I build as modules with no warning or error, did you find anything wrong?
->> diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
->> index 9c8eec8..8222a31 100644
->> --- a/drivers/mfd/rts5227.c
->> +++ b/drivers/mfd/rts5227.c
->> @@ -128,8 +128,27 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
->>   	return rtsx_pci_send_cmd(pcr, 100);
->>   }
->>   
->> +int rts5227_pm_reset(struct rtsx_pcr *pcr)
->> +{
->> +	int err;
->> +
->> +	/* init aspm */
->> +	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
->> +	if (err < 0)
->> +		return err;
->> +
->> +	/* reset PM_CTRL3 before send buffer cmd */
->> +	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
->> +}
->> +
->>   static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
->>   {
->> +	int err;
->> +
->> +	err = rts5227_pm_reset(pcr);
->> +	if (err < 0)
->> +		return err;
->> +
->>   	/* Optimize RX sensitivity */
->>   	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
->>   }
->> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
->> index 573de7b..0f1b0e6 100644
->> --- a/drivers/mfd/rts5249.c
->> +++ b/drivers/mfd/rts5249.c
->> @@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
->>   {
->>   	int err;
->>   
->> +	err = rts5227_pm_reset(pcr);
->> +	if (err < 0)
->> +		return err;
-> I don't like this.  Place rts52xx_pm_reset() somewhere more central.
-> Perhaps an inline function in the header would be better?
-Thanks, I will fix later.
->>   	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
->>   			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
->>   			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
->> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
->> index 07e4c2e..acc7a1e 100644
->> --- a/drivers/mfd/rtsx_pcr.h
->> +++ b/drivers/mfd/rtsx_pcr.h
->> @@ -72,4 +72,5 @@ do {									\
->>   	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
->>   } while (0)
->>   
->> +int rts5227_pm_reset(struct rtsx_pcr *pcr);
->>   #endif
->> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
->> index 74346d5..b34fec8 100644
->> --- a/include/linux/mfd/rtsx_pci.h
->> +++ b/include/linux/mfd/rtsx_pci.h
->> @@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->>   	return (u8 *)(pcr->host_cmds_ptr);
->>   }
->>   
->> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
->> +		u8 mask, u8 append)
->> +{
->> +	int err;
->> +	u8 val;
->> +
->> +	err = pci_read_config_byte(pcr->pci, addr, &val);
->> +	if (err < 0)
->> +		return err;
->> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
->> +}
->> +
->>   #endif
 
+
+On Thursday 18 September 2014 08:55 AM, Vivek Gautam wrote:
+> Hi Kishon,
+> 
+> 
+> On Wed, Sep 17, 2014 at 10:24 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>
+>>
+>> On Tuesday 16 September 2014 10:32 AM, Vivek Gautam wrote:
+>>> Currently the DP_PHY_ENABLE register is mapped in the driver,
+>>> and accessed to control power to the PHY.
+>>> With mfd-syscon and regmap interface available at our disposal,
+>>> it's wise to use that instead of using a 'reg' property for the
+>>> controller and allocating a memory resource for that.
+>>>
+>>> To facilitate this, we have added another compatible string
+>>> for Exynso5420 SoC to acquire driver data which contains
+>>> different DP-PHY-CONTROL register offset.
+>>>
+>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>> Cc: Jingoo Han <jg1.han@samsung.com>
+>>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>>
+>> Taking this in linux-phy tree. If someone has already taken this patch, please
+>> let me know.
+> 
+> Thanks for taking this. But just one check, i think i need to separate
+> out the Documentation
+> to a separate patch even before this driver patch. Isn't it ?
+
+no.. that's alright.
+
+Thanks
+Kishon
+> 
+>>
+>> Thanks
+>> Kishon
+>>
+>>> ---
+>>>
+>>> Changes since v2:
+>>>  - Using 'EXYNOS5_PHY_ENABLE' macro instead of 'EXYNOS_DPTX_PHY_ENABLE'
+>>>    since that's available with us in "linux/mfd/syscon/exynos5-pmu.h" file.
+>>>
+>>> Changes since v1:
+>>>  - state->regs should have been "struct regmap *" instead of
+>>>    "void __iomem *". So corrected the same.
+>>>
+>>>  .../devicetree/bindings/phy/samsung-phy.txt        |    7 +-
+>>>  drivers/phy/phy-exynos-dp-video.c                  |   79 +++++++++++++-------
+>>>  2 files changed, 59 insertions(+), 27 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>> index 7a6feea..15e0f2c 100644
+>>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>> @@ -17,8 +17,11 @@ Samsung EXYNOS SoC series Display Port PHY
+>>>  -------------------------------------------------
+>>>
+>>>  Required properties:
+>>> -- compatible : should be "samsung,exynos5250-dp-video-phy";
+>>> -- reg : offset and length of the Display Port PHY register set;
+>>> +- compatible : should be one of the following supported values:
+>>> +      - "samsung,exynos5250-dp-video-phy"
+>>> +      - "samsung,exynos5420-dp-video-phy"
+>>> +- samsung,pmu-syscon: phandle for PMU system controller interface, used to
+>>> +                   control pmu registers for power isolation.
+>>>  - #phy-cells : from the generic PHY bindings, must be 0;
+>>>
+>>>  Samsung S5P/EXYNOS SoC series USB PHY
+>>> diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
+>>> index 8b3026e..53f44a0 100644
+>>> --- a/drivers/phy/phy-exynos-dp-video.c
+>>> +++ b/drivers/phy/phy-exynos-dp-video.c
+>>> @@ -13,44 +13,55 @@
+>>>  #include <linux/io.h>
+>>>  #include <linux/kernel.h>
+>>>  #include <linux/module.h>
+>>> +#include <linux/mfd/syscon.h>
+>>> +#include <linux/mfd/syscon/exynos5-pmu.h>
+>>>  #include <linux/of.h>
+>>>  #include <linux/of_address.h>
+>>>  #include <linux/phy/phy.h>
+>>>  #include <linux/platform_device.h>
+>>> +#include <linux/regmap.h>
+>>>
+>>> -/* DPTX_PHY_CONTROL register */
+>>> -#define EXYNOS_DPTX_PHY_ENABLE               (1 << 0)
+>>> +struct exynos_dp_video_phy_drvdata {
+>>> +     u32 phy_ctrl_offset;
+>>> +};
+>>>
+>>>  struct exynos_dp_video_phy {
+>>> -     void __iomem *regs;
+>>> +     struct regmap *regs;
+>>> +     const struct exynos_dp_video_phy_drvdata *drvdata;
+>>>  };
+>>>
+>>> -static int __set_phy_state(struct exynos_dp_video_phy *state, unsigned int on)
+>>> +static void exynos_dp_video_phy_pwr_isol(struct exynos_dp_video_phy *state,
+>>> +                                                     unsigned int on)
+>>>  {
+>>> -     u32 reg;
+>>> +     unsigned int val;
+>>> +
+>>> +     if (IS_ERR(state->regs))
+>>> +             return;
+>>>
+>>> -     reg = readl(state->regs);
+>>> -     if (on)
+>>> -             reg |= EXYNOS_DPTX_PHY_ENABLE;
+>>> -     else
+>>> -             reg &= ~EXYNOS_DPTX_PHY_ENABLE;
+>>> -     writel(reg, state->regs);
+>>> +     val = on ? 0 : EXYNOS5_PHY_ENABLE;
+>>>
+>>> -     return 0;
+>>> +     regmap_update_bits(state->regs, state->drvdata->phy_ctrl_offset,
+>>> +                        EXYNOS5_PHY_ENABLE, val);
+>>>  }
+>>>
+>>>  static int exynos_dp_video_phy_power_on(struct phy *phy)
+>>>  {
+>>>       struct exynos_dp_video_phy *state = phy_get_drvdata(phy);
+>>>
+>>> -     return __set_phy_state(state, 1);
+>>> +     /* Disable power isolation on DP-PHY */
+>>> +     exynos_dp_video_phy_pwr_isol(state, 0);
+>>> +
+>>> +     return 0;
+>>>  }
+>>>
+>>>  static int exynos_dp_video_phy_power_off(struct phy *phy)
+>>>  {
+>>>       struct exynos_dp_video_phy *state = phy_get_drvdata(phy);
+>>>
+>>> -     return __set_phy_state(state, 0);
+>>> +     /* Enable power isolation on DP-PHY */
+>>> +     exynos_dp_video_phy_pwr_isol(state, 1);
+>>> +
+>>> +     return 0;
+>>>  }
+>>>
+>>>  static struct phy_ops exynos_dp_video_phy_ops = {
+>>> @@ -59,11 +70,31 @@ static struct phy_ops exynos_dp_video_phy_ops = {
+>>>       .owner          = THIS_MODULE,
+>>>  };
+>>>
+>>> +static const struct exynos_dp_video_phy_drvdata exynos5250_dp_video_phy = {
+>>> +     .phy_ctrl_offset        = EXYNOS5_DPTX_PHY_CONTROL,
+>>> +};
+>>> +
+>>> +static const struct exynos_dp_video_phy_drvdata exynos5420_dp_video_phy = {
+>>> +     .phy_ctrl_offset        = EXYNOS5420_DPTX_PHY_CONTROL,
+>>> +};
+>>> +
+>>> +static const struct of_device_id exynos_dp_video_phy_of_match[] = {
+>>> +     {
+>>> +             .compatible = "samsung,exynos5250-dp-video-phy",
+>>> +             .data = &exynos5250_dp_video_phy,
+>>> +     }, {
+>>> +             .compatible = "samsung,exynos5420-dp-video-phy",
+>>> +             .data = &exynos5420_dp_video_phy,
+>>> +     },
+>>> +     { },
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, exynos_dp_video_phy_of_match);
+>>> +
+>>>  static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+>>>  {
+>>>       struct exynos_dp_video_phy *state;
+>>>       struct device *dev = &pdev->dev;
+>>> -     struct resource *res;
+>>> +     const struct of_device_id *match;
+>>>       struct phy_provider *phy_provider;
+>>>       struct phy *phy;
+>>>
+>>> @@ -71,11 +102,15 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+>>>       if (!state)
+>>>               return -ENOMEM;
+>>>
+>>> -     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> -
+>>> -     state->regs = devm_ioremap_resource(dev, res);
+>>> -     if (IS_ERR(state->regs))
+>>> +     state->regs = syscon_regmap_lookup_by_phandle(dev->of_node,
+>>> +                                                   "samsung,pmu-syscon");
+>>> +     if (IS_ERR(state->regs)) {
+>>> +             dev_err(dev, "Failed to lookup PMU regmap\n");
+>>>               return PTR_ERR(state->regs);
+>>> +     }
+>>> +
+>>> +     match = of_match_node(exynos_dp_video_phy_of_match, dev->of_node);
+>>> +     state->drvdata = match->data;
+>>>
+>>>       phy = devm_phy_create(dev, NULL, &exynos_dp_video_phy_ops, NULL);
+>>>       if (IS_ERR(phy)) {
+>>> @@ -89,12 +124,6 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+>>>       return PTR_ERR_OR_ZERO(phy_provider);
+>>>  }
+>>>
+>>> -static const struct of_device_id exynos_dp_video_phy_of_match[] = {
+>>> -     { .compatible = "samsung,exynos5250-dp-video-phy" },
+>>> -     { },
+>>> -};
+>>> -MODULE_DEVICE_TABLE(of, exynos_dp_video_phy_of_match);
+>>> -
+>>>  static struct platform_driver exynos_dp_video_phy_driver = {
+>>>       .probe  = exynos_dp_video_phy_probe,
+>>>       .driver = {
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> 
