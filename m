@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaIRCNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 22:13:14 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:49709 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983AbaIRCNN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 22:13:13 -0400
+	id S932131AbaIRCPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 22:15:00 -0400
+Received: from mail-bn1bon0114.outbound.protection.outlook.com ([157.56.111.114]:31936
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757365AbaIRCO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 22:14:56 -0400
+X-WSS-ID: 0NC2RKQ-07-G1E-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>
+CC: <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
+        <liviu.dudau@arm.com>, <tglx@linutronix.de>,
+        <Harish.Kasiviswanathan@amd.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH 0/2 V7] irqchip: gic: Introduce ARM GICv2m MSI(-X) support
+Date: Wed, 17 Sep 2014 19:14:44 -0700
+Message-ID: <1411006486-17513-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-In-Reply-To: <20140917210954.6e622fb5@thinkpad-w530>
-References: <541178D6.6010303@de.ibm.com>
-	<CACVXFVO7Oo9GeagPhejngfoeySxOP4EqWz_GN6kYv2956-Wtxg@mail.gmail.com>
-	<541352ED.7030800@de.ibm.com>
-	<54193F4F.9060508@de.ibm.com>
-	<20140917140034.10125d00@thinkpad-w530>
-	<20140917215226.426f6ce7@tom-ThinkPad-T410>
-	<54199923.9010201@kernel.dk>
-	<CACVXFVPh3SSp3V7hHJaPnp-koyh7n7hqf+Ugv9CMg2gO_8MwXg@mail.gmail.com>
-	<20140917210954.6e622fb5@thinkpad-w530>
-Date: Thu, 18 Sep 2014 10:13:12 +0800
-Message-ID: <CACVXFVNivj3Y-gzto2tQAenR4fwQDUTYob703ZogUjNcz7=V5w@mail.gmail.com>
-Subject: Re: blk-mq crash under KVM in multiqueue block code (with virtio-blk
- and ext4)
-From: Ming Lei <tom.leiming@gmail.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(66654002)(189002)(199003)(33646002)(81342003)(79102003)(107046002)(77156001)(84676001)(81542003)(74662003)(77982003)(46102003)(97736003)(77096002)(106466001)(62966002)(31966008)(74502003)(229853001)(95666004)(83322001)(80022003)(48376002)(105586002)(20776003)(21056001)(50466002)(104166001)(99396002)(44976005)(89996001)(87286001)(36756003)(101416001)(86152002)(92726001)(2201001)(64706001)(92566001)(93916002)(68736004)(19580395003)(50226001)(87936001)(90102001)(4396001)(15975445006)(86362001)(88136002)(19580405001)(85306004)(53416004)(83072002)(85852003)(47776003)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 033857D0BD
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 3:09 AM, David Hildenbrand
-<dahi@linux.vnet.ibm.com> wrote:
->> On Wed, Sep 17, 2014 at 10:22 PM, Jens Axboe <axboe@kernel.dk> wrote:
->> >
->> > Another way would be to ensure that the timeout handler doesn't touch hw_ctx
->> > or tag_sets that aren't fully initialized yet. But I think this is
->> > safer/cleaner.
->>
->> That may not be easy or enough to check if hw_ctx/tag_sets are
->> fully initialized if you mean all requests have been used one time.
->>
->> On Wed, Sep 17, 2014 at 10:11 PM, David Hildenbrand
->> > I was playing with a simple patch that just sets cmd_flags and action_flags to
->>
->> What is action_flags?
->
-> atomic_flags, sorry :)
->
-> Otherwise e.g. REQ_ATOM_STARTED could already be set due to the randomness. I
-> am not sure if this is really necessary, or if it is completely shielded by the
-> tag-handling code, but seemed to be clean for me to do it (and I remember it
-> not being set within blk_mq_rq_ctx_init).
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-You are right, both cmd_flags and atomic_flags should be cleared
-in blk_mq_init_rq_map().
+NOTE: Resend w/ proper subject for the 2/2 patch.
 
->
->>
->> > 0. That should already be sufficient to hinder blk_mq_tag_to_rq and the calling
->> > method to do the wrong thing.
->>
->> Yes, clearing rq->cmd_flags should be enough.
->>
->> And looks better to move rq initialization to __blk_mq_free_request()
->> too, otherwise timeout still may see old cmd_flags and rq->q before
->> rq's new initialization.
->
-> Yes, __blk_mq_free_request() should also reset at least rq->cmd_flags, and I
-> think we can remove the initialization from  __blk_mq_alloc_request().
->
-> David
->
->>
->>
->> Thanks,
->
+This patch set introduces support for MSI(-X) in GICv2m specification,
+which is implemented in some variation of GIC400.
 
+This depends on and has been tested with the following patch set which
+implements PCI supports for ARM64:
 
+    [PATCH v10 00/10] Support for creating generic PCI host bridges from DT
+    https://lkml.org/lkml/2014/9/8/333
+
+    [PATCH v10] Add support for PCI in AArch64
+    https://lkml.org/lkml/2014/9/8/325
+ 
+Changes in V7:
+    * Fix error handling logic in gicv2m_of_init() and gicv2m_init_one().
+      per Marc suggestions.
+    * Restructure the patch to integrate the multi-MSI support for V2m
+      into the patch 2/2.
+    * Introduce "arm,gic-v2m-frame" compatible ID for the v2m DT binding.
+    * Introduce "arm,msi-base-spi" and "arm,msi-num-spi" property in the
+      v2m DT binding for overwriting value in MSI_TYPER register.
+    * Add irq-gic-v2m.c: is_msi_spi_valid() to validate the SPI base and
+      number of SPIs.
+    * Fix various comments from Marc (Many thanks).
+    * Add the missing CONFIG_ARM_GICV2M (per Marcin Juszkiewicz comment)
+
+Suravee Suthikulpanit (2):
+  irqchip: gic: Add support for multiple MSI for ARM64
+  irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
+
+ Documentation/devicetree/bindings/arm/gic.txt |  55 ++++
+ arch/arm64/Kconfig                            |   1 +
+ arch/arm64/kernel/Makefile                    |   1 +
+ arch/arm64/kernel/msi.c                       |  41 +++
+ drivers/irqchip/Kconfig                       |   7 +
+ drivers/irqchip/Makefile                      |   1 +
+ drivers/irqchip/irq-gic-common.c              |  12 +
+ drivers/irqchip/irq-gic-common.h              |   4 +
+ drivers/irqchip/irq-gic-v2m.c                 | 356 ++++++++++++++++++++++++++
+ drivers/irqchip/irq-gic.c                     |  82 +++---
+ drivers/irqchip/irq-gic.h                     |  54 ++++
+ 11 files changed, 584 insertions(+), 30 deletions(-)
+ create mode 100644 arch/arm64/kernel/msi.c
+ create mode 100644 drivers/irqchip/irq-gic-v2m.c
+ create mode 100644 drivers/irqchip/irq-gic.h
 
 -- 
-Ming Lei
+1.9.3
+
