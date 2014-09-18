@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566AbaIRFRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 01:17:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14198 "EHLO mga02.intel.com"
+	id S1751902AbaIRF0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 01:26:40 -0400
+Received: from mga14.intel.com ([192.55.52.115]:34382 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757450AbaIRFQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 01:16:37 -0400
+	id S1751212AbaIRF0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 01:26:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,544,1406617200"; 
-   d="scan'208";a="604607011"
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 2/3] x86: iosf: Add better description of IOSF driver in config
-Date: Wed, 17 Sep 2014 22:13:50 -0700
-Message-Id: <1411017231-20807-3-git-send-email-david.e.box@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411017231-20807-1-git-send-email-david.e.box@linux.intel.com>
-References: <1411017231-20807-1-git-send-email-david.e.box@linux.intel.com>
-In-Reply-To: <1410924386-16977-1-git-send-email-david.e.box@linux.intel.com>
-References: <1410924386-16977-1-git-send-email-david.e.box@linux.intel.com>
+   d="scan'208";a="478346481"
+Message-ID: <541A6CAD.1020001@intel.com>
+Date: Thu, 18 Sep 2014 08:25:01 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+CC: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mmc: don't request CD IRQ until mmc_start_host()
+References: <1410542338-24565-1-git-send-email-swarren@wwwdotorg.org> <CAPDyKFq63LKHKJ_1JD=SGU=V1eE-1105qPLy1EQtf=4k8dwKkA@mail.gmail.com> <5419E7B6.7020708@wwwdotorg.org>
+In-Reply-To: <5419E7B6.7020708@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds better description of IOSF driver to determinine when it should be enabled.
-Also moves the Kconfig option to "Processor type and features" menu from main
-configuration menu.
+On 09/17/2014 10:57 PM, Stephen Warren wrote:
+> On 09/17/2014 01:55 PM, Ulf Hansson wrote:
+>> On 12 September 2014 19:18, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> From: Stephen Warren <swarren@nvidia.com>
+>>>
+>>> As soon as the CD IRQ is requested, it can trigger, since it's an
+>>> externally controlled event. If it does, delayed_work host->detect will
+>>> be scheduled.
+>>>
+>>> Many host controller probe()s are roughly structured as:
+>>>
+>>> *_probe() {
+>>>      host = sdhci_pltfm_init();
+>>>      mmc_of_parse(host->mmc);
+>>>      rc = sdhci_add_host(host);
+>>>      if (rc) {
+>>>          sdhci_pltfm_free();
+>>>          return rc;
+>>>      }
+>>>
+>>> In 3.17, CD IRQs can are enabled quite early via *_probe() ->
+>>> mmc_of_parse() -> mmc_gpio_request_cd() -> mmc_gpiod_request_cd_irq().
+>>>
+>>> Note that in linux-next, mmc_of_parse() calls mmc_gpio*d*_request_cd()
+>>> rather than mmc_gpio_request_cd(), and mmc_gpio*d*_request_cd() doesn't
+>>> call mmc_gpiod_request_cd_irq(). However, this issue still exists for
+>>> any other direct users of mmc_gpio_request_cd().
+>>>
+>>> sdhci_add_host() may fail part way through (e.g. due to deferred
+>>> probe for a vmmc regulator), and sdhci_pltfm_free() does nothing to
+>>> unrequest the CD IRQ nor cancel the delayed_work. sdhci_pltfm_free() is
+>>> coded to assume that if sdhci_add_host() failed, then the delayed_work
+>>> cannot (or should not) have been triggered.
+>>>
+>>> This can lead to the following with CONFIG_DEBUG_OBJECTS_* enabled, when
+>>> kfree(host) is eventually called inside sdhci_pltfm_free():
+>>>
+>>> WARNING: CPU: 2 PID: 6 at lib/debugobjects.c:263
+>>> debug_print_object+0x8c/0xb4()
+>>> ODEBUG: free active (active state 0) object type: timer_list hint:
+>>> delayed_work_timer_fn+0x0/0x18
+>>>
+>>> The object being complained about is host->detect.
+>>>
+>>> There's no need to request the CD IRQ so early; mmc_start_host() already
+>>> requests it, and I *assume* that mmc_start_host() is called somehow for
+>>> all host controllers. For SDHCI hosts at least, the typical call path
+>>> that does this is: *_probe() -> sdhci_add_host() -> mmc_add_host() ->
+>>> mmc_start_host(). So, remove the call to mmc_gpiod_request_cd_irq() from
+>>> mmc_gpio_request_cd(). This matches mmc_gpio*d*_request_cd(), which
+>>> already doesn't call mmc_gpiod_request_cd_irq().
+>>>
+>>> This solves the problem (eliminates the kernel error message above),
+>>> since it guarantees that the IRQ can't trigger before mmc_start_host()
+>>> is called.
+>>>
+>>> The critical point here is that once sdhci_add_host() calls
+>>> mmc_add_host() -> mmc_start_host(), sdhci_add_host() is coded not to
+>>> fail. In other words, if there's a chance that mmc_start_host() may have
+>>> been called, and CD IRQs triggered, and the delayed_work scheduled,
+>>> sdhci_add_host() won't fail, and so cleanup is no longer via
+>>> sdhci_pltfm_free() (which doesn't free the IRQ or cancel the work queue)
+>>> but instead must be via sdhci_remove_host(), which calls mmc_remove_host()
+>>> -> mmc_stop_host(), which does free the IRQ and cancel the work queue.
+>>>
+>>> This fixes what I might conclude to be a mistake in commit 740a221ef0e5
+>>> ("mmc: slot-gpio: Add GPIO descriptor based CD GPIO API"), which added the
+>>> call from mmc_start_host() to mmc_gpiod_request_cd_irq(), but also added
+>>> incorrectly added a call from mmc_gpio_request_cd() to
+>>> mmc_gpiod_request_cd_irq().
+>>>
+>>> CC: Russell King <linux@arm.linux.org.uk>
+>>> Cc: Adrian Hunter <adrian.hunter@intel.com>
+>>> Cc: Alexandre Courbot <acourbot@nvidia.com>
+>>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>>
+>> Hi Stephen,
+>>
+>> Thanks for looking into this. It seems like this issue has been
+>> present for quite a while.
+>> I believe your patch should have a stable tag for 3.15+ as well,
+>> unless you object I will add it.
+> 
+> Yes, that probably makes sense, thanks.
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
----
- arch/x86/Kconfig | 32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index bcbb57d..b075873 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -480,6 +480,23 @@ config X86_INTEL_LPSS
- 	  things like clock tree (common clock framework) and pincontrol
- 	  which are needed by the LPSS peripheral drivers.
- 
-+config IOSF_MBI
-+	tristate "Intel SoC IOSF Sideband support for SoC platforms"
-+	depends on PCI
-+	---help---
-+	  This option enables sideband register access support for Intel SoC
-+	  platforms. On these platforms the IOSF sideband is used in lieu of
-+	  MSR's for some register accesses, mostly but not limited to thermal
-+	  and power. Drivers may query the availability of this device to
-+	  determine if they need the sideband in order to work on these
-+	  platforms. The sideband is available on the following SoC products.
-+	  This list is not meant to be exclusive.
-+	   - BayTrail
-+	   - Braswell
-+	   - Quark
-+
-+	  You should say Y if you are running a kernel on one of these SoC's.
-+
- config X86_RDC321X
- 	bool "RDC R-321x SoC"
- 	depends on X86_32
-@@ -2443,21 +2460,6 @@ config X86_DMA_REMAP
- 	bool
- 	depends on STA2X11
- 
--config IOSF_MBI
--	tristate "Intel System On Chip IOSF Sideband support"
--	depends on PCI
--	---help---
--	  Enables sideband access to mailbox registers on SoC's. The sideband is
--	  available on the following platforms. This list is not meant to be
--	  exclusive.
--	   - BayTrail
--	   - Cherryview
--	   - Braswell
--	   - Quark
--
--	  You should say Y if you are running a kernel on one of these
--	  platforms.
--
- config PMC_ATOM
- 	def_bool y
-         depends on PCI
--- 
-1.9.1
+Doesn't this patch break the drivers that call mmc_gpio_request_cd() after
+mmc_add_host() like mmc_spi.c or sdhci-sirf.c or tmio_mmc_pio.c ?
 
