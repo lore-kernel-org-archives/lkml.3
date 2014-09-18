@@ -1,194 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922AbaIRIdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:33:53 -0400
-Received: from ozlabs.org ([103.22.144.67]:35072 "EHLO ozlabs.org"
+	id S1754849AbaIRIka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:40:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5060 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817AbaIRI1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:27:15 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH 01/15] powerpc/cell: Move spu_handle_mm_fault() out of cell platform
-Date: Thu, 18 Sep 2014 18:26:46 +1000
-Message-Id: <1411028820-29933-2-git-send-email-mikey@neuling.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411028820-29933-1-git-send-email-mikey@neuling.org>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
+	id S1752976AbaIRIk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 04:40:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,545,1406617200"; 
+   d="scan'208";a="574947807"
+Message-ID: <541A9999.1070607@intel.com>
+Date: Thu, 18 Sep 2014 16:36:41 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: ego@linux.vnet.ibm.com
+CC: peterz@infradead.org, mingo@kernel.org, rafael.j.wysocki@intel.com,
+        srivatsa@mit.edu, akpm@linux-foundation.org, laijs@cn.fujitsu.com,
+        toshi.kani@hp.com, todd.e.brandt@linux.intel.com,
+        wangyun@linux.vnet.ibm.com, fabf@skynet.be, linux@arm.linux.org.uk,
+        oleg@redhat.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V2] PM/CPU: Parallel enalbing nonboot cpus with resume
+ devices
+References: <1408696420-2654-1-git-send-email-tianyu.lan@intel.com> <20140917090308.GD31806@in.ibm.com>
+In-Reply-To: <20140917090308.GD31806@in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+On 2014年09月17日 17:03, Gautham R Shenoy wrote:
+> Hi Lan,
+> 
+> Sorry missed this repost! Couple of comments.
+> 
 
-Currently spu_handle_mm_fault() is in the cell platform.
+Np, Thanks for review :)
 
-This code is generically useful for other non-cell co-processors on powerpc.
+> On Fri, Aug 22, 2014 at 04:33:40PM +0800, Lan Tianyu wrote:
+> 
+> [.. snip ..]
+>>
+>> +static int _cpu_up_with_trace(int cpu)
+>> +{
+>> +	int error;
+>> +
+>> +	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
+>> +	error = _cpu_up(cpu, 1);
+>> +	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
+>> +	if (error) {
+>> +		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
+>> +		return error;
+>> +	}
+>> +
+>> +	pr_info("CPU%d is up\n", cpu);
+>> +	return 0;
+>> +}
+>> +
+>> +static int async_enable_nonboot_cpus(void *data)
+>> +{
+>> +	int cpu;
+>> +
+>> +	cpu_maps_update_begin();
+>> +	arch_enable_nonboot_cpus_begin();
+>> +
+>> +	for_each_cpu(cpu, frozen_cpus) {
+>> +		_cpu_up_with_trace(cpu);
+>> +	}
+>> +
+>> +	arch_enable_nonboot_cpus_end();
+>> +	cpumask_clear(frozen_cpus);
+>> +	cpu_maps_update_done();
+>> +	return 0;
+>> +}
+>> +
+>>  void __ref enable_nonboot_cpus(void)
+>>  {
+>> +	struct task_struct *tsk;
+>>  	int cpu, error;
+>>
+>>  	/* Allow everyone to use the CPU hotplug again */
+>> @@ -563,22 +597,34 @@ void __ref enable_nonboot_cpus(void)
+>>
+>>  	pr_info("Enabling non-boot CPUs ...\n");
+>>
+>> -	arch_enable_nonboot_cpus_begin();
+>> +	cpu = cpumask_first(frozen_cpus);
+>> +	cpumask_clear_cpu(cpu, frozen_cpus);
+>>
+>> -	for_each_cpu(cpu, frozen_cpus) {
+>> -		trace_suspend_resume(TPS("CPU_ON"), cpu, true);
+>> -		error = _cpu_up(cpu, 1);
+>> -		trace_suspend_resume(TPS("CPU_ON"), cpu, false);
+>> -		if (!error) {
+>> -			pr_info("CPU%d is up\n", cpu);
+>> -			continue;
+>> +	error = _cpu_up_with_trace(cpu);
+> 
+>  If cpu fails to come up, you need to add a pr_warn() citing the
+>  reason why it failed to come up.
 
-This patch moves this function out of the cell platform into arch/powerpc/mm so
-that others may use it.
+Ok.
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
----
- arch/powerpc/include/asm/copro.h                       | 18 ++++++++++++++++++
- arch/powerpc/include/asm/spu.h                         |  5 ++---
- arch/powerpc/mm/Makefile                               |  1 +
- .../{platforms/cell/spu_fault.c => mm/copro_fault.c}   | 14 ++++++--------
- arch/powerpc/platforms/cell/Makefile                   |  2 +-
- arch/powerpc/platforms/cell/spufs/fault.c              |  4 ++--
- 6 files changed, 30 insertions(+), 14 deletions(-)
- create mode 100644 arch/powerpc/include/asm/copro.h
- rename arch/powerpc/{platforms/cell/spu_fault.c => mm/copro_fault.c} (89%)
+> 
+> 
+>> +	if (cpumask_empty(frozen_cpus))
+>> +		goto out;
+>> +
+>> +	if (error) {
+>> +		/*
+>> +		 * If fail to bring up the first frozen cpus,
+>> +		 * enable the rest frozen cpus on the boot cpu.
+>> +		 */
+>> +		arch_enable_nonboot_cpus_begin();
+>> +		for_each_cpu(cpu, frozen_cpus) {
+>> +			_cpu_up_with_trace(cpu);
+>>  		}
+>> -		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
+>> -	}
+>> +		arch_enable_nonboot_cpus_end();
+>>
+>> -	arch_enable_nonboot_cpus_end();
+>> +	} else {
+>> +		tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
+>> +				NULL, cpu, "async-enable-nonboot-cpus");
+>> +		if (IS_ERR(tsk)) {
+>> +			pr_err("Failed to create async enable nonboot cpus thread.\n");
+>> +			goto out;
+> 
+> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This is not good. If you fail to
+> create a kthread on the first non-boot cpu, that means none of the
+> other non-boot cpus will be brought up. 
+> 
+> Hence you might want to consider reordering the code in such a manner
+> that if the first non-boot cpu fails to come up or if you fail to
+> create the kthread task, then the boot cpu will boot the remaining non
+> boot cpus.
 
-diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-new file mode 100644
-index 0000000..2858108
---- /dev/null
-+++ b/arch/powerpc/include/asm/copro.h
-@@ -0,0 +1,18 @@
-+/*
-+ * Copyright 2014 IBM Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _ASM_POWERPC_COPRO_H
-+#define _ASM_POWERPC_COPRO_H
-+
-+int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
-+			  unsigned long dsisr, unsigned *flt);
-+
-+int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid);
-+
-+#endif /* _ASM_POWERPC_COPRO_H */
-diff --git a/arch/powerpc/include/asm/spu.h b/arch/powerpc/include/asm/spu.h
-index 37b7ca3..a6e6e2b 100644
---- a/arch/powerpc/include/asm/spu.h
-+++ b/arch/powerpc/include/asm/spu.h
-@@ -27,6 +27,8 @@
- #include <linux/workqueue.h>
- #include <linux/device.h>
- #include <linux/mutex.h>
-+#include <asm/reg.h>
-+#include <asm/copro.h>
- 
- #define LS_SIZE (256 * 1024)
- #define LS_ADDR_MASK (LS_SIZE - 1)
-@@ -277,9 +279,6 @@ void spu_remove_dev_attr(struct device_attribute *attr);
- int spu_add_dev_attr_group(struct attribute_group *attrs);
- void spu_remove_dev_attr_group(struct attribute_group *attrs);
- 
--int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
--		unsigned long dsisr, unsigned *flt);
--
- /*
-  * Notifier blocks:
-  *
-diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
-index d0130ff..a7f4dd7 100644
---- a/arch/powerpc/mm/Makefile
-+++ b/arch/powerpc/mm/Makefile
-@@ -34,3 +34,4 @@ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += hugepage-hash64.o
- obj-$(CONFIG_PPC_SUBPAGE_PROT)	+= subpage-prot.o
- obj-$(CONFIG_NOT_COHERENT_CACHE) += dma-noncoherent.o
- obj-$(CONFIG_HIGHMEM)		+= highmem.o
-+obj-$(CONFIG_SPU_BASE)		+= copro_fault.o
-diff --git a/arch/powerpc/platforms/cell/spu_fault.c b/arch/powerpc/mm/copro_fault.c
-similarity index 89%
-rename from arch/powerpc/platforms/cell/spu_fault.c
-rename to arch/powerpc/mm/copro_fault.c
-index 641e727..ba7df14 100644
---- a/arch/powerpc/platforms/cell/spu_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -1,5 +1,5 @@
- /*
-- * SPU mm fault handler
-+ * CoProcessor (SPU/AFU) mm fault handler
-  *
-  * (C) Copyright IBM Deutschland Entwicklung GmbH 2007
-  *
-@@ -23,16 +23,14 @@
- #include <linux/sched.h>
- #include <linux/mm.h>
- #include <linux/export.h>
--
--#include <asm/spu.h>
--#include <asm/spu_csa.h>
-+#include <asm/reg.h>
- 
- /*
-  * This ought to be kept in sync with the powerpc specific do_page_fault
-  * function. Currently, there are a few corner cases that we haven't had
-  * to handle fortunately.
-  */
--int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
-+int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
- 		unsigned long dsisr, unsigned *flt)
- {
- 	struct vm_area_struct *vma;
-@@ -58,12 +56,12 @@ int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
- 			goto out_unlock;
- 	}
- 
--	is_write = dsisr & MFC_DSISR_ACCESS_PUT;
-+	is_write = dsisr & DSISR_ISSTORE;
- 	if (is_write) {
- 		if (!(vma->vm_flags & VM_WRITE))
- 			goto out_unlock;
- 	} else {
--		if (dsisr & MFC_DSISR_ACCESS_DENIED)
-+		if (dsisr & DSISR_PROTFAULT)
- 			goto out_unlock;
- 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
- 			goto out_unlock;
-@@ -91,4 +89,4 @@ out_unlock:
- 	up_read(&mm->mmap_sem);
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(spu_handle_mm_fault);
-+EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-diff --git a/arch/powerpc/platforms/cell/Makefile b/arch/powerpc/platforms/cell/Makefile
-index fe053e7..2d16884 100644
---- a/arch/powerpc/platforms/cell/Makefile
-+++ b/arch/powerpc/platforms/cell/Makefile
-@@ -20,7 +20,7 @@ spu-manage-$(CONFIG_PPC_CELL_COMMON)	+= spu_manage.o
- 
- obj-$(CONFIG_SPU_BASE)			+= spu_callbacks.o spu_base.o \
- 					   spu_notify.o \
--					   spu_syscalls.o spu_fault.o \
-+					   spu_syscalls.o \
- 					   $(spu-priv1-y) \
- 					   $(spu-manage-y) \
- 					   spufs/
-diff --git a/arch/powerpc/platforms/cell/spufs/fault.c b/arch/powerpc/platforms/cell/spufs/fault.c
-index 8cb6260..e45894a 100644
---- a/arch/powerpc/platforms/cell/spufs/fault.c
-+++ b/arch/powerpc/platforms/cell/spufs/fault.c
-@@ -138,7 +138,7 @@ int spufs_handle_class1(struct spu_context *ctx)
- 	if (ctx->state == SPU_STATE_RUNNABLE)
- 		ctx->spu->stats.hash_flt++;
- 
--	/* we must not hold the lock when entering spu_handle_mm_fault */
-+	/* we must not hold the lock when entering copro_handle_mm_fault */
- 	spu_release(ctx);
- 
- 	access = (_PAGE_PRESENT | _PAGE_USER);
-@@ -149,7 +149,7 @@ int spufs_handle_class1(struct spu_context *ctx)
- 
- 	/* hashing failed, so try the actual fault handler */
- 	if (ret)
--		ret = spu_handle_mm_fault(current->mm, ea, dsisr, &flt);
-+		ret = copro_handle_mm_fault(current->mm, ea, dsisr, &flt);
- 
- 	/*
- 	 * This is nasty: we need the state_mutex for all the bookkeeping even
+Yes, this sounds good and will do it in the new version.
+
+> 
+> --
+> Thanks and Regards
+> gautham.
+> 
+
+
 -- 
-1.9.1
-
+Best regards
+Tianyu Lan
