@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaIRH1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 03:27:51 -0400
-Received: from mail-bl2on0147.outbound.protection.outlook.com ([65.55.169.147]:56715
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751149AbaIRH1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 03:27:50 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <B29396@freescale.com>, <pankaj.dubey@samsung.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>,
-        <devicetree@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] mfd: syscon: binding: Add syscon endianness support.
-Date: Thu, 18 Sep 2014 15:27:29 +0800
-Message-ID: <1411025249-34333-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(47776003)(64706001)(19580395003)(83322001)(19580405001)(44976005)(6806004)(20776003)(97736003)(26826002)(68736004)(21056001)(87286001)(84676001)(104016003)(104166001)(79102003)(81542003)(74662003)(85306004)(102836001)(90102001)(229853001)(76482002)(107046002)(74502003)(46102003)(81342003)(80022003)(77982003)(95666004)(106466001)(105606002)(99396002)(4396001)(50226001)(48376002)(62966002)(50466002)(92726001)(92566001)(2201001)(86362001)(50986999)(87936001)(85852003)(89996001)(93916002)(83072002)(88136002)(36756003)(31966008)(77156001)(1121002)(921003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB323;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1756212AbaIRH3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 03:29:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3829 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349AbaIRH3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 03:29:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,545,1406617200"; 
+   d="scan'208";a="604653399"
+Message-ID: <541A89AC.9000706@linux.intel.com>
+Date: Thu, 18 Sep 2014 15:28:44 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033857D0BD
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC Part2 v1 01/21] irqdomain: Introduce new interfaces to support
+ hierarchy irqdomains
+References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com> <1410444228-3134-2-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409160859080.4247@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409160859080.4247@nanos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For many drivers which will support rich endianness of Devices
-need define DT properties by itself with the binding support.
+On 2014/9/17 1:43, Thomas Gleixner wrote:
+> Jiang,
+> 
+> On Thu, 11 Sep 2014, Jiang Liu wrote:
+>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>>  	/* Create mapping */
+>> -	virq = irq_create_mapping(domain, hwirq);
+>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>> +	if (domain->ops->alloc)
+>> +		virq = irq_domain_alloc_irqs(domain, -1, 1, NUMA_NO_NODE,
+>> +					     irq_data);
+>> +	else
+>> +#endif
+>> +		virq = irq_create_mapping(domain, hwirq);
+> 
+> I'd prefer to get rid of the #ifdef CONFIG...s in the code. So this
+> can be written:
+> 
+>         if (irq_domain_has_hierarchy(domain))
+> 		virq = irq_domain_alloc_irqs(domain, -1, 1, NUMA_NO_NODE,
+> 					     irq_data);
+> 	else
+> 		virq = irq_create_mapping(domain, hwirq);
+Sure, will kill the ifdef. 	
 
-The regmap core has already support endianness of the following
-case:
-Index      Device     DT properties needed
-------------------------------------------
-1          BE         'big-endian'
-2          LE         'little-endian'
+> 	   
+> 
+>>  	if (!virq)
+>>  		return virq;
+>>  
+>> @@ -540,7 +542,11 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+>>  		return 0;
+>>  
+>>  	if (hwirq < domain->revmap_direct_max_irq) {
+>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>> +		data = irq_domain_get_irq_data(domain, hwirq);
+>> +#else
+>>  		data = irq_get_irq_data(hwirq);
+>> +#endif
+> 
+> Similar here. Make irq_domain_get_irq_data() map to irq_get_irq_data() for
+> the non hierarchy mode so you end up with a single line:
+> 
+> -  		data = irq_get_irq_data(hwirq);
+> +		data = irq_domain_get_irq_data(domain, hwirq);
+Sure.
 
-Please see the regmap binding for more detail information of
-the endianness support.
+>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>> +/**
+>> + * irq_domain_alloc_irqs - Allocate IRQs from domain
+>> + * @domain: domain to allocate from
+>> + * @irq_base: allocate specified IRQ nubmer if irq_base >= 0
+>> + * @nr_irqs: number of IRQs to allocate
+>> + * @node: NUMA node id for memory allocation
+>> + * @arg: domain specific argument
+>> + * @realloc: IRQ descriptors have already been allocated if true
+>> + *
+>> + * Allocate IRQ numbers and initialized all data structures to support
+>> + * hiearchy IRQ domains.
+>> + * Parameter @realloc is mainly to support legacy IRQs.
+> 
+> What's the issue with the legacy irqs? So this has the interrupt
+> descriptors allocated already. Are they already wired up for serving
+> interrupts and what's the state of those lines?
+Function arch_early_ioapic_init() will allocate irq descriptors and
+irq_cfg structures for all legacy IRQ for three purposes:
+1) To support ISA IRQs managed by 8259.
+2) To reserve vectors on all CPUs for legacy IRQs
+3) Prepare data structures to support pre_init_apic_IRQ0().
+We will kill pre_init_apic_IRQ0() soon, so item 3 above won't be needed
+anymore.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
+When __irq_domain_alloc_irqs() is called, only irq descriptor and
+irq_cfg have been allocated, but the interrupt controller hardware
+should be untouched yet.
 
-
-This patch hasn't any dependency with Pankaj Dubey's:
-    mfd: syscon: Decouple syscon interface from platform devices
-
-
-
- Documentation/devicetree/bindings/mfd/syscon.txt | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-index fe8150b..7c33178 100644
---- a/Documentation/devicetree/bindings/mfd/syscon.txt
-+++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-@@ -10,11 +10,22 @@ OS driver) to determine the location of the registers, and access the
- registers directly.
- 
- Required properties:
--- compatible: Should contain "syscon".
--- reg: the register region can be accessed from syscon
-+- compatible:		Should contain "syscon".
-+- reg:			The register region can be accessed from syscon
- 
--Examples:
-+Optional property:
-+- {big,little}-endian:	Boolean property. Please see ../regmap/regmap.txt
-+			for more information.
-+
-+Example 1:
- gpr: iomuxc-gpr@020e0000 {
- 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
- 	reg = <0x020e0000 0x38>;
- };
-+
-+Example 2:
-+dcfg: dcfg@1ee0000 {
-+	compatible = "fsl,ls1021a-dcfg", "syscon";
-+	reg = <0x0 0x1ee0000 0x0 0x10000>;
-+	big-endian;
-+};
--- 
-2.1.0.27.g96db324
-
+> 
+>> + * Returns error code or allocated IRQ number
+> 
+> Can you please add some documentation how the hierarchical allocation
+> is supposed to work and how the domains are connected. That should
+> probably go to Documentation/IRQ-domains.txt.
+Sure, I will do my best to add documentations for it.
+> 
+> Other than that this looks pretty good! Nice work!
+Thanks!
+Gerry
+> 
+> Thanks,
+> 
+> 	tglx
+> 
