@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799AbaIRIcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 04:32:05 -0400
-Received: from ozlabs.org ([103.22.144.67]:45899 "EHLO ozlabs.org"
+	id S932077AbaIRId2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 04:33:28 -0400
+Received: from ozlabs.org ([103.22.144.67]:45831 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755295AbaIRI1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 04:27:23 -0400
+	id S1753392AbaIRI1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 04:27:16 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
 Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH 09/15] powerpc/opal: Add PHB to cxl mode call
-Date: Thu, 18 Sep 2014 18:26:54 +1000
-Message-Id: <1411028820-29933-10-git-send-email-mikey@neuling.org>
+Subject: [PATCH 02/15] powerpc/cell: Move data segment faulting code out of cell platform
+Date: Thu, 18 Sep 2014 18:26:47 +1000
+Message-Id: <1411028820-29933-3-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411028820-29933-1-git-send-email-mikey@neuling.org>
 References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
@@ -24,44 +24,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This adds the OPAL call to change a PHB into cxl mode.
+__spu_trap_data_seg() currently contains code to determine the VSID and ESID
+required for a particular EA and mm struct.
+
+This code is generically useful for other co-processors.  This moves the code
+of the cell platform so it can be used by other powerpc code.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/include/asm/opal.h                | 2 ++
- arch/powerpc/platforms/powernv/opal-wrappers.S | 1 +
- 2 files changed, 3 insertions(+)
+ arch/powerpc/include/asm/mmu-hash64.h  |  2 ++
+ arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
+ arch/powerpc/mm/slb.c                  |  3 ---
+ arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
+ 4 files changed, 54 insertions(+), 40 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/opal.h b/arch/powerpc/include/asm/opal.h
-index 86055e5..84c37c4dbc 100644
---- a/arch/powerpc/include/asm/opal.h
-+++ b/arch/powerpc/include/asm/opal.h
-@@ -146,6 +146,7 @@ struct opal_sg_list {
- #define OPAL_GET_PARAM				89
- #define OPAL_SET_PARAM				90
- #define OPAL_DUMP_RESEND			91
-+#define OPAL_PCI_SET_PHB_CXL_MODE		93
- #define OPAL_DUMP_INFO2				94
- #define OPAL_PCI_EEH_FREEZE_SET			97
- #define OPAL_HANDLE_HMI				98
-@@ -924,6 +925,7 @@ int64_t opal_sensor_read(uint32_t sensor_hndl, int token, __be32 *sensor_data);
- int64_t opal_handle_hmi(void);
- int64_t opal_register_dump_region(uint32_t id, uint64_t start, uint64_t end);
- int64_t opal_unregister_dump_region(uint32_t id);
-+int64_t opal_pci_set_phb_cxl_mode(uint64_t phb_id, uint64_t mode, uint64_t pe_number);
+diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
+index d765144..fd19a53 100644
+--- a/arch/powerpc/include/asm/mmu-hash64.h
++++ b/arch/powerpc/include/asm/mmu-hash64.h
+@@ -180,6 +180,8 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
+  * we work in all cases including 4k page size.
+  */
+ #define VPN_SHIFT	12
++#define slb_vsid_shift(ssize)	\
++	((ssize) == MMU_SEGSIZE_256M ? SLB_VSID_SHIFT : SLB_VSID_SHIFT_1T)
  
- /* Internal functions */
- extern int early_init_dt_scan_opal(unsigned long node, const char *uname,
-diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
-index 2e6ce1b..0fb56dc 100644
---- a/arch/powerpc/platforms/powernv/opal-wrappers.S
-+++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
-@@ -247,3 +247,4 @@ OPAL_CALL(opal_set_param,			OPAL_SET_PARAM);
- OPAL_CALL(opal_handle_hmi,			OPAL_HANDLE_HMI);
- OPAL_CALL(opal_register_dump_region,		OPAL_REGISTER_DUMP_REGION);
- OPAL_CALL(opal_unregister_dump_region,		OPAL_UNREGISTER_DUMP_REGION);
-+OPAL_CALL(opal_pci_set_phb_cxl_mode,		OPAL_PCI_SET_PHB_CXL_MODE);
+ /*
+  * HPTE Large Page (LP) details
+diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+index ba7df14..4105a63 100644
+--- a/arch/powerpc/mm/copro_fault.c
++++ b/arch/powerpc/mm/copro_fault.c
+@@ -90,3 +90,51 @@ out_unlock:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
++
++int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
++{
++	int psize, ssize;
++
++	*esid = (ea & ESID_MASK) | SLB_ESID_V;
++
++	switch (REGION_ID(ea)) {
++	case USER_REGION_ID:
++		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
++#ifdef CONFIG_PPC_MM_SLICES
++		psize = get_slice_psize(mm, ea);
++#else
++		psize = mm->context.user_psize;
++#endif
++		ssize = user_segment_size(ea);
++		*vsid = (get_vsid(mm->context.id, ea, ssize)
++			<< slb_vsid_shift(ssize)) | SLB_VSID_USER
++			| (ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
++		break;
++	case VMALLOC_REGION_ID:
++		pr_devel("copro_data_segment: 0x%llx -- VMALLOC_REGION_ID\n", ea);
++		if (ea < VMALLOC_END)
++			psize = mmu_vmalloc_psize;
++		else
++			psize = mmu_io_psize;
++		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
++			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
++			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
++		break;
++	case KERNEL_REGION_ID:
++		pr_devel("copro_data_segment: 0x%llx -- KERNEL_REGION_ID\n", ea);
++		psize = mmu_linear_psize;
++		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
++			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
++			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
++		break;
++	default:
++		/* Future: support kernel segments so that drivers can use the
++		 * CoProcessors */
++		pr_debug("invalid region access at %016llx\n", ea);
++		return 1;
++	}
++	*vsid |= mmu_psize_defs[psize].sllp;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(copro_data_segment);
+diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
+index 0399a67..6e450ca 100644
+--- a/arch/powerpc/mm/slb.c
++++ b/arch/powerpc/mm/slb.c
+@@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
+ 	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
+ }
+ 
+-#define slb_vsid_shift(ssize)	\
+-	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
+-
+ static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
+ 					 unsigned long flags)
+ {
+diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
+index 2930d1e..fe004b1 100644
+--- a/arch/powerpc/platforms/cell/spu_base.c
++++ b/arch/powerpc/platforms/cell/spu_base.c
+@@ -167,45 +167,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
+ 
+ static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
+ {
+-	struct mm_struct *mm = spu->mm;
+ 	struct spu_slb slb;
+-	int psize;
+-
+-	pr_debug("%s\n", __func__);
+-
+-	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
++	int ret;
+ 
+-	switch(REGION_ID(ea)) {
+-	case USER_REGION_ID:
+-#ifdef CONFIG_PPC_MM_SLICES
+-		psize = get_slice_psize(mm, ea);
+-#else
+-		psize = mm->context.user_psize;
+-#endif
+-		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
+-				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
+-		break;
+-	case VMALLOC_REGION_ID:
+-		if (ea < VMALLOC_END)
+-			psize = mmu_vmalloc_psize;
+-		else
+-			psize = mmu_io_psize;
+-		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
+-				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+-		break;
+-	case KERNEL_REGION_ID:
+-		psize = mmu_linear_psize;
+-		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
+-				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+-		break;
+-	default:
+-		/* Future: support kernel segments so that drivers
+-		 * can use SPUs.
+-		 */
+-		pr_debug("invalid region access at %016lx\n", ea);
+-		return 1;
+-	}
+-	slb.vsid |= mmu_psize_defs[psize].sllp;
++	ret = copro_data_segment(spu->mm, ea, &slb.esid, &slb.vsid);
++	if (ret)
++		return ret;
+ 
+ 	spu_load_slb(spu, spu->slb_replace, &slb);
+ 
 -- 
 1.9.1
 
