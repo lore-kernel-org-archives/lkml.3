@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883AbaIRVyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:54:14 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:46112 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932700AbaIRVyJ (ORCPT
+	id S932123AbaIRV5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:57:11 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:59235 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755159AbaIRV5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:54:09 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 24/24] MIPS: sead3: Use generic plat_irq_dispatch
-Date: Thu, 18 Sep 2014 14:47:30 -0700
-Message-Id: <1411076851-28242-25-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
-References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
+	Thu, 18 Sep 2014 17:57:09 -0400
+Message-ID: <1411077427.2012.6.camel@x41>
+Subject: Re: [PATCH] ASoC: samsung: Remove goni or aquila with the WM8994
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@kernel.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Sep 2014 23:57:07 +0200
+In-Reply-To: <20140918175752.GC7960@sirena.org.uk>
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+	 <53C675E4.4020502@samsung.com> <1409825105.5546.91.camel@x220>
+	 <201409041802.36466.arnd@arndb.de> <1411033409.2017.15.camel@x220>
+	 <20140918175752.GC7960@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Sep 2014 21:57:07.0873 (UTC) FILETIME=[7DA23110:01CFD38B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic plat_irq_dispatch provided in irq_cpu.c is sufficient for
-dispatching interrupts on SEAD-3 in legacy and vectored interrupt modes.
+Hi Mark,
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
-Tested-by: Qais Yousef <qais.yousef@imgtec.com>
----
-No changes from v1.
----
- arch/mips/mti-sead3/sead3-int.c | 23 +----------------------
- 1 file changed, 1 insertion(+), 22 deletions(-)
+Mark Brown schreef op do 18-09-2014 om 10:57 [-0700]:
+> On Thu, Sep 18, 2014 at 11:43:29AM +0200, Paul Bolle wrote:
+> > On Thu, 2014-09-04 at 18:02 +0200, Arnd Bergmann wrote:
+> 
+> > > I think it would be nice if you could submit a patch to remove the
+> > > drivers from ASoC, then we can see if anybody complains.
+> 
+> > Same thing for v3.17-rc5 and next-20140918. Let's see if we can remove
+> > the goni or aquila with wm8994 driver.
+> > 
+> > Done on top of next-20140918. Untested.
+> > --------->8---------
+> > From: Paul Bolle <pebolle@tiscali.nl>
+> 
+> Please follow the patch submission process in SubmittingPatches.
 
-diff --git a/arch/mips/mti-sead3/sead3-int.c b/arch/mips/mti-sead3/sead3-int.c
-index cb06cd9..69ae185 100644
---- a/arch/mips/mti-sead3/sead3-int.c
-+++ b/arch/mips/mti-sead3/sead3-int.c
-@@ -22,32 +22,11 @@
- 
- static unsigned long sead3_config_reg;
- 
--asmlinkage void plat_irq_dispatch(void)
--{
--	unsigned int pending = read_c0_cause() & read_c0_status() & ST0_IM;
--	int irq;
--
--	irq = (fls(pending) - CAUSEB_IP - 1);
--	if (irq >= 0)
--		do_IRQ(MIPS_CPU_IRQ_BASE + irq);
--	else
--		spurious_interrupt();
--}
--
- void __init arch_init_irq(void)
- {
--	int i;
--
--	if (!cpu_has_veic) {
-+	if (!cpu_has_veic)
- 		mips_cpu_irq_init();
- 
--		if (cpu_has_vint) {
--			/* install generic handler */
--			for (i = 0; i < 8; i++)
--				set_vi_handler(i, plat_irq_dispatch);
--		}
--	}
--
- 	sead3_config_reg = (unsigned long)ioremap_nocache(SEAD_CONFIG_BASE,
- 		SEAD_CONFIG_SIZE);
- 	gic_present = (REG32(sead3_config_reg) & SEAD_CONFIG_GIC_PRESENT_MSK) >>
--- 
-2.1.0.rc2.206.gedb03e5
+Could you please be more specific? What part of SubmittingPatches have I
+skipped?
+
+Is it the perhaps the use of scissors? Or the superfluous From: line?
+"git am -c" appears to handle this message (and the very similar message
+I also sent today) just fine.
+
+Thanks,
+
+
+Paul Bolle
 
