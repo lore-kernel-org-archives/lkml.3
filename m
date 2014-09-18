@@ -1,115 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462AbaIRV2C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:28:02 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59399 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779AbaIRV2A (ORCPT
+	id S1757491AbaIRV2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 17:28:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33824 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756518AbaIRV2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 17:28:00 -0400
+	Thu, 18 Sep 2014 17:28:40 -0400
+Date: Thu, 18 Sep 2014 23:28:37 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Wenyou Yang <wenyou.yang@atmel.com>
+Subject: Re: [PATCH] ARM: at91: sama5: configure L2 cache
+Message-ID: <20140918212836.GD29620@piout.net>
+References: <1411072716-20769-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <20140918210212.GD5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1411025505-21628-3-git-send-email-zyw@rock-chips.com>
-References: <1411025505-21628-1-git-send-email-zyw@rock-chips.com>
-	<1411025505-21628-3-git-send-email-zyw@rock-chips.com>
-Date: Thu, 18 Sep 2014 14:27:59 -0700
-X-Google-Sender-Auth: 1R-71TSiExzFkfl0foBE7y7Clz0
-Message-ID: <CAD=FV=UdSQZqGqY5XvLwKpkSbEWvtXG0s1vuk3xfdX0AJ27TBg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] dt-bindings: add devicetree bindings for st-pwm regulator
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lee Jones <lee.jones@linaro.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140918210212.GD5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On 18/09/2014 at 22:02:12 +0100, Russell King - ARM Linux wrote :
+> On Thu, Sep 18, 2014 at 10:38:36PM +0200, Alexandre Belloni wrote:
+> > From: Wenyou Yang <wenyou.yang@atmel.com>
+> > 
+> > Ensure that the L2 cache configuration is optimal to avoid depending on the
+> > bootloader to set it correctly.
+> > 
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > ---
+> >  arch/arm/mach-at91/board-dt-sama5.c | 47 ++++++++++++++++++++++++++++++++++++-
+> >  1 file changed, 46 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+> > index 548de4ad6937..7cbe0d9daf2b 100644
+> > --- a/arch/arm/mach-at91/board-dt-sama5.c
+> > +++ b/arch/arm/mach-at91/board-dt-sama5.c
+> > @@ -13,12 +13,14 @@
+> >  #include <linux/gpio.h>
+> >  #include <linux/micrel_phy.h>
+> >  #include <linux/of.h>
+> > +#include <linux/of_address.h>
+> >  #include <linux/of_irq.h>
+> >  #include <linux/of_platform.h>
+> >  #include <linux/phy.h>
+> >  #include <linux/clk-provider.h>
+> >  
+> >  #include <asm/setup.h>
+> > +#include <asm/hardware/cache-l2x0.h>
+> >  #include <asm/irq.h>
+> >  #include <asm/mach/arch.h>
+> >  #include <asm/mach/map.h>
+> > @@ -35,8 +37,52 @@ static void __init sama5_dt_timer_init(void)
+> >  	at91sam926x_pit_init();
+> >  }
+> >  
+> > +static void __init at91_l2x0_init(void)
+> > +{
+> > +	struct device_node *np;
+> > +	void __iomem *l2cc_base;
+> > +	u32 reg;
+> > +
+> > +	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
+> > +	if (!np)
+> > +		return;
+> > +
+> > +	l2cc_base = of_iomap(np, 0);
+> > +	of_node_put(np);
+> > +
+> > +	if (!l2cc_base) {
+> > +		pr_err("L2C-310 unable to map registers\n");
+> > +		return;
+> > +	}
+> > +
+> > +	/* Prefetch Control */
+> > +	reg = readl_relaxed(l2cc_base + L310_PREFETCH_CTRL);
+> > +	reg &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
+> > +	reg |= 0x01 & L310_PREFETCH_CTRL_OFFSET_MASK;
+> > +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
+> > +	reg |= L310_PREFETCH_CTRL_PREFETCH_DROP;
+> > +	reg |= L310_PREFETCH_CTRL_DATA_PREFETCH;
+> > +	reg |= L310_PREFETCH_CTRL_INSTR_PREFETCH;
+> > +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL;
+> > +	writel_relaxed(reg, l2cc_base + L310_PREFETCH_CTRL);
+> > +
+> > +	/* Power Control */
+> > +	reg = readl_relaxed(l2cc_base + L310_POWER_CTRL);
+> > +	reg |= L310_STNDBY_MODE_EN;
+> > +	reg |= L310_DYNAMIC_CLK_GATING_EN;
+> > +	writel_relaxed(reg, l2cc_base + L310_POWER_CTRL);
+> > +
+> > +	/* Disable interrupts */
+> > +	writel_relaxed(0x00, l2cc_base + L2X0_INTR_MASK);
+> > +	writel_relaxed(0x01ff, l2cc_base + L2X0_INTR_CLEAR);
+> > +
+> > +	l2x0_of_init(0, ~0UL);
+> 
+> NAK.  Really, nak.  Stop this mentality of working around shortcomings
+> of generic code by adding yet more platform junk.  Such approaches are
+> not acceptable.
+> 
 
-On Thu, Sep 18, 2014 at 12:31 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Document the st-pwm regulator
->
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->
-> ---
->
-> Changes in v2:
-> Adviced by Lee Jones
-> - rename the documentation
-> Adviced by Doug Anderson
-> - update the example
-> Adviced by Mark Rutland
-> - remove pwm-reg-period
->
->  .../bindings/regulator/pwm-regulator.txt           |   29 ++++++++++++++++++++
->  1 file changed, 29 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
->
-> diff --git a/Documentation/devicetree/bindings/regulator/pwm-regulator.txt b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-> new file mode 100644
-> index 0000000..7c62a30
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-> @@ -0,0 +1,29 @@
-> +pwm regulator bindings
-> +
-> +Required properties:
-> +  - compatible: Should be "pwm-regulator"
-> +  - pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-> +  - voltage-table: voltage and duty table, include 2 merbers in each set of
-> +    brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-> +
+Thank you for that confirmation, that was the main reason to Cc you.
 
-I would be tempted to say that you should add a few required properties:
+> The power control is already done by generic code.  I know that you've
+> developed the above code against the exact copy of generic code which
+> has this, because you're using the new symbols.
+> 
 
-* regulator-boot-on
-* regulator-always-on
-* regulator-initial-microvolts
+Yeah I actually forgot to remove that part when "porting" from vendor
+code to use your defines.
 
->From my understanding of how PWM-based regulators work there is no way
-to "disable" them.  If you drive them low then they get their biggest
-voltage.  If you drive them high then they get their smallest voltage.
-If you make them floating then it's equivalent to 50% duty cycle
-(right?)
+> You shouldn't need to disable interrupts; the interrupts should already
+> be disabled unless your bootloaders are doing something weird with them.
+> 
+> There have been DT bindings proposed for prefetch control register.  I
+> suggest that you search this mailing list for that patch, and check
+> whether it is acceptable for your platform.
+> 
 
-Since your current bindings don't have an enable GPIO (which could
-possibly be used to turn one of these off if it was hooked up) then
-that means that the kernel had better keep the regulator always on.
+I'm really wondering whether we should really put that in the device
+tree... We will soon end up with a property for each bit of each
+registers and the binding will end up being huge. Also, that is
+configuration, not HW description.
 
-The initial-microvolts also seems like a wise property to add.
-There's no way (that I know of) to query what the voltage was at probe
-time.  The bootloader (or power on default) of the device might have
-left it as an input or might have left it driving high, driving low,
-or even PWMing.  It seems like we should specify what voltage this
-device should start up in.  You should make sure to use pinmux in
-whatever way is needed (maybe can't use "default") so that you can
-make sure that the PWM is configured and driving the initial voltage
-before you actually set the pinmux.
+I actually tried multiple things, without any satisfaction:
+ - using DT, with the main issue that we will definitely end up with one
+   property per bit of configuration
 
+ - adding an .l2c_prefetch_val to the machine start but that is kind of
+   ugly.
 
-All of the above could be done in followup patches since I think they
-are new features.
+ - adding a new parameter to l2x0_of_init()
 
-> +Any property defined as part of the core regulator binding defined in
-> +regulator.txt can also be used.
-> +
-> +Example:
-> +       pwm_regulator {
-> +               compatible = "pwm-regulator;
-> +               pwms = <&pwm1 0 1000000 0>;
+So I ended up choosing to do it in the platform code. But if everybody
+is fine with adding more properties to DT, I can go that way.
 
-Since you're using the voltage table from the old st-pwm driver, maybe
-you should specify a period that matches?  I think that means putting
-8448 as your period here.
+> Taking all that together, you should need /zero/ code in your platform
+> for L2 caches, which is *the way it should be*.
+> 
 
-Wow, so if the ST's PWM regulator needs a period of 8448ns then it's
-running at 118kHz?  The example you're showing runs at 1kHz, which is
-pretty drastically different...
+I would also prefer it that way.
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
