@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504AbaIRVxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 17:53:14 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:34187 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757554AbaIRVrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757512AbaIRVrj (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 18 Sep 2014 17:47:39 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:39434 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919AbaIRVrh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 17:47:37 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
         Jason Cooper <jason@lakedaemon.net>
@@ -17,304 +17,111 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Qais Yousef <qais.yousef@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 06/24] MIPS: Add hook to get C0 performance counter interrupt
-Date: Thu, 18 Sep 2014 14:47:12 -0700
-Message-Id: <1411076851-28242-7-git-send-email-abrestic@chromium.org>
+Subject: [PATCH V2 00/24] MIPS GIC cleanup, part 1
+Date: Thu, 18 Sep 2014 14:47:06 -0700
+Message-Id: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
-References: <1411076851-28242-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hardware perf event driver and oprofile interpret the global
-cp0_perfcount_irq differently: in the hardware perf event driver
-it is an offset from MIPS_CPU_IRQ_BASE and in oprofile it is the
-actual IRQ number.  This still works most of the time since
-MIPS_CPU_IRQ_BASE is usually 0, but is clearly wrong.  Since the
-performance counter interrupt may vary from platform to platform
-like the C0 timer interrupt, add the optional get_c0_perfcount_int
-hook which returns the IRQ number of the performance counter.
-The hook should return < 0 if the performance counter interrupt is
-shared with the timer.  If the hook is not present, the CPU vector
-reported in C0_IntCtl (cp0_perfcount_irq) is used.
+The current MIPS GIC driver and the platform code using it are rather
+ugly and could use a good cleanup before adding device-tree support [0].
+This major issues addressed in this series are converting the GIC (and
+platforms using it) to use IRQ domains and properly mapping interrupts
+through the GIC instead of using it transparently.  For part 2 I plan
+on: updating the driver to use proper iomem accessors, cleaning up and
+moving the GIC clocksource driver to drivers/clocksource/, adding DT
+support, and possibly converting the GIC driver to use generic irqchip.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Reviewed-by: Qais Yousef <qais.yousef@imgtec.com>
-Tested-by: Qais Yousef <qais.yousef@imgtec.com>
----
-No changes from v1.
----
- arch/mips/ath79/irq.c                |  1 -
- arch/mips/ath79/setup.c              |  5 +++++
- arch/mips/include/asm/time.h         |  1 +
- arch/mips/kernel/perf_event_mipsxx.c | 23 +++++++----------------
- arch/mips/lantiq/irq.c               |  8 +++++++-
- arch/mips/mti-malta/malta-time.c     | 16 ++++++----------
- arch/mips/mti-sead3/sead3-time.c     |  7 ++++---
- arch/mips/oprofile/op_model_mipsxx.c | 18 ++++++++++++++----
- arch/mips/ralink/irq.c               |  8 +++++++-
- 9 files changed, 51 insertions(+), 36 deletions(-)
+Patches 1-16 are cleanups for the existing GIC driver and prepare platforms
+using it for the switch to IRQ domains and using the GIC in a non-transparent
+way.
 
-diff --git a/arch/mips/ath79/irq.c b/arch/mips/ath79/irq.c
-index 9c0e176..6adae36 100644
---- a/arch/mips/ath79/irq.c
-+++ b/arch/mips/ath79/irq.c
-@@ -359,7 +359,6 @@ void __init arch_init_irq(void)
- 		BUG();
- 	}
- 
--	cp0_perfcount_irq = ATH79_MISC_IRQ(5);
- 	mips_cpu_irq_init();
- 	ath79_misc_irq_init();
- 
-diff --git a/arch/mips/ath79/setup.c b/arch/mips/ath79/setup.c
-index 64807a4..a73c93c 100644
---- a/arch/mips/ath79/setup.c
-+++ b/arch/mips/ath79/setup.c
-@@ -182,6 +182,11 @@ const char *get_system_type(void)
- 	return ath79_sys_type;
- }
- 
-+int get_c0_perfcount_int(void)
-+{
-+	return ATH79_MISC_IRQ(5);
-+}
-+
- unsigned int get_c0_compare_int(void)
- {
- 	return CP0_LEGACY_COMPARE_IRQ;
-diff --git a/arch/mips/include/asm/time.h b/arch/mips/include/asm/time.h
-index 8f3047d..7969933 100644
---- a/arch/mips/include/asm/time.h
-+++ b/arch/mips/include/asm/time.h
-@@ -46,6 +46,7 @@ extern unsigned int mips_hpt_frequency;
-  * so it lives here.
-  */
- extern int (*perf_irq)(void);
-+extern int __weak get_c0_perfcount_int(void);
- 
- /*
-  * Initialize the calling CPU's compare interrupt as clockevent device
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index b63f248..3a25096 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -1614,22 +1614,13 @@ init_hw_perf_events(void)
- 		counters = counters_total_to_per_cpu(counters);
- #endif
- 
--#ifdef MSC01E_INT_BASE
--	if (cpu_has_veic) {
--		/*
--		 * Using platform specific interrupt controller defines.
--		 */
--		irq = MSC01E_INT_BASE + MSC01E_INT_PERFCTR;
--	} else {
--#endif
--		if ((cp0_perfcount_irq >= 0) &&
--				(cp0_compare_irq != cp0_perfcount_irq))
--			irq = MIPS_CPU_IRQ_BASE + cp0_perfcount_irq;
--		else
--			irq = -1;
--#ifdef MSC01E_INT_BASE
--	}
--#endif
-+	if (get_c0_perfcount_int)
-+		irq = get_c0_perfcount_int();
-+	else if ((cp0_perfcount_irq >= 0) &&
-+		 (cp0_compare_irq != cp0_perfcount_irq))
-+		irq = MIPS_CPU_IRQ_BASE + cp0_perfcount_irq;
-+	else
-+		irq = -1;
- 
- 	mipspmu.map_raw_event = mipsxx_pmu_map_raw_event;
- 
-diff --git a/arch/mips/lantiq/irq.c b/arch/mips/lantiq/irq.c
-index 030568a..21c38ee 100644
---- a/arch/mips/lantiq/irq.c
-+++ b/arch/mips/lantiq/irq.c
-@@ -70,6 +70,7 @@ static struct resource ltq_eiu_irq[MAX_EIU];
- static void __iomem *ltq_icu_membase[MAX_IM];
- static void __iomem *ltq_eiu_membase;
- static struct irq_domain *ltq_domain;
-+static int ltq_perfcount_irq;
- 
- int ltq_eiu_get_irq(int exin)
- {
-@@ -449,7 +450,7 @@ int __init icu_of_init(struct device_node *node, struct device_node *parent)
- #endif
- 
- 	/* tell oprofile which irq to use */
--	cp0_perfcount_irq = irq_create_mapping(ltq_domain, LTQ_PERF_IRQ);
-+	ltq_perfcount_irq = irq_create_mapping(ltq_domain, LTQ_PERF_IRQ);
- 
- 	/*
- 	 * if the timer irq is not one of the mips irqs we need to
-@@ -461,6 +462,11 @@ int __init icu_of_init(struct device_node *node, struct device_node *parent)
- 	return 0;
- }
- 
-+int get_c0_perfcount_int(void)
-+{
-+	return ltq_perfcount_irq;
-+}
-+
- unsigned int get_c0_compare_int(void)
- {
- 	return MIPS_CPU_TIMER_IRQ;
-diff --git a/arch/mips/mti-malta/malta-time.c b/arch/mips/mti-malta/malta-time.c
-index 3778a35..a4e035c 100644
---- a/arch/mips/mti-malta/malta-time.c
-+++ b/arch/mips/mti-malta/malta-time.c
-@@ -121,22 +121,20 @@ void read_persistent_clock(struct timespec *ts)
- 	ts->tv_nsec = 0;
- }
- 
--static void __init plat_perf_setup(void)
-+int get_c0_perfcount_int(void)
- {
--#ifdef MSC01E_INT_BASE
- 	if (cpu_has_veic) {
- 		set_vi_handler(MSC01E_INT_PERFCTR, mips_perf_dispatch);
- 		mips_cpu_perf_irq = MSC01E_INT_BASE + MSC01E_INT_PERFCTR;
--	} else
--#endif
--	if (cp0_perfcount_irq >= 0) {
-+	} else if (cp0_perfcount_irq >= 0) {
- 		if (cpu_has_vint)
- 			set_vi_handler(cp0_perfcount_irq, mips_perf_dispatch);
- 		mips_cpu_perf_irq = MIPS_CPU_IRQ_BASE + cp0_perfcount_irq;
--#ifdef CONFIG_SMP
--		irq_set_handler(mips_cpu_perf_irq, handle_percpu_irq);
--#endif
-+	} else {
-+		mips_cpu_perf_irq = -1;
- 	}
-+
-+	return mips_cpu_perf_irq;
- }
- 
- unsigned int get_c0_compare_int(void)
-@@ -201,6 +199,4 @@ void __init plat_time_init(void)
- #endif
- 	}
- #endif
--
--	plat_perf_setup();
- }
-diff --git a/arch/mips/mti-sead3/sead3-time.c b/arch/mips/mti-sead3/sead3-time.c
-index 678d03d..f090c51 100644
---- a/arch/mips/mti-sead3/sead3-time.c
-+++ b/arch/mips/mti-sead3/sead3-time.c
-@@ -81,13 +81,16 @@ void read_persistent_clock(struct timespec *ts)
- 	ts->tv_nsec = 0;
- }
- 
--static void __init plat_perf_setup(void)
-+int get_c0_perfcount_int(void)
- {
- 	if (cp0_perfcount_irq >= 0) {
- 		if (cpu_has_vint)
- 			set_vi_handler(cp0_perfcount_irq, mips_perf_dispatch);
- 		mips_cpu_perf_irq = MIPS_CPU_IRQ_BASE + cp0_perfcount_irq;
-+	} else {
-+		mips_cpu_perf_irq = -1;
- 	}
-+	return mips_cpu_perf_irq;
- }
- 
- unsigned int get_c0_compare_int(void)
-@@ -108,6 +111,4 @@ void __init plat_time_init(void)
- 		(est_freq % 1000000) * 100 / 1000000);
- 
- 	mips_scroll_message();
--
--	plat_perf_setup();
- }
-diff --git a/arch/mips/oprofile/op_model_mipsxx.c b/arch/mips/oprofile/op_model_mipsxx.c
-index 42821ae..01f721a 100644
---- a/arch/mips/oprofile/op_model_mipsxx.c
-+++ b/arch/mips/oprofile/op_model_mipsxx.c
-@@ -11,6 +11,7 @@
- #include <linux/interrupt.h>
- #include <linux/smp.h>
- #include <asm/irq_regs.h>
-+#include <asm/time.h>
- 
- #include "op_impl.h"
- 
-@@ -35,6 +36,7 @@
- #define M_PERFCTL_COUNT_ALL_THREADS	(1UL	  << 13)
- 
- static int (*save_perf_irq)(void);
-+static int perfcount_irq;
- 
- /*
-  * XLR has only one set of counters per core. Designate the
-@@ -431,8 +433,16 @@ static int __init mipsxx_init(void)
- 	save_perf_irq = perf_irq;
- 	perf_irq = mipsxx_perfcount_handler;
- 
--	if ((cp0_perfcount_irq >= 0) && (cp0_compare_irq != cp0_perfcount_irq))
--		return request_irq(cp0_perfcount_irq, mipsxx_perfcount_int,
-+	if (get_c0_perfcount_int)
-+		perfcount_irq = get_c0_perfcount_int();
-+	else if ((cp0_perfcount_irq >= 0) &&
-+		 (cp0_compare_irq != cp0_perfcount_irq))
-+		perfcount_irq = MIPS_CPU_IRQ_BASE + cp0_perfcount_irq;
-+	else
-+		perfcount_irq = -1;
-+
-+	if (perfcount_irq >= 0)
-+		return request_irq(perfcount_irq, mipsxx_perfcount_int,
- 			0, "Perfcounter", save_perf_irq);
- 
- 	return 0;
-@@ -442,8 +452,8 @@ static void mipsxx_exit(void)
- {
- 	int counters = op_model_mipsxx_ops.num_counters;
- 
--	if ((cp0_perfcount_irq >= 0) && (cp0_compare_irq != cp0_perfcount_irq))
--		free_irq(cp0_perfcount_irq, save_perf_irq);
-+	if (perfcount_irq >= 0)
-+		free_irq(perfcount_irq, save_perf_irq);
- 
- 	counters = counters_per_cpu_to_total(counters);
- 	on_each_cpu(reset_counters, (void *)(long)counters, 1);
-diff --git a/arch/mips/ralink/irq.c b/arch/mips/ralink/irq.c
-index 0495011..7634dcd 100644
---- a/arch/mips/ralink/irq.c
-+++ b/arch/mips/ralink/irq.c
-@@ -45,6 +45,7 @@
- #define RALINK_INTC_IRQ_PERFC   (RALINK_INTC_IRQ_BASE + 9)
- 
- static void __iomem *rt_intc_membase;
-+static int rt_perfcount_irq;
- 
- static inline void rt_intc_w32(u32 val, unsigned reg)
- {
-@@ -73,6 +74,11 @@ static struct irq_chip ralink_intc_irq_chip = {
- 	.irq_mask_ack	= ralink_intc_irq_mask,
- };
- 
-+int get_c0_perfcount_int(void)
-+{
-+	return rt_perfcount_irq;
-+}
-+
- unsigned int get_c0_compare_int(void)
- {
- 	return CP0_LEGACY_COMPARE_IRQ;
-@@ -167,7 +173,7 @@ static int __init intc_of_init(struct device_node *node,
- 	irq_set_handler_data(irq, domain);
- 
- 	/* tell the kernel which irq is used for performance monitoring */
--	cp0_perfcount_irq = irq_create_mapping(domain, 9);
-+	rt_perfcount_irq = irq_create_mapping(domain, 9);
- 
- 	return 0;
- }
+Patches 17-24 convert the GIC driver to use IRQ domains and updates the
+platforms using it to properly map GIC interrupts instead of using the static
+routing tables to make the GIC appear transparent.
+
+I've tested this series on Malta and, with additional patches, on the
+DT-enabled Pistachio (formerly known as Danube) platform.  Unfortunately
+I do not have SEAD-3 hardware, but Qais Yousef has tested V1 of this series
+on a SEAD-3.  Compile tested on all other affected architectures (ath79,
+ralink, lantiq).
+
+Changes from v1:
+ - handle core interrupts in descending order
+ - dropped unnecessary irq_chip callbacks when possible
+ - used separate irq_chip to deal with C0 timer/perf interrupts
+ - added locking around potentially concurrent r-m-w operations
+
+[0] https://lkml.org/lkml/2014/9/5/542
+
+Andrew Bresticker (24):
+  MIPS: Always use IRQ domains for CPU IRQs
+  MIPS: Rename mips_cpu_intc_init() -> mips_cpu_irq_of_init()
+  MIPS: Provide a generic plat_irq_dispatch
+  MIPS: Set vint handler when mapping CPU interrupts
+  MIPS: i8259: Use IRQ domains
+  MIPS: Add hook to get C0 performance counter interrupt
+  MIPS: smp-cps: Enable all hardware interrupts on secondary CPUs
+  MIPS: Remove gic_{enable,disable}_interrupt()
+  MIPS: sead3: Remove sead3-serial.c
+  MIPS: sead3: Do not overlap CPU/GIC IRQ ranges
+  MIPS: Malta: Move MSC01 interrupt base
+  MIPS: Move MIPS_GIC_IRQ_BASE into platform irq.h
+  MIPS: Move GIC to drivers/irqchip/
+  irqchip: mips-gic: Remove platform irq_ack/irq_eoi callbacks
+  irqchip: mips-gic: Implement irq_set_type callback
+  irqchip: mips-gic: Fix gic_set_affinity() return value
+  irqchip: mips-gic: Use IRQ domains
+  irqchip: mips-gic: Stop using per-platform mapping tables
+  irqchip: mips-gic: Probe for number of external interrupts
+  irqchip: mips-gic: Use separate edge/level irq_chips
+  irqchip: mips-gic: Support local interrupts
+  irqchip: mips-gic: Remove unnecessary globals
+  MIPS: Malta: Use generic plat_irq_dispatch
+  MIPS: sead3: Use generic plat_irq_dispatch
+
+ Documentation/devicetree/bindings/mips/cpu_irq.txt |   4 +-
+ arch/mips/Kconfig                                  |  12 +-
+ arch/mips/ath79/irq.c                              |   1 -
+ arch/mips/ath79/setup.c                            |   5 +
+ arch/mips/include/asm/gic.h                        |  82 ++-
+ arch/mips/include/asm/irq_cpu.h                    |   4 +-
+ arch/mips/include/asm/mach-generic/irq.h           |   6 +
+ arch/mips/include/asm/mach-malta/irq.h             |   1 -
+ arch/mips/include/asm/mach-sead3/irq.h             |   1 -
+ arch/mips/include/asm/mips-boards/maltaint.h       |  24 +-
+ arch/mips/include/asm/mips-boards/sead3int.h       |  15 +-
+ arch/mips/include/asm/time.h                       |   1 +
+ arch/mips/kernel/Makefile                          |   1 -
+ arch/mips/kernel/cevt-gic.c                        |  14 +-
+ arch/mips/kernel/cevt-r4k.c                        |   4 +-
+ arch/mips/kernel/i8259.c                           |  24 +-
+ arch/mips/kernel/irq-gic.c                         | 402 -------------
+ arch/mips/kernel/irq_cpu.c                         |  48 +-
+ arch/mips/kernel/perf_event_mipsxx.c               |  23 +-
+ arch/mips/kernel/smp-cps.c                         |   4 +-
+ arch/mips/kernel/smp-mt.c                          |   4 +-
+ arch/mips/lantiq/irq.c                             |   8 +-
+ arch/mips/mti-malta/malta-int.c                    | 307 +---------
+ arch/mips/mti-malta/malta-time.c                   |  39 +-
+ arch/mips/mti-sead3/sead3-ehci.c                   |   8 +-
+ arch/mips/mti-sead3/sead3-int.c                    | 121 +---
+ arch/mips/mti-sead3/sead3-net.c                    |  14 +-
+ arch/mips/mti-sead3/sead3-platform.c               |  18 +-
+ arch/mips/mti-sead3/sead3-serial.c                 |  45 --
+ arch/mips/mti-sead3/sead3-time.c                   |  35 +-
+ arch/mips/oprofile/op_model_mipsxx.c               |  18 +-
+ arch/mips/ralink/irq.c                             |  10 +-
+ drivers/irqchip/Kconfig                            |   4 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-mips-gic.c                     | 646 +++++++++++++++++++++
+ 35 files changed, 919 insertions(+), 1035 deletions(-)
+ delete mode 100644 arch/mips/kernel/irq-gic.c
+ delete mode 100644 arch/mips/mti-sead3/sead3-serial.c
+ create mode 100644 drivers/irqchip/irq-mips-gic.c
+
 -- 
 2.1.0.rc2.206.gedb03e5
 
