@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaIRO76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 10:59:58 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:48777 "EHLO
+	id S932193AbaIRPAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 11:00:13 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:48840 "EHLO
 	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859AbaIRO75 (ORCPT
+	with ESMTP id S932154AbaIRPAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 10:59:57 -0400
+	Thu, 18 Sep 2014 11:00:10 -0400
 From: Nathan Lynch <nathan_lynch@mentor.com>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>
 CC: Catalin Marinas <catalin.marinas@arm.com>,
@@ -20,52 +20,57 @@ CC: Catalin Marinas <catalin.marinas@arm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Will Deacon <will.deacon@arm.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code consolidation
-Date: Thu, 18 Sep 2014 09:59:32 -0500
-Message-ID: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
+Subject: [PATCH v2 1/3] clocksource: arm_arch_timer: change clocksource name if CP15 unavailable
+Date: Thu, 18 Sep 2014 09:59:33 -0500
+Message-ID: <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series contains the necessary changes to allow architected timer
-access from user-space on 32-bit ARM.  This allows the VDSO to support
-high resolution timestamps for clock_gettime and gettimeofday.  This
-also merges substantially similar code from arm and arm64 into the
-core arm_arch_timer driver.
+The arm and arm64 VDSOs need CP15 access to the architected counter.
+If this is unavailable (which is allowed by ARM v7), indicate this by
+changing the clocksource name to "arch_mem_counter" before registering
+the clocksource.
 
-The functional changes are:
-- When available, CNTVCT is made readable by user space on arm, as it
-  is on arm64.
-- The clocksource name becomes "arch_mem_counter" if CP15 access to
-  the counter is not available.
+Suggested by Stephen Boyd.
 
-These changes have been carried as part of the ARM VDSO patch set over
-the last several months, but I am splitting them out here as I assume
-they should go through the clocksource maintainers.
+Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/arm_arch_timer.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-Changes since v1:
-- Fix minor checkpatch complaints.
-- Rework patches 2-4.  v1 copied arm64's arch_timer_evtstrm_enable
-  and arch_counter_set_user_access to the driver with slightly
-  different names in one patch, then removed the unused functions in
-  subsequent patches for each of arm and arm64.  This seemed kind of
-  awkward to me, so I've reorganized those changes into two patches
-  that should be easier to review.  Patch #1 is unchanged.
-
-Nathan Lynch (3):
-  clocksource: arm_arch_timer: change clocksource name if CP15
-    unavailable
-  clocksource: arm_arch_timer: enable counter access for 32-bit ARM
-  clocksource: arm_arch_timer: consolidate arch_timer_evtstrm_enable
-
- arch/arm/include/asm/arch_timer.h    | 25 --------------------
- arch/arm64/include/asm/arch_timer.h  | 31 -------------------------
- drivers/clocksource/arm_arch_timer.c | 44 ++++++++++++++++++++++++++++++++++--
- 3 files changed, 42 insertions(+), 58 deletions(-)
-
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 5163ec13429d..c99afdf12e98 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -429,11 +429,19 @@ static void __init arch_counter_register(unsigned type)
+ 	u64 start_count;
+ 
+ 	/* Register the CP15 based counter if we have one */
+-	if (type & ARCH_CP15_TIMER)
++	if (type & ARCH_CP15_TIMER) {
+ 		arch_timer_read_counter = arch_counter_get_cntvct;
+-	else
++	} else {
+ 		arch_timer_read_counter = arch_counter_get_cntvct_mem;
+ 
++		/* If the clocksource name is "arch_sys_counter" the
++		 * VDSO will attempt to read the CP15-based counter.
++		 * Ensure this does not happen when CP15-based
++		 * counter is not available.
++		 */
++		clocksource_counter.name = "arch_mem_counter";
++	}
++
+ 	start_count = arch_timer_read_counter();
+ 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+ 	cyclecounter.mult = clocksource_counter.mult;
 -- 
 1.9.3
 
