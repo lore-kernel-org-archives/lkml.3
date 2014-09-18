@@ -1,60 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096AbaIRBsh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 21:48:37 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:11764 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755705AbaIRBsf (ORCPT
+	id S1757320AbaIRBuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 21:50:51 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:47742 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755705AbaIRBut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 21:48:35 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Bjorn Andersson'" <bjorn@kryo.se>
-CC: "linux-arm-msm-owner@vger.kernel.org" 
-	<linux-arm-msm-owner@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        "dwalker@fifo99.com" <dwalker@fifo99.com>,
-        "bryanh@codeaurora.org" <bryanh@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Date: Thu, 18 Sep 2014 09:48:31 +0800
-Subject: RE: [RFC] msm:rpm-smd:change msm_rpm_smd_work method
-Thread-Topic: [RFC] msm:rpm-smd:change msm_rpm_smd_work method
-Thread-Index: Ac/Sl16wupcSOUaFRi6lT5Xs+7wxlAASzFwg
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB491615@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB491612@CNBJMBX05.corpusers.net>
- <CAJAp7OjeAuH3=VygJLSdNfp-kiQCfuVy54QVw7_-iDVs2n4QBw@mail.gmail.com>
-In-Reply-To: <CAJAp7OjeAuH3=VygJLSdNfp-kiQCfuVy54QVw7_-iDVs2n4QBw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 17 Sep 2014 21:50:49 -0400
+Date: Wed, 17 Sep 2014 21:50:46 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] X86: add IPI tracepoints
+Message-ID: <alpine.LFD.2.11.1409172135250.8647@knanqh.ubzr>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8I1mwuJ006746
 
-Hi Bjorn,
 
-I see,
-Thanks for your kind remind :)
+On X86 there are already tracepoints for IRQ vectors through which IPIs
+are handled.  However this is highly X86 specific, and the IPI signaling
+is not currently traced.
 
------Original Message-----
-On Tue, Sep 16, 2014 at 7:05 PM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
-[..]
-> diff --git a/arch/arm/mach-msm/rpm-smd.c b/arch/arm/mach-msm/rpm-smd.c
+This is an attempt at adding generic IPI tracepoints to X86.
 
-Hi Yalin,
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
 
-This file does not exist in mainline and this is not the forum for sending patches to codeaurora.
-Also note that your commit messages may not include "Change-id" when sending to LKML.
+This is a resent.  This patch was part of a larger series that got 
+merged during the last merge window.
 
-Regards,
-Bjorn
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index be8e1bde07..d193609bea 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -31,6 +31,16 @@
+ #include <asm/apic.h>
+ #include <asm/nmi.h>
+ #include <asm/trace/irq_vectors.h>
++
++#define CREATE_TRACE_POINTS
++/*
++ * Those were defined in <asm/trace/irq_vectors.h> and cause problems
++ * when including <trace/events/ipi.h>.
++ */
++#undef TRACE_INCLUDE_PATH
++#undef TRACE_INCLUDE_FILE
++#include <trace/events/ipi.h>
++
+ /*
+  *	Some notes on x86 processor bugs affecting SMP operation:
+  *
+@@ -124,11 +134,13 @@ static void native_smp_send_reschedule(int cpu)
+ 		WARN_ON(1);
+ 		return;
+ 	}
++	trace_ipi_raise(cpumask_of(cpu), tracepoint_string("RESCHEDULE"));
+ 	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+ }
+ 
+ void native_send_call_func_single_ipi(int cpu)
+ {
++	trace_ipi_raise(cpumask_of(cpu), tracepoint_string("CALL_FUNCTION_SINGLE"));
+ 	apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
+ }
+ 
+@@ -136,6 +148,8 @@ void native_send_call_func_ipi(const struct cpumask *mask)
+ {
+ 	cpumask_var_t allbutself;
+ 
++	trace_ipi_raise(mask, tracepoint_string("CALL_FUNCTION"));
++
+ 	if (!alloc_cpumask_var(&allbutself, GFP_ATOMIC)) {
+ 		apic->send_IPI_mask(mask, CALL_FUNCTION_VECTOR);
+ 		return;
+@@ -252,8 +266,10 @@ finish:
+  */
+ static inline void __smp_reschedule_interrupt(void)
+ {
++	trace_ipi_entry(tracepoint_string("RESCHEDULE"));
+ 	inc_irq_stat(irq_resched_count);
+ 	scheduler_ipi();
++	trace_ipi_exit(tracepoint_string("RESCHEDULE"));
+ }
+ 
+ __visible void smp_reschedule_interrupt(struct pt_regs *regs)
+@@ -291,8 +307,10 @@ __visible void smp_trace_reschedule_interrupt(struct pt_regs *regs)
+ 
+ static inline void __smp_call_function_interrupt(void)
+ {
++	trace_ipi_entry(tracepoint_string("CALL_FUNCTION"));
+ 	generic_smp_call_function_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_ipi_exit(tracepoint_string("CALL_FUNCTION"));
+ }
+ 
+ __visible void smp_call_function_interrupt(struct pt_regs *regs)
+@@ -313,8 +331,10 @@ __visible void smp_trace_call_function_interrupt(struct pt_regs *regs)
+ 
+ static inline void __smp_call_function_single_interrupt(void)
+ {
++	trace_ipi_entry(tracepoint_string("CALL_FUNCTION_SINGLE"));
+ 	generic_smp_call_function_single_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_ipi_exit(tracepoint_string("CALL_FUNCTION_SINGLE"));
+ }
+ 
+ __visible void smp_call_function_single_interrupt(struct pt_regs *regs)
