@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642AbaISSQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 14:16:00 -0400
-Received: from smtprelay0254.hostedemail.com ([216.40.44.254]:60216 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757587AbaISSP7 (ORCPT
+	id S1757706AbaISSRa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 14:17:30 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:51356 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757190AbaISSR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 14:15:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3866:3867:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:9025:10004:10400:10848:10967:11232:11658:11914:12043:12296:12517:12519:12679:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: iron67_50e85eaabaa1c
-X-Filterd-Recvd-Size: 1524
-Message-ID: <1411150553.24444.29.camel@joe-AO725>
-Subject: Re: [PATCH v2 1/2] Return a value from printk_ratelimited
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Omar Sandoval <osandov@osandov.com>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Date: Fri, 19 Sep 2014 11:15:53 -0700
-In-Reply-To: <20140919132123.418b276f@gandalf.local.home>
-References: <cover.1411116672.git.osandov@osandov.com>
-	 <3629aa32fd3e434e41e5e5f4a97ab50adb8edcdc.1411116672.git.osandov@osandov.com>
-	 <20140919132123.418b276f@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Sep 2014 14:17:28 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: arnd@arndb.de, olof@lixom.net, arm@kernel.org, mporter@linaro.org,
+        bcm@fixthebug.org, jonathar@broadcom.com, sbranden@broadcom.com,
+        rjui@broadcom.com, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com, hauke@hauke-m.de,
+        swarren@wwwdotorg.org, computersforpeace@gmail.com,
+        marc.ceeeee@gmail.com, cernekee@gmail.com, gregory.0xf0@gmail.com,
+        Florian Fainelli <f.fainelli@gmail.com>
+Subject: [PATCH] ARM: mach-bcm: offer a new maintainer and process
+Date: Fri, 19 Sep 2014 11:17:11 -0700
+Message-Id: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-19 at 13:21 -0400, Steven Rostedt wrote:
-> On Fri, 19 Sep 2014 02:01:29 -0700
-> Omar Sandoval <osandov@osandov.com> wrote:
-> 
-> > printk returns an integer; there's no reason for printk_ratelimited to swallow
-> > it.
+Hi all,
 
-Except for the lack of usefulness of the return value itself.
-See: https://lkml.org/lkml/2009/10/7/275
+As some of you may have seen in the news, Broadcom has recently stopped
+its mobile SoC activities. Upstream support for Broadcom's Mobile SoCs
+was an effort initially started by Christian Daudt and his team, and then
+continued by Alex Eleder and Matter Porter assigned to a particular landing
+team within Linaro to help Broadcom doing so.
 
+As part of this effort, Christian and Matt volunteered for centralizing pull
+requests coming from the arch/arm/mach-bcm/* directory and as of today, they
+are still responsible for merging mach-bcm pull requests coming from brcmstb,
+bcm5301x, bcm2835 and bcm63xx, creating an intermediate layer to the arm-soc
+tree.
+
+Following the mobile group shut down, our group (in which Brian, Gregory, Marc,
+Kevin and myself are) inherited these mobile SoC platforms, although at this
+point we cannot comment on the future of mobile platforms, we know that our
+Linaro activities have been stopped.
+
+We have not heard much from Christian and Matt in a while, and some of our pull
+requests have been stalling as a result. We would like to offer both a new
+maintainer for the mobile platforms as well as reworking the pull request
+process:
+
+- our group has now full access to these platforms, putting us in the best
+  position to support Mobile SoCs questions
+
+- over time, we think that the brcmstb, bcm5301x, bcm63xx and now Cygnus code
+  bases will represent the major bulk of the mach-bcm code changes submitted,
+  mobile SoCs being in deep maintenance mode
+
+- we want to keep our submission pace high, and keep a smooth and responsive
+  process in place for other maintainers such as Hauke Merthens and Stephen
+  Warren and now Scott Branden and his team for Cygnus/Northstar+.
+
+- there is little to no code sharing within mach-bcm, so we think each group
+  of maintainers should send individual pull requests towards Arnd and Olof,
+  the only conflicts they should ever have to resolve are for the Makefile and
+  Kconfig files, not different than any other pull requests
+
+Ideally, we would like Christian and Matt to acknowledge that change, if we
+cannot get an answer within the next 3 weeks, we think this change
+should go in to unblock the current situation.
+
+Florian Fainelli (1):
+  MAINTAINERS: add a third maintainer to mach-bcm
+
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
+
+-- 
+1.9.1
 
