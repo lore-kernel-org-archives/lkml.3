@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736AbaISRdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 13:33:25 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:62589 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757671AbaISRdX (ORCPT
+	id S1757783AbaISRef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 13:34:35 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:34064 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757479AbaISRed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 13:33:23 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140919172538.GC34042@vmdeb7>
-References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com> <20140919172538.GC34042@vmdeb7>
+	Fri, 19 Sep 2014 13:34:33 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v2 0/9] eeepc cleanup
-From: Frans Klaver <fransklaver@gmail.com>
-Date: Fri, 19 Sep 2014 19:33:11 +0200
-To: Darren Hart <dvhart@infradead.org>
-CC: Corentin Chary <corentin.chary@gmail.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <17894680-86be-41f3-8ee4-93704accd374@email.android.com>
+In-Reply-To: <1409928798-31895-4-git-send-email-alvin.chen@intel.com>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+	<1409928798-31895-4-git-send-email-alvin.chen@intel.com>
+Date: Fri, 19 Sep 2014 10:34:32 -0700
+Message-ID: <CACRpkdZOZu4aj7aWnkVaQXLND6Cf7k-LNZikQr7DcKkp2cgwRg@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v2] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Weike Chen <alvin.chen@intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 September 2014 19:25:38 CEST, Darren Hart <dvhart@infradead.org> wrote:
->On Wed, Sep 17, 2014 at 11:47:18PM +0200, Frans Klaver wrote:
->> Here's the second installment cleaning up some things in the eeepc
->laptop
->> driver.
->> 
->> This depends on "eeepc-laptop: simplify parse_arg()".
->> 
->> For those interested, I keep a copy based on Darren's testing branch
->on
->> github:
->
->Please note, "testing" is strictly for use with Fengguang's 0day robot.
->It
->*will* rebase and be recreated willy nilly.
->
->If you want to base on something I've queued, I suggest the "for-next"
->branch as
->I expect that to be far more stable. Rabses should be *very* rare
->there.
->
->Feel free to use "testing" if you need to, just be aware it will
->rebase.
->
+On Fri, Sep 5, 2014 at 7:53 AM, Weike Chen <alvin.chen@intel.com> wrote:
 
-I'll keep that in mind for the next batch ;) 
-
-
->> 
->> 	https://github.com/fransklaver/linux.git tags/eeepc_cleanup_v2
+> This patch enables suspend and resume mode for the power management, and
+> it is based on Josef Ahmad's previous work.
 >
->Queued for testing.
->
->Thanks Frans!
+> Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
+> Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
+> Signed-off-by: Weike Chen <alvin.chen@intel.com>
+(...)
 
-Thanks, 
-Frans 
+> +/* Store GPIO context across system-wide suspend/resume transitions */
+> +static struct dwapb_context {
+> +       u32 data[DWAPB_MAX_PORTS];
+> +       u32 dir[DWAPB_MAX_PORTS];
+> +       u32 ext[DWAPB_MAX_PORTS];
+> +       u32 int_en;
+> +       u32 int_mask;
+> +       u32 int_type;
+> +       u32 int_pol;
+> +       u32 int_deb;
+> +} dwapb_context;
 
+NAK, this should STILL be part of the device state container. Not
+a local variable.
 
+I've said this before. Please fix this, thanks.
+
+Yours,
+Linus Walleij
