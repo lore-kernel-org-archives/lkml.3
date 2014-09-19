@@ -1,57 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670AbaISL0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:26:51 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54205 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891AbaISL0u (ORCPT
+	id S1756726AbaISL1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:27:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59893 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaISL1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:26:50 -0400
-From: Sanchayan Maity <maitysanchayan@gmail.com>
-To: shawn.guo@freescale.com
-Cc: stefan@agner.ch, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sanchayan Maity <maitysanchayan@gmail.com>
-Subject: [PATCH v2] ARM: dts: vf610-colibri: Add ADC support
-Date: Fri, 19 Sep 2014 16:56:13 +0530
-Message-Id: <a0ecfce3f97fb6684657ae76b89f38108fcdf68f.1411122224.git.maitysanchayan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1411122224.git.maitysanchayan@gmail.com>
-References: <cover.1411122224.git.maitysanchayan@gmail.com>
-In-Reply-To: <cover.1411122224.git.maitysanchayan@gmail.com>
-References: <cover.1411122224.git.maitysanchayan@gmail.com>
+	Fri, 19 Sep 2014 07:27:10 -0400
+Date: Fri, 19 Sep 2014 04:27:09 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC v2 4/5] O_NONBLOCK flag for readv2/preadv2
+Message-ID: <20140919112709.GE4639@infradead.org>
+References: <cover.1410983998.git.milosz@adfin.com>
+ <e190ba39a6244ec19344f7fe161d6e4e89962a3d.1410983999.git.milosz@adfin.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e190ba39a6244ec19344f7fe161d6e4e89962a3d.1410983999.git.milosz@adfin.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable ADC support for Colibri VF61 modules
-
-Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
----
- arch/arm/boot/dts/vf610-colibri.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
-index 0cd8343..6fd099e 100644
---- a/arch/arm/boot/dts/vf610-colibri.dtsi
-+++ b/arch/arm/boot/dts/vf610-colibri.dtsi
-@@ -27,6 +27,16 @@
- 
- };
- 
-+&adc0 {
-+	pinctrl-names = "default";
-+	status = "okay";
-+};
-+
-+&adc1 {
-+	pinctrl-names = "default";
-+	status = "okay";
-+};
-+
- &esdhc1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_esdhc1>;
--- 
-1.7.9.5
+The subject needs an update now that the flag has been renamed.
 
