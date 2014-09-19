@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaISTwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 15:52:35 -0400
-Received: from smtprelay0114.hostedemail.com ([216.40.44.114]:49553 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932108AbaISTwd (ORCPT
+	id S932346AbaIST5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 15:57:53 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26607 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932080AbaIST5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 15:52:33 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3873:3874:4321:5007:6119:7652:8828:10004:10400:10848:11026:11232:11658:11914:12050:12438:12517:12519:12555:12740:13069:13071:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ball32_33038e0f5cf1e
-X-Filterd-Recvd-Size: 2188
-Message-ID: <1411156347.24444.31.camel@joe-AO725>
-Subject: Re: [PATCH v10 5/6] rtc: max77686: Use ffs() to calculate tm_wday
-From: Joe Perches <joe@perches.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Doug Anderson <dianders@chromium.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 19 Sep 2014 12:52:27 -0700
-In-Reply-To: <541C838B.7070207@collabora.co.uk>
-References: <1411122377-10426-1-git-send-email-javier.martinez@collabora.co.uk>
-	 <1411122377-10426-6-git-send-email-javier.martinez@collabora.co.uk>
-	 <1411137561.24444.5.camel@joe-AO725> <541C838B.7070207@collabora.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Sep 2014 15:57:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18TDJ5K04hnQkgIZ2PBmT2T
+Date: Fri, 19 Sep 2014 12:57:38 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
+Message-ID: <20140919195738.GR14505@atomide.com>
+References: <1411067086-16613-1-git-send-email-nm@ti.com>
+ <1411067086-16613-4-git-send-email-nm@ti.com>
+ <alpine.DEB.2.10.1409181749170.4206@nanos>
+ <20140919030333.GA6088@kahuna>
+ <alpine.DEB.2.10.1409190710320.5612@nanos>
+ <20140919161927.GA28613@kahuna>
+ <alpine.DEB.2.10.1409191027330.5612@nanos>
+ <20140919191649.GQ14505@atomide.com>
+ <alpine.DEB.2.10.1409191233590.4213@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1409191233590.4213@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-19 at 21:27 +0200, Javier Martinez Canillas wrote:
-> Hello Joe,
-
-Hello Javier.
-
-> On 09/19/2014 04:39 PM, Joe Perches wrote:
-> > On Fri, 2014-09-19 at 12:26 +0200, Javier Martinez Canillas wrote:
-> >> The function max77686_rtc_calculate_wday() is used to
-> >> calculate the day of the week to be filled in struct
-> >> rtc_time but that function only calculates the number
-> >> of bits shifted. So the ffs() function can be used to
-> >> find the first bit set instead of a special function.
+* Thomas Gleixner <tglx@linutronix.de> [140919 12:47]:
+> On Fri, 19 Sep 2014, Tony Lindgren wrote:
+> > * Thomas Gleixner <tglx@linutronix.de> [140919 10:37]:
+> > >From hardware point of view the wake-up events behave like interrupts
+> > and could also be used as the only interrupt in some messed up cases.
+> > That avoids all kinds of custom APIs from driver point.
 > > 
-> > This isn't the same logic.  Perhaps you want fls.
-> >
+> > The re-entrancy problem we've most likely had ever since we enabled
+> > the PRCM interrupts, and maybe that's why I did not even consider
+> > that part. I think before that we were calling the driver interrupt
+> > after waking up from the PM code..
+> > 
+> > Anyways, how about the following to deal with the re-entrancy problem:
+> > 
+> > 1. The wake-up interrupt handler must have a separate interrupt
+> >    handler that just calls tasklet_schedule()
+> > 
+> > 2. The device interrupt handler also just calls tasklet_schedule()
+> > 
+> > 3. The tasklet then does pm_runtime_get, handles the registers, and
+> >    so on.
+> > 
+> > Or would we still have a re-entrancy problem somewhere else with
+> > that?
 > 
-> Right, the removed function has the same logic than fls() - 1 but the value
-> stored in data[RTC_WEEKDAY] is:
+> Why on earth are you wanting tasklets in there? That's just silly,
+> really.
+
+Lack of a framework on driver side to cope with this in a generic
+way? :p
+ 
+> The wakeup handler is supposed to bring the thing out of deep sleep
+> and nothing else. All you want it to do is to mask itself and save the
+> information that the real device irq is pending.
+
+Yes that is enough.
+ 
+> A stub handler for the wakeup irq is enough. We can have that in the
+> irq/pm core and all it would do is simply:
 > 
-> data[RTC_WEEKDAY] = 1 << tm->tm_wday;
+> irqreturn_t handle_jinxed_wakeup_irq(unsigned irq, void *dev_id)
+> {
+> 	unsigned device_irq = get_dev_irq(dev_id);
 > 
-> so for this particular case, it doesn't matter since ffs() == fls() always.
+> 	force_mask(irq);
+> 	set_irq_pending(device_irq);
+> 	return HANDLED;	
+> }
+> 
+> So on resume_device_irqs() the real device interrupt gets reenabled
+> and unmasked (if it was masked) and the interrupt gets resent either
+> in hardware (level or retrigger) or by the software resend mechanism.
+> 
+> That completely avoids tasklets, reentrant irq handlers and all other
+> crap which might be required.
 
-I didn't look that far.
+Okie dokie, that sounds good to me. Having this generic for the
+drivers would be excellent, that's the missing piece.
 
-I just wanted to show that the logic wasn't the same.
+Thanks,
 
-Perhaps you can specify that ffs==fls in the changelog.
-
-
+Tony
