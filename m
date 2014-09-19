@@ -1,98 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaISQqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:46:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52966 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232AbaISQqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:46:15 -0400
-Date: Fri, 19 Sep 2014 09:46:03 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Corentin Chary <corentin.chary@gmail.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] eeepc-laptop: clean up coding style
-Message-ID: <20140919164603.GB34042@vmdeb7>
-References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
- <1410990447-3210-2-git-send-email-fransklaver@gmail.com>
- <1410991612.4290.10.camel@joe-AO725>
- <642509cf-05f2-47f4-be2e-a3cfb9a93a04@email.android.com>
+	id S932208AbaISQs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:48:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59940 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756232AbaISQs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 12:48:56 -0400
+Date: Fri, 19 Sep 2014 13:48:50 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
+Message-ID: <20140919164850.GD32694@kernel.org>
+References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
+ <540964C0.1050702@intel.com>
+ <20140905141123.GE30520@kernel.org>
+ <1409930200.1662.16.camel@leonhard>
+ <20140905154402.GF30520@kernel.org>
+ <87ppf1mkkk.fsf@sejong.aot.lge.com>
+ <20140912141116.GH1801@kernel.org>
+ <87zjdwktwu.fsf@sejong.aot.lge.com>
+ <20140919141653.GA32694@kernel.org>
+ <1411141366.1680.15.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <642509cf-05f2-47f4-be2e-a3cfb9a93a04@email.android.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411141366.1680.15.camel@leonhard>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 07:01:25AM +0200, Frans Klaver wrote:
-> On 18 September 2014 00:06:52 CEST, Joe Perches <joe@perches.com> wrote:
-> >On Wed, 2014-09-17 at 23:47 +0200, Frans Klaver wrote:
-> >> Correct indentation and brace usage to comply with
-> >> Documentation/CodingStyle.
-> >> 
-> >> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> >> ---
-> >>  drivers/platform/x86/eeepc-laptop.c | 8 +++++---
-> >>  1 file changed, 5 insertions(+), 3 deletions(-)
-> >> 
-> >> diff --git a/drivers/platform/x86/eeepc-laptop.c
-> >b/drivers/platform/x86/eeepc-laptop.c
-> >> index 3095d38..653999e 100644
-> >> --- a/drivers/platform/x86/eeepc-laptop.c
-> >> +++ b/drivers/platform/x86/eeepc-laptop.c
-> >> @@ -544,7 +544,7 @@ static int eeepc_led_init(struct eeepc_laptop
-> >*eeepc)
-> >>  	eeepc->tpd_led.name = "eeepc::touchpad";
-> >>  	eeepc->tpd_led.brightness_set = tpd_led_set;
-> >>  	if (get_acpi(eeepc, CM_ASL_TPD) >= 0) /* if method is available */
-> >> -	  eeepc->tpd_led.brightness_get = tpd_led_get;
-> >> +		eeepc->tpd_led.brightness_get = tpd_led_get;
-> >>  	eeepc->tpd_led.max_brightness = 1;
-> >>  
-> >>  	rv = led_classdev_register(&eeepc->platform_device->dev,
-> >> @@ -692,8 +692,9 @@ static int eeepc_register_rfkill_notifier(struct
-> >eeepc_laptop *eeepc,
-> >>  		 * changed during setup.
-> >>  		 */
-> >>  		eeepc_rfkill_hotplug(eeepc, handle);
-> >> -	} else
-> >> +	} else {
-> >>  		return -ENODEV;
-> >> +	}
-> >>  
-> >>  	return 0;
-> >>  }
-> >
-> >This sort of code:
-> >
-> >	if (foo) {
-> >		[ do_something ]
-> >	} else
-> >		return -ERRVAL;
-> >
-> >is generally better rewritten as:
-> >
-> >	if (!foo)
-> >		return -ERRVAL;
-> >
-> >	[ do_something ]
-> >
-> >This gives immediacy to the error handler and
-> >as well reduces unnecessary indentation.
+Em Sat, Sep 20, 2014 at 12:42:46AM +0900, Namhyung Kim escreveu:
+> 2014-09-19 (금), 11:16 -0300, Arnaldo Carvalho de Melo:
+> > Em Fri, Sep 19, 2014 at 03:26:25PM +0900, Namhyung Kim escreveu:
+> > > On Fri, 12 Sep 2014 11:11:16 -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Fri, Sep 12, 2014 at 03:14:51PM +0900, Namhyung Kim escreveu:
+> > > >> On Fri, 5 Sep 2014 12:44:02 -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Humm, take a look at machine__write_buildid_table() -> write_buildid(),
+> > > > we already seem to set build_id_event.header.misc suitably, no?
+> >  
+> > > AFAIK the PERF_RECORD_MISC_KERNEL is set for both of kernel image and
+> > > modules so we cannot distinguish a kernel from others (without checking
+> > > names).
+> > 
+> > Ok, not perfect, but I think we improve the situation by using this
+> > piece of information while looking if the file ends in .ko, in which
+> > case we can mark it as a kernel module, if it doesn't end in .ko, we
+> > have a kernel.
+> > 
+> > Better than today, probably good enough, no?
 > 
-> I fully agree. 
+> Yep, I'll check .ko suffix in v3.
+
+Thanks!
+
+> > > >> > That or to put the build-id into the synthesized kernel mmap
+> > > >> > event. Which is better, because:
+
+> > > >> > That leads to another problem that needs to get solved eventually: We
+> > > >> > need to have the build-id into PERF_RECORD_MMAP, because we're now using
+> > > >> > just the mmap filename as the key, not the contents, and for long
+> > > >> > running sessions, DSOs can get updated, etc.
+> > 
+> > > >> But it'd require a realtime processing of events at record time.
+> > 
+> > > > Been there, done that, backtracked, yes, we can't do that at 'record
+> > > > time', else we would be adding way too much noise to the recording
+> > > > phase.
+> > 
+> > > > The idea is for the _kernel_ to do that, would take sizeof(buildid)
+> > > > (about 20 bytes) on the per-DSO structure in the kernel.
+> > 
+> > > > When ELF loading it, stashing the contents of an ELF session
+> > > > (.note.gnu.build-id) somewhere accessible at PERF_RECORD_MMAP3
+> > > > generation time.
+> > 
+> > > > Doing that at the time we load the DSO from disk should add negligible
+> > > > overhead.
+> > 
+> > > > With that we would not need to go over all the perf.data stream to
+> > > > generate the build-id table after all record sessions, they would be at
+> > > > the struct map already.
+> >  
+> > > Yes, it'll solve the problem and simplifies the perf record.  However I
+> > > suspect it's not acceptable to keep such info in the kernel only for the
+> > > sake of perf.
+> > 
+> > Hey, perf is a crucial part of development, even if it was the sole
+> > user, I think this would be acceptable.
+> > 
+> > But this is not perf specific at all, any other tool that needs to map
+> > from sample to a symtab _needs_ this, there is no other way to, on a
+> > system with running apps and its libraries, to safely go from DSO
+> > pathname to its corresponding binary.
+> > 
+> > Also this enables one to unambiguously describe a running environment
+> > without packing tons of duplicated payloads for multiple workload runs,
+> > be it for profiling or for any other problem characterization task.
+> > 
+> > And we have build-ids available for quite a while in all DSOs in the
+> > system.
+> > 
+> > I bet gdb, systemtap, etc would be glad to use this if available.
 > 
-> Darren, do you still take this in one patch? 
+> Hmm.. okay then.  But IIUC kernel only knows about an executable (and
+> dynamic linker) at load time not libraries as they're loaded by the
+> linker.  So kernel needs to check whether a file is an ELF and has
+> build-id for every file, right?
 
-I'll take the cleanup patch as is. I'm happy to take a separate patch to improve
-the code flow.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
+Yes, when it figures out it is an ELF file and invokes this DSO loading
+routines, there is where we should insert the code that will read/store
+the build id so that when we emit the PERF_RECORD_MMAP3 we can read it.
+ 
+- Arnaldo
