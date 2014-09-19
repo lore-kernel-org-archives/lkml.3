@@ -1,46 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377AbaISPqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:46:47 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:64785 "EHLO gw1.transmode.se"
+	id S1757457AbaISPrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:47:39 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:35388 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756861AbaISPqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:46:45 -0400
-In-Reply-To: <20140919135756.A060D1AB26D@localhost.localdomain>
-References: <20140919135756.A060D1AB26D@localhost.localdomain>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-MIME-Version: 1.0
-Subject: Re: [PATCH 2/2] powerpc32: add support for csum_add()
-X-KeepSent: 808E087E:AC49C5B7-C1257D58:0055AC30;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Message-ID: <OF808E087E.AC49C5B7-ONC1257D58.0055AC30-C1257D58.0056ACBD@transmode.se>
-Date: Fri, 19 Sep 2014 17:46:42 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP6|November 21, 2013) at
- 19/09/2014 17:46:43,
-	Serialize complete at 19/09/2014 17:46:43
-Content-Type: text/plain; charset="US-ASCII"
+	id S1753398AbaISPrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:47:37 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.debian@gmx.de>,
+        Jan Kara <jack@suse.cz>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
+Date: Fri, 19 Sep 2014 19:45:16 +0400
+Message-Id: <1411141516-1918-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2014/09/19 15:57:56:
+Currently watchers are removed in dentry_iput(), if n_link is zero.  But
+other detries can be linked with this inode.
 
-> +#define HAVE_ARCH_CSUM_ADD
-> +static inline __wsum csum_add(__wsum csum, __wsum addend)
-> +{
-> +    __asm__("\n\
-> +   addc %0,%0,%1 \n\
-> +   addze %0,%0 \n\
-> +   "
-> +   : "=r" (csum)
-> +   : "r" (addend), "0"(csum));
+For example if we create two hard links, open the first one and set an
+inotify watcher on one of them.  Then if we remove the opened file and
+then another file, the inotify watcher will be removed. But we will have
+the alive file descriptor, which allows us to generate more events.
 
-hmm, I wonder if not this is better written as:
-: "+r" (csum): "r" (addend))
+And here is another behaviour, if files are removed in another order.
+The watcher will not be removed and we will keep getting inotify events
+for that inode.
 
-  Jocke
+This patch removes difference of behaviours for these cases. Watchers
+are removed, only if nlink is zero and i_dentry list is empty. The
+resulting behaviour is the same with what has been described in the
+second case.
+
+Look at a following example:
+
+	fd = inotify_init1(IN_NONBLOCK);
+	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+	link(path, path_link);
+
+	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
+
+	unlink(path);
+	unlink(path_link);
+
+	printf(" --- unlink path, path_link\n");
+	read_evetns(fd);
+
+	close(deleted);
+	printf(" --- close\n");
+	read_evetns(fd);
+	printf(" --- end\n");
+
+We expect to get the same set of events for this case and for the
+case, when files are deleted in another order. But now we get the
+different set of events.
+
+Without this patch:
+The first case, when "path" is deleted before "path_link"
+ --- unlink path, path_link
+4	(IN_ATTRIB)
+400	(IN_DELETE_SELF)
+8000	(IN_IGNORED)
+ --- close
+ --- end
+
+and for the case, when "path_link" is deleted before "path"
+ --- unlink path_link, path
+4	(IN_ATTRIB)
+ --- close
+8	(IN_CLOSE_WRITE)
+400	(IN_DELETE_SELF)
+8000	(IN_IGNORED)
+ --- end
+
+With this patch we have the same output for both cases:
+ --- unlink
+4	(IN_ATTRIB)
+ --- close
+8	(IN_CLOSE_WRITE)
+400	(IN_DELETE_SELF)
+8000	(IN_IGNORED)
+ --- end
+PASS
+
+v2: generate IN_DELETE_SELF when the last link to the file is removed
+
+Reviewed-by: Jan Kara <jack@suse.cz>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Heinrich Schuchardt <xypron.debian@gmx.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ fs/dcache.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 7a5b514..3a0e3bc 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -278,12 +278,15 @@ static void dentry_iput(struct dentry * dentry)
+ 	__releases(dentry->d_inode->i_lock)
+ {
+ 	struct inode *inode = dentry->d_inode;
++	bool last_dentry;
++
+ 	if (inode) {
+ 		dentry->d_inode = NULL;
+ 		hlist_del_init(&dentry->d_alias);
++		last_dentry = hlist_empty(&inode->i_dentry);
+ 		spin_unlock(&dentry->d_lock);
+ 		spin_unlock(&inode->i_lock);
+-		if (!inode->i_nlink)
++		if (!inode->i_nlink && last_dentry)
+ 			fsnotify_inoderemove(inode);
+ 		if (dentry->d_op && dentry->d_op->d_iput)
+ 			dentry->d_op->d_iput(dentry, inode);
+@@ -303,13 +306,16 @@ static void dentry_unlink_inode(struct dentry * dentry)
+ 	__releases(dentry->d_inode->i_lock)
+ {
+ 	struct inode *inode = dentry->d_inode;
++	bool last_dentry;
++
+ 	__d_clear_type(dentry);
+ 	dentry->d_inode = NULL;
+ 	hlist_del_init(&dentry->d_alias);
+ 	dentry_rcuwalk_barrier(dentry);
++	last_dentry = hlist_empty(&inode->i_dentry);
+ 	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&inode->i_lock);
+-	if (!inode->i_nlink)
++	if (!inode->i_nlink && last_dentry)
+ 		fsnotify_inoderemove(inode);
+ 	if (dentry->d_op && dentry->d_op->d_iput)
+ 		dentry->d_op->d_iput(dentry, inode);
+-- 
+1.9.3
+
