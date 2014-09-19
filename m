@@ -1,116 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694AbaISMoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:44:04 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:52709 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752300AbaISMoC (ORCPT
+	id S1756739AbaISMoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:44:38 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:61344 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaISMoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:44:02 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <541C25E5.6080601@smartplayin.com>
-Date: Fri, 19 Sep 2014 18:17:33 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Wim Van Sebroeck <wim@iguana.be>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: qcom: register a restart notifier
-References: <cover.1411078425.git.joshc@codeaurora.org> <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
-In-Reply-To: <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Sep 2014 08:44:37 -0400
+From: Roman Pen <r.peniaev@gmail.com>
+Cc: Roman Pen <r.peniaev@gmail.com>, Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [v4 PATCH 1/1] init: fix race between rootfs mount and firmware loading
+Date: Fri, 19 Sep 2014 21:44:24 +0900
+Message-Id: <1411130664-10195-1-git-send-email-r.peniaev@gmail.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140918174127.GB340@redhat.com>
+References: <20140918174127.GB340@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+The thing is that built-in modules are being inited before
+rootfs mount.  Some of the modules can request firmware loading
+from another thread using async 'request_firmware_nowait' call
+on inition, so we can catch this kind of race:
+   rootfs does not exist yet, but we are going to open and load
+   firmware file requesting it from the kernel thread.
 
-Tested this patch on IFC6410 by disabling pinctrl ps_hold reset
-implementation and on top of Guenter's patchset for restart_notifier.
+Solution is simple: before any rootfs access firmware loader
+must wait for rootfs mount.
 
-Tested-by: pramod.gurav@smartplayin.com
+There are few questions which remain unanswered, but in this
+patch I do not want to complicate things and want to fix exactly
+the race.  So here are the questions:
 
-I picked up DT changes from bindings as they are from this patchset.
+1. can 'request_firmware' (sync variant) be called on module inition
+   directly, without any threads? if can, that means firmware will
+   never be loaded for the driver at first try in case of built-in
+   module, because rootfs will be mounted only at the end of kernel
+   init sequence.
 
-Thanks
-Pramod
-On Friday 19 September 2014 03:57 AM, Josh Cartwright wrote:
-> The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
-> resort mechanism for triggering chip reset.  Usually, other restart
-> methods (such as PS_HOLD) are preferrable for issuing a more complete
-> reset of the chip.  As such, keep the priority of the watchdog notifier
-> low.
-> 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  drivers/watchdog/qcom-wdt.c | 31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-> 
-> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
-> index e9409f5..710ab43 100644
-> --- a/drivers/watchdog/qcom-wdt.c
-> +++ b/drivers/watchdog/qcom-wdt.c
-> @@ -15,6 +15,7 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/platform_device.h>
-> +#include <linux/reboot.h>
->  #include <linux/watchdog.h>
->  
->  #define WDT_RST		0x0
-> @@ -24,6 +25,7 @@
->  struct qcom_wdt {
->  	struct watchdog_device	wdd;
->  	unsigned long		freq;
-> +	struct notifier_block	restart_nb;
->  	void __iomem		*base;
->  };
->  
-> @@ -82,6 +84,24 @@ static const struct watchdog_info qcom_wdt_info = {
->  	.identity	= KBUILD_MODNAME,
->  };
->  
-> +static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
-> +			    void *data)
-> +{
-> +	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
-> +
-> +	/*
-> +	 * Trigger watchdog bite:
-> +	 *    Setup BITE_TIME to be very low, and enable WDT.
-> +	 */
-> +	mutex_lock(&wdt->wdd.lock);
-> +	writel_relaxed(0, wdt->base + WDT_EN);
-> +	writel_relaxed(1, wdt->base + WDT_RST);
-> +	writel_relaxed(0x31F3, wdt->base + WDT_BITE_TIME);
-> +	writel_relaxed(1, wdt->base + WDT_EN);
-> +	mutex_unlock(&wdt->wdd.lock);
-> +	return NOTIFY_DONE;
-> +}
-> +
->  static int qcom_watchdog_probe(struct platform_device *pdev)
->  {
->  	struct qcom_wdt *wdt;
-> @@ -121,6 +141,17 @@ static int qcom_watchdog_probe(struct platform_device *pdev)
->  		return ret;
->  	}
->  
-> +	/*
-> +	 * WDT restart notifier has priority 0 (use as a last resort)
-> +	 */
-> +	wdt->restart_nb.notifier_call = qcom_wdt_restart;
-> +	ret = register_restart_handler(&wdt->restart_nb);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup restart handler\n");
-> +		watchdog_unregister_device(&wdt->wdd);
-> +		return ret;
-> +	}
-> +
->  	return 0;
->  }
->  
-> 
+2. in case of separated '/lib' mount point we still have the problem:
+   firmware will be loaded only on further tries, but the first attempt
+   will always fail, because '/lib' mount point does not exist.  Seems
+   to me this can't be simply fixed, and firmware_request logic needs
+   some refactoring.
+
+Probably, there are other good questions which I do not see because
+of shallow understanding of init and firmware loading sequences.
+
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/base/firmware_class.c |  6 ++++++
+ include/linux/init.h          |  1 +
+ init/main.c                   | 33 +++++++++++++++++++++++++++++++--
+ 3 files changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index bf42430..450c4ae 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -29,6 +29,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/reboot.h>
+ #include <linux/security.h>
++#include <linux/init.h>
+ 
+ #include <generated/utsrelease.h>
+ 
+@@ -324,6 +325,11 @@ static int fw_get_filesystem_firmware(struct device *device,
+ 	int rc = -ENOENT;
+ 	char *path = __getname();
+ 
++	/* Before any file access we have to wait for rootfs.
++	   In case of built-in module we can race with kernel init
++	   thread, which has not mounted rootfs yet */
++	wait_for_rootfs();
++
+ 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+ 		struct file *file;
+ 
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 2df8e8d..83233ae 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -152,6 +152,7 @@ void setup_arch(char **);
+ void prepare_namespace(void);
+ void __init load_default_modules(void);
+ int __init init_rootfs(void);
++void wait_for_rootfs(void);
+ 
+ extern void (*late_time_init)(void);
+ 
+diff --git a/init/main.c b/init/main.c
+index bb1aed9..2cfe187 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -973,6 +973,33 @@ static int __ref kernel_init(void *unused)
+ 	      "See Linux Documentation/init.txt for guidance.");
+ }
+ 
++static DECLARE_WAIT_QUEUE_HEAD(rootfs_waitq);
++static bool rootfs_mounted;
++
++void wait_for_rootfs(void)
++{
++	/* Here we try to protect from a few things:
++	 * 1. Avoid waiting for ourselves, when init thread has not
++	 *    mounted rootfs yet.
++	 * 2. Avoid warning if call chain was initiated from userspace
++	 *    /sbin/init. For example when /sbin/init loads the driver,
++	 *    which, in turn, wants to access rootfs (e.g. firmware loading),
++	 *    thus it has to be sure, that rootfs has been successfully
++	 *    mounted.
++	 */
++	if (rootfs_mounted || WARN_ON(is_global_init(current)))
++		return;
++	else
++		wait_event(rootfs_waitq, rootfs_mounted);
++}
++EXPORT_SYMBOL(wait_for_rootfs);
++
++static inline void wake_up_rootfs_waiters(void)
++{
++	rootfs_mounted = true;
++	wake_up_all(&rootfs_waitq);
++}
++
+ static noinline void __init kernel_init_freeable(void)
+ {
+ 	/*
+@@ -1025,9 +1052,11 @@ static noinline void __init kernel_init_freeable(void)
+ 
+ 	/*
+ 	 * Ok, we have completed the initial bootup, and
+-	 * we're essentially up and running. Get rid of the
+-	 * initmem segments and start the user-mode stuff..
++	 * we're essentially up and running.  Wake up the
++	 * rootfs mount waiters, get rid of the initmem
++	 * segments, and start the user-mode stuff..
+ 	 */
++	wake_up_rootfs_waiters();
+ 
+ 	/* rootfs is available now, try loading default modules */
+ 	load_default_modules();
+-- 
+2.0.0
+
