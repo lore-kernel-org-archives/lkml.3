@@ -1,153 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457AbaISPrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:47:39 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:35388 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398AbaISPrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:47:37 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.debian@gmx.de>,
-        Jan Kara <jack@suse.cz>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
-Date: Fri, 19 Sep 2014 19:45:16 +0400
-Message-Id: <1411141516-1918-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.9.3
+	id S1757511AbaISPsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:48:13 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58099 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757038AbaISPsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:48:12 -0400
+Message-ID: <541C5029.1070500@fb.com>
+Date: Fri, 19 Sep 2014 11:47:53 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: <paulmck@linux.vnet.ibm.com>, Omar Sandoval <osandov@osandov.com>
+CC: Josef Bacik <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] Move BTRFS RCU string to common library
+References: <cover.1411116672.git.osandov@osandov.com> <20140919154546.GZ4723@linux.vnet.ibm.com>
+In-Reply-To: <20140919154546.GZ4723@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-19_07:2014-09-19,2014-09-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1409190135
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently watchers are removed in dentry_iput(), if n_link is zero.  But
-other detries can be linked with this inode.
 
-For example if we create two hard links, open the first one and set an
-inotify watcher on one of them.  Then if we remove the opened file and
-then another file, the inotify watcher will be removed. But we will have
-the alive file descriptor, which allows us to generate more events.
 
-And here is another behaviour, if files are removed in another order.
-The watcher will not be removed and we will keep getting inotify events
-for that inode.
+On 09/19/2014 11:45 AM, Paul E. McKenney wrote:
+> On Fri, Sep 19, 2014 at 02:01:28AM -0700, Omar Sandoval wrote:
+>> This patch series moves the generic RCU string library used internally by BTRFS
+>> to be accessible by anyone. It provides printk_in_rcu and
+>> printk_ratelimited_in_rcu to print these strings. In order to avoid a weird
+>> inconsistency between the two, the first patch fixes printk_ratelimited so it
+>> passes on the return value from printk.
+>>
+>> The second patch actually moves the RCU string library. Version 2 passes on the
+>> return values from printk{,_ratelimited} and fixes some style issues.
+>>
+>> Omar Sandoval (2):
+> 
+> For the series:
+> 
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-This patch removes difference of behaviours for these cases. Watchers
-are removed, only if nlink is zero and i_dentry list is empty. The
-resulting behaviour is the same with what has been described in the
-second case.
+Fine by me too, Paul, do you want to merge it in?
 
-Look at a following example:
-
-	fd = inotify_init1(IN_NONBLOCK);
-	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
-	link(path, path_link);
-
-	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
-
-	unlink(path);
-	unlink(path_link);
-
-	printf(" --- unlink path, path_link\n");
-	read_evetns(fd);
-
-	close(deleted);
-	printf(" --- close\n");
-	read_evetns(fd);
-	printf(" --- end\n");
-
-We expect to get the same set of events for this case and for the
-case, when files are deleted in another order. But now we get the
-different set of events.
-
-Without this patch:
-The first case, when "path" is deleted before "path_link"
- --- unlink path, path_link
-4	(IN_ATTRIB)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- close
- --- end
-
-and for the case, when "path_link" is deleted before "path"
- --- unlink path_link, path
-4	(IN_ATTRIB)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- end
-
-With this patch we have the same output for both cases:
- --- unlink
-4	(IN_ATTRIB)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- end
-PASS
-
-v2: generate IN_DELETE_SELF when the last link to the file is removed
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Heinrich Schuchardt <xypron.debian@gmx.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/dcache.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 7a5b514..3a0e3bc 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -278,12 +278,15 @@ static void dentry_iput(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	if (inode) {
- 		dentry->d_inode = NULL;
- 		hlist_del_init(&dentry->d_alias);
-+		last_dentry = hlist_empty(&inode->i_dentry);
- 		spin_unlock(&dentry->d_lock);
- 		spin_unlock(&inode->i_lock);
--		if (!inode->i_nlink)
-+		if (!inode->i_nlink && last_dentry)
- 			fsnotify_inoderemove(inode);
- 		if (dentry->d_op && dentry->d_op->d_iput)
- 			dentry->d_op->d_iput(dentry, inode);
-@@ -303,13 +306,16 @@ static void dentry_unlink_inode(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	__d_clear_type(dentry);
- 	dentry->d_inode = NULL;
- 	hlist_del_init(&dentry->d_alias);
- 	dentry_rcuwalk_barrier(dentry);
-+	last_dentry = hlist_empty(&inode->i_dentry);
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&inode->i_lock);
--	if (!inode->i_nlink)
-+	if (!inode->i_nlink && last_dentry)
- 		fsnotify_inoderemove(inode);
- 	if (dentry->d_op && dentry->d_op->d_iput)
- 		dentry->d_op->d_iput(dentry, inode);
--- 
-1.9.3
-
+-chris
