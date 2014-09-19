@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaISA2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 20:28:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50962 "EHLO mail.zytor.com"
+	id S1755643AbaISAaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 20:30:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47516 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154AbaISA2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 20:28:54 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
-References: <20140918135202.GA26038@khazad-dum.debian.net> <541B2F33.8000002@amacapital.net> <20140918145328.0253f009@as> <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com> <20140918200659.GA5331@khazad-dum.debian.net> <20140919001311.GB5331@khazad-dum.debian.net> <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+	id S1750713AbaISAaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 20:30:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="388358184"
+Date: Fri, 19 Sep 2014 08:32:07 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: Andres Lagar-Cavilla <andreslc@google.com>,
+        Radim Krcmar <rkrcmar@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140919003207.GA4296@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+ <1410976308-7683-1-git-send-email-andreslc@google.com>
+ <20140918002917.GA3921@kernel>
+ <20140918061326.GC30733@minantech.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 18 Sep 2014 17:28:08 -0700
-To: Andy Lutomirski <luto@amacapital.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Borislav Petkov <bp@alien8.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <713c7342-bdf4-4e38-8de2-37d840d7028b@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140918061326.GC30733@minantech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpuid bit gets twiddled...
+On Thu, Sep 18, 2014 at 09:13:26AM +0300, Gleb Natapov wrote:
+>On Thu, Sep 18, 2014 at 08:29:17AM +0800, Wanpeng Li wrote:
+>> Hi Andres,
+>> On Wed, Sep 17, 2014 at 10:51:48AM -0700, Andres Lagar-Cavilla wrote:
+>> [...]
+>> > static inline int check_user_page_hwpoison(unsigned long addr)
+>> > {
+>> > 	int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
+>> >@@ -1177,9 +1214,15 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
+>> > 		npages = get_user_page_nowait(current, current->mm,
+>> > 					      addr, write_fault, page);
+>> > 		up_read(&current->mm->mmap_sem);
+>> >-	} else
+>> >-		npages = get_user_pages_fast(addr, 1, write_fault,
+>> >-					     page);
+>> >+	} else {
+>> >+		/*
+>> >+		 * By now we have tried gup_fast, and possibly async_pf, and we
+>> >+		 * are certainly not atomic. Time to retry the gup, allowing
+>> >+		 * mmap semaphore to be relinquished in the case of IO.
+>> >+		 */
+>> >+		npages = kvm_get_user_page_io(current, current->mm, addr,
+>> >+					      write_fault, page);
+>> >+	}
+>> 
+>> try_async_pf 
+>>  gfn_to_pfn_async 
+>>   __gfn_to_pfn  			async = false 
+>                                        *async = false
+>
+>>    __gfn_to_pfn_memslot
+>>     hva_to_pfn 
+>> 	 hva_to_pfn_fast 
+>> 	 hva_to_pfn_slow 
+>hva_to_pfn_slow checks async not *async.
 
-On September 18, 2014 5:23:40 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->On Sep 18, 2014 5:13 PM, "Henrique de Moraes Holschuh" <hmh@hmh.eng.br>
->wrote:
->>
->> On Thu, 18 Sep 2014, Henrique de Moraes Holschuh wrote:
->> > On Thu, 18 Sep 2014, H. Peter Anvin wrote:
->> > > We should, but this is also part of why we want the early ucode
->capability.
+Got it, thanks for your pointing out.
+
+Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+
+Regards,
+Wanpeng Li 
+
+>
+>> 	  kvm_get_user_page_io
+>> 
+>> page will always be ready after kvm_get_user_page_io which leads to APF
+>> don't need to work any more.
+>> 
+>> Regards,
+>> Wanpeng Li
+>> 
+>> > 	if (npages != 1)
+>> > 		return npages;
+>> > 
+>> >-- 
+>> >2.1.0.rc2.206.gedb03e5
 >> >
->> > Well, yes.  But that won't help the several stable and LTS distros
->with
->> > kernels without early ucode update support.
->>
->> Here's a plan that might work, pending actually checking the
->libpthread TSX
->> code to make sure it keys on /proc/cpuinfo flags:
+>> >--
+>> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> >the body to majordomo@kvack.org.  For more info on Linux MM,
+>> >see: http://www.linux-mm.org/ .
+>> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 >
->Surely it checks cpuid directly, though.
->
->Can we twiddle the cpuid bit?  I never noticed any way in the docs to
->do it, but if BIOS has such an ability, maybe we do, too.  I wonder if
->there's anything semi-documented in biosbits, or if we could just
->reverse-engineer it.
->
->--Andy
->
->>
->> Add a cpu quirk, triggered by the Haswell cpuids, to force-disable
->hle on
->> the affected processors.
->>
->> This will work around the x86_capability capability issue (which
->should
->> still be fixed, anyway), and it should also get userspace to stay
->away from
->> TSX, therefore also working around the worst issue (processes getting
->> SIGILL).
->>
->> This will disable the "user may ask the BIOS to keep TSX enabled"
->> anti-feature, though.  This drawback can be avoided, but only if a
->future
->> microcode update won't re-disable hle when the BIOS enabled it.  For
->now, I
->> suggest that we decree that "hle is toast" for the current Haswells
->and add
->> back ways to enable it for testing when we know more about it.
->>
->> --
->>   "One disk to rule them all, One disk to find them. One disk to
->bring
->>   them all and in the darkness grind them. In the Land of Redmond
->>   where the shadows lie." -- The Silicon Valley Tarot
->>   Henrique Holschuh
-
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+>--
+>			Gleb.
