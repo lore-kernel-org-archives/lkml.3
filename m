@@ -1,191 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458AbaISV00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 17:26:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35287 "EHLO mga09.intel.com"
+	id S1757962AbaISV2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 17:28:49 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48026 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234AbaISV0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 17:26:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,557,1406617200"; 
-   d="asc'?scan'208";a="605592121"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Richard Weinberger <richard@nod.at>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH 5/7] signal: Silence nested-externs warnings
-Thread-Topic: [PATCH 5/7] signal: Silence nested-externs warnings
-Thread-Index: AQHP1B6dSPV3r4SNyUy3CpkS8cenGpwJC+SAgAAAbACAAAB1AIAAHFwAgABDUwCAAAFZgA==
-Date: Fri, 19 Sep 2014 21:26:20 +0000
-Message-ID: <DCC876B0-D2AC-44F0-A774-D8DFA6F17905@intel.com>
-References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <1411140580-20909-6-git-send-email-jeffrey.t.kirsher@intel.com>
- <541C4D57.9050507@nod.at> <1411141042.2513.3.camel@jtkirshe-mobl>
- <541C4E14.9010000@nod.at> <20140919172030.GA22293@redhat.com>
- <20140919212128.GP26432@jtriplet-mobl1>
-In-Reply-To: <20140919212128.GP26432@jtriplet-mobl1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.176.66]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_39C6AC14-3000-424C-B0F0-6CE1F08FE247";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
+	id S1757728AbaISV2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 17:28:48 -0400
+Date: Fri, 19 Sep 2014 17:28:43 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: linux-mm@kvack.org
+Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch v2] mm: memcontrol: convert reclaim iterator to simple css
+ refcounting
+Message-ID: <20140919212843.GA23861@cmpxchg.org>
+References: <1411161059-16552-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411161059-16552-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_39C6AC14-3000-424C-B0F0-6CE1F08FE247
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+Eek, sent a stale version of this.  Here is the right one:
 
-On Sep 19, 2014, at 2:21 PM, Josh Triplett <josh@joshtriplett.org> =
-wrote:
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Fri, 19 Sep 2014 12:39:18 -0400
+Subject: [patch v2] mm: memcontrol: convert reclaim iterator to simple css
+ refcounting
 
-> On Fri, Sep 19, 2014 at 07:20:30PM +0200, Oleg Nesterov wrote:
->> On 09/19, Richard Weinberger wrote:
->>>=20
->>> Am 19.09.2014 17:37, schrieb Jeff Kirsher:
->>>>=20
->>>> See patch 1 of the series.
->>>=20
->>> I was not CC'ed...
->>=20
->> Me too, and thus I don't understand this patch.
->>=20
->> But I have to admit it looks a bit ugly to me anyway.
->> Can't we simply kill _NSIG_WORDS_is_unsupported_size ?
->=20
-> This looks quite preferable.  Can you post that with a commit message
-> and signoff?  Also, the indentation on the second of the three =
-BUILD_BUG
-> calls has some spaces in it, which it shouldn't.  With those fixed:
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+The memcg reclaim iterators use a complicated weak reference scheme to
+prevent pinning cgroups indefinitely in the absence of memory pressure.
 
-I haven't tried this patch myself yet, but assuming that it works, it is =
-a far better way to go.
+However, during the ongoing cgroup core rework, css lifetime has been
+decoupled such that a pinned css no longer interferes with removal of
+the user-visible cgroup, and all this complexity is now unnecessary.
 
->> diff --git a/include/linux/signal.h b/include/linux/signal.h
->> index 750196f..679c9b4 100644
->> --- a/include/linux/signal.h
->> +++ b/include/linux/signal.h
->> @@ -67,7 +67,6 @@ static inline int sigismember(sigset_t *set, int =
-_sig)
->>=20
->> static inline int sigisemptyset(sigset_t *set)
->> {
->> -	extern void _NSIG_WORDS_is_unsupported_size(void);
->> 	switch (_NSIG_WORDS) {
->> 	case 4:
->> 		return (set->sig[3] | set->sig[2] |
->> @@ -77,7 +76,7 @@ static inline int sigisemptyset(sigset_t *set)
->> 	case 1:
->> 		return set->sig[0] =3D=3D 0;
->> 	default:
->> -		_NSIG_WORDS_is_unsupported_size();
->> +		BUILD_BUG();
->> 		return 0;
->> 	}
->> }
->> @@ -90,7 +89,6 @@ static inline int sigisemptyset(sigset_t *set)
->> #define _SIG_SET_BINOP(name, op)					=
-\
->> static inline void name(sigset_t *r, const sigset_t *a, const =
-sigset_t *b) \
->> {									=
-\
->> -	extern void _NSIG_WORDS_is_unsupported_size(void);		=
-\
->> 	unsigned long a0, a1, a2, a3, b0, b1, b2, b3;			=
-\
->> 									=
-\
->> 	switch (_NSIG_WORDS) {						=
-\
->> @@ -107,7 +105,7 @@ static inline void name(sigset_t *r, const =
-sigset_t *a, const sigset_t *b) \
->> 		r->sig[0] =3D op(a0, b0);					=
-\
->> 		break;							=
-\
->> 	    default:							=
-\
->> -		_NSIG_WORDS_is_unsupported_size();			=
-\
->> +	    	BUILD_BUG();						=
-\
->> 	}								=
-\
->> }
->>=20
->> @@ -128,8 +126,6 @@ _SIG_SET_BINOP(sigandnsets, _sig_andn)
->> #define _SIG_SET_OP(name, op)						=
-\
->> static inline void name(sigset_t *set)					=
-\
->> {									=
-\
->> -	extern void _NSIG_WORDS_is_unsupported_size(void);		=
-\
->> -									=
-\
->> 	switch (_NSIG_WORDS) {						=
-\
->> 	    case 4: set->sig[3] =3D op(set->sig[3]);			=
-\
->> 		    set->sig[2] =3D op(set->sig[2]);			=
-\
->> @@ -137,7 +133,7 @@ static inline void name(sigset_t *set)			=
-		\
->> 	    case 1: set->sig[0] =3D op(set->sig[0]);			=
-\
->> 		    break;						=
-\
->> 	    default:							=
-\
->> -		_NSIG_WORDS_is_unsupported_size();			=
-\
->> +		BUILD_BUG();						=
-\
->> 	}								=
-\
->> }
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 201 ++++++++++----------------------------------------------
+ 1 file changed, 34 insertions(+), 167 deletions(-)
 
---=20
-Mark Rustad, Networking Division, Intel Corporation
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index dfd3b15a57e8..154161bb7d4c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -253,18 +253,6 @@ struct mem_cgroup_stat_cpu {
+ 	unsigned long targets[MEM_CGROUP_NTARGETS];
+ };
+ 
+-struct mem_cgroup_reclaim_iter {
+-	/*
+-	 * last scanned hierarchy member. Valid only if last_dead_count
+-	 * matches memcg->dead_count of the hierarchy root group.
+-	 */
+-	struct mem_cgroup *last_visited;
+-	int last_dead_count;
+-
+-	/* scan generation, increased every round-trip */
+-	unsigned int generation;
+-};
+-
+ /*
+  * per-zone information in memory controller.
+  */
+@@ -272,7 +260,7 @@ struct mem_cgroup_per_zone {
+ 	struct lruvec		lruvec;
+ 	unsigned long		lru_size[NR_LRU_LISTS];
+ 
+-	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
++	struct mem_cgroup	*reclaim_iter[DEF_PRIORITY + 1];
+ 
+ 	struct rb_node		tree_node;	/* RB tree node */
+ 	unsigned long		usage_in_excess;/* Set to the value by which */
+@@ -1174,111 +1162,6 @@ static struct mem_cgroup *get_mem_cgroup_from_mm(struct mm_struct *mm)
+ 	return memcg;
+ }
+ 
+-/*
+- * Returns a next (in a pre-order walk) alive memcg (with elevated css
+- * ref. count) or NULL if the whole root's subtree has been visited.
+- *
+- * helper function to be used by mem_cgroup_iter
+- */
+-static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
+-		struct mem_cgroup *last_visited)
+-{
+-	struct cgroup_subsys_state *prev_css, *next_css;
+-
+-	prev_css = last_visited ? &last_visited->css : NULL;
+-skip_node:
+-	next_css = css_next_descendant_pre(prev_css, &root->css);
+-
+-	/*
+-	 * Even if we found a group we have to make sure it is
+-	 * alive. css && !memcg means that the groups should be
+-	 * skipped and we should continue the tree walk.
+-	 * last_visited css is safe to use because it is
+-	 * protected by css_get and the tree walk is rcu safe.
+-	 *
+-	 * We do not take a reference on the root of the tree walk
+-	 * because we might race with the root removal when it would
+-	 * be the only node in the iterated hierarchy and mem_cgroup_iter
+-	 * would end up in an endless loop because it expects that at
+-	 * least one valid node will be returned. Root cannot disappear
+-	 * because caller of the iterator should hold it already so
+-	 * skipping css reference should be safe.
+-	 */
+-	if (next_css) {
+-		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) &&
+-		     css_tryget_online(next_css)))
+-			return mem_cgroup_from_css(next_css);
+-
+-		prev_css = next_css;
+-		goto skip_node;
+-	}
+-
+-	return NULL;
+-}
+-
+-static void mem_cgroup_iter_invalidate(struct mem_cgroup *root)
+-{
+-	/*
+-	 * When a group in the hierarchy below root is destroyed, the
+-	 * hierarchy iterator can no longer be trusted since it might
+-	 * have pointed to the destroyed group.  Invalidate it.
+-	 */
+-	atomic_inc(&root->dead_count);
+-}
+-
+-static struct mem_cgroup *
+-mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
+-		     struct mem_cgroup *root,
+-		     int *sequence)
+-{
+-	struct mem_cgroup *position = NULL;
+-	/*
+-	 * A cgroup destruction happens in two stages: offlining and
+-	 * release.  They are separated by a RCU grace period.
+-	 *
+-	 * If the iterator is valid, we may still race with an
+-	 * offlining.  The RCU lock ensures the object won't be
+-	 * released, tryget will fail if we lost the race.
+-	 */
+-	*sequence = atomic_read(&root->dead_count);
+-	if (iter->last_dead_count == *sequence) {
+-		smp_rmb();
+-		position = iter->last_visited;
+-
+-		/*
+-		 * We cannot take a reference to root because we might race
+-		 * with root removal and returning NULL would end up in
+-		 * an endless loop on the iterator user level when root
+-		 * would be returned all the time.
+-		 */
+-		if (position && position != root &&
+-		    !css_tryget_online(&position->css))
+-			position = NULL;
+-	}
+-	return position;
+-}
+-
+-static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
+-				   struct mem_cgroup *last_visited,
+-				   struct mem_cgroup *new_position,
+-				   struct mem_cgroup *root,
+-				   int sequence)
+-{
+-	/* root reference counting symmetric to mem_cgroup_iter_load */
+-	if (last_visited && last_visited != root)
+-		css_put(&last_visited->css);
+-	/*
+-	 * We store the sequence count from the time @last_visited was
+-	 * loaded successfully instead of rereading it here so that we
+-	 * don't lose destruction events in between.  We could have
+-	 * raced with the destruction of @new_position after all.
+-	 */
+-	iter->last_visited = new_position;
+-	smp_wmb();
+-	iter->last_dead_count = sequence;
+-}
+-
+ /**
+  * mem_cgroup_iter - iterate over memory cgroup hierarchy
+  * @root: hierarchy root
+@@ -1300,8 +1183,11 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 				   struct mem_cgroup *prev,
+ 				   struct mem_cgroup_reclaim_cookie *reclaim)
+ {
++	struct mem_cgroup_per_zone *uninitialized_var(mz);
++	struct cgroup_subsys_state *css = NULL;
++	int uninitialized_var(priority);
+ 	struct mem_cgroup *memcg = NULL;
+-	struct mem_cgroup *last_visited = NULL;
++	struct mem_cgroup *pos = NULL;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return NULL;
+@@ -1310,50 +1196,51 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 		root = root_mem_cgroup;
+ 
+ 	if (prev && !reclaim)
+-		last_visited = prev;
++		pos = prev;
+ 
+ 	if (!root->use_hierarchy && root != root_mem_cgroup) {
+ 		if (prev)
+-			goto out_css_put;
++			goto out;
+ 		return root;
+ 	}
+ 
+ 	rcu_read_lock();
+-	while (!memcg) {
+-		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+-		int uninitialized_var(seq);
+ 
+-		if (reclaim) {
+-			struct mem_cgroup_per_zone *mz;
++	if (reclaim) {
++		mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
++		priority = reclaim->priority;
+ 
+-			mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
+-			iter = &mz->reclaim_iter[reclaim->priority];
+-			if (prev && reclaim->generation != iter->generation) {
+-				iter->last_visited = NULL;
+-				goto out_unlock;
+-			}
+-
+-			last_visited = mem_cgroup_iter_load(iter, root, &seq);
+-		}
+-
+-		memcg = __mem_cgroup_iter_next(root, last_visited);
++		do {
++			pos = ACCESS_ONCE(mz->reclaim_iter[priority]);
++		} while (pos && !css_tryget(&pos->css));
++	}
+ 
+-		if (reclaim) {
+-			mem_cgroup_iter_update(iter, last_visited, memcg, root,
+-					seq);
++	if (pos)
++		css = &pos->css;
+ 
+-			if (!memcg)
+-				iter->generation++;
+-			else if (!prev && memcg)
+-				reclaim->generation = iter->generation;
++	for (;;) {
++		css = css_next_descendant_pre(css, &root->css);
++		if (!css) {
++			if (prev)
++				goto out_unlock;
++			continue;
++		}
++		if (css == &root->css || css_tryget_online(css)) {
++			memcg = mem_cgroup_from_css(css);
++			break;
+ 		}
++	}
+ 
+-		if (prev && !memcg)
+-			goto out_unlock;
++	if (reclaim) {
++		if (cmpxchg(&mz->reclaim_iter[priority], pos, memcg) == pos)
++			css_get(&memcg->css);
++		if (pos)
++			css_put(&pos->css);
+ 	}
++
+ out_unlock:
+ 	rcu_read_unlock();
+-out_css_put:
++out:
+ 	if (prev && prev != root)
+ 		css_put(&prev->css);
+ 
+@@ -5526,24 +5413,6 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
+ }
+ 
+-/*
+- * Announce all parents that a group from their hierarchy is gone.
+- */
+-static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
+-{
+-	struct mem_cgroup *parent = memcg;
+-
+-	while ((parent = parent_mem_cgroup(parent)))
+-		mem_cgroup_iter_invalidate(parent);
+-
+-	/*
+-	 * if the root memcg is not hierarchical we have to check it
+-	 * explicitely.
+-	 */
+-	if (!root_mem_cgroup->use_hierarchy)
+-		mem_cgroup_iter_invalidate(root_mem_cgroup);
+-}
+-
+ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+@@ -5564,8 +5433,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 
+ 	kmem_cgroup_css_offline(memcg);
+ 
+-	mem_cgroup_invalidate_reclaim_iterators(memcg);
+-
+ 	/*
+ 	 * This requires that offlining is serialized.  Right now that is
+ 	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
+-- 
+2.1.0
 
 
---Apple-Mail=_39C6AC14-3000-424C-B0F0-6CE1F08FE247
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIcBAEBAgAGBQJUHJ95AAoJEDwO/+eO4+5uh+IP/28hXL8cFCfeaavuo5hJxuKm
-8Ef08NYGmvPCpkNWNjiCTaXKCTqzsOjjmBNgrEcUrXa0mitvMOPidSj9rRtPDtAg
-x9hTAG1uihTxFsCXxei0I0nLNRd+Phu9ENDzty0zHypUcQg9GqOCWdM0bj4iiVMM
-hvRsUyIDj3h9JqvWKj+TsgGB+iN7QykFAbPwIqx13XxEHkJYEmGjeBPj4f2uTgcX
-kpcTMWZo+JQ5jsYeJ7ir0xqHDmeT9+t/qHkfM/jFseQm3PjbPsO8tAVFM6I5gIKD
-bYdJM8ln5skN0B+1NqWM7iBFk0jYhI2VLW0Wf+7fhXqG8iwXDFK6cJP3z1lYqCLT
-NReDtkq6x9HdEYt1lCo/Z1iOf5M/prCnlvGq2j3jZsvzVRtLfcyRS/Db7wbcUC0f
-DJJiaTgh1FvigVOZLJbWgTYEFdAA3CoywJCUdEKea1McB7W5vm7z34OMAkvfKGiW
-q1uZOMDCsKzwmOQCTHFXDnb+Cev2kd5yrz+QsWIhXc9dusZV9kQpGjbEUCEsf2gk
-/CGX05JB6ydw3TqFBGobH/lBsNtf0sfV16hhmZnQpiyvsHk8FLCKizdH3cXZI+Az
-8BUl/5qXmtQ42vv23JSlY9E+uSRep7Go+Af12OlTIzo2qqMy49/JVBn0XVU8r9II
-WMcmTrZTLpeVZJUnb78P
-=IlWe
------END PGP SIGNATURE-----
-
---Apple-Mail=_39C6AC14-3000-424C-B0F0-6CE1F08FE247--
