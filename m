@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757AbaISMp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:45:56 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48415 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848AbaISMpz convert rfc822-to-8bit (ORCPT
+	id S1756776AbaISMqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:46:52 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:57900 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232AbaISMqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:45:55 -0400
-Message-ID: <541C259E.4010207@arm.com>
-Date: Fri, 19 Sep 2014 13:46:22 +0100
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        "peterz@infradead.org" <peterz@infradead.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "raistlin@linux.it" <raistlin@linux.it>,
-        "michael@amarulasolutions.com" <michael@amarulasolutions.com>,
-        "fchecconi@gmail.com" <fchecconi@gmail.com>,
-        "vincent@legout.info" <vincent@legout.info>,
-        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched/deadline: fix bandwidth check/update when migrating
- tasks between exclusive cpusets
-References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com> <1411118561-26323-3-git-send-email-juri.lelli@arm.com> <541C17D6.5020608@bmw-carit.de>
-In-Reply-To: <541C17D6.5020608@bmw-carit.de>
-X-OriginalArrivalTime: 19 Sep 2014 12:45:52.0490 (UTC) FILETIME=[A59504A0:01CFD407]
-X-MC-Unique: 114091913455207301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Sep 2014 08:46:51 -0400
+Message-ID: <1411130808.7106.302.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next V2] net: keep original skb which only needs
+ header checking during software GSO
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 19 Sep 2014 05:46:48 -0700
+In-Reply-To: <1411113878-11910-1-git-send-email-jasowang@redhat.com>
+References: <1411113878-11910-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On 19/09/14 12:47, Daniel Wagner wrote:
-> Hi,
+On Fri, 2014-09-19 at 16:04 +0800, Jason Wang wrote:
+> Commit ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+> around original SKB when we software segment GSO frames") frees the
+> original skb after software GSO even for dodgy gso skbs. This breaks
+> the stream throughput from untrusted sources, since only header
+> checking was done during software GSO instead of a true
+> segmentation. This patch fixes this by freeing the original gso skb
+> only when it was really segmented by software.
 > 
-> On 09/19/2014 11:22 AM, Juri Lelli wrote:
->> Exclusive cpusets are the only way users can restrict SCHED_DEADLINE tasks
->> affinity (performing what is commonly called clustered scheduling).
->> Unfortunately, such thing is currently broken for two reasons:
->>
->>  - No check is performed when the user tries to attach a task to
->>    an exlusive cpuset (recall that exclusive cpusets have an
->>    associated maximum allowed bandwidth).
->>
->>  - Bandwidths of source and destination cpusets are not correctly
->>    updated after a task is migrated between them.
->>
->> This patch fixes both things at once, as they are opposite faces
->> of the same coin.
->>
->> The check is performed in cpuset_can_attach(), as there aren't any
->> points of failure after that function. The updated is split in two
->> halves. We first reserve bandwidth in the destination cpuset, after
->> we pass the check in cpuset_can_attach(). And we then release
->> bandwidth from the source cpuset when the task's affinity is
->> actually changed. Even if there can be time windows when sched_setattr()
->> may erroneously fail in the source cpuset, we are fine with it, as
->> we can't perfom an atomic update of both cpusets at once.
->>
->> Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> Fixes ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+> around original SKB when we software segment GSO frames.")
 > 
-> Ack
-> 
-> I have no special test for this, I just let my test running which was
-> fixed by patch #1. Works fine though. I'll plan to write some test for this.
-> 
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
 
-Ok, thanks. Just mind that the problem fixed by patch 3/3 may sometime
-affect this too. I should have definitely put 3/3 on top of the patchset :/.
+Acked-by: Eric Dumazet <edumazet@google.com>
 
-Thanks,
-
-- Juri
 
