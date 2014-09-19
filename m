@@ -1,119 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492AbaISUQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:16:34 -0400
-Received: from mail-bn1on0114.outbound.protection.outlook.com ([157.56.110.114]:40224
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932195AbaISUQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:16:33 -0400
-Message-ID: <1411157769.13320.74.camel@snotra.buserror.net>
-Subject: Re: [PATCH 03/15] powerpc/msi: Improve IRQ bitmap allocator
-From: Scott Wood <scottwood@freescale.com>
-To: Michael Neuling <mikey@neuling.org>
-CC: <greg@kroah.com>, <arnd@arndb.de>, <mpe@ellerman.id.au>,
-        <benh@kernel.crashing.org>, <cbe-oss-dev@lists.ozlabs.org>,
-        <imunsie@au.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>, <jk@ozlabs.org>, <anton@samba.org>,
-        "Laurentiu Tudor" <Laurentiu.Tudor@freescale.com>
-Date: Fri, 19 Sep 2014 15:16:09 -0500
-In-Reply-To: <1411028820-29933-4-git-send-email-mikey@neuling.org>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
-	 <1411028820-29933-4-git-send-email-mikey@neuling.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:2d6a:b3e0:e03e:359e]
-X-ClientProxiedBy: BL2PR08CA0043.namprd08.prod.outlook.com (10.255.170.161) To
- BN1PR0301MB0722.namprd03.prod.outlook.com (25.160.78.141)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0722;
-X-Forefront-PRVS: 0339F89554
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(199003)(51704005)(24454002)(189002)(97736003)(104166001)(93916002)(87976001)(15202345003)(105586002)(77156001)(77096002)(101416001)(88136002)(77982003)(81342003)(86362001)(33646002)(95666004)(74662003)(81542003)(107046002)(31966008)(85852003)(19580395003)(76176999)(15975445006)(20776003)(83072002)(85306004)(47776003)(50986999)(64706001)(79102003)(4396001)(50226001)(80022003)(90102001)(21056001)(102836001)(19580405001)(74502003)(42186005)(99396002)(46102003)(110136001)(50466002)(106356001)(62966002)(23676002)(92566001)(83322001)(76482002)(103116003)(89996001)(87286001)(92726001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0722;H:[IPv6:2601:2:5800:3f7:2d6a:b3e0:e03e:359e];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0707;
-X-OriginatorOrg: freescale.com
+	id S932571AbaISUQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:16:57 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:35767 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757671AbaISUOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 16:14:52 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/8] ARM: mvebu: armada-xp: Use pinctrl node alias
+Date: Fri, 19 Sep 2014 22:14:39 +0200
+Message-Id: <1411157684-6991-4-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-18 at 18:26 +1000, Michael Neuling wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
-> 
-> Currently msi_bitmap_alloc_hwirqs() will round up any IRQ allocation requests
-> to the nearest power of 2.  eg. ask for 5 IRQs and you'll get 8.  This wastes a
-> lot of IRQs which can be a scarce resource.
-> 
-> For cxl we can require multiple IRQs for every contexts that is attached to the
-> accelerator.  For AFU directed accelerators, there may be 1000s of contexts
-> attached, hence we can easily run out of IRQs, especially if we are needlessly
-> wasting them.
-> 
-> This changes the msi_bitmap_alloc_hwirqs() to allocate only the required number
-> of IRQs, hence avoiding this wastage.
-> 
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> ---
->  arch/powerpc/sysdev/msi_bitmap.c | 18 +++++++++++++-----
->  1 file changed, 13 insertions(+), 5 deletions(-)
+Armada XP pinctrl node gained an alias, make use of it.
 
-This conflicts with (and partially duplicates)
-http://patchwork.ozlabs.org/patch/381892/
-which I have in my tree.  How should we handle it?
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/armada-xp-axpwifiap.dts        |  68 +++++-----
+ arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts  |  62 ++++-----
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi         |   8 +-
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi         |   8 +-
+ arch/arm/boot/dts/armada-xp-mv78460.dtsi         |   8 +-
+ arch/arm/boot/dts/armada-xp-netgear-rn2120.dts   | 164 +++++++++++------------
+ arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |  14 +-
+ 7 files changed, 167 insertions(+), 165 deletions(-)
 
-Laurentiu, from looking at the overlap between patches I see a problem
-with your existing patch, regarding the out-of-irqs path and
-msi_bitmap_free_hwirqs(), so one way or another that needs to get fixed
-soon.
-
--Scott
-
-> diff --git a/arch/powerpc/sysdev/msi_bitmap.c b/arch/powerpc/sysdev/msi_bitmap.c
-> index 2ff6302..e001559 100644
-> --- a/arch/powerpc/sysdev/msi_bitmap.c
-> +++ b/arch/powerpc/sysdev/msi_bitmap.c
-> @@ -24,28 +24,36 @@ int msi_bitmap_alloc_hwirqs(struct msi_bitmap *bmp, int num)
->  	 * This is fast, but stricter than we need. We might want to add
->  	 * a fallback routine which does a linear search with no alignment.
->  	 */
-> -	offset = bitmap_find_free_region(bmp->bitmap, bmp->irq_count, order);
-> +	offset = bitmap_find_next_zero_area(bmp->bitmap, bmp->irq_count, 0,
-> +					    num, (1 << order) - 1);
-> +	if (offset > bmp->irq_count)
-> +		goto err;
-> +	bitmap_set(bmp->bitmap, offset, num);
->  	spin_unlock_irqrestore(&bmp->lock, flags);
->  
->  	pr_debug("msi_bitmap: allocated 0x%x (2^%d) at offset 0x%x\n",
->  		 num, order, offset);
->  
->  	return offset;
-> +err:
-> +	spin_unlock_irqrestore(&bmp->lock, flags);
-> +	return -ENOMEM;
->  }
-> +EXPORT_SYMBOL(msi_bitmap_alloc_hwirqs);
->  
->  void msi_bitmap_free_hwirqs(struct msi_bitmap *bmp, unsigned int offset,
->  			    unsigned int num)
->  {
->  	unsigned long flags;
-> -	int order = get_count_order(num);
->  
-> -	pr_debug("msi_bitmap: freeing 0x%x (2^%d) at offset 0x%x\n",
-> -		 num, order, offset);
-> +	pr_debug("msi_bitmap: freeing 0x%x at offset 0x%x\n",
-> +		 num, offset);
->  
->  	spin_lock_irqsave(&bmp->lock, flags);
-> -	bitmap_release_region(bmp->bitmap, offset, order);
-> +	bitmap_clear(bmp->bitmap, offset, num);
->  	spin_unlock_irqrestore(&bmp->lock, flags);
->  }
-> +EXPORT_SYMBOL(msi_bitmap_free_hwirqs);
->  
->  void msi_bitmap_reserve_hwirq(struct msi_bitmap *bmp, unsigned int hwirq)
->  {
-
+diff --git a/arch/arm/boot/dts/armada-xp-axpwifiap.dts b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
+index 546016148283..cdab007fbaf4 100644
+--- a/arch/arm/boot/dts/armada-xp-axpwifiap.dts
++++ b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
+@@ -60,40 +60,6 @@
+ 		};
+ 
+ 		internal-regs {
+-			pinctrl: pin-ctrl@18000 {
+-				pinctrl-0 = <&pmx_phy_int>;
+-				pinctrl-names = "default";
+-
+-				pmx_ge0: pmx-ge0 {
+-					marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3",
+-						       "mpp4", "mpp5", "mpp6", "mpp7",
+-						       "mpp8", "mpp9", "mpp10", "mpp11";
+-					marvell,function = "ge0";
+-				};
+-
+-				pmx_ge1: pmx-ge1 {
+-					marvell,pins = "mpp12", "mpp13", "mpp14", "mpp15",
+-						       "mpp16", "mpp17", "mpp18", "mpp19",
+-						       "mpp20", "mpp21", "mpp22", "mpp23";
+-					marvell,function = "ge1";
+-				};
+-
+-				pmx_keys: pmx-keys {
+-					marvell,pins = "mpp33";
+-					marvell,function = "gpio";
+-				};
+-
+-				pmx_spi: pmx-spi {
+-					marvell,pins = "mpp36", "mpp37", "mpp38", "mpp39";
+-					marvell,function = "spi";
+-				};
+-
+-				pmx_phy_int: pmx-phy-int {
+-					marvell,pins = "mpp32";
+-					marvell,function = "gpio";
+-				};
+-			};
+-
+ 			serial@12000 {
+ 				status = "okay";
+ 			};
+@@ -162,3 +128,37 @@
+ 		};
+ 	};
+ };
++
++&pinctrl {
++	pinctrl-0 = <&pmx_phy_int>;
++	pinctrl-names = "default";
++
++	pmx_ge0: pmx-ge0 {
++		marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3",
++			       "mpp4", "mpp5", "mpp6", "mpp7",
++			       "mpp8", "mpp9", "mpp10", "mpp11";
++		marvell,function = "ge0";
++	};
++
++	pmx_ge1: pmx-ge1 {
++		marvell,pins = "mpp12", "mpp13", "mpp14", "mpp15",
++			       "mpp16", "mpp17", "mpp18", "mpp19",
++			       "mpp20", "mpp21", "mpp22", "mpp23";
++		marvell,function = "ge1";
++	};
++
++	pmx_keys: pmx-keys {
++		marvell,pins = "mpp33";
++		marvell,function = "gpio";
++	};
++
++	pmx_spi: pmx-spi {
++		marvell,pins = "mpp36", "mpp37", "mpp38", "mpp39";
++		marvell,function = "spi";
++	};
++
++	pmx_phy_int: pmx-phy-int {
++		marvell,pins = "mpp32";
++		marvell,function = "gpio";
++	};
++};
+diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+index baa43a004299..492cd8e3f424 100644
+--- a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
++++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+@@ -51,37 +51,6 @@
+ 		};
+ 
+ 		internal-regs {
+-			pinctrl: pin-ctrl@18000 {
+-				poweroff_pin: poweroff-pin {
+-					marvell,pins = "mpp24";
+-					marvell,function = "gpio";
+-				};
+-
+-				power_button_pin: power-button-pin {
+-					marvell,pins = "mpp44";
+-					marvell,function = "gpio";
+-				};
+-
+-				reset_button_pin: reset-button-pin {
+-					marvell,pins = "mpp45";
+-					marvell,function = "gpio";
+-				};
+-				select_button_pin: select-button-pin {
+-					marvell,pins = "mpp41";
+-					marvell,function = "gpio";
+-				};
+-
+-				scroll_button_pin: scroll-button-pin {
+-					marvell,pins = "mpp42";
+-					marvell,function = "gpio";
+-				};
+-
+-				hdd_led_pin: hdd-led-pin {
+-					marvell,pins = "mpp26";
+-					marvell,function = "gpio";
+-				};
+-			};
+-
+ 			serial@12000 {
+ 				status = "okay";
+ 			};
+@@ -282,3 +251,34 @@
+ 		gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+ 	};
+ };
++
++&pinctrl {
++	poweroff_pin: poweroff-pin {
++		marvell,pins = "mpp24";
++		marvell,function = "gpio";
++	};
++
++	power_button_pin: power-button-pin {
++		marvell,pins = "mpp44";
++		marvell,function = "gpio";
++	};
++
++	reset_button_pin: reset-button-pin {
++		marvell,pins = "mpp45";
++		marvell,function = "gpio";
++	};
++	select_button_pin: select-button-pin {
++		marvell,pins = "mpp41";
++		marvell,function = "gpio";
++	};
++
++	scroll_button_pin: scroll-button-pin {
++		marvell,pins = "mpp42";
++		marvell,function = "gpio";
++	};
++
++	hdd_led_pin: hdd-led-pin {
++		marvell,pins = "mpp26";
++		marvell,function = "gpio";
++	};
++};
+diff --git a/arch/arm/boot/dts/armada-xp-mv78230.dtsi b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+index e24ef072b8cb..281ccd24295c 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78230.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+@@ -167,10 +167,6 @@
+ 		};
+ 
+ 		internal-regs {
+-			pinctrl: pin-ctrl@18000 {
+-				compatible = "marvell,mv78230-pinctrl";
+-			};
+-
+ 			gpio0: gpio@18100 {
+ 				compatible = "marvell,orion-gpio";
+ 				reg = <0x18100 0x40>;
+@@ -195,3 +191,7 @@
+ 		};
+ 	};
+ };
++
++&pinctrl {
++	compatible = "marvell,mv78230-pinctrl";
++};
+diff --git a/arch/arm/boot/dts/armada-xp-mv78260.dtsi b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+index 53dfb157b91a..d7a8d0b0f385 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+@@ -251,10 +251,6 @@
+ 		};
+ 
+ 		internal-regs {
+-			pinctrl: pin-ctrl@18000 {
+-				compatible = "marvell,mv78260-pinctrl";
+-			};
+-
+ 			gpio0: gpio@18100 {
+ 				compatible = "marvell,orion-gpio";
+ 				reg = <0x18100 0x40>;
+@@ -298,3 +294,7 @@
+ 		};
+ 	};
+ };
++
++&pinctrl {
++	compatible = "marvell,mv78260-pinctrl";
++};
+diff --git a/arch/arm/boot/dts/armada-xp-mv78460.dtsi b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
+index 8b4ab0a5d620..9c40c130d11a 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78460.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
+@@ -289,10 +289,6 @@
+ 		};
+ 
+ 		internal-regs {
+-			pinctrl: pin-ctrl@18000 {
+-				compatible = "marvell,mv78460-pinctrl";
+-			};
+-
+ 			gpio0: gpio@18100 {
+ 				compatible = "marvell,orion-gpio";
+ 				reg = <0x18100 0x40>;
+@@ -336,3 +332,7 @@
+ 		};
+ 	};
+ };
++
++&pinctrl {
++	compatible = "marvell,mv78460-pinctrl";
++};
+diff --git a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
+index b3951c39c5da..8c241d08f2a3 100644
+--- a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
++++ b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
+@@ -55,88 +55,6 @@
+ 		};
+ 
+ 		internal-regs {
+-			pinctrl: pin-ctrl@18000 {
+-				poweroff: poweroff {
+-					marvell,pins = "mpp42";
+-					marvell,function = "gpio";
+-				};
+-
+-				power_button_pin: power-button-pin {
+-					marvell,pins = "mpp27";
+-					marvell,function = "gpio";
+-				};
+-
+-				reset_button_pin: reset-button-pin {
+-					marvell,pins = "mpp41";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata1_led_pin: sata1-led-pin {
+-					marvell,pins = "mpp31";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata2_led_pin: sata2-led-pin {
+-					marvell,pins = "mpp40";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata3_led_pin: sata3-led-pin {
+-					marvell,pins = "mpp44";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata4_led_pin: sata4-led-pin {
+-					marvell,pins = "mpp47";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata1_power_pin: sata1-power-pin {
+-					marvell,pins = "mpp24";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata2_power_pin: sata2-power-pin {
+-					marvell,pins = "mpp25";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata3_power_pin: sata3-power-pin {
+-					marvell,pins = "mpp26";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata4_power_pin: sata4-power-pin {
+-					marvell,pins = "mpp28";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata1_pres_pin: sata1-pres-pin {
+-					marvell,pins = "mpp32";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata2_pres_pin: sata2-pres-pin {
+-					marvell,pins = "mpp33";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata3_pres_pin: sata3-pres-pin {
+-					marvell,pins = "mpp34";
+-					marvell,function = "gpio";
+-				};
+-
+-				sata4_pres_pin: sata4-pres-pin {
+-					marvell,pins = "mpp35";
+-					marvell,function = "gpio";
+-				};
+-
+-				err_led_pin: err-led-pin {
+-					marvell,pins = "mpp45";
+-					marvell,function = "gpio";
+-				};
+-			};
+-
+ 			serial@12000 {
+ 				status = "okay";
+ 			};
+@@ -324,3 +242,85 @@
+ 		gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+ 	};
+ };
++
++&pinctrl {
++	poweroff: poweroff {
++		marvell,pins = "mpp42";
++		marvell,function = "gpio";
++	};
++
++	power_button_pin: power-button-pin {
++		marvell,pins = "mpp27";
++		marvell,function = "gpio";
++	};
++
++	reset_button_pin: reset-button-pin {
++		marvell,pins = "mpp41";
++		marvell,function = "gpio";
++	};
++
++	sata1_led_pin: sata1-led-pin {
++		marvell,pins = "mpp31";
++		marvell,function = "gpio";
++	};
++
++	sata2_led_pin: sata2-led-pin {
++		marvell,pins = "mpp40";
++		marvell,function = "gpio";
++	};
++
++	sata3_led_pin: sata3-led-pin {
++		marvell,pins = "mpp44";
++		marvell,function = "gpio";
++	};
++
++	sata4_led_pin: sata4-led-pin {
++		marvell,pins = "mpp47";
++		marvell,function = "gpio";
++	};
++
++	sata1_power_pin: sata1-power-pin {
++		marvell,pins = "mpp24";
++		marvell,function = "gpio";
++	};
++
++	sata2_power_pin: sata2-power-pin {
++		marvell,pins = "mpp25";
++		marvell,function = "gpio";
++	};
++
++	sata3_power_pin: sata3-power-pin {
++		marvell,pins = "mpp26";
++		marvell,function = "gpio";
++	};
++
++	sata4_power_pin: sata4-power-pin {
++		marvell,pins = "mpp28";
++		marvell,function = "gpio";
++	};
++
++	sata1_pres_pin: sata1-pres-pin {
++		marvell,pins = "mpp32";
++		marvell,function = "gpio";
++	};
++
++	sata2_pres_pin: sata2-pres-pin {
++		marvell,pins = "mpp33";
++		marvell,function = "gpio";
++	};
++
++	sata3_pres_pin: sata3-pres-pin {
++		marvell,pins = "mpp34";
++		marvell,function = "gpio";
++	};
++
++	sata4_pres_pin: sata4-pres-pin {
++		marvell,pins = "mpp35";
++		marvell,function = "gpio";
++	};
++
++	err_led_pin: err-led-pin {
++		marvell,pins = "mpp45";
++		marvell,function = "gpio";
++	};
++};
+diff --git a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
+index 394f085751be..6f6b0916df48 100644
+--- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
++++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
+@@ -77,12 +77,7 @@
+ 			serial@12100 {
+ 				status = "okay";
+ 			};
+-			pinctrl: pin-ctrl@18000 {
+-				led_pins: led-pins-0 {
+-					marvell,pins = "mpp49", "mpp51", "mpp53";
+-					marvell,function = "gpio";
+-				};
+-			};
++
+ 			leds {
+ 				compatible = "gpio-leds";
+ 				pinctrl-names = "default";
+@@ -187,3 +182,10 @@
+ 		};
+ 	};
+ };
++
++&pinctrl {
++	led_pins: led-pins-0 {
++		marvell,pins = "mpp49", "mpp51", "mpp53";
++		marvell,function = "gpio";
++	};
++};
+-- 
+2.0.0
 
