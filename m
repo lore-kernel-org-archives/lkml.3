@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696AbaISTM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 15:12:58 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37020 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757450AbaISTM5 (ORCPT
+	id S1757781AbaISTPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 15:15:22 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:51871 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771AbaISTPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 15:12:57 -0400
-Message-ID: <541C8047.80705@kernel.dk>
-Date: Fri, 19 Sep 2014 13:13:11 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 19 Sep 2014 15:15:20 -0400
+Date: Fri, 19 Sep 2014 12:15:14 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Helge Deller <deller@gmx.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: linux-next: Tree for Sep 19
+Message-ID: <20140919191514.GA5358@roeck-us.net>
+References: <20140919165817.225eb8b8@canb.auug.org.au>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq usage
- count
-References: <20140919113815.GA10791@lst.de>
-In-Reply-To: <20140919113815.GA10791@lst.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140919165817.225eb8b8@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2014 05:38 AM, Christoph Hellwig wrote:
-> Hi Jens, hi Tejun,
+On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> I've seen multi-second boot stalls in one of my KVM setups during
-> the initial scsi scan:
+> Changes since 20140917:
 > 
-> [    0.949892] scsi host0: Virtio SCSI HBA
-> [    1.007864] scsi 0:0:0:0: Direct-Access     QEMU     QEMU HARDDISK    1.1. PQ: 0 ANSI: 5
-> [    1.021299] scsi 0:0:1:0: Direct-Access     QEMU     QEMU HARDDISK    1.1. PQ: 0 ANSI: 5
-> [    1.520356] tsc: Refined TSC clocksource calibration: 2491.910 MHz
+> The fsl tree still had its build failure so I used the version from
+> next-20140917.
 > 
-> <stall>
+> The v4l-dvb tree lost its build failure.
 > 
-> [   16.186549] sd 0:0:0:0: Attached scsi generic sg0 type 0
-> [   16.190478] sd 0:0:1:0: Attached scsi generic sg1 type 0
-> [   16.194099] osd: LOADED open-osd 0.2.1
-> [   16.203202] sd 0:0:0:0: [sda] 31457280 512-byte logical blocks: (16.1 GB/15.0 GiB)
-> [   16.208478] sd 0:0:0:0: [sda] Write Protect is off
-> [   16.211439] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-> [   16.218771] sd 0:0:1:0: [sdb] 31457280 512-byte logical blocks: (16.1 GB/15.0 GiB)
-> [   16.223264] sd 0:0:1:0: [sdb] Write Protect is off
-> [   16.225682] sd 0:0:1:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+> The security tree gained a conflict against the file-locks tree.
 > 
+> Non-merge commits (relative to Linus' tree): 6014
+>  5488 files changed, 217522 insertions(+), 129375 deletions(-)
 > 
+> ----------------------------------------------------------------------------
 > 
-> I've tracked this down to "blk-mq: use percpu_ref for mq usage count" in
-> a rather painful way as that one introduced enough other regressions
-> to mess up bisect.
-> 
-> If I revert the following commits:
-> 
-> dd840087086f3b93ac20f7472b4fca59aff7b79f
-> cddd5d17642cc6881352732693c2ae6930e9ce65
-> add703fda981b9719d37f371498b9f129acbd997
-> 
-> which are the above mentioned commit and two fixes to it the problem goes
-> away.
 
-Thanks for bisecting this, I ran into something that I think is the same
-issue about a week ago. Tejun, any ideas before I dig into this one?
+parisc:defconfig, parisc:generic-32bit_defconfig:
 
--- 
-Jens Axboe
+--------------
+Error log:
+arch/parisc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
+arch/parisc/kernel/ptrace.c:274:2: error: implicit declaration of function
+'secure_computing' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[1]: *** [arch/parisc/kernel/ptrace.o] Error 1
 
+Bisect points to commit 273299fb6380 ('Merge branch 'x86/seccomp') which
+obviously doesn't help much. Suspected culprit is c90f06943e05 ('parisc: Wire up
+seccomp, getrandom and memfd_create syscalls') which seems to be missing an
+include file.
+
+Bisect log:
+
+# bad: [6a10bca9b608df445baa23c3bfafc510d93d425b] Add linux-next specific files for 20140919
+# good: [9e82bf014195d6f0054982c463575cdce24292be] Linux 3.17-rc5
+git bisect start 'HEAD' 'v3.17-rc5'
+# good: [fde058e2322b9098251d7cf798cac4327a29c004] Merge remote-tracking branch 'drm/drm-next'
+git bisect good fde058e2322b9098251d7cf798cac4327a29c004
+# bad: [8a258c1a0f82f4d152a3b06966a4d28dac2c8bcb] Merge remote-tracking branch 'usb-serial/usb-next'
+git bisect bad 8a258c1a0f82f4d152a3b06966a4d28dac2c8bcb
+# good: [5a571cebb73888024182de09063db35341e61beb] Merge remote-tracking branch 'spi/for-next'
+git bisect good 5a571cebb73888024182de09063db35341e61beb
+# bad: [249a58bd0f355bc12549d00296684103326ac38f] Merge remote-tracking branch 'rcu/rcu/next'
+git bisect bad 249a58bd0f355bc12549d00296684103326ac38f
+# good: [50a919fbd52123bd30c8f788a28343bfb159f855] Merge branch 'perf/core'
+git bisect good 50a919fbd52123bd30c8f788a28343bfb159f855
+# bad: [1187356a4b781969c160a9c21c164f738747fc66] Merge remote-tracking branch 'tip/auto-latest'
+git bisect bad 1187356a4b781969c160a9c21c164f738747fc66
+# good: [20ef49c29af54140f51657961a37d6a59c80b479] Merge branch 'x86/cleanups'
+git bisect good 20ef49c29af54140f51657961a37d6a59c80b479
+# good: [63feeed278579155f0dff01b13167034cde470b2] Merge branch 'x86/mm'
+git bisect good 63feeed278579155f0dff01b13167034cde470b2
+# bad: [273299fb6380d08414b2710d007252f23b7dcc8f] Merge branch 'x86/seccomp'
+git bisect bad 273299fb6380d08414b2710d007252f23b7dcc8f
+# good: [e0ffbaabc46db508b8717f023c0ce03b980eefac] x86: Split syscall_trace_enter into two phases
+git bisect good e0ffbaabc46db508b8717f023c0ce03b980eefac
+# good: [2e151c70dfb0075ff83bec305c52a9da1ba49089] x86: HPET force enable for e6xx based systems
+git bisect good 2e151c70dfb0075ff83bec305c52a9da1ba49089
+# good: [1dcf74f6edfc3a9acd84d83d8865dd9e2a3b1d1e] x86_64, entry: Use split-phase syscall_trace_enter for 64-bit syscalls
+git bisect good 1dcf74f6edfc3a9acd84d83d8865dd9e2a3b1d1e
+# good: [aa22686f4231a72583d03882e841eba2de4b1ee6] Merge branch 'x86/platform'
+git bisect good aa22686f4231a72583d03882e841eba2de4b1ee6
+# first bad commit: [273299fb6380d08414b2710d007252f23b7dcc8f] Merge branch 'x86/seccomp'
