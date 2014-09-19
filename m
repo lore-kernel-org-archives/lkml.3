@@ -1,129 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931AbaISF4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:56:11 -0400
-Received: from regular1.263xmail.com ([211.150.99.130]:57915 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaISF4I (ORCPT
+	id S1756579AbaISF4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:56:46 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:64473 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232AbaISF4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:56:08 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <45fefecd85ae5e1dacefac5d7d094901>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>,
-        Jeff Chen <jeff.chen@rock-chips.com>
-Subject: [PATCH v3 4/5] dt-bindings: video: Add documentation for rockchip edp
-Date: Fri, 19 Sep 2014 13:54:56 +0800
-Message-Id: <1411106096-502-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411105668-32722-1-git-send-email-mark.yao@rock-chips.com>
-References: <1411105668-32722-1-git-send-email-mark.yao@rock-chips.com>
+	Fri, 19 Sep 2014 01:56:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <54198BDE.8000509@codeaurora.org>
+References: <1410901756-20694-1-git-send-email-cov@codeaurora.org>
+ <5418AA80.4090102@codeaurora.org> <54198BDE.8000509@codeaurora.org>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Thu, 18 Sep 2014 22:56:23 -0700
+Message-ID: <CAFEAcA-Z_KqCrBRKLxtEaca3jAH35Xx=CqOr36KgAGfFrE91nw@mail.gmail.com>
+Subject: Re: [RFC] arm: Handle starting up in secure mode
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        Doug Anderson <dianders@chromium.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documentation for Rockchip SoC EDP driver.
+On 17 September 2014 06:25, Christopher Covington <cov@codeaurora.org> wrote:
+> On 09/16/2014 05:24 PM, Christopher Covington wrote:
+>> On 09/16/2014 05:09 PM, Christopher Covington wrote:
+>>> ARM Linux currently has the most features available to it in hypervisor
+>>> (HYP) mode, so switch to it when possible. This can also ensure proper
+>>> reset of newer registers such as CNTVOFF.
+>>>
+>>> The permissions on the Non-Secure Access Control Register (NSACR) are
+>>> used to probe what the security setting currently is when in supervisor
+>>> (SVC) mode.
+>>
+>> Sorry, this doesn't work yet. I was misinterpreting my test results. For what
+>> it's worth, my testing and development methodology is to run it after hacked
+>> up versions of the semihosting bootwrapper on the simulator that corresponds
+>> to rtsm_ve-aemv8a.dtb (AEM VE FVP these days?) and examine the instruction traces.
+>
+> Looks like the real problem was that I was hacking up the bootwrapper
+> incorrectly--my start-in-secure-mode bootwrapper variant wasn't setting up the
+> GIC for non-secure access. With that changed, I've tested the following
+> variations using the Image file in a single core configuration.
+>
+> Start in non-secure SVC with non-secure access to GIC configured.
+>
+> Start in secure SVC with non-secure access to GIC configured.
+>
+> Start in secure SVC with non-secure access to GIC configured and hypervisor
+> support disabled in the model (-C cluster.has_el2=0). This required setting
+> the VBAR again in non-secure SVC but with that fix it seems to work. I'll
+> include this change in v2.
 
-Signed-off-by: Jeff Chen <jeff.chen@rock-chips.com>
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
----
-Changes in v2:
-- add edp reset
-- add panel node
-- add port for display-subsystem
+If you're relying on the boot loader to set up the GIC to support
+non-secure access anyway, why not just have it boot the kernel in Hyp
+like the boot protocol document recommends? (The same thing as the GIC
+is going to apply for any other hardware that needs configuration to
+allow NS access; if we need the firmware to deal with this we might as
+well just have it boot us in the right mode too.)
 
-Changes in v3: None
+Incidentally, on a v7 CPU without the Security Extensions the VBAR
+doesn't exist at all, so your code is going to UNDEF at an earlier
+point than you think it is...
 
- .../devicetree/bindings/video/rockchip-edp.txt     |   50 ++++++++++++++++++++
- 1 file changed, 50 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-edp.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-edp.txt b/Documentation/devicetree/bindings/video/rockchip-edp.txt
-new file mode 100644
-index 0000000..515e806
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-edp.txt
-@@ -0,0 +1,50 @@
-+Rockchip RK3288 EDP interface
-+================================
-+
-+Required properties:
-+- compatible: "rockchip,rk3288-edp";
-+
-+- reg: physical base address of the controller and length
-+- clocks: from common clock binding: handle to dp clock.
-+	of memory mapped region.
-+- clock-names: from common clock binding:
-+	Required elements: "clk_edp"
-+			"clk_edp_24m"
-+			"pclk_edp"
-+- resets: Must contain an entry for each entry in reset-names.
-+	See ../reset/reset.txt for details.
-+- reset-names: Must include the name "edp"
-+
-+- rockchip,grf: this soc should set GRF regs, so need get grf here.
-+- rockchip,panel: required a simple panel node as described by
-+	Documentation/devicetree/bindings/panel/simple-panel.txt
-+
-+- ports: contain a port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt.
-+
-+Example:
-+	edp: edp@ff970000 {
-+		compatible = "rockchip,rk3288-edp";
-+		reg = <0xff970000 0x4000>;
-+		interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru SCLK_EDP>, <&cru SCLK_EDP_24M>, <&cru PCLK_EDP_CTRL>;
-+		clock-names = "clk_edp", "clk_edp_24m", "pclk_edp";
-+		rockchip,grf = <&grf>;
-+		resets = <&cru 111>;
-+		reset-names = "edp";
-+		rockchip,panel = <&panel>;
-+		ports {
-+			edp_in: port {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				edp_in_vopb: endpoint@0 {
-+					reg = <0>;
-+					remote-endpoint = <&vopb_out_edp>;
-+				};
-+				edp_in_vopl: endpoint@1 {
-+					reg = <1>;
-+					remote-endpoint = <&vopl_out_edp>;
-+				};
-+			};
-+		};
-+	};
--- 
-1.7.9.5
-
-
+-- PMM
