@@ -1,37 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaISQ3e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:29:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60620 "EHLO
+	id S1757532AbaISQcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:32:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60941 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232AbaISQ3c (ORCPT
+	with ESMTP id S1756107AbaISQcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:29:32 -0400
-Message-ID: <541C59EA.5020404@codeaurora.org>
-Date: Fri, 19 Sep 2014 09:29:30 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 19 Sep 2014 12:32:05 -0400
+Date: Fri, 19 Sep 2014 11:25:50 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wim Van Sebroeck <wim@iguana.be>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] watchdog: qcom: add support for KPSS WDT
+Message-ID: <20140919162550.GI3749@joshc.qualcomm.com>
+References: <cover.1411078425.git.joshc@codeaurora.org>
+ <32d17907ad1dfdcafe4e76f33adc2ff22631cd28.1411078425.git.joshc@codeaurora.org>
+ <541B97CD.60400@roeck-us.net>
+ <20140919032416.GE3749@joshc.qualcomm.com>
+ <541BA5F7.1030704@roeck-us.net>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Krait VFP fixes
-References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org> <20140918223241.GE5182@n2100.arm.linux.org.uk>
-In-Reply-To: <20140918223241.GE5182@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <541BA5F7.1030704@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/14 15:32, Russell King - ARM Linux wrote:
-> It would be nice to be copied on these patches, as the VFP code is
-> entirely my creation...  I'll review these patches shortly.
->
+On Thu, Sep 18, 2014 at 08:41:43PM -0700, Guenter Roeck wrote:
+> On 09/18/2014 08:24 PM, Josh Cartwright wrote:
+> >On Thu, Sep 18, 2014 at 07:41:17PM -0700, Guenter Roeck wrote:
+> >>On 09/18/2014 03:26 PM, Josh Cartwright wrote:
+> >>>Add a driver for the watchdog timer block found in the Krait Processor
+> >>>Subsystem (KPSS) on the MSM8960, APQ8064, and IPQ8064.
+> >>>
+> >>>Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> >>
+> >>Hi Josh,
+> >>
+> >>comments inline.
+> >
+> >Thanks for taking a look!
+> >
+[..]
+> >>>+	watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev);
+> >>
+> >>That leaves you with no default timeout if timeout-sec is not set in devicetree,
+> >>which if I understand the code correctly might result in an immediate reset.
+> >>Is this really what you want to happen ?
+> >
+> >I think I'd like to handle timeout-sec being unspecified as an error at
+> >probe.  If someone explicitly sets timeout-sec = <0>, then they get what
+> >they ask for.  I'll take another look to see how to make this happen.
+> >
+> 
+> Hmm.. kind of unusual. Usual would be to initialize the timeout together
+> with min_timeout / max_timeout above and only force the user to specify
+> a value if the default timeout is not desirable. You don't really gain
+> anything by making timeout-sec mandatory.
 
-Ah sorry. I will copy you on v2 and run get_maintainers too.
+Making timeout-sec mandatory makes it so I don't have to decide what a
+"sane default" is. :)
+
+It's even less clear about what a sane default is looking at the other
+watchdog drivers.  From the drivers I looked at, it ranges any where
+from 30s to 2mins.  Am I just to choose?  Why do these even differ
+between all of the drivers?
 
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
-
