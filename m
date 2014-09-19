@@ -1,149 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaISIQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:16:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64523 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204AbaISIQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 04:16:52 -0400
-Date: Fri, 19 Sep 2014 09:25:53 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, Alexander Gordeev <agordeev@redhat.com>,
-        "Jiang, Dave" <dave.jiang@intel.com>
-Subject: [PATCH v3 6/5] AHCI: Do not read HOST_IRQ_STAT register in multi-MSI
- mode
-Message-ID: <20140919082552.GH8793@agordeev.usersys.redhat.com>
-References: <cover.1411031922.git.agordeev@redhat.com>
+	id S1754063AbaISITM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:19:12 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:50685 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaISITG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 04:19:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1411031922.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410868367-11056-10-git-send-email-mika.westerberg@linux.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1410868367-11056-10-git-send-email-mika.westerberg@linux.intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 19 Sep 2014 17:18:44 +0900
+Message-ID: <CAAVeFuLxv-jK4G_0RHvMLsQM1arXZbFabjv8L0Fco6=BvSSceQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 09/16] leds: leds-gpio: Add support for GPIO descriptors
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As described in AHCI v1.0 specification chapter 10.6.2.2
-"Multiple MSI Based Messages" generation of interrupts
-is not controlled through the HOST_IRQ_STAT register.
+On Tue, Sep 16, 2014 at 8:52 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> GPIO descriptors are the preferred way over legacy GPIO numbers
+> nowadays. Convert the driver to use GPIO descriptors internally but
+> still allow passing legacy GPIO numbers from platform data to support
+> existing platforms.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Considering MMIO access is expensive remove unnecessary
-reading and writing of HOST_IRQ_STAT register.
+Obviously a good thing to do.
 
-Further, serializing access to the host data is no longer
-needed and the interrupt service routine can avoid competing
-on the host lock.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Suggested-by: "Jiang, Dave" <dave.jiang@intel.com>
-Cc: linux-ide@vger.kernel.org
----
- drivers/ata/ahci.h    |  1 +
- drivers/ata/libahci.c | 54 ++++++++-------------------------------------------
- 2 files changed, 9 insertions(+), 46 deletions(-)
-
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index c12f590..b8e117a 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -305,6 +305,7 @@ struct ahci_port_priv {
- 	unsigned int		ncq_saw_dmas:1;
- 	unsigned int		ncq_saw_sdb:1;
- 	u32			intr_status;	/* interrupts to handle */
-+	spinlock_t		intr_lock;	/* protects intr_status */
- 	spinlock_t		lock;		/* protects parent ata_port */
- 	u32 			intr_mask;	/* interrupts to enable */
- 	bool			fbs_supported;	/* set iff FBS is supported */
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 169c272..b9c4e93 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1785,11 +1785,11 @@ irqreturn_t ahci_port_thread_fn(int irq, void *dev_instance)
- 	unsigned long flags;
- 	u32 status;
- 
--	spin_lock_irqsave(&ap->host->lock, flags);
-+	spin_lock_irqsave(&pp->intr_lock, flags);
- 	status = pp->intr_status;
- 	if (status)
- 		pp->intr_status = 0;
--	spin_unlock_irqrestore(&ap->host->lock, flags);
-+	spin_unlock_irqrestore(&pp->intr_lock, flags);
- 
- 	spin_lock_bh(ap->lock);
- 	ahci_handle_port_interrupt(ap, status);
-@@ -1842,53 +1842,14 @@ static void ahci_update_intr_status(struct ata_port *ap)
- 
- irqreturn_t ahci_multi_irqs_intr(int irq, void *dev_instance)
- {
--	struct ata_port *ap_this = dev_instance;
--	struct ahci_port_priv *pp = ap_this->private_data;
--	struct ata_host *host = ap_this->host;
--	struct ahci_host_priv *hpriv = host->private_data;
--	void __iomem *mmio = hpriv->mmio;
--	unsigned int i;
--	u32 irq_stat, irq_masked;
-+	struct ata_port *ap = dev_instance;
-+	struct ahci_port_priv *pp = ap->private_data;
- 
- 	VPRINTK("ENTER\n");
- 
--	spin_lock(&host->lock);
--
--	irq_stat = readl(mmio + HOST_IRQ_STAT);
--
--	if (!irq_stat) {
--		u32 status = pp->intr_status;
--
--		spin_unlock(&host->lock);
--
--		VPRINTK("EXIT\n");
--
--		return status ? IRQ_WAKE_THREAD : IRQ_NONE;
--	}
--
--	irq_masked = irq_stat & hpriv->port_map;
--
--	for (i = 0; i < host->n_ports; i++) {
--		struct ata_port *ap;
--
--		if (!(irq_masked & (1 << i)))
--			continue;
--
--		ap = host->ports[i];
--		if (ap) {
--			ahci_update_intr_status(ap);
--			VPRINTK("port %u\n", i);
--		} else {
--			VPRINTK("port %u (no irq)\n", i);
--			if (ata_ratelimit())
--				dev_warn(host->dev,
--					 "interrupt on disabled port %u\n", i);
--		}
--	}
--
--	writel(irq_stat, mmio + HOST_IRQ_STAT);
--
--	spin_unlock(&host->lock);
-+	spin_lock(&pp->intr_lock);
-+	ahci_update_intr_status(ap);
-+	spin_unlock(&pp->intr_lock);
- 
- 	VPRINTK("EXIT\n");
- 
-@@ -2366,6 +2327,7 @@ static int ahci_port_start(struct ata_port *ap)
- 	 */
- 	pp->intr_mask = DEF_PORT_IRQ;
- 
-+	spin_lock_init(&pp->intr_lock);
- 	spin_lock_init(&pp->lock);
- 	ap->lock = &pp->lock;
- 
--- 
-1.8.3.1
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
