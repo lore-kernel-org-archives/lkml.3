@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302AbaISOmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:42:11 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:12150 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756626AbaISOmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757233AbaISOmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:42:10 -0400
+Received: from tex.lwn.net ([70.33.254.29]:43041 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756002AbaISOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 10:42:08 -0400
-Date: Fri, 19 Sep 2014 10:42:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/4] ftracetest: Initial commit for ftracetest
-Message-ID: <20140919104205.288cf493@gandalf.local.home>
-In-Reply-To: <541C3823.4090203@osg.samsung.com>
-References: <20140918120437.28308.72301.stgit@kbuild-f20.novalocal>
-	<20140918120445.28308.57538.stgit@kbuild-f20.novalocal>
-	<541AD905.6000700@osg.samsung.com>
-	<541B80DE.1060902@hitachi.com>
-	<541C3823.4090203@osg.samsung.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+Date: Fri, 19 Sep 2014 10:42:04 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC v2 0/5] Non-blockling buffered fs read (page cache only)
+Message-ID: <20140919104204.3b0bb762@lwn.net>
+In-Reply-To: <cover.1410983998.git.milosz@adfin.com>
+References: <cover.1410810247.git.milosz@adfin.com>
+	<cover.1410983998.git.milosz@adfin.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014 08:05:23 -0600
-Shuah Khan <shuahkh@osg.samsung.com> wrote:
+On Wed, 17 Sep 2014 22:20:45 +0000
+Milosz Tanski <milosz@adfin.com> wrote:
 
-
-> I am not concerned about the spacing.
+> This patcheset introduces an ability to perform a non-blocking read from
+> regular files in buffered IO mode. This works by only for those filesystems
+> that have data in the page cache.
 > 
-> Thanks for doing running the make kselftest target and sharing
-> the results. selftests don't get built or run in integ test
-> rings. I am working on addressing this at the moment.
-> 
-> Steven!
-> 
-> Could you please take this through your tree. You have my
-> 
-> Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
-> 
-> for the selftests Makefile
+> It does this by introducing new syscalls new syscalls readv2/writev2 and
+> preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
+> syscalls that accept an extra flag argument (O_NONBLOCK).
 
-OK, thanks!
+So I'm trying to understand the reasoning behind this approach so I can
+explain it to others.  When you decided to add these syscalls, you
+ruled out some other approaches that have been out there for a while.
+I assume that, before these syscalls can be merged, people will want to
+understand why you did that.  So I'll ask the dumb questions:
 
-I'll start trying to get my own personal tests working here.
+ - Non-blocking I/O has long been supported with a well-understood set
+   of operations - O_NONBLOCK and fcntl().  Why do we need a different
+   mechanism here - one that's only understood in the context of
+   buffered file I/O?  I assume you didn't want to implement support
+   for poll() and all that, but is that a good enough reason to add a
+   new Linux-specific non-blocking I/O technique?
 
-It may take some work as my tests may run for 10s of minutes, as they
-are more stress tests than a pass/fail thing. But I should have
-something other people can use. I'll continue using both my own
-personal tests as well as trying the new stuff that gets put here.
+ - Patches adding fincore() have been around since at least 2010; see,
+   for example, https://lwn.net/Articles/371538/ or
+   https://lwn.net/Articles/604640/.  It seems this could be used in
+   favor of four new read() syscalls; is there a reason it's not
+   suitable for your use case?
 
--- Steve
+ - Patches adding buffered support for AIO have been around since at
+   least 2003 - https://lwn.net/Articles/24422/, for example.  I guess
+   I don't really have to ask why you don't want to take that
+   approach! :)  
 
+Apologies for my ignorance here; that's what I get for hanging around
+with the MM folks at LSFMM, I guess.  Anyway, I suspect I'm not the
+only one who would appreciate any background you could give here.
+
+Thanks,
+
+jon
