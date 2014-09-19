@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782AbaISR1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 13:27:39 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:56064 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757413AbaISR1h (ORCPT
+	id S1757627AbaISRas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 13:30:48 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:61215 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756771AbaISRar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 13:27:37 -0400
-Date: Fri, 19 Sep 2014 10:27:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] watchdog: dw_wdt: restart the counter immediately
- after enabling WDT
-Message-ID: <20140919172732.GA716@roeck-us.net>
-References: <1411108199-1280-1-git-send-email-jszhang@marvell.com>
- <1411108199-1280-2-git-send-email-jszhang@marvell.com>
+	Fri, 19 Sep 2014 13:30:47 -0400
+Date: Fri, 19 Sep 2014 13:30:46 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH][linux-next] pnfs/blocklayout: Use do_div for 64 bit divide
+ operations
+Message-ID: <20140919133046.7d5ad943@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411108199-1280-2-git-send-email-jszhang@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 02:29:58PM +0800, Jisheng Zhang wrote:
-> The TOP_INIT may be zero, so the timeout period may be very short after
 
-What is TOP_INIT ?
+Commit 5c83746a0cf2 "pnfs/blocklayout: in-kernel GETDEVICEINFO XDR parsing"
+added some open coded 64 bit divisions which caused the following
+error on 32 bit builds:
 
-> initialization is done, thus the system may be reset soon after enabling.
-> We fix this problem by restarting the counter immediately after enabling
-> WDT.
-> 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/watchdog/dw_wdt.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-> index 9f21029..ad0619d 100644
-> --- a/drivers/watchdog/dw_wdt.c
-> +++ b/drivers/watchdog/dw_wdt.c
-> @@ -146,6 +146,7 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
->  		dw_wdt_set_top(DW_WDT_MAX_TOP);
+fs/built-in.o: In function `bl_map_stripe':
+fs/nfs/blocklayout/dev.c:153: undefined reference to `__udivdi3'
+fs/nfs/blocklayout/dev.c:154: undefined reference to `__umoddi3'
+fs/nfs/blocklayout/dev.c:168: undefined reference to `__udivdi3'
 
-This sets the timeout to the maximum, so I guess there must be some other
-event/register (TOP_INIT ?) which can be zero.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ fs/nfs/blocklayout/dev.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
->  		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
->  		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
+diff --git a/fs/nfs/blocklayout/dev.c b/fs/nfs/blocklayout/dev.c
+index 00f159da06ee..05d32e2175db 100644
+--- a/fs/nfs/blocklayout/dev.c
++++ b/fs/nfs/blocklayout/dev.c
+@@ -150,10 +150,18 @@ static bool bl_map_stripe(struct pnfs_block_dev *dev, u64 offset,
+ 		struct pnfs_block_dev_map *map)
+ {
+ 	struct pnfs_block_dev *child;
+-	u64 chunk = (offset / dev->chunk_size);
+-	int chunk_idx = chunk % dev->nr_children;
++	u64 chunk;
++	u64 chunk_tmp;
++	int chunk_idx;
+ 	u64 disk_offset;
+ 
++	chunk = offset;
++	/* chunk = offset / dev->chunk_size */
++	do_div(chunk, dev->chunk_size);
++	chunk_tmp = chunk;
++	/* chunk_idx = chunk % dev->nr_children) */
++	chunk_idx = do_div(chunk_tmp, dev->nr_children);
++
+ 	if (chunk_idx > dev->nr_children) {
+ 		dprintk("%s: invalid chunk idx %d (%lld/%lld)\n",
+ 			__func__, chunk_idx, offset, dev->chunk_size);
+@@ -165,7 +173,9 @@ static bool bl_map_stripe(struct pnfs_block_dev *dev, u64 offset,
+ 	offset = chunk * dev->chunk_size;
+ 
+ 	/* disk offset of the stripe */
+-	disk_offset = offset / dev->nr_children;
++	disk_offset = offset;
++	/* disk_offset = offset / dev->nr_children */
++	do_div(disk_offset, dev->nr_children);
+ 
+ 	child = &dev->children[chunk_idx];
+ 	child->map(child, disk_offset, map);
+-- 
+1.8.1.4
 
-What guarantees that the reset didn't already happen by the time
-the keepalive call is executed ? Does this change fix the problem,
-or does it just make it more unlikely to be seen ?
-
-Thanks,
-Guenter
-
-> +		dw_wdt_keepalive();
->  	}
->  
->  	dw_wdt_set_next_heartbeat();
-> -- 
-> 2.1.0
-> 
