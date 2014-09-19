@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751AbaISMyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:54:22 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:37180 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaISMyU (ORCPT
+	id S1756795AbaISM4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:56:13 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46159 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755372AbaISM4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:54:20 -0400
-Date: Fri, 19 Sep 2014 07:54:14 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes
- x86_capability
-Message-ID: <20140919075415.5149d5f2@as>
-In-Reply-To: <20140919112953.GA3256@nazgul.tnic>
-References: <20140918135202.GA26038@khazad-dum.debian.net>
-	<541B2F33.8000002@amacapital.net>
-	<20140918145328.0253f009@as>
-	<9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
-	<20140918200659.GA5331@khazad-dum.debian.net>
-	<20140919001311.GB5331@khazad-dum.debian.net>
-	<CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
-	<20140919110014.GC29639@khazad-dum.debian.net>
-	<20140919112953.GA3256@nazgul.tnic>
+	Fri, 19 Sep 2014 08:56:11 -0400
+Message-ID: <541C27E8.6090000@hurleysoftware.com>
+Date: Fri, 19 Sep 2014 08:56:08 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>,
+        linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>
+CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: Div-by-zero in the 8250 serial driver (3.17-rc5)
+References: <CAP145pg75hFKi2S9SVywRfex_A5=yRpe0p4Dzri8+Q=7YWoXfg@mail.gmail.com>
+In-Reply-To: <CAP145pg75hFKi2S9SVywRfex_A5=yRpe0p4Dzri8+Q=7YWoXfg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014 13:29:53 +0200
-Borislav Petkov <bp@alien8.de> wrote:
+[ +cc Greg Kroah-Hartman, AlanC ]
 
-> On Fri, Sep 19, 2014 at 08:00:15AM -0300, Henrique de Moraes Holschuh wrote:
-> > We're also killing microcode update support outside of the initramfs in
-> > Debian.  It has become obvious that anything other than the early initramfs
-> > method of microcode updates should be considered a developer thing.
+On 09/18/2014 10:57 AM, Robert Święcki wrote:
+> Hi,
 > 
-> That's simply not true: long-running systems which you can't reboot for
-> whatever reason will need the late microcode update.
+> # setserial /dev/ttyS0 spd_hi baud_base 38400
 > 
+> Entering kdb (current=0xffff8805ee033200, pid 1798) on processor 9 Oops: (null)
+> due to oops @ 0xffffffff8149c01e
+> CPU: 9 PID: 1798 Comm: setserial Tainted: G        W I
+> 3.17.0-031700rc5-generic-201409151105
+> task: ffff8805ee033200 ti: ffff8800e39e0000 task.ti: ffff8800e39e0000
+> RIP: 0010:[<ffffffff8149c01e>]  [<ffffffff8149c01e>] uart_get_divisor+0x1e/0x40
+> RSP: 0018:ffff8800e39e3c30  EFLAGS: 00010206
+> RAX: 0000000000096000 RBX: ffffffff81fab060 RCX: 0000000000000006
+> RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff81fab060
+> RBP: ffff8800e39e3c78 R08: 000000000000000a R09: 00000000000003d2
+> R10: 0000000000000000 R11: 00000000000003d1 R12: 0000000000000013
+> R13: ffff8805f0748d2c R14: 0000000000000000 R15: 0000000000000010
+> FS:  00007f0fa653d740(0000) GS:ffff880613920000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f0fa6003330 CR3: 00000000365f8000 CR4: 00000000000007e0
+> Stack:
+>  ffffffff814a2978 ffffffff81fab060 0000000000000010 ffff8800e39e3ca8
+>  ffff8805eca08000 ffff8805f0748c00 ffff8800e39e3dc0 ffffffff81fab060
+>  0000000000000010 ffff8800e39e3c88 ffffffff814a2d55 ffff8800e39e3ca8
+> Call Trace:
+>  [<ffffffff814a2978>] ? serial8250_do_set_termios+0xd8/0x490
+>  [<ffffffff814a2d55>] serial8250_set_termios+0x25/0x30
+>  [<ffffffff8149dce2>] uart_change_speed+0x52/0xb0
+>  [<ffffffff8149ec9c>] uart_set_info+0x20c/0x5f0
+>  [<ffffffff8149c75a>] ? do_uart_get_info+0xfa/0x1a0
+>  [<ffffffff8149fbdf>] uart_ioctl+0x14f/0x220
+>  [<ffffffff814804d8>] tty_ioctl+0x298/0x8f0
+>  [<ffffffff811fc025>] do_vfs_ioctl+0x75/0x2c0
+>  [<ffffffff811fc301>] SyS_ioctl+0x91/0xb0
+>  [<ffffffff817a436d>] system_call_fastpath+0x1a/0x1f
+> Code: c0 00 00 00 c3 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 81 fe
+> 00 96 00 00 48 89 e5 74 17 c1 e6 04 31 d2 89 f0 d1 e8 03 47 58 5d <f7>
+> f6 c3 0f 1f 80 00 00 00 00 8b 87 b8 00 00 00 25 30 10 00 00
 
-Assuming we can identify all the affected models and steppings, maybe
-something like this would work:
+Hi Robert,
 
-1) Refuse to finish booting if a microcode update that disables TSX
-isn't applied before userspace starts running on those CPUs.
+Thanks for the report.
 
-and/or
+I was able to reproduce this crash on all recent kernels I tested. The
+patch below fixed the problem for me. If possible, please test the patch
+on your system.
 
-2) Don't allow a late update if TSX is still enabled on those
-processors.
+Regards,
+Peter Hurley
 
-(1) could be overridden by a command line option for people who want to
-develop TSX code.
+--- >% ---
+Subject: [PATCH] serial: Fix divide-by-zero fault in uart_get_divisor()
+
+uart_get_baud_rate() will return baud == 0 if the max rate is set
+to the "magic" 38400 rate and the SPD_* flags are also specified.
+On the first iteration, if the current baud rate is higher than the
+max, the baud rate is clamped at the max (which in the degenerate
+case is 38400). On the second iteration, the now-"magic" 38400 baud
+rate selects the possibly higher alternate baud rate indicated by
+the SPD_* flag. Since only two loop iterations are performed, the
+loop is exited, a kernel WARNING is generated and a baud rate of
+0 is returned.
+
+Reproducible with:
+ setserial /dev/ttyS0 spd_hi base_baud 38400
+
+Only perform the "magic" 38400 -> SPD_* baud transform on the first
+loop iteration, which prevents the degenerate case from recognizing
+the clamped baud rate as the "magic" 38400 value.
+
+Reported-by: Robert Święcki <robert@swiecki.net>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/serial/serial_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 66e2de6..d0a5fc9 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -359,7 +359,7 @@ uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
+ 		 * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
+ 		 * Die! Die! Die!
+ 		 */
+-		if (baud == 38400)
++		if (try == 0 && baud == 38400)
+ 			baud = altbaud;
+ 
+ 		/*
+-- 
+2.1.0
+
+
+
+
