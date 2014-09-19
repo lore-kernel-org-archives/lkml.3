@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233AbaISOmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:42:10 -0400
-Received: from tex.lwn.net ([70.33.254.29]:43041 "EHLO vena.lwn.net"
+	id S1757173AbaISOoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:44:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49017 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756002AbaISOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:42:08 -0400
-Date: Fri, 19 Sep 2014 10:42:04 -0400
-From: Jonathan Corbet <corbet@lwn.net>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC v2 0/5] Non-blockling buffered fs read (page cache only)
-Message-ID: <20140919104204.3b0bb762@lwn.net>
-In-Reply-To: <cover.1410983998.git.milosz@adfin.com>
-References: <cover.1410810247.git.milosz@adfin.com>
-	<cover.1410983998.git.milosz@adfin.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1756766AbaISOoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 10:44:23 -0400
+Date: Fri, 19 Sep 2014 16:44:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+Message-ID: <20140919144408.GA5318@nazgul.tnic>
+References: <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
+ <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il>
+ <20140917132141.GD5358@nazgul.tnic>
+ <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com>
+ <20140917140601.GE5358@nazgul.tnic>
+ <541AD8F3.5010700@redhat.com>
+ <20140918132635.GB27008@nazgul.tnic>
+ <541ADFEB.6030801@redhat.com>
+ <20140919075814.GA30491@nazgul.tnic>
+ <541C324D.2080608@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <541C324D.2080608@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014 22:20:45 +0000
-Milosz Tanski <milosz@adfin.com> wrote:
+On Fri, Sep 19, 2014 at 03:40:29PM +0200, Paolo Bonzini wrote:
+> And similarly, Intel would not extend a bit from 16 to 17 bits if it
+> weren't zero on all older processors.
 
-> This patcheset introduces an ability to perform a non-blocking read from
-> regular files in buffered IO mode. This works by only for those filesystems
-> that have data in the page cache.
+Nothing is stopping a hw designer to say we're using 17 bits now. And
+software needs to deal with that. It is that simple!
+
+> > However, even there
+> > 
+> > "16 - Reserved - Do not count on the value."
+> > 
+> > I'm quoting Intel's CPUID doc 241618-037 from 2011 (there might be a
+> > newer one though), the CPUID(1).ECX description.
 > 
-> It does this by introducing new syscalls new syscalls readv2/writev2 and
-> preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
-> syscalls that accept an extra flag argument (O_NONBLOCK).
+> Once that bit gets a meaning in newer processors, the same meaning will
+> work retroactively for existing processors.  That's just how CPUID is
+> used.  Nobody checks families before testing bits, Intel/AMD do not even
+> suggest that.
 
-So I'm trying to understand the reasoning behind this approach so I can
-explain it to others.  When you decided to add these syscalls, you
-ruled out some other approaches that have been out there for a while.
-I assume that, before these syscalls can be merged, people will want to
-understand why you did that.  So I'll ask the dumb questions:
+I know that, and I bet those bits won't even get reused but we don't
+know, do we?! All I'm pointing at is that even the feature bits which
+are reserved cannot be relied to be of any value.
 
- - Non-blocking I/O has long been supported with a well-understood set
-   of operations - O_NONBLOCK and fcntl().  Why do we need a different
-   mechanism here - one that's only understood in the context of
-   buffered file I/O?  I assume you didn't want to implement support
-   for poll() and all that, but is that a good enough reason to add a
-   new Linux-specific non-blocking I/O technique?
+In any case, the moment hw designers decide to change any field width
+for which you have an union defined, this fragile scheme breaks with you
+needing to introduce ifdeffery.
 
- - Patches adding fincore() have been around since at least 2010; see,
-   for example, https://lwn.net/Articles/371538/ or
-   https://lwn.net/Articles/604640/.  It seems this could be used in
-   favor of four new read() syscalls; is there a reason it's not
-   suitable for your use case?
+And frankly, this whole waste-time discussion is only about you guys
+wanting to use those bitfields so that constructing a CPUID value works
+more conveniently. (Reportedly, I'm not convinced of that at all).
 
- - Patches adding buffered support for AIO have been around since at
-   least 2003 - https://lwn.net/Articles/24422/, for example.  I guess
-   I don't really have to ask why you don't want to take that
-   approach! :)  
+While the gazillion other places in the kernel simply use logical
+operations to construct a value and write it into the corresponding
+register. Does that mean that they have to go and define unions for
+those registers too? Of course not! That would be insane.
 
-Apologies for my ignorance here; that's what I get for hanging around
-with the MM folks at LSFMM, I guess.  Anyway, I suspect I'm not the
-only one who would appreciate any background you could give here.
+I remember a time where we did remove exactly that type of bitfields
+from the ide code because it wasn't helping, it was counter-intuitive
+and needless.
 
-Thanks,
+Geez, can we drop this already! It is a dumb idea, it doesn't bring us
+anything besides some superficial readability which you don't really
+need. Nowadays you can use even goddam wikipedia to understand what the
+CPUID bits mean:
 
-jon
+https://en.wikipedia.org/wiki/CPUID
+
+Everytime we have to access registers, we need to open the corresponding
+manual (or wikipedia, alternatively :-)) and look at the bit
+definitions. This will not change.
+
+> > Do you have a guarantee that this won't happen in the future and break
+> > all your fancy bitfields assumptions?
+> 
+> No guarantee, but were that to happen, I'd expect tar and feathers
+> spectacles around Intel's engineering headquarters.
+
+You're going over and doing some fireworks there?
+
+:-P
+
+-- 
+Regards/Gruss,
+    Boris.
+--
