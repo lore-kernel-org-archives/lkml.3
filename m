@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485AbaISQmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:42:33 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:36406 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756107AbaISQma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:42:30 -0400
-X-Sasl-enc: H3/3rX3okTofvszKVnA2PUIihkZBNaNbQZ3Ew3QrHJtm 1411144949
-Date: Fri, 19 Sep 2014 13:42:17 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140919164217.GD17456@khazad-dum.debian.net>
-References: <541B2F33.8000002@amacapital.net>
- <20140918145328.0253f009@as>
- <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
- <20140918200659.GA5331@khazad-dum.debian.net>
- <20140919001311.GB5331@khazad-dum.debian.net>
- <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
- <20140919110014.GC29639@khazad-dum.debian.net>
- <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140919150042.GC5318@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757538AbaISQmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:42:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8595 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756107AbaISQmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 12:42:43 -0400
+Message-ID: <1411144934.25340.34.camel@deneb.redhat.com>
+Subject: Re: [PATCH] arm64/pci: fix dma coherency inheritance for PCI devices
+From: Mark Salter <msalter@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>
+Date: Fri, 19 Sep 2014 12:42:14 -0400
+In-Reply-To: <20140919162859.GG20773@arm.com>
+References: <1411141886-11310-1-git-send-email-msalter@redhat.com>
+	 <20140919162859.GG20773@arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014, Borislav Petkov wrote:
-> On Fri, Sep 19, 2014 at 07:54:14AM -0500, Chuck Ebbert wrote:
-> > 2) Don't allow a late update if TSX is still enabled on those
-> > processors.
+On Fri, 2014-09-19 at 17:28 +0100, Will Deacon wrote:
+> On Fri, Sep 19, 2014 at 04:51:26PM +0100, Mark Salter wrote:
+> > The default dma_ops for devices on arm64 systems are noncoherent in
+> > nature and rely upon special operations and bounce buffers to
+> > perform a device DMA operation to/from memory. Some drivers rely
+> > upon coherent operations involving suitably capable hardware. In
+> > this case, a "dma-coherent" property will exist on the corresponding
+> > Device Tree node for the bridge device, or one of its ancestors.
+> > This patch adds support for applying a DMA coherent dma_ops for
+> > PCI devices in the case of such a property.
+> > 
+> > Signed-off-by: Jon Masters <jcm@redhat.com>
+> > [added search for device with of_node]
+> > Signed-off-by: Mark Salter <msalter@redhat.com>
+> > ---
+> >  arch/arm64/mm/dma-mapping.c | 21 +++++++++++++++++++--
+> >  1 file changed, 19 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+> > index 4164c5a..0e26bd7 100644
+> > --- a/arch/arm64/mm/dma-mapping.c
+> > +++ b/arch/arm64/mm/dma-mapping.c
+> > @@ -23,10 +23,12 @@
+> >  #include <linux/dma-mapping.h>
+> >  #include <linux/dma-contiguous.h>
+> >  #include <linux/of.h>
+> > +#include <linux/of_address.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/vmalloc.h>
+> >  #include <linux/swiotlb.h>
+> >  #include <linux/amba/bus.h>
+> > +#include <linux/pci.h>
+> >  
+> >  #include <asm/cacheflush.h>
+> >  
+> > @@ -316,8 +318,18 @@ static int dma_bus_notifier(struct notifier_block *nb,
+> >  	if (event != BUS_NOTIFY_ADD_DEVICE)
+> >  		return NOTIFY_DONE;
+> >  
+> > -	if (of_property_read_bool(dev->of_node, "dma-coherent"))
+> > -		set_dma_ops(dev, &coherent_swiotlb_dma_ops);
+> > +	/*
+> > +	 * Some devices won't have an of_node but a bus controller/bridge will.
+> > +	 * Search up the device chain until we find an of_node to check.
+> > +	 */
+> > +	while (dev) {
+> > +		if (dev->of_node) {
+> > +			if (of_dma_is_coherent(dev->of_node))
+> > +				set_dma_ops(_dev, &coherent_swiotlb_dma_ops);
+> > +			break;
+> > +		}
+> > +		dev = dev->parent;
+> > +	}
 > 
-> Yeah, so the use case I have in mind is when a long-running machine
-> wants to apply microcode and this microcode disables CPUID bits and
-> instructions. And the machine cannot be rebooted.
+> Hmm, how does this interact with of_dma_configure? I don't think the
+> dma-coherent property is inherited there, so I'm uneasy about doing this for
+> buses other than PCI (i.e. the platform bus).
+
+of_dma_configure() only gets called for platform bus and it
+uses of_dma_is_coherent() which searches device ancestors for
+dma-coherent property. But it uses set_arch_dma_coherent_ops()
+which is a no-op on arm64 now. Catalin mentions this in another
+thread: https://lkml.org/lkml/2014/9/15/363
+
+So maybe we should fix set_arch_dma_coherent_ops() and drop
+platform bus from the notifier handler.
+
 > 
-> I guess in that case we would have to issue a warning only on the
-> affected processors that a rebooted is mandatory and fail the update...
-> Maybe something like that.
+> In other words, we should move to using of_dma_configure for the platform
+> and amba buses, and have a separate notifier for the PCI bus. Is it likely
+> that people will have a mixture of coherent and non-coherent devices behind
+> the same host controller?
+> 
+> Will
+> 
+> >  	return NOTIFY_OK;
+> >  }
+> > @@ -330,6 +342,10 @@ static struct notifier_block amba_bus_nb = {
+> >  	.notifier_call = dma_bus_notifier,
+> >  };
+> >  
+> > +static struct notifier_block pci_bus_nb = {
+> > +	.notifier_call = dma_bus_notifier,
+> > +};
+> > +
+> >  extern int swiotlb_late_init_with_default_size(size_t default_size);
+> >  
+> >  static int __init swiotlb_late_init(void)
+> > @@ -341,6 +357,7 @@ static int __init swiotlb_late_init(void)
+> >  	 */
+> >  	bus_register_notifier(&platform_bus_type, &platform_bus_nb);
+> >  	bus_register_notifier(&amba_bustype, &amba_bus_nb);
+> > +	bus_register_notifier(&pci_bus_type, &pci_bus_nb);
+> >  
+> >  	dma_ops = &noncoherent_swiotlb_dma_ops;
+> >  
+> > -- 
+> > 1.9.3
+> > 
+> > 
 
-Well, in this case we'd have to (on Intel, but AMD is likely the same):
 
-1. offline a "guinea pig" group of "cpus", i.e. an entire "microcode update
-unit" that doesn't include the BSP.  This is going to be a pain, as what
-composes a "microcode update unit" is not set in stone, and could change in
-a future microarch.
-
-2. apply the update to one of the "guinea pig" "cpus" (which will update all
-"cpus" in the same "microcode update unit").
-
-3. sanity check.
-
-4a. abort the update run if something nasty happened, leaving the "guinea
-pig" "cpus" locked offline until the next reboot.  Warn the user.
-
-4b. online the "guinea pig" "cpus" if the update looks good, and proceed to
-update the rest of the "cpus" in the system.
-
-We need this dance because we cannot roll-back a microcode update in the
-general case.
-
-To me, it looks way too complicated to be worth the effort.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
