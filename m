@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaISNje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:39:34 -0400
-Received: from mail-db3on0147.outbound.protection.outlook.com ([157.55.234.147]:63581
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755848AbaISNjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:39:32 -0400
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-To: <shawn.guo@freescale.com>
-CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Subject: [PATCH v2 2/2] ARM: dts: vf610-colibri: Add backlight support
-Date: Fri, 19 Sep 2014 19:08:52 +0530
-Message-ID: <bae435d33cac93fd5f0c763fbe7bb302b52a6f0f.1411130205.git.bhuvanchandra.dv@toradex.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1411130205.git.bhuvanchandra.dv@toradex.com>
-References: <cover.1411130205.git.bhuvanchandra.dv@toradex.com>
+	id S1756761AbaISNlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:41:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754306AbaISNlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:41:08 -0400
+Message-ID: <541C324D.2080608@redhat.com>
+Date: Fri, 19 Sep 2014 15:40:29 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [115.115.225.206]
-X-ClientProxiedBy: DM2PR10CA0043.namprd10.prod.outlook.com (10.141.241.11) To
- AM3PR05MB257.eurprd05.prod.outlook.com (10.242.249.14)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0339F89554
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(76176999)(66066001)(83072002)(50986999)(48376002)(93916002)(69596002)(81342003)(77096002)(77156001)(62966002)(101416001)(88136002)(102836001)(99396002)(36756003)(104166001)(31966008)(19580395003)(50226001)(97736003)(89996001)(46102003)(106356001)(86362001)(2371004)(92566001)(85306004)(74662003)(42186005)(33646002)(87976001)(19580405001)(53416004)(83322001)(21056001)(107046002)(105586002)(85852003)(90102001)(77982003)(118296001)(2351001)(76482002)(4396001)(229853001)(79102003)(80022003)(47776003)(110136001)(95666004)(87286001)(81156004)(81542003)(92726001)(50466002)(74502003)(20776003)(7059019);DIR:OUT;SFP:1102;SCL:1;SRVR:AM3PR05MB257;H:trdx.toradex.int;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: toradex.com
+To: Borislav Petkov <bp@alien8.de>
+CC: Nadav Amit <namit@cs.technion.ac.il>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+References: <20140917124501.GC5358@nazgul.tnic> <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il> <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il> <20140917132141.GD5358@nazgul.tnic> <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com> <20140917140601.GE5358@nazgul.tnic> <541AD8F3.5010700@redhat.com> <20140918132635.GB27008@nazgul.tnic> <541ADFEB.6030801@redhat.com> <20140919075814.GA30491@nazgul.tnic>
+In-Reply-To: <20140919075814.GA30491@nazgul.tnic>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 19/09/2014 09:58, Borislav Petkov ha scritto:
+>> > The trivial example is feature bits like XSAVE. We query them all the
+>> > time without checking the family when they were first introduced,
+>> > don't we?
+> The feature bits would obviously be 0 if features are not supported.
 
-Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
----
- arch/arm/boot/dts/vf610-colibri-eval-v3.dts |    6 ++++++
- arch/arm/boot/dts/vf610-colibri.dtsi        |    6 ++++++
- 2 files changed, 12 insertions(+)
+And similarly, Intel would not extend a bit from 16 to 17 bits if it
+weren't zero on all older processors.
 
-diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-index 00f63d9..711cf82 100644
---- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-+++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-@@ -19,6 +19,12 @@
- 	};
- };
- 
-+&bl {
-+	brightness-levels = <0 4 8 16 32 64 128 255>;
-+	default-brightness-level = <6>;
-+	status  = "okay";
-+};
-+
- &esdhc1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_esdhc1>;
-diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
-index 560cd69..20b1c15 100644
---- a/arch/arm/boot/dts/vf610-colibri.dtsi
-+++ b/arch/arm/boot/dts/vf610-colibri.dtsi
-@@ -13,6 +13,12 @@
- 	model = "Toradex Colibri VF61 COM";
- 	compatible = "toradex,vf610-colibri_vf61", "fsl,vf610";
- 
-+	bl: backlight {
-+		compitable = "pwm-backlight";
-+		pwms = <&pwm0 0 5000000 0>;
-+		status = "disabled";
-+	};
-+
- 	clocks {
- 		enet_ext {
- 			compatible = "fixed-clock";
--- 
-1.7.9.5
+> However, even there
+> 
+> "16 - Reserved - Do not count on the value."
+> 
+> I'm quoting Intel's CPUID doc 241618-037 from 2011 (there might be a
+> newer one though), the CPUID(1).ECX description.
 
+Once that bit gets a meaning in newer processors, the same meaning will
+work retroactively for existing processors.  That's just how CPUID is
+used.  Nobody checks families before testing bits, Intel/AMD do not even
+suggest that.
+
+> Do you have a guarantee that this won't happen in the future and break
+> all your fancy bitfields assumptions?
+
+No guarantee, but were that to happen, I'd expect tar and feathers
+spectacles around Intel's engineering headquarters.
+
+Paolo
