@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232AbaISSGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 14:06:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3095 "EHLO mx1.redhat.com"
+	id S1757557AbaISSPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 14:15:09 -0400
+Received: from www.sr71.net ([198.145.64.142]:54873 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117AbaISSGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 14:06:42 -0400
-Date: Fri, 19 Sep 2014 20:03:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roman Peniaev <r.peniaev@gmail.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v3 PATCH 1/1] init: fix race between rootfs mount and
-	firmware loading
-Message-ID: <20140919180359.GA4402@redhat.com>
-References: <20140917174647.GC19308@redhat.com> <1411047228-2576-1-git-send-email-r.peniaev@gmail.com> <20140918174127.GB340@redhat.com> <CACZ9PQWDynSqUREO_79e5DFKqhV62ra3ecYYaNttOdNx4wS6_A@mail.gmail.com>
+	id S1756107AbaISSPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 14:15:07 -0400
+Message-ID: <541C72A9.9090509@sr71.net>
+Date: Fri, 19 Sep 2014 11:15:05 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACZ9PQWDynSqUREO_79e5DFKqhV62ra3ecYYaNttOdNx4wS6_A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Karel Zak <kzak@redhat.com>
+CC: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
+        a.p.zijlstra@chello.nl, mingo@kernel.org, hpa@linux.intel.com,
+        brice.goglin@gmail.com, bp@alien8.de
+Subject: Re: [PATCH] x86: new topology for multi-NUMA-node CPUs
+References: <20140918193334.C065EBCE@viggo.jf.intel.com> <20140919114529.GD5366@x2.net.home>
+In-Reply-To: <20140919114529.GD5366@x2.net.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19, Roman Peniaev wrote:
->
-> On Fri, Sep 19, 2014 at 2:41 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 09/18, Roman Pen wrote:
-> >>
-> >> +EXPORT_SYMBOL(wait_for_rootfs);
-> >
-> > Why?
->
-> CONFIG_FW_LOADER (which includes firmware_class.c to compilation
-> sequence) is declared as tristate,
+On 09/19/2014 04:45 AM, Karel Zak wrote:
+>  hmm... it would be also nice to test it with lscpu(1) from 
+>  util-linux (but it uses maps rather than lists from cpu*/topology/).
 
-Ah, I didn't know it can be compiled as a module. Thanks, you are
-right.
+Here's the output with and with out Cluster-on-Die enabled.
 
-Oleg.
+Everything looks OK to me.  The cache size changes are what the CPU
+actually tells us through CPUID leaves.
+
+[root@otc-grantley-03 ~]# diff -ru lscpu.nocod lscpu.wcod
+--- lscpu.nocod	2014-09-19 04:01:17.846336595 -0700
++++ lscpu.wcod	2014-09-19 04:10:56.557383761 -0700
+@@ -6,18 +6,20 @@
+ Thread(s) per core:    2
+ Core(s) per socket:    18
+ Socket(s):             2
+-NUMA node(s):          2
++NUMA node(s):          4
+ Vendor ID:             GenuineIntel
+ CPU family:            6
+ Model:                 63
+ Model name:            Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz
+ Stepping:              2
+-CPU MHz:               1340.468
+-BogoMIPS:              4590.53
++CPU MHz:               1360.234
++BogoMIPS:              4590.67
+ Virtualization:        VT-x
+ L1d cache:             32K
+ L1i cache:             32K
+ L2 cache:              256K
+-L3 cache:              46080K
+-NUMA node0 CPU(s):     0-17,36-53
+-NUMA node1 CPU(s):     18-35,54-71
++L3 cache:              23040K
++NUMA node0 CPU(s):     0-8,36-44
++NUMA node1 CPU(s):     9-17,45-53
++NUMA node2 CPU(s):     18-26,54-62
++NUMA node3 CPU(s):     27-35,63-71
+
 
