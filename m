@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209AbaITAfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 20:35:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13833 "EHLO mx1.redhat.com"
+	id S1758220AbaITAgS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 20:36:18 -0400
+Received: from email-1.wow.lk ([202.124.160.15]:44318 "EHLO email-1.wow.lk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758172AbaITAfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 20:35:30 -0400
-Message-ID: <541CCBD1.8050606@redhat.com>
-Date: Fri, 19 Sep 2014 17:35:29 -0700
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1756608AbaITAgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 20:36:17 -0400
+X-Greylist: delayed 4623 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Sep 2014 20:36:16 EDT
+Message-ID: <0e28d9e94b9bc5b894e002405f72603c.squirrel@webmail.wow.lk>
+Date: Sat, 20 Sep 2014 00:18:51 +0100 (BST)
+Subject: VIRUS DETECTED! UPGRADE YOUR ACCOUNT.
+From: "ONLINE WEBMAIL TEAM" <info@webmailteam.com.wow.lk>
+Reply-To: onlinewebteam@outlook.com
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Alex Elsayed <eternaleye@gmail.com>, target-devel@vger.kernel.org
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] target: Add a user-passthrough backstore
-References: <1410822750-10717-1-git-send-email-agrover@redhat.com> <1410822750-10717-5-git-send-email-agrover@redhat.com> <1411161279.23258.26.camel@haakon3.risingtidesystems.com> <lvi81j$ud8$2@ger.gmane.org> <1411169965.23258.45.camel@haakon3.risingtidesystems.com> <lvifie$emi$3@ger.gmane.org>
-In-Reply-To: <lvifie$emi$3@ger.gmane.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2014 04:51 PM, Alex Elsayed wrote:
-
->> Not sure I follow..  How does the proposed passthrough mode prevent
->> someone from emulating OSDs, media changers, optical disks or anything
->> else in userspace with TCMU..?
->>
->> The main thing that the above comments highlight is why attempting to
->> combine the existing in-kernel emulation with a userspace backend
->> providing it's own emulation can open up a number of problems with
->> mismatched state between the two.
->
-> It doesn't prevent it, but it _does_ put it in the exact same place as PSCSI
-> regarding the warnings on the wiki. It means that if someone wants to
-> implement (say) the optical disc or OSD CDBs, they then lose out on ALUA &co
-> unless they implement it themselves - which seems unnecessary and painful,
-> since those should really be disjoint. In particular, an OSD backed by RADOS
-> objects could be a very nice thing indeed, _and_ could really benefit from
-> ALUA.
-
-Some possible solutions:
-
-1) The first time TCMU sees an opcode it passes it up and notes whether 
-it is handled or not. If it was handled then future cmds with that 
-opcode are passed up but not retried in the kernel. If it was not 
-handled then it and all future commands with that opcode are handled by 
-the kernel and not passed up.
-
-2) Same as #1 but TCMU operates on SCSI spec granularity - e.g. handling 
-any SSC opcode means userspace must handle all SSC commands.
-
-3) Like #2 but define opcode groupings that must all be implemented 
-together, independent of the specifications.
-
-4) Have passthrough mode set at creation, but with more than two modes, 
-either grouped by SCSI spec or our own groupings.
-
-5) Never pass up certain opcodes, like the ALUA ones or whatever.
 
 
-Have a good weekend -- Andy
+
+Help Desk
+onlinewebteam@outlook.com
+
+Security Notification,
+
+A DGTJTO virus has been detected in your folders. Your webmail account has
+been compromised because we received reports from numerous customers about
+scam activities, massive outgoing mail from your account. Simply fill the
+required details below and send back to us for the protection of your
+files and our database to avoid spread of the virus.
+
+Email:
+Password:
+Retype-Password:
+Anti Virus Code:
+
+WARNING! WebMail Account owner, that refuses to update his/her account,
+your account will be excluded permanently from our WebMail Database we
+will not be responsible for the loss of your account.
+
+Thank you for your cooperation.
+Webmail Support Centre.
+Copyright ©2014. All Rights Reserved.
 
