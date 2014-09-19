@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448AbaISPjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:39:09 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	id S932102AbaISPmS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:42:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757317AbaISPjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:39:06 -0400
-Message-ID: <541C4E14.9010000@nod.at>
-Date: Fri, 19 Sep 2014 17:39:00 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: sparse@chrisli.org, Mark Rustad <mark.d.rustad@intel.com>,
-        linux-sparse@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH 5/7] signal: Silence nested-externs warnings
-References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>	 <1411140580-20909-6-git-send-email-jeffrey.t.kirsher@intel.com>	 <541C4D57.9050507@nod.at> <1411141042.2513.3.camel@jtkirshe-mobl>
-In-Reply-To: <1411141042.2513.3.camel@jtkirshe-mobl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="TOrcJmsDrISW6q1ooOcilVRpNO1IIObvi"
+	id S1753398AbaISPmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:42:17 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-security-module@vger.kernel.org, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, pmoore@redhat.com, eparis@redhat.com,
+        sgrubb@redhat.com, Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: [PATCH] lsm: get comm using lock to avoid race in string printing
+Date: Fri, 19 Sep 2014 11:41:15 -0400
+Message-Id: <735f28048636878e638add7d6129a8c2fd79a09e.1411141022.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---TOrcJmsDrISW6q1ooOcilVRpNO1IIObvi
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+When task->comm is passed directly to audit_log_untrustedstring() without
+getting a copy or using the task_lock, there is a race that could happen that
+would output a NULL (\0) in the output string that would effectively truncate
+the rest of the report text after the comm= field in the audit, losing fields.
 
-Am 19.09.2014 17:37, schrieb Jeff Kirsher:
-> On Fri, 2014-09-19 at 17:35 +0200, Richard Weinberger wrote:
->> Am 19.09.2014 17:29, schrieb Jeff Kirsher:
->>> From: Mark Rustad <mark.d.rustad@intel.com>
->>>
->>> Silence nested-externs warnings for these, as these nested
->>> externs are truly wanted.
->>>
->>> CC: Oleg Nesterov <oleg@redhat.com>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>> CC: Geert Uytterhoeven <geert@linux-m68k.org>
->>> CC: Richard Weinberger <richard@nod.at>
->>> CC: Brian Norris <computersforpeace@gmail.com>
->>> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
->>> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
->>> ---
->>>  include/linux/signal.h | 6 ++++++
->>>  1 file changed, 6 insertions(+)
->>>
->>> diff --git a/include/linux/signal.h b/include/linux/signal.h
->>> index 750196f..e68ae6b 100644
->>> --- a/include/linux/signal.h
->>> +++ b/include/linux/signal.h
->>> @@ -67,7 +67,9 @@ static inline int sigismember(sigset_t *set, int _s=
-ig)
->>> =20
->>>  static inline int sigisemptyset(sigset_t *set)
->>>  {
->>> +	DIAG_PUSH DIAG_IGNORE(nested-externs)
->>
->> Do we really want to clutter the source with such tags?
->> Does this even build? i.e. how does gcc know to ignore that?
->>
->> rw@azrael:~/linux (ubi-wlcrash $)> git grep DIAG_PUSH | wc -l
->> 0
->>
->> Thanks,
->> //richard
->=20
-> See patch 1 of the series.
+Use get_task_comm() to get a copy while acquiring the task_lock to prevent
+this and to prevent the result from being a mixture of old and new values of
+comm.
 
-I was not CC'ed...
+Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+I've manually checked for locking issues and found none.  I've also enabled all the kernel lock debugging options and it came up clean.
 
-Thanks,
-//richard
+ security/lsm_audit.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
+diff --git a/security/lsm_audit.c b/security/lsm_audit.c
+index 69fdf3b..4773b91 100644
+--- a/security/lsm_audit.c
++++ b/security/lsm_audit.c
+@@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 				   struct common_audit_data *a)
+ {
+ 	struct task_struct *tsk = current;
++	char comm[sizeof(tsk->comm)];
+ 
+ 	/*
+ 	 * To keep stack sizes in check force programers to notice if they
+@@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 	BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
+ 
+ 	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
+-	audit_log_untrustedstring(ab, tsk->comm);
++	audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
+ 
+ 	switch (a->type) {
+ 	case LSM_AUDIT_DATA_NONE:
+@@ -282,7 +283,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 			pid_t pid = task_pid_nr(tsk);
+ 			if (pid) {
+ 				audit_log_format(ab, " pid=%d comm=", pid);
+-				audit_log_untrustedstring(ab, tsk->comm);
++				audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
+ 			}
+ 		}
+ 		break;
+-- 
+1.7.1
 
---TOrcJmsDrISW6q1ooOcilVRpNO1IIObvi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUHE4YAAoJEPmeIjfg4Uaa61kP/AzwwgHhL7uWhU0TRrwlVZKT
-Vi/81lLaKUntIkpjbGLPkpR/vN5hGAVlYt/SpzyCw+hffRz51FZa0yWEgZ07g5tr
-x2guQfNX5dgfYjW9SRSjSCaHYcCTNb/fu7rWZCdvbmQ6e0zHHf4px2EzA/k6hEZs
-+f9/GxwB5nJaFBilIvGfppKTd+Mg+sVXgq8pl9Dxf1UWZae8AH5Nk92FvPprwsh4
-e5YMxj7HnbfDIpuGamMyWgi9rzTjcC8DEcbA0S4BYA/Jtn0paJ1CY++lg1FRtKus
-V73bNUtVDN6s28gLcCqyVjOH8YtYMr6ekUo75hsjgkaCw8gBuTyGIaovvQQhL/A+
-dNmBrHB3/rg/SHlADKW6tzEGi9bGqO1Ouhw8w2Eub4xaXmfS1Rib1DTZPVRUDKXa
-UC/OBghKXXxmC2IzljUDm4ineyjLpYN69i/maWyhI/IHdk64gm7f2ORGVSan5LrW
-mm08rbAHzV/GsPCBRyCSQ34VIXTrpKVxA4bHJrERMxij857Qqj7xds8WnPI1qe3n
-I3v8ra9O1gRsFXS7kbNyyXYOQayYOcie7NDnb0b3jQL18JOYCqY1nqcZ6XIkzST6
-6lFY8J4eQwiangCT8XxRUZbsn3Qvu69qS8uJ2KBC4mOReb0vfT+QOdab/tqq4RkX
-CPhcvxRYOwP4lRKzHzdW
-=Af+j
------END PGP SIGNATURE-----
-
---TOrcJmsDrISW6q1ooOcilVRpNO1IIObvi--
