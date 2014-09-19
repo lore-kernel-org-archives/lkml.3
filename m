@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557AbaISMld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:41:33 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42747 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298AbaISMlb (ORCPT
+	id S1756603AbaISMm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:42:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43553 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107AbaISMm6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:41:31 -0400
-Message-ID: <541C2475.7070500@de.ibm.com>
-Date: Fri, 19 Sep 2014 14:41:25 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	Fri, 19 Sep 2014 08:42:58 -0400
+Message-ID: <541C24EC.1080200@arm.com>
+Date: Fri, 19 Sep 2014 13:43:24 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>, tom.leiming@gmail.com,
-        axboe@kernel.dk
-CC: kvm@vger.kernel.org, stable@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, mst@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-mq: Avoid race condition with uninitialized requests
-References: <1411031071-40390-1-git-send-email-dahi@linux.vnet.ibm.com> <1411031071-40390-2-git-send-email-dahi@linux.vnet.ibm.com>
-In-Reply-To: <1411031071-40390-2-git-send-email-dahi@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091912-8372-0000-0000-0000013DE758
+To: Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        "peterz@infradead.org" <peterz@infradead.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "raistlin@linux.it" <raistlin@linux.it>,
+        "michael@amarulasolutions.com" <michael@amarulasolutions.com>,
+        "fchecconi@gmail.com" <fchecconi@gmail.com>,
+        "vincent@legout.info" <vincent@legout.info>,
+        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] sched/deadline: clear dl_entity params when setscheduling
+ to different class
+References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com> <1411118561-26323-2-git-send-email-juri.lelli@arm.com> <541C171E.6080900@bmw-carit.de>
+In-Reply-To: <541C171E.6080900@bmw-carit.de>
+X-OriginalArrivalTime: 19 Sep 2014 12:42:54.0367 (UTC) FILETIME=[3B699AF0:01CFD407]
+X-MC-Unique: 114091913425501401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 11:04 AM, David Hildenbrand wrote:
-> This patch should fix the bug reported in https://lkml.org/lkml/2014/9/11/249.
-> 
-> We have to initialize at least the atomic_flags and the cmd_flags when
-> allocating storage for the requests.
-> 
-> Otherwise blk_mq_timeout_check() might dereference uninitialized pointers when
-> racing with the creation of a request.
-> 
-> Also move the reset of cmd_flags for the initializing code to the point where a
-> request is freed. So we will never end up with pending flush request indicators
-> that might trigger dereferences of invalid pointers in blk_mq_timeout_check().
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Hi Daniel,
 
-So far our testers were not able to reproduce the problem with this patch applied, we will continue testing over weekend. I will give an ACK/NACK on monday then.
+On 19/09/14 12:44, Daniel Wagner wrote:
+> Hi,
+> 
+> On 09/19/2014 11:22 AM, Juri Lelli wrote:
+>> When a task is using SCHED_DEADLINE and the user setschedules it to a different
+>> class its sched_dl_entity static parameters are not cleaned up. This causes a
+>> bug if the user sets it back to SCHED_DEADLINE with the same parameters again.
+>> The problem resides in the check we perform at the very beginning of
+>> dl_overflow():
+>>
+>> 	if (new_bw == p->dl.dl_bw)
+>> 		return 0;
+>>
+>> This condition is met in the case depicted above, so the function returns and
+>> dl_b->total_bw is not updated (the p->dl.dl_bw is not added to it). After this,
+>> admission control is broken.
+>>
+>> This patch fixes the thing, properly clearing static parameters for a task
+>> that ceases to use SCHED_DEADLINE.
+>>
+>> Reported-by: Daniele Alessandrelli <daniele.alessandrelli@gmail.com>
+>> Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> 
+> Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> 
+> Fixes my problem.
+> 
 
-Thanks
+Great! Thanks for testing it.
 
+Best,
 
-> ---
->  block/blk-mq.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index 383ea0c..eed6340 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -203,7 +203,6 @@ __blk_mq_alloc_request(struct blk_mq_alloc_data *data, int rw)
->  	if (tag != BLK_MQ_TAG_FAIL) {
->  		rq = data->hctx->tags->rqs[tag];
-> 
-> -		rq->cmd_flags = 0;
->  		if (blk_mq_tag_busy(data->hctx)) {
->  			rq->cmd_flags = REQ_MQ_INFLIGHT;
->  			atomic_inc(&data->hctx->nr_active);
-> @@ -258,6 +257,7 @@ static void __blk_mq_free_request(struct blk_mq_hw_ctx *hctx,
-> 
->  	if (rq->cmd_flags & REQ_MQ_INFLIGHT)
->  		atomic_dec(&hctx->nr_active);
-> +	rq->cmd_flags = 0;
-> 
->  	clear_bit(REQ_ATOM_STARTED, &rq->atomic_flags);
->  	blk_mq_put_tag(hctx, tag, &ctx->last_tag);
-> @@ -1404,6 +1404,8 @@ static struct blk_mq_tags *blk_mq_init_rq_map(struct blk_mq_tag_set *set,
->  		left -= to_do * rq_size;
->  		for (j = 0; j < to_do; j++) {
->  			tags->rqs[i] = p;
-> +			tags->rqs[i]->atomic_flags = 0;
-> +			tags->rqs[i]->cmd_flags = 0;
->  			if (set->ops->init_request) {
->  				if (set->ops->init_request(set->driver_data,
->  						tags->rqs[i], hctx_idx, i,
-> 
+- Juri
 
