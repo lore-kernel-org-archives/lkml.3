@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235AbaISLiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:38:20 -0400
-Received: from verein.lst.de ([213.95.11.211]:43543 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350AbaISLiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:38:18 -0400
-Date: Fri, 19 Sep 2014 13:38:15 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: boot stall regression due to blk-mq: use percpu_ref for mq usage
-	count
-Message-ID: <20140919113815.GA10791@lst.de>
+	id S1755787AbaISLof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:44:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56005 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaISLod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 07:44:33 -0400
+Date: Fri, 19 Sep 2014 04:43:30 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-ba7e5a279e72f4b246dc7a419ac707e1936ede3e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        umgwanakikbuti@gmail.com, riel@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        umgwanakikbuti@gmail.com, riel@redhat.com, tglx@linutronix.de
+In-Reply-To: <20140904163530.189d410a@cuia.bos.redhat.com>
+References: <20140904163530.189d410a@cuia.bos.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/numa: Use select_idle_sibling()
+  to select a destination for task_numa_move()
+Git-Commit-ID: ba7e5a279e72f4b246dc7a419ac707e1936ede3e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens, hi Tejun,
+Commit-ID:  ba7e5a279e72f4b246dc7a419ac707e1936ede3e
+Gitweb:     http://git.kernel.org/tip/ba7e5a279e72f4b246dc7a419ac707e1936ede3e
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Thu, 4 Sep 2014 16:35:30 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 19 Sep 2014 12:35:14 +0200
 
-I've seen multi-second boot stalls in one of my KVM setups during
-the initial scsi scan:
+sched/numa: Use select_idle_sibling() to select a destination for task_numa_move()
 
-[    0.949892] scsi host0: Virtio SCSI HBA
-[    1.007864] scsi 0:0:0:0: Direct-Access     QEMU     QEMU HARDDISK    1.1. PQ: 0 ANSI: 5
-[    1.021299] scsi 0:0:1:0: Direct-Access     QEMU     QEMU HARDDISK    1.1. PQ: 0 ANSI: 5
-[    1.520356] tsc: Refined TSC clocksource calibration: 2491.910 MHz
+The code in task_numa_compare() will only examine at most one idle CPU per node,
+because they all have the same score. However, some idle CPUs are better
+candidates than others, due to busy or idle SMT siblings, etc...
 
-<stall>
+The scheduler has logic to find the best CPU within an LLC to place a
+task. The NUMA code should probably use it.
 
-[   16.186549] sd 0:0:0:0: Attached scsi generic sg0 type 0
-[   16.190478] sd 0:0:1:0: Attached scsi generic sg1 type 0
-[   16.194099] osd: LOADED open-osd 0.2.1
-[   16.203202] sd 0:0:0:0: [sda] 31457280 512-byte logical blocks: (16.1 GB/15.0 GiB)
-[   16.208478] sd 0:0:0:0: [sda] Write Protect is off
-[   16.211439] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-[   16.218771] sd 0:0:1:0: [sdb] 31457280 512-byte logical blocks: (16.1 GB/15.0 GiB)
-[   16.223264] sd 0:0:1:0: [sdb] Write Protect is off
-[   16.225682] sd 0:0:1:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+This seems to reduce the standard deviation for single instance SPECjbb2005
+with a low warehouse count on my 4 node test system.
 
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: mgorman@suse.de
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140904163530.189d410a@cuia.bos.redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-
-I've tracked this down to "blk-mq: use percpu_ref for mq usage count" in
-a rather painful way as that one introduced enough other regressions
-to mess up bisect.
-
-If I revert the following commits:
-
-dd840087086f3b93ac20f7472b4fca59aff7b79f
-cddd5d17642cc6881352732693c2ae6930e9ce65
-add703fda981b9719d37f371498b9f129acbd997
-
-which are the above mentioned commit and two fixes to it the problem goes
-away.
-
-My qemu command line is below:
-
-kvm \
-	-m 2048 \
-	-smp 1 \
-	-kernel arch/x86/boot/bzImage \
-	-append "root=/dev/vda console=tty0 console=ttyS0,115200n8 scsi_mod.use_blk_mq=Y" \
-	-nographic \
-	-drive if=virtio,file=/work/images/debian.qcow2,cache=none,serial="test1234" \
-	-drive if=none,id=test,file=/work/images/test.img,cache=none,aio=native \
-	-drive if=none,id=scratch,file=/work/images/scratch.img,cache=none,aio=native \
-	-device virtio-scsi-pci,id=scsi \
-	-device scsi-hd,drive=test \
-	-device scsi-hd,drive=scratch \
-	-drive file=/work/images/debian-7.3.0-amd64-netinst.iso,index=2,media=cdrom
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index be9e97b..96e7147 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -665,6 +665,7 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ }
+ 
+ #ifdef CONFIG_SMP
++static int select_idle_sibling(struct task_struct *p, int cpu);
+ static unsigned long task_h_load(struct task_struct *p);
+ 
+ static inline void __update_task_entity_contrib(struct sched_entity *se);
+@@ -1257,6 +1258,13 @@ balance:
+ 	if (load_too_imbalanced(src_load, dst_load, env))
+ 		goto unlock;
+ 
++	/*
++	 * One idle CPU per node is evaluated for a task numa move.
++	 * Call select_idle_sibling to maybe find a better one.
++	 */
++	if (!cur)
++		env->dst_cpu = select_idle_sibling(env->p, env->dst_cpu);
++
+ assign:
+ 	task_numa_assign(env, cur, imp);
+ unlock:
