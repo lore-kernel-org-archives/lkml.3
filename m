@@ -1,159 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaISUQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:16:55 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:35037 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757686AbaISUOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:14:52 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] ARM: mvebu: armada-xp: Add node alias to pinctrl and add base address
-Date: Fri, 19 Sep 2014 22:14:38 +0200
-Message-Id: <1411157684-6991-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1757909AbaISUWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:22:32 -0400
+Received: from mail-bl2on0105.outbound.protection.outlook.com ([65.55.169.105]:46688
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757861AbaISUWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 16:22:31 -0400
+Message-ID: <1411157986.13320.75.camel@snotra.buserror.net>
+Subject: Re: [PATCH 03/15] powerpc/msi: Improve IRQ bitmap allocator
+From: Scott Wood <scottwood@freescale.com>
+To: Michael Neuling <mikey@neuling.org>
+CC: <greg@kroah.com>, <arnd@arndb.de>, <mpe@ellerman.id.au>,
+        <benh@kernel.crashing.org>, <cbe-oss-dev@lists.ozlabs.org>,
+        <imunsie@au.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@ozlabs.org>, <jk@ozlabs.org>, <anton@samba.org>,
+        "Laurentiu Tudor" <Laurentiu.Tudor@freescale.com>
+Date: Fri, 19 Sep 2014 15:19:46 -0500
+In-Reply-To: <1411157769.13320.74.camel@snotra.buserror.net>
+References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
+	 <1411028820-29933-4-git-send-email-mikey@neuling.org>
+	 <1411157769.13320.74.camel@snotra.buserror.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:2d6a:b3e0:e03e:359e]
+X-ClientProxiedBy: BL2PR08CA0051.namprd08.prod.outlook.com (10.255.170.169) To
+ BN1PR0301MB0722.namprd03.prod.outlook.com (25.160.78.141)
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0722;
+X-Forefront-PRVS: 0339F89554
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(199003)(51704005)(24454002)(189002)(97736003)(104166001)(93916002)(87976001)(15202345003)(105586002)(77156001)(77096002)(101416001)(88136002)(77982003)(81342003)(86362001)(33646002)(95666004)(74662003)(81542003)(107046002)(31966008)(85852003)(19580395003)(76176999)(15975445006)(20776003)(83072002)(85306004)(47776003)(50986999)(64706001)(79102003)(4396001)(50226001)(80022003)(90102001)(21056001)(102836001)(19580405001)(74502003)(42186005)(99396002)(46102003)(110136001)(50466002)(106356001)(62966002)(23676002)(92566001)(83322001)(76482002)(103116003)(89996001)(87286001)(92726001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0722;H:[IPv6:2601:2:5800:3f7:2d6a:b3e0:e03e:359e];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In other MVEBU SoCs, the pin controller node is called pin-ctrl with
-its base address added. Also, we have a node alias to access the pinctrl
-node easily. Fix this for Armada XP pinctrl nodes to be consistent with
-other SoCs.
+On Fri, 2014-09-19 at 15:16 -0500, Scott Wood wrote:
+> On Thu, 2014-09-18 at 18:26 +1000, Michael Neuling wrote:
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> > 
+> > Currently msi_bitmap_alloc_hwirqs() will round up any IRQ allocation requests
+> > to the nearest power of 2.  eg. ask for 5 IRQs and you'll get 8.  This wastes a
+> > lot of IRQs which can be a scarce resource.
+> > 
+> > For cxl we can require multiple IRQs for every contexts that is attached to the
+> > accelerator.  For AFU directed accelerators, there may be 1000s of contexts
+> > attached, hence we can easily run out of IRQs, especially if we are needlessly
+> > wasting them.
+> > 
+> > This changes the msi_bitmap_alloc_hwirqs() to allocate only the required number
+> > of IRQs, hence avoiding this wastage.
+> > 
+> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> >  arch/powerpc/sysdev/msi_bitmap.c | 18 +++++++++++++-----
+> >  1 file changed, 13 insertions(+), 5 deletions(-)
+> 
+> This conflicts with (and partially duplicates)
+> http://patchwork.ozlabs.org/patch/381892/
+> which I have in my tree.  How should we handle it?
+> 
+> Laurentiu, from looking at the overlap between patches I see a problem
+> with your existing patch, regarding the out-of-irqs path and
+> msi_bitmap_free_hwirqs(), so one way or another that needs to get fixed
+> soon.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/armada-xp-axpwifiap.dts        | 2 +-
- arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts  | 2 +-
- arch/arm/boot/dts/armada-xp-mv78230.dtsi         | 2 +-
- arch/arm/boot/dts/armada-xp-mv78260.dtsi         | 2 +-
- arch/arm/boot/dts/armada-xp-mv78460.dtsi         | 2 +-
- arch/arm/boot/dts/armada-xp-netgear-rn2120.dts   | 2 +-
- arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts | 2 +-
- arch/arm/boot/dts/armada-xp.dtsi                 | 2 +-
- 8 files changed, 8 insertions(+), 8 deletions(-)
+Given the problems with Laurentiu's patch, perhaps it'd be best for me
+to just revert that patch in my tree, and respin it after this patchset
+has been merged.
 
-diff --git a/arch/arm/boot/dts/armada-xp-axpwifiap.dts b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-index a55a97a70505..546016148283 100644
---- a/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-+++ b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-@@ -60,7 +60,7 @@
- 		};
- 
- 		internal-regs {
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				pinctrl-0 = <&pmx_phy_int>;
- 				pinctrl-names = "default";
- 
-diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-index 469cf7137595..baa43a004299 100644
---- a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-+++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-@@ -51,7 +51,7 @@
- 		};
- 
- 		internal-regs {
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				poweroff_pin: poweroff-pin {
- 					marvell,pins = "mpp24";
- 					marvell,function = "gpio";
-diff --git a/arch/arm/boot/dts/armada-xp-mv78230.dtsi b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
-index b5933aa9ab50..e24ef072b8cb 100644
---- a/arch/arm/boot/dts/armada-xp-mv78230.dtsi
-+++ b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
-@@ -167,7 +167,7 @@
- 		};
- 
- 		internal-regs {
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				compatible = "marvell,mv78230-pinctrl";
- 			};
- 
-diff --git a/arch/arm/boot/dts/armada-xp-mv78260.dtsi b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-index 5954b362180c..53dfb157b91a 100644
---- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-+++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-@@ -251,7 +251,7 @@
- 		};
- 
- 		internal-regs {
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				compatible = "marvell,mv78260-pinctrl";
- 			};
- 
-diff --git a/arch/arm/boot/dts/armada-xp-mv78460.dtsi b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
-index 735924d62e12..8b4ab0a5d620 100644
---- a/arch/arm/boot/dts/armada-xp-mv78460.dtsi
-+++ b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
-@@ -289,7 +289,7 @@
- 		};
- 
- 		internal-regs {
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				compatible = "marvell,mv78460-pinctrl";
- 			};
- 
-diff --git a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
-index 0cf999abc4ed..b3951c39c5da 100644
---- a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
-+++ b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
-@@ -55,7 +55,7 @@
- 		};
- 
- 		internal-regs {
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				poweroff: poweroff {
- 					marvell,pins = "mpp42";
- 					marvell,function = "gpio";
-diff --git a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-index 4e5a59ee1501..394f085751be 100644
---- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-+++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-@@ -77,7 +77,7 @@
- 			serial@12100 {
- 				status = "okay";
- 			};
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				led_pins: led-pins-0 {
- 					marvell,pins = "mpp49", "mpp51", "mpp53";
- 					marvell,function = "gpio";
-diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
-index 75653774342a..b5fd8c69dfff 100644
---- a/arch/arm/boot/dts/armada-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-xp.dtsi
-@@ -71,7 +71,7 @@
- 				status = "disabled";
- 			};
- 
--			pinctrl {
-+			pinctrl: pin-ctrl@18000 {
- 				reg = <0x18000 0x38>;
- 
- 				sdio_pins: sdio-pins {
--- 
-2.0.0
+-Scott
+
 
