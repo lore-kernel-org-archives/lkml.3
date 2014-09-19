@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaISLqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:46:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56116 "EHLO
+	id S932191AbaISLqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:46:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56133 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146AbaISLqM (ORCPT
+	with ESMTP id S1756146AbaISLqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:46:12 -0400
-Date: Fri, 19 Sep 2014 04:45:17 -0700
+	Fri, 19 Sep 2014 07:46:34 -0400
+Date: Fri, 19 Sep 2014 04:45:45 -0700
 From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-a8edd075323cec607797fdd1d7b1222c987f4a47@git.kernel.org>
+Message-ID: <tip-f3f1768f89d601ad29f4701deef91caaa82b9f57@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1410529276.3569.24.camel@tkhai>
-References: <1410529276.3569.24.camel@tkhai>
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1410529321.3569.26.camel@tkhai>
+References: <1410529321.3569.26.camel@tkhai>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: cleanup:
-  Remove useless assignment in select_task_rq_fair()
-Git-Commit-ID: a8edd075323cec607797fdd1d7b1222c987f4a47
+Subject: [tip:sched/core] sched/rt:
+  Remove useless if from cleanup pick_next_task_rt()
+Git-Commit-ID: f3f1768f89d601ad29f4701deef91caaa82b9f57
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,40 +34,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a8edd075323cec607797fdd1d7b1222c987f4a47
-Gitweb:     http://git.kernel.org/tip/a8edd075323cec607797fdd1d7b1222c987f4a47
+Commit-ID:  f3f1768f89d601ad29f4701deef91caaa82b9f57
+Gitweb:     http://git.kernel.org/tip/f3f1768f89d601ad29f4701deef91caaa82b9f57
 Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Fri, 12 Sep 2014 17:41:16 +0400
+AuthorDate: Fri, 12 Sep 2014 17:42:01 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:35:18 +0200
+CommitDate: Fri, 19 Sep 2014 12:35:20 +0200
 
-sched/fair: cleanup: Remove useless assignment in select_task_rq_fair()
+sched/rt: Remove useless if from cleanup pick_next_task_rt()
 
-new_cpu is reassigned below, so we do not need this here.
+_pick_next_task_rt() never returns NULL.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1410529276.3569.24.camel@tkhai
+Link: http://lkml.kernel.org/r/1410529321.3569.26.camel@tkhai
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ kernel/sched/rt.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 96e7147..9807a99 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4521,11 +4521,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 4feac8f..2e6a774 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1468,8 +1468,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	p = _pick_next_task_rt(rq);
  
--	if (sd_flag & SD_BALANCE_WAKE) {
--		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
--			want_affine = 1;
--		new_cpu = prev_cpu;
--	}
-+	if (sd_flag & SD_BALANCE_WAKE)
-+		want_affine = cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
+ 	/* The running task is never eligible for pushing */
+-	if (p)
+-		dequeue_pushable_task(rq, p);
++	dequeue_pushable_task(rq, p);
  
- 	rcu_read_lock();
- 	for_each_domain(cpu, tmp) {
+ 	set_post_schedule(rq);
+ 
