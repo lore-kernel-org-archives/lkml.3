@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880AbaISTix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 15:38:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49735 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757700AbaISTiw (ORCPT
+	id S1757913AbaISTmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 15:42:52 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:61269 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757687AbaISTmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 15:38:52 -0400
-Date: Fri, 19 Sep 2014 15:38:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Petr Mladek <pmladek@suse.cz>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/6] usb: hub: convert khubd into workqueue
-In-Reply-To: <1411140744-21424-1-git-send-email-pmladek@suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1409191536000.1133-100000@iolanthe.rowland.org>
+	Fri, 19 Sep 2014 15:42:50 -0400
+Date: Fri, 19 Sep 2014 12:42:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: Tree for Sep 19
+Message-ID: <20140919194245.GA14491@roeck-us.net>
+References: <20140919165817.225eb8b8@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140919165817.225eb8b8@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014, Petr Mladek wrote:
+On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20140917:
+> 
+> The fsl tree still had its build failure so I used the version from
+> next-20140917.
+> 
+> The v4l-dvb tree lost its build failure.
+> 
+> The security tree gained a conflict against the file-locks tree.
+> 
+> Non-merge commits (relative to Linus' tree): 6014
+>  5488 files changed, 217522 insertions(+), 129375 deletions(-)
+> 
+> ----------------------------------------------------------------------------
+> 
+sparc64:allmodconfig:
 
-> The 3rd version of the patchset is slightly reordered and refactored
-> as suggested earlier. See below for more details.
-> 
-> IMHO, the result is more clean. But feel free to ask me to revert it.
-> I do not want to make the review more complicated. Well, I double checked
-> the diff of patches files between v2 and v3. It is pretty small and only
-> the expected changes are there.
-> 
-> Changes in:
->     + v3:
-> 	+ split the optimization of hub->hdev reference counting
-> 	  into separate patch; usable standalone (1st patch)
-> 
-> 	+ switch order of the two patches that convert the kthread
-> 	  and that remove the while cycle in hub_event(); it is
-> 	  cleaner (2nd and 3rd patch)
-> 
-> 	+ use ordered workqueue by default; it makes it compatible
-> 	  with the original kthread solution (3rd patch)
-> 
->         + added optional patch that allows to process events
-> 	  in parallel (6th patch)
-> 
-> 	+ fixed the suggested stylistic problems (2nd and 3rd patch)
-> 
-> 
->     + v2:
-> 	+ solved potential races:
-> 	  	 + get hub->kref in kick_hub_wq()
-> 		 + call usb_get_dev(hdev) in hub_probe()
-> 		   and 	usb_put_dev(hdev) in hub_release()
-> 		 + INIT_WORK only once in hub_probe()
-> 
-> 	 + do not call cancel_work_sync() in hub_disconnect()
-> 	   to keep it fast
-> 
-> 	 + rename kick_khubd() to kick_hub_wq() already
-> 	   in the first patch; IMHO, it is cleaner while
-> 	   adding only very few changes
-> 
-> 
-> The workqueue API is well defined and tested. It has many options
-> that could be used to tune the scheduling. The code is usually
-> easier and thus more safe. It allows to avoid the extra thread
-> in most cases. It has has clearly defined behavior vrt. system suspend.
-> 
-> This patchset converts khubd into the workqueue. It saves one thread,
-> lock, and list.
-> 
-> It  looks huge but the main change is in the first patch. The rest is
-> simple renaming of functions, comments and documentation.
-> 
-> 	   
-> Thanks a lot Alan Stern and Tejun Heo for hints and guidance.
-> 
-> The patches can be applied either against Linus' tree or linux-next.
+In file included from drivers/tty/serial/serial_mctrl_gpio.c:21:0:
+include/uapi/asm-generic/termios.h:22:8: error: redefinition of 'struct termio'
+./arch/sparc/include/uapi/asm/termbits.h:16:8: note: originally defined here
+make[3]: *** [drivers/tty/serial/serial_mctrl_gpio.o] Error 1
 
-Very nice work.  I haven't tried it out, but it all looks good.  No
-doubt we will be able to sort out unforeseen troubles if any arise,
-without much difficulty.
+Caused by commit 62b0a1b3e759 ('serial: clps711x: Use mctrl_gpio helpers for
+handling modem signals'), which enables SERIAL_MCTRL_GPIO for this build,
+but SERIAL_MCTRL_GPIO doesn't work for sparc64.
 
-For all six patches,
+bisect log:
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-Alan Stern
-
+# bad: [6a10bca9b608df445baa23c3bfafc510d93d425b] Add linux-next specific files for 20140919
+# good: [9e82bf014195d6f0054982c463575cdce24292be] Linux 3.17-rc5
+git bisect start 'HEAD' 'v3.17-rc5'
+# good: [fde058e2322b9098251d7cf798cac4327a29c004] Merge remote-tracking branch 'drm/drm-next'
+git bisect good fde058e2322b9098251d7cf798cac4327a29c004
+# bad: [8a258c1a0f82f4d152a3b06966a4d28dac2c8bcb] Merge remote-tracking branch 'usb-serial/usb-next'
+git bisect bad 8a258c1a0f82f4d152a3b06966a4d28dac2c8bcb
+# good: [5a571cebb73888024182de09063db35341e61beb] Merge remote-tracking branch 'spi/for-next'
+git bisect good 5a571cebb73888024182de09063db35341e61beb
+# good: [249a58bd0f355bc12549d00296684103326ac38f] Merge remote-tracking branch 'rcu/rcu/next'
+git bisect good 249a58bd0f355bc12549d00296684103326ac38f
+# good: [2154c4598a10e4dfeaf8061cd7b7511c3d4cf32b] Merge remote-tracking branch 'regmap/for-next'
+git bisect good 2154c4598a10e4dfeaf8061cd7b7511c3d4cf32b
+# good: [72a65a0d19c16de36e970ca6981732b5e8f7f4c4] Revert "usb: gadget: composite: dequeue cdev->req before free its buffer"
+git bisect good 72a65a0d19c16de36e970ca6981732b5e8f7f4c4
+# bad: [ae14a7954f5124208e6e93cafb3099f83acd43f5] tty: serial: 8250_core: provide a function to export uart_8250_port
+git bisect bad ae14a7954f5124208e6e93cafb3099f83acd43f5
+# bad: [920314dfd05f40cbe8ad677ba733ff1f8814d93a] serial: Fix build failure caused by missing header file
+git bisect bad 920314dfd05f40cbe8ad677ba733ff1f8814d93a
+# good: [2f2dafe77df2c78e189a9fa6b1879dffd06ae5a1] serial: serial_core.c: printk replacement
+git bisect good 2f2dafe77df2c78e189a9fa6b1879dffd06ae5a1
+# bad: [c10b73905a0bb4b91e6c153dbbf4c2809084e4c2] serial: 8250_hp300: trivial: fix symbol name in #warning message
+git bisect bad c10b73905a0bb4b91e6c153dbbf4c2809084e4c2
+# bad: [8b374399468da1c25db5b5d436b167aafc10fbdc] serial: msm_serial: Fix kgdb continue
+git bisect bad 8b374399468da1c25db5b5d436b167aafc10fbdc
+# bad: [e0525393baf07b1bb6e537ddbe7dfae3621649df] TTY: fix decimal printf format specifiers prefixed with 0x
+git bisect bad e0525393baf07b1bb6e537ddbe7dfae3621649df
+# bad: [62b0a1b3e7593e0647db9ecc5e7809e4410acb81] serial: clps711x: Use mctrl_gpio helpers for handling modem signals
+git bisect bad 62b0a1b3e7593e0647db9ecc5e7809e4410acb81
+# first bad commit: [62b0a1b3e7593e0647db9ecc5e7809e4410acb81] serial: clps711x: Use mctrl_gpio helpers for handling modem signals
