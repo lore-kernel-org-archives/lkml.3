@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833AbaISR0I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 13:26:08 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:39139 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757526AbaISR0H (ORCPT
+	id S1757782AbaISR1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 13:27:39 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:56064 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757413AbaISR1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 13:26:07 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
-Subject: [RFC PATCH] rcu: Change use of __this_cpu ops on a bool type
-Date: Fri, 19 Sep 2014 13:26:03 -0400
-Message-Id: <1411147563-9136-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 19 Sep 2014 13:27:37 -0400
+Date: Fri, 19 Sep 2014 10:27:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] watchdog: dw_wdt: restart the counter immediately
+ after enabling WDT
+Message-ID: <20140919172732.GA716@roeck-us.net>
+References: <1411108199-1280-1-git-send-email-jszhang@marvell.com>
+ <1411108199-1280-2-git-send-email-jszhang@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411108199-1280-2-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__this_cpu_{read/write}() uses sizeof() to determine the size of the variable.
-Using this operation on a bool type causes sparse to complain.
+On Fri, Sep 19, 2014 at 02:29:58PM +0800, Jisheng Zhang wrote:
+> The TOP_INIT may be zero, so the timeout period may be very short after
 
-I checked the generated code and there is only a slight difference in
-instructions generated.
+What is TOP_INIT ?
 
-I am not sure this warning by sparse is really valid, but let us silence it
-anyways.
+> initialization is done, thus the system may be reset soon after enabling.
+> We fix this problem by restarting the counter immediately after enabling
+> WDT.
+> 
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> ---
+>  drivers/watchdog/dw_wdt.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+> index 9f21029..ad0619d 100644
+> --- a/drivers/watchdog/dw_wdt.c
+> +++ b/drivers/watchdog/dw_wdt.c
+> @@ -146,6 +146,7 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
+>  		dw_wdt_set_top(DW_WDT_MAX_TOP);
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- kernel/rcu/tree.c        | 12 ++++++++----
- kernel/rcu/tree_plugin.h |  6 ++++--
- 2 files changed, 12 insertions(+), 6 deletions(-)
+This sets the timeout to the maximum, so I guess there must be some other
+event/register (TOP_INIT ?) which can be zero.
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index bc085e5..85f228a 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -186,21 +186,25 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  */
- void rcu_sched_qs(void)
- {
--	if (!__this_cpu_read(rcu_sched_data.passed_quiesce)) {
-+	struct rcu_data *rdp = __this_cpu_ptr(&rcu_sched_data);
-+
-+	if (!rdp->passed_quiesce) {
- 		trace_rcu_grace_period(TPS("rcu_sched"),
- 				       __this_cpu_read(rcu_sched_data.gpnum),
- 				       TPS("cpuqs"));
--		__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-+		rdp->passed_quiesce = true;
- 	}
- }
- 
- void rcu_bh_qs(void)
- {
--	if (!__this_cpu_read(rcu_bh_data.passed_quiesce)) {
-+	struct rcu_data *rdp = __this_cpu_ptr(&rcu_bh_data);
-+
-+	if (!rdp->passed_quiesce) {
- 		trace_rcu_grace_period(TPS("rcu_bh"),
- 				       __this_cpu_read(rcu_bh_data.gpnum),
- 				       TPS("cpuqs"));
--		__this_cpu_write(rcu_bh_data.passed_quiesce, 1);
-+		rdp->passed_quiesce = true;
- 	}
- }
- 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 77f9376..98de303 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -143,11 +143,13 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
-  */
- static void rcu_preempt_qs(void)
- {
--	if (!__this_cpu_read(rcu_preempt_data.passed_quiesce)) {
-+	struct rcu_data *rdp = __this_cpu_ptr(&rcu_preempt_data);
-+
-+	if (!rdp->passed_quiesce) {
- 		trace_rcu_grace_period(TPS("rcu_preempt"),
- 				       __this_cpu_read(rcu_preempt_data.gpnum),
- 				       TPS("cpuqs"));
--		__this_cpu_write(rcu_preempt_data.passed_quiesce, 1);
-+		rdp->passed_quiesce = true;
- 		barrier(); /* Coordinate with rcu_preempt_check_callbacks(). */
- 		current->rcu_read_unlock_special.b.need_qs = false;
- 	}
--- 
-2.1.0
+>  		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
+>  		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
 
+What guarantees that the reset didn't already happen by the time
+the keepalive call is executed ? Does this change fix the problem,
+or does it just make it more unlikely to be seen ?
+
+Thanks,
+Guenter
+
+> +		dw_wdt_keepalive();
+>  	}
+>  
+>  	dw_wdt_set_next_heartbeat();
+> -- 
+> 2.1.0
+> 
