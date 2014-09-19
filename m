@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896AbaIST2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 15:28:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43664 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757747AbaIST2N (ORCPT
+	id S1757758AbaISTdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 15:33:00 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34129 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757626AbaISTc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 15:28:13 -0400
-Date: Fri, 19 Sep 2014 20:27:24 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wenyou Yang <wenyou.yang@atmel.com>
-Subject: Re: [PATCH] ARM: at91: sama5: configure L2 cache
-Message-ID: <20140919192724.GH26036@leverpostej>
-References: <1411072716-20769-1-git-send-email-alexandre.belloni@free-electrons.com>
- <20140918210212.GD5182@n2100.arm.linux.org.uk>
- <20140918212836.GD29620@piout.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140918212836.GD29620@piout.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Sep 2014 15:32:58 -0400
+Message-ID: <1411155174.8463.0.camel@leira.trondhjem.org>
+Subject: [GIT PULL] Please pull NFS client bugfixes
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Sep 2014 15:32:54 -0400
+Organization: Primary Data, Inc
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+Hi Linus,
 
-> > There have been DT bindings proposed for prefetch control register.  I
-> > suggest that you search this mailing list for that patch, and check
-> > whether it is acceptable for your platform.
-> > 
-> 
-> I'm really wondering whether we should really put that in the device
-> tree... We will soon end up with a property for each bit of each
-> registers and the binding will end up being huge. Also, that is
-> configuration, not HW description.
+The following changes since commit 224ecbf5a674ec7da3a3b3ea21ca62e2853653fa:
 
-If it's configuration, why is putting it in a board file any better?
-The optimal values will depend on the workload, which depends on more
-than the just the machine. If anything this kind of tuning might be
-better handled using kernel command line parameters.
+  pnfs: fix filelayout_retry_commit when idx > 0 (2014-09-10 12:43:45 -0700)
 
-> I actually tried multiple things, without any satisfaction:
->  - using DT, with the main issue that we will definitely end up with one
->    property per bit of configuration
-> 
->  - adding an .l2c_prefetch_val to the machine start but that is kind of
->    ugly.
-> 
->  - adding a new parameter to l2x0_of_init()
-> 
-> So I ended up choosing to do it in the platform code. But if everybody
-> is fine with adding more properties to DT, I can go that way.
+are available in the git repository at:
 
-We can add properties as necessary. The fun part is deciding what is
-necessary.
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.17-5
 
-Mark.
+for you to fetch changes up to cd9288ffaea4359d5cfe2b8d264911506aed26a4:
+
+  NFSv4: Fix another bug in the close/open_downgrade code (2014-09-18 13:04:22 -0400)
+
+----------------------------------------------------------------
+NFS client fixes for 3.17
+
+Highligts:
+- Fix an Oops in nfs4_open_and_get_state
+- Fix an Oops in the nfs4_state_manager
+- Fix another bug in the close/open_downgrade code
+
+----------------------------------------------------------------
+NeilBrown (1):
+      NFS: remove BUG possibility in nfs4_open_and_get_state
+
+Steve Dickson (1):
+      NFSv4: nfs4_state_manager() vs. nfs_server_remove_lists()
+
+Trond Myklebust (1):
+      NFSv4: Fix another bug in the close/open_downgrade code
+
+ fs/nfs/nfs4client.c | 38 ++++++++++++++++++++------------------
+ fs/nfs/nfs4proc.c   | 40 ++++++++++++++++++++++------------------
+ 2 files changed, 42 insertions(+), 36 deletions(-)
+
+
