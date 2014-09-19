@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125AbaISXu6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 19:50:58 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34256 "EHLO
+	id S1757423AbaISXu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 19:50:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34249 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685AbaISXuz (ORCPT
+	with ESMTP id S1752139AbaISXuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 19:50:55 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
@@ -12,12 +12,10 @@ To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH 2/2] ARM: DT: msm8960: Add sdcc nodes
-Date: Fri, 19 Sep 2014 16:50:51 -0700
-Message-Id: <1411170651-28855-2-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 1/2] ARM: DT: msm8660: Add sdcc nodes
+Date: Fri, 19 Sep 2014 16:50:50 -0700
+Message-Id: <1411170651-28855-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.61.ge50deb1
-In-Reply-To: <1411170651-28855-1-git-send-email-sboyd@codeaurora.org>
-References: <1411170651-28855-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,14 +27,14 @@ regulator driver is mainlined.
 Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/boot/dts/qcom-msm8960-cdp.dts | 12 ++++++++
- arch/arm/boot/dts/qcom-msm8960.dtsi    | 50 ++++++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+)
+ arch/arm/boot/dts/qcom-msm8660-surf.dts | 12 ++++++++
+ arch/arm/boot/dts/qcom-msm8660.dtsi     | 51 +++++++++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+)
 
-diff --git a/arch/arm/boot/dts/qcom-msm8960-cdp.dts b/arch/arm/boot/dts/qcom-msm8960-cdp.dts
-index 8b10812c0cda..7f70fae90959 100644
---- a/arch/arm/boot/dts/qcom-msm8960-cdp.dts
-+++ b/arch/arm/boot/dts/qcom-msm8960-cdp.dts
+diff --git a/arch/arm/boot/dts/qcom-msm8660-surf.dts b/arch/arm/boot/dts/qcom-msm8660-surf.dts
+index ff7c53f58a06..e0883c376248 100644
+--- a/arch/arm/boot/dts/qcom-msm8660-surf.dts
++++ b/arch/arm/boot/dts/qcom-msm8660-surf.dts
 @@ -14,6 +14,18 @@
  				status = "ok";
  			};
@@ -56,21 +54,21 @@ index 8b10812c0cda..7f70fae90959 100644
  	};
  };
  
-diff --git a/arch/arm/boot/dts/qcom-msm8960.dtsi b/arch/arm/boot/dts/qcom-msm8960.dtsi
-index 2f677247744d..e1b0d5cd9e3c 100644
---- a/arch/arm/boot/dts/qcom-msm8960.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8960.dtsi
+diff --git a/arch/arm/boot/dts/qcom-msm8660.dtsi b/arch/arm/boot/dts/qcom-msm8660.dtsi
+index a3fd26b8139f..0affd6193f56 100644
+--- a/arch/arm/boot/dts/qcom-msm8660.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8660.dtsi
 @@ -2,6 +2,7 @@
  
  /include/ "skeleton.dtsi"
  
 +#include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/clock/qcom,gcc-msm8960.h>
+ #include <dt-bindings/clock/qcom,gcc-msm8660.h>
  #include <dt-bindings/soc/qcom,gsbi.h>
  
-@@ -188,5 +189,54 @@
- 			clocks = <&gcc PRNG_CLK>;
- 			clock-names = "core";
+@@ -146,5 +147,55 @@
+ 				};
+ 			};
  		};
 +
 +		/* Temporary fixed regulator */
@@ -97,7 +95,7 @@ index 2f677247744d..e1b0d5cd9e3c 100644
 +				clocks		= <&gcc SDC1_CLK>, <&gcc SDC1_H_CLK>;
 +				clock-names	= "mclk", "apb_pclk";
 +				bus-width	= <8>;
-+				max-frequency	= <96000000>;
++				max-frequency	= <48000000>;
 +				non-removable;
 +				cap-sd-highspeed;
 +				cap-mmc-highspeed;
@@ -116,12 +114,13 @@ index 2f677247744d..e1b0d5cd9e3c 100644
 +				bus-width	= <4>;
 +				cap-sd-highspeed;
 +				cap-mmc-highspeed;
-+				max-frequency	= <192000000>;
++				max-frequency	= <48000000>;
 +				no-1-8-v;
 +				vmmc-supply = <&vsdcc_fixed>;
 +			};
 +		};
  	};
++
  };
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
