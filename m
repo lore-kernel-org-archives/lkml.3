@@ -1,284 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049AbaISKhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 06:37:46 -0400
-Received: from mail-bn1bon0133.outbound.protection.outlook.com ([157.56.111.133]:61847
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754085AbaISKhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 06:37:45 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] ARM: ls1021a: add gating clocks to IP blocks.
-Date: Fri, 19 Sep 2014 18:37:27 +0800
-Message-ID: <1411123047-7544-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(46102003)(83072002)(6806004)(48376002)(4396001)(85852003)(80022003)(50226001)(74502003)(74662003)(93916002)(83322001)(97736003)(102836001)(86362001)(62966002)(107046002)(19580395003)(79102003)(229853001)(92726001)(44976005)(68736004)(19580405001)(104016003)(77982003)(69596002)(81342003)(31966008)(50986999)(81542003)(2201001)(90102001)(104166001)(92566001)(81156004)(26826002)(64706001)(106466001)(20776003)(47776003)(105606002)(76482002)(85306004)(87936001)(89996001)(87286001)(99396002)(36756003)(50466002)(77156001)(21056001)(95666004)(84676001)(88136002)(2004002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0614;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1755626AbaISKk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 06:40:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46439 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaISKk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 06:40:27 -0400
+Date: Fri, 19 Sep 2014 12:40:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20140919104021.GA11552@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-X-Forefront-PRVS: 0339F89554
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A given application may not use all the peripherals on the device.
-In this case, it may be desirable to disable unused peripherals.
-DCFG provides a mechanism for gating clocks to IP blocks that are
-not used when running an application.
+Linus,
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- arch/arm/mach-imx/Makefile                |   2 +
- arch/arm/mach-imx/clk-ls1021a.c           | 124 ++++++++++++++++++++++++++++++
- arch/arm/mach-imx/clk.h                   |  21 +++++
- include/dt-bindings/clock/ls1021a-clock.h |  54 +++++++++++++
- 4 files changed, 201 insertions(+)
- create mode 100644 arch/arm/mach-imx/clk-ls1021a.c
- create mode 100644 include/dt-bindings/clock/ls1021a-clock.h
+Please pull the latest x86-urgent-for-linus git tree from:
 
-diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-index 6e4fcd8..f6a1544 100644
---- a/arch/arm/mach-imx/Makefile
-+++ b/arch/arm/mach-imx/Makefile
-@@ -110,4 +110,6 @@ obj-$(CONFIG_SOC_IMX53) += mach-imx53.o
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+
+   # HEAD: 5ac385d83525fb8924ef87c18a4dc49998366394 Merge tag 'efi-urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi into x86/urgent
+
+Misc fixes: EFI fixes, a build fix, a page table dumping (debug) 
+fix and a clang build fix.
+
+  out-of-topic modifications in x86-urgent-for-linus:
+  -----------------------------------------------------
+  arch/arm64/mm/init.c               # 0ceac9e094b0: efi/arm64: Fix fdt-related m
+  drivers/firmware/efi/libstub/fdt.c # 0ceac9e094b0: efi/arm64: Fix fdt-related m
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Jan-Simon Möller (1):
+      x86/mm: Apply the section attribute to the variable, not its type
+
+Jiang Liu (1):
+      x86, irq: Fix build error caused by 9eabc99a635a77cbf09
+
+Mark Salter (1):
+      efi/arm64: Fix fdt-related memory reservation
+
+Mathias Krause (1):
+      x86-64, ptdump: Mark espfix area only if existent
+
+Matt Fleming (1):
+      x86/efi: Fixup GOT in all boot code paths
+
+Yinghai Lu (1):
+      x86/efi: Only load initrd above 4g on second try
+
+
+ arch/arm64/mm/init.c               |  3 +-
+ arch/x86/boot/compressed/eboot.c   | 18 +++++++-----
+ arch/x86/boot/compressed/head_32.S | 54 ++++++++++++++++++++++++++----------
+ arch/x86/boot/compressed/head_64.S | 56 ++++++++++++++++++++++++++++----------
+ arch/x86/include/asm/io_apic.h     |  1 +
+ arch/x86/mm/dump_pagetables.c      |  4 +++
+ arch/x86/mm/mmap.c                 |  2 +-
+ drivers/firmware/efi/libstub/fdt.c | 10 ++++++-
+ 8 files changed, 108 insertions(+), 40 deletions(-)
+
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index 5472c2401876..a83061f37e43 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -149,8 +149,7 @@ void __init arm64_memblock_init(void)
+ 		memblock_reserve(__virt_to_phys(initrd_start), initrd_end - initrd_start);
+ #endif
  
- obj-$(CONFIG_SOC_VF610) += clk-vf610.o mach-vf610.o
+-	if (!efi_enabled(EFI_MEMMAP))
+-		early_init_fdt_scan_reserved_mem();
++	early_init_fdt_scan_reserved_mem();
  
-+obj-$(CONFIG_SOC_LS1021A) += clk-ls1021a.o
+ 	/* 4GB maximum for 32-bit only capable devices */
+ 	if (IS_ENABLED(CONFIG_ZONE_DMA))
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index f277184e2ac1..dca9842d8f91 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -1032,7 +1032,6 @@ struct boot_params *make_boot_params(struct efi_config *c)
+ 	int i;
+ 	unsigned long ramdisk_addr;
+ 	unsigned long ramdisk_size;
+-	unsigned long initrd_addr_max;
+ 
+ 	efi_early = c;
+ 	sys_table = (efi_system_table_t *)(unsigned long)efi_early->table;
+@@ -1095,15 +1094,20 @@ struct boot_params *make_boot_params(struct efi_config *c)
+ 
+ 	memset(sdt, 0, sizeof(*sdt));
+ 
+-	if (hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)
+-		initrd_addr_max = -1UL;
+-	else
+-		initrd_addr_max = hdr->initrd_addr_max;
+-
+ 	status = handle_cmdline_files(sys_table, image,
+ 				      (char *)(unsigned long)hdr->cmd_line_ptr,
+-				      "initrd=", initrd_addr_max,
++				      "initrd=", hdr->initrd_addr_max,
+ 				      &ramdisk_addr, &ramdisk_size);
 +
- obj-y += devices/
-diff --git a/arch/arm/mach-imx/clk-ls1021a.c b/arch/arm/mach-imx/clk-ls1021a.c
-new file mode 100644
-index 0000000..680b616
---- /dev/null
-+++ b/arch/arm/mach-imx/clk-ls1021a.c
-@@ -0,0 +1,124 @@
++	if (status != EFI_SUCCESS &&
++	    hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G) {
++		efi_printk(sys_table, "Trying to load files to higher address\n");
++		status = handle_cmdline_files(sys_table, image,
++				      (char *)(unsigned long)hdr->cmd_line_ptr,
++				      "initrd=", -1UL,
++				      &ramdisk_addr, &ramdisk_size);
++	}
++
+ 	if (status != EFI_SUCCESS)
+ 		goto fail2;
+ 	hdr->ramdisk_image = ramdisk_addr & 0xffffffff;
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index cbed1407a5cd..d6b8aa4c986c 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -30,6 +30,33 @@
+ #include <asm/boot.h>
+ #include <asm/asm-offsets.h>
+ 
 +/*
-+ * Copyright 2014 Freescale Semiconductor, Inc.
++ * Adjust our own GOT
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * The relocation base must be in %ebx
 + *
++ * It is safe to call this macro more than once, because in some of the
++ * code paths multiple invocations are inevitable, e.g. via the efi*
++ * entry points.
++ *
++ * Relocation is only performed the first time.
 + */
++.macro FIXUP_GOT
++	cmpb	$1, got_fixed(%ebx)
++	je	2f
 +
-+#include <linux/clk.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/of_address.h>
-+#include <dt-bindings/clock/ls1021a-clock.h>
++	leal	_got(%ebx), %edx
++	leal	_egot(%ebx), %ecx
++1:
++	cmpl	%ecx, %edx
++	jae	2f
++	addl	%ebx, (%edx)
++	addl	$4, %edx
++	jmp	1b
++2:
++	movb	$1, got_fixed(%ebx)
++.endm
 +
-+#include "clk.h"
-+
-+static struct clk *clk[LS1021A_CLK_END];
-+static struct clk_onecell_data clk_data;
-+
-+static void __init ls1021a_clocks_init(struct device_node *np)
-+{
-+	void __iomem *dcfg_base;
-+
-+#define DCFG_CCSR_DEVDISR1	(dcfg_base + 0x70)
-+#define DCFG_CCSR_DEVDISR2	(dcfg_base + 0x74)
-+#define DCFG_CCSR_DEVDISR3	(dcfg_base + 0x78)
-+#define DCFG_CCSR_DEVDISR4	(dcfg_base + 0x7c)
-+#define DCFG_CCSR_DEVDISR5	(dcfg_base + 0x80)
-+
-+	dcfg_base = of_iomap(np, 0);
-+
-+	BUG_ON(!dcfg_base);
-+
-+	clk[LS1021A_CLK_PBL_EN] = ls1021a_clk_gate("pbl_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 0, true);
-+	clk[LS1021A_CLK_ESDHC_EN] = ls1021a_clk_gate("esdhc_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 2, true);
-+	clk[LS1021A_CLK_DMA1_EN] = ls1021a_clk_gate("dma1_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 8, true);
-+	clk[LS1021A_CLK_DMA2_EN] = ls1021a_clk_gate("dma2_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 9, true);
-+	clk[LS1021A_CLK_USB3_PHY_EN] = ls1021a_clk_gate("usb3_phy_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 12, true);
-+	clk[LS1021A_CLK_USB2_EN] = ls1021a_clk_gate("usb2_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 13, true);
-+	clk[LS1021A_CLK_SATA_EN] = ls1021a_clk_gate("sata_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 16, true);
-+	clk[LS1021A_CLK_USB3_EN] = ls1021a_clk_gate("usb3_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 17, true);
-+	clk[LS1021A_CLK_SEC_EN] = ls1021a_clk_gate("sec_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 22, true);
-+	clk[LS1021A_CLK_2D_ACE_EN] = ls1021a_clk_gate("2d_ace_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 30, true);
-+	clk[LS1021A_CLK_QE_EN] = ls1021a_clk_gate("qe_en", "dummy",
-+						DCFG_CCSR_DEVDISR1, 31, true);
-+
-+	clk[LS1021A_CLK_ETSEC1_EN] = ls1021a_clk_gate("etsec1_en", "dummy",
-+						DCFG_CCSR_DEVDISR2, 0, true);
-+	clk[LS1021A_CLK_ETSEC2_EN] = ls1021a_clk_gate("etsec2_en", "dummy",
-+						DCFG_CCSR_DEVDISR2, 1, true);
-+	clk[LS1021A_CLK_ETSEC3_EN] = ls1021a_clk_gate("etsec3_en", "dummy",
-+						DCFG_CCSR_DEVDISR2, 2, true);
-+
-+	clk[LS1021A_CLK_PEX1_EN] = ls1021a_clk_gate("pex1_en", "dummy",
-+						DCFG_CCSR_DEVDISR3, 0, true);
-+	clk[LS1021A_CLK_PEX2_EN] = ls1021a_clk_gate("pex2_en", "dummy",
-+						DCFG_CCSR_DEVDISR3, 1, true);
-+
-+	clk[LS1021A_CLK_DUART1_EN] = ls1021a_clk_gate("duart1_en", "dummy",
-+						DCFG_CCSR_DEVDISR4, 2, true);
-+	clk[LS1021A_CLK_DUART2_EN] = ls1021a_clk_gate("duart2_en", "dummy",
-+						DCFG_CCSR_DEVDISR4, 3, true);
-+	clk[LS1021A_CLK_QSPI_EN] = ls1021a_clk_gate("qspi_en", "dummy",
-+						DCFG_CCSR_DEVDISR4, 4, true);
-+
-+	clk[LS1021A_CLK_DDR_EN] = ls1021a_clk_gate("ddr_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 0, true);
-+	clk[LS1021A_CLK_OCRAM1_EN] = ls1021a_clk_gate("ocram1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 4, true);
-+	clk[LS1021A_CLK_IFC_EN] = ls1021a_clk_gate("ifc_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 8, true);
-+	clk[LS1021A_CLK_GPIO_EN] = ls1021a_clk_gate("gpio_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 9, true);
-+	clk[LS1021A_CLK_DBG_EN] = ls1021a_clk_gate("dbg_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 10, true);
-+	clk[LS1021A_CLK_FLEXCAN1_EN] = ls1021a_clk_gate("flexcan1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 12, true);
-+	clk[LS1021A_CLK_FLEXCAN234_EN] = ls1021a_clk_gate("flexcan234_en",
-+					"dummy", DCFG_CCSR_DEVDISR5, 13, true);
-+	/* For flextiemr 2/3/4/5/6/7/8 */
-+	clk[LS1021A_CLK_FLEXTIMER_EN] = ls1021a_clk_gate("flextimer_en",
-+					"dummy", DCFG_CCSR_DEVDISR5, 14, true);
-+	clk[LS1021A_CLK_SECMON_EN] = ls1021a_clk_gate("secmon_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 17, true);
-+	clk[LS1021A_CLK_WDOG12_EN] = ls1021a_clk_gate("wdog12_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 21, true);
-+	clk[LS1021A_CLK_I2C23_EN] = ls1021a_clk_gate("i2c23_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 22, true);
-+	/* For SAI 1/2/3/4 */
-+	clk[LS1021A_CLK_SAI_EN] = ls1021a_clk_gate("sai_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 23, true);
-+	/* For lpuart 2/3/4/5/6  */
-+	clk[LS1021A_CLK_LPUART_EN] = ls1021a_clk_gate("lpuart_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 24, true);
-+	clk[LS1021A_CLK_DSPI12_EN] = ls1021a_clk_gate("dspi12_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 25, true);
-+	clk[LS1021A_CLK_ASRC_EN] = ls1021a_clk_gate("asrc_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 26, true);
-+	clk[LS1021A_CLK_SPDIF_EN] = ls1021a_clk_gate("spdif_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 27, true);
-+	clk[LS1021A_CLK_I2C1_EN] = ls1021a_clk_gate("i2c1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 29, true);
-+	clk[LS1021A_CLK_LPUART1_EN] = ls1021a_clk_gate("lpuart1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5, 30, true);
-+	clk[LS1021A_CLK_FLEXTIMER1_EN] = ls1021a_clk_gate("flextimer1_en",
-+					"dummy", DCFG_CCSR_DEVDISR5, 31, true);
-+
-+	/* Add the clocks to provider list */
-+	clk_data.clks = clk;
-+	clk_data.clk_num = ARRAY_SIZE(clk);
-+	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
-+}
-+CLK_OF_DECLARE(ls1021a, "fsl,ls1021a-gate", ls1021a_clocks_init);
-diff --git a/arch/arm/mach-imx/clk.h b/arch/arm/mach-imx/clk.h
-index 4cdf8b6..dd9e369 100644
---- a/arch/arm/mach-imx/clk.h
-+++ b/arch/arm/mach-imx/clk.h
-@@ -107,6 +107,27 @@ static inline struct clk *imx_clk_gate_dis(const char *name, const char *parent,
- 			shift, CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
- }
+ 	__HEAD
+ ENTRY(startup_32)
+ #ifdef CONFIG_EFI_STUB
+@@ -56,6 +83,9 @@ ENTRY(efi_pe_entry)
+ 	add	%esi, 88(%eax)
+ 	pushl	%eax
  
-+/* The DCFG registers are in big endian mode on LS1021A SoC */
-+static inline u8 ls1021a_clk_calculate_shift(u8 shift)
-+{
-+	int m, n;
++	movl	%esi, %ebx
++	FIXUP_GOT
 +
-+	m = shift / 8;
-+	n = shift % 8;
+ 	call	make_boot_params
+ 	cmpl	$0, %eax
+ 	je	fail
+@@ -81,6 +111,10 @@ ENTRY(efi32_stub_entry)
+ 	leal	efi32_config(%esi), %eax
+ 	add	%esi, 88(%eax)
+ 	pushl	%eax
 +
-+	return (3 - m) * 8 + n;
-+}
++	movl	%esi, %ebx
++	FIXUP_GOT
 +
-+static inline struct clk *ls1021a_clk_gate(const char *name, const char *parent,
-+		void __iomem *reg, u8 shift, bool big_endian)
-+{
-+	if (big_endian)
-+		shift = ls1021a_clk_calculate_shift(shift);
+ 2:
+ 	call	efi_main
+ 	cmpl	$0, %eax
+@@ -190,19 +224,7 @@ ENDPROC(startup_32)
+ 	shrl	$2, %ecx
+ 	rep	stosl
+ 
+-/*
+- * Adjust our own GOT
+- */
+-	leal	_got(%ebx), %edx
+-	leal	_egot(%ebx), %ecx
+-1:
+-	cmpl	%ecx, %edx
+-	jae	2f
+-	addl	%ebx, (%edx)
+-	addl	$4, %edx
+-	jmp	1b
+-2:
+-
++	FIXUP_GOT
+ /*
+  * Do the decompression, and jump to the new kernel..
+  */
+@@ -225,8 +247,12 @@ ENDPROC(startup_32)
+ 	xorl	%ebx, %ebx
+ 	jmp	*%eax
+ 
+-#ifdef CONFIG_EFI_STUB
+ 	.data
++/* Have we relocated the GOT? */
++got_fixed:
++	.byte 0
 +
-+	return clk_register_gate(NULL, name, parent, CLK_SET_RATE_PARENT, reg,
-+			shift, CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
-+}
++#ifdef CONFIG_EFI_STUB
+ efi32_config:
+ 	.fill 11,8,0
+ 	.long efi_call_phys
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2884e0c3e8a5..50f69c7eaaf4 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -32,6 +32,33 @@
+ #include <asm/processor-flags.h>
+ #include <asm/asm-offsets.h>
+ 
++/*
++ * Adjust our own GOT
++ *
++ * The relocation base must be in %rbx
++ *
++ * It is safe to call this macro more than once, because in some of the
++ * code paths multiple invocations are inevitable, e.g. via the efi*
++ * entry points.
++ *
++ * Relocation is only performed the first time.
++ */
++.macro FIXUP_GOT
++	cmpb	$1, got_fixed(%rip)
++	je	2f
 +
- static inline struct clk *imx_clk_mux(const char *name, void __iomem *reg,
- 		u8 shift, u8 width, const char **parents, int num_parents)
++	leaq	_got(%rip), %rdx
++	leaq	_egot(%rip), %rcx
++1:
++	cmpq	%rcx, %rdx
++	jae	2f
++	addq	%rbx, (%rdx)
++	addq	$8, %rdx
++	jmp	1b
++2:
++	movb	$1, got_fixed(%rip)
++.endm
++
+ 	__HEAD
+ 	.code32
+ ENTRY(startup_32)
+@@ -252,10 +279,13 @@ ENTRY(efi_pe_entry)
+ 	subq	$1b, %rbp
+ 
+ 	/*
+-	 * Relocate efi_config->call().
++	 * Relocate efi_config->call() and the GOT entries.
+ 	 */
+ 	addq	%rbp, efi64_config+88(%rip)
+ 
++	movq	%rbp, %rbx
++	FIXUP_GOT
++
+ 	movq	%rax, %rdi
+ 	call	make_boot_params
+ 	cmpq	$0,%rax
+@@ -271,10 +301,13 @@ ENTRY(efi_pe_entry)
+ 	subq	$1b, %rbp
+ 
+ 	/*
+-	 * Relocate efi_config->call().
++	 * Relocate efi_config->call() and the GOT entries.
+ 	 */
+ 	movq	efi_config(%rip), %rax
+ 	addq	%rbp, 88(%rax)
++
++	movq	%rbp, %rbx
++	FIXUP_GOT
+ 2:
+ 	movq	efi_config(%rip), %rdi
+ 	call	efi_main
+@@ -385,19 +418,8 @@ ENDPROC(efi64_stub_entry)
+ 	shrq	$3, %rcx
+ 	rep	stosq
+ 
+-/*
+- * Adjust our own GOT
+- */
+-	leaq	_got(%rip), %rdx
+-	leaq	_egot(%rip), %rcx
+-1:
+-	cmpq	%rcx, %rdx
+-	jae	2f
+-	addq	%rbx, (%rdx)
+-	addq	$8, %rdx
+-	jmp	1b
+-2:
+-	
++	FIXUP_GOT
++
+ /*
+  * Do the decompression, and jump to the new kernel..
+  */
+@@ -437,6 +459,10 @@ ENDPROC(efi64_stub_entry)
+ 	.quad   0x0000000000000000	/* TS continued */
+ gdt_end:
+ 
++/* Have we relocated the GOT? */
++got_fixed:
++	.byte	0
++
+ #ifdef CONFIG_EFI_STUB
+ efi_config:
+ 	.quad	0
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 478c490f3654..1733ab49ac5e 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -239,6 +239,7 @@ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
+ static inline int mp_map_gsi_to_irq(u32 gsi, unsigned int flags) { return gsi; }
+ static inline void mp_unmap_irq(int irq) { }
++static inline bool mp_should_keep_irq(struct device *dev) { return 1; }
+ 
+ static inline int save_ioapic_entries(void)
  {
-diff --git a/include/dt-bindings/clock/ls1021a-clock.h b/include/dt-bindings/clock/ls1021a-clock.h
-new file mode 100644
-index 0000000..f259882
---- /dev/null
-+++ b/include/dt-bindings/clock/ls1021a-clock.h
-@@ -0,0 +1,54 @@
-+/*
-+ * Copyright 2014 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
+diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
+index 167ffcac16ed..95a427e57887 100644
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -48,7 +48,9 @@ enum address_markers_idx {
+ 	LOW_KERNEL_NR,
+ 	VMALLOC_START_NR,
+ 	VMEMMAP_START_NR,
++# ifdef CONFIG_X86_ESPFIX64
+ 	ESPFIX_START_NR,
++# endif
+ 	HIGH_KERNEL_NR,
+ 	MODULES_VADDR_NR,
+ 	MODULES_END_NR,
+@@ -71,7 +73,9 @@ static struct addr_marker address_markers[] = {
+ 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
+ 	{ VMALLOC_START,        "vmalloc() Area" },
+ 	{ VMEMMAP_START,        "Vmemmap" },
++# ifdef CONFIG_X86_ESPFIX64
+ 	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
++# endif
+ 	{ __START_KERNEL_map,   "High Kernel Mapping" },
+ 	{ MODULES_VADDR,        "Modules" },
+ 	{ MODULES_END,          "End Modules" },
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 25e7e1372bb2..919b91205cd4 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -31,7 +31,7 @@
+ #include <linux/sched.h>
+ #include <asm/elf.h>
+ 
+-struct __read_mostly va_alignment va_align = {
++struct va_alignment __read_mostly va_align = {
+ 	.flags = -1,
+ };
+ 
+diff --git a/drivers/firmware/efi/libstub/fdt.c b/drivers/firmware/efi/libstub/fdt.c
+index a56bb3528755..c846a9608cbd 100644
+--- a/drivers/firmware/efi/libstub/fdt.c
++++ b/drivers/firmware/efi/libstub/fdt.c
+@@ -22,7 +22,7 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
+ 			unsigned long map_size, unsigned long desc_size,
+ 			u32 desc_ver)
+ {
+-	int node, prev;
++	int node, prev, num_rsv;
+ 	int status;
+ 	u32 fdt_val32;
+ 	u64 fdt_val64;
+@@ -73,6 +73,14 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
+ 		prev = node;
+ 	}
+ 
++	/*
++	 * Delete all memory reserve map entries. When booting via UEFI,
++	 * kernel will use the UEFI memory map to find reserved regions.
++	 */
++	num_rsv = fdt_num_mem_rsv(fdt);
++	while (num_rsv-- > 0)
++		fdt_del_mem_rsv(fdt, num_rsv);
 +
-+#ifndef __DT_BINDINGS_CLOCK_LS1021A_H
-+#define __DT_BINDINGS_CLOCK_LS1021A_H
-+
-+#define LS1021A_CLK_DUMMY	0
-+#define LS1021A_CLK_PBL_EN	1
-+#define LS1021A_CLK_ESDHC_EN	2
-+#define LS1021A_CLK_DMA1_EN	3
-+#define LS1021A_CLK_DMA2_EN	4
-+#define LS1021A_CLK_USB3_PHY_EN	5
-+#define LS1021A_CLK_USB2_EN	6
-+#define LS1021A_CLK_SATA_EN	7
-+#define LS1021A_CLK_USB3_EN	8
-+#define LS1021A_CLK_SEC_EN	9
-+#define LS1021A_CLK_2D_ACE_EN	10
-+#define LS1021A_CLK_QE_EN	11
-+#define LS1021A_CLK_ETSEC1_EN	12
-+#define LS1021A_CLK_ETSEC2_EN	13
-+#define LS1021A_CLK_ETSEC3_EN	14
-+#define LS1021A_CLK_PEX1_EN	15
-+#define LS1021A_CLK_PEX2_EN	16
-+#define LS1021A_CLK_DUART1_EN	17
-+#define LS1021A_CLK_DUART2_EN	18
-+#define LS1021A_CLK_QSPI_EN	19
-+#define LS1021A_CLK_DDR_EN	20
-+#define LS1021A_CLK_OCRAM1_EN	21
-+#define LS1021A_CLK_IFC_EN	22
-+#define LS1021A_CLK_GPIO_EN	23
-+#define LS1021A_CLK_DBG_EN	24
-+#define LS1021A_CLK_FLEXCAN1_EN	25
-+#define LS1021A_CLK_FLEXCAN234_EN	26
-+#define LS1021A_CLK_FLEXTIMER_EN	27
-+#define LS1021A_CLK_SECMON_EN	28
-+#define LS1021A_CLK_WDOG12_EN	28
-+#define LS1021A_CLK_I2C23_EN	30
-+#define LS1021A_CLK_SAI_EN	31
-+#define LS1021A_CLK_LPUART_EN	32
-+#define LS1021A_CLK_DSPI12_EN	33
-+#define LS1021A_CLK_ASRC_EN	34
-+#define LS1021A_CLK_SPDIF_EN	35
-+#define LS1021A_CLK_I2C1_EN	36
-+#define LS1021A_CLK_LPUART1_EN	37
-+#define LS1021A_CLK_FLEXTIMER1_EN	38
-+#define LS1021A_CLK_END		39
-+
-+#endif /* __DT_BINDINGS_CLOCK_LS1021A_H */
--- 
-2.1.0.27.g96db324
-
+ 	node = fdt_subnode_offset(fdt, 0, "chosen");
+ 	if (node < 0) {
+ 		node = fdt_add_subnode(fdt, 0, "chosen");
