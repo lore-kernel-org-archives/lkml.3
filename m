@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaISHoa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 03:44:30 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:50090 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750705AbaISHo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 03:44:29 -0400
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz,
-        heikki.krogerus@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: [PATCHv2] serial: 8250: Add Quark X1000 to 8250 PCI driver
-Date: Fri, 19 Sep 2014 08:43:49 +0100
-Message-Id: <1411112629-3238-1-git-send-email-pure.logic@nexus-software.ie>
-X-Mailer: git-send-email 1.9.1
+	id S1752187AbaISHtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 03:49:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28643 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750865AbaISHtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 03:49:41 -0400
+Message-ID: <541BE00E.9060802@redhat.com>
+Date: Fri, 19 Sep 2014 15:49:34 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] net: keep original skb which only needs header
+ checking during software GSO
+References: <1411108686-20602-1-git-send-email-jasowang@redhat.com> <1411110263.7106.301.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1411110263.7106.301.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds PCI identifier for the X1000
-Adds clocking and register size and register shift
+On 09/19/2014 03:04 PM, Eric Dumazet wrote:
+> On Fri, 2014-09-19 at 14:38 +0800, Jason Wang wrote:
+>> Commit ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+>> around original SKB when we software segment GSO frames") frees the
+>> original skb after software GSO even for dodgy gso skbs. This breaks
+>> the stream throughput from untrusted sources, since only header
+>> checking was done during software GSO instead of a true
+>> segmentation. This patch fixes this by freeing the original gso skb
+>> only when it was really segmented by software.
+>>
+>> Fixes ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+>> around original SKB when we software segment GSO frames.")
+>>
+>> CC: David S. Miller <davem@davemloft.net>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  net/core/dev.c | 6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/net/core/dev.c b/net/core/dev.c
+>> index e916ba8..b7a0e1d 100644
+>> --- a/net/core/dev.c
+>> +++ b/net/core/dev.c
+>> @@ -2694,10 +2694,12 @@ struct sk_buff *validate_xmit_skb(struct sk_buff *skb, struct net_device *dev)
+>>  		struct sk_buff *segs;
+>>  
+>>  		segs = skb_gso_segment(skb, features);
+>> -		kfree_skb(skb);
+>>  		if (IS_ERR(segs))
+>>  			
+>> -		skb = segs;
+>> +		else if (segs) {
+>> +			kfree_skb(skb);
+>> +			skb = segs;
+>> +		}
+>>  	} else {
+>>  		if (skb_needs_linearize(skb, features) &&
+>>  		    __skb_linearize(skb))
+> Good catch !
+>
+> While we are at it, could you use consume_skb() instead of kfree_skb(),
+> and add missing {} (CodingStyle) ?
+>
+> if (IS_ERR(segs)) {
+> 	segs = NULL;
+> } else if (segs) {
+> 	consume_skb(skb);
+> 	skb = segs;
+> }
+>
+>
+> Thanks !
+>
+>
 
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
----
- drivers/tty/serial/8250/8250_pci.c | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
-
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 61830b1..5e72959 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1481,6 +1481,19 @@ byt_serial_setup(struct serial_private *priv,
- 	return ret;
- }
- 
-+#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
-+
-+static int
-+pci_intel_qrk_setup(struct serial_private *priv,
-+		const struct pciserial_board *board,
-+		struct uart_8250_port *port, int idx)
-+{
-+	unsigned int bar, offset = board->first_offset;
-+
-+	bar = FL_GET_BASE(board->flags);
-+
-+	return setup_port(priv, port, bar, offset, board->reg_shift);
-+}
- static int
- pci_omegapci_setup(struct serial_private *priv,
- 		      const struct pciserial_board *board,
-@@ -1898,6 +1911,13 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= byt_serial_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= pci_intel_qrk_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-@@ -2740,6 +2760,7 @@ enum pci_board_num_t {
- 	pbn_ADDIDATA_PCIe_8_3906250,
- 	pbn_ce4100_1_115200,
- 	pbn_byt,
-+	pbn_qrk,
- 	pbn_omegapci,
- 	pbn_NETMOS9900_2s_115200,
- 	pbn_brcm_trumanage,
-@@ -3490,6 +3511,12 @@ static struct pciserial_board pci_boards[] = {
- 		.uart_offset	= 0x80,
- 		.reg_shift      = 2,
- 	},
-+	[pbn_qrk] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.base_baud	= 2764800,
-+		.reg_shift	= 2,
-+	},
- 	[pbn_omegapci] = {
- 		.flags		= FL_BASE0,
- 		.num_ports	= 8,
-@@ -5192,6 +5219,12 @@ static struct pci_device_id serial_pci_tbl[] = {
- 		pbn_byt },
- 
- 	/*
-+	 * Intel Quark x1000
-+	 */
-+	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_qrk },
-+	/*
- 	 * Cronyx Omega PCI
- 	 */
- 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
--- 
-1.9.1
-
+Yes, it's better. Will do them in V2.
