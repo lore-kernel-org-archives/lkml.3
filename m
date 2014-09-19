@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaISQVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:21:19 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:38651 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716AbaISQVS convert rfc822-to-8bit (ORCPT
+	id S1757358AbaISQXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:23:17 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:33425 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756553AbaISQXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:21:18 -0400
+	Fri, 19 Sep 2014 12:23:16 -0400
+Message-ID: <541C5861.4040403@fb.com>
+Date: Fri, 19 Sep 2014 12:22:57 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <541C27E8.6090000@hurleysoftware.com>
-References: <CAP145pg75hFKi2S9SVywRfex_A5=yRpe0p4Dzri8+Q=7YWoXfg@mail.gmail.com>
-	<541C27E8.6090000@hurleysoftware.com>
-Date: Fri, 19 Sep 2014 18:21:16 +0200
-Message-ID: <CAP145pjdkDd1xejL9tCL21zyWMBwMgQU+ygxaqm5tiF7yvbZPw@mail.gmail.com>
-Subject: Re: Div-by-zero in the 8250 serial driver (3.17-rc5)
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: <paulmck@linux.vnet.ibm.com>
+CC: Omar Sandoval <osandov@osandov.com>, Josef Bacik <jbacik@fb.com>,
+        <linux-btrfs@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] Move BTRFS RCU string to common library
+References: <cover.1411116672.git.osandov@osandov.com> <20140919154546.GZ4723@linux.vnet.ibm.com> <541C5029.1070500@fb.com> <20140919160555.GD4723@linux.vnet.ibm.com>
+In-Reply-To: <20140919160555.GD4723@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-19_07:2014-09-19,2014-09-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=1 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1409190138
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-19 14:56 GMT+02:00 Peter Hurley <peter@hurleysoftware.com>:
-> [ +cc Greg Kroah-Hartman, AlanC ]
->
-> On 09/18/2014 10:57 AM, Robert Święcki wrote:
->> Hi,
+On 09/19/2014 12:05 PM, Paul E. McKenney wrote:
+> On Fri, Sep 19, 2014 at 11:47:53AM -0400, Chris Mason wrote:
 >>
->> # setserial /dev/ttyS0 spd_hi baud_base 38400
 >>
->> Entering kdb (current=0xffff8805ee033200, pid 1798) on processor 9 Oops: (null)
->> due to oops @ 0xffffffff8149c01e
->>  CPU: 9 PID: 1798 Comm: setserial Tainted: G        W I
->> 3.17.0-031700rc5-generic-201409151105
->> task: ffff8805ee033200 ti: ffff8800e39e0000 task.ti: ffff8800e39e0000
->> RIP: 0010:[<ffffffff8149c01e>]  [<ffffffff8149c01e>] uart_get_divisor+0x1e/0x40
->> RSP: 0018:ffff8800e39e3c30  EFLAGS: 00010206
->> RAX: 0000000000096000 RBX: ffffffff81fab060 RCX: 0000000000000006
->> RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff81fab060
->> RBP: ffff8800e39e3c78 R08: 000000000000000a R09: 00000000000003d2
->> R10: 0000000000000000 R11: 00000000000003d1 R12: 0000000000000013
->> R13: ffff8805f0748d2c R14: 0000000000000000 R15: 0000000000000010
->> FS:  00007f0fa653d740(0000) GS:ffff880613920000(0000) knlGS:0000000000000000
->> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> CR2: 00007f0fa6003330 CR3: 00000000365f8000 CR4: 00000000000007e0
->> Stack:
->>  ffffffff814a2978 ffffffff81fab060 0000000000000010 ffff8800e39e3ca8
->>  ffff8805eca08000 ffff8805f0748c00 ffff8800e39e3dc0 ffffffff81fab060
->>  0000000000000010 ffff8800e39e3c88 ffffffff814a2d55 ffff8800e39e3ca8
->> Call Trace:
->>  [<ffffffff814a2978>] ? serial8250_do_set_termios+0xd8/0x490
->>  [<ffffffff814a2d55>] serial8250_set_termios+0x25/0x30
->>  [<ffffffff8149dce2>] uart_change_speed+0x52/0xb0
->>  [<ffffffff8149ec9c>] uart_set_info+0x20c/0x5f0
->>  [<ffffffff8149c75a>] ? do_uart_get_info+0xfa/0x1a0
->>  [<ffffffff8149fbdf>] uart_ioctl+0x14f/0x220
->>  [<ffffffff814804d8>] tty_ioctl+0x298/0x8f0
->>  [<ffffffff811fc025>] do_vfs_ioctl+0x75/0x2c0
->>  [<ffffffff811fc301>] SyS_ioctl+0x91/0xb0
->>  [<ffffffff817a436d>] system_call_fastpath+0x1a/0x1f
->> Code: c0 00 00 00 c3 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 81 fe
->> 00 96 00 00 48 89 e5 74 17 c1 e6 04 31 d2 89 f0 d1 e8 03 47 58 5d <f7>
->> f6 c3 0f 1f 80 00 00 00 00 8b 87 b8 00 00 00 25 30 10 00 00
->
-> Hi Robert,
->
-> Thanks for the report.
->
-> I was able to reproduce this crash on all recent kernels I tested. The
-> patch below fixed the problem for me. If possible, please test the patch
-> on your system.
+>> On 09/19/2014 11:45 AM, Paul E. McKenney wrote:
+>>> On Fri, Sep 19, 2014 at 02:01:28AM -0700, Omar Sandoval wrote:
+>>>> This patch series moves the generic RCU string library used internally by BTRFS
+>>>> to be accessible by anyone. It provides printk_in_rcu and
+>>>> printk_ratelimited_in_rcu to print these strings. In order to avoid a weird
+>>>> inconsistency between the two, the first patch fixes printk_ratelimited so it
+>>>> passes on the return value from printk.
+>>>>
+>>>> The second patch actually moves the RCU string library. Version 2 passes on the
+>>>> return values from printk{,_ratelimited} and fixes some style issues.
+>>>>
+>>>> Omar Sandoval (2):
+>>>
+>>> For the series:
+>>>
+>>> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> Fine by me too, Paul, do you want to merge it in?
+> 
+> I would be happy to.
+> 
+> Are you thinking in terms of 3.18 or 3.19?  These look OK either way, but
+> thought I should check.
 
-Yup, the crash is gone.
+Either way is fine with me.  Actually this will have minor conflicts
+with my current branch headed for-next, so I can resolve and send as a
+stand alone pull.
 
-Thanks for the fix!
+-chris
 
-> Regards,
-> Peter Hurley
->
-> --- >% ---
-> Subject: [PATCH] serial: Fix divide-by-zero fault in uart_get_divisor()
->
-> uart_get_baud_rate() will return baud == 0 if the max rate is set
-> to the "magic" 38400 rate and the SPD_* flags are also specified.
-> On the first iteration, if the current baud rate is higher than the
-> max, the baud rate is clamped at the max (which in the degenerate
-> case is 38400). On the second iteration, the now-"magic" 38400 baud
-> rate selects the possibly higher alternate baud rate indicated by
-> the SPD_* flag. Since only two loop iterations are performed, the
-> loop is exited, a kernel WARNING is generated and a baud rate of
-> 0 is returned.
->
-> Reproducible with:
->  setserial /dev/ttyS0 spd_hi base_baud 38400
->
-> Only perform the "magic" 38400 -> SPD_* baud transform on the first
-> loop iteration, which prevents the degenerate case from recognizing
-> the clamped baud rate as the "magic" 38400 value.
->
-> Reported-by: Robert Święcki <robert@swiecki.net>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/serial/serial_core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index 66e2de6..d0a5fc9 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -359,7 +359,7 @@ uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
->                  * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
->                  * Die! Die! Die!
->                  */
-> -               if (baud == 38400)
-> +               if (try == 0 && baud == 38400)
->                         baud = altbaud;
->
->                 /*
-> --
-> 2.1.0
-
--- 
-Robert Święcki
