@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaISIDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:03:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51446 "EHLO mail.skyhub.de"
+	id S1755151AbaISIE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:04:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15764 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250AbaISIDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 04:03:32 -0400
-Date: Fri, 19 Sep 2014 10:03:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140919080322.GB30491@nazgul.tnic>
-References: <20140918135202.GA26038@khazad-dum.debian.net>
- <541B2F33.8000002@amacapital.net>
- <20140918145328.0253f009@as>
- <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
- <20140918200659.GA5331@khazad-dum.debian.net>
- <20140919001311.GB5331@khazad-dum.debian.net>
- <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
- <713c7342-bdf4-4e38-8de2-37d840d7028b@email.android.com>
- <CALCETrXaD01bHdpO9F1ukjhWnkusWuQ-M-FcJiqr47vWFUgGsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrXaD01bHdpO9F1ukjhWnkusWuQ-M-FcJiqr47vWFUgGsg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754949AbaISIEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 04:04:54 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [PATCH net-next V2] net: keep original skb which only needs header checking during software GSO
+Date: Fri, 19 Sep 2014 16:04:38 +0800
+Message-Id: <1411113878-11910-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 06:00:12PM -0700, Andy Lutomirski wrote:
-> Yes, but how?  I assume that BIOS isn't switching between two
-> different ucode blobs, and I don't know about any wrcpuid instruction.
-> So there must be *some* way, at least on new ucode (and maybe on old
-> ucode) to change that bit.
+Commit ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+around original SKB when we software segment GSO frames") frees the
+original skb after software GSO even for dodgy gso skbs. This breaks
+the stream throughput from untrusted sources, since only header
+checking was done during software GSO instead of a true
+segmentation. This patch fixes this by freeing the original gso skb
+only when it was really segmented by software.
 
-I'd venture a guess that WRMSR to some reg should give you that, if they
-expose it.
+Fixes ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+around original SKB when we software segment GSO frames.")
 
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V1:
+- use consume_skb() instead of kfree_skb()
+- fix coding style
+---
+ net/core/dev.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e916ba8..52cd71a 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2694,10 +2694,12 @@ struct sk_buff *validate_xmit_skb(struct sk_buff *skb, struct net_device *dev)
+ 		struct sk_buff *segs;
+ 
+ 		segs = skb_gso_segment(skb, features);
+-		kfree_skb(skb);
+-		if (IS_ERR(segs))
++		if (IS_ERR(segs)) {
+ 			segs = NULL;
+-		skb = segs;
++		} else if (segs) {
++			consume_skb(skb);
++			skb = segs;
++		}
+ 	} else {
+ 		if (skb_needs_linearize(skb, features) &&
+ 		    __skb_linearize(skb))
 -- 
-Regards/Gruss,
-    Boris.
---
+1.9.1
+
