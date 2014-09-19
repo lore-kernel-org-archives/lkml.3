@@ -1,186 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363AbaISSao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 14:30:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43590 "EHLO comal.ext.ti.com"
+	id S932394AbaISSax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 14:30:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37005 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932069AbaISSam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 14:30:42 -0400
-Message-ID: <541C7609.3000901@ti.com>
-Date: Fri, 19 Sep 2014 21:29:29 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S932069AbaISSav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 14:30:51 -0400
+Date: Fri, 19 Sep 2014 19:39:51 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Dan Williams <dan.j.williams@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        "Jiang, Dave" <dave.jiang@intel.com>
+Subject: Re: [PATCH v3 6/5] AHCI: Do not read HOST_IRQ_STAT register in
+ multi-MSI mode
+Message-ID: <20140919183950.GJ8793@agordeev.usersys.redhat.com>
+References: <cover.1411031922.git.agordeev@redhat.com>
+ <20140919082552.GH8793@agordeev.usersys.redhat.com>
+ <CAA9_cmcpKRczsosw7odOC-a4-xRM6E5QrkQoxPrBBFybzcKZbg@mail.gmail.com>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Herring <robherring2@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
-References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com> <53A46CB7.1030109@ti.com> <4193075.zZSpRTFEYz@wuerfel> <53A48553.2080504@ti.com> <CAL_JsqLYho6dRA=-ovKqF7H4EGHJcH_aN3ywd+76oXSprfTMbQ@mail.gmail.com> <53A73110.60405@ti.com>
-In-Reply-To: <53A73110.60405@ti.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmcpKRczsosw7odOC-a4-xRM6E5QrkQoxPrBBFybzcKZbg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Fri, Sep 19, 2014 at 09:34:34AM -0700, Dan Williams wrote:
+> On Fri, Sep 19, 2014 at 1:25 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> > As described in AHCI v1.0 specification chapter 10.6.2.2
+> > "Multiple MSI Based Messages" generation of interrupts
+> > is not controlled through the HOST_IRQ_STAT register.
+> >
+> > Considering MMIO access is expensive remove unnecessary
+> > reading and writing of HOST_IRQ_STAT register.
+> >
+> > Further, serializing access to the host data is no longer
+> > needed and the interrupt service routine can avoid competing
+> > on the host lock.
+> >
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > Suggested-by: "Jiang, Dave" <dave.jiang@intel.com>
+> > Cc: linux-ide@vger.kernel.org
+> > ---
+> >  drivers/ata/ahci.h    |  1 +
+> >  drivers/ata/libahci.c | 54 ++++++++-------------------------------------------
+> >  2 files changed, 9 insertions(+), 46 deletions(-)
+> >
+> > diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+> > index c12f590..b8e117a 100644
+> > --- a/drivers/ata/ahci.h
+> > +++ b/drivers/ata/ahci.h
+> > @@ -305,6 +305,7 @@ struct ahci_port_priv {
+> >         unsigned int            ncq_saw_dmas:1;
+> >         unsigned int            ncq_saw_sdb:1;
+> >         u32                     intr_status;    /* interrupts to handle */
+> > +       spinlock_t              intr_lock;      /* protects intr_status */
+> 
+> Why introduce a new lock?  Can't we switch to per-ata port locking
+> rather than ata_host locking?
 
-On 06/22/2014 10:40 PM, Santosh Shilimkar wrote:
-> On Friday 20 June 2014 03:46 PM, Rob Herring wrote:
->> On Fri, Jun 20, 2014 at 2:02 PM, Santosh Shilimkar
->> <santosh.shilimkar@ti.com> wrote:
->>> On Friday 20 June 2014 02:56 PM, Arnd Bergmann wrote:
->>>> On Friday 20 June 2014 13:17:43 Santosh Shilimkar wrote:
->>>>>>> +                       dma-coherent;
->>>>>>> +                       dma-ranges;
->>>>>>> +
->>>>>>> +                       dwc3@2690000 {
->>>>>>> +                               compatible = "synopsys,dwc3";
->>>>>>> +                               [...]
->>>>>>> +                       };
->>>>>>
->>>>>> This example is a bit strange. I don't understand the relationship
->>>>>> between keystone-dwc3 and synopsys,dwc3, nor do I want to. I'd prefer
->>>>>> to see a simple example here.
->>>>
->>>>
->>>>>> dma-ranges is a property of the parent which you show, but
->>>>>> dma-coherent originally was a property of the bus master itself. While
->>>>>> we need to support that, are we changing that? We need to be clear on
->>>>>> where the property belongs even if the kernel is more lax.
->>>>>>
->>>>> I don't think we are changing it fundamentally but may be I missing
->>>>> your point. The dma-coherent as is now a per-device property.
->>>>> USB is one of the bus master supports coherency and hence showed
->>>>> up in above example.
->>>>
->>>> I think it's enough if you just drop the "synopsys,dwc3" node and the
->>>> intermediate dma-ranges property from the example, leaving the
->>>> dma-coherent property in the "ti,keystone-dwc3" node.
->>>>
->>> Thanks Arnd. That should avoid the confusion. Just to see if Rob is
->>> fine by it, the example will look like below.
->>
->> Yes. Looks fine.
->>
-> Great. Updated version 2 below.
+We could. But this case hardware context interrupt handler would compete
+with threads/softriqs, which is exactly what I tried to avoid. With the
+separate lock we *only* update ahci_port_priv::intr_status with interrupts
+disabled.
 
-Seems, this patch has not been merged accidentally :(
-Is it possible for you to take it, or would you like me to re-send it?
-
->
->  From 7df26004fe11b7d3ef9592161205c69e1fb663be Mon Sep 17 00:00:00 2001
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Date: Fri, 20 Jun 2014 11:01:54 -0400
-> Subject: [PATCH v2] dt/documentation: add specification of dma bus information
->
-> Recently we introduced the generic device tree infrastructure for couple of DMA
-> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
-> its useful for future users.
->
-> The "dma-ranges" property is intended to be used for describing the
-> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
->
-> The "dma-coherent" property is intended to be used for identifying devices
-> supported coherent DMA operations.
->
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Acked-by: Shawn Guo <shawn.guo@freescale.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->   Documentation/devicetree/booting-without-of.txt |   53 +++++++++++++++++++++++
->   1 file changed, 53 insertions(+)
->
-> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
-> index 1f013bd..7768518 100644
-> --- a/Documentation/devicetree/booting-without-of.txt
-> +++ b/Documentation/devicetree/booting-without-of.txt
-> @@ -51,6 +51,8 @@ Table of Contents
->
->     VIII - Specifying device power management information (sleep property)
->
-> +  IX - Specifying dma bus information
-> +
->     Appendix A - Sample SOC node for MPC8540
->
->
-> @@ -1332,6 +1334,57 @@ reasonably grouped in this manner, then create a virtual sleep controller
->   (similar to an interrupt nexus, except that defining a standardized
->   sleep-map should wait until its necessity is demonstrated).
->
-> +IX - Specifying dma bus information
-> +
-> +Some devices may have DMA memory range shifted relatively to the beginning of
-> +RAM, or even placed outside of kernel RAM. For example, the Keystone 2 SoC
-> +worked in LPAE mode with 4G memory has:
-> +- RAM range: [0x8 0000 0000, 0x8 FFFF FFFF]
-> +- DMA range: [  0x8000 0000,   0xFFFF FFFF]
-> +and DMA range is aliased into first 2G of RAM in HW.
-> +
-> +In such cases, DMA addresses translation should be performed between CPU phys
-> +and DMA addresses. The "dma-ranges" property is intended to be used
-> +for describing the configuration of such system in DT.
-> +
-> +In addition, each DMA master device on the DMA bus may or may not support
-> +coherent DMA operations. The "dma-coherent" property is intended to be used
-> +for identifying devices supported coherent DMA operations in DT.
-> +
-> +* DMA Bus master
-> +Optional property:
-> +- dma-ranges: <prop-encoded-array> encoded as arbitrary number of triplets of
-> +	(child-bus-address, parent-bus-address, length). Each triplet specified
-> +	describes a contiguous DMA address range.
-> +	The dma-ranges property is used to describe the direct memory access (DMA)
-> +	structure of a memory-mapped bus whose device tree parent can be accessed
-> +	from DMA operations originating from the bus. It provides a means of
-> +	defining a mapping or translation between the physical address space of
-> +	the bus and the physical address space of the parent of the bus.
-> +	(for more information see ePAPR specification)
-> +
-> +* DMA Bus child
-> +Optional property:
-> +- dma-ranges: <empty> value. if present - It means that DMA addresses
-> +	translation has to be enabled for this device.
-> +- dma-coherent: Present if dma operations are coherent
-> +
-> +Example:
-> +soc {
-> +		compatible = "ti,keystone","simple-bus";
-> +		ranges = <0x0 0x0 0x0 0xc0000000>;
-> +		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
-> +
-> +		[...]
-> +
-> +		usb: usb@2680000 {
-> +			compatible = "ti,keystone-dwc3";
-> +
-> +			[...]
-> +			dma-coherent;
-> +		};
-> +};
-> +
->   Appendix A - Sample SOC node for MPC8540
->   ========================================
->
->
-
+-- 
 Regards,
--grygorii
+Alexander Gordeev
+agordeev@redhat.com
