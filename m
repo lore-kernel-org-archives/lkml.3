@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaISHtm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 03:49:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28643 "EHLO mx1.redhat.com"
+	id S1752130AbaISH61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 03:58:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54401 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865AbaISHtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 03:49:41 -0400
-Message-ID: <541BE00E.9060802@redhat.com>
-Date: Fri, 19 Sep 2014 15:49:34 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1750853AbaISH6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 03:58:25 -0400
+Date: Fri, 19 Sep 2014 09:58:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND PATCH 1/3] x86: Adding structs to reflect cpuid fields
+Message-ID: <20140919075814.GA30491@nazgul.tnic>
+References: <20140917124501.GC5358@nazgul.tnic>
+ <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
+ <1410958454-7501-2-git-send-email-namit@cs.technion.ac.il>
+ <20140917132141.GD5358@nazgul.tnic>
+ <CAKLkAJ5wYuDL+96RcRwxi7xD1iAK8_oug1zC_niipV-ToCUu=A@mail.gmail.com>
+ <20140917140601.GE5358@nazgul.tnic>
+ <541AD8F3.5010700@redhat.com>
+ <20140918132635.GB27008@nazgul.tnic>
+ <541ADFEB.6030801@redhat.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] net: keep original skb which only needs header
- checking during software GSO
-References: <1411108686-20602-1-git-send-email-jasowang@redhat.com> <1411110263.7106.301.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1411110263.7106.301.camel@edumazet-glaptop2.roam.corp.google.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <541ADFEB.6030801@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2014 03:04 PM, Eric Dumazet wrote:
-> On Fri, 2014-09-19 at 14:38 +0800, Jason Wang wrote:
->> Commit ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
->> around original SKB when we software segment GSO frames") frees the
->> original skb after software GSO even for dodgy gso skbs. This breaks
->> the stream throughput from untrusted sources, since only header
->> checking was done during software GSO instead of a true
->> segmentation. This patch fixes this by freeing the original gso skb
->> only when it was really segmented by software.
->>
->> Fixes ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
->> around original SKB when we software segment GSO frames.")
->>
->> CC: David S. Miller <davem@davemloft.net>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  net/core/dev.c | 6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/net/core/dev.c b/net/core/dev.c
->> index e916ba8..b7a0e1d 100644
->> --- a/net/core/dev.c
->> +++ b/net/core/dev.c
->> @@ -2694,10 +2694,12 @@ struct sk_buff *validate_xmit_skb(struct sk_buff *skb, struct net_device *dev)
->>  		struct sk_buff *segs;
->>  
->>  		segs = skb_gso_segment(skb, features);
->> -		kfree_skb(skb);
->>  		if (IS_ERR(segs))
->>  			
->> -		skb = segs;
->> +		else if (segs) {
->> +			kfree_skb(skb);
->> +			skb = segs;
->> +		}
->>  	} else {
->>  		if (skb_needs_linearize(skb, features) &&
->>  		    __skb_linearize(skb))
-> Good catch !
->
-> While we are at it, could you use consume_skb() instead of kfree_skb(),
-> and add missing {} (CodingStyle) ?
->
-> if (IS_ERR(segs)) {
-> 	segs = NULL;
-> } else if (segs) {
-> 	consume_skb(skb);
-> 	skb = segs;
-> }
->
->
-> Thanks !
->
->
+On Thu, Sep 18, 2014 at 03:36:43PM +0200, Paolo Bonzini wrote:
+> We're talking about the case where the field is not reserved anymore and
+> we _know_ that the vendor has just decided to grow the bitfield that
+> precedes it.
 
-Yes, it's better. Will do them in V2.
+We're talking about the case where you assumed that a reserved bit is 0
+which is an unsafe assumption, the least.
+
+> As soon as we know that the field is not reserved anymore, we
+> obviously rely on reserved bits being zero in older processors, and in
+> future processors from other vendors.
+
+Again, this is an unsafe assumption.
+
+> The trivial example is feature bits like XSAVE. We query them all the
+> time without checking the family when they were first introduced,
+> don't we?
+
+The feature bits would obviously be 0 if features are not supported.
+
+However, even there
+
+"16 - Reserved - Do not count on the value."
+
+I'm quoting Intel's CPUID doc 241618-037 from 2011 (there might be a
+newer one though), the CPUID(1).ECX description.
+
+-- 
+Regards/Gruss,
+    Boris.
+--
