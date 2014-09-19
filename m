@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360AbaISLsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:48:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56310 "EHLO
+	id S932391AbaISLtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:49:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56328 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaISLsw (ORCPT
+	with ESMTP id S932089AbaISLtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:48:52 -0400
-Date: Fri, 19 Sep 2014 04:47:54 -0700
-From: tip-bot for Vincent Guittot <tipbot@zytor.com>
-Message-ID: <tip-26bc3c50d3b3984564c270da86f1fbbfb774dbcd@git.kernel.org>
+	Fri, 19 Sep 2014 07:49:08 -0400
+Date: Fri, 19 Sep 2014 04:48:53 -0700
+From: tip-bot for Martin Kelly <tipbot@zytor.com>
+Message-ID: <tip-9575a6a23a8081bc4c9d47d001621e2af0957c02@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        kamalesh@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, preeti@linux.vnet.ibm.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
+        martin@martingkelly.com, tglx@linutronix.de, aubrey.li@linux.intel.com,
+        martkell@amazon.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kamalesh@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, preeti@linux.vnet.ibm.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-In-Reply-To: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
-References: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
+        martin@martingkelly.com, tglx@linutronix.de, martkell@amazon.com,
+        aubrey.li@linux.intel.com
+In-Reply-To: <1410963476-8360-1-git-send-email-martin@martingkelly.com>
+References: <1410963476-8360-1-git-send-email-martin@martingkelly.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Allow all architectures to set '
- capacity_orig'
-Git-Commit-ID: 26bc3c50d3b3984564c270da86f1fbbfb774dbcd
+Subject: [tip:x86/platform] x86/platform/pmc_atom:
+  Fix warning when CONFIG_DEBUG_FS=n
+Git-Commit-ID: 9575a6a23a8081bc4c9d47d001621e2af0957c02
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,97 +34,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26bc3c50d3b3984564c270da86f1fbbfb774dbcd
-Gitweb:     http://git.kernel.org/tip/26bc3c50d3b3984564c270da86f1fbbfb774dbcd
-Author:     Vincent Guittot <vincent.guittot@linaro.org>
-AuthorDate: Tue, 26 Aug 2014 13:06:47 +0200
+Commit-ID:  9575a6a23a8081bc4c9d47d001621e2af0957c02
+Gitweb:     http://git.kernel.org/tip/9575a6a23a8081bc4c9d47d001621e2af0957c02
+Author:     Martin Kelly <martin@martingkelly.com>
+AuthorDate: Wed, 17 Sep 2014 07:17:56 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:35:27 +0200
+CommitDate: Fri, 19 Sep 2014 13:02:21 +0200
 
-sched: Allow all architectures to set 'capacity_orig'
+x86/platform/pmc_atom: Fix warning when CONFIG_DEBUG_FS=n
 
-'capacity_orig' is only changed for systems with an SMT sched_domain level in order
-to reflect the lower capacity of CPUs. Heterogenous systems also have to reflect an
-original capacity that is different from the default value.
+When compiling with CONFIG_DEBUG_FS=n, GCC emits an unused
+variable warning for pmc_atom.c because "ret" is used only
+within the CONFIG_DEBUG_FS block.
 
-Create a more generic function arch_scale_cpu_capacity that can be also used by
-non SMT platforms to set capacity_orig.
+This patch adds a dummy #ifdef for pmc_dbgfs_register() when
+CONFIG_DEBUG_FS=n to simplify the code and remove the warning.
 
-The __weak implementation of arch_scale_cpu_capacity() is the previous SMT variant,
-in order to keep backward compatibility with the use of capacity_orig.
-
-arch_scale_smt_capacity() and default_scale_smt_capacity() have been removed as
-they were not used elsewhere than in arch_scale_cpu_capacity().
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Reviewed-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
-[ Added default_scale_cpu_capacity() back. ]
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: riel@redhat.com
-Cc: Morten.Rasmussen@arm.com
-Cc: efault@gmx.de
-Cc: nicolas.pitre@linaro.org
-Cc: daniel.lezcano@linaro.org
-Cc: dietmar.eggemann@arm.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409051215-16788-5-git-send-email-vincent.guittot@linaro.org
+Signed-off-by: Martin Kelly <martkell@amazon.com>
+Acked-by: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: vishwesh.m.rudramuni@intel.com
+Link: http://lkml.kernel.org/r/1410963476-8360-1-git-send-email-martin@martingkelly.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+ arch/x86/kernel/pmc_atom.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index eb87229..be530e4 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5705,19 +5705,17 @@ unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
- 	return default_scale_capacity(sd, cpu);
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+index 0c424a6..0ee5025e 100644
+--- a/arch/x86/kernel/pmc_atom.c
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -235,6 +235,11 @@ err:
+ 	pmc_dbgfs_unregister(pmc);
+ 	return -ENODEV;
+ }
++#else
++static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
++{
++	return 0;
++}
+ #endif /* CONFIG_DEBUG_FS */
+ 
+ static int pmc_setup_dev(struct pci_dev *pdev)
+@@ -262,14 +267,12 @@ static int pmc_setup_dev(struct pci_dev *pdev)
+ 	/* PMC hardware registers setup */
+ 	pmc_hw_reg_setup(pmc);
+ 
+-#ifdef CONFIG_DEBUG_FS
+ 	ret = pmc_dbgfs_register(pmc, pdev);
+ 	if (ret) {
+ 		iounmap(pmc->regmap);
+-		return ret;
+ 	}
+-#endif /* CONFIG_DEBUG_FS */
+-	return 0;
++
++	return ret;
  }
  
--static unsigned long default_scale_smt_capacity(struct sched_domain *sd, int cpu)
-+static unsigned long default_scale_cpu_capacity(struct sched_domain *sd, int cpu)
- {
--	unsigned long weight = sd->span_weight;
--	unsigned long smt_gain = sd->smt_gain;
-+	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
-+		return sd->smt_gain / sd->span_weight;
- 
--	smt_gain /= weight;
--
--	return smt_gain;
-+	return SCHED_CAPACITY_SCALE;
- }
- 
--unsigned long __weak arch_scale_smt_capacity(struct sched_domain *sd, int cpu)
-+unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
- {
--	return default_scale_smt_capacity(sd, cpu);
-+	return default_scale_cpu_capacity(sd, cpu);
- }
- 
- static unsigned long scale_rt_capacity(int cpu)
-@@ -5756,18 +5754,15 @@ static unsigned long scale_rt_capacity(int cpu)
- 
- static void update_cpu_capacity(struct sched_domain *sd, int cpu)
- {
--	unsigned long weight = sd->span_weight;
- 	unsigned long capacity = SCHED_CAPACITY_SCALE;
- 	struct sched_group *sdg = sd->groups;
- 
--	if ((sd->flags & SD_SHARE_CPUCAPACITY) && weight > 1) {
--		if (sched_feat(ARCH_CAPACITY))
--			capacity *= arch_scale_smt_capacity(sd, cpu);
--		else
--			capacity *= default_scale_smt_capacity(sd, cpu);
-+	if (sched_feat(ARCH_CAPACITY))
-+		capacity *= arch_scale_cpu_capacity(sd, cpu);
-+	else
-+		capacity *= default_scale_cpu_capacity(sd, cpu);
- 
--		capacity >>= SCHED_CAPACITY_SHIFT;
--	}
-+	capacity >>= SCHED_CAPACITY_SHIFT;
- 
- 	sdg->sgc->capacity_orig = capacity;
- 
+ /*
