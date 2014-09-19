@@ -1,124 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984AbaISORH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:17:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52626 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848AbaISORF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:17:05 -0400
-Date: Fri, 19 Sep 2014 11:16:53 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
-Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
-Message-ID: <20140919141653.GA32694@kernel.org>
-References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
- <540964C0.1050702@intel.com>
- <20140905141123.GE30520@kernel.org>
- <1409930200.1662.16.camel@leonhard>
- <20140905154402.GF30520@kernel.org>
- <87ppf1mkkk.fsf@sejong.aot.lge.com>
- <20140912141116.GH1801@kernel.org>
- <87zjdwktwu.fsf@sejong.aot.lge.com>
+	id S1757236AbaISOSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:18:39 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56710 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756553AbaISOSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 10:18:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zjdwktwu.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [95.23.61.81]
+In-Reply-To: <1411132009-11173-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1411132009-11173-1-git-send-email-pankaj.dubey@samsung.com>
+Date: Fri, 19 Sep 2014 16:18:36 +0200
+Message-ID: <CABxcv=m4CX6ZiWxq0kNZ-3iLg9J8pqguhcr5G7Ud0+8N-8RDjQ@mail.gmail.com>
+Subject: Re: [PATCH v4] mfd: syscon: Decouple syscon interface from platform devices
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, vikas.sajjan@samsung.com,
+        sunil joshi <joshi@samsung.com>, naushad@samsung.com,
+        thomas.ab@samsung.com, chow.kim@samsung.com,
+        Kukjin Kim <kgene.kim@samsung.com>, b29396@freescale.com,
+        Li.Xiubo@freescale.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 19, 2014 at 03:26:25PM +0900, Namhyung Kim escreveu:
-> On Fri, 12 Sep 2014 11:11:16 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Sep 12, 2014 at 03:14:51PM +0900, Namhyung Kim escreveu:
-> >> On Fri, 5 Sep 2014 12:44:02 -0300, Arnaldo Carvalho de Melo wrote:
-> >> > It seems we need a way to state that an entry in the build-id table is
-> >> > for the kernel, without looking at its file name.
+Hello Pankaj,
 
-> >> Maybe we can add a new build_id2_event (like mmap2) that has a new field
-> >> to record that info.
+On Fri, Sep 19, 2014 at 3:06 PM, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
+> Currently a syscon entity can be only registered directly through a
+> platform device that binds to a dedicated syscon driver. However in
+> certain use cases it is desirable to make a device used with another
+> driver a syscon interface provider.
+>
+> For example, certain SoCs (e.g. Exynos) contain system controller
+> blocks which perform various functions such as power domain control,
+> CPU power management, low power mode control, but in addition contain
+> certain IP integration glue, such as various signal masks,
+> coprocessor power control, etc. In such case, there is a need to have
+> a dedicated driver for such system controller but also share registers
+> with other drivers. The latter is where the syscon interface is helpful.
+>
+> In case of DT based platforms, this patch decouples syscon object from
+> syscon platform driver, and allows to create syscon objects first time
+> when it is required by calling of syscon_regmap_lookup_by APIs and keep
+> a list of such syscon objects along with syscon provider device_nodes
+> and regmap handles.
+>
+> For non-DT based platforms, this patch keeps syscon platform driver
+> structure where is can be probed and such non-DT based drivers can use
+> syscon_regmap_lookup_by_pdev API and get access to regmap handles.
+> Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT based,
+> we can completly remove platform driver of syscon, and keep only helper
+> functions to get regmap handles.
+>
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
+> Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+> Changes since v3:
+>  - Addressed Arnd's comment for v2.
+>  - Updated of_syscon_register for adding dev pointer in regmap_init_mmio.
+>  - For early users created dummy platform device.
+>
+> Changes since v2:
+>  - Added back platform device support from syscon, with one change that
+>    syscon will not be probed for DT based platform.
+>  - Added back syscon_regmap_lookup_by_pdevname API so that non-DT base
+>    users of syscon will not be broken.
+>  - Removed unwanted change in syscon.h.
+>  - Modified Signed-off-by list, added Suggested-by of Tomasz Figa and
+>    Arnd Bergmann.
+>  - Added Tested-by of Vivek Gautam for testing on Exynos platform.
+>
+> Changes since v1:
+>  - Removed of_syscon_unregister function.
+>  - Modified of_syscon_register function and it will be used by syscon.c
+>    to create syscon objects whenever required.
+>  - Removed platform device support from syscon.
+>  - Removed syscon_regmap_lookup_by_pdevname API support.
+>  - As there are significant changes w.r.t patchset v1, I am taking over
+>    author for this patchset from Tomasz Figa.
+>
+> [1]: https://lkml.org/lkml/2014/9/2/299
+>  drivers/mfd/syscon.c |  102 ++++++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 79 insertions(+), 23 deletions(-)
+>
 
-> > Humm, take a look at machine__write_buildid_table() -> write_buildid(),
-> > we already seem to set build_id_event.header.misc suitably, no?
- 
-> AFAIK the PERF_RECORD_MISC_KERNEL is set for both of kernel image and
-> modules so we cannot distinguish a kernel from others (without checking
-> names).
+I tested this patch on an Exynos5420 Peach Pit Chromebook and I see
+that of_syscon_register() is called for the PMU system controller with
+compatible string "samsung,exynos5420-pmu", "syscon" which does not
+have a dedicated platform driver, so:
 
-Ok, not perfect, but I think we improve the situation by using this
-piece of information while looking if the file ends in .ko, in which
-case we can mark it as a kernel module, if it doesn't end in .ko, we
-have a kernel.
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-Better than today, probably good enough, no?
- 
-> >> > That or to put the build-id into the synthesized kernel mmap
-> >> > event. Which is better, because:
-
-> >> > That leads to another problem that needs to get solved eventually: We
-> >> > need to have the build-id into PERF_RECORD_MMAP, because we're now using
-> >> > just the mmap filename as the key, not the contents, and for long
-> >> > running sessions, DSOs can get updated, etc.
-
-> >> But it'd require a realtime processing of events at record time.
-
-> > Been there, done that, backtracked, yes, we can't do that at 'record
-> > time', else we would be adding way too much noise to the recording
-> > phase.
-
-> > The idea is for the _kernel_ to do that, would take sizeof(buildid)
-> > (about 20 bytes) on the per-DSO structure in the kernel.
-
-> > When ELF loading it, stashing the contents of an ELF session
-> > (.note.gnu.build-id) somewhere accessible at PERF_RECORD_MMAP3
-> > generation time.
-
-> > Doing that at the time we load the DSO from disk should add negligible
-> > overhead.
-
-> > With that we would not need to go over all the perf.data stream to
-> > generate the build-id table after all record sessions, they would be at
-> > the struct map already.
- 
-> Yes, it'll solve the problem and simplifies the perf record.  However I
-> suspect it's not acceptable to keep such info in the kernel only for the
-> sake of perf.
-
-Hey, perf is a crucial part of development, even if it was the sole
-user, I think this would be acceptable.
-
-But this is not perf specific at all, any other tool that needs to map
-from sample to a symtab _needs_ this, there is no other way to, on a
-system with running apps and its libraries, to safely go from DSO
-pathname to its corresponding binary.
-
-Also this enables one to unambiguously describe a running environment
-without packing tons of duplicated payloads for multiple workload runs,
-be it for profiling or for any other problem characterization task.
-
-And we have build-ids available for quite a while in all DSOs in the
-system.
-
-I bet gdb, systemtap, etc would be glad to use this if available.
- 
-> > We could then have multiple entries in the build-id table for the same
-> > pathname, with different build ids, that is something we don't support
-> > now and that provides bogus results when it happens.
- 
-> Maybe we can save and compare timestamp of build-id/map event and sample
-> event.  I'm experimenting to separate meta events (comm, mmap, ...) from
-> sample events with a similar idea... :)
-
-The point is to go from an entry in /proc/pid/maps to the file where it
-was loaded from, in a system where updates may have taken place for that
-pathname.
-
-- Arnaldo
+Best regards,
+Javier
