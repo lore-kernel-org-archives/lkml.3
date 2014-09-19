@@ -1,55 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251AbaISLX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:23:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59076 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178AbaISLX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:23:57 -0400
-Date: Fri, 19 Sep 2014 04:23:55 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        michael.kerrisk@gmail.com
-Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-Message-ID: <20140919112355.GB4639@infradead.org>
-References: <cover.1410810247.git.milosz@adfin.com>
- <x49d2awr1ez.fsf@segfault.boston.devel.redhat.com>
+	id S1756382AbaISLYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:24:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756298AbaISLYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 07:24:13 -0400
+Date: Fri, 19 Sep 2014 12:33:04 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ide@vger.kernel.org, "Jiang, Dave" <dave.jiang@intel.com>
+Subject: Re: [PATCH v3 6/5] AHCI: Do not read HOST_IRQ_STAT register in
+ multi-MSI mode
+Message-ID: <20140919113303.GI8793@agordeev.usersys.redhat.com>
+References: <cover.1411031922.git.agordeev@redhat.com>
+ <20140919082552.GH8793@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x49d2awr1ez.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <20140919082552.GH8793@agordeev.usersys.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 05:58:44PM -0400, Jeff Moyer wrote:
-> I thought you were going to introduce a new flag instead of using
-> O_NONBLOCK for this.  I dug up an old email that suggested that enabling
-> O_NONBLOCK for regular files (well, a device node in this case) broke a
-> cd ripping or burning application.  I also found this old bugzilla,
-> which states that squid would fail to start, and that gqview was also
-> broken:
->   https://bugzilla.redhat.com/show_bug.cgi?id=136057
-
-That is why we avoid looking a the per-open O_NONBLOCK flag, and only
-apply it per I/O.  As mentioned in my last mail it's not quite as
-trivial but still fairly easy to also do that for writes.
-
-> I don't think O_NONBLOCK is the right flag.  What you're really
-> specifying is a flag that prevents I/O in the read path, and nowhere
-> else.  As such, I'd feel much better about this if we defined a new flag
-> (O_NONBLOCK_READ maybe?  No, that's too verbose.).
+On Fri, Sep 19, 2014 at 09:25:52AM +0100, Alexander Gordeev wrote:
+> As described in AHCI v1.0 specification chapter 10.6.2.2
+> "Multiple MSI Based Messages" generation of interrupts
+> is not controlled through the HOST_IRQ_STAT register.
 > 
-> In summary, I like the idea, but I worry about overloading O_NONBLOCK.
+> Considering MMIO access is expensive remove unnecessary
+> reading and writing of HOST_IRQ_STAT register.
+> 
+> Further, serializing access to the host data is no longer
+> needed and the interrupt service routine can avoid competing
+> on the host lock.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Suggested-by: "Jiang, Dave" <dave.jiang@intel.com>
+> Cc: linux-ide@vger.kernel.org
+> ---
+>  drivers/ata/ahci.h    |  1 +
+>  drivers/ata/libahci.c | 54 ++++++++-------------------------------------------
+>  2 files changed, 9 insertions(+), 46 deletions(-)
+> 
+> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+> index c12f590..b8e117a 100644
+> --- a/drivers/ata/ahci.h
+> +++ b/drivers/ata/ahci.h
+> @@ -305,6 +305,7 @@ struct ahci_port_priv {
+>  	unsigned int		ncq_saw_dmas:1;
+>  	unsigned int		ncq_saw_sdb:1;
+>  	u32			intr_status;	/* interrupts to handle */
+> +	spinlock_t		intr_lock;	/* protects intr_status */
+>  	spinlock_t		lock;		/* protects parent ata_port */
+>  	u32 			intr_mask;	/* interrupts to enable */
+>  	bool			fbs_supported;	/* set iff FBS is supported */
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index 169c272..b9c4e93 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -1785,11 +1785,11 @@ irqreturn_t ahci_port_thread_fn(int irq, void *dev_instance)
+>  	unsigned long flags;
+>  	u32 status;
+>  
+> -	spin_lock_irqsave(&ap->host->lock, flags);
+> +	spin_lock_irqsave(&pp->intr_lock, flags);
+>  	status = pp->intr_status;
+>  	if (status)
+>  		pp->intr_status = 0;
+> -	spin_unlock_irqrestore(&ap->host->lock, flags);
+> +	spin_unlock_irqrestore(&pp->intr_lock, flags);
 
-There's a fair argument we could use a different namespace for the
-per-I/O ops, and it seems like Miklos already implemented this for the
-next version.
+This change ^^^ is wrong in single interrupt mode.
+Self-Nack.
+
+>  	spin_lock_bh(ap->lock);
+>  	ahci_handle_port_interrupt(ap, status);
+> @@ -1842,53 +1842,14 @@ static void ahci_update_intr_status(struct ata_port *ap)
+>  
+>  irqreturn_t ahci_multi_irqs_intr(int irq, void *dev_instance)
+>  {
+> -	struct ata_port *ap_this = dev_instance;
+> -	struct ahci_port_priv *pp = ap_this->private_data;
+> -	struct ata_host *host = ap_this->host;
+> -	struct ahci_host_priv *hpriv = host->private_data;
+> -	void __iomem *mmio = hpriv->mmio;
+> -	unsigned int i;
+> -	u32 irq_stat, irq_masked;
+> +	struct ata_port *ap = dev_instance;
+> +	struct ahci_port_priv *pp = ap->private_data;
+>  
+>  	VPRINTK("ENTER\n");
+>  
+> -	spin_lock(&host->lock);
+> -
+> -	irq_stat = readl(mmio + HOST_IRQ_STAT);
+> -
+> -	if (!irq_stat) {
+> -		u32 status = pp->intr_status;
+> -
+> -		spin_unlock(&host->lock);
+> -
+> -		VPRINTK("EXIT\n");
+> -
+> -		return status ? IRQ_WAKE_THREAD : IRQ_NONE;
+> -	}
+> -
+> -	irq_masked = irq_stat & hpriv->port_map;
+> -
+> -	for (i = 0; i < host->n_ports; i++) {
+> -		struct ata_port *ap;
+> -
+> -		if (!(irq_masked & (1 << i)))
+> -			continue;
+> -
+> -		ap = host->ports[i];
+> -		if (ap) {
+> -			ahci_update_intr_status(ap);
+> -			VPRINTK("port %u\n", i);
+> -		} else {
+> -			VPRINTK("port %u (no irq)\n", i);
+> -			if (ata_ratelimit())
+> -				dev_warn(host->dev,
+> -					 "interrupt on disabled port %u\n", i);
+> -		}
+> -	}
+> -
+> -	writel(irq_stat, mmio + HOST_IRQ_STAT);
+> -
+> -	spin_unlock(&host->lock);
+> +	spin_lock(&pp->intr_lock);
+> +	ahci_update_intr_status(ap);
+> +	spin_unlock(&pp->intr_lock);
+>  
+>  	VPRINTK("EXIT\n");
+>  
+> @@ -2366,6 +2327,7 @@ static int ahci_port_start(struct ata_port *ap)
+>  	 */
+>  	pp->intr_mask = DEF_PORT_IRQ;
+>  
+> +	spin_lock_init(&pp->intr_lock);
+>  	spin_lock_init(&pp->lock);
+>  	ap->lock = &pp->lock;
+>  
+> -- 
+> 1.8.3.1
+> 
+> -- 
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
