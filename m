@@ -1,190 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbaISDfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 23:35:12 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58637 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaISDfK (ORCPT
+	id S1756768AbaISDiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 23:38:11 -0400
+Received: from mail-bn1on0118.outbound.protection.outlook.com ([157.56.110.118]:63277
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751294AbaISDiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 23:35:10 -0400
-Message-ID: <541BA451.9010508@roeck-us.net>
-Date: Thu, 18 Sep 2014 20:34:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 18 Sep 2014 23:38:08 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "Aisheng.Dong@freescale.com" <Aisheng.Dong@freescale.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "naushad@samsung.com" <naushad@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        "joshi@samsung.com" <joshi@samsung.com>,
+        "thomas.ab@samsung.com" <thomas.ab@samsung.com>,
+        "vikas.sajjan@samsung.com" <vikas.sajjan@samsung.com>,
+        "chow.kim@samsung.com" <chow.kim@samsung.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "'Boris BREZILLON'" <boris.brezillon@free-electrons.com>,
+        "'Geert Uytterhoeven'" <geert+renesas@glider.be>,
+        "'Stephen Warren'" <swarren@nvidia.com>
+Subject: RE: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
+ devices
+Thread-Topic: [PATCH v3] mfd: syscon: Decouple syscon interface from platform
+ devices
+Thread-Index: AQHP0kIqUorD0T+DMkOGT4aDDQhODZwFBqQAgAAntgCAAQgOgIAAMZkAgAAfVACAABxWgIAAB+AAgAEKw2A=
+Date: Fri, 19 Sep 2014 03:38:03 +0000
+Message-ID: <48f9f4067cc44ad49297bb4b62c56c88@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1410935510-1567-1-git-send-email-pankaj.dubey@samsung.com>
+ <20140917085818.GA10285@shlinux1.ap.freescale.net>
+ <000401cfd269$922dfc40$b689f4c0$@samsung.com>
+ <20140918030552.GA26661@shlinux1.ap.freescale.net>
+ <000701cfd306$4d3e8080$e7bb8180$@samsung.com>
+ <20140918075516.GB15363@shlinux1.ap.freescale.net>
+ <000c01cfd324$1f2cd930$5d868b90$@samsung.com>
+ <20140918100505.GA19346@shlinux1.ap.freescale.net>
+In-Reply-To: <20140918100505.GA19346@shlinux1.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0339F89554
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(52604005)(164054003)(189002)(199003)(2656002)(106356001)(83322001)(99286002)(20776003)(90102001)(15975445006)(64706001)(76176999)(87936001)(101416001)(77096002)(74316001)(50986999)(85306004)(97736003)(108616004)(15202345003)(81342003)(99396002)(54356999)(46102003)(85852003)(105586002)(66066001)(33646002)(106116001)(79102003)(76576001)(31966008)(95666004)(19580395003)(21056001)(76482002)(74662003)(4396001)(86362001)(80022003)(92566001)(19580405001)(74502003)(77982003)(81542003)(107046002)(93886004)(83072002)(21314002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB330;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>
-Subject: Re: [PATCH] pinctrl: qcom: use restart_notifier mechanism for ps_hold
-References: <1411079579-10172-1-git-send-email-joshc@codeaurora.org> <541B9ADA.2070107@roeck-us.net>
-In-Reply-To: <541B9ADA.2070107@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.541BA46D.00C5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 12
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 07:54 PM, Guenter Roeck wrote:
-> On 09/18/2014 03:32 PM, Josh Cartwright wrote:
->> By converting to the restart_notifier mechanism for restart, we allow
->> for other mechanisms, like the watchdog, to be used for restart in the
->> case where PS_HOLD has failed to reset the chip.
->>
->> Choose priority 128, as according to documentation, this mechanism "is
->> sufficient to restart the entire system".
->>
->> Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
->> ---
->>   drivers/pinctrl/qcom/pinctrl-msm.c | 38 ++++++++++++++++++++++++++------------
->>   1 file changed, 26 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
->> index d5ed127..9fced3b 100644
->> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
->> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
->> @@ -27,8 +27,7 @@
->>   #include <linux/gpio.h>
->>   #include <linux/interrupt.h>
->>   #include <linux/spinlock.h>
->> -
->> -#include <asm/system_misc.h>
->> +#include <linux/reboot.h>
->>
->>   #include "../core.h"
->>   #include "../pinconf.h"
->> @@ -43,6 +42,7 @@
->>    * @dev:            device handle.
->>    * @pctrl:          pinctrl handle.
->>    * @chip:           gpiochip handle.
->> + * @restart_nb:     restart notifier block.
->>    * @irq:            parent irq for the TLMM irq_chip.
->>    * @lock:           Spinlock to protect register resources as well
->>    *                  as msm_pinctrl data structures.
->> @@ -56,6 +56,7 @@ struct msm_pinctrl {
->>       struct device *dev;
->>       struct pinctrl_dev *pctrl;
->>       struct gpio_chip chip;
->> +    struct notifier_block restart_nb;
->>       int irq;
->>
->>       spinlock_t lock;
->> @@ -852,13 +853,14 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
->>       return 0;
->>   }
->>
->> -#ifdef CONFIG_ARM
->
-> Unrelated to this patch, but is this going to be executed (and potentially used)
-> on any non-arm architectures ?
->
-> Reason for asking that the restart handler mechanism is currently only
-> implemented on arm and arm64. If it is going to be used with other
-> architectures, we'll have to add the necessary call into the architecture
-> restart code.
->
->> -static void __iomem *msm_ps_hold;
->> -
->> -static void msm_reset(enum reboot_mode reboot_mode, const char *cmd)
->> +static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
->> +                   void *data)
->>   {
->> -    writel(0, msm_ps_hold);
->> +    struct msm_pinctrl *pctrl = container_of(nb, struct msm_pinctrl, restart_nb);
->> +
->> +    writel(0, pctrl->regs + PS_HOLD_OFFSET);
->>       mdelay(10000);
->
-> Sure you still want to wait for 10 seconds here ?
-> Would it make sense to choose a more reasonable timeout ?
->
-> Thanks,
-> Guenter
->
->> +    return NOTIFY_DONE;
->>   }
->>
->>   static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
->> @@ -868,13 +870,16 @@ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
->>
->>       for (; i <= pctrl->soc->nfunctions; i++)
->>           if (!strcmp(func[i].name, "ps_hold")) {
->> -            msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
->> -            arm_pm_restart = msm_reset;
->> +            pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
->> +            pctrl->restart_nb.priority = 128;
->> +            if (register_restart_handler(&pctrl->restart_nb)) {
->> +                dev_err(pctrl->dev,
->> +                    "failed to setup restart handler.\n");
->> +                pctrl->restart_nb.notifier_call = NULL;
->> +            }
->> +            break;
->>           }
->>   }
->> -#else
->> -static void msm_pinctrl_setup_pm_reset(const struct msm_pinctrl *pctrl) {}
->> -#endif
->>
->>   int msm_pinctrl_probe(struct platform_device *pdev,
->>                 const struct msm_pinctrl_soc_data *soc_data)
->> @@ -943,6 +948,15 @@ int msm_pinctrl_remove(struct platform_device *pdev)
->>
->>       pinctrl_unregister(pctrl->pctrl);
->>
->> +    if (pctrl->restart_nb.notifier_call) {
+> > Thanks for testing. In that case I will post this change, as I feel this
+> > should be
+> > fixed irrespective of my syscon patch.
+> >
+> > > But as Xiubo pointed in another mail, it may still cause other issues.
+> > > Looking at regmap.c, there're still some other places using the device
+> > pointer, e.g.
+> > > dev_xxx debug information and some tracepoints also take device pointer as
+> > > parameter(not sure if it will break if dev is NULL).
+> > > Another thing is that if dev is NULL, we may not be able to use regmap
+> > debugfs
+> > > feature which seems also not as our expected.
+> > >
+> >
+> > I would have preferred to check dev for NULL, as it's only at two places and
+> > we could
+> > still have debug prints for NULL dev, as normal pr_info instead of dev_info.
+> >
+> > But Xiubo also pointed out that his patch [1] which updates syscon binding
+> > information
+> > will be useless if we pass NULL dev in regmap_init_mmio, which he posted
+> > today,
+> > and it requires dev pointer in "regmap_get_val_endian" function to read DT
+> > property.
+> >
+> > [1]: [PATCH] mfd: syscon: binding: Add syscon endianness support
+> >       https://lkml.org/lkml/2014/9/18/67
+> >
+> > So instead of adding dummy device or creating device structure, I would
+> > prefer to get actual
+> > device pointer corresponding to "np" passed in of_syscon_register function
+> > as shown below:
+> >
+> 
+> I wonder this may not work at early stage before the devices are populated
+> from device tree.
+> My initial understanding that one important thing for your patch is
+> to address this issue, isn't it?
+> Many people have asked for this feature before.
+> 
 
-One more comment: The conditional is really unnecessary. Just let
-unregister_restart_handler deal with it ...
+My boot log:
 
->> +        ret = unregister_restart_handler(&pctrl->restart_nb);
+   ...
+of_platform_bus_create() - skipping /chosen, no compatible prop
+of_platform_bus_create() - skipping /aliases, no compatible prop
+of_platform_bus_create() - skipping /memory, no compatible prop
+of_platform_bus_create() - skipping /cpus, no compatible prop
+   create child: /soc/smmu@1200000
+   create child: /soc/smmu@1280000
+   create child: /soc/smmu@1300000
+   create child: /soc/smmu@1380000
+   create child: /soc/interrupt-controller@1400000
+   create child: /soc/tzasc@1500000
+of_platform_bus_create() - skipping /soc/tzasc@1500000, no compatible prop
+   create child: /soc/ifc@1530000
+   create child: /soc/ifc@1530000/nor@0,0
+   create child: /soc/ifc@1530000/board-control@2,0
+   create child: /soc/dcfg@1ee0000
+syscon 1ee0000.dcfg: regmap [mem 0x01ee0000-0x01eeffff] registered
+   create child: /soc/quadspi@1550000
+   create child: /soc/esdhc@1560000
+   create child: /soc/scfg@1570000
+   create child: /soc/crypto@1700000
+   create child: /soc/sfp@1e80000
+of_platform_bus_create() - skipping /soc/sfp@1e80000, no compatible prop
+   create child: /soc/snvs@1e90000
+of_platform_bus_create() - skipping /soc/snvs@1e90000, no compatible prop
+   create child: /soc/serdes1@1ea0000
+of_platform_bus_create() - skipping /soc/serdes1@1ea0000, no compatible prop
+   create child: /soc/clocking@1ee1000
+   create child: /soc/rcpm@1ee2000
+   create child: /soc/dspi@2100000
+   create child: /soc/dspi@2110000
+   create child: /soc/i2c@2180000
+   create child: /soc/i2c@2190000
+   create child: /soc/i2c@21a0000
+   create child: /soc/serial@21c0500
+   create child: /soc/serial@21c0600
+   create child: /soc/serial@21d0500
+   create child: /soc/serial@21d0600
+   create child: /soc/gpio@2300000
+   create child: /soc/gpio@2310000
+   create child: /soc/gpio@2320000
+   create child: /soc/gpio@2330000
+   create child: /soc/uqe@2400000
+   create child: /soc/uqe@2400000/qeic@80
+   create child: /soc/uqe@2400000/ucc@2000
+irq: no irq domain found for /soc/uqe@2400000/qeic@80 !
+   create child: /soc/uqe@2400000/ucc@2200
+irq: no irq domain found for /soc/uqe@2400000/qeic@80 !
+   create child: /soc/uqe@2400000/muram@10000
+   create child: /soc/uqe@2400000/si@700
+   create child: /soc/uqe@2400000/siram@1000
+   create child: /soc/serial@2950000
+   create child: /soc/serial@2960000
+   create child: /soc/serial@2970000
+   create child: /soc/serial@2980000
+   create child: /soc/serial@2990000
+   create child: /soc/serial@29a0000
+   create child: /soc/ftm0_1@29d0000
+   create child: /soc/ftm@29f0000
+of_platform_bus_create() - skipping /soc/ftm@29f0000, no compatible prop
+   create child: /soc/ftm@2a00000
+   create child: /soc/ftm@2a10000
+of_platform_bus_create() - skipping /soc/ftm@2a10000, no compatible prop
+   create child: /soc/ftm@2a20000
+of_platform_bus_create() - skipping /soc/ftm@2a20000, no compatible prop
+   create child: /soc/ftm@2a30000
+   create child: /soc/ftm@2a40000
+   create child: /soc/wdog@2ad0000
+   create child: /soc/sai@2b60000
+   create child: /soc/edma@2c00000
+   create child: /soc/dcu@2ce0000
+   create child: /soc/mdio@2d24000
+   create child: /soc/ptp_clock@2d10e00
+   create child: /soc/ethernet@2d10000
+   create child: /soc/ethernet@2d50000
+   create child: /soc/ethernet@2d90000
+   create child: /soc/usb@8600000
+   create child: /soc/usb3@3100000
+   create child: /soc/can@2a70000
+   create child: /soc/can@2a80000
+   create child: /soc/can@2a90000
+   create child: /soc/can@2aa0000
+   create child: /soc/pcie@3400000
+   create child: /soc/pcie@3500000
+   create child: /dcsr@20000000/dcsr-epu@0
+   create child: /dcsr@20000000/dcsr-gdi@100000
+   create child: /dcsr@20000000/dcsr-dddi@120000
+   create child: /dcsr@20000000/dcsr-dcfg@220000
+   create child: /dcsr@20000000/dcsr-clock@221000
+   create child: /dcsr@20000000/dcsr-rcpm@222000
+   create child: /dcsr@20000000/dcsr-ccp@225000
+   create child: /dcsr@20000000/dcsr-fusectrl@226000
+   create child: /dcsr@20000000/dcsr-dap@300000
+   create child: /dcsr@20000000/dcsr-cstf@350000
+   create child: /dcsr@20000000/dcsr-a7rom@360000
+   create child: /dcsr@20000000/dcsr-a7cpu@370000
+   create child: /dcsr@20000000/dcsr-a7cti@378000
+   create child: /dcsr@20000000/dcsr-etm@37c000
+   create child: /dcsr@20000000/dcsr-hugorom@3a0000
+   create child: /dcsr@20000000/dcsr-etf@3a1000
+   create child: /dcsr@20000000/dcsr-etr@3a3000
+   create child: /dcsr@20000000/dcsr-cti@3a4000
+   create child: /dcsr@20000000/dcsr-atbrepl@3a8000
+   create child: /dcsr@20000000/dcsr-tsgen-ctrl@3a9000
+   create child: /dcsr@20000000/dcsr-tsgen-read@3aa000
+   create child: /regulators/regulator@0
+   ...
 
-and just ignore the error return. The function will only return an error
-if the entry was not found, and then it is a don't care.
+As default the Linux will create all the platform device for each DT node, which
+Can be found from "drivers/of/platform.c".
+
+So we can get the pdev node using the specified DT node, and feel safe to use
+it as Pankaj's patch does.
+
+And also we must make sure that the 'syscon' DT nodes has the compatible prop.
 
 Thanks,
-Guenter
 
->> +        if (ret) {
->> +            dev_err(&pdev->dev,
->> +                "unable to unregister restart handler\n");
->> +            return ret;
->> +        }
->> +    }
->> +
->>       return 0;
->>   }
->>   EXPORT_SYMBOL(msm_pinctrl_remove);
->>
->
+BRs
+Xiubo
 
+
+> Regards
+> Dong Aisheng
+> 
+> > ----
+> > static struct syscon *of_syscon_register(struct device_node *np)
+> >  {
+> > +	struct platform_device *pdev;
+> >  	struct syscon *syscon;
+> >  	struct regmap *regmap;
+> >  	void __iomem *base;
+> > @@ -142,7 +144,11 @@ static struct syscon *of_syscon_register(struct
+> > device_node *np)
+> >  	if (!base)
+> >  		return ERR_PTR(-ENOMEM);
+> >
+> > -	regmap = regmap_init_mmio(NULL, base, &syscon_regmap_config);
+> > +	pdev = of_find_device_by_node(np);
+> > +	if (!(&pdev->dev))
+> > +		return ERR_PTR(-ENODEV);
+> > +
+> > +	regmap = regmap_init_mmio(&pdev->dev, base, &syscon_regmap_config);
+> >  	if (IS_ERR(regmap)) {
+> >  		pr_err("regmap init failed\n");
+> >  		return ERR_CAST(regmap);
+> > -------
+> >
+> > I have tested this in linux-next and it works well. In this way there won't
+> > be any issues of
+> > dereferencing NULL pointer in regmap.c and at the same time, if DT has
+> > {big,little}-endian
+> > optional property in syscon device node, it will be taken care.
+> >
+> > So I would wait for Arnd's opinion about above mentioned changes and then
+> > post a new
+> > change after addressing Arnd's minor comment along with this fix in next
+> > revision.
+> >
+> >
+> > Thanks,
+> > Pankaj Dubey
+> > > Maybe we could consider create device structure for each syscon compatible
+> > device in
+> > > syscon driver in of_syscon_register in first time which seems to be
+> > reasonable.
+> > >
+> > > Regards
+> > > Dong Aisheng
+> > >
+> > > > --------------------------------------------
+> > > > Subject: [PATCH] regmap: fix NULL pointer dereference in
+> > > > regmap_get_val_endian
+> > > >
+> > > > Recent commits for getting reg endianess causing NULL pointer
+> > > > dereference if dev is passed NULL in regmap_init_mmio. This patch
+> > > > fixes this issue, and allows to parse reg endianess only if dev and
+> > > > dev->of_node exist.
+> > > >
+> > > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > > > ---
+> > > >  drivers/base/regmap/regmap.c |   23 ++++++++++++++---------
+> > > >  1 file changed, 14 insertions(+), 9 deletions(-)
+> > > >
+> > > > diff --git a/drivers/base/regmap/regmap.c
+> > > > b/drivers/base/regmap/regmap.c index f2281af..455a877 100644
+> > > > --- a/drivers/base/regmap/regmap.c
+> > > > +++ b/drivers/base/regmap/regmap.c
+> > > > @@ -477,7 +477,7 @@ static enum regmap_endian
+> > > > regmap_get_val_endian(struct device *dev,
+> > > >  					const struct regmap_bus *bus,
+> > > >  					const struct regmap_config *config)
+> > {
+> > > > -	struct device_node *np = dev->of_node;
+> > > > +	struct device_node *np;
+> > > >  	enum regmap_endian endian;
+> > > >
+> > > >  	/* Retrieve the endianness specification from the regmap config
+> */
+> > > > @@ -487,15 +487,20 @@ static enum regmap_endian
+> > > > regmap_get_val_endian(struct device *dev,
+> > > >  	if (endian != REGMAP_ENDIAN_DEFAULT)
+> > > >  		return endian;
+> > > >
+> > > > -	/* Parse the device's DT node for an endianness specification */
+> > > > -	if (of_property_read_bool(np, "big-endian"))
+> > > > -		endian = REGMAP_ENDIAN_BIG;
+> > > > -	else if (of_property_read_bool(np, "little-endian"))
+> > > > -		endian = REGMAP_ENDIAN_LITTLE;
+> > > > +	/* If the dev and dev->of_node exist try to get endianness from
+> DT
+> > > > */
+> > > > +	if (dev && dev->of_node) {
+> > > > +		np = dev->of_node;
+> > > >
+> > > > -	/* If the endianness was specified in DT, use that */
+> > > > -	if (endian != REGMAP_ENDIAN_DEFAULT)
+> > > > -		return endian;
+> > > > +		/* Parse the device's DT node for an endianness
+> > > > specification */
+> > > > +		if (of_property_read_bool(np, "big-endian"))
+> > > > +			endian = REGMAP_ENDIAN_BIG;
+> > > > +		else if (of_property_read_bool(np, "little-endian"))
+> > > > +			endian = REGMAP_ENDIAN_LITTLE;
+> > > > +
+> > > > +		/* If the endianness was specified in DT, use that */
+> > > > +		if (endian != REGMAP_ENDIAN_DEFAULT)
+> > > > +			return endian;
+> > > > +	}
+> > > >
+> > > >  	/* Retrieve the endianness specification from the bus config */
+> > > >  	if (bus && bus->val_format_endian_default)
+> > > > --
+> > > >
+> > > > Thanks,
+> > > > Pankaj Dubey
+> > > >
+> > > > > Regards
+> > > > > Dong Aisheng
+> > > > >
+> > > > > >
+> > > > > > Thanks,
+> > > > > > Pankaj Dubey
+> > > > > >
+> > > > > > > Regards
+> > > > > > > Dong Aisheng
+> > > > > > >
+> > > > > > > >
+> > > > > > > >
+> > > > > > > > _______________________________________________
+> > > > > > > > linux-arm-kernel mailing list
+> > > > > > > > linux-arm-kernel@lists.infradead.org
+> > > > > > > > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > > > > >
+> > > >
+> >
