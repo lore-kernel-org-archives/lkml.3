@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542AbaISUQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:16:56 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:45786 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687AbaISUOw (ORCPT
+	id S1757772AbaISUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:17:27 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:38181 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771AbaISUR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:14:52 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] ARM: mvebu: armada-xp: Move GE0/1 pinctrl settings for RGMII
-Date: Fri, 19 Sep 2014 22:14:40 +0200
-Message-Id: <1411157684-6991-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 19 Sep 2014 16:17:26 -0400
+Date: Fri, 19 Sep 2014 13:17:22 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/2] bus: brcmstb_gisb: register the fault code hook
+Message-ID: <20140919201722.GL1193@ld-irv-0074>
+References: <1411156230-24024-1-git-send-email-f.fainelli@gmail.com>
+ <1411156230-24024-2-git-send-email-f.fainelli@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411156230-24024-2-git-send-email-f.fainelli@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pinctrl settings for GE0 and GE1 are not only usable on RD-AXPWiFiAP.
-Moreover, naming the RGMII settings pmx-ge{0,1} is not precise enough
-as there is also a GMII setting for GE0.
+On Fri, Sep 19, 2014 at 12:50:29PM -0700, Florian Fainelli wrote:
+> Commit 44127b771d9c31 ("bus: add Broadcom GISB bus arbiter timeout/error
+> handler") added everything that is required to register an ARM fault
+> handler for imprecise external aborts, except that there is nothing
+> calling this currently.
+> 
+> We do not need to export that specific function and have to update
+> arch/arm/mach-bcm/brcmstb.c to call it, simply, register the fault
+> handler with an arch_initcall.
 
-Move the pinctrl sub-nodes to the common pinctrl node and rename them
-to pmx-ge{0,1}-rgmii.
+Am I missing something, or does that mean that this error handler will
+be registered for *all* kernels which include this driver? e.g., anyone
+using multi_v7_defconfig?
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/armada-xp-axpwifiap.dts | 18 ++----------------
- arch/arm/boot/dts/armada-xp.dtsi          | 16 ++++++++++++++++
- 2 files changed, 18 insertions(+), 16 deletions(-)
+So it seems we need to gate this behind some kind of machine check;
+either called from mach-bcm/*, or better, from something that is probed
+via device tree. Is it a problem to register this in the probe()
+function, like drivers/pci/host/pci-imx6.c?
 
-diff --git a/arch/arm/boot/dts/armada-xp-axpwifiap.dts b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-index cdab007fbaf4..0e53fad111de 100644
---- a/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-+++ b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-@@ -84,14 +84,14 @@
- 			};
- 
- 			ethernet@70000 {
--				pinctrl-0 = <&pmx_ge0>;
-+				pinctrl-0 = <&pmx_ge0_rgmii>;
- 				pinctrl-names = "default";
- 				status = "okay";
- 				phy = <&phy0>;
- 				phy-mode = "rgmii-id";
- 			};
- 			ethernet@74000 {
--				pinctrl-0 = <&pmx_ge1>;
-+				pinctrl-0 = <&pmx_ge1_rgmii>;
- 				pinctrl-names = "default";
- 				status = "okay";
- 				phy = <&phy1>;
-@@ -133,20 +133,6 @@
- 	pinctrl-0 = <&pmx_phy_int>;
- 	pinctrl-names = "default";
- 
--	pmx_ge0: pmx-ge0 {
--		marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3",
--			       "mpp4", "mpp5", "mpp6", "mpp7",
--			       "mpp8", "mpp9", "mpp10", "mpp11";
--		marvell,function = "ge0";
--	};
--
--	pmx_ge1: pmx-ge1 {
--		marvell,pins = "mpp12", "mpp13", "mpp14", "mpp15",
--			       "mpp16", "mpp17", "mpp18", "mpp19",
--			       "mpp20", "mpp21", "mpp22", "mpp23";
--		marvell,function = "ge1";
--	};
--
- 	pmx_keys: pmx-keys {
- 		marvell,pins = "mpp33";
- 		marvell,function = "gpio";
-diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
-index b5fd8c69dfff..dfbcb10ad0db 100644
---- a/arch/arm/boot/dts/armada-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-xp.dtsi
-@@ -74,6 +74,22 @@
- 			pinctrl: pin-ctrl@18000 {
- 				reg = <0x18000 0x38>;
- 
-+				pmx_ge0_rgmii: pmx-ge0-rgmii {
-+					marvell,pins =
-+					     "mpp0", "mpp1", "mpp2", "mpp3",
-+					     "mpp4", "mpp5", "mpp6", "mpp7",
-+					     "mpp8", "mpp9", "mpp10", "mpp11";
-+					marvell,function = "ge0";
-+				};
-+
-+				pmx_ge1_rgmii: pmx-ge1-rgmii {
-+					marvell,pins =
-+					     "mpp12", "mpp13", "mpp14", "mpp15",
-+					     "mpp16", "mpp17", "mpp18", "mpp19",
-+					     "mpp20", "mpp21", "mpp22", "mpp23";
-+					marvell,function = "ge1";
-+				};
-+
- 				sdio_pins: sdio-pins {
- 					marvell,pins = "mpp30", "mpp31", "mpp32",
- 						       "mpp33", "mpp34", "mpp35";
--- 
-2.0.0
+> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+> Changes in v2:
+> - removed the accidental hunk that added saved_timeout since it does
+>   not belong in this patch
+> 
+>  drivers/bus/brcmstb_gisb.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/bus/brcmstb_gisb.c b/drivers/bus/brcmstb_gisb.c
+> index f2cd6a2d40b4..5b608955957a 100644
+> --- a/drivers/bus/brcmstb_gisb.c
+> +++ b/drivers/bus/brcmstb_gisb.c
+> @@ -160,11 +160,13 @@ static int brcmstb_bus_error_handler(unsigned long addr, unsigned int fsr,
+>  	return ret;
+>  }
+>  
+> -void __init brcmstb_hook_fault_code(void)
+> +static int __init brcmstb_hook_fault_code(void)
+>  {
+>  	hook_fault_code(22, brcmstb_bus_error_handler, SIGBUS, 0,
+>  			"imprecise external abort");
+> +	return 0;
+>  }
+> +arch_initcall(brcmstb_hook_fault_code)
+>  
+>  static irqreturn_t brcmstb_gisb_timeout_handler(int irq, void *dev_id)
+>  {
 
+Brian
