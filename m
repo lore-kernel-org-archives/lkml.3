@@ -1,150 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355AbaISRMi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 13:12:38 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48306 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553AbaISRMg (ORCPT
+	id S1757592AbaISRPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 13:15:51 -0400
+Received: from exprod5og123.obsmtp.com ([64.18.0.198]:53621 "HELO
+	exprod5og123.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756771AbaISRPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 13:12:36 -0400
-Date: Fri, 19 Sep 2014 11:12:31 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dirk Gouders <dirk@gouders.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-Message-ID: <20140919171231.GC19374@google.com>
-References: <ghzje5f5zt.fsf@lena.gouders.net>
- <ghbnqkeh9k.fsf@quad.gouders.net>
- <CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
- <gh4mwcef0r.fsf@quad.gouders.net>
- <CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
- <ghoaukcx6b.fsf@quad.gouders.net>
- <CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
- <ghk358crbe.fsf@quad.gouders.net>
- <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
- <20140913040716.GA28080@google.com>
+	Fri, 19 Sep 2014 13:15:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140913040716.GA28080@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACVXFVNEFSMjA=h_pyNF1AyYX4C336iM9nkYY=ocGQxjGpDCJA@mail.gmail.com>
+References: <1410906824-9321-1-git-send-email-tinamdar@apm.com>
+	<CACVXFVNEFSMjA=h_pyNF1AyYX4C336iM9nkYY=ocGQxjGpDCJA@mail.gmail.com>
+Date: Fri, 19 Sep 2014 10:15:45 -0700
+Message-ID: <CACoXjc=eA0nnK2_dRxktFeSKsfV6fQr=mDfN09sbe34H4GADrA@mail.gmail.com>
+Subject: Re: [PATCH v9 0/4] APM X-Gene PCIe host controller
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 10:07:16PM -0600, Bjorn Helgaas wrote:
-> I want to fix this regression before v3.17.  Dirk, can you test the
-> following patch on top of v3.17-rc2?  I'm hoping you can try this on your
-> test machine in conjunction with your acpi_pci_root_add() and
-> pci_scan_device() patches.  If I understand correctly,  you were able to
-> reproduce the FC adapter not showing up, and if you can verify that it does
-> show with those patches + this revert, I think that's good enough for now.
-> 
-> I'm not committed to applying this yet, but I'd like to have a working fix
-> in my back pocket in case we don't come up with a better solution soon.
+Hi Ming Lei,
 
-Since Dirk confirmed that the revert below avoids the problem for now, I
-applied it to my for-linus branch for v3.17.
+On Thu, Sep 18, 2014 at 8:08 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+> Hi Tanmay,
+>
+> On Wed, Sep 17, 2014 at 6:33 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+>> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+>> cards.
+>>
+>> X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
+>> Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
+>> support for creating generic pcie bridge from device tree. Liviu's patches
+>> are available here
+>> https://lkml.org/lkml/2014/9/8/333
+>>
+>> If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
+>> patches from Liviu must be applied before the patches in this patch set. Also
+>> please use latest xgene u-boot firmware.
+>>
+>> changes since V8:
+>> 1. Add 'dma-coherent' attribute in device node.
+>
+>
+> I just tested your V9 patches plus Liviu's V10 PCI/ARM64 patches
+> against 3.17-rc5 on Mustang, and the following failure is triggered:
+>
+> [    1.190131] bnx2x: Broadcom NetXtreme II 5771x/578xx 10/20-Gigabit
+> Ethernet Driver bnx2x 1.78.19-0 (2014/02/10)
+> [    1.200249] tg3.c:v3.137 (May 11, 2014)
+> [    1.204087] ------------[ cut here ]------------
+> [    1.208682] WARNING: CPU: 1 PID: 1 at drivers/pci/pci.c:131
+> pci_ioremap_bar+0x70/0x78()
+> [    1.216646] Modules linked in:
+> [    1.219696] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5+ #1
+> [    1.226018] Call trace:
+> [    1.228453] [<ffffffc0000884f0>] dump_backtrace+0x0/0x16c
+> [    1.233826] [<ffffffc00008866c>] show_stack+0x10/0x1c
+> [    1.238851] [<ffffffc0006e3210>] dump_stack+0x74/0x94
+> [    1.243878] [<ffffffc0000a934c>] warn_slowpath_common+0x88/0xb0
+> [    1.249767] [<ffffffc0000a9438>] warn_slowpath_null+0x14/0x20
+> [    1.255485] [<ffffffc0003994c4>] pci_ioremap_bar+0x6c/0x78
+> [    1.260942] [<ffffffc0005598cc>] tg3_init_one+0x148/0x16f4
+> [    1.266401] [<ffffffc00039ccf0>] pci_device_probe+0x78/0xd4
+> [    1.271946] [<ffffffc00042785c>] driver_probe_device+0x94/0x390
+> [    1.277834] [<ffffffc000427c44>] __driver_attach+0x98/0xa0
+> [    1.283293] [<ffffffc000425a54>] bus_for_each_dev+0x54/0x98
+> [    1.288835] [<ffffffc00042730c>] driver_attach+0x1c/0x28
+> [    1.294121] [<ffffffc000426f04>] bus_add_driver+0x164/0x240
+> [    1.299663] [<ffffffc000428430>] driver_register+0x64/0x130
+> [    1.305207] [<ffffffc00039c97c>] __pci_register_driver+0x3c/0x48
+> [    1.311181] [<ffffffc000aa8a5c>] tg3_driver_init+0x1c/0x28
+> [    1.316640] [<ffffffc0000814e0>] do_one_initcall+0xc4/0x1b4
+> [    1.322186] [<ffffffc000a74b64>] kernel_init_freeable+0x1b8/0x25c
+> [    1.328246] [<ffffffc0006de318>] kernel_init+0xc/0xd4
+> [    1.333278] ---[ end trace f4dca5ab5b436080 ]---
+> [    1.337871] tg3 0000:01:00.0: Cannot map device registers, aborting
+> [    1.344122] tg3: probe of 0000:01:00.0 failed with error -12
+>
+>
 
-I don't think this is the right fix, but it will buy us some time to figure
-out a better fix after v3.17.
+Thanks for trying out the patches. Which firmware version are you
+using? We may have release new firmware version for PCI to work if not
+released yet.
+Also can you please send out the entire boot log?
 
-Bjorn
+Thanks,
+Tanmay
 
-> commit 5945a8d28c416fc390a94c8e7fb8fd0a76f5d710
-> Author: Bjorn Helgaas <bhelgaas@google.com>
-> Date:   Fri Sep 12 21:58:19 2014 -0600
-> 
->     Revert "PCI: Make sure bus number resources stay within their parents bounds"
->     
->     This reverts commit 1820ffdccb9b ("PCI: Make sure bus number resources stay
->     within their parents bounds") because it breaks some systems with LSI Logic
->     FC949ES Fibre Channel Adapters, apparently by exposing a defect in those
->     adapters.
->     
->     Dirk tested a Tyan VX50 (B4985) with this device that worked like this
->     prior to 1820ffdccb9b:
->     
->         bus: [bus 00-7f] on node 0 link 1
->         ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-07])
->         pci 0000:00:0e.0: PCI bridge to [bus 0a]
->         pci_bus 0000:0a: busn_res: can not insert [bus 0a] under [bus 00-07] (conflicts with (null) [bus 00-07])
->         pci 0000:0a:00.0: [1000:0646] type 00 class 0x0c0400 (FC adapter)
->     
->     Note that the root bridge [bus 00-07] aperture is wrong; this is a BIOS
->     defect in the PCI0 _CRS method.  But prior to 1820ffdccb9b, we didn't
->     enforce that aperture, and the FC adapter worked fine at 0a:00.0.
->     
->     After 1820ffdccb9b, we notice that 00:0e.0's aperture is not contained in
->     the root bridge's aperture, so we reconfigure it so it *is* contained:
->     
->         pci 0000:00:0e.0: bridge configuration invalid ([bus 0a-0a]), reconfiguring
->         pci 0000:00:0e.0: PCI bridge to [bus 06-07]
->     
->     This effectively moves the FC device from 0a:00.0 to 07:00.0, which should
->     be legal.  But when we enumerate bus 06, the FC device doesn't respond, so
->     we don't find anything.  This is probably a defect in the FC device.
->     
->     Possible fixes (due to Yinghai):
->     
->         1) Add a quirk to fix the _CRS information based on what amd_bus.c read
->            from the hardware
->     
->         2) Reset the FC device after we change its bus number
->     
->         3) Revert 1820ffdccb9b
->     
->     Fix 1 would be relatively easy, but it does sweep the LSI FC issue under
->     the rug.  We might want to reconfigure bus numbers in the future for some
->     other reason, e.g., hotplug, and then we could trip over this again.
->     
->     For that reason, I like fix 2, but we don't know whether it actually works,
->     and we don't have a patch for it yet.
->     
->     This revert is fix 3, which also sweeps the LSI FC issue under the rug.
->     
->     Link: https://bugzilla.kernel.org/show_bug.cgi?id=84281
->     Reported-by: Dirk Gouders <dirk@gouders.net>
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->     CC: stable@vger.kernel.org	# v3.15+
->     CC: Yinghai Lu <yinghai@kernel.org>
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index e3cf8a2e6292..f0badff77cff 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -775,7 +775,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
->  	/* Check if setup is sensible at all */
->  	if (!pass &&
->  	    (primary != bus->number || secondary <= bus->number ||
-> -	     secondary > subordinate || subordinate > bus->busn_res.end)) {
-> +	     secondary > subordinate)) {
->  		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
->  			 secondary, subordinate);
->  		broken = 1;
-> @@ -853,8 +853,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
->  			child = pci_add_new_bus(bus, dev, max+1);
->  			if (!child)
->  				goto out;
-> -			pci_bus_insert_busn_res(child, max+1,
-> -						bus->busn_res.end);
-> +			pci_bus_insert_busn_res(child, max+1, 0xff);
->  		}
->  		max++;
->  		buses = (buses & 0xff000000)
-> @@ -913,11 +912,6 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
->  		/*
->  		 * Set the subordinate bus number to its real value.
->  		 */
-> -		if (max > bus->busn_res.end) {
-> -			dev_warn(&dev->dev, "max busn %02x is outside %pR\n",
-> -				 max, &bus->busn_res);
-> -			max = bus->busn_res.end;
-> -		}
->  		pci_bus_update_busn_res_end(child, max);
->  		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
->  	}
+>
+> Thanks,
+>
+>>
+>> changes since V7:
+>> 1. Fix outbound region mapping for IO region. Thanks Liviu for the catch.
+>>
+>> changes since V6:
+>> 1. Port driver to changed interface as per Liviu's v10 series.
+>>
+>> changes since V5:
+>> 1. Port driver to changed interface of 'of_create_pci_host_bridge'
+>> 2. Fix the prefetch bit setting
+>> 3. Removed bunch of register programming which is already done by firmware
+>>
+>> changes since V4:
+>> 1. fix section mismatch warnings
+>> 2. fix the patch description
+>> 3. fix indentation
+>> 4. update read/write cfg functions by passing both addr and offset.
+>> 5. use 'time_before' for timeout.
+>> 6. remove unnecessary 'IS_ERR_OR_NULL'. Keep 'IS_ERR' for 'clk_get'
+>> 7. remove BUG_ON for pci_ioremap_io.
+>>
+>> changes since V3:
+>> 1. remove 'struct hw_pci' and supporting ops in hw_pci
+>> 2. add code to create the host bridge from dts
+>> 3. add code to scan the the host bridge
+>> 4. modify outbound windows setup function to get resource information from
+>>    'bridge->windows'
+>> 5. add compatible string in pcie dts node with current X-Gene SOC name.
+>>
+>> changes since V2:
+>> 1. redefined each PCI port in different PCI domain correctly.
+>> 2. removed setup_lane and setup_link functions from driver.
+>> 3. removed scan_bus wrapper and set_primary_bus hack.
+>> 4. added pci_ioremap_io for io resources.
+>>
+>> changes since V1:
+>> 1. added PCI domain support
+>> 2. reading cpu and pci addresses from device tree to configure regions.
+>> 3. got rid of unnecessary wrappers for readl and writel.
+>> 4. got rid of endpoint configuration code.
+>> 5. added 'dma-ranges' property support to read inbound region configuration.
+>> 6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
+>> 7. dropped 'clock-names' property from bindings
+>> 8. added comments whereever requested.
+>>
+>>
+>> Tanmay Inamdar (4):
+>>   pci:host: APM X-Gene PCIe host controller driver
+>>   arm64: dts: APM X-Gene PCIe device tree nodes
+>>   dt-bindings: pci: xgene pcie device tree bindings
+>>   MAINTAINERS: entry for APM X-Gene PCIe host driver
+>>
+>>  .../devicetree/bindings/pci/xgene-pci.txt          |  57 ++
+>>  MAINTAINERS                                        |   8 +
+>>  arch/arm64/boot/dts/apm-mustang.dts                |   8 +
+>>  arch/arm64/boot/dts/apm-storm.dtsi                 | 165 ++++++
+>>  drivers/pci/host/Kconfig                           |  10 +
+>>  drivers/pci/host/Makefile                          |   1 +
+>>  drivers/pci/host/pci-xgene.c                       | 646 +++++++++++++++++++++
+>>  7 files changed, 895 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
+>>  create mode 100644 drivers/pci/host/pci-xgene.c
+>>
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+> --
+> Ming Lei
