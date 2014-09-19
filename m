@@ -1,194 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaISFP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:15:57 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:61416 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaISFPn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:15:43 -0400
-Date: Fri, 19 Sep 2014 07:15:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Avi Kivity <avi@cloudius-systems.com>,
-        Chanho Park <chanho61.park@samsung.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, david lerner <dlernerdroid@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        John Spencer <maillist-linux@barfooze.de>,
-        Kyle McMartin <kyle@mcmartin.ca>, linux-perf-users@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/20] perf/core improvements and fixes
-Message-ID: <20140919051536.GA9821@gmail.com>
-References: <1410989063-14207-1-git-send-email-acme@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410989063-14207-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756568AbaISFQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:16:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41499 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754911AbaISFQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 01:16:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,552,1406617200"; 
+   d="scan'208";a="602019815"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: [Patch Part3 V6 1/8] iommu/vt-d: Introduce helper function dmar_walk_resources()
+Date: Fri, 19 Sep 2014 13:18:48 +0800
+Message-Id: <1411103935-31301-2-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce helper function dmar_walk_resources to walk resource entries
+in DMAR table and ACPI buffer object returned by ACPI _DSM method
+for IOMMU hot-plug.
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/dmar.c        |  209 +++++++++++++++++++++++--------------------
+ drivers/iommu/intel-iommu.c |    4 +-
+ include/linux/dmar.h        |   19 ++--
+ 3 files changed, 122 insertions(+), 110 deletions(-)
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit c88f2096136416b261bd3647cc260935f6e95805:
-> 
->   perf: Do not check PERF_EVENT_STATE_EXIT on syscall read path (2014-09-16 10:30:36 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to e5685730e2c620f97bc12380e9370e857e5bd7a7:
-> 
->   perf record: Use ring buffer consume method to look like other tools (2014-09-17 18:01:43 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> User visible:
-> 
-> o Add +field argument support for --sort option (Jiri Olsa)
-> 
-> o Do not access kallsyms when analyzing user binaries with 'probe' (Masami Hiramatsu)
-> 
-> o Ignore stripped vmlinux and fallback to kallsyms (Anton Blanchard)
-> 
-> o Add path to Ubuntu kernel debuginfo file (Anton Blanchard)
-> 
-> o Disable kernel symbol demangling by default (Avi Kivity)
-> 
-> Infrastructure:
-> 
-> o More intel PT prep work, from Adrian Hunter, including:
-> 
->   - Let a user specify a PMU event without any config terms
->   - Add perf-with-kcore script
->   - Let default config be defined for a PMU
->   - Add perf_pmu__scan_file()
-> 
-> o "perf kvm stat report" improvements by Alexander Yarygin:
->   o  Save pid string in opts.target.pid
->   o  Enable the target.system_wide flag
->   o  Unify the title bar output
-> 
-> o Fix build issue on powerpc when DWARF support is disabled (Anton Blanchard)
-> 
-> o Allow to specify lib compile variable for spec usage (Jiri Olsa)
-> 
-> o Fix build on ARM (Stephane Eranian)
-> 
-> o Fix build on powerpc when DWARF support is disabled (Anton Blanchard)
-> 
-> o Don't include sys/poll.h directly (Arnaldo Carvalho de Melo)
-> 
-> o Use ring buffer consume method to look like other tools (Arnaldo Carvalho de Melo)
-> 
-> Chanho Park (1):
->   perf tools: define _DEFAULT_SOURCE for glibc_2.20
-> 
-> o Allow to specify lib compile variable for spec usage (Jiri Olsa)
-> 
-> o Fix GNU-only grep usage in Makefile (John Spencer)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (4):
->       perf tools: Let a user specify a PMU event without any config terms
->       perf tools: Add perf-with-kcore script
->       perf tools: Let default config be defined for a PMU
->       perf tools: Add perf_pmu__scan_file()
-> 
-> Alexander Yarygin (3):
->       perf kvm stat report: Save pid string in opts.target.pid
->       perf kvm stat report: Enable the target.system_wide flag
->       perf kvm stat report: Unify the title bar output
-> 
-> Anton Blanchard (3):
->       perf tools powerpc: Fix build issue when DWARF support is disabled
->       perf symbols: Ignore stripped vmlinux and fallback to kallsyms
->       perf symbols: Add path to Ubuntu kernel debuginfo file
-> 
-> Arnaldo Carvalho de Melo (2):
->       perf tools: Don't include sys/poll.h directly
->       perf record: Use ring buffer consume method to look like other tools
-> 
-> Avi Kivity (1):
->       perf tools: Disable kernel symbol demangling by default
-> 
-> Chanho Park (1):
->       perf tools: define _DEFAULT_SOURCE for glibc_2.20
-> 
-> Jiri Olsa (2):
->       perf tools: Add +field argument support for --sort option
->       perf tools: Allow to specify lib compile variable for spec usage
-> 
-> John Spencer (1):
->       perf tools: Fix GNU-only grep usage in Makefile
-> 
-> Masami Hiramatsu (2):
->       perf probe: Do not access kallsyms when analyzing user binaries
->       perf probe: Do not use dwfl_module_addrsym if dwarf_diename finds symbol name
-> 
-> Stephane Eranian (1):
->       perf tool: fix compilation for ARM
-> 
->  tools/perf/.gitignore                       |   1 +
->  tools/perf/Documentation/perf-probe.txt     |   3 +
->  tools/perf/Documentation/perf-report.txt    |   3 +
->  tools/perf/Documentation/perf-top.txt       |   3 +
->  tools/perf/Makefile.perf                    |   5 +-
->  tools/perf/arch/arm/tests/dwarf-unwind.c    |   1 +
->  tools/perf/arch/arm/util/unwind-libunwind.c |   1 +
->  tools/perf/arch/powerpc/Makefile            |   2 +-
->  tools/perf/bench/sched-messaging.c          |   2 +-
->  tools/perf/builtin-kvm.c                    |  23 +--
->  tools/perf/builtin-probe.c                  |   5 +-
->  tools/perf/builtin-record.c                 |   8 +-
->  tools/perf/builtin-report.c                 |   2 +
->  tools/perf/builtin-top.c                    |   4 +-
->  tools/perf/config/Makefile                  |  12 +-
->  tools/perf/config/utilities.mak             |   2 +-
->  tools/perf/perf-with-kcore.sh               | 259 ++++++++++++++++++++++++++++
->  tools/perf/tests/pmu.c                      |   2 +-
->  tools/perf/util/kvm-stat.h                  |   1 -
->  tools/perf/util/parse-events.c              |  13 +-
->  tools/perf/util/parse-events.y              |  10 ++
->  tools/perf/util/pmu.c                       |  79 +++++++--
->  tools/perf/util/pmu.h                       |  12 +-
->  tools/perf/util/probe-event.c               |   9 +-
->  tools/perf/util/probe-event.h               |   3 +-
->  tools/perf/util/probe-finder.c              |  16 +-
->  tools/perf/util/sort.c                      |  37 +++-
->  tools/perf/util/symbol-elf.c                |  15 +-
->  tools/perf/util/symbol.c                    |   9 +-
->  tools/perf/util/symbol.h                    |   1 +
->  tools/perf/util/util.h                      |   4 +-
->  31 files changed, 487 insertions(+), 60 deletions(-)
->  create mode 100644 tools/perf/perf-with-kcore.sh
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 06d268abe951..a05cf3634efe 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -44,6 +44,14 @@
+ 
+ #include "irq_remapping.h"
+ 
++typedef int (*dmar_res_handler_t)(struct acpi_dmar_header *, void *);
++struct dmar_res_callback {
++	dmar_res_handler_t	cb[ACPI_DMAR_TYPE_RESERVED];
++	void			*arg[ACPI_DMAR_TYPE_RESERVED];
++	bool			ignore_unhandled;
++	bool			print_entry;
++};
++
+ /*
+  * Assumptions:
+  * 1) The hotplug framework guarentees that DMAR unit will be hot-added
+@@ -333,7 +341,7 @@ static struct notifier_block dmar_pci_bus_nb = {
+  * present in the platform
+  */
+ static int __init
+-dmar_parse_one_drhd(struct acpi_dmar_header *header)
++dmar_parse_one_drhd(struct acpi_dmar_header *header, void *arg)
+ {
+ 	struct acpi_dmar_hardware_unit *drhd;
+ 	struct dmar_drhd_unit *dmaru;
+@@ -364,6 +372,10 @@ dmar_parse_one_drhd(struct acpi_dmar_header *header)
+ 		return ret;
+ 	}
+ 	dmar_register_drhd_unit(dmaru);
++
++	if (arg)
++		(*(int *)arg)++;
++
+ 	return 0;
+ }
+ 
+@@ -376,7 +388,8 @@ static void dmar_free_drhd(struct dmar_drhd_unit *dmaru)
+ 	kfree(dmaru);
+ }
+ 
+-static int __init dmar_parse_one_andd(struct acpi_dmar_header *header)
++static int __init dmar_parse_one_andd(struct acpi_dmar_header *header,
++				      void *arg)
+ {
+ 	struct acpi_dmar_andd *andd = (void *)header;
+ 
+@@ -398,7 +411,7 @@ static int __init dmar_parse_one_andd(struct acpi_dmar_header *header)
+ 
+ #ifdef CONFIG_ACPI_NUMA
+ static int __init
+-dmar_parse_one_rhsa(struct acpi_dmar_header *header)
++dmar_parse_one_rhsa(struct acpi_dmar_header *header, void *arg)
+ {
+ 	struct acpi_dmar_rhsa *rhsa;
+ 	struct dmar_drhd_unit *drhd;
+@@ -425,6 +438,8 @@ dmar_parse_one_rhsa(struct acpi_dmar_header *header)
+ 
+ 	return 0;
+ }
++#else
++#define	dmar_parse_one_rhsa		dmar_res_noop
+ #endif
+ 
+ static void __init
+@@ -486,6 +501,52 @@ static int __init dmar_table_detect(void)
+ 	return (ACPI_SUCCESS(status) ? 1 : 0);
+ }
+ 
++static int dmar_walk_remapping_entries(struct acpi_dmar_header *start,
++				       size_t len, struct dmar_res_callback *cb)
++{
++	int ret = 0;
++	struct acpi_dmar_header *iter, *next;
++	struct acpi_dmar_header *end = ((void *)start) + len;
++
++	for (iter = start; iter < end && ret == 0; iter = next) {
++		next = (void *)iter + iter->length;
++		if (iter->length == 0) {
++			/* Avoid looping forever on bad ACPI tables */
++			pr_debug(FW_BUG "Invalid 0-length structure\n");
++			break;
++		} else if (next > end) {
++			/* Avoid passing table end */
++			pr_warn(FW_BUG "record passes table end\n");
++			ret = -EINVAL;
++			break;
++		}
++
++		if (cb->print_entry)
++			dmar_table_print_dmar_entry(iter);
++
++		if (iter->type >= ACPI_DMAR_TYPE_RESERVED) {
++			/* continue for forward compatibility */
++			pr_debug("Unknown DMAR structure type %d\n",
++				 iter->type);
++		} else if (cb->cb[iter->type]) {
++			ret = cb->cb[iter->type](iter, cb->arg[iter->type]);
++		} else if (!cb->ignore_unhandled) {
++			pr_warn("No handler for DMAR structure type %d\n",
++				iter->type);
++			ret = -EINVAL;
++		}
++	}
++
++	return ret;
++}
++
++static inline int dmar_walk_dmar_table(struct acpi_table_dmar *dmar,
++				       struct dmar_res_callback *cb)
++{
++	return dmar_walk_remapping_entries((void *)(dmar + 1),
++			dmar->header.length - sizeof(*dmar), cb);
++}
++
+ /**
+  * parse_dmar_table - parses the DMA reporting table
+  */
+@@ -493,9 +554,18 @@ static int __init
+ parse_dmar_table(void)
+ {
+ 	struct acpi_table_dmar *dmar;
+-	struct acpi_dmar_header *entry_header;
+ 	int ret = 0;
+ 	int drhd_count = 0;
++	struct dmar_res_callback cb = {
++		.print_entry = true,
++		.ignore_unhandled = true,
++		.arg[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &drhd_count,
++		.cb[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &dmar_parse_one_drhd,
++		.cb[ACPI_DMAR_TYPE_RESERVED_MEMORY] = &dmar_parse_one_rmrr,
++		.cb[ACPI_DMAR_TYPE_ROOT_ATS] = &dmar_parse_one_atsr,
++		.cb[ACPI_DMAR_TYPE_HARDWARE_AFFINITY] = &dmar_parse_one_rhsa,
++		.cb[ACPI_DMAR_TYPE_NAMESPACE] = &dmar_parse_one_andd,
++	};
+ 
+ 	/*
+ 	 * Do it again, earlier dmar_tbl mapping could be mapped with
+@@ -519,51 +589,10 @@ parse_dmar_table(void)
+ 	}
+ 
+ 	pr_info("Host address width %d\n", dmar->width + 1);
+-
+-	entry_header = (struct acpi_dmar_header *)(dmar + 1);
+-	while (((unsigned long)entry_header) <
+-			(((unsigned long)dmar) + dmar_tbl->length)) {
+-		/* Avoid looping forever on bad ACPI tables */
+-		if (entry_header->length == 0) {
+-			pr_warn("Invalid 0-length structure\n");
+-			ret = -EINVAL;
+-			break;
+-		}
+-
+-		dmar_table_print_dmar_entry(entry_header);
+-
+-		switch (entry_header->type) {
+-		case ACPI_DMAR_TYPE_HARDWARE_UNIT:
+-			drhd_count++;
+-			ret = dmar_parse_one_drhd(entry_header);
+-			break;
+-		case ACPI_DMAR_TYPE_RESERVED_MEMORY:
+-			ret = dmar_parse_one_rmrr(entry_header);
+-			break;
+-		case ACPI_DMAR_TYPE_ROOT_ATS:
+-			ret = dmar_parse_one_atsr(entry_header);
+-			break;
+-		case ACPI_DMAR_TYPE_HARDWARE_AFFINITY:
+-#ifdef CONFIG_ACPI_NUMA
+-			ret = dmar_parse_one_rhsa(entry_header);
+-#endif
+-			break;
+-		case ACPI_DMAR_TYPE_NAMESPACE:
+-			ret = dmar_parse_one_andd(entry_header);
+-			break;
+-		default:
+-			pr_warn("Unknown DMAR structure type %d\n",
+-				entry_header->type);
+-			ret = 0; /* for forward compatibility */
+-			break;
+-		}
+-		if (ret)
+-			break;
+-
+-		entry_header = ((void *)entry_header + entry_header->length);
+-	}
+-	if (drhd_count == 0)
++	ret = dmar_walk_dmar_table(dmar, &cb);
++	if (ret == 0 && drhd_count == 0)
+ 		pr_warn(FW_BUG "No DRHD structure found in DMAR table\n");
++
+ 	return ret;
+ }
+ 
+@@ -761,76 +790,60 @@ static void warn_invalid_dmar(u64 addr, const char *message)
+ 		dmi_get_system_info(DMI_PRODUCT_VERSION));
+ }
+ 
+-static int __init check_zero_address(void)
++static int __ref
++dmar_validate_one_drhd(struct acpi_dmar_header *entry, void *arg)
+ {
+-	struct acpi_table_dmar *dmar;
+-	struct acpi_dmar_header *entry_header;
+ 	struct acpi_dmar_hardware_unit *drhd;
++	void __iomem *addr;
++	u64 cap, ecap;
+ 
+-	dmar = (struct acpi_table_dmar *)dmar_tbl;
+-	entry_header = (struct acpi_dmar_header *)(dmar + 1);
+-
+-	while (((unsigned long)entry_header) <
+-			(((unsigned long)dmar) + dmar_tbl->length)) {
+-		/* Avoid looping forever on bad ACPI tables */
+-		if (entry_header->length == 0) {
+-			pr_warn("Invalid 0-length structure\n");
+-			return 0;
+-		}
+-
+-		if (entry_header->type == ACPI_DMAR_TYPE_HARDWARE_UNIT) {
+-			void __iomem *addr;
+-			u64 cap, ecap;
+-
+-			drhd = (void *)entry_header;
+-			if (!drhd->address) {
+-				warn_invalid_dmar(0, "");
+-				goto failed;
+-			}
++	drhd = (void *)entry;
++	if (!drhd->address) {
++		warn_invalid_dmar(0, "");
++		return -EINVAL;
++	}
+ 
+-			addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
+-			if (!addr ) {
+-				printk("IOMMU: can't validate: %llx\n", drhd->address);
+-				goto failed;
+-			}
+-			cap = dmar_readq(addr + DMAR_CAP_REG);
+-			ecap = dmar_readq(addr + DMAR_ECAP_REG);
+-			early_iounmap(addr, VTD_PAGE_SIZE);
+-			if (cap == (uint64_t)-1 && ecap == (uint64_t)-1) {
+-				warn_invalid_dmar(drhd->address,
+-						  " returns all ones");
+-				goto failed;
+-			}
+-		}
++	addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
++	if (!addr) {
++		pr_warn("IOMMU: can't validate: %llx\n", drhd->address);
++		return -EINVAL;
++	}
++	cap = dmar_readq(addr + DMAR_CAP_REG);
++	ecap = dmar_readq(addr + DMAR_ECAP_REG);
++	early_iounmap(addr, VTD_PAGE_SIZE);
+ 
+-		entry_header = ((void *)entry_header + entry_header->length);
++	if (cap == (uint64_t)-1 && ecap == (uint64_t)-1) {
++		warn_invalid_dmar(drhd->address, " returns all ones");
++		return -EINVAL;
+ 	}
+-	return 1;
+ 
+-failed:
+ 	return 0;
+ }
+ 
+ int __init detect_intel_iommu(void)
+ {
+ 	int ret;
++	struct dmar_res_callback validate_drhd_cb = {
++		.cb[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &dmar_validate_one_drhd,
++		.ignore_unhandled = true,
++	};
+ 
+ 	down_write(&dmar_global_lock);
+ 	ret = dmar_table_detect();
+ 	if (ret)
+-		ret = check_zero_address();
+-	{
+-		if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
+-			iommu_detected = 1;
+-			/* Make sure ACS will be enabled */
+-			pci_request_acs();
+-		}
++		ret = !dmar_walk_dmar_table((struct acpi_table_dmar *)dmar_tbl,
++					    &validate_drhd_cb);
++	if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
++		iommu_detected = 1;
++		/* Make sure ACS will be enabled */
++		pci_request_acs();
++	}
+ 
+ #ifdef CONFIG_X86
+-		if (ret)
+-			x86_init.iommu.iommu_init = intel_iommu_init;
++	if (ret)
++		x86_init.iommu.iommu_init = intel_iommu_init;
+ #endif
+-	}
++
+ 	early_acpi_os_unmap_memory((void __iomem *)dmar_tbl, dmar_tbl_size);
+ 	dmar_tbl = NULL;
+ 	up_write(&dmar_global_lock);
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 5619f264862d..4af2206e41bc 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3682,7 +3682,7 @@ static inline void init_iommu_pm_ops(void) {}
+ #endif	/* CONFIG_PM */
+ 
+ 
+-int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
++int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header, void *arg)
+ {
+ 	struct acpi_dmar_reserved_memory *rmrr;
+ 	struct dmar_rmrr_unit *rmrru;
+@@ -3708,7 +3708,7 @@ int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
+ 	return 0;
+ }
+ 
+-int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
++int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr, void *arg)
+ {
+ 	struct acpi_dmar_atsr *atsr;
+ 	struct dmar_atsr_unit *atsru;
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 1deece46a0ca..fac8ca34f9a8 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -115,22 +115,21 @@ extern int dmar_remove_dev_scope(struct dmar_pci_notify_info *info,
+ extern int detect_intel_iommu(void);
+ extern int enable_drhd_fault_handling(void);
+ 
++static inline int dmar_res_noop(struct acpi_dmar_header *hdr, void *arg)
++{
++	return 0;
++}
++
+ #ifdef CONFIG_INTEL_IOMMU
+ extern int iommu_detected, no_iommu;
+ extern int intel_iommu_init(void);
+-extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
+-extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
++extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header, void *arg);
++extern int dmar_parse_one_atsr(struct acpi_dmar_header *header, void *arg);
+ extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
+ #else /* !CONFIG_INTEL_IOMMU: */
+ static inline int intel_iommu_init(void) { return -ENODEV; }
+-static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
+-{
+-	return 0;
+-}
+-static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
+-{
+-	return 0;
+-}
++#define	dmar_parse_one_rmrr		dmar_res_noop
++#define	dmar_parse_one_atsr		dmar_res_noop
+ static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
+ {
+ 	return 0;
+-- 
+1.7.10.4
 
-Pulled into tip:perf/core, thanks a lot Arnaldo!
-
-	Ingo
