@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757126AbaISOj3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:39:29 -0400
-Received: from smtprelay0235.hostedemail.com ([216.40.44.235]:51481 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753398AbaISOj1 (ORCPT
+	id S1757400AbaISOmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:42:13 -0400
+Received: from [62.179.121.43] ([62.179.121.43]:44928 "EHLO
+	fep23.mx.upcmail.net" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756805AbaISOmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:39:27 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3873:3874:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12050:12296:12438:12517:12519:12555:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: kite01_51f05e5c6a856
-X-Filterd-Recvd-Size: 2225
-Message-ID: <1411137561.24444.5.camel@joe-AO725>
-Subject: Re: [PATCH v10 5/6] rtc: max77686: Use ffs() to calculate tm_wday
-From: Joe Perches <joe@perches.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Doug Anderson <dianders@chromium.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 19 Sep 2014 07:39:21 -0700
-In-Reply-To: <1411122377-10426-6-git-send-email-javier.martinez@collabora.co.uk>
-References: <1411122377-10426-1-git-send-email-javier.martinez@collabora.co.uk>
-	 <1411122377-10426-6-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Fri, 19 Sep 2014 10:42:10 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <541C40AA.4060206@odi.ch>
+Date: Fri, 19 Sep 2014 16:41:46 +0200
+From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
+Subject: Re: [BUG] nouveau regression: ext monitor dead after resume
+References: <541AE737.8070009@odi.ch> <CAKb7UvjcYsFm7TWzKXdWHVDVRDO1rFtcCTZoChYssDKqLMDGWw@mail.gmail.com>
+In-Reply-To: <CAKb7UvjcYsFm7TWzKXdWHVDVRDO1rFtcCTZoChYssDKqLMDGWw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-19 at 12:26 +0200, Javier Martinez Canillas wrote:
-> The function max77686_rtc_calculate_wday() is used to
-> calculate the day of the week to be filled in struct
-> rtc_time but that function only calculates the number
-> of bits shifted. So the ffs() function can be used to
-> find the first bit set instead of a special function.
-
-This isn't the same logic.  Perhaps you want fls.
-
-> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-[]
-> -static inline int max77686_rtc_calculate_wday(u8 shifted)
-> -{
-> -	int counter = -1;
-> -	while (shifted) {
-> -		shifted >>= 1;
-> -		counter++;
-> -	}
-> -	return counter;
-> -}
-> -
->  static void max77686_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
->  				   int rtc_24hr_mode)
->  {
-> @@ -93,7 +83,7 @@ static void max77686_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
->  			tm->tm_hour += 12;
->  	}
->  
-> -	tm->tm_wday = max77686_rtc_calculate_wday(data[RTC_WEEKDAY] & 0x7f);
-> +	tm->tm_wday = ffs(data[RTC_WEEKDAY] & 0x7f) - 1;
 
 
+On 18.09.2014 16:58, Ilia Mirkin wrote:
+> This has been reported a few times already -- probably the same thing
+> as bug https://bugs.freedesktop.org/show_bug.cgi?id=83550
 
+Ah, thanks. I would like to try with that commit reverted, but unfortunately it no longer reverts
+cleanly, and my attempts to make a sensible merge were futile. If you can send me a patch that
+reverts the changes on 3.17-rc5 or 3.16 I am glad to try it out and give you the requested feedback.
+
+Ortwin
