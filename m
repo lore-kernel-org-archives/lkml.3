@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428AbaISQm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:42:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40928 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756107AbaISQmY (ORCPT
+	id S1757485AbaISQmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:42:33 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:36406 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756107AbaISQma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:42:24 -0400
-Date: Fri, 19 Sep 2014 17:42:20 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Joerg Roedel <jroedel@suse.de>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 04/13 v2] iommu/arm-smmu: Convert to iommu_capable() API
- function function
-Message-ID: <20140919164220.GI20773@arm.com>
-References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
- <1409914384-21191-5-git-send-email-joro@8bytes.org>
- <20140908165136.GW26030@arm.com>
- <20140917085312.GE2533@suse.de>
+	Fri, 19 Sep 2014 12:42:30 -0400
+X-Sasl-enc: H3/3rX3okTofvszKVnA2PUIihkZBNaNbQZ3Ew3QrHJtm 1411144949
+Date: Fri, 19 Sep 2014 13:42:17 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140919164217.GD17456@khazad-dum.debian.net>
+References: <541B2F33.8000002@amacapital.net>
+ <20140918145328.0253f009@as>
+ <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+ <20140918200659.GA5331@khazad-dum.debian.net>
+ <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+ <20140919110014.GC29639@khazad-dum.debian.net>
+ <20140919112953.GA3256@nazgul.tnic>
+ <20140919075415.5149d5f2@as>
+ <20140919150042.GC5318@nazgul.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140917085312.GE2533@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140919150042.GC5318@nazgul.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 09:53:12AM +0100, Joerg Roedel wrote:
-> Hi Will,
-
-Hello Joerg,
-
-> On Mon, Sep 08, 2014 at 05:51:36PM +0100, Will Deacon wrote:
-> > On Fri, Sep 05, 2014 at 11:52:56AM +0100, Joerg Roedel wrote:
-> > > From: Joerg Roedel <jroedel@suse.de>
-> > > 
-> > > Cc: Will Deacon <will.deacon@arm.com>
-> > > Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> > > ---
-> > >  drivers/iommu/arm-smmu.c | 35 ++++++++++++++++++++++++++---------
-> > >  1 file changed, 26 insertions(+), 9 deletions(-)
+On Fri, 19 Sep 2014, Borislav Petkov wrote:
+> On Fri, Sep 19, 2014 at 07:54:14AM -0500, Chuck Ebbert wrote:
+> > 2) Don't allow a late update if TSX is still enabled on those
+> > processors.
 > 
-> Okay, so here is the updated patch:
-
-Thanks, comments inline.
-
-> From b5d895980849ba1a46a5250cd4cc5f3f9f28235d Mon Sep 17 00:00:00 2001
-> From: Joerg Roedel <jroedel@suse.de>
-> Date: Fri, 5 Sep 2014 10:49:34 +0200
-> Subject: [PATCH 04/13] iommu/arm-smmu: Convert to iommu_capable() API function
+> Yeah, so the use case I have in mind is when a long-running machine
+> wants to apply microcode and this microcode disables CPUID bits and
+> instructions. And the machine cannot be rebooted.
 > 
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/iommu/arm-smmu.c | 20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-> index a83cc2a..f5cacf4 100644
-> --- a/drivers/iommu/arm-smmu.c
-> +++ b/drivers/iommu/arm-smmu.c
-> @@ -1526,20 +1526,20 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
->  	return __pfn_to_phys(pte_pfn(pte)) | (iova & ~PAGE_MASK);
->  }
->  
-> -static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
-> -				   unsigned long cap)
-> +static bool arm_smmu_capable(enum iommu_cap cap)
->  {
-> -	struct arm_smmu_domain *smmu_domain = domain->priv;
-> -	struct arm_smmu_device *smmu = smmu_domain->smmu;
-> -	u32 features = smmu ? smmu->features : 0;
-> -
->  	switch (cap) {
->  	case IOMMU_CAP_CACHE_COHERENCY:
-> -		return features & ARM_SMMU_FEAT_COHERENT_WALK;
-> +		/*
-> +		 * Return false here until we have a way to find out whether the
-> +		 * SMMUs in the system a coherently connected and able to force
-> +		 * DMA coherency.
-> +		 */
+> I guess in that case we would have to issue a warning only on the
+> affected processors that a rebooted is mandatory and fail the update...
+> Maybe something like that.
 
-s/a/are/
+Well, in this case we'd have to (on Intel, but AMD is likely the same):
 
-However, I thought about this a bit more and the coherency isn't necessarily
-a global property of the SMMU. In reality, it is dependent on the IOTLBs in
-use by the domain, so it's not going to be possible to report true here in
-many cases.
+1. offline a "guinea pig" group of "cpus", i.e. an entire "microcode update
+unit" that doesn't include the BSP.  This is going to be a pain, as what
+composes a "microcode update unit" is not set in stone, and could change in
+a future microarch.
 
-That means we'd need a way to say `this device is dma coherent when its
-downstream IOMMU is enabled with IOMMU_CACHE mappings'. For the moment,
-people will probably just add `dma-coherent' to the endpoint and dma-mapping
-will request IOMMU_CACHE mappings regardless of the features advertised by
-the IOMMU. In that case, it might make more sense to return `true' here as
-we can always generated cacheable transactions from the SMMU. The
-dma-coherent property on the device would then indicate whether those
-transactions will snoop the CPU caches.
+2. apply the update to one of the "guinea pig" "cpus" (which will update all
+"cpus" in the same "microcode update unit").
 
-Will
+3. sanity check.
+
+4a. abort the update run if something nasty happened, leaving the "guinea
+pig" "cpus" locked offline until the next reboot.  Warn the user.
+
+4b. online the "guinea pig" "cpus" if the update looks good, and proceed to
+update the rest of the "cpus" in the system.
+
+We need this dance because we cannot roll-back a microcode update in the
+general case.
+
+To me, it looks way too complicated to be worth the effort.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
