@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929AbaISLsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:48:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56307 "EHLO
+	id S932360AbaISLsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:48:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56310 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaISLst (ORCPT
+	with ESMTP id S1754045AbaISLsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:48:49 -0400
-Date: Fri, 19 Sep 2014 04:48:37 -0700
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-beb9147e95a75f41c984d7235cf6d59f3ca2d5db@git.kernel.org>
+	Fri, 19 Sep 2014 07:48:52 -0400
+Date: Fri, 19 Sep 2014 04:47:54 -0700
+From: tip-bot for Vincent Guittot <tipbot@zytor.com>
+Message-ID: <tip-26bc3c50d3b3984564c270da86f1fbbfb774dbcd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ryabinin.a.a@gmail.com, dvyukov@google.com,
-        dave.hansen@linux.intel.com, tglx@linutronix.de
+        kamalesh@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, preeti@linux.vnet.ibm.com,
+        vincent.guittot@linaro.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ryabinin.a.a@gmail.com, tglx@linutronix.de,
-        dave.hansen@linux.intel.com, dvyukov@google.com
-In-Reply-To: <20140918195606.841389D2@viggo.jf.intel.com>
-References: <20140918195606.841389D2@viggo.jf.intel.com>
+        kamalesh@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, preeti@linux.vnet.ibm.com,
+        vincent.guittot@linaro.org, tglx@linutronix.de
+In-Reply-To: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
+References: <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/mm:
-  Update memory map description to list hypervisor-reserved area
-Git-Commit-ID: beb9147e95a75f41c984d7235cf6d59f3ca2d5db
+Subject: [tip:sched/core] sched: Allow all architectures to set '
+ capacity_orig'
+Git-Commit-ID: 26bc3c50d3b3984564c270da86f1fbbfb774dbcd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,45 +36,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  beb9147e95a75f41c984d7235cf6d59f3ca2d5db
-Gitweb:     http://git.kernel.org/tip/beb9147e95a75f41c984d7235cf6d59f3ca2d5db
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Thu, 18 Sep 2014 12:56:06 -0700
+Commit-ID:  26bc3c50d3b3984564c270da86f1fbbfb774dbcd
+Gitweb:     http://git.kernel.org/tip/26bc3c50d3b3984564c270da86f1fbbfb774dbcd
+Author:     Vincent Guittot <vincent.guittot@linaro.org>
+AuthorDate: Tue, 26 Aug 2014 13:06:47 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:48:02 +0200
+CommitDate: Fri, 19 Sep 2014 12:35:27 +0200
 
-x86/mm: Update memory map description to list hypervisor-reserved area
+sched: Allow all architectures to set 'capacity_orig'
 
-Peter Anvin says:
+'capacity_orig' is only changed for systems with an SMT sched_domain level in order
+to reflect the lower capacity of CPUs. Heterogenous systems also have to reflect an
+original capacity that is different from the default value.
 
- > 0xffff880000000000 is the lowest usable address because we have
- > agreed to leave 0xffff800000000000-0xffff880000000000 for the
- > hypervisor or other non-OS uses.
+Create a more generic function arch_scale_cpu_capacity that can be also used by
+non SMT platforms to set capacity_orig.
 
-Let's call this out in the documentation.
+The __weak implementation of arch_scale_cpu_capacity() is the previous SMT variant,
+in order to keep backward compatibility with the use of capacity_orig.
 
-This came up during the kernel address sanitizer discussions
-where it was proposed to use this area for other kernel things.
+arch_scale_smt_capacity() and default_scale_smt_capacity() have been removed as
+they were not used elsewhere than in arch_scale_cpu_capacity().
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: Dmitry Vyukov <dvyukov@google.com>
-Link: http://lkml.kernel.org/r/20140918195606.841389D2@viggo.jf.intel.com
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Reviewed-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+[ Added default_scale_cpu_capacity() back. ]
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: riel@redhat.com
+Cc: Morten.Rasmussen@arm.com
+Cc: efault@gmx.de
+Cc: nicolas.pitre@linaro.org
+Cc: daniel.lezcano@linaro.org
+Cc: dietmar.eggemann@arm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1409051215-16788-5-git-send-email-vincent.guittot@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/x86/x86_64/mm.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c | 27 +++++++++++----------------
+ 1 file changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/Documentation/x86/x86_64/mm.txt b/Documentation/x86/x86_64/mm.txt
-index afe68dd..052ee64 100644
---- a/Documentation/x86/x86_64/mm.txt
-+++ b/Documentation/x86/x86_64/mm.txt
-@@ -5,7 +5,7 @@ Virtual memory map with 4 level page tables:
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index eb87229..be530e4 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5705,19 +5705,17 @@ unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
+ 	return default_scale_capacity(sd, cpu);
+ }
  
- 0000000000000000 - 00007fffffffffff (=47 bits) user space, different per mm
- hole caused by [48:63] sign extension
--ffff800000000000 - ffff80ffffffffff (=40 bits) guard hole
-+ffff800000000000 - ffff87ffffffffff (=43 bits) guard hole, reserved for hypervisor
- ffff880000000000 - ffffc7ffffffffff (=64 TB) direct mapping of all phys. memory
- ffffc80000000000 - ffffc8ffffffffff (=40 bits) hole
- ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
+-static unsigned long default_scale_smt_capacity(struct sched_domain *sd, int cpu)
++static unsigned long default_scale_cpu_capacity(struct sched_domain *sd, int cpu)
+ {
+-	unsigned long weight = sd->span_weight;
+-	unsigned long smt_gain = sd->smt_gain;
++	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
++		return sd->smt_gain / sd->span_weight;
+ 
+-	smt_gain /= weight;
+-
+-	return smt_gain;
++	return SCHED_CAPACITY_SCALE;
+ }
+ 
+-unsigned long __weak arch_scale_smt_capacity(struct sched_domain *sd, int cpu)
++unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
+ {
+-	return default_scale_smt_capacity(sd, cpu);
++	return default_scale_cpu_capacity(sd, cpu);
+ }
+ 
+ static unsigned long scale_rt_capacity(int cpu)
+@@ -5756,18 +5754,15 @@ static unsigned long scale_rt_capacity(int cpu)
+ 
+ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
+ {
+-	unsigned long weight = sd->span_weight;
+ 	unsigned long capacity = SCHED_CAPACITY_SCALE;
+ 	struct sched_group *sdg = sd->groups;
+ 
+-	if ((sd->flags & SD_SHARE_CPUCAPACITY) && weight > 1) {
+-		if (sched_feat(ARCH_CAPACITY))
+-			capacity *= arch_scale_smt_capacity(sd, cpu);
+-		else
+-			capacity *= default_scale_smt_capacity(sd, cpu);
++	if (sched_feat(ARCH_CAPACITY))
++		capacity *= arch_scale_cpu_capacity(sd, cpu);
++	else
++		capacity *= default_scale_cpu_capacity(sd, cpu);
+ 
+-		capacity >>= SCHED_CAPACITY_SHIFT;
+-	}
++	capacity >>= SCHED_CAPACITY_SHIFT;
+ 
+ 	sdg->sgc->capacity_orig = capacity;
+ 
