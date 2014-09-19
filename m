@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390AbaISPiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:38:09 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716AbaISPiG (ORCPT
+	id S932350AbaISPiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:38:23 -0400
+Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:43211 "EHLO
+	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932322AbaISPiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:38:06 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] UBI: Fix livelock in produce_free_peb()
-Date: Fri, 19 Sep 2014 17:37:56 +0200
-Message-Id: <1411141076-21489-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
+	Fri, 19 Sep 2014 11:38:19 -0400
+Message-ID: <541C4DE8.3010307@nexus-software.ie>
+Date: Fri, 19 Sep 2014 16:38:16 +0100
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: "Chew, Kean Ho" <kean.ho.chew@intel.com>,
+        "heikki.krogerus@linux.intel.com" <heikki.krogerus@linux.intel.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Subject: Re: [PATCHv2] serial: 8250: Add Quark X1000 to 8250 PCI driver
+References: <1411112629-3238-1-git-send-email-pure.logic@nexus-software.ie> <20140919105833.GB31784@xps8300> <541C14E7.8020208@nexus-software.ie> <1E478852902BF549B22CC4F16C2AE67C0F472359@PGSMSX108.gar.corp.intel.com> <541C295A.6020101@nexus-software.ie> <1E478852902BF549B22CC4F16C2AE67C0F47241C@PGSMSX108.gar.corp.intel.com> <541C2ED3.7080206@nexus-software.ie> <1E478852902BF549B22CC4F16C2AE67C0F4724D1@PGSMSX108.gar.corp.intel.com>
+In-Reply-To: <1E478852902BF549B22CC4F16C2AE67C0F4724D1@PGSMSX108.gar.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The while loop in produce_free_peb() assumes that each work will produce a
-free PEB. This is not true.
-If ubi->works_count is 1 and the only scheduled work is the
-wear_leveling_worker() produce_free_peb() can loop forever in case
-nobody schedules an erase work.
-Fix this issue by checking in the while loop whether work is scheduled.
+On 19/09/14 15:31, Chew, Kean Ho wrote:
+>> Hi Ho.
+>>
+>> Do you have an idea when ?
+>>
+>> I guess if we're saying the simple patch which works right now - should be
+>> rejected in favour of alternative code coming - then at a minimum could you
+>> please give an indication of when that alternative code will be available ?
+>>
+>> Otherwise I think it makes sense to enable the hardware now - using the
+>> bog-standard means of doing that - just like BYT and others :)
+>
+> Make sense. I go with Hekki's direction.
+>
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/wl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Great.
 
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 0509c8a..6add739 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -272,7 +272,7 @@ static int produce_free_peb(struct ubi_device *ubi)
- {
- 	int err;
- 
--	while (!ubi->free.rb_node) {
-+	while (!ubi->free.rb_node && ubi->works_count) {
- 		spin_unlock(&ubi->wl_lock);
- 
- 		dbg_wl("do one work synchronously");
--- 
-1.8.4.5
+So Hekki, are OK with the suggested path here then ? I think myself and 
+Ho are pretty much in agreement.
+
+Apply the patch I've submitted to 8250_pci.c - and then do whatever mods 
+are appropriate later to enable whatever you're doing quark_8250.c.
+
+I think, it'd be a win from a Galileo enabling point of view.
+
+
+Best,
+Bryan
 
