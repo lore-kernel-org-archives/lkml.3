@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610AbaISS13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 14:27:29 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58220 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771AbaISS11 (ORCPT
+	id S932279AbaISSaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 14:30:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38650 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757484AbaISSaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 14:27:27 -0400
-Date: Fri, 19 Sep 2014 11:27:23 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
-        arm@kernel.org, mporter@linaro.org, bcm@fixthebug.org,
-        jonathar@broadcom.com, sbranden@broadcom.com, rjui@broadcom.com,
-        linux-kernel@vger.kernel.org, bcm-kernel-feedback-list@broadcom.com,
-        hauke@hauke-m.de, swarren@wwwdotorg.org, marc.ceeeee@gmail.com,
-        cernekee@gmail.com, gregory.0xf0@gmail.com
-Subject: Re: [PATCH] MAINTAINERS: add a third maintainer to mach-bcm
-Message-ID: <20140919182723.GK1193@ld-irv-0074>
-References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
- <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+	Fri, 19 Sep 2014 14:30:11 -0400
+Date: Fri, 19 Sep 2014 20:30:07 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        tony@atomide.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, drake@endlessm.com, loeliger@gmail.com,
+        santosh.shilimkar@ti.com, linux-omap@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v4 4/7] ARM: l2c: Add support for overriding prefetch
+ settings
+Message-ID: <20140919183007.GG29620@piout.net>
+References: <1409062680-15906-1-git-send-email-t.figa@samsung.com>
+ <1409062680-15906-5-git-send-email-t.figa@samsung.com>
+ <20140919095000.GF29620@piout.net>
+ <20140919163932.GH12379@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+In-Reply-To: <20140919163932.GH12379@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:17:12AM -0700, Florian Fainelli wrote:
-> Add myself as a third maintainer to the mach-bcm code to increase the
-> chances the redundancy in the merging/reviewing process.
+On 19/09/2014 at 17:39:32 +0100, Russell King - ARM Linux wrote :
+> On Fri, Sep 19, 2014 at 11:50:01AM +0200, Alexandre Belloni wrote:
+> > On 26/08/2014 at 16:17:57 +0200, Tomasz Figa wrote :
+> > > Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
+> > > settings configured in registers leading to crashes if L2C is enabled
+> > > without overriding them. This patch introduces bindings to enable
+> > > prefetch settings to be specified from DT and necessary support in the
+> > > driver.
+> > > 
+> > > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> > 
+> > Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > 
+> > It is working and useful on Atmel's sama5d4 were the bootloader is not
+> > configuring the L2C prefetch. However, I'm wondering whether we should
+> > add support for setting L310_PREFETCH_CTRL_DATA_PREFETCH and
+> > L310_PREFETCH_CTRL_INSTR_PREFETCH. I'm currently doing it by using
+> > ".l2c_aux_val    = L310_AUX_CTRL_DATA_PREFETCH |
+> > L310_AUX_CTRL_INSTR_PREFETCH" (those are the same bits) but this has the
+> > disadvantage of displaying the "L2C: platform modifies aux control
+> > register:" twice.
 > 
-> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+> The L2C documentation, freely available from the ARM infocentre website,
+> has the answer to this for you.
+> 
+> The two bits in the prefetch control register which control the data
+> and instruction prefetching are aliases of the aux control register.
+> If you set them to a value in one register, they are reflected in the
+> other.
+> 
+> The reason for that is that once the L2 cache is enabled, writes to
+> the aux control register are no longer permitted, but it's safe to
+> enable and disable the prefetching with the cache already enabled.
+> This reason is even stated in the documentation.
+> 
 
-Acked-by: Brian Norris <computersforpeace@gmail.com>
+Yeah, so my question still holds, should we have an other way to
+enable/disable I/D prefetch by adding two other DT bindings ?
 
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 809ecd680d88..e0762fea2d02 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2004,6 +2004,7 @@ F:	drivers/net/ethernet/broadcom/bnx2x/
->  BROADCOM BCM281XX/BCM11XXX/BCM216XX ARM ARCHITECTURE
->  M:	Christian Daudt <bcm@fixthebug.org>
->  M:	Matt Porter <mporter@linaro.org>
-> +M:	Florian Fainelli <f.fainelli@gmail.com>
->  L:	bcm-kernel-feedback-list@broadcom.com
->  T:	git git://github.com/broadcom/mach-bcm
->  S:	Maintained
-> -- 
-> 1.9.1
-> 
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
