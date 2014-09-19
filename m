@@ -1,140 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaISBEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 21:04:16 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:45887 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464AbaISBEP (ORCPT
+	id S1756037AbaISBEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 21:04:23 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:30343 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857AbaISBEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 21:04:15 -0400
+	Thu, 18 Sep 2014 21:04:20 -0400
+X-IronPort-AV: E=Sophos;i="5.04,550,1406617200"; 
+   d="scan'208";a="46044037"
+Message-ID: <541B7FCB.1090102@broadcom.com>
+Date: Thu, 18 Sep 2014 17:58:51 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <20140918212955.GA6941@linux.vnet.ibm.com>
-References: <1411010509-31927-1-git-send-email-bobby.prani@gmail.com>
- <1411010509-31927-3-git-send-email-bobby.prani@gmail.com> <20140918212955.GA6941@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 18 Sep 2014 21:03:43 -0400
-Message-ID: <CAJhHMCCe43QYjGo8gA-GHhj-DMbGbNcUajCwWVDx-woLpqixhA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] rcu: Add early boot self tests
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hauke Mehrtens <hauke@hauke-m.de>, Florian Fainelli <florian@openwrt.org>,
+        Jonathan Richardson <jonathar@broadcom.com>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
+CC: <devicetree@vger.kernel.org>, Ray Jui <rjui@broadcom.com>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/6] Add initial support for Broadcom Cygnus SoC
+References: <Jonathan Richardson <jonathar@broadcom.com> <1410897497-27527-1-git-send-email-jonathar@broadcom.com> <541B5D5A.10800@hauke-m.de> <541B5F16.6030005@openwrt.org> <541B62BE.8050909@hauke-m.de>
+In-Reply-To: <541B62BE.8050909@hauke-m.de>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 5:29 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
+On 14-09-18 03:54 PM, Hauke Mehrtens wrote:
+> On 09/19/2014 12:39 AM, Florian Fainelli wrote:
+>> On 09/18/2014 03:31 PM, Hauke Mehrtens wrote:
+>>> On 09/16/2014 09:58 PM, Jonathan Richardson wrote:
+>>>> Hi,
+>>>>
+>>>> This patchset contains initial support for Broadcom's Cygnus SoC based on our
+>>>> iProc architecture. Initial support is minimal and includes just the mach
+>>>> platform code, clock driver, and a basic device tree configuration. Peripheral
+>>>> drivers will be submitted soon, as will device tree configurations for other
+>>>> Cygnus board variants.
+>>>
+>>> This SoC looks similar to the BCM5301X (Northstar) SoCs even some cores
+>>> are at the same memory addresses. Does this SoC use an AXI bus with
+>>> Broadcom Plugins at address 0x18000000 ?
+>>>
+>>> The BCM5301X (Northstar) SoCs also has an iProc Clock Control Unit and I
+>>> will try to use your driver for that SoC.
+>>>
+>>> Is Broadcom Cygnus similar to BCM563XX or is it actually the same SoC?
+Cygnus is a next generation product with similarities to other Broadcom 
+SoC's.  It takes technology from other parts for sure.  Our first step 
+is to upstream the core IPROC code and Cygnus code.  From there we will 
+upstream individual drivers which are reusable on some other Broadcom 
+chips (or will need minor additions/quirks added as identified).  There 
+are also other IPROC-based Broadcom chips that can also be upstreamed 
+more easily with this patchset going forward.
 
->> +static int rcu_self_test_counter;
->> +static struct rcu_head head;
->
-> This needs to be within the individual functions, because otherwise the
-> lists get messed up when you to multiple tests during the same boot...
->
-
-Hmm, I thought this was OK since we are not using this head anywhere.
-What lists are getting messed up?
-
-In any case, I will update this as you suggested.
-
->> +DEFINE_STATIC_SRCU(srcu_struct);
->> +
->> +static void test_callback(struct rcu_head *r)
->> +{
->> +     rcu_self_test_counter++;
->> +     pr_info("RCU test callback executed %d\n", rcu_self_test_counter);
->> +}
->> +
->> +static void early_boot_test_call_rcu(void)
->> +{
->
-> ... as in:
->
->         static struct rcu_head head;
->
->> +     call_rcu(&head, test_callback);
->> +}
->> +
->> +static void early_boot_test_call_rcu_bh(void)
->> +{
->> +     call_rcu_bh(&head, test_callback);
->> +}
->> +
->> +static void early_boot_test_call_rcu_sched(void)
->> +{
->> +     call_rcu_sched(&head, test_callback);
->> +}
->> +
->> +static void early_boot_test_call_srcu(void)
->> +{
->> +     call_srcu(&srcu_struct, &head, test_callback);
->
-> This looked like a great idea at first, but unfortunately call_srcu()
-> invokes queue_delayed_work(), which breaks horribly this early in boot.
-> Either this test has to be removed, or call_srcu() has to be updated
-> to handle early-boot invocation.  Given that no one is using call_srcu()
-> during early boot, it is probably best to just drop the test.
->
-> (In case you were wondering, TEST06 dies during boot.)
->
-> Could you please send an updated patch?
-
-
-Yup, will do. Please see one question below:
-
-<...>
->> +static int rcu_verify_early_boot_tests(void)
->> +{
->> +     int ret = 0;
->> +     int early_boot_test_counter = 0;
->> +
->> +     if (rcu_self_test) {
->> +             early_boot_test_counter++;
->> +             rcu_barrier();
->> +     }
->> +     if (rcu_self_test_bh) {
->> +             early_boot_test_counter++;
->> +             rcu_barrier_bh();
->> +     }
->> +     if (rcu_self_test_sched) {
->> +             early_boot_test_counter++;
->> +             rcu_barrier_sched();
->> +     }
->> +     if (rcu_self_test_srcu) {
->> +             early_boot_test_counter++;
->> +             srcu_barrier(&srcu_struct);
->> +     }
->> +
->> +     if (rcu_self_test_counter != early_boot_test_counter)
->> +             ret = -1;
-
-
-So this basically does nothing when it does not match. All we see is
-the return value when we pass initcall_debug. Should I add a WARN_ON()
-or some such so that it is more explicit?
-
->> +
->> +     return ret;
->> +}
->> +late_initcall(rcu_verify_early_boot_tests);
->> +#else
->> +void rcu_early_boot_tests(void) {}
->> +#endif /* CONFIG_PROVE_RCU */
->> --
->> 2.1.0
+I know the BCM5301X iProc Clock Control Unit is an older.  I think you 
+may run into some difficulties running this code as is.  But hopefully 
+we can build up more support for other chips from this initial 
+submission for Cygnus support.
 >>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>> According to this link:
+>> http://lists.denx.de/pipermail/u-boot/2014-August/186086.html
+>>
+>> these SoCs, in particular BCM58622 would belong to the StrataGX network
+>> processors:
+>> http://www.broadcom.com/products/Processors/Home-and-Small-Business/BCM5862X-Series.
+>
+> Broadcom claims that this SoC is pin and software compatible to BCM5301X:
+>> Pin compatible and software compatible products with previous
+>> generation BCM5301x products enable single design with easy
+>> upgradeable path
+>
+>>> Do you have some description of the hardware features of this SoC? Does
+>>> it have PCIe, or Ethernet?
+Yes, Some variants of Cygnus do have PCIe or Ethernet.  Drivers to be 
+upstreamed once cleaned up fully.  The drivers will be built into our 
+bcm_cygnus_defconfig and then enabled in device tree.
+>>
+>>  From the link above, it has Ethernet for sure, and certainly PCIe since
+>> the Wi-Fi chips mentioned in the link above are PCIe chips.
+>>
+>> It would be really good if all the work you and Rafal did was usable for
+>> the Cygnus SoCs.
+>
+> I also hope you can use much of the code and improve it. ;-)
+>
+> Hauke
+
 >
 
-
-
--- 
-Pranith
