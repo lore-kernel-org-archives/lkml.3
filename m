@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaISK6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 06:58:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58703 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaISK6t (ORCPT
+	id S1756077AbaISK70 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 06:59:26 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:34788 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732AbaISK7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 06:58:49 -0400
-Message-ID: <541C0C64.5010206@linutronix.de>
-Date: Fri, 19 Sep 2014 12:58:44 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Fri, 19 Sep 2014 06:59:25 -0400
+Date: Fri, 19 Sep 2014 12:59:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        keescook@chromium.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] parisc: Use secure_computing_strict, not secure_computing
+Message-ID: <20140919105920.GA14133@gmail.com>
+References: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de> <5419B825.5000201@linutronix.de> <20140919102212.GA31784@xps8300>
-In-Reply-To: <20140919102212.GA31784@xps8300>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2014 12:22 PM, Heikki Krogerus wrote:
-> Couldn't you just replace the handle_irq with a custom irq routine in
-> the omap driver like you did with set_termios? Where you would do
-> those tricks and/or call serial8250_handle_irq()?
 
-Tricks within serial8250_handle_irq(), see [0]. It is not a lot but
-still. I could provide my own handle irq, just asking what you would
-prefer.
+(Cc:-ed the PARISC maintainer. Original patch quoted below.)
 
-[0]
-http://git.breakpoint.cc/cgit/bigeasy/linux.git/commit/?h=uart_v10_pre2&id=f26f161d998ee4a84a0aa6ddff69a435c25f204d
+* Andy Lutomirski <luto@amacapital.net> wrote:
 
-> The 8250_core changes in that patch #10 only modify
-> serial8250_handle_irg right?
+> After commit a4412fc9486e, the secure_computing function is only
+> available if seccomp filters are implemented by the architecture.
+> Architectures without seccomp filters use secure_computing_strict
+> instead.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+> 
+> This is minimally tested because my cross-compiler toolchain for parisc
+> is quite broken.  ptrace.c seems to *compile*, but it doesn't assemble.
+> 
+>  arch/parisc/kernel/ptrace.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/parisc/kernel/ptrace.c b/arch/parisc/kernel/ptrace.c
+> index 3bab72462ab5..5961cc86d6d2 100644
+> --- a/arch/parisc/kernel/ptrace.c
+> +++ b/arch/parisc/kernel/ptrace.c
+> @@ -270,11 +270,11 @@ long do_syscall_trace_enter(struct pt_regs *regs)
+>  {
+>  	long ret = 0;
+>  
+> -	/* Do the secure computing check first. */
+> -	if (secure_computing(regs->gr[20])) {
+> -		/* seccomp failures shouldn't expose any additional code. */
+> -		return -1;
+> -	}
+> +	/*
+> +	 * Do the secure computing check first. seccomp failures
+> +	 * shouldn't expose any additional code.
+> +	 */
+> +	secure_computing_strict(regs->gr[20]);
+>  
+>  	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+>  	    tracehook_report_syscall_entry(regs))
 
-Correct. However there is another change due to the RX_DMA_BUG. A while
-ago you said that this RX_DMA_BUG thing might be something that other
-SoC could use, too.
-If you ask me now for my own irq routine it would make sense to move RX
-bug handling into omap specific code as well.
-
-> Cheers,
-
-Sebastian
