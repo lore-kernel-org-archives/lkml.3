@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441AbaISXAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 19:00:30 -0400
-Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:22642
-	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932205AbaISXA3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 19:00:29 -0400
-From: Anish Bhatt <anish@chelsio.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: RE: [PATCH] scsi: fix SCSI_BNX2X_FCOE dependencies and build errors
-Thread-Topic: [PATCH] scsi: fix SCSI_BNX2X_FCOE dependencies and build errors
-Thread-Index: AQHP1Fppssfx2r3GbUujvsveyIG5wJwJES7V
-Date: Fri, 19 Sep 2014 22:59:13 +0000
-Message-ID: <525DB349B3FB5444AE057A887CB2A8D88EF6BE@nice.asicdesigners.com>
-References: <541CB055.6000504@infradead.org>
-In-Reply-To: <541CB055.6000504@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.163.152]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932478AbaISXAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 19:00:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57082 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443AbaISXAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 19:00:34 -0400
+Date: Fri, 19 Sep 2014 16:00:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V3 RESEND] SYSV: logging update
+Message-Id: <20140919160032.5863df2729d42df7c0b58825@linux-foundation.org>
+In-Reply-To: <1410642756-24237-1-git-send-email-fabf@skynet.be>
+References: <1410642756-24237-1-git-send-email-fabf@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leaves only 1 warning still reproduceable : 
-(LIBFCOE && TCM_QLA2XXX) selects LIBFC which has unmet direct dependencies (SCSI_LOWLEVEL && SCSI && SCSI_FC_ATTRS),
- so maybe that needs a fix too ? All the other fcoe/scsi menu entries behave 
-as expected.
+On Sat, 13 Sep 2014 23:12:36 +0200 Fabian Frederick <fabf@skynet.be> wrote:
 
-Tested-by: Anish Bhatt <anish@chelsio.com>
-________________________________________
-From: Randy Dunlap [rdunlap@infradead.org]
-Sent: Friday, September 19, 2014 3:38 PM
-To: netdev@vger.kernel.org; David Miller
-Cc: LKML; Anish Bhatt; James Bottomley
-Subject: [PATCH] scsi: fix SCSI_BNX2X_FCOE dependencies and build errors
+> -use current logging functions
+> -replace no level printk by pr_err
+> -add debug.c / sysv_err function to include sb->s_id
+> -use pr_fmt with standard KBUILD_MODNAME ": "
+> -use __builtin_return_address to display function name
+> logging format is now:
+> sysv: (sb->s_id) sysv_fill_super [sysv]: msg
 
-From: Randy Dunlap <rdunlap@infradead.org>
-
-Don't enable NETDEVICES when NET is not enabled. That causes
-build warnings and errors.
-
-warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2X_FCOE) selects NETDEVICES which has unmet direct dependencies (NET)
-warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2_ISCSI && SCSI_BNX2X_FCOE) selects ETHERNET which has unmet direct dependencies (NETDEVICES && NET)
-warning: (SCSI_BNX2X_FCOE && LIBFCOE && TCM_QLA2XXX) selects LIBFC which has unmet direct dependencies (SCSI_LOWLEVEL && SCSI && SCSI_FC_ATTRS)
-
-../drivers/net/ethernet/cisco/enic/enic_main.c: In function 'enic_rq_indicate_buf':
-../drivers/net/ethernet/cisco/enic/enic_main.c:1077:3: error: implicit declaration of function 'skb_mark_napi_id' [-Werror=implicit-function-declaration]
-../drivers/net/ethernet/cisco/enic/enic_main.c:1078:3: error: implicit declaration of function 'enic_poll_busy_polling' [-Werror=implicit-function-declaration]
-
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- drivers/scsi/bnx2fc/Kconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- linux-next-20140918.orig/drivers/scsi/bnx2fc/Kconfig
-+++ linux-next-20140918/drivers/scsi/bnx2fc/Kconfig
-@@ -1,7 +1,8 @@
- config SCSI_BNX2X_FCOE
-        tristate "QLogic NetXtreme II FCoE support"
--       depends on PCI
-+       depends on PCI && NET
-        depends on (IPV6 || IPV6=n)
-+       depends on SCSI_FC_ATTRS
-        select NETDEVICES
-        select ETHERNET
-        select NET_VENDOR_BROADCOM
+Is this patch tested?
