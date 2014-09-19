@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694AbaISSjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 14:39:12 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:48706 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626AbaISSjL (ORCPT
+	id S1757785AbaISSjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 14:39:51 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:48583 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757643AbaISSjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 14:39:11 -0400
+	Fri, 19 Sep 2014 14:39:49 -0400
+Date: Fri, 19 Sep 2014 12:39:43 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Dirk Gouders <dirk@gouders.net>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+Message-ID: <20140919183943.GD19374@google.com>
+References: <CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
+ <gh4mwcef0r.fsf@quad.gouders.net>
+ <CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
+ <ghoaukcx6b.fsf@quad.gouders.net>
+ <CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
+ <ghk358crbe.fsf@quad.gouders.net>
+ <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
+ <20140913040716.GA28080@google.com>
+ <gh8ulnn9yo.fsf@quad.gouders.net>
+ <gh8uln71g1.fsf@lena.gouders.net>
 MIME-Version: 1.0
-In-Reply-To: <20140919133046.7d5ad943@gandalf.local.home>
-References: <20140919133046.7d5ad943@gandalf.local.home>
-Date: Fri, 19 Sep 2014 14:39:10 -0400
-Message-ID: <CAHQdGtQqDMiu+MTOMd3ywaJzxdFo-MquGktitq-YxOsEhLA4Zg@mail.gmail.com>
-Subject: Re: [PATCH][linux-next] pnfs/blocklayout: Use do_div for 64 bit
- divide operations
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <gh8uln71g1.fsf@lena.gouders.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Sat, Sep 13, 2014 at 09:41:34PM +0200, Dirk Gouders wrote:
+> So, I did some tests on the VX50 which probably wasn't the worst idea,
+> because it behaves different than the test machine.
+> 
+> Summary:
+> 
+> 1) Bjorn's back pocket patch works on the VX50.
+> 
+>    On the test machine it causes a trace, mount_root has to do with
+>    it.  I tried to use netconsole but it complained the interface were
+>    not ready.
 
-On Fri, Sep 19, 2014 at 1:30 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Commit 5c83746a0cf2 "pnfs/blocklayout: in-kernel GETDEVICEINFO XDR parsing"
-> added some open coded 64 bit divisions which caused the following
-> error on 32 bit builds:
->
-> fs/built-in.o: In function `bl_map_stripe':
-> fs/nfs/blocklayout/dev.c:153: undefined reference to `__udivdi3'
-> fs/nfs/blocklayout/dev.c:154: undefined reference to `__umoddi3'
-> fs/nfs/blocklayout/dev.c:168: undefined reference to `__udivdi3'
->
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  fs/nfs/blocklayout/dev.c | 16 +++++++++++++---
->  1 file changed, 13 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/nfs/blocklayout/dev.c b/fs/nfs/blocklayout/dev.c
-> index 00f159da06ee..05d32e2175db 100644
-> --- a/fs/nfs/blocklayout/dev.c
-> +++ b/fs/nfs/blocklayout/dev.c
-> @@ -150,10 +150,18 @@ static bool bl_map_stripe(struct pnfs_block_dev *dev, u64 offset,
->                 struct pnfs_block_dev_map *map)
->  {
->         struct pnfs_block_dev *child;
-> -       u64 chunk = (offset / dev->chunk_size);
-> -       int chunk_idx = chunk % dev->nr_children;
-> +       u64 chunk;
-> +       u64 chunk_tmp;
-> +       int chunk_idx;
->         u64 disk_offset;
->
-> +       chunk = offset;
-> +       /* chunk = offset / dev->chunk_size */
-> +       do_div(chunk, dev->chunk_size);
-> +       chunk_tmp = chunk;
-> +       /* chunk_idx = chunk % dev->nr_children) */
-> +       chunk_idx = do_div(chunk_tmp, dev->nr_children);
-> +
->         if (chunk_idx > dev->nr_children) {
->                 dprintk("%s: invalid chunk idx %d (%lld/%lld)\n",
->                         __func__, chunk_idx, offset, dev->chunk_size);
-> @@ -165,7 +173,9 @@ static bool bl_map_stripe(struct pnfs_block_dev *dev, u64 offset,
->         offset = chunk * dev->chunk_size;
->
->         /* disk offset of the stripe */
-> -       disk_offset = offset / dev->nr_children;
-> +       disk_offset = offset;
-> +       /* disk_offset = offset / dev->nr_children */
-> +       do_div(disk_offset, dev->nr_children);
->
->         child = &dev->children[chunk_idx];
->         child->map(child, disk_offset, map);
-> --
-> 1.8.1.4
->
+OK, that's good.  I put this revert patch in for-linus for v3.17.  I regard
+this as a temporary fix, not the real solution.  My guess is the test
+machine doesn't boot because you're missing a driver, so not related to the
+revert patch.
 
-Thanks. I posted a similar bugfix on the linux-nfs mailing list
-yesterday. That hasn't been pushed to linux-next yet because Christoph
-wanted to run it through some QA tests first.
+> 3) Reset with Bjorn's commands
+> 
+>    DEV=00:0e.0
+>    setpci -s$DEV BRIDGE_CONTROL.W=0x0040
+>    sleep 1
+>    setpci -s$DEV BRIDGE_CONTROL.W=0x0000
+>    sleep 1
+>    echo 1 > /sys/bus/pci/rescan
+> 
+>    let the FC adapter appear but there are errors that I cannot really
+>    interpret.
+> 
+> 4) Reset with Yinghai's patches and 
+> 
+>    echo 1 > /sys/bus/pci/devices/0000\:00\:0e.0/pcie_link_disable
+>    echo 0 > /sys/bus/pci/devices/0000\:00\:0e.0/pcie_link_disable
+>    echo 1 > /sys/bus/pci/rescan
+> 
+>    gives a similar resut to 3).
 
-Cheers
-  Trond
+Resetting the device or simply disabling and re-enabling the link was
+enough to fix things from the device's perspective.  In both cases, it
+responded as one would expect:
 
--- 
-Trond Myklebust
+  pci_scan_child_bus: pci_bus 0000:06: scanning bus
+  pci 0000:06:00.0: [1000:0646] type 00 class 0x0c0400
+  pci 0000:06:00.0: reg 0x10: [io  0x0000-0x00ff] 
+  pci 0000:06:00.0: reg 0x14: [mem 0x00000000-0x00003fff 64bit]
+  pci 0000:06:00.0: reg 0x1c: [mem 0x00000000-0x0000ffff 64bit]
+  pci 0000:06:00.0: reg 0x30: [mem 0x00000000-0x000fffff pref]
 
-Linux NFS client maintainer, PrimaryData
+Linux tried to assign MMIO space to the device, but failed:
 
-trond.myklebust@primarydata.com
+  pci 0000:06:00.0: BAR 6: assigned [mem 0xd4200000-0xd42fffff pref]
+  pci 0000:06:00.0: BAR 3: no space for [mem size 0x00010000 64bit]
+  pci 0000:06:00.0: BAR 3: failed to assign [mem size 0x00010000 64bit]
+  pci 0000:06:00.0: BAR 1: no space for [mem size 0x00004000 64bit]
+  pci 0000:06:00.0: BAR 1: failed to assign [mem size 0x00004000 64bit]
+
+The upstream bridge windows are:
+
+  pci 0000:00:0e.0: PCI bridge to [bus 06]	# was originally to bus 0a
+  pci 0000:00:0e.0:   bridge window [io  0x3000-0x3fff] 
+  pci 0000:00:0e.0:   bridge window [mem 0xd4200000-0xd42fffff]
+
+So the ROM BAR (reg 0x30/BAR 6) takes up the whole window, leaving nothing
+for BARs 1 and 3.  This is something that Linux could do better.  For
+example, we could assign normal BARs first, followed by ROM BARs, since the
+normal ones are more important.  It's possible we could also try to expand
+the bridge window so all the BARs would fit.
+
+In any case, resetting the device is not a simple fix all by itself.  So
+our possibilities are:
+
+  1) Quirk to work around _CRS bug.  This works but requires us to maintain
+     CPU-specific code that I really don't want.
+
+  2) Reset device when changing bus number.  This works from the device
+     point of view, but would require additional Linux changes.
+
+  3) Revert 1820ffdccb9b.  This works but is ugly because we're ignoring
+     some of what _CRS tells us.
+
+Bjorn
