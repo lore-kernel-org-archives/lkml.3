@@ -1,126 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656AbaISPcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:32:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53623 "EHLO mx2.suse.de"
+	id S932221AbaISPeo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:34:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53696 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757595AbaISPck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:32:40 -0400
+	id S1756767AbaISPel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:34:41 -0400
 From: Petr Mladek <pmladek@suse.cz>
 To: Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Tejun Heo <tj@kernel.org>, Joe Lawrence <joe.lawrence@stratus.com>,
         Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v3 0/6] usb: hub: convert khubd into workqueue
-Date: Fri, 19 Sep 2014 17:32:18 +0200
-Message-Id: <1411140744-21424-1-git-send-email-pmladek@suse.cz>
+Subject: [PATCH v3 6/6] usb: hub: allow to process more usb hub events in parallel
+Date: Fri, 19 Sep 2014 17:32:24 +0200
+Message-Id: <1411140744-21424-7-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1411140744-21424-1-git-send-email-pmladek@suse.cz>
+References: <1411140744-21424-1-git-send-email-pmladek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 3rd version of the patchset is slightly reordered and refactored
-as suggested earlier. See below for more details.
+It seems that only choose_devnum() was not ready to process more hub
+events at the same time.
 
-IMHO, the result is more clean. But feel free to ask me to revert it.
-I do not want to make the review more complicated. Well, I double checked
-the diff of patches files between v2 and v3. It is pretty small and only
-the expected changes are there.
+All should be fine if we take bus->usb_address0_mutex there. It will
+make sure that more devnums will not be chosen for the given bus and
+the related devices at the same time.
 
-Changes in:
-    + v3:
-	+ split the optimization of hub->hdev reference counting
-	  into separate patch; usable standalone (1st patch)
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ drivers/usb/core/hub.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-	+ switch order of the two patches that convert the kthread
-	  and that remove the while cycle in hub_event(); it is
-	  cleaner (2nd and 3rd patch)
-
-	+ use ordered workqueue by default; it makes it compatible
-	  with the original kthread solution (3rd patch)
-
-        + added optional patch that allows to process events
-	  in parallel (6th patch)
-
-	+ fixed the suggested stylistic problems (2nd and 3rd patch)
-
-
-    + v2:
-	+ solved potential races:
-	  	 + get hub->kref in kick_hub_wq()
-		 + call usb_get_dev(hdev) in hub_probe()
-		   and 	usb_put_dev(hdev) in hub_release()
-		 + INIT_WORK only once in hub_probe()
-
-	 + do not call cancel_work_sync() in hub_disconnect()
-	   to keep it fast
-
-	 + rename kick_khubd() to kick_hub_wq() already
-	   in the first patch; IMHO, it is cleaner while
-	   adding only very few changes
-
-
-The workqueue API is well defined and tested. It has many options
-that could be used to tune the scheduling. The code is usually
-easier and thus more safe. It allows to avoid the extra thread
-in most cases. It has has clearly defined behavior vrt. system suspend.
-
-This patchset converts khubd into the workqueue. It saves one thread,
-lock, and list.
-
-It  looks huge but the main change is in the first patch. The rest is
-simple renaming of functions, comments and documentation.
-
-	   
-Thanks a lot Alan Stern and Tejun Heo for hints and guidance.
-
-The patches can be applied either against Linus' tree or linux-next.
-
-
-Petr Mladek (6):
-  usb: hub: keep hub->dev reference all the time when struct usb_hub
-    lives
-  usb: hub: rename hub_events() to hub_event() and handle only one event
-    there
-  usb: hub: convert khubd into workqueue
-  usb: hub: rename usb_kick_khubd() to usb_kick_hub_wq()
-  usb: hub: rename khubd to hub_wq in documentation and comments
-  usb: hub: allow to process more usb hub events in parallel
-
- Documentation/DocBook/usb.tmpl             |   2 +-
- Documentation/usb/WUSB-Design-overview.txt |   6 +-
- Documentation/usb/hotplug.txt              |   2 +-
- drivers/net/usb/usbnet.c                   |  14 +-
- drivers/usb/README                         |   2 +-
- drivers/usb/core/hcd.c                     |  14 +-
- drivers/usb/core/hub.c                     | 380 +++++++++++++----------------
- drivers/usb/core/hub.h                     |   2 +-
- drivers/usb/core/usb.h                     |   2 +-
- drivers/usb/host/ehci-fsl.c                |   2 +-
- drivers/usb/host/ehci-hcd.c                |   2 +-
- drivers/usb/host/ehci-hub.c                |   8 +-
- drivers/usb/host/fhci-hcd.c                |   6 +-
- drivers/usb/host/fotg210-hcd.c             |   8 +-
- drivers/usb/host/fusbh200-hcd.c            |   8 +-
- drivers/usb/host/isp1760-hcd.c             |   6 +-
- drivers/usb/host/ohci-hcd.c                |   6 +-
- drivers/usb/host/ohci-hub.c                |   4 +-
- drivers/usb/host/ohci-omap.c               |   2 +-
- drivers/usb/host/oxu210hp-hcd.c            |  10 +-
- drivers/usb/host/sl811-hcd.c               |   8 +-
- drivers/usb/host/xhci-hub.c                |   2 +-
- drivers/usb/host/xhci.c                    |   4 +-
- drivers/usb/misc/usbtest.c                 |   2 +-
- drivers/usb/musb/am35x.c                   |   1 +
- drivers/usb/musb/tusb6010.c                |   2 +-
- drivers/usb/phy/phy-fsl-usb.c              |   2 +-
- drivers/usb/phy/phy-isp1301-omap.c         |   2 +-
- drivers/usb/wusbcore/devconnect.c          |   6 +-
- drivers/usb/wusbcore/wa-hc.h               |   2 +-
- sound/usb/midi.c                           |   2 +-
- 31 files changed, 242 insertions(+), 277 deletions(-)
-
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 6c1a79a50576..69f9f1c1d9c1 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2042,7 +2042,8 @@ static void choose_devnum(struct usb_device *udev)
+ 	int		devnum;
+ 	struct usb_bus	*bus = udev->bus;
+ 
+-	/* If hub_wq ever becomes multithreaded, this will need a lock */
++	/* be safe when more hub events are proceed in parallel */
++	mutex_lock(&bus->usb_address0_mutex);
+ 	if (udev->wusb) {
+ 		devnum = udev->portnum + 1;
+ 		BUG_ON(test_bit(devnum, bus->devmap.devicemap));
+@@ -2060,6 +2061,7 @@ static void choose_devnum(struct usb_device *udev)
+ 		set_bit(devnum, bus->devmap.devicemap);
+ 		udev->devnum = devnum;
+ 	}
++	mutex_unlock(&bus->usb_address0_mutex);
+ }
+ 
+ static void release_devnum(struct usb_device *udev)
+@@ -5162,11 +5164,8 @@ int usb_hub_init(void)
+ 	 * USB-PERSIST port handover. Otherwise it might see that a full-speed
+ 	 * device was gone before the EHCI controller had handed its port
+ 	 * over to the companion full-speed controller.
+-	 *
+-	 * Also we use ordered workqueue because the code is not ready
+-	 * for parallel execution of hub events, see choose_devnum().
+ 	 */
+-	hub_wq = alloc_ordered_workqueue("usb_hub_wq", WQ_FREEZABLE);
++	hub_wq = alloc_workqueue("usb_hub_wq", WQ_FREEZABLE, 0);
+ 	if (hub_wq)
+ 		return 0;
+ 
 -- 
 1.8.4
 
