@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259AbaISSYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 14:24:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40531 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195AbaISSYD (ORCPT
+	id S932308AbaISSZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 14:25:05 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:47756 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269AbaISSZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 14:24:03 -0400
-Message-ID: <541C74C1.9060504@codeaurora.org>
-Date: Fri, 19 Sep 2014 11:24:01 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 19 Sep 2014 14:25:01 -0400
+X-IronPort-AV: E=Sophos;i="5.04,556,1406617200"; 
+   d="scan'208";a="46511300"
+Message-ID: <541C74EB.9070100@broadcom.com>
+Date: Fri, 19 Sep 2014 11:24:43 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: vfp: fix VFPv3 hwcap detection on non-ARM vfp
- implementations
-References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org> <1411076592-6157-3-git-send-email-sboyd@codeaurora.org> <20140918224625.GF5182@n2100.arm.linux.org.uk>
-In-Reply-To: <20140918224625.GF5182@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <arnd@arndb.de>, <olof@lixom.net>, <arm@kernel.org>, <mporter@linaro.org>,
+        <bcm@fixthebug.org>, <jonathar@broadcom.com>, <rjui@broadcom.com>,
+        <linux-kernel@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <hauke@hauke-m.de>,
+        <swarren@wwwdotorg.org>, <computersforpeace@gmail.com>,
+        <marc.ceeeee@gmail.com>, <cernekee@gmail.com>,
+        <gregory.0xf0@gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: add a third maintainer to mach-bcm
+References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com> <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+In-Reply-To: <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/14 15:46, Russell King - ARM Linux wrote:
-> On Thu, Sep 18, 2014 at 02:43:11PM -0700, Stephen Boyd wrote:
->> diff --git a/arch/arm/include/asm/vfp.h b/arch/arm/include/asm/vfp.h
->> index f4ab34fd4f72..76d3f6907cce 100644
->> --- a/arch/arm/include/asm/vfp.h
->> +++ b/arch/arm/include/asm/vfp.h
->> @@ -21,7 +21,7 @@
->>  #define FPSID_FORMAT_MASK	(0x3  << FPSID_FORMAT_BIT)
->>  #define FPSID_NODOUBLE		(1<<20)
->>  #define FPSID_ARCH_BIT		(16)
->> -#define FPSID_ARCH_MASK		(0xF  << FPSID_ARCH_BIT)
->> +#define FPSID_ARCH_MASK		(0x7F  << FPSID_ARCH_BIT)
-> This is incorrect.  On VFPv2, the architecture field is four bits long.
-> As you can see from the above, bit 20 indicates that there are no
-> double operations provided, and the next two bits indicate the FSTMX/
-> FLDMX format.
+On 14-09-19 11:17 AM, Florian Fainelli wrote:
+> Add myself as a third maintainer to the mach-bcm code to increase the
+> chances the redundancy in the merging/reviewing process.
 >
-> I know that you're changing this to conform with the ARM ARM, but we
-> have to consider that before VFP was subsumed into the ARM ARM, this
-> register had the format described as per this file, and these other
-> bits may be set for an ARM part.  Including these bits in the mask
-> means that we will mis-identify these older parts as VFPv3.
+> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+Acked-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>   MAINTAINERS | 1 +
+>   1 file changed, 1 insertion(+)
 >
-> Welcome to the lack of standardisation!
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 809ecd680d88..e0762fea2d02 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2004,6 +2004,7 @@ F:	drivers/net/ethernet/broadcom/bnx2x/
+>   BROADCOM BCM281XX/BCM11XXX/BCM216XX ARM ARCHITECTURE
+>   M:	Christian Daudt <bcm@fixthebug.org>
+>   M:	Matt Porter <mporter@linaro.org>
+> +M:	Florian Fainelli <f.fainelli@gmail.com>
+>   L:	bcm-kernel-feedback-list@broadcom.com
+>   T:	git git://github.com/broadcom/mach-bcm
+>   S:	Maintained
 >
-
-Thank you for the warm welcome! I looked at the TRMs for ARM11 and ARM9.
-I can't find anywhere where VFPv2 is supported and these bits are set.
-
-Bits 22-16 of FPSID:
-
-ARM1136r1p5:     0x01
-ARM1136r1p3:     0x01
-ARM1176:         0x01
-ARM11MPCorer2p0: 0x01
-ARM11MPCorer1p0: 0x01
-ARM1156:         0x01
-ARM9:            0x01
-
-
-Do you, or anyone else, know of other implementations? I *hope* that
-this same exercise was done by the VFP architects before they
-re-purposed bits but who knows. If nobody is actually setting these
-higher bits then is there any problem widening the mask (besides it
-being slightly confusing)?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
