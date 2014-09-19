@@ -1,176 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262AbaISQUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:20:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39259 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002AbaISQUK (ORCPT
+	id S932100AbaISQVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:21:19 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:38651 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716AbaISQVS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:20:10 -0400
-Date: Fri, 19 Sep 2014 11:19:27 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-CC: <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
-        Mark Brown <broonie@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
-Message-ID: <20140919161927.GA28613@kahuna>
-References: <1411067086-16613-1-git-send-email-nm@ti.com>
- <1411067086-16613-4-git-send-email-nm@ti.com>
- <alpine.DEB.2.10.1409181749170.4206@nanos>
- <20140919030333.GA6088@kahuna>
- <alpine.DEB.2.10.1409190710320.5612@nanos>
+	Fri, 19 Sep 2014 12:21:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1409190710320.5612@nanos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <541C27E8.6090000@hurleysoftware.com>
+References: <CAP145pg75hFKi2S9SVywRfex_A5=yRpe0p4Dzri8+Q=7YWoXfg@mail.gmail.com>
+	<541C27E8.6090000@hurleysoftware.com>
+Date: Fri, 19 Sep 2014 18:21:16 +0200
+Message-ID: <CAP145pjdkDd1xejL9tCL21zyWMBwMgQU+ygxaqm5tiF7yvbZPw@mail.gmail.com>
+Subject: Re: Div-by-zero in the 8250 serial driver (3.17-rc5)
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08:37-20140919, Thomas Gleixner wrote:
-> On Thu, 18 Sep 2014, Nishanth Menon wrote:
-> > On 17:57-20140918, Thomas Gleixner wrote:
-> > 
-> > I suppose I can improve the commit message to elaborate this better?
-> > Will that help?
-> 
-> You also want to improve the comment in the empty handler.
-OK. will do the same. Thanks for suggesting.
+2014-09-19 14:56 GMT+02:00 Peter Hurley <peter@hurleysoftware.com>:
+> [ +cc Greg Kroah-Hartman, AlanC ]
+>
+> On 09/18/2014 10:57 AM, Robert Święcki wrote:
+>> Hi,
+>>
+>> # setserial /dev/ttyS0 spd_hi baud_base 38400
+>>
+>> Entering kdb (current=0xffff8805ee033200, pid 1798) on processor 9 Oops: (null)
+>> due to oops @ 0xffffffff8149c01e
+>>  CPU: 9 PID: 1798 Comm: setserial Tainted: G        W I
+>> 3.17.0-031700rc5-generic-201409151105
+>> task: ffff8805ee033200 ti: ffff8800e39e0000 task.ti: ffff8800e39e0000
+>> RIP: 0010:[<ffffffff8149c01e>]  [<ffffffff8149c01e>] uart_get_divisor+0x1e/0x40
+>> RSP: 0018:ffff8800e39e3c30  EFLAGS: 00010206
+>> RAX: 0000000000096000 RBX: ffffffff81fab060 RCX: 0000000000000006
+>> RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff81fab060
+>> RBP: ffff8800e39e3c78 R08: 000000000000000a R09: 00000000000003d2
+>> R10: 0000000000000000 R11: 00000000000003d1 R12: 0000000000000013
+>> R13: ffff8805f0748d2c R14: 0000000000000000 R15: 0000000000000010
+>> FS:  00007f0fa653d740(0000) GS:ffff880613920000(0000) knlGS:0000000000000000
+>> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> CR2: 00007f0fa6003330 CR3: 00000000365f8000 CR4: 00000000000007e0
+>> Stack:
+>>  ffffffff814a2978 ffffffff81fab060 0000000000000010 ffff8800e39e3ca8
+>>  ffff8805eca08000 ffff8805f0748c00 ffff8800e39e3dc0 ffffffff81fab060
+>>  0000000000000010 ffff8800e39e3c88 ffffffff814a2d55 ffff8800e39e3ca8
+>> Call Trace:
+>>  [<ffffffff814a2978>] ? serial8250_do_set_termios+0xd8/0x490
+>>  [<ffffffff814a2d55>] serial8250_set_termios+0x25/0x30
+>>  [<ffffffff8149dce2>] uart_change_speed+0x52/0xb0
+>>  [<ffffffff8149ec9c>] uart_set_info+0x20c/0x5f0
+>>  [<ffffffff8149c75a>] ? do_uart_get_info+0xfa/0x1a0
+>>  [<ffffffff8149fbdf>] uart_ioctl+0x14f/0x220
+>>  [<ffffffff814804d8>] tty_ioctl+0x298/0x8f0
+>>  [<ffffffff811fc025>] do_vfs_ioctl+0x75/0x2c0
+>>  [<ffffffff811fc301>] SyS_ioctl+0x91/0xb0
+>>  [<ffffffff817a436d>] system_call_fastpath+0x1a/0x1f
+>> Code: c0 00 00 00 c3 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 81 fe
+>> 00 96 00 00 48 89 e5 74 17 c1 e6 04 31 d2 89 f0 d1 e8 03 47 58 5d <f7>
+>> f6 c3 0f 1f 80 00 00 00 00 8b 87 b8 00 00 00 25 30 10 00 00
+>
+> Hi Robert,
+>
+> Thanks for the report.
+>
+> I was able to reproduce this crash on all recent kernels I tested. The
+> patch below fixed the problem for me. If possible, please test the patch
+> on your system.
 
-> 
-> > > 
-> > > > +	 */
-> > > > +	return IRQ_NONE;
-> 
-> And it still does not explain WHY you think that returning IRQ_NONE is
-> the right thing to do here. You actually handle the interrupt, right?
-> Just because the handler is an NOP does not mean you did not handle
-> it.
+Yup, the crash is gone.
 
-Hmm.. My motivation for IRQ_NONE was because this specific handler does
-not handle the interrupt. Now, from this discussion, I understand that I
-should rather use IRQ_HANDLED since the event is indeed handled (just
-not here).
+Thanks for the fix!
 
-Thank you for correcting my understanding. Will update in my next rev
-(once we solve the following discussion)..
-
-> 
-> > > > +static int palmas_i2c_suspend(struct i2c_client *i2c,  pm_message_t mesg)
-> > > > +{
-> > > > +	struct palmas *palmas = i2c_get_clientdata(i2c);
-> > > > +	struct device *dev = &i2c->dev;
-> > > > +
-> > > > +	if (!palmas->wakeirq)
-> > > > +		return 0;
-> > > > +
-> > > > +	if (device_may_wakeup(dev))
-> > > > +		enable_irq(palmas->wakeirq);
-> > > > +
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static int palmas_i2c_resume(struct i2c_client *i2c)
-> > > > +{
-> > > > +	struct palmas *palmas = i2c_get_clientdata(i2c);
-> > > > +	struct device *dev = &i2c->dev;
-> > > > +
-> > > > +	if (!palmas->wakeirq)
-> > > > +		return 0;
-> > > > +
-> > > > +	if (device_may_wakeup(dev))
-> > > > +		disable_irq_nosync(palmas->wakeirq);
-> > > 
-> > > Again, why nosync?
-> > true - nosync is not necessary at here. disable_irq is however necessary
-> > as we are not interested in wakeup events for level changes.
-> > 
-> > We just use the enable/disable to control when we'd want to arm the pin
-> > for waking up from suspend state.
-> 
-> And what is issuing the call to enable/disable_irq_wake()? 
-> 
-> So if that interrupt is not marked proper then you can bring your
-> device into a wont resume state easily
-> 
->        start suspend
->        enable wakeirq
->        disable_device_irqs()
-> 	   if (!iswakeup_irq())
-> 	      disable_irq() // does not mask due to lazy masking
-> 
->        ....
->        wakeirq fires
->           if (irq_is_disabled())
-> 	     mask_irq();
-> 
->        transition into suspend
-> 
-> Now your pinctrl irq is masked at the HW level and wont wake the
-> machine up ever again.
-True.
-
-> 
-> So now looking at that pinctrl irq chip thing, which seems to be
-> designed to handle these kind of wakeups. That thing looks massivly
-> wrong as well, simply because it enforces to use
-> enable_irq/disable_irq().
-> 
-> So because the sole purpose of this chip is to handle the separate
-> wakeup style interrupt, it should actually NOT enable the interrupt in
-> the irq_unmask callback.
-> 
-> Simply because during normal operation nothing is interested in the
-> interrupt and any operation which might enable it (including request
-> irq) is just making the system handle completely pointless interrupts
-> and hoops and loops juggling with enable/disable irq.
-> 
-> So the right thing here is to have an empty unmask function and do the
-> actual unmask only in the irq_set_wake() callback. mask of course
-> needs to do what it says. The point is, that the following sequence of
-> code will just work w/o generating an interrupt on the wakeirq line
-> outside of the wake enabled context.
-> 
-> dev_init()
-> 	request_wakeirq();
-> 
-> suspend()
-> 	if (may_wake())
-> 	   enable_irq_wake();
-> 
-> resume()
-> 	if (may_wake())
-> 	   disable_irq_wake();
-> 
-> The other omap drivers using this have the same issue ... And of
-> course they are subtly different.
-> 
-> The uart one handles the actual device interrupt, which is violating
-> the general rule of possible interrupt reentrancy in the pm-runtime
-> case if the two interrupts are affine to two different cores. Yes,
-> it's protected by a lock and works by chance ....
-> 
-> The mmc one issues a disable_irq_nosync() in the wakeup irq handler
-> itself.
-> 
-> WHY does one driver need that and the other does not? You are not even
-> able to come up with a common scheme for OMAP. I don't want to see the
-> mess others are going to create when this stuff becomes more used.
-> 
-> Thanks,
-> 
-> 	tglx
-
-I think I understand your concern - I request Tony to comment about
-this. I mean, I can try and hook things like uart in other drivers
-(like https://patchwork.kernel.org/patch/4759171/ ), but w.r.t overall
-generic usage guideline wise, I would prefer Tony to comment.
+> Regards,
+> Peter Hurley
+>
+> --- >% ---
+> Subject: [PATCH] serial: Fix divide-by-zero fault in uart_get_divisor()
+>
+> uart_get_baud_rate() will return baud == 0 if the max rate is set
+> to the "magic" 38400 rate and the SPD_* flags are also specified.
+> On the first iteration, if the current baud rate is higher than the
+> max, the baud rate is clamped at the max (which in the degenerate
+> case is 38400). On the second iteration, the now-"magic" 38400 baud
+> rate selects the possibly higher alternate baud rate indicated by
+> the SPD_* flag. Since only two loop iterations are performed, the
+> loop is exited, a kernel WARNING is generated and a baud rate of
+> 0 is returned.
+>
+> Reproducible with:
+>  setserial /dev/ttyS0 spd_hi base_baud 38400
+>
+> Only perform the "magic" 38400 -> SPD_* baud transform on the first
+> loop iteration, which prevents the degenerate case from recognizing
+> the clamped baud rate as the "magic" 38400 value.
+>
+> Reported-by: Robert Święcki <robert@swiecki.net>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/serial/serial_core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index 66e2de6..d0a5fc9 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -359,7 +359,7 @@ uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
+>                  * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
+>                  * Die! Die! Die!
+>                  */
+> -               if (baud == 38400)
+> +               if (try == 0 && baud == 38400)
+>                         baud = altbaud;
+>
+>                 /*
+> --
+> 2.1.0
 
 -- 
-Regards,
-Nishanth Menon
+Robert Święcki
