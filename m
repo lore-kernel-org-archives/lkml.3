@@ -1,137 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025AbaISVK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 17:10:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57806 "EHLO mx1.redhat.com"
+	id S1758076AbaISVLK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 17:11:10 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48022 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757700AbaISVKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 17:10:25 -0400
-Date: Fri, 19 Sep 2014 23:10:17 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Liang Chen <liangchen.linux@gmail.com>, pbonzini@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] KVM: x86: directly use kvm_make_request again
-Message-ID: <20140919211013.GB29990@potion.brq.redhat.com>
-References: <1411058317-23646-1-git-send-email-liangchen.linux@gmail.com>
- <1411058317-23646-3-git-send-email-liangchen.linux@gmail.com>
- <541BC949.4050602@linux.vnet.ibm.com>
- <20140919122502.GA29990@potion.brq.redhat.com>
- <541C313C.8060402@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <541C313C.8060402@linux.vnet.ibm.com>
+	id S1757848AbaISVLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 17:11:08 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: linux-mm@kvack.org
+Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: convert reclaim iterator to simple css refcounting
+Date: Fri, 19 Sep 2014 17:10:59 -0400
+Message-Id: <1411161059-16552-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-19 21:35+0800, Xiao Guangrong:
-> On 09/19/2014 08:25 PM, Radim Krčmář wrote:
-> >>>   * Returns 1 to let __vcpu_run() continue the guest execution loop without
-> >>>   * exiting to the userspace.  Otherwise, the value will be returned to the
-> >>> @@ -6018,8 +6024,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
-> >>>  		if (kvm_check_request(KVM_REQ_MMU_SYNC, vcpu))
-> >>>  			kvm_mmu_sync_roots(vcpu);
-> >>>  		if (kvm_check_request(KVM_REQ_TLB_FLUSH, vcpu)) {
-> >>> -			++vcpu->stat.tlb_flush;
-> >>> -			kvm_x86_ops->tlb_flush(vcpu);
-> >>> +			kvm_vcpu_flush_tlb(vcpu);
-> >>
-> >> NACK!
-> >>
-> >> Do not understand why you have to introduce a meaningful name
-> >> here - it's used just inner a function, which can not help to
-> >> improve a readability of the code at all.
-> > 
-> > I prefer the new hunk
-> >  - it makes the parent function simpler (not everyone wants to read how
-> >    we do tlb flushes when looking at vcpu_enter_guest)
-> 
-> Using one line instead of two lines does not simplify parent function much.
+The memcg reclaim iterators use a complicated weak reference scheme to
+prevent pinning cgroups indefinitely in the absence of memory pressure.
 
-(Don't forget braces!)
+However, during the ongoing cgroup core rework, css lifetime has been
+decoupled such that a pinned css no longer interferes with removal of
+the user-visible cgroup, and all this complexity is now unnecessary.
 
-There might come a patch that pushes the length above a readability
-threshold.  With our development process, I think it is quite likely
-that new function won't get created then;
-and preventing this situation makes the function nicer now as well.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 200 ++++++++++----------------------------------------------
+ 1 file changed, 33 insertions(+), 167 deletions(-)
 
-(Most of my thinking that is about cases that will never happen.)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index dfd3b15a57e8..5daa1d3dd9d5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -253,18 +253,6 @@ struct mem_cgroup_stat_cpu {
+ 	unsigned long targets[MEM_CGROUP_NTARGETS];
+ };
+ 
+-struct mem_cgroup_reclaim_iter {
+-	/*
+-	 * last scanned hierarchy member. Valid only if last_dead_count
+-	 * matches memcg->dead_count of the hierarchy root group.
+-	 */
+-	struct mem_cgroup *last_visited;
+-	int last_dead_count;
+-
+-	/* scan generation, increased every round-trip */
+-	unsigned int generation;
+-};
+-
+ /*
+  * per-zone information in memory controller.
+  */
+@@ -272,7 +260,7 @@ struct mem_cgroup_per_zone {
+ 	struct lruvec		lruvec;
+ 	unsigned long		lru_size[NR_LRU_LISTS];
+ 
+-	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
++	struct mem_cgroup	*reclaim_iter[DEF_PRIORITY + 1];
+ 
+ 	struct rb_node		tree_node;	/* RB tree node */
+ 	unsigned long		usage_in_excess;/* Set to the value by which */
+@@ -1174,111 +1162,6 @@ static struct mem_cgroup *get_mem_cgroup_from_mm(struct mm_struct *mm)
+ 	return memcg;
+ }
+ 
+-/*
+- * Returns a next (in a pre-order walk) alive memcg (with elevated css
+- * ref. count) or NULL if the whole root's subtree has been visited.
+- *
+- * helper function to be used by mem_cgroup_iter
+- */
+-static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
+-		struct mem_cgroup *last_visited)
+-{
+-	struct cgroup_subsys_state *prev_css, *next_css;
+-
+-	prev_css = last_visited ? &last_visited->css : NULL;
+-skip_node:
+-	next_css = css_next_descendant_pre(prev_css, &root->css);
+-
+-	/*
+-	 * Even if we found a group we have to make sure it is
+-	 * alive. css && !memcg means that the groups should be
+-	 * skipped and we should continue the tree walk.
+-	 * last_visited css is safe to use because it is
+-	 * protected by css_get and the tree walk is rcu safe.
+-	 *
+-	 * We do not take a reference on the root of the tree walk
+-	 * because we might race with the root removal when it would
+-	 * be the only node in the iterated hierarchy and mem_cgroup_iter
+-	 * would end up in an endless loop because it expects that at
+-	 * least one valid node will be returned. Root cannot disappear
+-	 * because caller of the iterator should hold it already so
+-	 * skipping css reference should be safe.
+-	 */
+-	if (next_css) {
+-		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) &&
+-		     css_tryget_online(next_css)))
+-			return mem_cgroup_from_css(next_css);
+-
+-		prev_css = next_css;
+-		goto skip_node;
+-	}
+-
+-	return NULL;
+-}
+-
+-static void mem_cgroup_iter_invalidate(struct mem_cgroup *root)
+-{
+-	/*
+-	 * When a group in the hierarchy below root is destroyed, the
+-	 * hierarchy iterator can no longer be trusted since it might
+-	 * have pointed to the destroyed group.  Invalidate it.
+-	 */
+-	atomic_inc(&root->dead_count);
+-}
+-
+-static struct mem_cgroup *
+-mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
+-		     struct mem_cgroup *root,
+-		     int *sequence)
+-{
+-	struct mem_cgroup *position = NULL;
+-	/*
+-	 * A cgroup destruction happens in two stages: offlining and
+-	 * release.  They are separated by a RCU grace period.
+-	 *
+-	 * If the iterator is valid, we may still race with an
+-	 * offlining.  The RCU lock ensures the object won't be
+-	 * released, tryget will fail if we lost the race.
+-	 */
+-	*sequence = atomic_read(&root->dead_count);
+-	if (iter->last_dead_count == *sequence) {
+-		smp_rmb();
+-		position = iter->last_visited;
+-
+-		/*
+-		 * We cannot take a reference to root because we might race
+-		 * with root removal and returning NULL would end up in
+-		 * an endless loop on the iterator user level when root
+-		 * would be returned all the time.
+-		 */
+-		if (position && position != root &&
+-		    !css_tryget_online(&position->css))
+-			position = NULL;
+-	}
+-	return position;
+-}
+-
+-static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
+-				   struct mem_cgroup *last_visited,
+-				   struct mem_cgroup *new_position,
+-				   struct mem_cgroup *root,
+-				   int sequence)
+-{
+-	/* root reference counting symmetric to mem_cgroup_iter_load */
+-	if (last_visited && last_visited != root)
+-		css_put(&last_visited->css);
+-	/*
+-	 * We store the sequence count from the time @last_visited was
+-	 * loaded successfully instead of rereading it here so that we
+-	 * don't lose destruction events in between.  We could have
+-	 * raced with the destruction of @new_position after all.
+-	 */
+-	iter->last_visited = new_position;
+-	smp_wmb();
+-	iter->last_dead_count = sequence;
+-}
+-
+ /**
+  * mem_cgroup_iter - iterate over memory cgroup hierarchy
+  * @root: hierarchy root
+@@ -1300,8 +1183,11 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 				   struct mem_cgroup *prev,
+ 				   struct mem_cgroup_reclaim_cookie *reclaim)
+ {
++	struct mem_cgroup_per_zone *uninitialized_var(mz);
++	struct cgroup_subsys_state *css = NULL;
++	int uninitialized_var(priority);
+ 	struct mem_cgroup *memcg = NULL;
+-	struct mem_cgroup *last_visited = NULL;
++	struct mem_cgroup *pos = NULL;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return NULL;
+@@ -1310,50 +1196,50 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 		root = root_mem_cgroup;
+ 
+ 	if (prev && !reclaim)
+-		last_visited = prev;
++		pos = prev;
+ 
+ 	if (!root->use_hierarchy && root != root_mem_cgroup) {
+ 		if (prev)
+-			goto out_css_put;
++			goto out;
+ 		return root;
+ 	}
+ 
+ 	rcu_read_lock();
+-	while (!memcg) {
+-		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+-		int uninitialized_var(seq);
+ 
+-		if (reclaim) {
+-			struct mem_cgroup_per_zone *mz;
++	if (reclaim) {
++		mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
++		priority = reclaim->priority;
+ 
+-			mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
+-			iter = &mz->reclaim_iter[reclaim->priority];
+-			if (prev && reclaim->generation != iter->generation) {
+-				iter->last_visited = NULL;
+-				goto out_unlock;
+-			}
+-
+-			last_visited = mem_cgroup_iter_load(iter, root, &seq);
+-		}
+-
+-		memcg = __mem_cgroup_iter_next(root, last_visited);
++		do {
++			pos = ACCESS_ONCE(mz->reclaim_iter[priority]);
++		} while (!css_tryget(&pos->css));
++	}
+ 
+-		if (reclaim) {
+-			mem_cgroup_iter_update(iter, last_visited, memcg, root,
+-					seq);
++	if (pos)
++		css = &pos->css;
+ 
+-			if (!memcg)
+-				iter->generation++;
+-			else if (!prev && memcg)
+-				reclaim->generation = iter->generation;
++	for (;;) {
++		css = css_next_descendant_pre(css, &root->css);
++		if (!css) {
++			if (prev)
++				goto out_unlock;
++			continue;
++		}
++		if (css == &root->css || css_tryget_online(css)) {
++			memcg = mem_cgroup_from_css(css);
++			break;
+ 		}
++	}
+ 
+-		if (prev && !memcg)
+-			goto out_unlock;
++	if (reclaim) {
++		if (cmpxchg(&mz->reclaim_iter[priority], pos, memcg) == pos)
++			css_get(&memcg->css);
++		css_put(&pos->css);
+ 	}
++
+ out_unlock:
+ 	rcu_read_unlock();
+-out_css_put:
++out:
+ 	if (prev && prev != root)
+ 		css_put(&prev->css);
+ 
+@@ -5526,24 +5412,6 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
+ }
+ 
+-/*
+- * Announce all parents that a group from their hierarchy is gone.
+- */
+-static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
+-{
+-	struct mem_cgroup *parent = memcg;
+-
+-	while ((parent = parent_mem_cgroup(parent)))
+-		mem_cgroup_iter_invalidate(parent);
+-
+-	/*
+-	 * if the root memcg is not hierarchical we have to check it
+-	 * explicitely.
+-	 */
+-	if (!root_mem_cgroup->use_hierarchy)
+-		mem_cgroup_iter_invalidate(root_mem_cgroup);
+-}
+-
+ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+@@ -5564,8 +5432,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 
+ 	kmem_cgroup_css_offline(memcg);
+ 
+-	mem_cgroup_invalidate_reclaim_iterators(memcg);
+-
+ 	/*
+ 	 * This requires that offlining is serialized.  Right now that is
+ 	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
+-- 
+2.1.0
 
-> >  - the function is properly named
-> 
-> kvm_x86_ops->tlb_flush(vcpu) is also a good hit to tell the reader it is
-> doing tlb flush. :)
-
-Yep.  (The surprise was leaked by KVM_REQ_TLB_FLUSH.)
-
-It was more like safety check -- if we wanted a new function, it should
-be called like that.
-
-> >  - we do a similar thing with kvm_gen_kvmclock_update
-> 
-> I understand this raw-bit-set style is largely used in current kvm code,
-> however, it does not mean it's a best way do it. It may be turned off
-> someday as it is be used in more and more places.
-> 
-> Anyway, the meaningful name wrapping raw-bit-set is a right direction
-> and let's keep this right direction.
-
-Agreed, it would be nice to have an indirection that hides the
-underlying request-mechanic from higher-level code.
-
-(More below.)
-
-> > My issues with kvm_mmu_flush_tlb:
-> > 
-> >  - 'kvm_flush_remote_tlbs()' calls tlb request directly;
-> >     our wrapper thus cannot be extended with features, which makes it a
-> >     poor abstraction
-> 
-> kvm_flush_remote_tlbs does not only set tlb request but also handles memory
-> order and syncs the tlb state.
-> 
-> I guess you wanted to say kvm_mmu_flush_tlb here, it is a API name and let
-> it be easily used in other files. It's not worth committing a patch doing
-> nothing except reverting the meaningful name.
-
-(I really meant kvm_flush_remote_tlbs().)
-
-When we change kvm_mmu_flush_tlb(), it doesn't get propagated to
-"remote" TLB flushes => we might have a false sense of API and
-the code is harder to work with because of that.
-
-(I don't consider kvm_mmu_flush_tlb() a step in the right direction ...
- close, like all bugs.)
-
-> >  - we don't do this for other requests
-> 
-> See above.
-
-(Below is here.)
-
-Between half-new half-old and unmixed API, I'm leaning towards the
-latter option ...
-(My arguments for this are weak though; not enough experience.)
-
-> >  - direct request isn't absolutely horrible to read and write
-> >    (I totally agree that it is bad.)
-> >  - we call one function 'kvm_mmu_flush_tlb()' and the second one
-> >    'kvm_flush_remote_tlbs()' and I'd need to look why
-> 
-> Yeah, this is why i suggested to rename kvm_mmu_flush_tlb since which clarifies
-> things better:
-> - kvm_flush_remote_tlbs: flush tlb in all vcpus
-> - kvm_vcpu_flush_tlb: only flush tlb on the vcpu specified by @vcpu.
-
-(I am confused about "mmu" in names -- kvm_flush_remote_tlbs is shared
- through host.h, which is probably why it didn't get "mmu".)
-
-> > Which is why just removing it solves more problems for me :)
-> 
-> Thank you for raising this question and letting me know the patch's history. :)
-
-Thanks for the reply, I hope I have understood you correctly,
-now just to find a person to write all the good code :)
