@@ -1,165 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258AbaISUnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:43:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43300 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757739AbaISUnQ (ORCPT
+	id S1757908AbaISUs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:48:26 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:50125 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757700AbaISUsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:43:16 -0400
-Date: Fri, 19 Sep 2014 22:43:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: sparse@chrisli.org, Mark Rustad <mark.d.rustad@intel.com>,
-        linux-sparse@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH 3/7] atomic: Silence nested-externs warnings
-Message-ID: <20140919204303.GF2832@worktop.localdomain>
-References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <1411140580-20909-4-git-send-email-jeffrey.t.kirsher@intel.com>
+	Fri, 19 Sep 2014 16:48:23 -0400
+Date: Fri, 19 Sep 2014 14:48:17 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v11 02/10] PCI: Introduce helper functions to deal with
+ PCI I/O ranges.
+Message-ID: <20140919204817.GF19374@google.com>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411003825-21521-3-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411140580-20909-4-git-send-email-jeffrey.t.kirsher@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1411003825-21521-3-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 08:29:36AM -0700, Jeff Kirsher wrote:
-> From: Mark Rustad <mark.d.rustad@intel.com>
+On Thu, Sep 18, 2014 at 02:30:17AM +0100, Liviu Dudau wrote:
+> Some architectures do not have a simple view of the PCI I/O space
+> and instead use a range of CPU addresses that map to bus addresses.
+> For some architectures these ranges will be expressed by OF bindings
+> in a device tree file.
 > 
-> Silence the nested-externs warnings for these, as they are
-> truly wanted.
+> This patch introduces a pci_register_io_range() helper function with
+> a generic implementation that can be used by such architectures to
+> keep track of the I/O ranges described by the PCI bindings. If the
+> PCI_IOBASE macro is not defined that signals lack of support for PCI
+> and we return an error.
 > 
+> In order to retrieve the CPU address associated with an I/O port, a
+> new helper function pci_pio_to_address() is introduced. This will
+> search in the list of ranges registered with pci_register_io_range()
+> and return the CPU address that corresponds to the given port.
+> 
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> Acked-by: Rob Herring <robh@kernel.org>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> ---
+>  drivers/of/address.c       | 100 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_address.h |   2 +
+>  2 files changed, 102 insertions(+)
+> 
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index e371825..2373a92 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/module.h>
+>  #include <linux/of_address.h>
+>  #include <linux/pci_regs.h>
+> +#include <linux/slab.h>
+>  #include <linux/string.h>
+>  
+>  /* Max address size we deal with */
+> @@ -601,12 +602,111 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
+>  }
+>  EXPORT_SYMBOL(of_get_address);
+>  
+> +#ifdef PCI_IOBASE
+> +struct io_range {
+> +	struct list_head list;
+> +	phys_addr_t start;
+> +	resource_size_t size;
+> +};
+> +
+> +static LIST_HEAD(io_range_list);
+> +static DEFINE_SPINLOCK(io_range_lock);
+> +#endif
+> +
+> +/*
+> + * Record the PCI IO range (expressed as CPU physical address + size).
+> + * Return a negative value if an error has occured, zero otherwise
+> + */
+> +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
+> +{
+> +#ifdef PCI_IOBASE
+> +	struct io_range *range;
+> +	resource_size_t allocated_size = 0;
+> +
+> +	/* check if the range hasn't been previously recorded */
+> +	spin_lock(&io_range_lock);
+> +	list_for_each_entry(range, &io_range_list, list) {
+> +		if (addr >= range->start && addr + size <= range->start + size)
+> +			return 0;
 
-You're patching an old tree.
+This returns while holding io_range_lock.
 
----
-commit 2e39465abc4b7856a0ea6fcf4f6b4668bb5db877
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Mon Aug 4 12:07:15 2014 +0200
+> +		allocated_size += range->size;
+> +	}
+> +	spin_unlock(&io_range_lock);
 
-    locking: Remove deprecated smp_mb__() barriers
-    
-    Its been a while and there are no in-tree users left, so remove the
-    deprecated barriers.
-    
-    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-    Cc: Chen, Gong <gong.chen@linux.intel.com>
-    Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-    Cc: Joe Perches <joe@perches.com>
-    Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
-    Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-    Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-    Cc: Theodore Ts'o <tytso@mit.edu>
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
+I think this is racy; because you drop the lock between (1) checking
+whether the range is already recorded and (2) adding the range to the list,
+it's still possible for two callers to add the same range.
 
-diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-index fef3a80..5b08a85 100644
---- a/include/linux/atomic.h
-+++ b/include/linux/atomic.h
-@@ -3,42 +3,6 @@
- #define _LINUX_ATOMIC_H
- #include <asm/atomic.h>
- 
--/*
-- * Provide __deprecated wrappers for the new interface, avoid flag day changes.
-- * We need the ugly external functions to break header recursion hell.
-- */
--#ifndef smp_mb__before_atomic_inc
--static inline void __deprecated smp_mb__before_atomic_inc(void)
--{
--	extern void __smp_mb__before_atomic(void);
--	__smp_mb__before_atomic();
--}
--#endif
--
--#ifndef smp_mb__after_atomic_inc
--static inline void __deprecated smp_mb__after_atomic_inc(void)
--{
--	extern void __smp_mb__after_atomic(void);
--	__smp_mb__after_atomic();
--}
--#endif
--
--#ifndef smp_mb__before_atomic_dec
--static inline void __deprecated smp_mb__before_atomic_dec(void)
--{
--	extern void __smp_mb__before_atomic(void);
--	__smp_mb__before_atomic();
--}
--#endif
--
--#ifndef smp_mb__after_atomic_dec
--static inline void __deprecated smp_mb__after_atomic_dec(void)
--{
--	extern void __smp_mb__after_atomic(void);
--	__smp_mb__after_atomic();
--}
--#endif
--
- /**
-  * atomic_add_unless - add unless the number is already a given value
-  * @v: pointer of type atomic_t
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index cbc5833..be5fd38 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -32,26 +32,6 @@ extern unsigned long __sw_hweight64(__u64 w);
-  */
- #include <asm/bitops.h>
- 
--/*
-- * Provide __deprecated wrappers for the new interface, avoid flag day changes.
-- * We need the ugly external functions to break header recursion hell.
-- */
--#ifndef smp_mb__before_clear_bit
--static inline void __deprecated smp_mb__before_clear_bit(void)
--{
--	extern void __smp_mb__before_atomic(void);
--	__smp_mb__before_atomic();
--}
--#endif
--
--#ifndef smp_mb__after_clear_bit
--static inline void __deprecated smp_mb__after_clear_bit(void)
--{
--	extern void __smp_mb__after_atomic(void);
--	__smp_mb__after_atomic();
--}
--#endif
--
- #define for_each_set_bit(bit, addr, size) \
- 	for ((bit) = find_first_bit((addr), (size));		\
- 	     (bit) < (size);					\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1211575..76c518c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -90,22 +90,6 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/sched.h>
- 
--#ifdef smp_mb__before_atomic
--void __smp_mb__before_atomic(void)
--{
--	smp_mb__before_atomic();
--}
--EXPORT_SYMBOL(__smp_mb__before_atomic);
--#endif
--
--#ifdef smp_mb__after_atomic
--void __smp_mb__after_atomic(void)
--{
--	smp_mb__after_atomic();
--}
--EXPORT_SYMBOL(__smp_mb__after_atomic);
--#endif
--
- void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
- {
- 	unsigned long delta;
+> +	/* range not registed yet, check for available space */
+> +	if (allocated_size + size - 1 > IO_SPACE_LIMIT) {
+> +		/* if it's too big check if 64K space can be reserved */
+> +		if (allocated_size + SZ_64K - 1 > IO_SPACE_LIMIT)
+> +			return -E2BIG;
+> +
+> +		size = SZ_64K;
+> +		pr_warn("Requested IO range too big, new size set to 64K\n");
+> +	}
+> +
+> +	/* add the range to the list */
+> +	range = kzalloc(sizeof(*range), GFP_KERNEL);
+> +	if (!range)
+> +		return -ENOMEM;
+> +
+> +	range->start = addr;
+> +	range->size = size;
+> +
+> +	spin_lock(&io_range_lock);
+> +	list_add_tail(&range->list, &io_range_list);
+> +	spin_unlock(&io_range_lock);
+> +#endif
+> +
+> +	return 0;
+> +}
