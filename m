@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115AbaISXj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 19:39:27 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34198 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685AbaISXj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 19:39:26 -0400
-Message-ID: <1411169965.23258.45.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 4/4] target: Add a user-passthrough backstore
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Alex Elsayed <eternaleye@gmail.com>
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 19 Sep 2014 16:39:25 -0700
-In-Reply-To: <lvi81j$ud8$2@ger.gmane.org>
-References: <1410822750-10717-1-git-send-email-agrover@redhat.com>
-	 <1410822750-10717-5-git-send-email-agrover@redhat.com>
-	 <1411161279.23258.26.camel@haakon3.risingtidesystems.com>
-	 <lvi81j$ud8$2@ger.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758117AbaISXor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 19:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756608AbaISXoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 19:44:46 -0400
+Date: Sat, 20 Sep 2014 01:44:41 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: Make init_rmode_tss() return 0 on success.
+Message-ID: <20140919234440.GA2501@potion.redhat.com>
+References: <1410867505-5941-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410867505-5941-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-19 at 14:43 -0700, Alex Elsayed wrote:
-> Nicholas A. Bellinger wrote:
+2014-09-16 13:38+0200, Paolo Bonzini:
+> In init_rmode_tss(), there two variables indicating the return
+> value, r and ret, and it return 0 on error, 1 on success. The function
+> is only called by vmx_set_tss_addr(), and r is redundant.
 > 
-> <snip>
-> > So the idea of allowing the in-kernel CDB emulation to run after
-> > user-space has returned unsupported opcode is problematic for a couple
-> > of different reasons.
-> > 
-> > First, if the correct feature bits in standard INQUIRY + EVPD INQUIRY,
-> > etc are not populated by user-space to match what in-kernel CDB
-> > emulation actually supports, this can result in potentially undefined
-> > results initiator side.
-> > 
-> > Also for example, if user-space decided to emulate only a subset of PR
-> > operations, and leaves the rest of it up to the in-kernel emulation,
-> > there's not really a way to sync current state between the two, which
-> > also can end up with undefined results.
-> > 
-> > So that said, I think a saner approach would be two define two modes of
-> > operation for TCMU:
-> > 
-> >    *) Passthrough Mode: All CDBs are passed to user-space, and no
-> >       in-kernel emulation is done in the event of an unsupported
-> >       opcode response.
-> > 
-> >    *) I/O Mode: I/O related CDBs are passed into user-space, but
-> >       all control CDBs continue to be processed by in-kernel emulation.
-> >       This effectively limits operation to TYPE_DISK, but with this mode
-> >       it's probably OK to assume this.
-> > 
-> > This seems like the best trade-off between flexibility when everything
-> > should be handled by user-space, vs. functionality when only block
-> > remapping of I/O is occurring in user-space code.
-> 
-> The problem there is that the first case has all the issues of pscsi and 
-> simply becomes a performance optimization over tgt+iscsi client+pscsi and 
-> the latter case excludes the main use cases I'm interested in - OSDs, media 
-> changers, optical discs (the biggest thing for me), and so forth.
-> 
-> One of the main things I want to do with this is hook up a plugin that uses 
-> libmirage to handle various optical disc image formats.
-> 
+> This patch removes the redundant variable, by making init_rmode_tss()
+> return 0 on success, -errno on failure.
 
-Not sure I follow..  How does the proposed passthrough mode prevent
-someone from emulating OSDs, media changers, optical disks or anything
-else in userspace with TCMU..?
+Which is going to propagate all the way to userpace through ioctl ...
+is this change of A[PB]I acceptable?
 
-The main thing that the above comments highlight is why attempting to
-combine the existing in-kernel emulation with a userspace backend
-providing it's own emulation can open up a number of problems with
-mismatched state between the two.
-
---nab
-
+Otherwise, -EFAULT seems to match unlikely problems better than -ENOMEM,
+so if it is acceptable:  Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
