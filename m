@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaISFVD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:21:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52949 "EHLO
+	id S1757660AbaISFTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:19:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52849 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795AbaISFVA (ORCPT
+	with ESMTP id S1751753AbaISFTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:21:00 -0400
-Date: Thu, 18 Sep 2014 22:19:37 -0700
-From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
-Message-ID: <tip-f181957c2849478fc963a8ac3c7dacf0a87c6b05@git.kernel.org>
+	Fri, 19 Sep 2014 01:19:40 -0400
+Date: Thu, 18 Sep 2014 22:19:09 -0700
+From: tip-bot for Anton Blanchard <tipbot@zytor.com>
+Message-ID: <tip-65ccb4faae872b63dd8f5fbc83d0195e3dfabf0d@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, borntraeger@de.ibm.com,
-        yarygin@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, borntraeger@de.ibm.com,
-        yarygin@linux.vnet.ibm.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1409579095-12963-3-git-send-email-yarygin@linux.vnet.ibm.com>
-References: <1409579095-12963-3-git-send-email-yarygin@linux.vnet.ibm.com>
+        mingo@redhat.com, anton@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, mpe@ellerman.id.au, sukadev@linux.vnet.ibm.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@samba.org, mingo@redhat.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, mpe@ellerman.id.au, tglx@linutronix.de,
+        sukadev@linux.vnet.ibm.com
+In-Reply-To: <20140825182506.2be6512d@kryten>
+References: <20140825182506.2be6512d@kryten>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm stat report:
-  Enable the target.system_wide flag
-Git-Commit-ID: f181957c2849478fc963a8ac3c7dacf0a87c6b05
+Subject: [tip:perf/core] perf tools powerpc:
+  Fix build issue when DWARF support is disabled
+Git-Commit-ID: 65ccb4faae872b63dd8f5fbc83d0195e3dfabf0d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,47 +36,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f181957c2849478fc963a8ac3c7dacf0a87c6b05
-Gitweb:     http://git.kernel.org/tip/f181957c2849478fc963a8ac3c7dacf0a87c6b05
-Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-AuthorDate: Mon, 1 Sep 2014 17:44:54 +0400
+Commit-ID:  65ccb4faae872b63dd8f5fbc83d0195e3dfabf0d
+Gitweb:     http://git.kernel.org/tip/65ccb4faae872b63dd8f5fbc83d0195e3dfabf0d
+Author:     Anton Blanchard <anton@samba.org>
+AuthorDate: Mon, 25 Aug 2014 18:25:06 +1000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 17 Sep 2014 17:08:07 -0300
 
-perf kvm stat report: Enable the target.system_wide flag
+perf tools powerpc: Fix build issue when DWARF support is disabled
 
-The 'perf kvm stat report' command can be used to analyze events either
-for system wide or for specific pids.
+The powerpc skip callchain code uses DWARF, so we must disable it if
+DWARF is disabled.
 
-Let's enable kvm->opts.target.system_wide flag when 'report' command is
-running for system-wide analyzing. This helps to sync kvm->opts.target
-values in 'report' and 'live' commands.
-
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1409579095-12963-3-git-send-email-yarygin@linux.vnet.ibm.com
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20140825182506.2be6512d@kryten
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/arch/powerpc/Makefile |  2 +-
+ tools/perf/config/Makefile       | 10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 646ec5d..84295ab 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1207,6 +1207,9 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 					   kvm_events_report_options);
- 	}
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index b92219b..6f7782b 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -1,6 +1,6 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 75d4c23..98c9fd1 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -48,10 +48,6 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm))
+   NO_LIBDW_DWARF_UNWIND := 1
+ endif
  
-+	if (!kvm->opts.target.pid)
-+		kvm->opts.target.system_wide = true;
+-ifeq ($(ARCH),powerpc)
+-  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
+-endif
+-
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
+@@ -378,6 +374,12 @@ ifndef NO_LIBELF
+   endif # NO_DWARF
+ endif # NO_LIBELF
+ 
++ifeq ($(ARCH),powerpc)
++  ifndef NO_DWARF
++    CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
++  endif
++endif
 +
- 	return kvm_events_report_vcpu(kvm);
- }
- 
+ ifndef NO_LIBUNWIND
+   ifneq ($(feature-libunwind), 1)
+     msg := $(warning No libunwind found. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
