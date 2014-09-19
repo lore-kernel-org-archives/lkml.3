@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339AbaISN6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:58:03 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:57495 "EHLO mailhub1.si.c-s.fr"
+	id S1757251AbaISN6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:58:01 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:57503 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738AbaISN56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756716AbaISN56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 09:57:58 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: [PATCH 1/2] powerpc32: put csum_tcpudp_magic inline
-Message-Id: <20140919135756.6EE8D1AB26A@localhost.localdomain>
+Subject: [PATCH 2/2] powerpc32: add support for csum_add()
+Message-Id: <20140919135756.A060D1AB26D@localhost.localdomain>
 Date: Fri, 19 Sep 2014 15:57:56 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-csum_tcpudp_magic() is only a few instructions, and does not modifies any other
-register than the returned result. So it is not worth having it as a separate
-function and suffer function branching and saving of volatile registers.
-This patch makes it inline by use of the already existing csum_tcpudp_nofold()
+The C version of csum_add() as defined in include/net/checksum.h gives the
+following assembly:
+       0:       7c 04 1a 14     add     r0,r4,r3
+       4:       7c 64 00 10     subfc   r3,r4,r0
+       8:       7c 63 19 10     subfe   r3,r3,r3
+       c:       7c 63 00 50     subf    r3,r3,r0
+
+include/net/checksum.h also offers the possibility to define an arch specific
 function.
+This patch provides a ppc32 specific csum_add() inline function.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/include/asm/checksum.h | 15 +++++++++++++++
- arch/powerpc/lib/checksum_32.S      | 16 ----------------
- 2 files changed, 15 insertions(+), 16 deletions(-)
+ arch/powerpc/include/asm/checksum.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
 diff --git a/arch/powerpc/include/asm/checksum.h b/arch/powerpc/include/asm/checksum.h
-index 8251a3b..cfe806a 100644
+index cfe806a..a13aa1f 100644
 --- a/arch/powerpc/include/asm/checksum.h
 +++ b/arch/powerpc/include/asm/checksum.h
-@@ -19,6 +19,7 @@
- #else
- extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
- 
-+#ifdef __powerpc64__
- /*
-  * computes the checksum of the TCP/UDP pseudo-header
-  * returns a 16-bit checksum, already complemented
-@@ -27,6 +28,7 @@ extern __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
- 					unsigned short len,
- 					unsigned short proto,
- 					__wsum sum);
-+#endif
- 
- /*
-  * computes the checksum of a memory block at buff, length len,
-@@ -127,6 +129,19 @@ static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
- #endif
+@@ -141,6 +141,19 @@ static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
+ {
+ 	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
  }
- 
-+#ifndef __powerpc64__
-+/*
-+ * computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented
-+ */
-+static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
-+					unsigned short len,
-+					unsigned short proto,
-+					__wsum sum)
++
++#define HAVE_ARCH_CSUM_ADD
++static inline __wsum csum_add(__wsum csum, __wsum addend)
 +{
-+	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
++    __asm__("\n\
++	addc %0,%0,%1 \n\
++	addze %0,%0 \n\
++	"
++	: "=r" (csum)
++	: "r" (addend), "0"(csum));
++	return csum;
 +}
-+#endif
++
+ #endif
  #endif
  #endif /* __KERNEL__ */
- #endif
-diff --git a/arch/powerpc/lib/checksum_32.S b/arch/powerpc/lib/checksum_32.S
-index 7874e8a..6d67e05 100644
---- a/arch/powerpc/lib/checksum_32.S
-+++ b/arch/powerpc/lib/checksum_32.S
-@@ -41,22 +41,6 @@ _GLOBAL(ip_fast_csum)
- 	blr
- 
- /*
-- * Compute checksum of TCP or UDP pseudo-header:
-- *   csum_tcpudp_magic(saddr, daddr, len, proto, sum)
-- */	
--_GLOBAL(csum_tcpudp_magic)
--	rlwimi	r5,r6,16,0,15	/* put proto in upper half of len */
--	addc	r0,r3,r4	/* add 4 32-bit words together */
--	adde	r0,r0,r5
--	adde	r0,r0,r7
--	addze	r0,r0		/* add in final carry */
--	rlwinm	r3,r0,16,0,31	/* fold two halves together */
--	add	r3,r0,r3
--	not	r3,r3
--	srwi	r3,r3,16
--	blr
--
--/*
-  * computes the checksum of a memory block at buff, length len,
-  * and adds in "sum" (32-bit)
-  *
 -- 
 2.1.0
 
