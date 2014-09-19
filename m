@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026AbaISGcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 02:32:43 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:57232 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751046AbaISGcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 02:32:41 -0400
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <wim@iguana.be>, <linux@roeck-us.net>
-CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH 1/2] watchdog: dw_wdt: restart the counter immediately after enabling WDT
-Date: Fri, 19 Sep 2014 14:29:58 +0800
-Message-ID: <1411108199-1280-2-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411108199-1280-1-git-send-email-jszhang@marvell.com>
-References: <1411108199-1280-1-git-send-email-jszhang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-19_04:2014-09-18,2014-09-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1409190062
+	id S1756804AbaISGiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 02:38:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaISGiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 02:38:12 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net-next] net: keep original skb which only needs header checking during software GSO
+Date: Fri, 19 Sep 2014 14:38:06 +0800
+Message-Id: <1411108686-20602-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TOP_INIT may be zero, so the timeout period may be very short after
-initialization is done, thus the system may be reset soon after enabling.
-We fix this problem by restarting the counter immediately after enabling
-WDT.
+Commit ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+around original SKB when we software segment GSO frames") frees the
+original skb after software GSO even for dodgy gso skbs. This breaks
+the stream throughput from untrusted sources, since only header
+checking was done during software GSO instead of a true
+segmentation. This patch fixes this by freeing the original gso skb
+only when it was really segmented by software.
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Fixes ce93718fb7cdbc064c3000ff59e4d3200bdfa744 ("net: Don't keep
+around original SKB when we software segment GSO frames.")
+
+CC: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/watchdog/dw_wdt.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/core/dev.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-index 9f21029..ad0619d 100644
---- a/drivers/watchdog/dw_wdt.c
-+++ b/drivers/watchdog/dw_wdt.c
-@@ -146,6 +146,7 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
- 		dw_wdt_set_top(DW_WDT_MAX_TOP);
- 		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
- 		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
-+		dw_wdt_keepalive();
- 	}
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e916ba8..b7a0e1d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2694,10 +2694,12 @@ struct sk_buff *validate_xmit_skb(struct sk_buff *skb, struct net_device *dev)
+ 		struct sk_buff *segs;
  
- 	dw_wdt_set_next_heartbeat();
+ 		segs = skb_gso_segment(skb, features);
+-		kfree_skb(skb);
+ 		if (IS_ERR(segs))
+ 			segs = NULL;
+-		skb = segs;
++		else if (segs) {
++			kfree_skb(skb);
++			skb = segs;
++		}
+ 	} else {
+ 		if (skb_needs_linearize(skb, features) &&
+ 		    __skb_linearize(skb))
 -- 
-2.1.0
+1.9.1
 
