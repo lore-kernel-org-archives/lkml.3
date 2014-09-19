@@ -1,100 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104AbaISLti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:49:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56351 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050AbaISLtf (ORCPT
+	id S1757383AbaISLva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:51:30 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:56613 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757348AbaISLv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:49:35 -0400
-Date: Fri, 19 Sep 2014 04:49:07 -0700
-From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-0cacbfbeb5077b63d5d3cf6df88b14ac12ad584b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, bhe@redhat.com,
-        rafael.j.wysocki@intel.com, vgoyal@redhat.com, pavel@ucw.cz,
-        keescook@chromium.org, yongjun_wei@trendmicro.com.cn,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bhe@redhat.com, torvalds@linux-foundation.org,
-        rafael.j.wysocki@intel.com, vgoyal@redhat.com, pavel@ucw.cz,
-        keescook@chromium.org, yongjun_wei@trendmicro.com.cn,
-        tglx@linutronix.de
-In-Reply-To: <20140911161931.GA12001@www.outflux.net>
-References: <20140911161931.GA12001@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/kaslr:
-  Avoid the setup_data area when picking location
-Git-Commit-ID: 0cacbfbeb5077b63d5d3cf6df88b14ac12ad584b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 19 Sep 2014 07:51:28 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-07-541c18bd6a06
+Message-id: <541C18B9.1010107@samsung.com>
+Date: Fri, 19 Sep 2014 13:51:21 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Joonyoung Shim <jy0922.shim@samsung.com>, Inki Dae <inki.dae@samsung.com>
+Cc: Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, drake@endlessm.com,
+        daniel@ffwll.ch, m.szyprowski@samsung.com
+Subject: Re: [PATCH] drm/exynos: switch to universal plane API
+References: <1411046223-22703-1-git-send-email-a.hajda@samsung.com>
+ <541B8093.6040807@samsung.com> <541C0B5B.7010100@samsung.com>
+ <541C0F7E.1080808@samsung.com>
+In-reply-to: <541C0F7E.1080808@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xa7p7JWRCDP7ONbDoPXeSyeL/tonM
+	Fo/mP2a2uPL1PZvFpPsTWCxe3LvIYtG74CqbxdmmN+wWl3fNYbOYcX4fk8XaI3fZLWZMfsnm
+	wOOx6HuWx95vC1g8tn97wOpxv/s4k0ffllWMHp83yQWwRXHZpKTmZJalFunbJXBlLLh6mrXg
+	gn/F/seZDYz7HbsY2TkkBEwkftV0MXICWWISF+6tZ+ti5OIQEljKKHHvaTsjhPOJUWLDt3ls
+	IFW8AloS87e9B7NZBFQlbvdNYgWx2QQ0Jf5uvgkWFxUIk3j26yATRL2gxI/J91hAbBEBX4kt
+	/1+DDWUWmMcssab9O1hCWMBO4tfMm4wgtpDAEkaJQ4udQWxOAW2Jbf2ngGo4gBr0JO5f1AIJ
+	MwvIS2xe85Z5AqPALCQrZiFUzUJStYCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSGR8
+	3cG49JjVIUYBDkYlHl6PNOkQIdbEsuLK3EOMEhzMSiK8fGIyIUK8KYmVValF+fFFpTmpxYcY
+	mTg4pRoYG+7uWrZ1q+TMB5Yl1xXWe7wUKt4ZOUt/lkjoltsbX3AY8E27z36cM1Cce8n6K+IW
+	HakOBZdu/12zonW7Slfwm1dqX6PstcRYf6ilqv01+7BB1FEmQcLcq+qYZ1PChvtHPVZcrtbd
+	fWaKJtPaoxzXRN4XOzj9Yr+2MfMP1+5vi/z2Lro72avypxJLcUaioRZzUXEiAPK2YlVqAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0cacbfbeb5077b63d5d3cf6df88b14ac12ad584b
-Gitweb:     http://git.kernel.org/tip/0cacbfbeb5077b63d5d3cf6df88b14ac12ad584b
-Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Thu, 11 Sep 2014 09:19:31 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 13:04:29 +0200
+On 09/19/2014 01:11 PM, Joonyoung Shim wrote:
+> Hi,
+>
+> On 09/19/2014 07:54 PM, Andrzej Hajda wrote:
+>> On 09/19/2014 03:02 AM, Joonyoung Shim wrote:
+>>> Hi Andrzej,
+>>>
+>>> On 09/18/2014 10:17 PM, Andrzej Hajda wrote:
+>>>> The patch replaces legacy functions
+>>>> drm_plane_init() / drm_crtc_init() with
+>>>> drm_universal_plane_init() and drm_crtc_init_with_planes().
+>>>> It allows to replace fake primary plane with the real one.
+>>>>
+>>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>>>> ---
+>>>> Hi Inki,
+>>>>
+>>>> I have tested this patch with trats board, it looks OK.
+>>>> As a side effect it should solve fb refcounting issues
+>>>> reported by me and Daniel Drake.
+>>>>
+>>>> Regards
+>>>> Andrzej
+>>>> ---
+>>>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c  | 63 ++++++++++++++++---------------
+>>>>  drivers/gpu/drm/exynos/exynos_drm_drv.c   |  5 ++-
+>>>>  drivers/gpu/drm/exynos/exynos_drm_plane.c | 17 +++++----
+>>>>  drivers/gpu/drm/exynos/exynos_drm_plane.h |  3 +-
+>>>>  4 files changed, 47 insertions(+), 41 deletions(-)
+>>>>
+>>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>>> index b68e58f..d2f713e 100644
+>>>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>>> @@ -32,7 +32,6 @@ enum exynos_crtc_mode {
+>>>>   * Exynos specific crtc structure.
+>>>>   *
+>>>>   * @drm_crtc: crtc object.
+>>>> - * @drm_plane: pointer of private plane object for this crtc
+>>>>   * @manager: the manager associated with this crtc
+>>>>   * @pipe: a crtc index created at load() with a new crtc object creation
+>>>>   *	and the crtc object would be set to private->crtc array
+>>>> @@ -46,7 +45,6 @@ enum exynos_crtc_mode {
+>>>>   */
+>>>>  struct exynos_drm_crtc {
+>>>>  	struct drm_crtc			drm_crtc;
+>>>> -	struct drm_plane		*plane;
+>>>>  	struct exynos_drm_manager	*manager;
+>>>>  	unsigned int			pipe;
+>>>>  	unsigned int			dpms;
+>>>> @@ -94,12 +92,12 @@ static void exynos_drm_crtc_commit(struct drm_crtc *crtc)
+>>>>  
+>>>>  	exynos_drm_crtc_dpms(crtc, DRM_MODE_DPMS_ON);
+>>>>  
+>>>> -	exynos_plane_commit(exynos_crtc->plane);
+>>>> +	exynos_plane_commit(crtc->primary);
+>>>>  
+>>>>  	if (manager->ops->commit)
+>>>>  		manager->ops->commit(manager);
+>>>>  
+>>>> -	exynos_plane_dpms(exynos_crtc->plane, DRM_MODE_DPMS_ON);
+>>>> +	exynos_plane_dpms(crtc->primary, DRM_MODE_DPMS_ON);
+>>>>  }
+>>>>  
+>>>>  static bool
+>>>> @@ -123,10 +121,9 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>>>  {
+>>>>  	struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
+>>>>  	struct exynos_drm_manager *manager = exynos_crtc->manager;
+>>>> -	struct drm_plane *plane = exynos_crtc->plane;
+>>>> +	struct drm_framebuffer *fb = crtc->primary->fb;
+>>>>  	unsigned int crtc_w;
+>>>>  	unsigned int crtc_h;
+>>>> -	int ret;
+>>>>  
+>>>>  	/*
+>>>>  	 * copy the mode data adjusted by mode_fixup() into crtc->mode
+>>>> @@ -134,29 +131,21 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>>>  	 */
+>>>>  	memcpy(&crtc->mode, adjusted_mode, sizeof(*adjusted_mode));
+>>>>  
+>>>> -	crtc_w = crtc->primary->fb->width - x;
+>>>> -	crtc_h = crtc->primary->fb->height - y;
+>>>> +	crtc_w = fb->width - x;
+>>>> +	crtc_h = fb->height - y;
+>>>>  
+>>>>  	if (manager->ops->mode_set)
+>>>>  		manager->ops->mode_set(manager, &crtc->mode);
+>>>>  
+>>>> -	ret = exynos_plane_mode_set(plane, crtc, crtc->primary->fb, 0, 0, crtc_w, crtc_h,
+>>>> -				    x, y, crtc_w, crtc_h);
+>>>> -	if (ret)
+>>>> -		return ret;
+>>>> -
+>>>> -	plane->crtc = crtc;
+>>>> -	plane->fb = crtc->primary->fb;
+>>>> -	drm_framebuffer_reference(plane->fb);
+>>>> -
+>>>> -	return 0;
+>>>> +	return exynos_plane_mode_set(crtc->primary, crtc, fb, 0, 0,
+>>>> +				     crtc_w, crtc_h, x, y, crtc_w, crtc_h);
+>>>>  }
+>>>>  
+>>>>  static int exynos_drm_crtc_mode_set_commit(struct drm_crtc *crtc, int x, int y,
+>>>>  					  struct drm_framebuffer *old_fb)
+>>>>  {
+>>>>  	struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
+>>>> -	struct drm_plane *plane = exynos_crtc->plane;
+>>>> +	struct drm_framebuffer *fb = crtc->primary->fb;
+>>>>  	unsigned int crtc_w;
+>>>>  	unsigned int crtc_h;
+>>>>  	int ret;
+>>>> @@ -167,11 +156,11 @@ static int exynos_drm_crtc_mode_set_commit(struct drm_crtc *crtc, int x, int y,
+>>>>  		return -EPERM;
+>>>>  	}
+>>>>  
+>>>> -	crtc_w = crtc->primary->fb->width - x;
+>>>> -	crtc_h = crtc->primary->fb->height - y;
+>>>> +	crtc_w = fb->width - x;
+>>>> +	crtc_h = fb->height - y;
+>>>>  
+>>>> -	ret = exynos_plane_mode_set(plane, crtc, crtc->primary->fb, 0, 0, crtc_w, crtc_h,
+>>>> -				    x, y, crtc_w, crtc_h);
+>>>> +	ret = exynos_plane_mode_set(crtc->primary, crtc, fb, 0, 0,
+>>>> +				    crtc_w, crtc_h, x, y, crtc_w, crtc_h);
+>>>>  	if (ret)
+>>>>  		return ret;
+>>>>  
+>>>> @@ -279,6 +268,7 @@ static void exynos_drm_crtc_destroy(struct drm_crtc *crtc)
+>>>>  
+>>>>  	private->crtc[exynos_crtc->pipe] = NULL;
+>>>>  
+>>>> +	crtc->primary->funcs->destroy(crtc->primary);
+>>> This is unnecessary.
+>> The question is how these object should be destroyed. In current code
+>> crtc is destroyed in fimd_unbind and it is called before
+>> drm_mode_config_cleanup
+>> which destroys all planes.
+>> In such case primary plane will stay with .crtc pointing to non-existing
+>> crtc.
+>> Maybe performing crtcs cleanup after planes cleanup is better solution???
+> I think it's wrong to call destroy function of crtc in fimd_unbind, all
+> objects should be destroyed by drm_mode_config_cleanup except error
+> cases while initializing.
 
-x86/kaslr: Avoid the setup_data area when picking location
+Yes, it looks better this way. As I lurked in other drm drivers only
+exynos and imx
+destroys their objects directly, not via drm_mode_config_cleanup.
 
-The KASLR location-choosing logic needs to avoid the setup_data
-list memory areas as well. Without this, it would be possible to
-have the ASLR position stomp on the memory, ultimately causing
-the boot to fail.
+>
+>>>>  	drm_crtc_cleanup(crtc);
+>>>>  	kfree(exynos_crtc);
+>>>>  }
+>>>> @@ -304,8 +294,7 @@ static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
+>>>>  			exynos_drm_crtc_commit(crtc);
+>>>>  			break;
+>>>>  		case CRTC_MODE_BLANK:
+>>>> -			exynos_plane_dpms(exynos_crtc->plane,
+>>>> -					  DRM_MODE_DPMS_OFF);
+>>>> +			exynos_plane_dpms(crtc->primary, DRM_MODE_DPMS_OFF);
+>>>>  			break;
+>>>>  		default:
+>>>>  			break;
+>>>> @@ -351,8 +340,10 @@ static void exynos_drm_crtc_attach_mode_property(struct drm_crtc *crtc)
+>>>>  int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>>>  {
+>>>>  	struct exynos_drm_crtc *exynos_crtc;
+>>>> +	struct drm_plane *plane;
+>>>>  	struct exynos_drm_private *private = manager->drm_dev->dev_private;
+>>>>  	struct drm_crtc *crtc;
+>>>> +	int ret;
+>>>>  
+>>>>  	exynos_crtc = kzalloc(sizeof(*exynos_crtc), GFP_KERNEL);
+>>>>  	if (!exynos_crtc)
+>>>> @@ -364,11 +355,11 @@ int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>>>  	exynos_crtc->dpms = DRM_MODE_DPMS_OFF;
+>>>>  	exynos_crtc->manager = manager;
+>>>>  	exynos_crtc->pipe = manager->pipe;
+>>>> -	exynos_crtc->plane = exynos_plane_init(manager->drm_dev,
+>>>> -				1 << manager->pipe, true);
+>>>> -	if (!exynos_crtc->plane) {
+>>>> -		kfree(exynos_crtc);
+>>>> -		return -ENOMEM;
+>>>> +	plane = exynos_plane_init(manager->drm_dev, 1 << manager->pipe,
+>>>> +				  DRM_PLANE_TYPE_PRIMARY);
+>>>> +	if (IS_ERR(plane)) {
+>>>> +		ret = PTR_ERR(plane);
+>>>> +		goto err_plane;
+>>>>  	}
+>>>>  
+>>>>  	manager->crtc = &exynos_crtc->drm_crtc;
+>>>> @@ -376,12 +367,22 @@ int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>>>  
+>>>>  	private->crtc[manager->pipe] = crtc;
+>>>>  
+>>>> -	drm_crtc_init(manager->drm_dev, crtc, &exynos_crtc_funcs);
+>>>> +	ret = drm_crtc_init_with_planes(manager->drm_dev, crtc, plane, NULL,
+>>>> +					&exynos_crtc_funcs);
+>>>> +	if (ret < 0)
+>>>> +		goto err_crtc;
+>>>> +
+>>>>  	drm_crtc_helper_add(crtc, &exynos_crtc_helper_funcs);
+>>>>  
+>>>>  	exynos_drm_crtc_attach_mode_property(crtc);
+>>>>  
+>>>>  	return 0;
+>>>> +
+>>>> +err_crtc:
+>>>> +	plane->funcs->destroy(plane);
+>>>> +err_plane:
+>>>> +	kfree(exynos_crtc);
+>>>> +	return ret;
+>>>>  }
+>>>>  
+>>>>  int exynos_drm_crtc_enable_vblank(struct drm_device *dev, int pipe)
+>>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>>>> index 9b00e4e..a439452 100644
+>>>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>>>> @@ -86,8 +86,9 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+>>>>  		struct drm_plane *plane;
+>>>>  		unsigned long possible_crtcs = (1 << MAX_CRTC) - 1;
+>>>>  
+>>>> -		plane = exynos_plane_init(dev, possible_crtcs, false);
+>>>> -		if (!plane)
+>>>> +		plane = exynos_plane_init(dev, possible_crtcs,
+>>>> +					  DRM_PLANE_TYPE_OVERLAY);
+>>>> +		if (IS_ERR(plane))
+>>>>  			goto err_mode_config_cleanup;
+>>>>  	}
+>>>>  
+>>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_plane.c b/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>>>> index 8371cbd..15e37a0 100644
+>>>> --- a/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>>>> @@ -139,6 +139,8 @@ int exynos_plane_mode_set(struct drm_plane *plane, struct drm_crtc *crtc,
+>>>>  			overlay->crtc_x, overlay->crtc_y,
+>>>>  			overlay->crtc_width, overlay->crtc_height);
+>>>>  
+>>>> +	plane->crtc = crtc;
+>>>> +
+>>> OK, then we can remove same code from exynos_update_plane().
+>> Right.
+>>
+>>> One more, plane->crtc is NULL before mode_set or setplane so it's
+>>> problem if call plane->funcs->destroy with plane->crtc == NULL.
+>>> We need checking plane->crtc is NULL in exynos_disable_plane().
+>> I can simply add checks, but why we allow the plane with NULL crtc to be
+>> enabled?
+>>
+> I mean plane disable case, not enable case.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Baoquan He <bhe@redhat.com>
-Cc: stable@vger.kernel.org
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140911161931.GA12001@www.outflux.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/boot/compressed/aslr.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+exynos_plane_dpms(off) calls exynos_drm_crtc_plane_disable only if
+exynos_plane->enabled
+is true, so only if plane changes state from enabled to disabled
+exynos_drm_crtc_plane_disable
+is called. I guess it should not be allowed that plane have .enabled
+true and .crtc NULL, if so
+we do not need checks here.
 
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index fc6091a..d39189b 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -183,12 +183,27 @@ static void mem_avoid_init(unsigned long input, unsigned long input_size,
- static bool mem_avoid_overlap(struct mem_vector *img)
- {
- 	int i;
-+	struct setup_data *ptr;
- 
- 	for (i = 0; i < MEM_AVOID_MAX; i++) {
- 		if (mem_overlaps(img, &mem_avoid[i]))
- 			return true;
- 	}
- 
-+	/* Avoid all entries in the setup_data linked list. */
-+	ptr = (struct setup_data *)(unsigned long)real_mode->hdr.setup_data;
-+	while (ptr) {
-+		struct mem_vector avoid;
-+
-+		avoid.start = (u64)ptr;
-+		avoid.size = sizeof(*ptr) + ptr->len;
-+
-+		if (mem_overlaps(img, &avoid))
-+			return true;
-+
-+		ptr = (struct setup_data *)(unsigned long)ptr->next;
-+	}
-+
- 	return false;
- }
- 
+Regards
+Andrzej
+
+>
+> Thanks.
+>
+
