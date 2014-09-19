@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836AbaISFVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:21:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52982 "EHLO
+	id S1757851AbaISFVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:21:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52989 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaISFVk (ORCPT
+	with ESMTP id S1752139AbaISFVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:21:40 -0400
-Date: Thu, 18 Sep 2014 22:20:38 -0700
+	Fri, 19 Sep 2014 01:21:45 -0400
+Date: Thu, 18 Sep 2014 22:20:51 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-c501e90b4700e4f247ccdcf5ae81f9846a2ef5f9@git.kernel.org>
+Message-ID: <tip-dc0a6202421170a6d8d2c6f5176575b3f60e0f85@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
@@ -20,11 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1406786474-9306-30-git-send-email-adrian.hunter@intel.com>
-References: <1406786474-9306-30-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1406786474-9306-7-git-send-email-adrian.hunter@intel.com>
+References: <1406786474-9306-7-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add perf-with-kcore script
-Git-Commit-ID: c501e90b4700e4f247ccdcf5ae81f9846a2ef5f9
+Subject: [tip:perf/core] perf tools:
+  Let default config be defined for a PMU
+Git-Commit-ID: dc0a6202421170a6d8d2c6f5176575b3f60e0f85
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,55 +38,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c501e90b4700e4f247ccdcf5ae81f9846a2ef5f9
-Gitweb:     http://git.kernel.org/tip/c501e90b4700e4f247ccdcf5ae81f9846a2ef5f9
+Commit-ID:  dc0a6202421170a6d8d2c6f5176575b3f60e0f85
+Gitweb:     http://git.kernel.org/tip/dc0a6202421170a6d8d2c6f5176575b3f60e0f85
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 31 Jul 2014 09:01:12 +0300
+AuthorDate: Thu, 31 Jul 2014 09:00:49 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 17 Sep 2014 17:08:08 -0300
 
-perf tools: Add perf-with-kcore script
+perf tools: Let default config be defined for a PMU
 
-Decoding an Intel PT trace of the kernel requires an accurate kernel
-object image.  This is provided by making a copy of kcore.  However the
-copy needs to be made under the same conditions as the original
-recording, and then it needs to be associated with the perf.data file.
-The perf-with-kcore script does that.
+This allows default config terms to be provided for a PMU. So, for
+example, when the Intel PT PMU is added, it will be possible to specify:
 
-The script also checks the permissions on the buildid cache and can be
-used to fix them.  That is needed for distributions where root does not
-have a home directory and consequently writes to the same buildid cache
-as the user, resulting in cached files that the user does not have
-access to.
+	intel_pt//
 
-Example:
+which will be the same as:
 
-$ ./perf-with-kcore
-Usage: perf-with-kcore <perf sub-command> <perf.data directory> [<sub-command options> [ -- <workload>]]
-       <perf sub-command> can be record, script, report or inject
-   or: perf-with-kcore fix_buildid_cache_permissions
-$ ./perf-with-kcore record pt_uname -e intel_pt// -- uname
-Recording
-Using /home/ahunter/bin/perf
-perf version 3.15.rc3.g4549ba
-/home/ahunter/bin/perf record -o pt_uname/perf.data -e intel_pt//  -- uname
-Linux
-[ perf record: Woken up 3 times to write data ]
-[ perf record: Captured and wrote 0.023 MB pt_uname/perf.data ]
-Copying kcore
-[sudo] password for ahunter:
-Done
-$ tools/perf/perf-with-kcore.sh script pt_uname | head
-Using /home/ahunter/bin/perf
-perf version 3.15.rc3.g4549ba
-/home/ahunter/bin/perf script -i pt_uname/perf.data --kallsyms=pt_uname/kcore_dir/kallsyms
-         swapper     0 [002] 161533.969666: sched:sched_switch: swapper/2:0 [120] R ==> perf:11316 [120]
-          :11315 11315 [003] 161533.969704: sched:sched_switch: perf:11315 [120] S ==> swapper/3:0 [120]
-          :11316 11316 [002] 161533.969783: sched:sched_switch: perf:11316 [120] R ==> migration/2:33 [0]
-             :33    33 [002] 161533.969791: sched:sched_switch: migration/2:33 [0] S ==> swapper/2:0 [120]
-         swapper     0 [003] 161533.969792: sched:sched_switch: swapper/3:0 [120] R ==> perf:11316 [120]
-          :11316 11316 [003] 161533.970062: branches:                 0 [unknown] ([unknown]) => ffffffff810532fa native_write_msr_safe ([kernel.kallsyms])
-          :11316 11316 [003] 161533.970062: branches:  ffffffff810532fd native_write_msr_safe ([kernel.kallsyms]) => ffffffff81035b31 pt_config_start ([kernel.kallsyms])
+	intel_pt/tsc=1,noretcomp=0/
+
+meaning that the trace should contain TSC timestamps and perform 'return
+compression'.
+
+An important consideration of this patch is that it must be possible to
+overwrite the default values.  That has meant changing the logic so that
+a zero value can replace a non-zero value.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -95,318 +71,194 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-30-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406786474-9306-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/.gitignore         |   1 +
- tools/perf/Makefile.perf      |   5 +-
- tools/perf/perf-with-kcore.sh | 259 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 264 insertions(+), 1 deletion(-)
+ tools/perf/tests/pmu.c         |  2 +-
+ tools/perf/util/parse-events.c |  7 ++++++-
+ tools/perf/util/pmu.c          | 42 ++++++++++++++++++++++++++----------------
+ tools/perf/util/pmu.h          |  9 ++++++++-
+ 4 files changed, 41 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
-index 782d86e..717221e 100644
---- a/tools/perf/.gitignore
-+++ b/tools/perf/.gitignore
-@@ -15,6 +15,7 @@ perf.data
- perf.data.old
- output.svg
- perf-archive
-+perf-with-kcore
- tags
- TAGS
- cscope*
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 95e832b..171f4e6 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -126,6 +126,7 @@ PYRF_OBJS =
- SCRIPT_SH =
+diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
+index 12b322f..eeb68bb1 100644
+--- a/tools/perf/tests/pmu.c
++++ b/tools/perf/tests/pmu.c
+@@ -152,7 +152,7 @@ int test__pmu(void)
+ 		if (ret)
+ 			break;
  
- SCRIPT_SH += perf-archive.sh
-+SCRIPT_SH += perf-with-kcore.sh
+-		ret = perf_pmu__config_terms(&formats, &attr, terms);
++		ret = perf_pmu__config_terms(&formats, &attr, terms, false);
+ 		if (ret)
+ 			break;
  
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
-@@ -878,6 +879,8 @@ install-bin: all install-gtk
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- 	$(call QUIET_INSTALL, perf-archive) \
- 		$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
-+	$(call QUIET_INSTALL, perf-with-kcore) \
-+		$(INSTALL) $(OUTPUT)perf-with-kcore -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- ifndef NO_LIBPERL
- 	$(call QUIET_INSTALL, perl-scripts) \
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
-@@ -923,7 +926,7 @@ config-clean:
- 	@$(MAKE) -C config/feature-checks clean >/dev/null
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index e756288..61be3e6 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -643,7 +643,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 	if (!pmu)
+ 		return -EINVAL;
  
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
--	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
-+	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
- 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
- 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
-diff --git a/tools/perf/perf-with-kcore.sh b/tools/perf/perf-with-kcore.sh
-new file mode 100644
-index 0000000..c7ff90a
---- /dev/null
-+++ b/tools/perf/perf-with-kcore.sh
-@@ -0,0 +1,259 @@
-+#!/bin/bash
-+# perf-with-kcore: use perf with a copy of kcore
-+# Copyright (c) 2014, Intel Corporation.
-+#
-+# This program is free software; you can redistribute it and/or modify it
-+# under the terms and conditions of the GNU General Public License,
-+# version 2, as published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope it will be useful, but WITHOUT
-+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+# more details.
-+
-+set -e
-+
-+usage()
+-	memset(&attr, 0, sizeof(attr));
++	if (pmu->default_config) {
++		memcpy(&attr, pmu->default_config,
++		       sizeof(struct perf_event_attr));
++	} else {
++		memset(&attr, 0, sizeof(attr));
++	}
+ 
+ 	if (!head_config) {
+ 		attr.type = pmu->type;
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9bf5827..438bb26 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -2,6 +2,7 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <stdio.h>
++#include <stdbool.h>
+ #include <dirent.h>
+ #include <api/fs/fs.h>
+ #include <locale.h>
+@@ -387,6 +388,12 @@ static struct cpu_map *pmu_cpumask(const char *name)
+ 	return cpus;
+ }
+ 
++struct perf_event_attr *__attribute__((weak))
++perf_pmu__get_default_config(struct perf_pmu *pmu __maybe_unused)
 +{
-+        echo "Usage: perf-with-kcore <perf sub-command> <perf.data directory> [<sub-command options> [ -- <workload>]]" >&2
-+        echo "       <perf sub-command> can be record, script, report or inject" >&2
-+        echo "   or: perf-with-kcore fix_buildid_cache_permissions" >&2
-+        exit 1
++	return NULL;
 +}
 +
-+find_perf()
-+{
-+	if [ -n "$PERF" ] ; then
-+		return
-+	fi
-+	PERF=`which perf || true`
-+	if [ -z "$PERF" ] ; then
-+		echo "Failed to find perf" >&2
-+	        exit 1
-+	fi
-+	if [ ! -x "$PERF" ] ; then
-+		echo "Failed to find perf" >&2
-+	        exit 1
-+	fi
-+	echo "Using $PERF"
-+	"$PERF" version
-+}
+ static struct perf_pmu *pmu_lookup(const char *name)
+ {
+ 	struct perf_pmu *pmu;
+@@ -421,6 +428,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	pmu->name = strdup(name);
+ 	pmu->type = type;
+ 	list_add_tail(&pmu->list, &pmus);
 +
-+copy_kcore()
-+{
-+	echo "Copying kcore"
++	pmu->default_config = perf_pmu__get_default_config(pmu);
 +
-+	if [ $EUID -eq 0 ] ; then
-+		SUDO=""
-+	else
-+		SUDO="sudo"
-+	fi
+ 	return pmu;
+ }
+ 
+@@ -479,28 +489,24 @@ pmu_find_format(struct list_head *formats, char *name)
+ }
+ 
+ /*
+- * Returns value based on the format definition (format parameter)
++ * Sets value based on the format definition (format parameter)
+  * and unformated value (value parameter).
+- *
+- * TODO maybe optimize a little ;)
+  */
+-static __u64 pmu_format_value(unsigned long *format, __u64 value)
++static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
++			     bool zero)
+ {
+ 	unsigned long fbit, vbit;
+-	__u64 v = 0;
+ 
+ 	for (fbit = 0, vbit = 0; fbit < PERF_PMU_FORMAT_BITS; fbit++) {
+ 
+ 		if (!test_bit(fbit, format))
+ 			continue;
+ 
+-		if (!(value & (1llu << vbit++)))
+-			continue;
+-
+-		v |= (1llu << fbit);
++		if (value & (1llu << vbit++))
++			*v |= (1llu << fbit);
++		else if (zero)
++			*v &= ~(1llu << fbit);
+ 	}
+-
+-	return v;
+ }
+ 
+ /*
+@@ -509,7 +515,8 @@ static __u64 pmu_format_value(unsigned long *format, __u64 value)
+  */
+ static int pmu_config_term(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct parse_events_term *term)
++			   struct parse_events_term *term,
++			   bool zero)
+ {
+ 	struct perf_pmu_format *format;
+ 	__u64 *vp;
+@@ -548,18 +555,19 @@ static int pmu_config_term(struct list_head *formats,
+ 	 * non-hardcoded terms, here's the place to translate
+ 	 * them into value.
+ 	 */
+-	*vp |= pmu_format_value(format->bits, term->val.num);
++	pmu_format_value(format->bits, term->val.num, vp, zero);
+ 	return 0;
+ }
+ 
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct list_head *head_terms)
++			   struct list_head *head_terms,
++			   bool zero)
+ {
+ 	struct parse_events_term *term;
+ 
+ 	list_for_each_entry(term, head_terms, list)
+-		if (pmu_config_term(formats, attr, term))
++		if (pmu_config_term(formats, attr, term, zero))
+ 			return -EINVAL;
+ 
+ 	return 0;
+@@ -573,8 +581,10 @@ int perf_pmu__config_terms(struct list_head *formats,
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms)
+ {
++	bool zero = !!pmu->default_config;
 +
-+	rm -f perf.data.junk
-+	("$PERF" record -o perf.data.junk $PERF_OPTIONS -- sleep 60) >/dev/null 2>/dev/null &
-+	PERF_PID=$!
+ 	attr->type = pmu->type;
+-	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
++	return perf_pmu__config_terms(&pmu->format, attr, head_terms, zero);
+ }
+ 
+ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 1c1e2ee..413b9a6 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -13,9 +13,12 @@ enum {
+ 
+ #define PERF_PMU_FORMAT_BITS 64
+ 
++struct perf_event_attr;
 +
-+	# Need to make sure that perf has started
-+	sleep 1
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
++	struct perf_event_attr *default_config;
+ 	struct cpu_map *cpus;
+ 	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
+ 	struct list_head aliases; /* HEAD struct perf_pmu_alias -> list */
+@@ -27,7 +30,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct list_head *head_terms);
++			   struct list_head *head_terms,
++			   bool zero);
+ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+ 			  const char **unit, double *scale);
+ struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+@@ -46,4 +50,7 @@ void print_pmu_events(const char *event_glob, bool name_only);
+ bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
 +
-+	KCORE=$(($SUDO "$PERF" buildid-cache -v -f -k /proc/kcore >/dev/null) 2>&1)
-+	case "$KCORE" in
-+	"kcore added to build-id cache directory "*)
-+		KCORE_DIR=${KCORE#"kcore added to build-id cache directory "}
-+	;;
-+	*)
-+		kill $PERF_PID
-+		wait >/dev/null 2>/dev/null || true
-+		rm perf.data.junk
-+		echo "$KCORE"
-+		echo "Failed to find kcore" >&2
-+		exit 1
-+	;;
-+	esac
++struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
 +
-+	kill $PERF_PID
-+	wait >/dev/null 2>/dev/null || true
-+	rm perf.data.junk
-+
-+	$SUDO cp -a "$KCORE_DIR" "$(pwd)/$PERF_DATA_DIR"
-+	$SUDO rm -f "$KCORE_DIR/kcore"
-+	$SUDO rm -f "$KCORE_DIR/kallsyms"
-+	$SUDO rm -f "$KCORE_DIR/modules"
-+	$SUDO rmdir "$KCORE_DIR"
-+
-+	KCORE_DIR_BASENAME=$(basename "$KCORE_DIR")
-+	KCORE_DIR="$(pwd)/$PERF_DATA_DIR/$KCORE_DIR_BASENAME"
-+
-+	$SUDO chown $UID "$KCORE_DIR"
-+	$SUDO chown $UID "$KCORE_DIR/kcore"
-+	$SUDO chown $UID "$KCORE_DIR/kallsyms"
-+	$SUDO chown $UID "$KCORE_DIR/modules"
-+
-+	$SUDO chgrp $GROUPS "$KCORE_DIR"
-+	$SUDO chgrp $GROUPS "$KCORE_DIR/kcore"
-+	$SUDO chgrp $GROUPS "$KCORE_DIR/kallsyms"
-+	$SUDO chgrp $GROUPS "$KCORE_DIR/modules"
-+
-+	ln -s "$KCORE_DIR_BASENAME" "$PERF_DATA_DIR/kcore_dir"
-+}
-+
-+fix_buildid_cache_permissions()
-+{
-+	if [ $EUID -ne 0 ] ; then
-+		echo "This script must be run as root via sudo " >&2
-+		exit 1
-+	fi
-+
-+	if [ -z "$SUDO_USER" ] ; then
-+		echo "This script must be run via sudo" >&2
-+		exit 1
-+	fi
-+
-+	USER_HOME=$(bash <<< "echo ~$SUDO_USER")
-+
-+	if [ "$HOME" != "$USER_HOME" ] ; then
-+		echo "Fix unnecessary because root has a home: $HOME" >&2
-+		exit 1
-+	fi
-+
-+	echo "Fixing buildid cache permissions"
-+
-+	find "$USER_HOME/.debug" -xdev -type d          ! -user "$SUDO_USER" -ls -exec chown    "$SUDO_USER" \{\} \;
-+	find "$USER_HOME/.debug" -xdev -type f -links 1 ! -user "$SUDO_USER" -ls -exec chown    "$SUDO_USER" \{\} \;
-+	find "$USER_HOME/.debug" -xdev -type l          ! -user "$SUDO_USER" -ls -exec chown -h "$SUDO_USER" \{\} \;
-+
-+	if [ -n "$SUDO_GID" ] ; then
-+		find "$USER_HOME/.debug" -xdev -type d          ! -group "$SUDO_GID" -ls -exec chgrp    "$SUDO_GID" \{\} \;
-+		find "$USER_HOME/.debug" -xdev -type f -links 1 ! -group "$SUDO_GID" -ls -exec chgrp    "$SUDO_GID" \{\} \;
-+		find "$USER_HOME/.debug" -xdev -type l          ! -group "$SUDO_GID" -ls -exec chgrp -h "$SUDO_GID" \{\} \;
-+	fi
-+
-+	echo "Done"
-+}
-+
-+check_buildid_cache_permissions()
-+{
-+	if [ $EUID -eq 0 ] ; then
-+		return
-+	fi
-+
-+	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type d          ! -user "$USER" -print -quit)
-+	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type f -links 1 ! -user "$USER" -print -quit)
-+	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type l          ! -user "$USER" -print -quit)
-+
-+	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type d          ! -group "$GROUPS" -print -quit)
-+	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type f -links 1 ! -group "$GROUPS" -print -quit)
-+	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type l          ! -group "$GROUPS" -print -quit)
-+
-+	if [ -n "$PERMISSIONS_OK" ] ; then
-+		echo "*** WARNING *** buildid cache permissions may need fixing" >&2
-+	fi
-+}
-+
-+record()
-+{
-+	echo "Recording"
-+
-+	if [ $EUID -ne 0 ] ; then
-+
-+		if [ "$(cat /proc/sys/kernel/kptr_restrict)" -ne 0 ] ; then
-+			echo "*** WARNING *** /proc/sys/kernel/kptr_restrict prevents access to kernel addresses" >&2
-+		fi
-+
-+		if echo "$PERF_OPTIONS" | grep -q ' -a \|^-a \| -a$\|^-a$\| --all-cpus \|^--all-cpus \| --all-cpus$\|^--all-cpus$' ; then
-+			echo "*** WARNING *** system-wide tracing without root access will not be able to read all necessary information from /proc" >&2
-+		fi
-+
-+		if echo "$PERF_OPTIONS" | grep -q 'intel_pt\|intel_bts\| -I\|^-I' ; then
-+			if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt -1 ] ; then
-+				echo "*** WARNING *** /proc/sys/kernel/perf_event_paranoid restricts buffer size and tracepoint (sched_switch) use" >&2
-+			fi
-+
-+			if echo "$PERF_OPTIONS" | grep -q ' --per-thread \|^--per-thread \| --per-thread$\|^--per-thread$' ; then
-+				true
-+			elif echo "$PERF_OPTIONS" | grep -q ' -t \|^-t \| -t$\|^-t$' ; then
-+				true
-+			elif [ ! -r /sys/kernel/debug -o ! -x /sys/kernel/debug ] ; then
-+				echo "*** WARNING *** /sys/kernel/debug permissions prevent tracepoint (sched_switch) use" >&2
-+			fi
-+		fi
-+	fi
-+
-+	if [ -z "$1" ] ; then
-+		echo "Workload is required for recording" >&2
-+		usage
-+	fi
-+
-+	if [ -e "$PERF_DATA_DIR" ] ; then
-+		echo "'$PERF_DATA_DIR' exists" >&2
-+		exit 1
-+	fi
-+
-+	find_perf
-+
-+	mkdir "$PERF_DATA_DIR"
-+
-+	echo "$PERF record -o $PERF_DATA_DIR/perf.data $PERF_OPTIONS -- $*"
-+	"$PERF" record -o "$PERF_DATA_DIR/perf.data" $PERF_OPTIONS -- $* || true
-+
-+	if rmdir "$PERF_DATA_DIR" > /dev/null 2>/dev/null ; then
-+		exit 1
-+	fi
-+
-+	copy_kcore
-+
-+	echo "Done"
-+}
-+
-+subcommand()
-+{
-+	find_perf
-+	check_buildid_cache_permissions
-+	echo "$PERF $PERF_SUB_COMMAND -i $PERF_DATA_DIR/perf.data --kallsyms=$PERF_DATA_DIR/kcore_dir/kallsyms $*"
-+	"$PERF" $PERF_SUB_COMMAND -i "$PERF_DATA_DIR/perf.data" "--kallsyms=$PERF_DATA_DIR/kcore_dir/kallsyms" $*
-+}
-+
-+if [ "$1" = "fix_buildid_cache_permissions" ] ; then
-+	fix_buildid_cache_permissions
-+	exit 0
-+fi
-+
-+PERF_SUB_COMMAND=$1
-+PERF_DATA_DIR=$2
-+shift || true
-+shift || true
-+
-+if [ -z "$PERF_SUB_COMMAND" ] ; then
-+	usage
-+fi
-+
-+if [ -z "$PERF_DATA_DIR" ] ; then
-+	usage
-+fi
-+
-+case "$PERF_SUB_COMMAND" in
-+"record")
-+	while [ "$1" != "--" ] ; do
-+		PERF_OPTIONS+="$1 "
-+		shift || break
-+	done
-+	if [ "$1" != "--" ] ; then
-+		echo "Options and workload are required for recording" >&2
-+		usage
-+	fi
-+	shift
-+	record $*
-+;;
-+"script")
-+	subcommand $*
-+;;
-+"report")
-+	subcommand $*
-+;;
-+"inject")
-+	subcommand $*
-+;;
-+*)
-+	usage
-+;;
-+esac
+ #endif /* __PMU_H */
