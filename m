@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285AbaISTqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 15:46:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60741 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaISTql (ORCPT
+	id S932359AbaISTr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 15:47:26 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11888 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932080AbaISTrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 15:46:41 -0400
-Date: Fri, 19 Sep 2014 12:46:29 -0700 (PDT)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tony Lindgren <tony@atomide.com>
-cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
-        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
-        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
-In-Reply-To: <20140919191649.GQ14505@atomide.com>
-Message-ID: <alpine.DEB.2.10.1409191233590.4213@nanos>
-References: <1411067086-16613-1-git-send-email-nm@ti.com> <1411067086-16613-4-git-send-email-nm@ti.com> <alpine.DEB.2.10.1409181749170.4206@nanos> <20140919030333.GA6088@kahuna> <alpine.DEB.2.10.1409190710320.5612@nanos> <20140919161927.GA28613@kahuna>
- <alpine.DEB.2.10.1409191027330.5612@nanos> <20140919191649.GQ14505@atomide.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 19 Sep 2014 15:47:24 -0400
+Message-ID: <541C8845.4080101@fb.com>
+Date: Fri, 19 Sep 2014 15:47:17 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: [GIT PULL] Btrfs fixes
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-19_07:2014-09-19,2014-09-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.46549439250521e-13 kscore.compositescore=0
+ circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1409190165
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014, Tony Lindgren wrote:
-> * Thomas Gleixner <tglx@linutronix.de> [140919 10:37]:
-> >From hardware point of view the wake-up events behave like interrupts
-> and could also be used as the only interrupt in some messed up cases.
-> That avoids all kinds of custom APIs from driver point.
-> 
-> The re-entrancy problem we've most likely had ever since we enabled
-> the PRCM interrupts, and maybe that's why I did not even consider
-> that part. I think before that we were calling the driver interrupt
-> after waking up from the PM code..
-> 
-> Anyways, how about the following to deal with the re-entrancy problem:
-> 
-> 1. The wake-up interrupt handler must have a separate interrupt
->    handler that just calls tasklet_schedule()
-> 
-> 2. The device interrupt handler also just calls tasklet_schedule()
-> 
-> 3. The tasklet then does pm_runtime_get, handles the registers, and
->    so on.
-> 
-> Or would we still have a re-entrancy problem somewhere else with
-> that?
+Hi Linus,
 
-Why on earth are you wanting tasklets in there? That's just silly,
-really.
+We have two more fixes for pulling:
 
-The wakeup handler is supposed to bring the thing out of deep sleep
-and nothing else. All you want it to do is to mask itself and save the
-information that the real device irq is pending.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-A stub handler for the wakeup irq is enough. We can have that in the
-irq/pm core and all it would do is simply:
+I've got a  revert to fix a regression with btrfs device registration,
+and Filipe has part two of his fsync fix from last week.
 
-irqreturn_t handle_jinxed_wakeup_irq(unsigned irq, void *dev_id)
-{
-	unsigned device_irq = get_dev_irq(dev_id);
+Chris Mason (1) commits (+6/-7):
+    Revert "Btrfs: device_list_add() should not update list when mounted"
 
-	force_mask(irq);
-	set_irq_pending(device_irq);
-	return HANDLED;	
-}
+Filipe Manana (1) commits (+13/-14):
+    Btrfs: set inode's logged_trans/last_log_commit after ranged fsync
 
-So on resume_device_irqs() the real device interrupt gets reenabled
-and unmasked (if it was masked) and the interrupt gets resent either
-in hardware (level or retrigger) or by the software resend mechanism.
+Total: (2) commits (+19/-21)
 
-That completely avoids tasklets, reentrant irq handlers and all other
-crap which might be required.
-
-Thanks,
-
-	tglx
+ fs/btrfs/btrfs_inode.h | 13 +++++++++++--
+ fs/btrfs/tree-log.c    | 14 ++------------
+ fs/btrfs/volumes.c     | 13 ++++++-------
+ 3 files changed, 19 insertions(+), 21 deletions(-)
