@@ -1,183 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592AbaISRPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 13:15:51 -0400
-Received: from exprod5og123.obsmtp.com ([64.18.0.198]:53621 "HELO
-	exprod5og123.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756771AbaISRPs (ORCPT
+	id S1757612AbaISRQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 13:16:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41479 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756771AbaISRQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 13:15:48 -0400
+	Fri, 19 Sep 2014 13:16:56 -0400
+Date: Fri, 19 Sep 2014 18:16:02 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: ls1021a: add gating clocks to IP blocks.
+Message-ID: <20140919171602.GF26036@leverpostej>
+References: <1411123047-7544-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVNEFSMjA=h_pyNF1AyYX4C336iM9nkYY=ocGQxjGpDCJA@mail.gmail.com>
-References: <1410906824-9321-1-git-send-email-tinamdar@apm.com>
-	<CACVXFVNEFSMjA=h_pyNF1AyYX4C336iM9nkYY=ocGQxjGpDCJA@mail.gmail.com>
-Date: Fri, 19 Sep 2014 10:15:45 -0700
-Message-ID: <CACoXjc=eA0nnK2_dRxktFeSKsfV6fQr=mDfN09sbe34H4GADrA@mail.gmail.com>
-Subject: Re: [PATCH v9 0/4] APM X-Gene PCIe host controller
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411123047-7544-1-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ming Lei,
+On Fri, Sep 19, 2014 at 11:37:27AM +0100, Xiubo Li wrote:
+> A given application may not use all the peripherals on the device.
+> In this case, it may be desirable to disable unused peripherals.
+> DCFG provides a mechanism for gating clocks to IP blocks that are
+> not used when running an application.
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  arch/arm/mach-imx/Makefile                |   2 +
+>  arch/arm/mach-imx/clk-ls1021a.c           | 124 ++++++++++++++++++++++++++++++
+>  arch/arm/mach-imx/clk.h                   |  21 +++++
+>  include/dt-bindings/clock/ls1021a-clock.h |  54 +++++++++++++
+>  4 files changed, 201 insertions(+)
+>  create mode 100644 arch/arm/mach-imx/clk-ls1021a.c
+>  create mode 100644 include/dt-bindings/clock/ls1021a-clock.h
 
-On Thu, Sep 18, 2014 at 8:08 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi Tanmay,
->
-> On Wed, Sep 17, 2014 at 6:33 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
->> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
->> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
->> cards.
->>
->> X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
->> Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
->> support for creating generic pcie bridge from device tree. Liviu's patches
->> are available here
->> https://lkml.org/lkml/2014/9/8/333
->>
->> If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
->> patches from Liviu must be applied before the patches in this patch set. Also
->> please use latest xgene u-boot firmware.
->>
->> changes since V8:
->> 1. Add 'dma-coherent' attribute in device node.
->
->
-> I just tested your V9 patches plus Liviu's V10 PCI/ARM64 patches
-> against 3.17-rc5 on Mustang, and the following failure is triggered:
->
-> [    1.190131] bnx2x: Broadcom NetXtreme II 5771x/578xx 10/20-Gigabit
-> Ethernet Driver bnx2x 1.78.19-0 (2014/02/10)
-> [    1.200249] tg3.c:v3.137 (May 11, 2014)
-> [    1.204087] ------------[ cut here ]------------
-> [    1.208682] WARNING: CPU: 1 PID: 1 at drivers/pci/pci.c:131
-> pci_ioremap_bar+0x70/0x78()
-> [    1.216646] Modules linked in:
-> [    1.219696] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5+ #1
-> [    1.226018] Call trace:
-> [    1.228453] [<ffffffc0000884f0>] dump_backtrace+0x0/0x16c
-> [    1.233826] [<ffffffc00008866c>] show_stack+0x10/0x1c
-> [    1.238851] [<ffffffc0006e3210>] dump_stack+0x74/0x94
-> [    1.243878] [<ffffffc0000a934c>] warn_slowpath_common+0x88/0xb0
-> [    1.249767] [<ffffffc0000a9438>] warn_slowpath_null+0x14/0x20
-> [    1.255485] [<ffffffc0003994c4>] pci_ioremap_bar+0x6c/0x78
-> [    1.260942] [<ffffffc0005598cc>] tg3_init_one+0x148/0x16f4
-> [    1.266401] [<ffffffc00039ccf0>] pci_device_probe+0x78/0xd4
-> [    1.271946] [<ffffffc00042785c>] driver_probe_device+0x94/0x390
-> [    1.277834] [<ffffffc000427c44>] __driver_attach+0x98/0xa0
-> [    1.283293] [<ffffffc000425a54>] bus_for_each_dev+0x54/0x98
-> [    1.288835] [<ffffffc00042730c>] driver_attach+0x1c/0x28
-> [    1.294121] [<ffffffc000426f04>] bus_add_driver+0x164/0x240
-> [    1.299663] [<ffffffc000428430>] driver_register+0x64/0x130
-> [    1.305207] [<ffffffc00039c97c>] __pci_register_driver+0x3c/0x48
-> [    1.311181] [<ffffffc000aa8a5c>] tg3_driver_init+0x1c/0x28
-> [    1.316640] [<ffffffc0000814e0>] do_one_initcall+0xc4/0x1b4
-> [    1.322186] [<ffffffc000a74b64>] kernel_init_freeable+0x1b8/0x25c
-> [    1.328246] [<ffffffc0006de318>] kernel_init+0xc/0xd4
-> [    1.333278] ---[ end trace f4dca5ab5b436080 ]---
-> [    1.337871] tg3 0000:01:00.0: Cannot map device registers, aborting
-> [    1.344122] tg3: probe of 0000:01:00.0 failed with error -12
->
->
+This looks to be missing an addition to Documentation/devicetree. Please
+put together a document.
 
-Thanks for trying out the patches. Which firmware version are you
-using? We may have release new firmware version for PCI to work if not
-released yet.
-Also can you please send out the entire boot log?
+Mark.
 
-Thanks,
-Tanmay
-
->
-> Thanks,
->
->>
->> changes since V7:
->> 1. Fix outbound region mapping for IO region. Thanks Liviu for the catch.
->>
->> changes since V6:
->> 1. Port driver to changed interface as per Liviu's v10 series.
->>
->> changes since V5:
->> 1. Port driver to changed interface of 'of_create_pci_host_bridge'
->> 2. Fix the prefetch bit setting
->> 3. Removed bunch of register programming which is already done by firmware
->>
->> changes since V4:
->> 1. fix section mismatch warnings
->> 2. fix the patch description
->> 3. fix indentation
->> 4. update read/write cfg functions by passing both addr and offset.
->> 5. use 'time_before' for timeout.
->> 6. remove unnecessary 'IS_ERR_OR_NULL'. Keep 'IS_ERR' for 'clk_get'
->> 7. remove BUG_ON for pci_ioremap_io.
->>
->> changes since V3:
->> 1. remove 'struct hw_pci' and supporting ops in hw_pci
->> 2. add code to create the host bridge from dts
->> 3. add code to scan the the host bridge
->> 4. modify outbound windows setup function to get resource information from
->>    'bridge->windows'
->> 5. add compatible string in pcie dts node with current X-Gene SOC name.
->>
->> changes since V2:
->> 1. redefined each PCI port in different PCI domain correctly.
->> 2. removed setup_lane and setup_link functions from driver.
->> 3. removed scan_bus wrapper and set_primary_bus hack.
->> 4. added pci_ioremap_io for io resources.
->>
->> changes since V1:
->> 1. added PCI domain support
->> 2. reading cpu and pci addresses from device tree to configure regions.
->> 3. got rid of unnecessary wrappers for readl and writel.
->> 4. got rid of endpoint configuration code.
->> 5. added 'dma-ranges' property support to read inbound region configuration.
->> 6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
->> 7. dropped 'clock-names' property from bindings
->> 8. added comments whereever requested.
->>
->>
->> Tanmay Inamdar (4):
->>   pci:host: APM X-Gene PCIe host controller driver
->>   arm64: dts: APM X-Gene PCIe device tree nodes
->>   dt-bindings: pci: xgene pcie device tree bindings
->>   MAINTAINERS: entry for APM X-Gene PCIe host driver
->>
->>  .../devicetree/bindings/pci/xgene-pci.txt          |  57 ++
->>  MAINTAINERS                                        |   8 +
->>  arch/arm64/boot/dts/apm-mustang.dts                |   8 +
->>  arch/arm64/boot/dts/apm-storm.dtsi                 | 165 ++++++
->>  drivers/pci/host/Kconfig                           |  10 +
->>  drivers/pci/host/Makefile                          |   1 +
->>  drivers/pci/host/pci-xgene.c                       | 646 +++++++++++++++++++++
->>  7 files changed, 895 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
->>  create mode 100644 drivers/pci/host/pci-xgene.c
->>
->> --
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
+> 
+> diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
+> index 6e4fcd8..f6a1544 100644
+> --- a/arch/arm/mach-imx/Makefile
+> +++ b/arch/arm/mach-imx/Makefile
+> @@ -110,4 +110,6 @@ obj-$(CONFIG_SOC_IMX53) += mach-imx53.o
+> 
+>  obj-$(CONFIG_SOC_VF610) += clk-vf610.o mach-vf610.o
+> 
+> +obj-$(CONFIG_SOC_LS1021A) += clk-ls1021a.o
+> +
+>  obj-y += devices/
+> diff --git a/arch/arm/mach-imx/clk-ls1021a.c b/arch/arm/mach-imx/clk-ls1021a.c
+> new file mode 100644
+> index 0000000..680b616
+> --- /dev/null
+> +++ b/arch/arm/mach-imx/clk-ls1021a.c
+> @@ -0,0 +1,124 @@
+> +/*
+> + * Copyright 2014 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/of_address.h>
+> +#include <dt-bindings/clock/ls1021a-clock.h>
+> +
+> +#include "clk.h"
+> +
+> +static struct clk *clk[LS1021A_CLK_END];
+> +static struct clk_onecell_data clk_data;
+> +
+> +static void __init ls1021a_clocks_init(struct device_node *np)
+> +{
+> +       void __iomem *dcfg_base;
+> +
+> +#define DCFG_CCSR_DEVDISR1     (dcfg_base + 0x70)
+> +#define DCFG_CCSR_DEVDISR2     (dcfg_base + 0x74)
+> +#define DCFG_CCSR_DEVDISR3     (dcfg_base + 0x78)
+> +#define DCFG_CCSR_DEVDISR4     (dcfg_base + 0x7c)
+> +#define DCFG_CCSR_DEVDISR5     (dcfg_base + 0x80)
+> +
+> +       dcfg_base = of_iomap(np, 0);
+> +
+> +       BUG_ON(!dcfg_base);
+> +
+> +       clk[LS1021A_CLK_PBL_EN] = ls1021a_clk_gate("pbl_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 0, true);
+> +       clk[LS1021A_CLK_ESDHC_EN] = ls1021a_clk_gate("esdhc_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 2, true);
+> +       clk[LS1021A_CLK_DMA1_EN] = ls1021a_clk_gate("dma1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 8, true);
+> +       clk[LS1021A_CLK_DMA2_EN] = ls1021a_clk_gate("dma2_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 9, true);
+> +       clk[LS1021A_CLK_USB3_PHY_EN] = ls1021a_clk_gate("usb3_phy_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 12, true);
+> +       clk[LS1021A_CLK_USB2_EN] = ls1021a_clk_gate("usb2_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 13, true);
+> +       clk[LS1021A_CLK_SATA_EN] = ls1021a_clk_gate("sata_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 16, true);
+> +       clk[LS1021A_CLK_USB3_EN] = ls1021a_clk_gate("usb3_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 17, true);
+> +       clk[LS1021A_CLK_SEC_EN] = ls1021a_clk_gate("sec_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 22, true);
+> +       clk[LS1021A_CLK_2D_ACE_EN] = ls1021a_clk_gate("2d_ace_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 30, true);
+> +       clk[LS1021A_CLK_QE_EN] = ls1021a_clk_gate("qe_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR1, 31, true);
+> +
+> +       clk[LS1021A_CLK_ETSEC1_EN] = ls1021a_clk_gate("etsec1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR2, 0, true);
+> +       clk[LS1021A_CLK_ETSEC2_EN] = ls1021a_clk_gate("etsec2_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR2, 1, true);
+> +       clk[LS1021A_CLK_ETSEC3_EN] = ls1021a_clk_gate("etsec3_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR2, 2, true);
+> +
+> +       clk[LS1021A_CLK_PEX1_EN] = ls1021a_clk_gate("pex1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR3, 0, true);
+> +       clk[LS1021A_CLK_PEX2_EN] = ls1021a_clk_gate("pex2_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR3, 1, true);
+> +
+> +       clk[LS1021A_CLK_DUART1_EN] = ls1021a_clk_gate("duart1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR4, 2, true);
+> +       clk[LS1021A_CLK_DUART2_EN] = ls1021a_clk_gate("duart2_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR4, 3, true);
+> +       clk[LS1021A_CLK_QSPI_EN] = ls1021a_clk_gate("qspi_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR4, 4, true);
+> +
+> +       clk[LS1021A_CLK_DDR_EN] = ls1021a_clk_gate("ddr_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 0, true);
+> +       clk[LS1021A_CLK_OCRAM1_EN] = ls1021a_clk_gate("ocram1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 4, true);
+> +       clk[LS1021A_CLK_IFC_EN] = ls1021a_clk_gate("ifc_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 8, true);
+> +       clk[LS1021A_CLK_GPIO_EN] = ls1021a_clk_gate("gpio_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 9, true);
+> +       clk[LS1021A_CLK_DBG_EN] = ls1021a_clk_gate("dbg_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 10, true);
+> +       clk[LS1021A_CLK_FLEXCAN1_EN] = ls1021a_clk_gate("flexcan1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 12, true);
+> +       clk[LS1021A_CLK_FLEXCAN234_EN] = ls1021a_clk_gate("flexcan234_en",
+> +                                       "dummy", DCFG_CCSR_DEVDISR5, 13, true);
+> +       /* For flextiemr 2/3/4/5/6/7/8 */
+> +       clk[LS1021A_CLK_FLEXTIMER_EN] = ls1021a_clk_gate("flextimer_en",
+> +                                       "dummy", DCFG_CCSR_DEVDISR5, 14, true);
+> +       clk[LS1021A_CLK_SECMON_EN] = ls1021a_clk_gate("secmon_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 17, true);
+> +       clk[LS1021A_CLK_WDOG12_EN] = ls1021a_clk_gate("wdog12_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 21, true);
+> +       clk[LS1021A_CLK_I2C23_EN] = ls1021a_clk_gate("i2c23_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 22, true);
+> +       /* For SAI 1/2/3/4 */
+> +       clk[LS1021A_CLK_SAI_EN] = ls1021a_clk_gate("sai_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 23, true);
+> +       /* For lpuart 2/3/4/5/6  */
+> +       clk[LS1021A_CLK_LPUART_EN] = ls1021a_clk_gate("lpuart_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 24, true);
+> +       clk[LS1021A_CLK_DSPI12_EN] = ls1021a_clk_gate("dspi12_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 25, true);
+> +       clk[LS1021A_CLK_ASRC_EN] = ls1021a_clk_gate("asrc_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 26, true);
+> +       clk[LS1021A_CLK_SPDIF_EN] = ls1021a_clk_gate("spdif_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 27, true);
+> +       clk[LS1021A_CLK_I2C1_EN] = ls1021a_clk_gate("i2c1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 29, true);
+> +       clk[LS1021A_CLK_LPUART1_EN] = ls1021a_clk_gate("lpuart1_en", "dummy",
+> +                                               DCFG_CCSR_DEVDISR5, 30, true);
+> +       clk[LS1021A_CLK_FLEXTIMER1_EN] = ls1021a_clk_gate("flextimer1_en",
+> +                                       "dummy", DCFG_CCSR_DEVDISR5, 31, true);
+> +
+> +       /* Add the clocks to provider list */
+> +       clk_data.clks = clk;
+> +       clk_data.clk_num = ARRAY_SIZE(clk);
+> +       of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+> +}
+> +CLK_OF_DECLARE(ls1021a, "fsl,ls1021a-gate", ls1021a_clocks_init);
+> diff --git a/arch/arm/mach-imx/clk.h b/arch/arm/mach-imx/clk.h
+> index 4cdf8b6..dd9e369 100644
+> --- a/arch/arm/mach-imx/clk.h
+> +++ b/arch/arm/mach-imx/clk.h
+> @@ -107,6 +107,27 @@ static inline struct clk *imx_clk_gate_dis(const char *name, const char *parent,
+>                         shift, CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
+>  }
+> 
+> +/* The DCFG registers are in big endian mode on LS1021A SoC */
+> +static inline u8 ls1021a_clk_calculate_shift(u8 shift)
+> +{
+> +       int m, n;
+> +
+> +       m = shift / 8;
+> +       n = shift % 8;
+> +
+> +       return (3 - m) * 8 + n;
+> +}
+> +
+> +static inline struct clk *ls1021a_clk_gate(const char *name, const char *parent,
+> +               void __iomem *reg, u8 shift, bool big_endian)
+> +{
+> +       if (big_endian)
+> +               shift = ls1021a_clk_calculate_shift(shift);
+> +
+> +       return clk_register_gate(NULL, name, parent, CLK_SET_RATE_PARENT, reg,
+> +                       shift, CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
+> +}
+> +
+>  static inline struct clk *imx_clk_mux(const char *name, void __iomem *reg,
+>                 u8 shift, u8 width, const char **parents, int num_parents)
+>  {
+> diff --git a/include/dt-bindings/clock/ls1021a-clock.h b/include/dt-bindings/clock/ls1021a-clock.h
+> new file mode 100644
+> index 0000000..f259882
+> --- /dev/null
+> +++ b/include/dt-bindings/clock/ls1021a-clock.h
+> @@ -0,0 +1,54 @@
+> +/*
+> + * Copyright 2014 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __DT_BINDINGS_CLOCK_LS1021A_H
+> +#define __DT_BINDINGS_CLOCK_LS1021A_H
+> +
+> +#define LS1021A_CLK_DUMMY      0
+> +#define LS1021A_CLK_PBL_EN     1
+> +#define LS1021A_CLK_ESDHC_EN   2
+> +#define LS1021A_CLK_DMA1_EN    3
+> +#define LS1021A_CLK_DMA2_EN    4
+> +#define LS1021A_CLK_USB3_PHY_EN        5
+> +#define LS1021A_CLK_USB2_EN    6
+> +#define LS1021A_CLK_SATA_EN    7
+> +#define LS1021A_CLK_USB3_EN    8
+> +#define LS1021A_CLK_SEC_EN     9
+> +#define LS1021A_CLK_2D_ACE_EN  10
+> +#define LS1021A_CLK_QE_EN      11
+> +#define LS1021A_CLK_ETSEC1_EN  12
+> +#define LS1021A_CLK_ETSEC2_EN  13
+> +#define LS1021A_CLK_ETSEC3_EN  14
+> +#define LS1021A_CLK_PEX1_EN    15
+> +#define LS1021A_CLK_PEX2_EN    16
+> +#define LS1021A_CLK_DUART1_EN  17
+> +#define LS1021A_CLK_DUART2_EN  18
+> +#define LS1021A_CLK_QSPI_EN    19
+> +#define LS1021A_CLK_DDR_EN     20
+> +#define LS1021A_CLK_OCRAM1_EN  21
+> +#define LS1021A_CLK_IFC_EN     22
+> +#define LS1021A_CLK_GPIO_EN    23
+> +#define LS1021A_CLK_DBG_EN     24
+> +#define LS1021A_CLK_FLEXCAN1_EN        25
+> +#define LS1021A_CLK_FLEXCAN234_EN      26
+> +#define LS1021A_CLK_FLEXTIMER_EN       27
+> +#define LS1021A_CLK_SECMON_EN  28
+> +#define LS1021A_CLK_WDOG12_EN  28
+> +#define LS1021A_CLK_I2C23_EN   30
+> +#define LS1021A_CLK_SAI_EN     31
+> +#define LS1021A_CLK_LPUART_EN  32
+> +#define LS1021A_CLK_DSPI12_EN  33
+> +#define LS1021A_CLK_ASRC_EN    34
+> +#define LS1021A_CLK_SPDIF_EN   35
+> +#define LS1021A_CLK_I2C1_EN    36
+> +#define LS1021A_CLK_LPUART1_EN 37
+> +#define LS1021A_CLK_FLEXTIMER1_EN      38
+> +#define LS1021A_CLK_END                39
+> +
+> +#endif /* __DT_BINDINGS_CLOCK_LS1021A_H */
 > --
-> Ming Lei
+> 2.1.0.27.g96db324
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
