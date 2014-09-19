@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823AbaISLsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:48:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56243 "EHLO
+	id S932332AbaISLsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:48:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56267 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766AbaISLsD (ORCPT
+	with ESMTP id S1753558AbaISLsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:48:03 -0400
-Date: Fri, 19 Sep 2014 04:46:44 -0700
+	Fri, 19 Sep 2014 07:48:16 -0400
+Date: Fri, 19 Sep 2014 04:46:58 -0700
 From: tip-bot for Aaron Tomlin <tipbot@zytor.com>
-Message-ID: <tip-a70857e46dd13e87ae06bf0e64cb6a2d4f436265@git.kernel.org>
+Message-ID: <tip-0d9e26329b0c9263d4d9e0422d80a0e73268c52f@git.kernel.org>
 Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        seiji.aguchi@hds.com, mpe@ellerman.id.au, atomlin@redhat.com,
-        jolsa@redhat.com, rostedt@goodmis.org, akpm@linux-foundation.org,
-        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, masami.hiramatsu.pt@hitachi.com
+        atomlin@redhat.com, viro@zeniv.linux.org.uk, ddstreet@ieee.org,
+        akpm@linux-foundation.org, ak@linux.intel.com, tglx@linutronix.de,
+        davidlohr@hp.com, lkundrak@v3.sk, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, davem@davemloft.net, paulmck@linux.vnet.ibm.com,
+        keescook@chromium.org, ast@plumgrid.com
 Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, mpe@ellerman.id.au, seiji.aguchi@hds.com,
-        atomlin@redhat.com, jolsa@redhat.com, akpm@linux-foundation.org,
-        rostedt@goodmis.org, isimatu.yasuaki@jp.fujitsu.com,
-        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        masami.hiramatsu.pt@hitachi.com
-In-Reply-To: <1410527779-8133-3-git-send-email-atomlin@redhat.com>
-References: <1410527779-8133-3-git-send-email-atomlin@redhat.com>
+        peterz@infradead.org, atomlin@redhat.com, viro@zeniv.linux.org.uk,
+        ddstreet@ieee.org, akpm@linux-foundation.org, ak@linux.intel.com,
+        tglx@linutronix.de, davidlohr@hp.com, lkundrak@v3.sk,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, davem@davemloft.net,
+        paulmck@linux.vnet.ibm.com, keescook@chromium.org, ast@plumgrid.com
+In-Reply-To: <1410527779-8133-4-git-send-email-atomlin@redhat.com>
+References: <1410527779-8133-4-git-send-email-atomlin@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Add helper for task stack page overrun checking
-Git-Commit-ID: a70857e46dd13e87ae06bf0e64cb6a2d4f436265
+Subject: [tip:sched/core] sched: Add default-disabled option to BUG()
+  when stack end location is overwritten
+Git-Commit-ID: 0d9e26329b0c9263d4d9e0422d80a0e73268c52f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -41,17 +40,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a70857e46dd13e87ae06bf0e64cb6a2d4f436265
-Gitweb:     http://git.kernel.org/tip/a70857e46dd13e87ae06bf0e64cb6a2d4f436265
+Commit-ID:  0d9e26329b0c9263d4d9e0422d80a0e73268c52f
+Gitweb:     http://git.kernel.org/tip/0d9e26329b0c9263d4d9e0422d80a0e73268c52f
 Author:     Aaron Tomlin <atomlin@redhat.com>
-AuthorDate: Fri, 12 Sep 2014 14:16:18 +0100
+AuthorDate: Fri, 12 Sep 2014 14:16:19 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:35:23 +0200
+CommitDate: Fri, 19 Sep 2014 12:35:24 +0200
 
-sched: Add helper for task stack page overrun checking
+sched: Add default-disabled option to BUG() when stack end location is overwritten
 
-This facility is used in a few places so let's introduce
-a helper function to improve code readability.
+Currently in the event of a stack overrun a call to schedule()
+does not check for this type of corruption. This corruption is
+often silent and can go unnoticed. However once the corrupted
+region is examined at a later stage, the outcome is undefined
+and often results in a sporadic page fault which cannot be
+handled.
+
+This patch checks for a stack overrun and takes appropriate
+action since the damage is already done, there is no point
+in continuing.
 
 Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
@@ -66,94 +73,60 @@ Cc: jgh@redhat.com
 Cc: minchan@kernel.org
 Cc: mpe@ellerman.id.au
 Cc: tglx@linutronix.de
+Cc: rostedt@goodmis.org
 Cc: hannes@cmpxchg.org
+Cc: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Dan Streetman <ddstreet@ieee.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Kees Cook <keescook@chromium.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Link: http://lkml.kernel.org/r/1410527779-8133-3-git-send-email-atomlin@redhat.com
+Cc: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1410527779-8133-4-git-send-email-atomlin@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/powerpc/mm/fault.c    | 4 +---
- arch/x86/mm/fault.c        | 4 +---
- include/linux/sched.h      | 2 ++
- kernel/trace/trace_stack.c | 2 +-
- 4 files changed, 5 insertions(+), 7 deletions(-)
+ kernel/sched/core.c |  3 +++
+ lib/Kconfig.debug   | 12 ++++++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 35d0760c..99b2f27 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -507,7 +507,6 @@ bail:
- void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4b1ddeb..61ee2b3 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2693,6 +2693,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
+  */
+ static inline void schedule_debug(struct task_struct *prev)
  {
- 	const struct exception_table_entry *entry;
--	unsigned long *stackend;
++#ifdef CONFIG_SCHED_STACK_END_CHECK
++	BUG_ON(unlikely(task_stack_end_corrupted(prev)));
++#endif
+ 	/*
+ 	 * Test if we are atomic. Since do_exit() needs to call into
+ 	 * schedule() atomically, we ignore that path. Otherwise whine
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a285900..e58163d 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -824,6 +824,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
  
- 	/* Are we prepared to handle this fault?  */
- 	if ((entry = search_exception_tables(regs->nip)) != NULL) {
-@@ -536,8 +535,7 @@ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
- 	printk(KERN_ALERT "Faulting instruction address: 0x%08lx\n",
- 		regs->nip);
- 
--	stackend = end_of_stack(current);
--	if (*stackend != STACK_END_MAGIC)
-+	if (task_stack_end_corrupted(current))
- 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
- 
- 	die("Kernel access of bad area", regs, sig);
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index bc23a70..6240bc7 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -648,7 +648,6 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 	   unsigned long address, int signal, int si_code)
- {
- 	struct task_struct *tsk = current;
--	unsigned long *stackend;
- 	unsigned long flags;
- 	int sig;
- 
-@@ -708,8 +707,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 
- 	show_fault_oops(regs, error_code, address);
- 
--	stackend = end_of_stack(tsk);
--	if (*stackend != STACK_END_MAGIC)
-+	if (task_stack_end_corrupted(tsk))
- 		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
- 
- 	tsk->thread.cr2		= address;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 118dca7..18f5262 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2617,6 +2617,8 @@ static inline unsigned long *end_of_stack(struct task_struct *p)
- }
- 
- #endif
-+#define task_stack_end_corrupted(task) \
-+		(*(end_of_stack(task)) != STACK_END_MAGIC)
- 
- static inline int object_is_on_stack(void *obj)
- {
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 1636e41..16eddb3 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -170,7 +170,7 @@ check_stack(unsigned long ip, unsigned long *stack)
- 			i++;
- 	}
- 
--	if (*end_of_stack(current) != STACK_END_MAGIC) {
-+	if (task_stack_end_corrupted(current)) {
- 		print_max_stack();
- 		BUG();
- 	}
++config SCHED_STACK_END_CHECK
++	bool "Detect stack corruption on calls to schedule()"
++	depends on DEBUG_KERNEL
++	default n
++	help
++	  This option checks for a stack overrun on calls to schedule().
++	  If the stack end location is found to be over written always panic as
++	  the content of the corrupted region can no longer be trusted.
++	  This is to ensure no erroneous behaviour occurs which could result in
++	  data corruption or a sporadic crash at a later stage once the region
++	  is examined. The runtime overhead introduced is minimal.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
