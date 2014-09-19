@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158AbaISQjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:39:49 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34947 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755848AbaISQjs (ORCPT
+	id S1757428AbaISQm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:42:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40928 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756107AbaISQmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:39:48 -0400
-Date: Fri, 19 Sep 2014 17:39:32 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        tony@atomide.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, drake@endlessm.com, loeliger@gmail.com,
-        santosh.shilimkar@ti.com, linux-omap@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v4 4/7] ARM: l2c: Add support for overriding prefetch
-	settings
-Message-ID: <20140919163932.GH12379@n2100.arm.linux.org.uk>
-References: <1409062680-15906-1-git-send-email-t.figa@samsung.com> <1409062680-15906-5-git-send-email-t.figa@samsung.com> <20140919095000.GF29620@piout.net>
+	Fri, 19 Sep 2014 12:42:24 -0400
+Date: Fri, 19 Sep 2014 17:42:20 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Joerg Roedel <jroedel@suse.de>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 04/13 v2] iommu/arm-smmu: Convert to iommu_capable() API
+ function function
+Message-ID: <20140919164220.GI20773@arm.com>
+References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
+ <1409914384-21191-5-git-send-email-joro@8bytes.org>
+ <20140908165136.GW26030@arm.com>
+ <20140917085312.GE2533@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140919095000.GF29620@piout.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140917085312.GE2533@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:50:01AM +0200, Alexandre Belloni wrote:
-> On 26/08/2014 at 16:17:57 +0200, Tomasz Figa wrote :
-> > Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
-> > settings configured in registers leading to crashes if L2C is enabled
-> > without overriding them. This patch introduces bindings to enable
-> > prefetch settings to be specified from DT and necessary support in the
-> > driver.
-> > 
-> > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+On Wed, Sep 17, 2014 at 09:53:12AM +0100, Joerg Roedel wrote:
+> Hi Will,
+
+Hello Joerg,
+
+> On Mon, Sep 08, 2014 at 05:51:36PM +0100, Will Deacon wrote:
+> > On Fri, Sep 05, 2014 at 11:52:56AM +0100, Joerg Roedel wrote:
+> > > From: Joerg Roedel <jroedel@suse.de>
+> > > 
+> > > Cc: Will Deacon <will.deacon@arm.com>
+> > > Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> > > ---
+> > >  drivers/iommu/arm-smmu.c | 35 ++++++++++++++++++++++++++---------
+> > >  1 file changed, 26 insertions(+), 9 deletions(-)
 > 
-> Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Okay, so here is the updated patch:
+
+Thanks, comments inline.
+
+> From b5d895980849ba1a46a5250cd4cc5f3f9f28235d Mon Sep 17 00:00:00 2001
+> From: Joerg Roedel <jroedel@suse.de>
+> Date: Fri, 5 Sep 2014 10:49:34 +0200
+> Subject: [PATCH 04/13] iommu/arm-smmu: Convert to iommu_capable() API function
 > 
-> It is working and useful on Atmel's sama5d4 were the bootloader is not
-> configuring the L2C prefetch. However, I'm wondering whether we should
-> add support for setting L310_PREFETCH_CTRL_DATA_PREFETCH and
-> L310_PREFETCH_CTRL_INSTR_PREFETCH. I'm currently doing it by using
-> ".l2c_aux_val    = L310_AUX_CTRL_DATA_PREFETCH |
-> L310_AUX_CTRL_INSTR_PREFETCH" (those are the same bits) but this has the
-> disadvantage of displaying the "L2C: platform modifies aux control
-> register:" twice.
+> Cc: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> ---
+>  drivers/iommu/arm-smmu.c | 20 ++++++++++----------
+>  1 file changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+> index a83cc2a..f5cacf4 100644
+> --- a/drivers/iommu/arm-smmu.c
+> +++ b/drivers/iommu/arm-smmu.c
+> @@ -1526,20 +1526,20 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
+>  	return __pfn_to_phys(pte_pfn(pte)) | (iova & ~PAGE_MASK);
+>  }
+>  
+> -static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
+> -				   unsigned long cap)
+> +static bool arm_smmu_capable(enum iommu_cap cap)
+>  {
+> -	struct arm_smmu_domain *smmu_domain = domain->priv;
+> -	struct arm_smmu_device *smmu = smmu_domain->smmu;
+> -	u32 features = smmu ? smmu->features : 0;
+> -
+>  	switch (cap) {
+>  	case IOMMU_CAP_CACHE_COHERENCY:
+> -		return features & ARM_SMMU_FEAT_COHERENT_WALK;
+> +		/*
+> +		 * Return false here until we have a way to find out whether the
+> +		 * SMMUs in the system a coherently connected and able to force
+> +		 * DMA coherency.
+> +		 */
 
-The L2C documentation, freely available from the ARM infocentre website,
-has the answer to this for you.
+s/a/are/
 
-The two bits in the prefetch control register which control the data
-and instruction prefetching are aliases of the aux control register.
-If you set them to a value in one register, they are reflected in the
-other.
+However, I thought about this a bit more and the coherency isn't necessarily
+a global property of the SMMU. In reality, it is dependent on the IOTLBs in
+use by the domain, so it's not going to be possible to report true here in
+many cases.
 
-The reason for that is that once the L2 cache is enabled, writes to
-the aux control register are no longer permitted, but it's safe to
-enable and disable the prefetching with the cache already enabled.
-This reason is even stated in the documentation.
+That means we'd need a way to say `this device is dma coherent when its
+downstream IOMMU is enabled with IOMMU_CACHE mappings'. For the moment,
+people will probably just add `dma-coherent' to the endpoint and dma-mapping
+will request IOMMU_CACHE mappings regardless of the features advertised by
+the IOMMU. In that case, it might make more sense to return `true' here as
+we can always generated cacheable transactions from the SMMU. The
+dma-coherent property on the device would then indicate whether those
+transactions will snoop the CPU caches.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Will
