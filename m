@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947AbaISFX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:23:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53083 "EHLO
+	id S1757957AbaISFXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:23:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53092 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaISFXY (ORCPT
+	with ESMTP id S1756139AbaISFXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:23:24 -0400
-Date: Thu, 18 Sep 2014 22:23:11 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-664fee3dc37939bb8010906913fa9dbc52abb587@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        dlernerdroid@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        dlernerdroid@gmail.com
-In-Reply-To: <20140917084101.3722.25299.stgit@kbuild-f20.novalocal>
-References: <20140917084101.3722.25299.stgit@kbuild-f20.novalocal>
+	Fri, 19 Sep 2014 01:23:38 -0400
+Date: Thu, 18 Sep 2014 22:22:44 -0700
+From: tip-bot for Anton Blanchard <tipbot@zytor.com>
+Message-ID: <tip-c657f423aed0d836c807ea1d6d8d28b3914446fa@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        anton@samba.org, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, anton@samba.org, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <20140909091152.2698c0f7@kryten>
+References: <20140909091152.2698c0f7@kryten>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Do not use dwfl_module_addrsym if dwarf_diename finds symbol name
-Git-Commit-ID: 664fee3dc37939bb8010906913fa9dbc52abb587
+Subject: [tip:perf/core] perf symbols:
+  Add path to Ubuntu kernel debuginfo file
+Git-Commit-ID: c657f423aed0d836c807ea1d6d8d28b3914446fa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,74 +34,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  664fee3dc37939bb8010906913fa9dbc52abb587
-Gitweb:     http://git.kernel.org/tip/664fee3dc37939bb8010906913fa9dbc52abb587
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Wed, 17 Sep 2014 08:41:01 +0000
+Commit-ID:  c657f423aed0d836c807ea1d6d8d28b3914446fa
+Gitweb:     http://git.kernel.org/tip/c657f423aed0d836c807ea1d6d8d28b3914446fa
+Author:     Anton Blanchard <anton@samba.org>
+AuthorDate: Mon, 15 Sep 2014 16:57:56 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Sep 2014 18:01:43 -0300
+CommitDate: Wed, 17 Sep 2014 17:08:10 -0300
 
-perf probe: Do not use dwfl_module_addrsym if dwarf_diename finds symbol name
+perf symbols: Add path to Ubuntu kernel debuginfo file
 
-Do not use dwfl_module_addrsym if dwarf_diename can find the symbol
-name, since dwfl_module_addrsym can be failed on shared libraries.
+Ubuntu places the kernel debuginfo in /usr/lib/debug/boot/vmlinux-*
 
-Without this patch
-  ----
-  $ perf probe -x ../lib/traceevent/libtraceevent.so -V create_arg_op
-  Failed to find symbol at 0x11df1
-  Failed to find the address of create_arg_op
-    Error: Failed to show vars.
-  ----
-With this patch
-  ----
-  $ perf probe -x ../lib/traceevent/libtraceevent.so -V create_arg_op
-  Available variables at create_arg_op
-          @<create_arg_op+0>
-                  enum filter_op_type     btype
-                  struct filter_arg*      arg
-  ----
-
-This bug was reported on linux-perf-users@vger.kernel.org.
-
-Reported-by: david lerner <dlernerdroid@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: david lerner <dlernerdroid@gmail.com>
-Cc: linux-perf-user@vger.kernel.org
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://permalink.gmane.org/gmane.linux.kernel.perf.user/1691
-Link: http://lkml.kernel.org/r/20140917084101.3722.25299.stgit@kbuild-f20.novalocal
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+echo Link: http://lkml.kernel.org/n/tip-`ranpwd -l 24`@git.kernel.org
+Link: http://lkml.kernel.org/r/20140909091152.2698c0f7@kryten
+[ Adapted it to use the perf.data file kernel version as in 0a7e6d1b6844 ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ tools/perf/util/symbol.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 9c59356..c7918f8 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -609,14 +609,18 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwfl_Module *mod,
- 		return -EINVAL;
- 	}
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 1adb143..be84f7a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1757,7 +1757,7 @@ static int vmlinux_path__init(struct perf_session_env *env)
+ 	char bf[PATH_MAX];
+ 	char *kernel_version;
  
--	/* Get an appropriate symbol from symtab */
--	symbol = dwfl_module_addrsym(mod, paddr, &sym, NULL);
-+	symbol = dwarf_diename(sp_die);
- 	if (!symbol) {
--		pr_warning("Failed to find symbol at 0x%lx\n",
--			   (unsigned long)paddr);
--		return -ENOENT;
-+		/* Try to get the symbol name from symtab */
-+		symbol = dwfl_module_addrsym(mod, paddr, &sym, NULL);
-+		if (!symbol) {
-+			pr_warning("Failed to find symbol at 0x%lx\n",
-+				   (unsigned long)paddr);
-+			return -ENOENT;
-+		}
-+		eaddr = sym.st_value;
- 	}
--	tp->offset = (unsigned long)(paddr - sym.st_value);
-+	tp->offset = (unsigned long)(paddr - eaddr);
- 	tp->address = (unsigned long)paddr;
- 	tp->symbol = strdup(symbol);
- 	if (!tp->symbol)
+-	vmlinux_path = malloc(sizeof(char *) * 5);
++	vmlinux_path = malloc(sizeof(char *) * 6);
+ 	if (vmlinux_path == NULL)
+ 		return -1;
+ 
+@@ -1788,6 +1788,12 @@ static int vmlinux_path__init(struct perf_session_env *env)
+ 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+ 		goto out_fail;
+ 	++vmlinux_path__nr_entries;
++	snprintf(bf, sizeof(bf), "/usr/lib/debug/boot/vmlinux-%s",
++		 kernel_version);
++	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
++	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
++		goto out_fail;
++        ++vmlinux_path__nr_entries;
+ 	snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux", kernel_version);
+ 	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+ 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
