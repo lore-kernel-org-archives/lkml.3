@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069AbaISPaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:30:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49352 "EHLO mga09.intel.com"
+	id S1757197AbaISPas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:30:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60855 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738AbaISPaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:30:16 -0400
+	id S1756626AbaISPar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:30:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,555,1406617200"; 
-   d="scan'208";a="605437220"
+   d="scan'208";a="605437150"
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 To: sparse@chrisli.org
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-sparse@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 5/7] signal: Silence nested-externs warnings
-Date: Fri, 19 Sep 2014 08:29:38 -0700
-Message-Id: <1411140580-20909-6-git-send-email-jeffrey.t.kirsher@intel.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux-sparse@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Rustad <mark.d.rustad@intel.com>
+Subject: [PATCH 0/7] Silence even more W=2 warnings
+Date: Fri, 19 Sep 2014 08:29:33 -0700
+Message-Id: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
-References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+The following patches silence over 100,000 warnings in a W=2
+kernel build. This series does most of it by using the compilers
+diagnostic controls. The first patch in the series adds macros to
+invoke the pragmas for those controls. Macros are provided for GCC
+and clang. Although they are highly compatible in this area, macros
+are provided for compiler-specific controls, and there is one
+example that uses a clang-specific control (look for DIAG_CLANG_IGNORE).
 
-Silence nested-externs warnings for these, as these nested
-externs are truly wanted.
+Some missing-field-initializers warnings were resolved using
+the diagnostic control macros simply because so many lines
+would have had to have been changed. At this stage Mark thought 
+about avoiding possible merge issues. If the maintainer would 
+rather resolve them by using designated initialization, just 
+say so.
 
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Richard Weinberger <richard@nod.at>
-CC: Brian Norris <computersforpeace@gmail.com>
+The combined effect of this patch series and his other patches
+that did not use these diagnostic control macros was to reduce 
+the number of W=2 warnings from 127,164 to 1,345!
+
 Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
 Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
- include/linux/signal.h | 6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index 750196f..e68ae6b 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -67,7 +67,9 @@ static inline int sigismember(sigset_t *set, int _sig)
- 
- static inline int sigisemptyset(sigset_t *set)
- {
-+	DIAG_PUSH DIAG_IGNORE(nested-externs)
- 	extern void _NSIG_WORDS_is_unsupported_size(void);
-+	DIAG_POP
- 	switch (_NSIG_WORDS) {
- 	case 4:
- 		return (set->sig[3] | set->sig[2] |
-@@ -90,7 +92,9 @@ static inline int sigisemptyset(sigset_t *set)
- #define _SIG_SET_BINOP(name, op)					\
- static inline void name(sigset_t *r, const sigset_t *a, const sigset_t *b) \
- {									\
-+	DIAG_PUSH DIAG_IGNORE(nested-externs)				\
- 	extern void _NSIG_WORDS_is_unsupported_size(void);		\
-+	DIAG_POP							\
- 	unsigned long a0, a1, a2, a3, b0, b1, b2, b3;			\
- 									\
- 	switch (_NSIG_WORDS) {						\
-@@ -128,7 +132,9 @@ _SIG_SET_BINOP(sigandnsets, _sig_andn)
- #define _SIG_SET_OP(name, op)						\
- static inline void name(sigset_t *set)					\
- {									\
-+	DIAG_PUSH DIAG_IGNORE(nested-externs)				\
- 	extern void _NSIG_WORDS_is_unsupported_size(void);		\
-+	DIAG_POP							\
- 									\
- 	switch (_NSIG_WORDS) {						\
- 	    case 4: set->sig[3] = op(set->sig[3]);			\
+Mark Rustad (7):
+  compiler: Add diagnostic control macros
+  x86: Silence initializer-overrides warnings
+  atomic: Silence nested-externs warnings
+  bitops: Silence nested-externs warnings
+  signal: Silence nested-externs warnings
+  mm: Silence nested-externs warnings
+  sched: Silence nested-externs warnings
+
+ arch/x86/ia32/syscall_ia32.c   |  2 ++
+ include/linux/atomic.h         |  2 ++
+ include/linux/bitops.h         |  2 ++
+ include/linux/compiler-clang.h | 26 ++++++++++++++++++++++++++
+ include/linux/compiler-gcc4.h  | 31 +++++++++++++++++++++++++++++++
+ include/linux/compiler.h       | 20 ++++++++++++++++++++
+ include/linux/mm.h             |  2 ++
+ include/linux/sched.h          |  2 ++
+ include/linux/signal.h         |  6 ++++++
+ 9 files changed, 93 insertions(+)
+
 -- 
 1.9.3
 
