@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112AbaISIgX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:36:23 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:54506 "EHLO mailhub1.si.c-s.fr"
+	id S1755687AbaISIhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:37:09 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:54477 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530AbaISIgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754795AbaISIgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 04:36:17 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,104 +12,139 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v4 14/21] powerpc/8xx: Const for TLB RPN forced value
-Message-Id: <20140919083609.332EB1AB03B@localhost.localdomain>
-Date: Fri, 19 Sep 2014 10:36:09 +0200 (CEST)
+Subject: [PATCH v4 20/21] powerpc/8xx: Use DAR to save r3 for CPU6 ERRATA
+Message-Id: <20140919083610.AB1721AB041@localhost.localdomain>
+Date: Fri, 19 Sep 2014 10:36:10 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Value 0x00f0 is used to force bits in TLB level 2 entry. This value is linked
-to the page size and will vary when we change the page size. Lets define a const
-for it in order to have it at only one place.
+As we are not using anymore DAR to save registers, it is now available for
+saving the r3 register used for CPU6 ERRATA handling. Therefore we can
+remove the major hack which was to use memory location 0 to save r3.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
-Changes in v2:
-- None
-
 Changes in v3:
-- None
+- New
 
 Changes in v4:
-- None
+- Fixed the patch as it didn't apply.
 
- arch/powerpc/kernel/head_8xx.S | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/head_8xx.S | 33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index e8d8263..d777e3c 100644
+index e21f0b2..3e8e341 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -40,6 +40,13 @@
- #else
- #define DO_8xx_CPU6(val, reg)
+@@ -83,13 +83,6 @@ _ENTRY(_start);
+  * 8M 1:1.  I also mapped an additional I/O space 1:1 so we can get to
+  * the "internal" processor registers before MMU_init is called.
+  *
+- * The TLB code currently contains a major hack.  Since I use the condition
+- * code register, I have to save and restore it.  I am out of registers, so
+- * I just store it in memory location 0 (the TLB handlers are not reentrant).
+- * To avoid making any decisions, I need to use the "segment" valid bit
+- * in the first level table, but that would require many changes to the
+- * Linux page directory/table functions that I don't want to do right now.
+- *
+  *	-- Dan
+  */
+ 	.globl	__start
+@@ -304,7 +297,7 @@ SystemCall:
+  */
+ InstructionTLBMiss:
+ #ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
++	mtspr	SPRN_DAR, r3
  #endif
-+
-+/*
-+ * Value for the bits that have fixed value in RPN entries.
-+ * Also used for tagging DAR for DTLBerror.
-+ */
-+#define RPN_PATTERN	0x00f0
-+
- 	__HEAD
- _ENTRY(_stext);
- _ENTRY(_start);
-@@ -211,7 +218,7 @@ MachineCheck:
- 	EXCEPTION_PROLOG
- 	mfspr r4,SPRN_DAR
- 	stw r4,_DAR(r11)
--	li r5,0x00f0
-+	li r5,RPN_PATTERN
- 	mtspr SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
- 	mfspr r5,SPRN_DSISR
- 	stw r5,_DSISR(r11)
-@@ -239,7 +246,7 @@ Alignment:
- 	EXCEPTION_PROLOG
- 	mfspr	r4,SPRN_DAR
- 	stw	r4,_DAR(r11)
--	li	r5,0x00f0
-+	li	r5,RPN_PATTERN
- 	mtspr	SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
- 	mfspr	r5,SPRN_DSISR
- 	stw	r5,_DSISR(r11)
-@@ -343,7 +350,7 @@ InstructionTLBMiss:
- 	 * set.  All other Linux PTE bits control the behavior
- 	 * of the MMU.
- 	 */
--	li	r11, 0x00f0
-+	li	r11, RPN_PATTERN
- 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
- 	DO_8xx_CPU6(0x2d80, r3)
- 	mtspr	SPRN_MI_RPN, r10	/* Update TLB entry */
-@@ -447,7 +454,7 @@ DataStoreTLBMiss:
- 	 * set.  All other Linux PTE bits control the behavior
- 	 * of the MMU.
- 	 */
--2:	li	r11, 0x00f0
-+2:	li	r11, RPN_PATTERN
- 	rlwimi	r10, r11, 0, 24, 28	/* Set 24-27, clear 28 */
- 	DO_8xx_CPU6(0x3d80, r3)
- 	mtspr	SPRN_MD_RPN, r10	/* Update TLB entry */
-@@ -482,7 +489,7 @@ DataTLBError:
  	EXCEPTION_PROLOG_0
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+@@ -349,7 +342,10 @@ InstructionTLBMiss:
+ #ifdef CONFIG_SWAP
+ 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
+ 	cmpwi	cr0, r11, _PAGE_ACCESSED | _PAGE_PRESENT
++	li	r11, RPN_PATTERN
+ 	bne-	cr0, 2f
++#else
++	li	r11, RPN_PATTERN
+ #endif
+ 	/* The Linux PTE won't go exactly into the MMU TLB.
+ 	 * Software indicator bits 21 and 28 must be clear.
+@@ -357,28 +353,29 @@ InstructionTLBMiss:
+ 	 * set.  All other Linux PTE bits control the behavior
+ 	 * of the MMU.
+ 	 */
+-	li	r11, RPN_PATTERN
+ 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
+ 	MTSPR_CPU6(SPRN_MI_RPN, r10, r3)	/* Update TLB entry */
  
- 	mfspr	r11, SPRN_DAR
--	cmpwi	cr0, r11, 0x00f0
-+	cmpwi	cr0, r11, RPN_PATTERN
- 	beq-	FixupDAR	/* must be a buggy dcbX, icbi insn. */
- DARFixed:/* Return from dcbx instruction bug workaround */
- 	EXCEPTION_PROLOG_1
-@@ -491,7 +498,7 @@ DARFixed:/* Return from dcbx instruction bug workaround */
- 	stw	r10,_DSISR(r11)
- 	mr	r5,r10
- 	mfspr	r4,SPRN_DAR
--	li	r10,0x00f0
-+	li	r10,RPN_PATTERN
- 	mtspr	SPRN_DAR,r10	/* Tag DAR, to be used in DTLB Error */
- 	/* 0x300 is DataAccess exception, needed by bad_page_fault() */
- 	EXC_XFER_LITE(0x300, handle_page_fault)
+ 	/* Restore registers */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
++	mfspr	r3, SPRN_DAR
++	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ #endif
+ 	mfspr	r10, SPRN_SPRG_SCRATCH2
+ 	EXCEPTION_EPILOG_0
+ 	rfi
+ 2:
+-	mfspr	r11, SPRN_SRR1
++	mfspr	r10, SPRN_SRR1
+ 	/* clear all error bits as TLB Miss
+ 	 * sets a few unconditionally
+ 	*/
+-	rlwinm	r11, r11, 0, 0xffff
+-	mtspr	SPRN_SRR1, r11
++	rlwinm	r10, r10, 0, 0xffff
++	mtspr	SPRN_SRR1, r10
+ 
+ 	/* Restore registers */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
++	mfspr	r3, SPRN_DAR
++	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ #endif
+ 	mfspr	r10, SPRN_SPRG_SCRATCH2
+ 	b	InstructionTLBError1
+@@ -386,7 +383,7 @@ InstructionTLBMiss:
+ 	. = 0x1200
+ DataStoreTLBMiss:
+ #ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
++	mtspr	SPRN_DAR, r3
+ #endif
+ 	EXCEPTION_PROLOG_0
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+@@ -457,7 +454,7 @@ DataStoreTLBMiss:
+ 
+ 	/* Restore registers */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)
++	mfspr	r3, SPRN_DAR
+ #endif
+ 	mtspr	SPRN_DAR, r11	/* Tag DAR */
+ 	mfspr	r10, SPRN_SPRG_SCRATCH2
+@@ -527,7 +524,7 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+ #define NO_SELF_MODIFYING_CODE
+ FixupDAR:/* Entry point for dcbx workaround. */
+ #ifdef CONFIG_8xx_CPU6
+-	stw	r3, 8(r0)
++	mtspr	SPRN_DAR, r3
+ #endif
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+ 	/* fetch instruction from memory. */
+@@ -546,7 +543,7 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r11, r10, r11	/* Get the pte */
+ #ifdef CONFIG_8xx_CPU6
+-	lwz	r3, 8(r0)	/* restore r3 from memory */
++	mfspr	r3, SPRN_DAR
+ #endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	mfspr	r10, SPRN_SRR0
 -- 
 2.1.0
 
