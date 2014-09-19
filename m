@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaISI3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:29:48 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:62037 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaISI3p (ORCPT
+	id S1752274AbaISIcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:32:20 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54123 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaISIcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 04:29:45 -0400
-Message-ID: <541BE96B.1090605@huawei.com>
-Date: Fri, 19 Sep 2014 16:29:31 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 19 Sep 2014 04:32:15 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH] cgroup: remove redundant check in cgroup_ino()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.541BE971.0057,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 4407b808e8c67e2d02e7323ad064ec5b
+In-Reply-To: <1409930524-1529-1-git-send-email-octavian.purdila@intel.com>
+References: <1409930524-1529-1-git-send-email-octavian.purdila@intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 19 Sep 2014 17:31:54 +0900
+Message-ID: <CAAVeFuL1_H=wxP1K3zNmzYLUy0kiFFN9AgH-vY_eSXj_=OVa3w@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: fix a few issues with gpiochip_remove
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After we implemented default unified hierarchy, cgrp->kn can never
-be NULL.
+On Sat, Sep 6, 2014 at 12:22 AM, Octavian Purdila
+<octavian.purdila@intel.com> wrote:
+> The current implementation of gpiochip_remove() does not check to see
+> if the GPIO pins are busy before removing the associated irqchip and
+> this is causing the following warning:
+>
+> WARNING: CPU: 3 PID: 553 at fs/proc/generic.c:521 remove_proc_entry+0x19f/0x1b0()
+> remove_proc_entry: removing non-empty directory 'irq/24', leaking at least 'bmc150_accel_event'
+> Call Trace:
+>  [<ffffffff81a78504>] dump_stack+0x4e/0x7a
+>  [<ffffffff810c79bd>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff810c7a2c>] warn_slowpath_fmt+0x4c/0x50
+>  [<ffffffff8125259f>] remove_proc_entry+0x19f/0x1b0
+>  [<ffffffff811138ae>] unregister_irq_proc+0xce/0xf0
+>  [<ffffffff8110dbc1>] free_desc+0x31/0x70
+>  [<ffffffff8110dc3c>] irq_free_descs+0x3c/0x80
+>  [<ffffffff81113096>] irq_dispose_mapping+0x36/0x50
+>  [<ffffffff8148549a>] gpiochip_remove+0x5a/0x160
+>  [<ffffffff814895d8>] dln2_do_remove+0x18/0x80
+>  [<ffffffff8148966a>] dln2_gpio_remove+0x2a/0x30
+>  [<ffffffff816143bd>] platform_drv_remove+0x1d/0x40
+> ...
+>
+> and bug:
+>
+> BUG: sleeping function called from invalid context at kernel/locking/mutex.c:97
+> in_atomic(): 1, irqs_disabled(): 1, pid: 553, name: khubd
+> Preemption disabled at:[<ffffffff81485462>] gpiochip_remove+0x22/0x160
+> Call Trace:
+>  [<ffffffff81a78504>] dump_stack+0x4e/0x7a
+>  [<ffffffff810e8dff>] __might_sleep+0x10f/0x180
+>  [<ffffffff81a7f3f0>] mutex_lock+0x20/0x3d
+>  [<ffffffff8110dbcd>] free_desc+0x3d/0x70
+>  [<ffffffff8110dc3c>] irq_free_descs+0x3c/0x80
+>  [<ffffffff81113096>] irq_dispose_mapping+0x36/0x50
+>  [<ffffffff8148549a>] gpiochip_remove+0x5a/0x160
+>  [<ffffffff814895d8>] dln2_do_remove+0x18/0x80
+>  [<ffffffff8148966a>] dln2_gpio_remove+0x2a/0x30
+>  [<ffffffff816143bd>] platform_drv_remove+0x1d/0x40
+> ...
+>
+> The current implementaion also does a partial cleanup if one of the
+> pins is busy, which makes it impossible to retry the remove operation
+> later.
+>
+> A retry operation is needed in the case of MFD devices that bundles a
+> GPIO device and another device that is an indirect consumer of the
+> GPIO device (typical an I2C bus).
+>
+> In this case, when the MFD device is removed, if an I2C device
+> associated with the I2C bus of the MFD device is using a GPIO pin (as
+> an interrupt source for example), and the remove routine for the GPIO
+> device is called first, then the removal of the gpio chip will fail.
+>
+> However, we can later retry the gpio chip removal, as the I2C bus will
+> eventually be removed which will cause the I2C device to release the
+> GPIO pin.
+>
+> This patch modifies gpiochip_remove to be atomic (i.e. if it fails no
+> partial cleanup is done) and it also moves gpiochip_irqchip_remove()
+> out of the spinlock to avoid the bug above.
+>
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
+>  drivers/gpio/gpiolib.c | 13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 15cc0bb..0f53bef 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -314,14 +314,8 @@ int gpiochip_remove(struct gpio_chip *chip)
+>         int             status = 0;
+>         unsigned        id;
+>
+> -       acpi_gpiochip_remove(chip);
+> -
+>         spin_lock_irqsave(&gpio_lock, flags);
+>
+> -       gpiochip_irqchip_remove(chip);
+> -       gpiochip_remove_pin_ranges(chip);
+> -       of_gpiochip_remove(chip);
+> -
+>         for (id = 0; id < chip->ngpio; id++) {
+>                 if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+>                         status = -EBUSY;
+> @@ -337,8 +331,13 @@ int gpiochip_remove(struct gpio_chip *chip)
+>
+>         spin_unlock_irqrestore(&gpio_lock, flags);
+>
+> -       if (status == 0)
+> +       if (status == 0) {
+> +               gpiochip_irqchip_remove(chip);
+> +               gpiochip_remove_pin_ranges(chip);
+> +               of_gpiochip_remove(chip);
+> +               acpi_gpiochip_remove(chip);
+>                 gpiochip_unexport(chip);
+> +       }
+>
+>         return status;
+>  }
 
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- include/linux/cgroup.h | 7 ++-----
- mm/memory-failure.c    | 2 +-
- 2 files changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 77a1d37..818a81f 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -532,13 +532,10 @@ static inline bool cgroup_has_tasks(struct cgroup *cgrp)
- 	return !list_empty(&cgrp->cset_links);
- }
- 
--/* returns ino associated with a cgroup, 0 indicates unmounted root */
-+/* returns ino associated with a cgroup */
- static inline ino_t cgroup_ino(struct cgroup *cgrp)
- {
--	if (cgrp->kn)
--		return cgrp->kn->ino;
--	else
--		return 0;
-+	return cgrp->kn->ino;
- }
- 
- /* cft/css accessors for cftype->write() operation */
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 44c6bd2..8639f6b 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -148,7 +148,7 @@ static int hwpoison_filter_task(struct page *p)
- 	ino = cgroup_ino(css->cgroup);
- 	css_put(css);
- 
--	if (!ino || ino != hwpoison_filter_memcg)
-+	if (ino != hwpoison_filter_memcg)
- 		return -EINVAL;
- 
- 	return 0;
--- 
-1.8.0.2
-
+This seems to be much better this way indeed. But isn't it still
+possible for a pin to become requested between the time the spinlock
+is released and the time the function exits?
