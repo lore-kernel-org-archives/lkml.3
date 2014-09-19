@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146AbaISWiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 18:38:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43763 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757848AbaISWiS (ORCPT
+	id S1758135AbaISWlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 18:41:07 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40280 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757949AbaISWlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 18:38:18 -0400
-Message-ID: <541CB055.6000504@infradead.org>
-Date: Fri, 19 Sep 2014 15:38:13 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>, Anish Bhatt <anish@chelsio.com>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: [PATCH] scsi: fix SCSI_BNX2X_FCOE dependencies and build errors
-Content-Type: text/plain; charset=utf-8
+	Fri, 19 Sep 2014 18:41:05 -0400
+Message-ID: <1411166462.23258.36.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target fixes for v3.17-rc6
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Sep 2014 15:41:02 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+Hi Linus,
 
-Don't enable NETDEVICES when NET is not enabled. That causes
-build warnings and errors.
+Here are the target pending fixes for v3.17-rc6.  Please pull from:
 
-warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2X_FCOE) selects NETDEVICES which has unmet direct dependencies (NET)
-warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2_ISCSI && SCSI_BNX2X_FCOE) selects ETHERNET which has unmet direct dependencies (NETDEVICES && NET)
-warning: (SCSI_BNX2X_FCOE && LIBFCOE && TCM_QLA2XXX) selects LIBFC which has unmet direct dependencies (SCSI_LOWLEVEL && SCSI && SCSI_FC_ATTRS)
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
-../drivers/net/ethernet/cisco/enic/enic_main.c: In function 'enic_rq_indicate_buf':
-../drivers/net/ethernet/cisco/enic/enic_main.c:1077:3: error: implicit declaration of function 'skb_mark_napi_id' [-Werror=implicit-function-declaration]
-../drivers/net/ethernet/cisco/enic/enic_main.c:1078:3: error: implicit declaration of function 'enic_poll_busy_polling' [-Werror=implicit-function-declaration]
+Included are Sagi's long overdue fixes related to iser-target shutdown,
+along with a couple of fixes from Sebastian related to ALUA Referrals
+changes that when in during the v3.14 time-frame.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- drivers/scsi/bnx2fc/Kconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Also included are a few iscsi-target fixes, most recently of which where
+found during Joern's Coverity scanning of target code.
 
---- linux-next-20140918.orig/drivers/scsi/bnx2fc/Kconfig
-+++ linux-next-20140918/drivers/scsi/bnx2fc/Kconfig
-@@ -1,7 +1,8 @@
- config SCSI_BNX2X_FCOE
- 	tristate "QLogic NetXtreme II FCoE support"
--	depends on PCI
-+	depends on PCI && NET
- 	depends on (IPV6 || IPV6=n)
-+	depends on SCSI_FC_ATTRS
- 	select NETDEVICES
- 	select ETHERNET
- 	select NET_VENDOR_BROADCOM
+Thanks,
+
+--nab
+
+Joern Engel (1):
+  iscsi-target: avoid NULL pointer in iscsi_copy_param_list failure
+
+Nicholas Bellinger (2):
+  iscsi-target: Ignore ICF_GOT_LAST_DATAOUT during Data-Out ITT lookup
+  iscsi-target: Fix memory corruption in
+    iscsit_logout_post_handler_diffcid
+
+Sagi Grimberg (4):
+  Target/iser: Get isert_conn reference once got to connected_handler
+  Target/iser: Don't put isert_conn inside disconnected handler
+  Target/iser: Avoid calling rdma_disconnect twice
+  Target/iser: Fix initiator_depth and responder_resources
+
+Sebastian Herbszt (2):
+  target: Fix user data segment multiplier in spc_emulate_evpd_b3()
+  target: Fix inverted logic in SE_DEV_ALUA_SUPPORT_STATE_STORE
+
+ drivers/infiniband/ulp/isert/ib_isert.c        |   20 +++++++++++---------
+ drivers/target/iscsi/iscsi_target.c            |    4 +++-
+ drivers/target/iscsi/iscsi_target_parameters.c |    2 +-
+ drivers/target/iscsi/iscsi_target_util.c       |    2 ++
+ drivers/target/target_core_configfs.c          |    2 +-
+ drivers/target/target_core_spc.c               |    2 +-
+ 6 files changed, 19 insertions(+), 13 deletions(-)
+
