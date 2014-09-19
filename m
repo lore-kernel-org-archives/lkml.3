@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621AbaISMxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:53:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30514 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924AbaISMxv convert rfc822-to-8bit (ORCPT
+	id S1756751AbaISMyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:54:22 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:37180 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904AbaISMyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:53:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,554,1406617200"; 
-   d="scan'208";a="478679292"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-CC: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "roland@kernel.org" <roland@kernel.org>,
-        "hal.rosenstock@gmail.com" <hal.rosenstock@gmail.com>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+	Fri, 19 Sep 2014 08:54:20 -0400
+Date: Fri, 19 Sep 2014 07:54:14 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] qib: qib_qp: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Thread-Topic: [PATCH] qib: qib_qp: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Thread-Index: AQHPwTrMQC/0HK00oUadTysbcFvFdJwIjoJw
-Date: Fri, 19 Sep 2014 12:53:48 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC21C4AFA4@fmsmsx120.amr.corp.intel.com>
-References: <20140826143322.GA2498@ada>
-In-Reply-To: <20140826143322.GA2498@ada>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Subject: Re: x86, microcode: BUG: microcode update that changes
+ x86_capability
+Message-ID: <20140919075415.5149d5f2@as>
+In-Reply-To: <20140919112953.GA3256@nazgul.tnic>
+References: <20140918135202.GA26038@khazad-dum.debian.net>
+	<541B2F33.8000002@amacapital.net>
+	<20140918145328.0253f009@as>
+	<9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+	<20140918200659.GA5331@khazad-dum.debian.net>
+	<20140919001311.GB5331@khazad-dum.debian.net>
+	<CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+	<20140919110014.GC29639@khazad-dum.debian.net>
+	<20140919112953.GA3256@nazgul.tnic>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH] qib: qib_qp: Replace rcu_assign_pointer() with
-> RCU_INIT_POINTER()
->
+On Fri, 19 Sep 2014 13:29:53 +0200
+Borislav Petkov <bp@alien8.de> wrote:
 
-Why not consolidate this with http://marc.info/?l=linux-rdma&m=140836578119485&w=2 so there is just one patch?
+> On Fri, Sep 19, 2014 at 08:00:15AM -0300, Henrique de Moraes Holschuh wrote:
+> > We're also killing microcode update support outside of the initramfs in
+> > Debian.  It has become obvious that anything other than the early initramfs
+> > method of microcode updates should be considered a developer thing.
+> 
+> That's simply not true: long-running systems which you can't reboot for
+> whatever reason will need the late microcode update.
+> 
 
-Mike
+Assuming we can identify all the affected models and steppings, maybe
+something like this would work:
+
+1) Refuse to finish booting if a microcode update that disables TSX
+isn't applied before userspace starts running on those CPUs.
+
+and/or
+
+2) Don't allow a late update if TSX is still enabled on those
+processors.
+
+(1) could be overridden by a command line option for people who want to
+develop TSX code.
