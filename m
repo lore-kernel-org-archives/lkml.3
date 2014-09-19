@@ -1,49 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaISEWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 00:22:22 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:47127 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaISEWV (ORCPT
+	id S1752955AbaISEcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 00:32:13 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41539 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaISEcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 00:22:21 -0400
-Message-ID: <541BAF75.8050900@gmail.com>
-Date: Fri, 19 Sep 2014 07:22:13 +0300
-From: =?UTF-8?B?R2llZHJpdXMgU3RhdGtldmnEjWl1cw==?= 
-	<giedrius.statkevicius@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 19 Sep 2014 00:32:11 -0400
+Date: Thu, 18 Sep 2014 21:32:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/3] rcu: Add early boot self tests
+Message-ID: <20140919043206.GW4723@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1411010509-31927-1-git-send-email-bobby.prani@gmail.com>
+ <1411010509-31927-3-git-send-email-bobby.prani@gmail.com>
+ <20140918212955.GA6941@linux.vnet.ibm.com>
+ <CAJhHMCCe43QYjGo8gA-GHhj-DMbGbNcUajCwWVDx-woLpqixhA@mail.gmail.com>
 MIME-Version: 1.0
-To: Rene Kolarik <rene.kolarik@gmail.com>, gregkh@linuxfoundation.org,
-        shawn.guo@freescale.com, kernel@pengutronix.de
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]imx-drm coding style fixes
-References: <20140918225736.GA15881@rendy-i5>
-In-Reply-To: <20140918225736.GA15881@rendy-i5>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCCe43QYjGo8gA-GHhj-DMbGbNcUajCwWVDx-woLpqixhA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091904-1344-0000-0000-00000451A8BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.09.19 01:57, Rene Kolarik wrote:
-> Hello,
+On Thu, Sep 18, 2014 at 09:03:43PM -0400, Pranith Kumar wrote:
+> On Thu, Sep 18, 2014 at 5:29 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> I've fixed coding style issues in drivers/staging/imx-drm directory. This is a part of Eudyptula Challenge.
-Please submit your patches "inline" (look at /Documentation/SubmittingPatches section 7). Also, think about if it's worth seperating this patch into two or more since you are doing more than what you're saying in the description. 
-Furthermore, your subject line is kind of wrong. Perhaps it should look something like this:
-[PATCH] drivers: staging: imx-drm style cleanup (SubmittingPatches section 15)
-Finally, you didn't mention what coding style issues you've fixed and these kind of patches are called clean-up patches.
+> >> +static int rcu_self_test_counter;
+> >> +static struct rcu_head head;
+> >
+> > This needs to be within the individual functions, because otherwise the
+> > lists get messed up when you to multiple tests during the same boot...
 > 
-> Rene Kolarik
+> Hmm, I thought this was OK since we are not using this head anywhere.
+> What lists are getting messed up?
+
+The problem is that the current code enqueues the same structure onto
+up to four different lists, and we don't have a quantum computer, so
+head.next can't point to four different places.  ;-)
+
+Making head be static in all four functions allows four different
+head.next pointer to point to the four different places, as required.
+
+> In any case, I will update this as you suggested.
+
+Very good!
+
+> >> +DEFINE_STATIC_SRCU(srcu_struct);
+> >> +
+> >> +static void test_callback(struct rcu_head *r)
+> >> +{
+> >> +     rcu_self_test_counter++;
+> >> +     pr_info("RCU test callback executed %d\n", rcu_self_test_counter);
+> >> +}
+> >> +
+> >> +static void early_boot_test_call_rcu(void)
+> >> +{
+> >
+> > ... as in:
+> >
+> >         static struct rcu_head head;
+> >
+> >> +     call_rcu(&head, test_callback);
+> >> +}
+> >> +
+> >> +static void early_boot_test_call_rcu_bh(void)
+> >> +{
+> >> +     call_rcu_bh(&head, test_callback);
+> >> +}
+> >> +
+> >> +static void early_boot_test_call_rcu_sched(void)
+> >> +{
+> >> +     call_rcu_sched(&head, test_callback);
+> >> +}
+> >> +
+> >> +static void early_boot_test_call_srcu(void)
+> >> +{
+> >> +     call_srcu(&srcu_struct, &head, test_callback);
+> >
+> > This looked like a great idea at first, but unfortunately call_srcu()
+> > invokes queue_delayed_work(), which breaks horribly this early in boot.
+> > Either this test has to be removed, or call_srcu() has to be updated
+> > to handle early-boot invocation.  Given that no one is using call_srcu()
+> > during early boot, it is probably best to just drop the test.
+> >
+> > (In case you were wondering, TEST06 dies during boot.)
+> >
+> > Could you please send an updated patch?
+> 
+> 
+> Yup, will do. Please see one question below:
+> 
+> <...>
+> >> +static int rcu_verify_early_boot_tests(void)
+> >> +{
+> >> +     int ret = 0;
+> >> +     int early_boot_test_counter = 0;
+> >> +
+> >> +     if (rcu_self_test) {
+> >> +             early_boot_test_counter++;
+> >> +             rcu_barrier();
+> >> +     }
+> >> +     if (rcu_self_test_bh) {
+> >> +             early_boot_test_counter++;
+> >> +             rcu_barrier_bh();
+> >> +     }
+> >> +     if (rcu_self_test_sched) {
+> >> +             early_boot_test_counter++;
+> >> +             rcu_barrier_sched();
+> >> +     }
+> >> +     if (rcu_self_test_srcu) {
+> >> +             early_boot_test_counter++;
+> >> +             srcu_barrier(&srcu_struct);
+> >> +     }
+> >> +
+> >> +     if (rcu_self_test_counter != early_boot_test_counter)
+> >> +             ret = -1;
+> 
+> 
+> So this basically does nothing when it does not match. All we see is
+> the return value when we pass initcall_debug. Should I add a WARN_ON()
+> or some such so that it is more explicit?
+
+Please do!
+
+								Thanx, Paul
+
+> >> +
+> >> +     return ret;
+> >> +}
+> >> +late_initcall(rcu_verify_early_boot_tests);
+> >> +#else
+> >> +void rcu_early_boot_tests(void) {}
+> >> +#endif /* CONFIG_PROVE_RCU */
+> >> --
+> >> 2.1.0
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >
 > 
 > 
 > 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> -- 
+> Pranith
 > 
 
--- 
-thanks,
-Giedrius
