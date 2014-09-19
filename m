@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559AbaISQfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:35:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33192 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756392AbaISQfa (ORCPT
+	id S1757158AbaISQjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:39:49 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34947 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755848AbaISQjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:35:30 -0400
-Date: Fri, 19 Sep 2014 11:29:17 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-arm-msm@vger.kernel.org,
+	Fri, 19 Sep 2014 12:39:48 -0400
+Date: Fri, 19 Sep 2014 17:39:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        tony@atomide.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, drake@endlessm.com, loeliger@gmail.com,
+        santosh.shilimkar@ti.com, linux-omap@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>,
         linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: qcom: register a restart notifier
-Message-ID: <20140919162917.GJ3749@joshc.qualcomm.com>
-References: <cover.1411078425.git.joshc@codeaurora.org>
- <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
- <541B995A.6000609@roeck-us.net>
- <20140919033202.GF3749@joshc.qualcomm.com>
- <541BAB06.7040502@roeck-us.net>
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v4 4/7] ARM: l2c: Add support for overriding prefetch
+	settings
+Message-ID: <20140919163932.GH12379@n2100.arm.linux.org.uk>
+References: <1409062680-15906-1-git-send-email-t.figa@samsung.com> <1409062680-15906-5-git-send-email-t.figa@samsung.com> <20140919095000.GF29620@piout.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <541BAB06.7040502@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140919095000.GF29620@piout.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 09:03:18PM -0700, Guenter Roeck wrote:
-> On 09/18/2014 08:32 PM, Josh Cartwright wrote:
-> >On Thu, Sep 18, 2014 at 07:47:54PM -0700, Guenter Roeck wrote:
-> >>On 09/18/2014 03:27 PM, Josh Cartwright wrote:
-[..]
-> >
-> >Nothing magic, it's just a reasonably low value to set the bite time
-> >counter at.  It also happens to be the value at reset.
-> >
-> Can you add a note explaining that this reflects a reset delay of <n>
-> milliseconds or whatever it is ?
+On Fri, Sep 19, 2014 at 11:50:01AM +0200, Alexandre Belloni wrote:
+> On 26/08/2014 at 16:17:57 +0200, Tomasz Figa wrote :
+> > Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
+> > settings configured in registers leading to crashes if L2C is enabled
+> > without overriding them. This patch introduces bindings to enable
+> > prefetch settings to be specified from DT and necessary support in the
+> > driver.
+> > 
+> > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> 
+> Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> 
+> It is working and useful on Atmel's sama5d4 were the bootloader is not
+> configuring the L2C prefetch. However, I'm wondering whether we should
+> add support for setting L310_PREFETCH_CTRL_DATA_PREFETCH and
+> L310_PREFETCH_CTRL_INSTR_PREFETCH. I'm currently doing it by using
+> ".l2c_aux_val    = L310_AUX_CTRL_DATA_PREFETCH |
+> L310_AUX_CTRL_INSTR_PREFETCH" (those are the same bits) but this has the
+> disadvantage of displaying the "L2C: platform modifies aux control
+> register:" twice.
 
-Certainly.  Will do.
+The L2C documentation, freely available from the ARM infocentre website,
+has the answer to this for you.
 
-Thanks,
-  Josh
+The two bits in the prefetch control register which control the data
+and instruction prefetching are aliases of the aux control register.
+If you set them to a value in one register, they are reflected in the
+other.
+
+The reason for that is that once the L2 cache is enabled, writes to
+the aux control register are no longer permitted, but it's safe to
+enable and disable the prefetching with the cache already enabled.
+This reason is even stated in the documentation.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
