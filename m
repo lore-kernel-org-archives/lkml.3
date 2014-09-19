@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328AbaISOJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:09:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755831AbaISOJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:09:24 -0400
-Date: Fri, 19 Sep 2014 09:22:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: CAI Qian <caiqian@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        ltp-list <ltp-list@lists.sourceforge.net>,
-        crash-utility <crash-utility@redhat.com>,
-        kexec <kexec@lists.infradead.org>,
-        kexec kdump redhat mailing list 
-	<kexec-kdump-list@redhat.com>
-Subject: Re: [RFC] autokdump - automated kdump testsuite
-Message-ID: <20140919132236.GB2190@redhat.com>
-References: <145412866.25258463.1411119061796.JavaMail.zimbra@redhat.com>
- <293476264.25264480.1411120345360.JavaMail.zimbra@redhat.com>
+	id S1757405AbaISOL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:11:57 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:52981 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaISOL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 10:11:56 -0400
+Message-ID: <541C39BB.8010804@kernel.dk>
+Date: Fri, 19 Sep 2014 08:12:11 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <293476264.25264480.1411120345360.JavaMail.zimbra@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] blk-timeout: fix blk_add_timer
+References: <1411134826-6772-1-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1411134826-6772-1-git-send-email-ming.lei@canonical.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 05:52:25AM -0400, CAI Qian wrote:
-> I plan to release an automated kdump testsuite that will be
-
-So will this be a standalone test suit? Can it be merged with
-something already existing say, LTP.
-
-> focus on testing kernel and the crash utility. It should work
-> for all major distros since it will use none of distro-specific
-> stuff, and also support different arches including x86, ARM,
-> PPC64 and s390x.
+On 09/19/2014 07:53 AM, Ming Lei wrote:
+> Commit 8cb34819cdd5d(blk-mq: unshared timeout handler) introduces
+> blk-mq's own timeout handler, and removes following line
 > 
-> It does the following:
-> 1) check if there is a memory reserved for kdump. If not,
->    reserve the memory and reboot the system.
-> 2) once the system is back, load kexec on panic and
->    prepare a separate initramfs that including needed
->    modules to load a local filesystem and necessary utilities
-
-So you will write logic to prepare custom initramfs or will rely
-on dracut or some other utility for that.
-
->    in order to analyse /proc/vmcore in the 2nd kernel.
-> 3) trigger the system crash using methods like sysrq-c, NMI,
->    and panic_on_hung_task etc.
-> 4) in the 2nd kernel, mount a filesystem and use the crash
->    utility to analyse /proc/vmcore. Then, gather the analyse
->    logs, serial console output, dmesg etc into the filesystem.
-
-Why not save core and boot back in first kernel and then analyze. 
-
-Trying to work directly with /proc/vmcore does not test makedumfile
-which everybody uses. Also it will require more memory to be reserved
-and packing crash and debug vmlinux into initramfs.
-
-I think being able to test makedumpfile also is the key here.
-
-Thanks
-Vivek 
-> 5) reboot back into the 1st kernel.
+> 	blk_queue_rq_timed_out(q, blk_mq_rq_timed_out);
 > 
-> implementation:
-> It will setup a daemon to handle reboots.
+> then cause blk_add_timer() to do nop in case of blk-mq.
 > 
-> plan:
-> I might also to test the makedumpfile all together later.
->    CAI Qian
+> This patch fixes the problem by bypassing the check for blk-mq.
+
+Good catch, this explains something I ran into yesterday on a missing
+timer. I had a hard time understanding your description here, I'll
+reword it a little bit and apply. Thanks!
+
+-- 
+Jens Axboe
+
