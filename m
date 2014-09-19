@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077AbaISK70 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 06:59:26 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:34788 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaISK7Z (ORCPT
+	id S1756097AbaISLAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:00:24 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:43396 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751498AbaISLAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 06:59:25 -0400
-Date: Fri, 19 Sep 2014 12:59:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
+	Fri, 19 Sep 2014 07:00:22 -0400
+X-Sasl-enc: 9f9obtmbFynP0wf3wSxmIg/e104ho6Phs3dabRPWVHbA 1411124421
+Date: Fri, 19 Sep 2014 08:00:15 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        keescook@chromium.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH] parisc: Use secure_computing_strict, not secure_computing
-Message-ID: <20140919105920.GA14133@gmail.com>
-References: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140919110014.GC29639@khazad-dum.debian.net>
+References: <20140918135202.GA26038@khazad-dum.debian.net>
+ <541B2F33.8000002@amacapital.net>
+ <20140918145328.0253f009@as>
+ <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+ <20140918200659.GA5331@khazad-dum.debian.net>
+ <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-(Cc:-ed the PARISC maintainer. Original patch quoted below.)
-
-* Andy Lutomirski <luto@amacapital.net> wrote:
-
-> After commit a4412fc9486e, the secure_computing function is only
-> available if seccomp filters are implemented by the architecture.
-> Architectures without seccomp filters use secure_computing_strict
-> instead.
+On Thu, 18 Sep 2014, Andy Lutomirski wrote:
+> On Sep 18, 2014 5:13 PM, "Henrique de Moraes Holschuh" <hmh@hmh.eng.br> wrote:
+> > Here's a plan that might work, pending actually checking the libpthread TSX
+> > code to make sure it keys on /proc/cpuinfo flags:
 > 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> This is minimally tested because my cross-compiler toolchain for parisc
-> is quite broken.  ptrace.c seems to *compile*, but it doesn't assemble.
-> 
->  arch/parisc/kernel/ptrace.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/parisc/kernel/ptrace.c b/arch/parisc/kernel/ptrace.c
-> index 3bab72462ab5..5961cc86d6d2 100644
-> --- a/arch/parisc/kernel/ptrace.c
-> +++ b/arch/parisc/kernel/ptrace.c
-> @@ -270,11 +270,11 @@ long do_syscall_trace_enter(struct pt_regs *regs)
->  {
->  	long ret = 0;
->  
-> -	/* Do the secure computing check first. */
-> -	if (secure_computing(regs->gr[20])) {
-> -		/* seccomp failures shouldn't expose any additional code. */
-> -		return -1;
-> -	}
-> +	/*
-> +	 * Do the secure computing check first. seccomp failures
-> +	 * shouldn't expose any additional code.
-> +	 */
-> +	secure_computing_strict(regs->gr[20]);
->  
->  	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
->  	    tracehook_report_syscall_entry(regs))
+> Surely it checks cpuid directly, though.
 
+Unfortunately, you're correct.  It uses cpuid() directly.  So, my plan is
+not going to work.
+
+> Can we twiddle the cpuid bit?  I never noticed any way in the docs to
+
+No, we can't, at least not by manipulating cpuid itself.
+
+And if the old microcode had such a Intel TSX on/off switch (which would
+also reset the bit), the "fix" that disables Intel TSX should have been a
+BIOS update, not a microcode update... so I consider that very unlikely.
+
+I'm filling a bug on Debian glibc, asking them to blacklist HLE until
+further notice.
+
+So that's two nice features that might go the way of the Dodo over this:
+We're also killing microcode update support outside of the initramfs in
+Debian.  It has become obvious that anything other than the early initramfs
+method of microcode updates should be considered a developer thing.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
