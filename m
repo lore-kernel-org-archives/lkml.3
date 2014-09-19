@@ -1,107 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaISM5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:57:35 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:33861 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaISM5d (ORCPT
+	id S1756841AbaISM66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:58:58 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43994 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756204AbaISM65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:57:33 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-c2-541c283a3334
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
-        dri-devel@lists.freedesktop.org (open list:DRM DRIVERS FOR E...),
-        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
-        linux-kernel@vger.kernel.org (open list), drake@endlessm.com,
-        daniel@ffwll.ch, m.szyprowski@samsung.com
-Subject: [PATCH] drm/exynos: init vblank with real number of crtcs
-Date: Fri, 19 Sep 2014 14:57:20 +0200
-Message-id: <1411131440-15395-1-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4NV0rDZkQg9+HFC1urTvHatF77iST
-	xf9tE5ktHs1/zGxx5et7NotJ9yewWLy4d5HFonfBVTaLs01v2C0u75rDZjHj/D4mi7VH7rJb
-	zJj8ks2B12PR9yyPvd8WsHhs//aA1eN+93Emj74tqxg9Pm+SC2CL4rJJSc3JLEst0rdL4Mp4
-	9eMIW8E6gYq571vZGxjv8nYxcnJICJhITL79jhnCFpO4cG89WxcjF4eQwFJGiQO3/rNCOH1M
-	Enuau9lAqtgENCX+br4JZosIKEus2tfODlLELPCWWeLH2ZssIAlhASeJi/3dQAkODhYBVYkj
-	zfEgYV4BZ4kPMx5CbZOTOHlsMusERu4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUJC
-	7esOxqXHrA4xCnAwKvHweqRJhwixJpYVV+YeYpTgYFYS4eUTkwkR4k1JrKxKLcqPLyrNSS0+
-	xMjEwSnVwDgp821fruwNI40uUZX6hx2L7Cx3FS3J52F20OA2LottnDjF3D8nd65FeYK8kf+5
-	bVMfzVS9fi+W6Z9g6/66y/emSvvf2FjXukvQJKc+KD/udp+XwYqDgSHHSnoNP9uad94Jrvc/
-	debU4bJ5p3xYo55on3VMX7jBJiIztc6w+pbT71uZNX8PKrEUZyQaajEXFScCADV9tGcTAgAA
+	Fri, 19 Sep 2014 08:58:57 -0400
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+To: jic23@kernel.org
+Cc: stefan@agner.ch, shawn.guo@freescale.com, B38611@freescale.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sanchayan Maity <maitysanchayan@gmail.com>
+Subject: [PATCH v3] drivers/iio/adc/vf610-adc: Add temperature sensor support
+Date: Fri, 19 Sep 2014 18:28:41 +0530
+Message-Id: <cover.1411128738.git.maitysanchayan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialization of vblank with MAX_CRTC caused attempts
-to disabling vblanks for non-existing crtcs in case
-drm used fewer crtcs. The patch fixes it.
+Vybrid ADC peripheral includes a temperature sensor
+which is connected to channel number 26. This patch
+adds support for the sensor. The raw value is read
+and the temperature calculated in milli degree Celsius,
+which is returned using IIO_CHAN_INFO_PROCESSED option.
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_drv.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+Changes since v2:
+v2 and v1 patch were with "ARM: imx:" Cleaned this.
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index 9b00e4e..dc4affd 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-@@ -94,10 +94,6 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
- 	/* init kms poll for handling hpd */
- 	drm_kms_helper_poll_init(dev);
- 
--	ret = drm_vblank_init(dev, MAX_CRTC);
--	if (ret)
--		goto err_mode_config_cleanup;
--
- 	/* setup possible_clones. */
- 	exynos_drm_encoder_setup(dev);
- 
-@@ -106,22 +102,26 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
- 	/* Try to bind all sub drivers. */
- 	ret = component_bind_all(dev->dev, dev);
- 	if (ret)
--		goto err_cleanup_vblank;
-+		goto err_mode_config_cleanup;
-+
-+	ret = drm_vblank_init(dev, dev->mode_config.num_crtc);
-+	if (ret)
-+		goto err_unbind_all;
- 
- 	/* Probe non kms sub drivers and virtual display driver. */
- 	ret = exynos_drm_device_subdrv_probe(dev);
- 	if (ret)
--		goto err_unbind_all;
-+		goto err_cleanup_vblank;
- 
- 	/* force connectors detection */
- 	drm_helper_hpd_irq_event(dev);
- 
- 	return 0;
- 
--err_unbind_all:
--	component_unbind_all(dev->dev, dev);
- err_cleanup_vblank:
- 	drm_vblank_cleanup(dev);
-+err_unbind_all:
-+	component_unbind_all(dev->dev, dev);
- err_mode_config_cleanup:
- 	drm_mode_config_cleanup(dev);
- 	drm_release_iommu_mapping(dev);
-@@ -138,8 +138,8 @@ static int exynos_drm_unload(struct drm_device *dev)
- 	exynos_drm_fbdev_fini(dev);
- 	drm_kms_helper_poll_fini(dev);
- 
--	component_unbind_all(dev->dev, dev);
- 	drm_vblank_cleanup(dev);
-+	component_unbind_all(dev->dev, dev);
- 	drm_mode_config_cleanup(dev);
- 	drm_release_iommu_mapping(dev);
- 
+Changes since v1:
+[1] Removed info scale, index and sampling frequency 
+specification for temperature channel.
+[2] Instead of having info->value as int for temperature
+calculation, kept it at u32 and only read value during 
+temperature calculation
+
+[v1] http://thread.gmane.org/gmane.linux.kernel.iio/13960/focus=13963
+[v2] https://lkml.org/lkml/2014/9/18/161
+
+Sanchayan Maity (1):
+  drivers/iio/adc/vf610-adc: Add temperature sensor support
+
+ drivers/iio/adc/vf610_adc.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
 -- 
-1.9.1
+1.7.9.5
 
