@@ -1,171 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898AbaISNrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:47:07 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:49666 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398AbaISNrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:47:05 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: srv_hongzhou.yang@mediatek.com, Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, srv_heupstream@mediatek.com,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "=Sascha Hauer" <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>
-Subject: Re: [PATCH 4/4] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
-Date: Fri, 19 Sep 2014 15:48:57 +0200
-Message-ID: <8504020.ELHUosuJMo@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1411127306-13677-5-git-send-email-srv_hongzhou.yang@mediatek.com>
-References: <1411127306-13677-1-git-send-email-srv_hongzhou.yang@mediatek.com> <1411127306-13677-5-git-send-email-srv_hongzhou.yang@mediatek.com>
+	id S1756976AbaISNuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:50:12 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:58582 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756995AbaISNuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:50:09 -0400
+X-IronPort-AV: E=Sophos;i="5.04,555,1406584800"; 
+   d="scan'208";a="96651857"
+Date: Fri, 19 Sep 2014 15:50:01 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: "Drokin, Oleg" <oleg.drokin@intel.com>
+cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "<kernel-janitors@vger.kernel.org>" <kernel-janitors@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<HPDD-discuss@ml01.01.org>" <HPDD-discuss@ml01.01.org>
+Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: llite: Use kzalloc and
+ rewrite null tests
+In-Reply-To: <4533064F-A093-4DED-8294-CF049CB591A8@intel.com>
+Message-ID: <alpine.DEB.2.10.1409191546440.2525@hadrien>
+References: <1411071842-24714-1-git-send-email-Julia.Lawall@lip6.fr> <1411071842-24714-2-git-send-email-Julia.Lawall@lip6.fr> <20140918234309.GP17875@mwanda> <E43F4FD2-3A79-485E-960B-A12960B3D2B7@intel.com> <517B3353-BD3C-4326-A8F4-F1775B4865E5@intel.com>
+ <alpine.DEB.2.10.1409190637190.2507@hadrien> <4533064F-A093-4DED-8294-CF049CB591A8@intel.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-123650081-1411134607=:2525"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 19. September 2014, 19:48:26 schrieb 
-srv_hongzhou.yang@mediatek.com:
-> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
-> 
-> Add devicetree bindings for Mediatek SoC pinctrl driver.
-> 
-> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
-> ---
->  .../devicetree/bindings/pinctrl/pinctrl-mt65xx.txt | 92
-> ++++++++++++++++++++++ 1 file changed, 92 insertions(+)
->  create mode 100644
-> Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
-> b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt new file
-> mode 100644
-> index 0000000..e2deff6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
-> @@ -0,0 +1,92 @@
-> +* Mediatek MT65XX Pin Controller
-> +
-> +The Mediatek's Pin controller is used to control GPIO pins.
-> +
-> +Required properties:
-> +- compatible: value should be either of the following.
-> +    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
-> +- reg: Should contain the register physical address and length for the
-> +  pin controller.
-> +- gpio-controller : Marks the device node as a gpio controller.
-> +- #gpio-cells: number of cells in GPIO specifier. Since the generic GPIO
-> +  binding is used, the amount of cells must be specified as 2. See the
-> below +  mentioned gpio binding representation for description of
-> particular cells. +
-> +	Eg: <&pio 6 0>
-> +	<[phandle of the gpio controller node]
-> +	[pin number within the gpio controller]
-> +	[flags]>
-> +
-> +	Values for gpio specifier:
-> +	- Pin number: is a value between 0 to 202.
-> +	- Flags:  bit field of flags, as defined in <dt-bindings/gpio/gpio.h>.
-> +            Only the following flags are supported:
-> +            0 - GPIO_ACTIVE_HIGH
-> +            1 - GPIO_ACTIVE_LOW
-> +
-> +Please refer to pinctrl-bindings.txt in this directory for details of the
-> +common pinctrl bindings used by client devices.
-> +
-> +A pinctrl node should contain at least one subnodes representing the
-> +pinctrl groups available on the machine. Each subnode will list the
-> +pins it needs, and how they should be configured, with regard to muxer
-> +configuration and pullups. If one of these options is
-> +not set, its actual value will be unspecified.
-> +
-> +Required subnode-properties:
-> +
-> +- mediatek,pinfunc: List of gpio number and function to mux.
-> +
-> +The mediatek,pinfunc can use defines directly,
-> +which are already defind in boot/dts/mt8135-pinfunc.h.
-> +
-> +Optional subnode-properties:
-> +- mediatek,pull: Integer, defines in dt-bindings/pinctrl/mt65xx.h.
-> +    MT_PIN_PULL_DISABLE: No resistor
-> +    MT_PIN_CONF_PULL_UP: Pull-up resistor
-> +    MT_PIN_CONF_PULL_DOWN: Pull-down resistor
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Please use the generic pinconfig for such options instead of defining your own.
-
-For examples on how to do this in a devicetree-context using 
-pinconf_generic_parse_dt_config() you could look at
-
-drivers/pinctrl/nomadik/pinctrl-abx500.c
-drivers/pinctrl/pinctrl-tz1090.c
-drivers/pinctrl/sh-pfc/pinctrl.c
+--8323329-123650081-1411134607=:2525
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 
 
-Heiko
 
-> +
-> +The mediatek,pull can be either a single value or an array.
-> +If it is a single value, that means all pins use use this value for same.
-> +If it is an array, the means one value per pin.
-> +
-> +Examples:
-> +
-> +pinctrl@01c20800 {
-> +	compatible = "mediatek,mt8135-pinctrl";
-> +	reg = <0x01c20800 0x400>;
-> +	gpio-controller;
-> +	#gpio-cells = <2>;
-> +
-> +	i2c0_pins_a: i2c0@0 {
-> +		mediatek,pinfunc = <MT8135_PIN_100_SDA0__FUNC_SDA0
-> MT8135_PIN_101_SCL0__FUNC_SCL0>; +		mediatek,pull = 
-<MT_PIN_PULL_DISABLE>;
-> +	};
-> +
-> +	i2c1_pins_a: i2c1@0 {
-> +		mediatek,pinfunc = <MT8135_PIN_195_SDA1__FUNC_SDA1
-> MT8135_PIN_196_SCL1__FUNC_SCL1>; +		mediatek,pull = 
-<MT_PIN_PULL_DISABLE>;
-> +	};
-> +
-> +	i2c2_pins_a: i2c2@0 {
-> +		mediatek,pinfunc = <MT8135_PIN_193_SDA2__FUNC_SDA2
-> MT8135_PIN_194_SCL2__FUNC_SCL2>; +		mediatek,pull = 
-<MT_PIN_PULL_DISABLE>;
-> +	};
-> +
-> +	i2c3_pins_a: i2c3@0 {
-> +		mediatek,pinfunc = <MT8135_PIN_35_SCL3__FUNC_SCL3
-> MT8135_PIN_36_SDA3__FUNC_SDA3>; +		mediatek,pull = 
-<MT_PIN_PULL_DISABLE>;
-> +	};
-> +
-> +	uart2_pins_a: uart2@0 {
-> +		mediatek,pinfunc = <MT8135_PIN_53_URXD2__FUNC_URXD2
-> MT8135_PIN_54_UTXD2__FUNC_UTXD2>; +		mediatek,pull = 
-<MT_PIN_PULL_DISABLE>;
-> +	};
-> +
-> +	uart3_pins_a: uart3@0 {
-> +		mediatek,pinfunc = <MT8135_PIN_191_URXD3__FUNC_URXD3
-> MT8135_PIN_192_UTXD3__FUNC_UTXD3>; +		mediatek,pull =
-> <MT_PIN_PULL_DISABLE>;
-> +	};
-> +	...
-> +
-> +};
+On Fri, 19 Sep 2014, Drokin, Oleg wrote:
 
+> Hello!
+>
+>    First, thanks for your patches and efforts spent on these cleanups.
+>
+> On Sep 19, 2014, at 12:45 AM, Julia Lawall wrote:
+>
+> > With respect to the upper case lower case issue, does the thing need to be
+> > a macro?  I think that the lowercase is more or less fine, but only if
+> > what is behind it is a function.
+>
+> I don't have a strong opinion either way as long as we have all the functionality
+> we need.
+>
+> > I say more or less fine, because normally in the kernel the special
+> > allocators have special purposes, eg allocating and initializing the xyz
+> > structure.  Here what is wanted is a general purpose allocator with lots
+> > of special tracing features, so it is not quite the same thing.  And one
+> > can wonder why all of these special tracing features are not relevant to
+> > the kernel as a whole?
+>
+> Like I explained in my previous email, many of the tracing features are already
+> possible to replace with other existing in-kernel mechanisms like kmemleak.
+>
+> Except the total tally of allocations/frees so that a memleak could be visibly
+> easily seen on module unload time. I think this would be useful for other
+> kinds of modules too, not just lustre, so having that as a generic allocator
+> feature would be cool too.
+>
+> > In reading through the description of the needed features, it seems like
+> > only the _ptr extension requires being a macro.  Do we need that?  The
+>
+> We only need that as a less error-prone way of having
+> x = obd_kzalloc(sizeof(*x), ….)
+> …
+> obd_free(…, sizeof(*x))
+>
+> Real free function does not take size argument, but we need that for
+> total allocated/freed accounting. Easy to have disconnect with
+> the size argument of obd_free to be wrong.
+>
+> > rest of the kernel manages to do x = kzalloc(sizeof(*x),...) ok.  It's
+> > unpleasant to have an assignment hidden in this way.  And currently it is
+> > not used consistently.  There are some OBD_ALLOCs that have the same form.
+>
+> Yes, those are converted as thy are noticed.
+>
+> > Sorry for overlooking the frees.  I was focusing on trying one thing at a
+> > time...
+>
+> I kind of think it's a related issue.
+> Touching ones needs to touch the other if not in the same patch then in
+> a next patch. And that's why I think consideations for what FREEs would need
+> is needed from the start, so the FREEs removal patch does not goes and patches a bunch of just patched allocs.
+
+Sure, it's fine.
+
+Where do you want to go from here?  Should I propose function definitions
+for obd_alloc and obd_free?  Could we leave the vmalloc issue for a future
+set of changes?
+
+julia
+--8323329-123650081-1411134607=:2525--
