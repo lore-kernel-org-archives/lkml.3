@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745AbaISLqJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:46:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56104 "EHLO
+	id S932159AbaISLqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:46:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56116 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146AbaISLqF (ORCPT
+	with ESMTP id S1756146AbaISLqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:46:05 -0400
-Date: Fri, 19 Sep 2014 04:45:32 -0700
+	Fri, 19 Sep 2014 07:46:12 -0400
+Date: Fri, 19 Sep 2014 04:45:17 -0700
 From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-f3cd1c4ec059c956d3346705e453aff3ace3b494@git.kernel.org>
+Message-ID: <tip-a8edd075323cec607797fdd1d7b1222c987f4a47@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
         linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1410529300.3569.25.camel@tkhai>
-References: <1410529300.3569.25.camel@tkhai>
+In-Reply-To: <1410529276.3569.24.camel@tkhai>
+References: <1410529276.3569.24.camel@tkhai>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/core: Use put_prev_task()
-  accessor where possible
-Git-Commit-ID: f3cd1c4ec059c956d3346705e453aff3ace3b494
+Subject: [tip:sched/core] sched/fair: cleanup:
+  Remove useless assignment in select_task_rq_fair()
+Git-Commit-ID: a8edd075323cec607797fdd1d7b1222c987f4a47
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,60 +32,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f3cd1c4ec059c956d3346705e453aff3ace3b494
-Gitweb:     http://git.kernel.org/tip/f3cd1c4ec059c956d3346705e453aff3ace3b494
+Commit-ID:  a8edd075323cec607797fdd1d7b1222c987f4a47
+Gitweb:     http://git.kernel.org/tip/a8edd075323cec607797fdd1d7b1222c987f4a47
 Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Fri, 12 Sep 2014 17:41:40 +0400
+AuthorDate: Fri, 12 Sep 2014 17:41:16 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:35:19 +0200
+CommitDate: Fri, 19 Sep 2014 12:35:18 +0200
 
-sched/core: Use put_prev_task() accessor where possible
+sched/fair: cleanup: Remove useless assignment in select_task_rq_fair()
+
+new_cpu is reassigned below, so we do not need this here.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1410529300.3569.25.camel@tkhai
+Link: http://lkml.kernel.org/r/1410529276.3569.24.camel@tkhai
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f7c6ed2..5536397 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3033,7 +3033,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
--		p->sched_class->put_prev_task(rq, p);
-+		put_prev_task(rq, p);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 96e7147..9807a99 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4521,11 +4521,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+ 	if (p->nr_cpus_allowed == 1)
+ 		return prev_cpu;
  
- 	/*
- 	 * Boosting condition are:
-@@ -3586,7 +3586,7 @@ change:
- 	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
--		p->sched_class->put_prev_task(rq, p);
-+		put_prev_task(rq, p);
+-	if (sd_flag & SD_BALANCE_WAKE) {
+-		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
+-			want_affine = 1;
+-		new_cpu = prev_cpu;
+-	}
++	if (sd_flag & SD_BALANCE_WAKE)
++		want_affine = cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
  
- 	prev_class = p->sched_class;
- 	__setscheduler(rq, p, attr);
-@@ -4792,7 +4792,7 @@ void sched_setnuma(struct task_struct *p, int nid)
- 	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
--		p->sched_class->put_prev_task(rq, p);
-+		put_prev_task(rq, p);
- 
- 	p->numa_preferred_nid = nid;
- 
-@@ -7374,7 +7374,7 @@ void sched_move_task(struct task_struct *tsk)
- 	if (queued)
- 		dequeue_task(rq, tsk, 0);
- 	if (unlikely(running))
--		tsk->sched_class->put_prev_task(rq, tsk);
-+		put_prev_task(rq, tsk);
- 
- 	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
- 				lockdep_is_held(&tsk->sighand->siglock)),
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, tmp) {
