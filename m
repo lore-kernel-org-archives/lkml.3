@@ -1,125 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaISM4N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:56:13 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46159 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755372AbaISM4L (ORCPT
+	id S1756645AbaISM5f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:57:35 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33861 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaISM5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:56:11 -0400
-Message-ID: <541C27E8.6090000@hurleysoftware.com>
-Date: Fri, 19 Sep 2014 08:56:08 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: Div-by-zero in the 8250 serial driver (3.17-rc5)
-References: <CAP145pg75hFKi2S9SVywRfex_A5=yRpe0p4Dzri8+Q=7YWoXfg@mail.gmail.com>
-In-Reply-To: <CAP145pg75hFKi2S9SVywRfex_A5=yRpe0p4Dzri8+Q=7YWoXfg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Fri, 19 Sep 2014 08:57:33 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-c2-541c283a3334
+From: Andrzej Hajda <a.hajda@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        dri-devel@lists.freedesktop.org (open list:DRM DRIVERS FOR E...),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
+        linux-kernel@vger.kernel.org (open list), drake@endlessm.com,
+        daniel@ffwll.ch, m.szyprowski@samsung.com
+Subject: [PATCH] drm/exynos: init vblank with real number of crtcs
+Date: Fri, 19 Sep 2014 14:57:20 +0200
+Message-id: <1411131440-15395-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4NV0rDZkQg9+HFC1urTvHatF77iST
+	xf9tE5ktHs1/zGxx5et7NotJ9yewWLy4d5HFonfBVTaLs01v2C0u75rDZjHj/D4mi7VH7rJb
+	zJj8ks2B12PR9yyPvd8WsHhs//aA1eN+93Emj74tqxg9Pm+SC2CL4rJJSc3JLEst0rdL4Mp4
+	9eMIW8E6gYq571vZGxjv8nYxcnJICJhITL79jhnCFpO4cG89WxcjF4eQwFJGiQO3/rNCOH1M
+	Enuau9lAqtgENCX+br4JZosIKEus2tfODlLELPCWWeLH2ZssIAlhASeJi/3dQAkODhYBVYkj
+	zfEgYV4BZ4kPMx5CbZOTOHlsMusERu4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUJC
+	7esOxqXHrA4xCnAwKvHweqRJhwixJpYVV+YeYpTgYFYS4eUTkwkR4k1JrKxKLcqPLyrNSS0+
+	xMjEwSnVwDgp821fruwNI40uUZX6hx2L7Cx3FS3J52F20OA2LottnDjF3D8nd65FeYK8kf+5
+	bVMfzVS9fi+W6Z9g6/66y/emSvvf2FjXukvQJKc+KD/udp+XwYqDgSHHSnoNP9uad94Jrvc/
+	debU4bJ5p3xYo55on3VMX7jBJiIztc6w+pbT71uZNX8PKrEUZyQaajEXFScCADV9tGcTAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Greg Kroah-Hartman, AlanC ]
+Initialization of vblank with MAX_CRTC caused attempts
+to disabling vblanks for non-existing crtcs in case
+drm used fewer crtcs. The patch fixes it.
 
-On 09/18/2014 10:57 AM, Robert Święcki wrote:
-> Hi,
-> 
-> # setserial /dev/ttyS0 spd_hi baud_base 38400
-> 
-> Entering kdb (current=0xffff8805ee033200, pid 1798) on processor 9 Oops: (null)
-> due to oops @ 0xffffffff8149c01e
-> CPU: 9 PID: 1798 Comm: setserial Tainted: G        W I
-> 3.17.0-031700rc5-generic-201409151105
-> task: ffff8805ee033200 ti: ffff8800e39e0000 task.ti: ffff8800e39e0000
-> RIP: 0010:[<ffffffff8149c01e>]  [<ffffffff8149c01e>] uart_get_divisor+0x1e/0x40
-> RSP: 0018:ffff8800e39e3c30  EFLAGS: 00010206
-> RAX: 0000000000096000 RBX: ffffffff81fab060 RCX: 0000000000000006
-> RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff81fab060
-> RBP: ffff8800e39e3c78 R08: 000000000000000a R09: 00000000000003d2
-> R10: 0000000000000000 R11: 00000000000003d1 R12: 0000000000000013
-> R13: ffff8805f0748d2c R14: 0000000000000000 R15: 0000000000000010
-> FS:  00007f0fa653d740(0000) GS:ffff880613920000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00007f0fa6003330 CR3: 00000000365f8000 CR4: 00000000000007e0
-> Stack:
->  ffffffff814a2978 ffffffff81fab060 0000000000000010 ffff8800e39e3ca8
->  ffff8805eca08000 ffff8805f0748c00 ffff8800e39e3dc0 ffffffff81fab060
->  0000000000000010 ffff8800e39e3c88 ffffffff814a2d55 ffff8800e39e3ca8
-> Call Trace:
->  [<ffffffff814a2978>] ? serial8250_do_set_termios+0xd8/0x490
->  [<ffffffff814a2d55>] serial8250_set_termios+0x25/0x30
->  [<ffffffff8149dce2>] uart_change_speed+0x52/0xb0
->  [<ffffffff8149ec9c>] uart_set_info+0x20c/0x5f0
->  [<ffffffff8149c75a>] ? do_uart_get_info+0xfa/0x1a0
->  [<ffffffff8149fbdf>] uart_ioctl+0x14f/0x220
->  [<ffffffff814804d8>] tty_ioctl+0x298/0x8f0
->  [<ffffffff811fc025>] do_vfs_ioctl+0x75/0x2c0
->  [<ffffffff811fc301>] SyS_ioctl+0x91/0xb0
->  [<ffffffff817a436d>] system_call_fastpath+0x1a/0x1f
-> Code: c0 00 00 00 c3 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 81 fe
-> 00 96 00 00 48 89 e5 74 17 c1 e6 04 31 d2 89 f0 d1 e8 03 47 58 5d <f7>
-> f6 c3 0f 1f 80 00 00 00 00 8b 87 b8 00 00 00 25 30 10 00 00
-
-Hi Robert,
-
-Thanks for the report.
-
-I was able to reproduce this crash on all recent kernels I tested. The
-patch below fixed the problem for me. If possible, please test the patch
-on your system.
-
-Regards,
-Peter Hurley
-
---- >% ---
-Subject: [PATCH] serial: Fix divide-by-zero fault in uart_get_divisor()
-
-uart_get_baud_rate() will return baud == 0 if the max rate is set
-to the "magic" 38400 rate and the SPD_* flags are also specified.
-On the first iteration, if the current baud rate is higher than the
-max, the baud rate is clamped at the max (which in the degenerate
-case is 38400). On the second iteration, the now-"magic" 38400 baud
-rate selects the possibly higher alternate baud rate indicated by
-the SPD_* flag. Since only two loop iterations are performed, the
-loop is exited, a kernel WARNING is generated and a baud rate of
-0 is returned.
-
-Reproducible with:
- setserial /dev/ttyS0 spd_hi base_baud 38400
-
-Only perform the "magic" 38400 -> SPD_* baud transform on the first
-loop iteration, which prevents the degenerate case from recognizing
-the clamped baud rate as the "magic" 38400 value.
-
-Reported-by: Robert Święcki <robert@swiecki.net>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/tty/serial/serial_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/exynos/exynos_drm_drv.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 66e2de6..d0a5fc9 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -359,7 +359,7 @@ uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
- 		 * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
- 		 * Die! Die! Die!
- 		 */
--		if (baud == 38400)
-+		if (try == 0 && baud == 38400)
- 			baud = altbaud;
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+index 9b00e4e..dc4affd 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+@@ -94,10 +94,6 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+ 	/* init kms poll for handling hpd */
+ 	drm_kms_helper_poll_init(dev);
  
- 		/*
+-	ret = drm_vblank_init(dev, MAX_CRTC);
+-	if (ret)
+-		goto err_mode_config_cleanup;
+-
+ 	/* setup possible_clones. */
+ 	exynos_drm_encoder_setup(dev);
+ 
+@@ -106,22 +102,26 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+ 	/* Try to bind all sub drivers. */
+ 	ret = component_bind_all(dev->dev, dev);
+ 	if (ret)
+-		goto err_cleanup_vblank;
++		goto err_mode_config_cleanup;
++
++	ret = drm_vblank_init(dev, dev->mode_config.num_crtc);
++	if (ret)
++		goto err_unbind_all;
+ 
+ 	/* Probe non kms sub drivers and virtual display driver. */
+ 	ret = exynos_drm_device_subdrv_probe(dev);
+ 	if (ret)
+-		goto err_unbind_all;
++		goto err_cleanup_vblank;
+ 
+ 	/* force connectors detection */
+ 	drm_helper_hpd_irq_event(dev);
+ 
+ 	return 0;
+ 
+-err_unbind_all:
+-	component_unbind_all(dev->dev, dev);
+ err_cleanup_vblank:
+ 	drm_vblank_cleanup(dev);
++err_unbind_all:
++	component_unbind_all(dev->dev, dev);
+ err_mode_config_cleanup:
+ 	drm_mode_config_cleanup(dev);
+ 	drm_release_iommu_mapping(dev);
+@@ -138,8 +138,8 @@ static int exynos_drm_unload(struct drm_device *dev)
+ 	exynos_drm_fbdev_fini(dev);
+ 	drm_kms_helper_poll_fini(dev);
+ 
+-	component_unbind_all(dev->dev, dev);
+ 	drm_vblank_cleanup(dev);
++	component_unbind_all(dev->dev, dev);
+ 	drm_mode_config_cleanup(dev);
+ 	drm_release_iommu_mapping(dev);
+ 
 -- 
-2.1.0
-
-
-
+1.9.1
 
