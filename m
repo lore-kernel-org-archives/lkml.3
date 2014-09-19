@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864AbaISXfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 19:35:42 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:42162 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaISXfl (ORCPT
+	id S1758115AbaISXj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 19:39:27 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34198 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685AbaISXj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 19:35:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140919205754.GE26432@jtriplet-mobl1>
-References: <1411147563-9136-1-git-send-email-bobby.prani@gmail.com> <20140919205754.GE26432@jtriplet-mobl1>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Fri, 19 Sep 2014 19:35:09 -0400
-Message-ID: <CAJhHMCCXUJyyxPe=HFcR_YtihwkLEg96X81W8R7FKpsYb78Z9w@mail.gmail.com>
-Subject: Re: [RFC PATCH] rcu: Change use of __this_cpu ops on a bool type
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Sep 2014 19:39:26 -0400
+Message-ID: <1411169965.23258.45.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 4/4] target: Add a user-passthrough backstore
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alex Elsayed <eternaleye@gmail.com>
+Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 19 Sep 2014 16:39:25 -0700
+In-Reply-To: <lvi81j$ud8$2@ger.gmane.org>
+References: <1410822750-10717-1-git-send-email-agrover@redhat.com>
+	 <1410822750-10717-5-git-send-email-agrover@redhat.com>
+	 <1411161279.23258.26.camel@haakon3.risingtidesystems.com>
+	 <lvi81j$ud8$2@ger.gmane.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 4:57 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> On Fri, Sep 19, 2014 at 01:26:03PM -0400, Pranith Kumar wrote:
->> __this_cpu_{read/write}() uses sizeof() to determine the size of the variable.
->> Using this operation on a bool type causes sparse to complain.
->>
->> I checked the generated code and there is only a slight difference in
->> instructions generated.
->>
->> I am not sure this warning by sparse is really valid, but let us silence it
->> anyways.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->
-> I believe this warning was actually fixed with current versions of
-> Sparse; there was some discussion and a patch on the linux-sparse
-> mailing list.  Can you please recheck with the latest Sparse from git,
-> and if it still breaks, please raise that on linux-sparse?
->
+On Fri, 2014-09-19 at 14:43 -0700, Alex Elsayed wrote:
+> Nicholas A. Bellinger wrote:
+> 
+> <snip>
+> > So the idea of allowing the in-kernel CDB emulation to run after
+> > user-space has returned unsupported opcode is problematic for a couple
+> > of different reasons.
+> > 
+> > First, if the correct feature bits in standard INQUIRY + EVPD INQUIRY,
+> > etc are not populated by user-space to match what in-kernel CDB
+> > emulation actually supports, this can result in potentially undefined
+> > results initiator side.
+> > 
+> > Also for example, if user-space decided to emulate only a subset of PR
+> > operations, and leaves the rest of it up to the in-kernel emulation,
+> > there's not really a way to sync current state between the two, which
+> > also can end up with undefined results.
+> > 
+> > So that said, I think a saner approach would be two define two modes of
+> > operation for TCMU:
+> > 
+> >    *) Passthrough Mode: All CDBs are passed to user-space, and no
+> >       in-kernel emulation is done in the event of an unsupported
+> >       opcode response.
+> > 
+> >    *) I/O Mode: I/O related CDBs are passed into user-space, but
+> >       all control CDBs continue to be processed by in-kernel emulation.
+> >       This effectively limits operation to TYPE_DISK, but with this mode
+> >       it's probably OK to assume this.
+> > 
+> > This seems like the best trade-off between flexibility when everything
+> > should be handled by user-space, vs. functionality when only block
+> > remapping of I/O is occurring in user-space code.
+> 
+> The problem there is that the first case has all the issues of pscsi and 
+> simply becomes a performance optimization over tgt+iscsi client+pscsi and 
+> the latter case excludes the main use cases I'm interested in - OSDs, media 
+> changers, optical discs (the biggest thing for me), and so forth.
+> 
+> One of the main things I want to do with this is hook up a plugin that uses 
+> libmirage to handle various optical disc image formats.
+> 
 
-Yup, looks like the latest version of sparse fixes this. Please ignore
-this patch. Thanks!
+Not sure I follow..  How does the proposed passthrough mode prevent
+someone from emulating OSDs, media changers, optical disks or anything
+else in userspace with TCMU..?
 
--- 
-Pranith
+The main thing that the above comments highlight is why attempting to
+combine the existing in-kernel emulation with a userspace backend
+providing it's own emulation can open up a number of problems with
+mismatched state between the two.
+
+--nab
+
