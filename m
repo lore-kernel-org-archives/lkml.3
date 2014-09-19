@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568AbaISFSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:18:38 -0400
+	id S1756213AbaISFQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:16:57 -0400
 Received: from mga11.intel.com ([192.55.52.93]:41499 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756579AbaISFRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:17:04 -0400
+	id S1754818AbaISFQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 01:16:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,552,1406617200"; 
-   d="scan'208";a="602019882"
+   d="scan'208";a="602019808"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,85 +20,58 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V6 4/8] iommu/vt-d: Search for ACPI _DSM method for DMAR hotplug
-Date: Fri, 19 Sep 2014 13:18:51 +0800
-Message-Id: <1411103935-31301-5-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V6 0/8] Enable support of Intel DMAR device hotplug
+Date: Fri, 19 Sep 2014 13:18:47 +0800
+Message-Id: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Intel VT-d specification, _DSM method to support DMAR
-hotplug should exist directly under corresponding ACPI object
-representing PCI host bridge. But some BIOSes doesn't conform to
-this, so search for _DSM method in the subtree starting from the
-ACPI object representing the PCI host bridge.
+When hot plugging a descrete IOH or a physical processor with embedded
+IIO, we need to handle DMAR(or IOMMU) unit in the PCIe host bridge if
+DMAR is in use. This patch set tries to enhance current DMAR/IOMMU/IR
+drivers to support hotplug and is based on latest Linus master branch.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/iommu/dmar.c |   35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+All prerequisite patches to support DMAR device hotplug have been merged
+into the mainstream kernel, and this is the last patch set to enable
+DMAR device hotplug.
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index ab504cf0f34a..9249836d0a6a 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1925,21 +1925,48 @@ static int dmar_hotplug_remove(acpi_handle handle)
- 	return ret;
- }
- 
--static int dmar_device_hotplug(acpi_handle handle, bool insert)
-+static acpi_status dmar_get_dsm_handle(acpi_handle handle, u32 lvl,
-+				       void *context, void **retval)
-+{
-+	acpi_handle *phdl = retval;
-+
-+	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-+		*phdl = handle;
-+		return AE_CTRL_TERMINATE;
-+	}
-+
-+	return AE_OK;
-+}
-+
-+int dmar_device_hotplug(acpi_handle handle, bool insert)
- {
- 	int ret;
-+	acpi_handle tmp = NULL;
-+	acpi_status status;
- 
- 	if (!dmar_in_use())
- 		return 0;
- 
--	if (!dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD))
-+	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-+		tmp = handle;
-+	} else {
-+		status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-+					     ACPI_UINT32_MAX,
-+					     dmar_get_dsm_handle,
-+					     NULL, NULL, &tmp);
-+		if (ACPI_FAILURE(status)) {
-+			pr_warn("Failed to locate _DSM method.\n");
-+			return -ENXIO;
-+		}
-+	}
-+	if (tmp == NULL)
- 		return 0;
- 
- 	down_write(&dmar_global_lock);
- 	if (insert)
--		ret = dmar_hotplug_insert(handle);
-+		ret = dmar_hotplug_insert(tmp);
- 	else
--		ret = dmar_hotplug_remove(handle);
-+		ret = dmar_hotplug_remove(tmp);
- 	up_write(&dmar_global_lock);
- 
- 	return ret;
+You may access the patch set at:
+https://github.com/jiangliu/linux.git iommu/hotplug_v6
+
+This patch set has been tested on Intel development machine.
+Appreciate any comments and tests.
+
+V5->V6:
+1) Fix a race condition found during review
+2) Refine dmar_walk_resources() to dmar_walk_remapping_entries()
+
+Patch 1-4 enhances DMAR framework to support hotplug
+Patch 5 enhances Intel interrupt remapping driver to support hotplug
+Patch 6 enhances error handling in Intel IR driver
+Patch 7 enhance Intel IOMMU to support hotplug
+Patch 8 enhance ACPI pci_root driver to handle DMAR units
+
+Jiang Liu (8):
+  iommu/vt-d: Introduce helper function dmar_walk_resources()
+  iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
+  iommu/vt-d: Implement DMAR unit hotplug framework
+  iommu/vt-d: Search for ACPI _DSM method for DMAR hotplug
+  iommu/vt-d: Enhance intel_irq_remapping driver to support DMAR unit
+    hotplug
+  iommu/vt-d: Enhance error recovery in function
+    intel_enable_irq_remapping()
+  iommu/vt-d: Enhance intel-iommu driver to support DMAR unit hotplug
+  pci, ACPI, iommu: Enhance pci_root to support DMAR device hotplug
+
+ drivers/acpi/pci_root.c             |   16 +-
+ drivers/iommu/dmar.c                |  532 ++++++++++++++++++++++++++++-------
+ drivers/iommu/intel-iommu.c         |  297 ++++++++++++++-----
+ drivers/iommu/intel_irq_remapping.c |  237 ++++++++++++----
+ include/linux/dmar.h                |   50 +++-
+ 5 files changed, 890 insertions(+), 242 deletions(-)
+
 -- 
 1.7.10.4
 
