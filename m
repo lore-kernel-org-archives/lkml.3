@@ -1,21 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841AbaISM66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:58:58 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:43994 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204AbaISM65 (ORCPT
+	id S1756949AbaISM7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:59:09 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:49137 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756204AbaISM7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:58:57 -0400
+	Fri, 19 Sep 2014 08:59:02 -0400
 From: Sanchayan Maity <maitysanchayan@gmail.com>
 To: jic23@kernel.org
 Cc: stefan@agner.ch, shawn.guo@freescale.com, B38611@freescale.com,
         linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         Sanchayan Maity <maitysanchayan@gmail.com>
-Subject: [PATCH v3] drivers/iio/adc/vf610-adc: Add temperature sensor support
-Date: Fri, 19 Sep 2014 18:28:41 +0530
-Message-Id: <cover.1411128738.git.maitysanchayan@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=20v3=5D=20drivers/iio/adc/vf610-adc=3A=20Add=20temperature=20sensor=20support?=
+Date: Fri, 19 Sep 2014 18:28:42 +0530
+Message-Id: <0d7ce38f3f0550a485293d854832304463e215cf.1411128738.git.maitysanchayan@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1411128738.git.maitysanchayan@gmail.com>
+References: <cover.1411128738.git.maitysanchayan@gmail.com>
+In-Reply-To: <cover.1411128738.git.maitysanchayan@gmail.com>
+References: <cover.1411128738.git.maitysanchayan@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,25 +33,78 @@ adds support for the sensor. The raw value is read
 and the temperature calculated in milli degree Celsius,
 which is returned using IIO_CHAN_INFO_PROCESSED option.
 
-Changes since v2:
-v2 and v1 patch were with "ARM: imx:" Cleaned this.
-
-Changes since v1:
-[1] Removed info scale, index and sampling frequency 
-specification for temperature channel.
-[2] Instead of having info->value as int for temperature
-calculation, kept it at u32 and only read value during 
-temperature calculation
-
-[v1] http://thread.gmane.org/gmane.linux.kernel.iio/13960/focus=13963
-[v2] https://lkml.org/lkml/2014/9/18/161
-
-Sanchayan Maity (1):
-  drivers/iio/adc/vf610-adc: Add temperature sensor support
-
+Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+---
  drivers/iio/adc/vf610_adc.c |   28 ++++++++++++++++++++++++++--
  1 file changed, 26 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c
+index 44799eb5..52af611 100644
+--- a/drivers/iio/adc/vf610_adc.c
++++ b/drivers/iio/adc/vf610_adc.c
+@@ -91,7 +91,7 @@
+ #define VF610_ADC_CAL			0x80
+ 
+ /* Other field define */
+-#define VF610_ADC_ADCHC(x)		((x) & 0xF)
++#define VF610_ADC_ADCHC(x)		((x) & 0x1F)
+ #define VF610_ADC_AIEN			(0x1 << 7)
+ #define VF610_ADC_CONV_DISABLE		0x1F
+ #define VF610_ADC_HS_COCO0		0x1
+@@ -153,6 +153,12 @@ struct vf610_adc {
+ 				BIT(IIO_CHAN_INFO_SAMP_FREQ),	\
+ }
+ 
++#define VF610_ADC_TEMPERATURE_CHAN(_idx, _chan_type) {	\
++	.type = (_chan_type),	\
++	.channel = (_idx),		\
++	.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),	\
++}
++
+ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
+ 	VF610_ADC_CHAN(0, IIO_VOLTAGE),
+ 	VF610_ADC_CHAN(1, IIO_VOLTAGE),
+@@ -170,6 +176,7 @@ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
+ 	VF610_ADC_CHAN(13, IIO_VOLTAGE),
+ 	VF610_ADC_CHAN(14, IIO_VOLTAGE),
+ 	VF610_ADC_CHAN(15, IIO_VOLTAGE),
++	VF610_ADC_TEMPERATURE_CHAN(26, IIO_TEMP),
+ 	/* sentinel */
+ };
+ 
+@@ -451,6 +458,7 @@ static int vf610_read_raw(struct iio_dev *indio_dev,
+ 
+ 	switch (mask) {
+ 	case IIO_CHAN_INFO_RAW:
++	case IIO_CHAN_INFO_PROCESSED:
+ 		mutex_lock(&indio_dev->mlock);
+ 		reinit_completion(&info->completion);
+ 
+@@ -468,7 +476,23 @@ static int vf610_read_raw(struct iio_dev *indio_dev,
+ 			return ret;
+ 		}
+ 
+-		*val = info->value;
++		switch (chan->type) {
++		case IIO_VOLTAGE:
++			*val = info->value;
++			break;
++		case IIO_TEMP:
++			/*
++			* Calculate in degree Celsius times 1000
++			* Using sensor slope of 1.84 mV/°C and
++			* V at 25°C of 696 mV
++			*/
++			*val = 25000 - ((int)info->value - 864) * 1000000 / 1840;
++			break;
++		default:
++			mutex_unlock(&indio_dev->mlock);
++			return -EINVAL;
++		}
++
+ 		mutex_unlock(&indio_dev->mlock);
+ 		return IIO_VAL_INT;
+ 
 -- 
 1.7.9.5
 
