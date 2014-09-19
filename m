@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbaISIDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:03:19 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60834 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaISICt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 04:02:49 -0400
-From: Chris Zhong <zyw@rock-chips.com>
-To: dianders@chromium.org, heiko@sntech.de
-Cc: linux-rockchip@lists.infradead.org, lee.jones@linaro.org,
-        broonie@kernel.org, Chris Zhong <zyw@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] dt-bindings: add devicetree bindings for st-pwm regulator
-Date: Fri, 19 Sep 2014 16:02:19 +0800
-Message-Id: <1411113739-1934-3-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411113739-1934-1-git-send-email-zyw@rock-chips.com>
-References: <1411113739-1934-1-git-send-email-zyw@rock-chips.com>
+	id S1754650AbaISIDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:03:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51446 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754250AbaISIDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 04:03:32 -0400
+Date: Fri, 19 Sep 2014 10:03:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140919080322.GB30491@nazgul.tnic>
+References: <20140918135202.GA26038@khazad-dum.debian.net>
+ <541B2F33.8000002@amacapital.net>
+ <20140918145328.0253f009@as>
+ <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+ <20140918200659.GA5331@khazad-dum.debian.net>
+ <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+ <713c7342-bdf4-4e38-8de2-37d840d7028b@email.android.com>
+ <CALCETrXaD01bHdpO9F1ukjhWnkusWuQ-M-FcJiqr47vWFUgGsg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrXaD01bHdpO9F1ukjhWnkusWuQ-M-FcJiqr47vWFUgGsg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the st-pwm regulator
+On Thu, Sep 18, 2014 at 06:00:12PM -0700, Andy Lutomirski wrote:
+> Yes, but how?  I assume that BIOS isn't switching between two
+> different ucode blobs, and I don't know about any wrcpuid instruction.
+> So there must be *some* way, at least on new ucode (and maybe on old
+> ucode) to change that bit.
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+I'd venture a guess that WRMSR to some reg should give you that, if they
+expose it.
 
----
-
-Changes in v3:
-Adviced by Doug Anderson
-- update the Example
-
-Changes in v2:
-Adviced by Lee Jones
-- rename the documentation
-Adviced by Doug Anderson
-- update the example
-Adviced by Mark Rutland
-- remove pwm-reg-period
-
- .../bindings/regulator/pwm-regulator.txt           |   29 ++++++++++++++++++++
- 1 file changed, 29 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/pwm-regulator.txt b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-new file mode 100644
-index 0000000..eb46f7b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-@@ -0,0 +1,29 @@
-+pwm regulator bindings
-+
-+Required properties:
-+- compatible: Should be "pwm-regulator"
-+- pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-+- voltage-table: voltage and duty table, include 2 merbers in each set of
-+  brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-+
-+Any property defined as part of the core regulator binding defined in
-+regulator.txt can also be used.
-+
-+Example:
-+	pwm_regulator {
-+		compatible = "pwm-regulator;
-+		pwms = <&pwm1 0 8448 0>;
-+
-+		voltage-table = <1114000 0>,
-+				<1095000 10>,
-+				<1076000 20>,
-+				<1056000 30>,
-+				<1036000 40>,
-+				<1016000 50>;
-+
-+		regulator-always-on;
-+		regulator-boot-on;
-+		regulator-min-microvolt = <1016000>;
-+		regulator-max-microvolt = <1114000>;
-+		regulator-name = "vdd_logic";
-+	};
 -- 
-1.7.9.5
-
+Regards/Gruss,
+    Boris.
+--
