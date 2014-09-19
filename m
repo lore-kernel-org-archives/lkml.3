@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131AbaISO6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:58:21 -0400
-Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:34516 "EHLO
-	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756696AbaISO6S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:58:18 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <541C447F.7090608@smartplayin.com>
-Date: Fri, 19 Sep 2014 20:28:07 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1756705AbaISPAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:00:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39087 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085AbaISPAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:00:51 -0400
+Date: Fri, 19 Sep 2014 17:00:42 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140919150042.GC5318@nazgul.tnic>
+References: <20140918135202.GA26038@khazad-dum.debian.net>
+ <541B2F33.8000002@amacapital.net>
+ <20140918145328.0253f009@as>
+ <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+ <20140918200659.GA5331@khazad-dum.debian.net>
+ <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+ <20140919110014.GC29639@khazad-dum.debian.net>
+ <20140919112953.GA3256@nazgul.tnic>
+ <20140919075415.5149d5f2@as>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-CC: Josh Cartwright <joshc@codeaurora.org>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] power: reset: use restart_notifier mechanism for msm
- poweroff
-References: <1411128415-20381-1-git-send-email-pramod.gurav@smartplayin.com> <541C3545.3090700@roeck-us.net>
-In-Reply-To: <541C3545.3090700@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140919075415.5149d5f2@as>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-Thanks for you.
+On Fri, Sep 19, 2014 at 07:54:14AM -0500, Chuck Ebbert wrote:
+> Assuming we can identify all the affected models and steppings, maybe
+> something like this would work:
+> 
+> 1) Refuse to finish booting if a microcode update that disables TSX
+> isn't applied before userspace starts running on those CPUs.
 
-On 19-09-2014 07:23 PM, Guenter Roeck wrote:
-> On 09/19/2014 05:06 AM, Pramod Gurav wrote:
->> This change uses replaces use of arm_pm_restart with recently introduced
->> reset mechanism in Linux kernel called restart_notifier.
->>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> Cc: Josh Cartwright <joshc@codeaurora.org>
->> Cc: Sebastian Reichel <sre@kernel.org>
->> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
->> Cc: David Woodhouse <dwmw2@infradead.org>
->> Cc: Stephen Boyd <sboyd@codeaurora.org>
->> Cc: linux-pm@vger.kernel.org
->>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->>
->> ---
->>
->> This patch is tested on DB8074 Target and are based on patchset [1]
->> by Guenter Roeck.
->>
->> [1]: https://patchwork.kernel.org/patch/4746721/
->>
->>   drivers/power/reset/msm-poweroff.c |   18 +++++++++++++++---
->>   1 file changed, 15 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
->> index 774f9a3..59b368c 100644
->> --- a/drivers/power/reset/msm-poweroff.c
->> +++ b/drivers/power/reset/msm-poweroff.c
->> @@ -24,17 +24,21 @@
->>   #include <asm/system_misc.h>
->>
->>   static void __iomem *msm_ps_hold;
->> +static struct notifier_block restart_nb;
->>
->> -static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
->> +static int do_msm_restart(struct notifier_block *nb, unsigned long action,
->> +			   void *data)
->>   {
->>   	writel(0, msm_ps_hold);
->>   	mdelay(10000);
->> +
->> +	return NOTIFY_DONE;
->>   }
->>
->>   static void do_msm_poweroff(void)
->>   {
->>   	/* TODO: Add poweroff capability */
->> -	do_msm_restart(REBOOT_HARD, NULL);
->> +	do_msm_restart(&restart_nb, 0, NULL);
->>   }
->>
->>   static int msm_restart_probe(struct platform_device *pdev)
->> @@ -47,8 +51,16 @@ static int msm_restart_probe(struct platform_device *pdev)
->>   	if (IS_ERR(msm_ps_hold))
->>   		return PTR_ERR(msm_ps_hold);
->>
->> +	restart_nb.notifier_call = do_msm_restart;
->> +	restart_nb.priority = 128;
-> 
-> Since the structure is static, you might as well initialize it there
-> and save a few bytes of code.
-> 
->> +	if (register_restart_handler(&restart_nb)) {
->> +		dev_err(&pdev->dev,
->> +			"failed to setup restart handler.\n");
-> 
-> 'failed to register ...' might be a bit better wording.
-> 
->> +			restart_nb.notifier_call = NULL;
-> 
-> No need to set notifier_call to NULL.
+Well, I think when we're booting, we would have already applied the
+early microcode, no? Because then it is a non-issue.
 
-Will address the comments and send v2.
-> 
->> +	}
->> +
->>   	pm_power_off = do_msm_poweroff;
->> -	arm_pm_restart = do_msm_restart;
->> +
->>   	return 0;
->>   }
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> 2) Don't allow a late update if TSX is still enabled on those
+> processors.
+
+Yeah, so the use case I have in mind is when a long-running machine
+wants to apply microcode and this microcode disables CPUID bits and
+instructions. And the machine cannot be rebooted.
+
+I guess in that case we would have to issue a warning only on the
+affected processors that a rebooted is mandatory and fail the update...
+Maybe something like that.
+
+> (1) could be overridden by a command line option for people who want
+> to develop TSX code.
+
+The way I understand it, those people shouldn't apply the microcode
+patch at all.
+
+-- 
+Regards/Gruss,
+    Boris.
+--
