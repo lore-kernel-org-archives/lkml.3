@@ -1,29 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354AbaISLpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:45:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56052 "EHLO
+	id S1756503AbaISLpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:45:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56060 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898AbaISLpJ (ORCPT
+	with ESMTP id S1756372AbaISLpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:45:09 -0400
-Date: Fri, 19 Sep 2014 04:44:13 -0700
+	Fri, 19 Sep 2014 07:45:16 -0400
+Date: Fri, 19 Sep 2014 04:44:00 -0700
 From: tip-bot for Chuansheng Liu <tipbot@zytor.com>
-Message-ID: <tip-2ed903c5485bad0eafdd3d59ff993598736e4f31@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, rjw@rjwysocki.net, daniel.lezcano@linaro.org,
-        chuansheng.liu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, rjw@rjwysocki.net, daniel.lezcano@linaro.org,
-        chuansheng.liu@intel.com
-In-Reply-To: <1409815075-4180-3-git-send-email-chuansheng.liu@intel.com>
-References: <1409815075-4180-3-git-send-email-chuansheng.liu@intel.com>
+Message-ID: <tip-c6f4459fc3ba532e896cb678e29b45cb985f82bf@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, jack@suse.cz,
+        geert+renesas@glider.be, peterz@infradead.org, fweisbec@gmail.com,
+        akpm@linux-foundation.org, axboe@fb.com, tglx@linutronix.de,
+        klamm@yandex-team.ru, chuansheng.liu@intel.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, axboe@kernel.dk,
+        srivatsa.bhat@linux.vnet.ibm.com, hch@infradead.org, mhocko@suse.cz,
+        paul.gortmaker@windriver.com
+Reply-To: mingo@kernel.org, jack@suse.cz, torvalds@linux-foundation.org,
+        peterz@infradead.org, geert+renesas@glider.be, fweisbec@gmail.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, axboe@fb.com,
+        klamm@yandex-team.ru, chuansheng.liu@intel.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, axboe@kernel.dk,
+        srivatsa.bhat@linux.vnet.ibm.com, hch@infradead.org, mhocko@suse.cz,
+        paul.gortmaker@windriver.com
+In-Reply-To: <1409815075-4180-2-git-send-email-chuansheng.liu@intel.com>
+References: <1409815075-4180-2-git-send-email-chuansheng.liu@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] cpuidle: Use wake_up_all_idle_cpus()
-  to wake up all idle cpus
-Git-Commit-ID: 2ed903c5485bad0eafdd3d59ff993598736e4f31
+Subject: [tip:sched/core] smp: Add new wake_up_all_idle_cpus() function
+Git-Commit-ID: c6f4459fc3ba532e896cb678e29b45cb985f82bf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,69 +41,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2ed903c5485bad0eafdd3d59ff993598736e4f31
-Gitweb:     http://git.kernel.org/tip/2ed903c5485bad0eafdd3d59ff993598736e4f31
+Commit-ID:  c6f4459fc3ba532e896cb678e29b45cb985f82bf
+Gitweb:     http://git.kernel.org/tip/c6f4459fc3ba532e896cb678e29b45cb985f82bf
 Author:     Chuansheng Liu <chuansheng.liu@intel.com>
-AuthorDate: Thu, 4 Sep 2014 15:17:55 +0800
+AuthorDate: Thu, 4 Sep 2014 15:17:54 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:35:16 +0200
+CommitDate: Fri, 19 Sep 2014 12:35:15 +0200
 
-cpuidle: Use wake_up_all_idle_cpus() to wake up all idle cpus
+smp: Add new wake_up_all_idle_cpus() function
 
-Currently kick_all_cpus_sync() or smp_call_function() can not
-break the polling idle cpu immediately.
+Currently kick_all_cpus_sync() can break non-polling idle cpus
+thru IPI interrupts.
 
-Instead using wake_up_all_idle_cpus() which can wake up the polling idle
-cpu quickly is much more helpful for power.
+But sometimes we need to break the polling idle cpus immediately
+to reselect the suitable c-state, also for non-idle cpus, we need
+to do nothing if we try to wake up them.
+
+Here adding one new function wake_up_all_idle_cpus() to let all cpus
+out of idle based on function wake_up_if_idle().
 
 Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: daniel.lezcano@linaro.org
+Cc: rjw@rjwysocki.net
 Cc: linux-pm@vger.kernel.org
 Cc: changcheng.liu@intel.com
 Cc: xiaoming.wang@intel.com
 Cc: souvik.k.chakravarty@intel.com
 Cc: luto@amacapital.net
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Jens Axboe <axboe@fb.com>
+Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: linux-pm@vger.kernel.org
-Link: http://lkml.kernel.org/r/1409815075-4180-3-git-send-email-chuansheng.liu@intel.com
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1409815075-4180-2-git-send-email-chuansheng.liu@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/cpuidle/cpuidle.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ include/linux/smp.h |  2 ++
+ kernel/smp.c        | 22 ++++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index ee9df5e..d31e04c 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -223,7 +223,7 @@ void cpuidle_uninstall_idle_handler(void)
- {
- 	if (enabled_devices) {
- 		initialized = 0;
--		kick_all_cpus_sync();
-+		wake_up_all_idle_cpus();
- 	}
- }
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 34347f2..93dff5f 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -100,6 +100,7 @@ int smp_call_function_any(const struct cpumask *mask,
+ 			  smp_call_func_t func, void *info, int wait);
  
-@@ -530,11 +530,6 @@ EXPORT_SYMBOL_GPL(cpuidle_register);
+ void kick_all_cpus_sync(void);
++void wake_up_all_idle_cpus(void);
  
- #ifdef CONFIG_SMP
- 
--static void smp_callback(void *v)
--{
--	/* we already woke the CPU up, nothing more to do */
--}
--
  /*
-  * This function gets called when a part of the kernel has a new latency
-  * requirement.  This means we need to get all processors out of their C-state,
-@@ -544,7 +539,7 @@ static void smp_callback(void *v)
- static int cpuidle_latency_notify(struct notifier_block *b,
- 		unsigned long l, void *v)
- {
--	smp_call_function(smp_callback, NULL, 1);
-+	wake_up_all_idle_cpus();
- 	return NOTIFY_OK;
+  * Generic and arch helpers
+@@ -148,6 +149,7 @@ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
  }
  
+ static inline void kick_all_cpus_sync(void) {  }
++static inline void wake_up_all_idle_cpus(void) {  }
+ 
+ #endif /* !SMP */
+ 
+diff --git a/kernel/smp.c b/kernel/smp.c
+index aff8aa1..9e0d0b2 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -13,6 +13,7 @@
+ #include <linux/gfp.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
++#include <linux/sched.h>
+ 
+ #include "smpboot.h"
+ 
+@@ -699,3 +700,24 @@ void kick_all_cpus_sync(void)
+ 	smp_call_function(do_nothing, NULL, 1);
+ }
+ EXPORT_SYMBOL_GPL(kick_all_cpus_sync);
++
++/**
++ * wake_up_all_idle_cpus - break all cpus out of idle
++ * wake_up_all_idle_cpus try to break all cpus which is in idle state even
++ * including idle polling cpus, for non-idle cpus, we will do nothing
++ * for them.
++ */
++void wake_up_all_idle_cpus(void)
++{
++	int cpu;
++
++	preempt_disable();
++	for_each_online_cpu(cpu) {
++		if (cpu == smp_processor_id())
++			continue;
++
++		wake_up_if_idle(cpu);
++	}
++	preempt_enable();
++}
++EXPORT_SYMBOL_GPL(wake_up_all_idle_cpus);
