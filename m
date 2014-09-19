@@ -1,51 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291AbaISNyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:54:24 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51728 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002AbaISNyW (ORCPT
+	id S1756809AbaISN45 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:56:57 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60408 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753398AbaISN4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:54:22 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] blk-timeout: fix blk_add_timer
-Date: Fri, 19 Sep 2014 21:53:46 +0800
-Message-Id: <1411134826-6772-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 19 Sep 2014 09:56:55 -0400
+Message-ID: <1411135007.3764.24.camel@jarvis.home>
+Subject: [GIT PULL] SCSI fixes for 3.17-rc5
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Sep 2014 14:56:47 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8cb34819cdd5d(blk-mq: unshared timeout handler) introduces
-blk-mq's own timeout handler, and removes following line
+This is a set of three fixes.  One represents a nasty shared tag map
+regression (another inverted condition) caused by recent SCSI MQ
+patches, one is a longstanding potential buffer overrun in the iscsi
+data buffer and the final one is a use after free for the rare
+bidirectional commands.
 
-	blk_queue_rq_timed_out(q, blk_mq_rq_timed_out);
+The patch is available here:
 
-then cause blk_add_timer() to do nop in case of blk-mq.
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
 
-This patch fixes the problem by bypassing the check for blk-mq.
+The short changelog is:
 
-Signe-off-by: Ming Lei <ming.lei@canonical.com>
+Christoph Hellwig (1):
+      fix regression that accidentally disabled block-based tcq
+
+Daniel Gryniewicz (1):
+      fix for bidi use after free
+
+Mike Christie (1):
+      libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
+
+And the diffstat:
+
+ drivers/scsi/libiscsi.c | 10 ++++++++++
+ drivers/scsi/scsi_lib.c |  5 +++--
+ include/scsi/scsi_tcq.h |  2 +-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
+
+With full diff below.
+
+James
+
 ---
- block/blk-timeout.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/block/blk-timeout.c b/block/blk-timeout.c
-index 4d44825..0c2375c 100644
---- a/block/blk-timeout.c
-+++ b/block/blk-timeout.c
-@@ -186,7 +186,8 @@ void blk_add_timer(struct request *req)
- 	struct request_queue *q = req->q;
- 	unsigned long expiry;
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index ea025e4..191b597 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
+ 			return NULL;
+ 		}
  
--	if (!q->rq_timed_out_fn)
-+	/* mq needn't the handler */
-+	if (!q->mq_ops && !q->rq_timed_out_fn)
++		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
++			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
++			return NULL;
++		}
++
+ 		task = conn->login_task;
+ 	} else {
+ 		if (session->state != ISCSI_STATE_LOGGED_IN)
+ 			return NULL;
+ 
++		if (data_size != 0) {
++			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
++			return NULL;
++		}
++
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ 
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index d837dc1..aaea4b9 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -733,12 +733,13 @@ static bool scsi_end_request(struct request *req, int error,
+ 	} else {
+ 		unsigned long flags;
+ 
++		if (bidi_bytes)
++			scsi_release_bidi_buffers(cmd);
++
+ 		spin_lock_irqsave(q->queue_lock, flags);
+ 		blk_finish_request(req, error);
+ 		spin_unlock_irqrestore(q->queue_lock, flags);
+ 
+-		if (bidi_bytes)
+-			scsi_release_bidi_buffers(cmd);
+ 		scsi_release_buffers(cmd);
+ 		scsi_next_command(cmd);
+ 	}
+diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
+index cdcc90b..e645835 100644
+--- a/include/scsi/scsi_tcq.h
++++ b/include/scsi/scsi_tcq.h
+@@ -68,7 +68,7 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
  		return;
  
- 	BUG_ON(!list_empty(&req->timeout_list));
--- 
-1.7.9.5
+ 	if (!shost_use_blk_mq(sdev->host) &&
+-	    blk_queue_tagged(sdev->request_queue))
++	    !blk_queue_tagged(sdev->request_queue))
+ 		blk_queue_init_tags(sdev->request_queue, depth,
+ 				    sdev->host->bqt);
+ 
+
+
 
