@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345AbaISOdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:33:07 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:46860 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085AbaISOdF (ORCPT
+	id S1757411AbaISOdb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:33:31 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:49146 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306AbaISOda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:33:05 -0400
+	Fri, 19 Sep 2014 10:33:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Fri, 19 Sep 2014 16:32:33 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: kernel@pengutronix.de, festevam@gmail.com, jingchang.lu@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: dts: vf610: Add ARM Global Timer
-In-Reply-To: <20140912075900.GK18566@dragon>
-References: <1410437175-6636-1-git-send-email-stefan@agner.ch>
- <20140912075900.GK18566@dragon>
-Message-ID: <42e11ee7107cacb92fa3a477e61dc6d4@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
+In-Reply-To: <1411134460.27173.8.camel@mtksdaap41>
+References: <1411127306-13677-1-git-send-email-srv_hongzhou.yang@mediatek.com>
+	<1411127306-13677-3-git-send-email-srv_hongzhou.yang@mediatek.com>
+	<1411134460.27173.8.camel@mtksdaap41>
+Date: Fri, 19 Sep 2014 16:33:28 +0200
+Message-ID: <CABuKBeLF5gA7R5qVWEUdAWTxKA1feY7mSy5g98gpL18HWnvp0A@mail.gmail.com>
+Subject: Re: [PATCH 2/4] ARM: mediatek: Add Pinctrl/GPIO driver for mt8135.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: "Joe.C" <yingjoe.chen@mediatek.com>
+Cc: srv_hongzhou.yang@mediatek.com, Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        "=Sascha Hauer" <kernel@pengutronix.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-09-12 09:59, schrieb Shawn Guo:
-> On Thu, Sep 11, 2014 at 02:06:14PM +0200, Stefan Agner wrote:
->> Add Global Timer support which is part of the Snoop Control Unit
->> of the Cortex-A5 processor. This Global Timer is compatible with the
->> Cortex-A9 implementation. It's a 64-bit timer and is clocked by the
->> peripheral clock, which is typically 133 or 166MHz on Vybrid.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->>  arch/arm/boot/dts/vf610.dtsi | 8 ++++++++
->>  1 file changed, 8 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
->> index 4d2ec32..a03abf6 100644
->> --- a/arch/arm/boot/dts/vf610.dtsi
->> +++ b/arch/arm/boot/dts/vf610.dtsi
->> @@ -11,6 +11,7 @@
->>  #include "vf610-pinfunc.h"
->>  #include <dt-bindings/clock/vf610-clock.h>
->>  #include <dt-bindings/interrupt-controller/irq.h>
->> +#include <dt-bindings/interrupt-controller/arm-gic.h>
->>
->>  / {
->>  	aliases {
->> @@ -83,6 +84,13 @@
->>  				      <0x40002100 0x100>;
->>  			};
->>
->> +			global_timer: global-timer@40002200 {
-> 
-> I think it's more idiomatic to use the generic name 'timer' for the
-> node.
-
-Agree to that. I guess you can change that when you apply it, in case
-there are no other objections to this patchset..?
-
-> 
-> Shawn
-> 
->> +				compatible = "arm,cortex-a9-global-timer";
->> +				reg = <0x40002200 0x20>;
->> +				interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
->> +				clocks = <&clks VF610_CLK_PLATFORM_BUS>;
->> +			};
+2014-09-19 15:47 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
+> On Fri, 2014-09-19 at 19:48 +0800, srv_hongzhou.yang@mediatek.com wrote:
 >> +
->>  			L2: l2-cache@40006000 {
->>  				compatible = "arm,pl310-cache";
->>  				reg = <0x40006000 0x1000>;
->> --
->> 2.1.0
->>
+>> +static const struct pinmux_ops mt_pmx_ops = {
+>> +     .get_functions_count    = mt_pmx_get_funcs_cnt,
+>> +     .get_function_name      = mt_pmx_get_func_name,
+>> +     .get_function_groups    = mt_pmx_get_func_groups,
+>> +     .enable                 = mt_pmx_enable,
+>> +     .disable                = mt_pmx_disable,
+>> +     .gpio_set_direction     = mt_pmx_gpio_set_direction,
+>> +};
+>> +
+>
+> It seems pinmux_ops.disable is removed in commit commit
+> 2243a87d90b42eb38bc281957df3e57c712b5e56. So this will cause build
+> error. This should be fixed in next version.
+
+For this cases and in general it would be good to put in the patch set
+description against which tree/tag the patches are build.
+
+Thanks,
+Matthias
+
+>
+> ../drivers/pinctrl/mediatek/pinctrl-mtk-common.c:566:2: error: unknown
+> field 'disable' specified in initializer
+> ../drivers/pinctrl/mediatek/pinctrl-mtk-common.c:566:2: warning:
+> initialization from incompatible pointer type [enabled by default]
+> ../drivers/pinctrl/mediatek/pinctrl-mtk-common.c:566:2: warning: (near
+> initialization for 'mt_pmx_ops.gpio_request_enable') [enabled by
+> default]
+>
+> Joe.C
+>
+>
 
 
---
-Stefan
+
+-- 
+motzblog.wordpress.com
