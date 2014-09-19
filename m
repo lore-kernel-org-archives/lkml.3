@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511AbaISPsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:48:13 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58099 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757038AbaISPsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:48:12 -0400
-Message-ID: <541C5029.1070500@fb.com>
-Date: Fri, 19 Sep 2014 11:47:53 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <paulmck@linux.vnet.ibm.com>, Omar Sandoval <osandov@osandov.com>
-CC: Josef Bacik <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] Move BTRFS RCU string to common library
-References: <cover.1411116672.git.osandov@osandov.com> <20140919154546.GZ4723@linux.vnet.ibm.com>
-In-Reply-To: <20140919154546.GZ4723@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-19_07:2014-09-19,2014-09-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1409190135
-X-FB-Internal: deliver
+	id S1757053AbaISPv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:51:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50652 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754306AbaISPv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 11:51:58 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mark Salter <msalter@redhat.com>, Jon Masters <jcm@redhat.com>
+Subject: [PATCH] arm64/pci: fix dma coherency inheritance for PCI devices
+Date: Fri, 19 Sep 2014 11:51:26 -0400
+Message-Id: <1411141886-11310-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The default dma_ops for devices on arm64 systems are noncoherent in
+nature and rely upon special operations and bounce buffers to
+perform a device DMA operation to/from memory. Some drivers rely
+upon coherent operations involving suitably capable hardware. In
+this case, a "dma-coherent" property will exist on the corresponding
+Device Tree node for the bridge device, or one of its ancestors.
+This patch adds support for applying a DMA coherent dma_ops for
+PCI devices in the case of such a property.
 
+Signed-off-by: Jon Masters <jcm@redhat.com>
+[added search for device with of_node]
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/arm64/mm/dma-mapping.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
-On 09/19/2014 11:45 AM, Paul E. McKenney wrote:
-> On Fri, Sep 19, 2014 at 02:01:28AM -0700, Omar Sandoval wrote:
->> This patch series moves the generic RCU string library used internally by BTRFS
->> to be accessible by anyone. It provides printk_in_rcu and
->> printk_ratelimited_in_rcu to print these strings. In order to avoid a weird
->> inconsistency between the two, the first patch fixes printk_ratelimited so it
->> passes on the return value from printk.
->>
->> The second patch actually moves the RCU string library. Version 2 passes on the
->> return values from printk{,_ratelimited} and fixes some style issues.
->>
->> Omar Sandoval (2):
-> 
-> For the series:
-> 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+index 4164c5a..0e26bd7 100644
+--- a/arch/arm64/mm/dma-mapping.c
++++ b/arch/arm64/mm/dma-mapping.c
+@@ -23,10 +23,12 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/dma-contiguous.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ #include <linux/platform_device.h>
+ #include <linux/vmalloc.h>
+ #include <linux/swiotlb.h>
+ #include <linux/amba/bus.h>
++#include <linux/pci.h>
+ 
+ #include <asm/cacheflush.h>
+ 
+@@ -316,8 +318,18 @@ static int dma_bus_notifier(struct notifier_block *nb,
+ 	if (event != BUS_NOTIFY_ADD_DEVICE)
+ 		return NOTIFY_DONE;
+ 
+-	if (of_property_read_bool(dev->of_node, "dma-coherent"))
+-		set_dma_ops(dev, &coherent_swiotlb_dma_ops);
++	/*
++	 * Some devices won't have an of_node but a bus controller/bridge will.
++	 * Search up the device chain until we find an of_node to check.
++	 */
++	while (dev) {
++		if (dev->of_node) {
++			if (of_dma_is_coherent(dev->of_node))
++				set_dma_ops(_dev, &coherent_swiotlb_dma_ops);
++			break;
++		}
++		dev = dev->parent;
++	}
+ 
+ 	return NOTIFY_OK;
+ }
+@@ -330,6 +342,10 @@ static struct notifier_block amba_bus_nb = {
+ 	.notifier_call = dma_bus_notifier,
+ };
+ 
++static struct notifier_block pci_bus_nb = {
++	.notifier_call = dma_bus_notifier,
++};
++
+ extern int swiotlb_late_init_with_default_size(size_t default_size);
+ 
+ static int __init swiotlb_late_init(void)
+@@ -341,6 +357,7 @@ static int __init swiotlb_late_init(void)
+ 	 */
+ 	bus_register_notifier(&platform_bus_type, &platform_bus_nb);
+ 	bus_register_notifier(&amba_bustype, &amba_bus_nb);
++	bus_register_notifier(&pci_bus_type, &pci_bus_nb);
+ 
+ 	dma_ops = &noncoherent_swiotlb_dma_ops;
+ 
+-- 
+1.9.3
 
-Fine by me too, Paul, do you want to merge it in?
-
--chris
