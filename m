@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923AbaISKVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 06:21:49 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:45783 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752036AbaISKVr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 06:21:47 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-Message-ID: <541C032F.3080206@smartplayin.com>
-Date: Fri, 19 Sep 2014 15:49:27 +0530
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1756046AbaISKWk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 06:22:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34407 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755437AbaISKWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 06:22:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,554,1406617200"; 
+   d="scan'208";a="605317557"
+Date: Fri, 19 Sep 2014 13:22:12 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140919102212.GA31784@xps8300>
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+ <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
+ <20140911111721.GB17476@xps8300>
+ <54118AAB.2010205@linutronix.de>
+ <5419B825.5000201@linutronix.de>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] iio: iadc: Qualcomm SPMI PMIC current ADC driver
-References: <1411046123-30625-1-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1411046123-30625-1-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <5419B825.5000201@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
-
-On Thursday 18 September 2014 06:45 PM, Ivan T. Ivanov wrote:
-> The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> 16 bits resolution and register space inside PMIC accessible across
-> SPMI bus.
+On Wed, Sep 17, 2014 at 06:34:45PM +0200, Sebastian Andrzej Siewior wrote:
+> On 09/11/2014 01:42 PM, Sebastian Andrzej Siewior wrote:
+> >> We should add hooks like tx_dma and rx_dma to struct uart_8250_dma so
+> >> that the probe drivers can replace serial8250_tx_dma and
+> >> seria8250_rx_dma, like I think Alan already suggested.
+> > 
+> > Okay. Wasn't aware that Alan already suggested that.
+> > I also need a watchdog timer for TX since it seems that on omap3 the
+> > DMA engine suddenly forgets to continue with DMAâ€¦
+> > 
+> > If this is really what we want, I would need to refactor a few thingsâ€¦
+> > 
+> >> Let's keep serial8250_tx_dma/rx_dma as the default, and not add any
+> >> quirks to them. Only if there is a very common case should it be
+> >> handled in those. The case of RX req needing to be sent before data in
+> >> FIFO maybe one of those, but I'm no sure.
+> > 
+> > keep in mind that both (RX & TX bugs/hacks) need also a bit of handling
+> > in the 8250-core so it works together (like the tx_err member so we
+> > fall back to manual xmit)
 > 
-> The driver registers itself through IIO interface.
+> Done. I've kept the RX workarounds in the 8250_dma and moved the TX
+> part into the omap driver.
+> I needed to add the 8250_core pieces of patch #10 [0]. Now If you say,
+> couldn't this done in an other way then I could move the RX workarounds
+> pieces to the omap driver as well as the interrupt routine. Any
+> preferences?
 > 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->  .../devicetree/bindings/iio/adc/qcom,spmi-iadc.txt |  61 ++
+> [0] [PATCH 10/16] tty: serial: 8250_dma: optimize the xmit path due to
+>     UART_BUG_DMA_TX
 
-<snip>
+Couldn't you just replace the handle_irq with a custom irq routine in
+the omap driver like you did with set_termios? Where you would do
+those tricks and/or call serial8250_handle_irq()?
 
-> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-> index 11b048a..77274e4 100644
-> --- a/drivers/iio/adc/Kconfig
-> +++ b/drivers/iio/adc/Kconfig
-> @@ -279,4 +279,15 @@ config XILINX_XADC
->  	  The driver can also be build as a module. If so, the module will be called
->  	  xilinx-xadc.
->  
-> +config QCOM_SPMI_IADC
-> +	tristate "Qualcomm SPMI PMIC current ADC"
-> +	select REGMAP_SPMI
-> +	depends on IIO
+The 8250_core changes in that patch #10 only modify
+serial8250_handle_irg right?
 
-May be you need to add "SPMI" in depends on because without enabling that it breaks.
 
-> +	help
-> +	  This is the IIO Current ADC driver for Qualcomm QPNP IADC Chip.
-> +
-> +	  The driver supports single mode operation to read from upto seven channel
-> +	  configuration that include reading the external/internal Rsense, CSP_EX,
-> +	  CSN_EX pair along with the gain and offset calibration.
-> +
->  endmenu
+Cheers,
 
-<snip>
-
-> +
-> +	return iadc_write(iadc, IADC_EN_CTL1, data);
-> +}
-> +
-> +static void iadc_status_show(struct iadc_chip *iadc)
-> +{
-> +	u8 mode, sta1, chan, dig, en, req;
-
-During compilation, getting a waring as below for all variables,
-
-rivers/iio/adc/qcom-spmi-iadc.c: In function ‘iadc_poll_wait_eoc’:
-drivers/iio/adc/qcom-spmi-iadc.c:227:10: warning: ‘en’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  dev_warn(iadc->dev,
-          ^
-
-> +	int ret;
-> +
-> +	ret = iadc_read(iadc, IADC_MODE_CTL, &mode);
-> +	if (ret < 0)
-> +		return;
-> +
-> +	ret = iadc_read(iadc, IADC_DIG_PARAM, &dig);
-
-Thanks,
---Kiran
-
+-- 
+heikki
