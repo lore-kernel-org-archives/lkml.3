@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722AbaISXDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 19:03:33 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:63315 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372AbaISXDb (ORCPT
+	id S1757856AbaISXDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 19:03:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57117 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626AbaISXDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 19:03:31 -0400
-From: David Matlack <dmatlack@google.com>
-To: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Matlack <dmatlack@google.com>
-Subject: [PATCH] kvm: don't take vcpu mutex for obviously invalid vcpu ioctls
-Date: Fri, 19 Sep 2014 16:03:25 -0700
-Message-Id: <1411167805-2458-1-git-send-email-dmatlack@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Fri, 19 Sep 2014 19:03:48 -0400
+Date: Fri, 19 Sep 2014 16:03:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH] rtc: pm8xxx: rework to support pm8941 rtc
+Message-Id: <20140919160347.eaa72f4b715338e4210790df@linux-foundation.org>
+In-Reply-To: <1410515044-31689-1-git-send-email-svarbanov@mm-sol.com>
+References: <1410515044-31689-1-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vcpu ioctls can hang the calling thread if issued while a vcpu is
-running. If we know ioctl is going to be rejected as invalid anyway,
-we can fail before trying to take the vcpu mutex.
+On Fri, 12 Sep 2014 12:44:04 +0300 Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
 
-This patch does not change functionality, it just makes invalid ioctls
-fail faster.
+> Adds support for RTC device inside PM8941 PMIC. The RTC
+> in this PMIC have two register spaces. Thus the rtc-pm8xxx
+> is slightly reworked to reflect these differences.
+> 
+> The register set for different PMIC chips are selected
+> on DT compatible string base.
 
-Signed-off-by: David Matlack <dmatlack@google.com>
----
- virt/kvm/kvm_main.c | 4 ++++
- 1 file changed, 4 insertions(+)
+checkpatch (which you obviously didn't use!) says
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 96ec622..f9234e5 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -52,6 +52,7 @@
- 
- #include <asm/processor.h>
- #include <asm/io.h>
-+#include <asm/ioctl.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- 
-@@ -1975,6 +1976,9 @@ static long kvm_vcpu_ioctl(struct file *filp,
- 	if (vcpu->kvm->mm != current->mm)
- 		return -EIO;
- 
-+	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
-+		return -EINVAL;
-+
- #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
- 	/*
- 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
--- 
-2.1.0.rc2.206.gedb03e5
-
+WARNING: DT compatible string "qcom,pm8941-rtc" appears un-documented -- check ./Documentation/devicetree/bindings/
+#414: FILE: drivers/rtc/rtc-pm8xxx.c:435:
++       { .compatible = "qcom,pm8941-rtc", .data = &pm8941_regs },
