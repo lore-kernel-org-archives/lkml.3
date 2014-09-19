@@ -1,191 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606AbaISFTQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:19:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41499 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755898AbaISFQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:16:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,552,1406617200"; 
-   d="scan'208";a="602019842"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [Patch Part3 V6 2/8] iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
-Date: Fri, 19 Sep 2014 13:18:49 +0800
-Message-Id: <1411103935-31301-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1757685AbaISFTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:19:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52850 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754911AbaISFTk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 01:19:40 -0400
+Date: Thu, 18 Sep 2014 22:18:55 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-1a1c0ffb2adb2d2ce7bb9c4dfd2935ba345cf2c2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+In-Reply-To: <20140823125948.GA1193@krava.brq.redhat.com>
+References: <20140823125948.GA1193@krava.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Add +field argument support for --sort option
+Git-Commit-ID: 1a1c0ffb2adb2d2ce7bb9c4dfd2935ba345cf2c2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce functions to support dynamic IOMMU seq_id allocating and
-releasing, which will be used to support DMAR hotplug.
+Commit-ID:  1a1c0ffb2adb2d2ce7bb9c4dfd2935ba345cf2c2
+Gitweb:     http://git.kernel.org/tip/1a1c0ffb2adb2d2ce7bb9c4dfd2935ba345cf2c2
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Sat, 23 Aug 2014 14:59:48 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 17 Sep 2014 17:08:07 -0300
 
-Also rename IOMMU_UNITS_SUPPORTED as DMAR_UNITS_SUPPORTED.
+perf tools: Add +field argument support for --sort option
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
+Adding support to add field(s) to default sort order via using the '+'
+prefix, like for report:
+
+  $ perf report
+  Samples: 2K of event 'cycles', Event count (approx.): 882172583
+  Overhead  Command  Shared Object        Symbol
+     7.39%  swapper  [kernel.kallsyms]    [k] intel_idle
+     1.97%  firefox  libpthread-2.17.so   [.] pthread_mutex_lock
+     1.39%  firefox  [snd_hda_intel]      [k] azx_get_position
+     1.11%  firefox  libpthread-2.17.so   [.] pthread_mutex_unlock
+
+  $ perf report -s +cpu
+  Samples: 2K of event 'cycles', Event count (approx.): 882172583
+  Overhead  Command  Shared Object        Symbol                  CPU
+     2.89%  swapper  [kernel.kallsyms]    [k] intel_idle          000
+     2.61%  swapper  [kernel.kallsyms]    [k] intel_idle          002
+     1.20%  swapper  [kernel.kallsyms]    [k] intel_idle          001
+     0.82%  firefox  libpthread-2.17.so   [.] pthread_mutex_lock  002
+
+Works in general for commands using --sort option.
+
+v2 with changes suggested:
+  - Use dynamic memory instead static buffer
+  - Fix error message typo
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20140823125948.GA1193@krava.brq.redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/iommu/dmar.c        |   40 ++++++++++++++++++++++++++++++++++------
- drivers/iommu/intel-iommu.c |   13 +++----------
- include/linux/dmar.h        |    6 ++++++
- 3 files changed, 43 insertions(+), 16 deletions(-)
+ tools/perf/util/sort.c | 37 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 36 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index a05cf3634efe..ac4f8ee2871f 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -70,6 +70,7 @@ LIST_HEAD(dmar_drhd_units);
- struct acpi_table_header * __initdata dmar_tbl;
- static acpi_size dmar_tbl_size;
- static int dmar_dev_scope_status = 1;
-+static unsigned long dmar_seq_ids[BITS_TO_LONGS(DMAR_UNITS_SUPPORTED)];
- 
- static int alloc_iommu(struct dmar_drhd_unit *drhd);
- static void free_iommu(struct intel_iommu *iommu);
-@@ -927,11 +928,32 @@ out:
- 	return err;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1958637..289df9d 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1446,12 +1446,47 @@ static const char *get_default_sort_order(void)
+ 	return default_sort_orders[sort__mode];
  }
  
-+static int dmar_alloc_seq_id(struct intel_iommu *iommu)
++static int setup_sort_order(void)
 +{
-+	iommu->seq_id = find_first_zero_bit(dmar_seq_ids,
-+					    DMAR_UNITS_SUPPORTED);
-+	if (iommu->seq_id >= DMAR_UNITS_SUPPORTED) {
-+		iommu->seq_id = -1;
-+	} else {
-+		set_bit(iommu->seq_id, dmar_seq_ids);
-+		sprintf(iommu->name, "dmar%d", iommu->seq_id);
++	char *new_sort_order;
++
++	/*
++	 * Append '+'-prefixed sort order to the default sort
++	 * order string.
++	 */
++	if (!sort_order || is_strict_order(sort_order))
++		return 0;
++
++	if (sort_order[1] == '\0') {
++		error("Invalid --sort key: `+'");
++		return -EINVAL;
 +	}
 +
-+	return iommu->seq_id;
-+}
-+
-+static void dmar_free_seq_id(struct intel_iommu *iommu)
-+{
-+	if (iommu->seq_id >= 0) {
-+		clear_bit(iommu->seq_id, dmar_seq_ids);
-+		iommu->seq_id = -1;
++	/*
++	 * We allocate new sort_order string, but we never free it,
++	 * because it's checked over the rest of the code.
++	 */
++	if (asprintf(&new_sort_order, "%s,%s",
++		     get_default_sort_order(), sort_order + 1) < 0) {
++		error("Not enough memory to set up --sort");
++		return -ENOMEM;
 +	}
++
++	sort_order = new_sort_order;
++	return 0;
 +}
 +
- static int alloc_iommu(struct dmar_drhd_unit *drhd)
+ static int __setup_sorting(void)
  {
- 	struct intel_iommu *iommu;
- 	u32 ver, sts;
--	static int iommu_allocated = 0;
- 	int agaw = 0;
- 	int msagaw = 0;
- 	int err;
-@@ -945,13 +967,16 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 	if (!iommu)
- 		return -ENOMEM;
+ 	char *tmp, *tok, *str;
+-	const char *sort_keys = sort_order;
++	const char *sort_keys;
+ 	int ret = 0;
  
--	iommu->seq_id = iommu_allocated++;
--	sprintf (iommu->name, "dmar%d", iommu->seq_id);
-+	if (dmar_alloc_seq_id(iommu) < 0) {
-+		pr_err("IOMMU: failed to allocate seq_id\n");
-+		err = -ENOSPC;
-+		goto error;
-+	}
- 
- 	err = map_iommu(iommu, drhd->reg_base_addr);
- 	if (err) {
- 		pr_err("IOMMU: failed to map %s\n", iommu->name);
--		goto error;
-+		goto error_free_seq_id;
- 	}
- 
- 	err = -EINVAL;
-@@ -1001,9 +1026,11 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 
- 	return 0;
- 
-- err_unmap:
-+err_unmap:
- 	unmap_iommu(iommu);
-- error:
-+error_free_seq_id:
-+	dmar_free_seq_id(iommu);
-+error:
- 	kfree(iommu);
- 	return err;
- }
-@@ -1027,6 +1054,7 @@ static void free_iommu(struct intel_iommu *iommu)
- 	if (iommu->reg)
- 		unmap_iommu(iommu);
- 
-+	dmar_free_seq_id(iommu);
- 	kfree(iommu);
- }
- 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 4af2206e41bc..7daa74ed46d0 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -328,17 +328,10 @@ static int hw_pass_through = 1;
- /* si_domain contains mulitple devices */
- #define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
- 
--/* define the limit of IOMMUs supported in each domain */
--#ifdef	CONFIG_X86
--# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
--#else
--# define	IOMMU_UNITS_SUPPORTED	64
--#endif
--
- struct dmar_domain {
- 	int	id;			/* domain id */
- 	int	nid;			/* node id */
--	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
-+	DECLARE_BITMAP(iommu_bmp, DMAR_UNITS_SUPPORTED);
- 					/* bitmap of iommus this domain uses*/
- 
- 	struct list_head devices; 	/* all devices' list */
-@@ -2728,12 +2721,12 @@ static int __init init_dmars(void)
- 		 * threaded kernel __init code path all other access are read
- 		 * only
- 		 */
--		if (g_num_of_iommus < IOMMU_UNITS_SUPPORTED) {
-+		if (g_num_of_iommus < DMAR_UNITS_SUPPORTED) {
- 			g_num_of_iommus++;
- 			continue;
- 		}
- 		printk_once(KERN_ERR "intel-iommu: exceeded %d IOMMUs\n",
--			  IOMMU_UNITS_SUPPORTED);
-+			  DMAR_UNITS_SUPPORTED);
- 	}
- 
- 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index fac8ca34f9a8..c8a576bc3a98 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -30,6 +30,12 @@
- 
- struct acpi_dmar_header;
- 
-+#ifdef	CONFIG_X86
-+# define	DMAR_UNITS_SUPPORTED	MAX_IO_APICS
-+#else
-+# define	DMAR_UNITS_SUPPORTED	64
-+#endif
++	ret = setup_sort_order();
++	if (ret)
++		return ret;
 +
- /* DMAR Flags */
- #define DMAR_INTR_REMAP		0x1
- #define DMAR_X2APIC_OPT_OUT	0x2
--- 
-1.7.10.4
-
++	sort_keys = sort_order;
+ 	if (sort_keys == NULL) {
+ 		if (is_strict_order(field_order)) {
+ 			/*
