@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350AbaISCEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 22:04:35 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:57516 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584AbaISCEe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 22:04:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140918181926.GA19520@thunk.org>
-References: <CAJhHMCBhN7iVOBVJmoFBiLVurs2uncnJ57p5RBeC5z=_kSgUfg@mail.gmail.com>
- <20140918181926.GA19520@thunk.org>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 18 Sep 2014 22:04:02 -0400
-Message-ID: <CAJhHMCB_i1PAFwhzFaoURLzPSrhAu+Y8wExBbSsd8_0JSPaz+Q@mail.gmail.com>
-Subject: Re: BUG in ext4_setattr
-To: "Theodore Ts'o" <tytso@mit.edu>, Pranith Kumar <bobby.prani@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753184AbaISCSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 22:18:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750926AbaISCSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 22:18:31 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        aviro@redhat.com
+Subject: [PATCH] audit: remove open_arg() function that is never used
+Date: Thu, 18 Sep 2014 22:17:56 -0400
+Message-Id: <7798658322e73d36d5754922920efe37d7f1cd59.1411092980.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 2:19 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Thu, Sep 18, 2014 at 12:01:00PM -0400, Pranith Kumar wrote:
->>
->> The following splat occurs in the latest rc5+ kernel. I am not sure
->> this is enough information. Please let me know what options to enable
->> to get more meaningful info.
->
-> This is a PowerMac, apparently.  I don't know why we can get symbol
-> information for at least part of the stack, but not for the fault
-> location.
->
-> Is this repeatable?  If so, the best way to go forward is a bisection
-> search.
->
+open_arg() was added in commit 55669bfa "audit: AUDIT_PERM support"
+and never used.  Remove it.
 
-I got this twice today, but sadly it is not repeating afterwards. I am
-getting errors elsewhere though. So may be it is an issue with the
-hardware.
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/auditsc.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 4e17443..63a74a7 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -126,14 +126,6 @@ struct audit_tree_refs {
+ 	struct audit_chunk *c[31];
+ };
+ 
+-static inline int open_arg(int flags, int mask)
+-{
+-	int n = ACC_MODE(flags);
+-	if (flags & (O_TRUNC | O_CREAT))
+-		n |= AUDIT_PERM_WRITE;
+-	return n & mask;
+-}
+-
+ static int audit_match_perm(struct audit_context *ctx, int mask)
+ {
+ 	unsigned n;
 -- 
-Pranith
+1.7.1
+
