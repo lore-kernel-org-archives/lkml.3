@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909AbaISUWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:22:32 -0400
-Received: from mail-bl2on0105.outbound.protection.outlook.com ([65.55.169.105]:46688
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757861AbaISUWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:22:31 -0400
-Message-ID: <1411157986.13320.75.camel@snotra.buserror.net>
-Subject: Re: [PATCH 03/15] powerpc/msi: Improve IRQ bitmap allocator
-From: Scott Wood <scottwood@freescale.com>
-To: Michael Neuling <mikey@neuling.org>
-CC: <greg@kroah.com>, <arnd@arndb.de>, <mpe@ellerman.id.au>,
-        <benh@kernel.crashing.org>, <cbe-oss-dev@lists.ozlabs.org>,
-        <imunsie@au.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>, <jk@ozlabs.org>, <anton@samba.org>,
-        "Laurentiu Tudor" <Laurentiu.Tudor@freescale.com>
-Date: Fri, 19 Sep 2014 15:19:46 -0500
-In-Reply-To: <1411157769.13320.74.camel@snotra.buserror.net>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
-	 <1411028820-29933-4-git-send-email-mikey@neuling.org>
-	 <1411157769.13320.74.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1757929AbaISUW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:22:58 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:50747 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771AbaISUWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 16:22:55 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:2d6a:b3e0:e03e:359e]
-X-ClientProxiedBy: BL2PR08CA0051.namprd08.prod.outlook.com (10.255.170.169) To
- BN1PR0301MB0722.namprd03.prod.outlook.com (25.160.78.141)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0722;
-X-Forefront-PRVS: 0339F89554
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(199003)(51704005)(24454002)(189002)(97736003)(104166001)(93916002)(87976001)(15202345003)(105586002)(77156001)(77096002)(101416001)(88136002)(77982003)(81342003)(86362001)(33646002)(95666004)(74662003)(81542003)(107046002)(31966008)(85852003)(19580395003)(76176999)(15975445006)(20776003)(83072002)(85306004)(47776003)(50986999)(64706001)(79102003)(4396001)(50226001)(80022003)(90102001)(21056001)(102836001)(19580405001)(74502003)(42186005)(99396002)(46102003)(110136001)(50466002)(106356001)(62966002)(23676002)(92566001)(83322001)(76482002)(103116003)(89996001)(87286001)(92726001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0722;H:[IPv6:2601:2:5800:3f7:2d6a:b3e0:e03e:359e];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1411113739-1934-2-git-send-email-zyw@rock-chips.com>
+References: <1411113739-1934-1-git-send-email-zyw@rock-chips.com>
+	<1411113739-1934-2-git-send-email-zyw@rock-chips.com>
+Date: Fri, 19 Sep 2014 13:22:54 -0700
+X-Google-Sender-Auth: GR4e7byLivApDf0p82mUQRf6244
+Message-ID: <CAD=FV=Vm-XgNvfQjtaXML3_1ROoir5Kv2fosSr94jkcG6K3P6A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] regulator: st-pwm: get voltage and duty table from dts
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        linux-rockchip@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-19 at 15:16 -0500, Scott Wood wrote:
-> On Thu, 2014-09-18 at 18:26 +1000, Michael Neuling wrote:
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> > 
-> > Currently msi_bitmap_alloc_hwirqs() will round up any IRQ allocation requests
-> > to the nearest power of 2.  eg. ask for 5 IRQs and you'll get 8.  This wastes a
-> > lot of IRQs which can be a scarce resource.
-> > 
-> > For cxl we can require multiple IRQs for every contexts that is attached to the
-> > accelerator.  For AFU directed accelerators, there may be 1000s of contexts
-> > attached, hence we can easily run out of IRQs, especially if we are needlessly
-> > wasting them.
-> > 
-> > This changes the msi_bitmap_alloc_hwirqs() to allocate only the required number
-> > of IRQs, hence avoiding this wastage.
-> > 
-> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> > Signed-off-by: Michael Neuling <mikey@neuling.org>
-> > ---
-> >  arch/powerpc/sysdev/msi_bitmap.c | 18 +++++++++++++-----
-> >  1 file changed, 13 insertions(+), 5 deletions(-)
-> 
-> This conflicts with (and partially duplicates)
-> http://patchwork.ozlabs.org/patch/381892/
-> which I have in my tree.  How should we handle it?
-> 
-> Laurentiu, from looking at the overlap between patches I see a problem
-> with your existing patch, regarding the out-of-irqs path and
-> msi_bitmap_free_hwirqs(), so one way or another that needs to get fixed
-> soon.
+Chris,
 
-Given the problems with Laurentiu's patch, perhaps it'd be best for me
-to just revert that patch in my tree, and respin it after this patchset
-has been merged.
+On Fri, Sep 19, 2014 at 1:02 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+> Get voltage & duty table from device tree might be better, other platforms can also use this
+> driver without any modify.
+>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>
+> ---
+>
+> Changes in v3:
+> Adviced by Doug Anderson
+> - Make Kconfig & Makefile alphabetical
+> - remove pwm_reg_period from pwm_regulator_data
+> - modify the calculation in pwm_regulator_set_voltage_sel
+> - add length validity check
+>
+> Changes in v2:
+> Adviced by Lee Jones
+> - rename the file
+> - remove all the prefix st_
+> - add depend on PWM in Kconfig
+>
+>  drivers/regulator/Kconfig         |   13 +--
+>  drivers/regulator/Makefile        |    2 +-
+>  drivers/regulator/pwm-regulator.c |  197 +++++++++++++++++++++++++++++++++++++
+>  drivers/regulator/st-pwm.c        |  190 -----------------------------------
+>  4 files changed, 205 insertions(+), 197 deletions(-)
+>  create mode 100644 drivers/regulator/pwm-regulator.c
+>  delete mode 100644 drivers/regulator/st-pwm.c
+>
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index fb32bab..320751a 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -449,6 +449,13 @@ config REGULATOR_PFUZE100
+>           Say y here to support the regulators found on the Freescale
+>           PFUZE100/PFUZE200 PMIC.
+>
+> +config REGULATOR_PWM
+> +       tristate "PWM voltage regulator"
+> +       depends on PWM
+> +       help
+> +         This driver supports PWM controlled voltage regulators. Config PWM
+> +         duty can increasing or decreasing the voltage.
 
--Scott
+Slightly more proper English:
+        This driver supports PWM controlled voltage regulators. PWM
+        duty cycle can increase or decrease the voltage.
 
 
+> +static struct regulator_desc pwm_regulator_desc = {
+> +       .name           = "pwm-regulator",
+> +       .ops            = &pwm_regulator_voltage_ops,
+> +       .type           = REGULATOR_VOLTAGE,
+> +       .owner          = THIS_MODULE,
+> +       .supply_name    = "pwm",
+> +};
+
+nit: the pwm_regulator_desc can now be "const".
+
+
+Neither of those is huge.  If you get no other feedback, Mark could
+maybe give advice on whether you should spin your series or whether
+he'd like to fix them when he applies.
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
