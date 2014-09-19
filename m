@@ -1,121 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809AbaISN45 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:56:57 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60408 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753398AbaISN4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:56:55 -0400
-Message-ID: <1411135007.3764.24.camel@jarvis.home>
-Subject: [GIT PULL] SCSI fixes for 3.17-rc5
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Sep 2014 14:56:47 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757339AbaISN6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:58:03 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:57495 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756738AbaISN56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:57:58 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: [PATCH 1/2] powerpc32: put csum_tcpudp_magic inline
+Message-Id: <20140919135756.6EE8D1AB26A@localhost.localdomain>
+Date: Fri, 19 Sep 2014 15:57:56 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a set of three fixes.  One represents a nasty shared tag map
-regression (another inverted condition) caused by recent SCSI MQ
-patches, one is a longstanding potential buffer overrun in the iscsi
-data buffer and the final one is a use after free for the rare
-bidirectional commands.
+csum_tcpudp_magic() is only a few instructions, and does not modifies any other
+register than the returned result. So it is not worth having it as a separate
+function and suffer function branching and saving of volatile registers.
+This patch makes it inline by use of the already existing csum_tcpudp_nofold()
+function.
 
-The patch is available here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
-
-The short changelog is:
-
-Christoph Hellwig (1):
-      fix regression that accidentally disabled block-based tcq
-
-Daniel Gryniewicz (1):
-      fix for bidi use after free
-
-Mike Christie (1):
-      libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-
-And the diffstat:
-
- drivers/scsi/libiscsi.c | 10 ++++++++++
- drivers/scsi/scsi_lib.c |  5 +++--
- include/scsi/scsi_tcq.h |  2 +-
- 3 files changed, 14 insertions(+), 3 deletions(-)
-
-With full diff below.
-
-James
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
+ arch/powerpc/include/asm/checksum.h | 15 +++++++++++++++
+ arch/powerpc/lib/checksum_32.S      | 16 ----------------
+ 2 files changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index ea025e4..191b597 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
- 			return NULL;
- 		}
+diff --git a/arch/powerpc/include/asm/checksum.h b/arch/powerpc/include/asm/checksum.h
+index 8251a3b..cfe806a 100644
+--- a/arch/powerpc/include/asm/checksum.h
++++ b/arch/powerpc/include/asm/checksum.h
+@@ -19,6 +19,7 @@
+ #else
+ extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
  
-+		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
-+			return NULL;
-+		}
-+
- 		task = conn->login_task;
- 	} else {
- 		if (session->state != ISCSI_STATE_LOGGED_IN)
- 			return NULL;
++#ifdef __powerpc64__
+ /*
+  * computes the checksum of the TCP/UDP pseudo-header
+  * returns a 16-bit checksum, already complemented
+@@ -27,6 +28,7 @@ extern __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
+ 					unsigned short len,
+ 					unsigned short proto,
+ 					__wsum sum);
++#endif
  
-+		if (data_size != 0) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
-+			return NULL;
-+		}
-+
- 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
- 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ /*
+  * computes the checksum of a memory block at buff, length len,
+@@ -127,6 +129,19 @@ static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
+ #endif
+ }
  
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index d837dc1..aaea4b9 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -733,12 +733,13 @@ static bool scsi_end_request(struct request *req, int error,
- 	} else {
- 		unsigned long flags;
++#ifndef __powerpc64__
++/*
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
++					unsigned short len,
++					unsigned short proto,
++					__wsum sum)
++{
++	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
++}
++#endif
+ #endif
+ #endif /* __KERNEL__ */
+ #endif
+diff --git a/arch/powerpc/lib/checksum_32.S b/arch/powerpc/lib/checksum_32.S
+index 7874e8a..6d67e05 100644
+--- a/arch/powerpc/lib/checksum_32.S
++++ b/arch/powerpc/lib/checksum_32.S
+@@ -41,22 +41,6 @@ _GLOBAL(ip_fast_csum)
+ 	blr
  
-+		if (bidi_bytes)
-+			scsi_release_bidi_buffers(cmd);
-+
- 		spin_lock_irqsave(q->queue_lock, flags);
- 		blk_finish_request(req, error);
- 		spin_unlock_irqrestore(q->queue_lock, flags);
- 
--		if (bidi_bytes)
--			scsi_release_bidi_buffers(cmd);
- 		scsi_release_buffers(cmd);
- 		scsi_next_command(cmd);
- 	}
-diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
-index cdcc90b..e645835 100644
---- a/include/scsi/scsi_tcq.h
-+++ b/include/scsi/scsi_tcq.h
-@@ -68,7 +68,7 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
- 		return;
- 
- 	if (!shost_use_blk_mq(sdev->host) &&
--	    blk_queue_tagged(sdev->request_queue))
-+	    !blk_queue_tagged(sdev->request_queue))
- 		blk_queue_init_tags(sdev->request_queue, depth,
- 				    sdev->host->bqt);
- 
-
-
+ /*
+- * Compute checksum of TCP or UDP pseudo-header:
+- *   csum_tcpudp_magic(saddr, daddr, len, proto, sum)
+- */	
+-_GLOBAL(csum_tcpudp_magic)
+-	rlwimi	r5,r6,16,0,15	/* put proto in upper half of len */
+-	addc	r0,r3,r4	/* add 4 32-bit words together */
+-	adde	r0,r0,r5
+-	adde	r0,r0,r7
+-	addze	r0,r0		/* add in final carry */
+-	rlwinm	r3,r0,16,0,31	/* fold two halves together */
+-	add	r3,r0,r3
+-	not	r3,r3
+-	srwi	r3,r3,16
+-	blr
+-
+-/*
+  * computes the checksum of a memory block at buff, length len,
+  * and adds in "sum" (32-bit)
+  *
+-- 
+2.1.0
 
