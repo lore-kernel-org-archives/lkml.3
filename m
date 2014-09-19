@@ -1,106 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405AbaISIsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:48:35 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55835 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaISIsb (ORCPT
+	id S1754831AbaISIvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:51:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:45375 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaISIvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 04:48:31 -0400
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] perf session: Add option to copy events when queueing
-References: <1411060059-23589-1-git-send-email-yarygin@linux.vnet.ibm.com>
-	<1411060059-23589-2-git-send-email-yarygin@linux.vnet.ibm.com>
-	<20140918185345.GJ2770@kernel.org> <541B3ECD.8000706@gmail.com>
-	<541B40A8.8020406@gmail.com>
-Date: Fri, 19 Sep 2014 12:48:21 +0400
-In-Reply-To: <541B40A8.8020406@gmail.com> (David Ahern's message of "Thu, 18
-	Sep 2014 14:29:28 -0600")
-Message-ID: <87r3z86lnu.fsf@linux.vnet.ibm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Fri, 19 Sep 2014 04:51:11 -0400
+Message-ID: <541BEE74.6020008@huawei.com>
+Date: Fri, 19 Sep 2014 16:51:00 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091908-0342-0000-0000-0000011F02D9
+To: Tejun Heo <tj@kernel.org>
+CC: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] cgroup: remove CGRP_RELEASABLE flag
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Ahern <dsahern@gmail.com> writes:
+We call put_css_set() after setting CGRP_RELEASABLE flag in
+cgroup_task_migrate(), but in other places we call it without setting
+the flag. I don't see the necessity of this flag.
 
-> On 9/18/14, 2:21 PM, David Ahern wrote:
->> On 9/18/14, 12:53 PM, Arnaldo Carvalho de Melo wrote:
->>> If nobody objects I'll merge this patch, as it fixes problems, but I
->>> wonder if the best wouldn't be simply not calling
->>> perf_evlist__mmap_consume() till the last event there is in fact
->>> consumed... I.e. as we _really_ consume the events, we remove it from
->>> there.
->>>
->>> Instead of consuming the event at perf_tool->sample() time, we would
->>> do it at perf_tool->finished_round(), would that be feasible? Has anyone
->>> tried this?
->>
->> Hmmm... haven't tried this.  Conceptually it should work - at least
->> nothing comes to mind at the moment.
->
-> Upon further review ...
->
-> Alex you might want to try this first. Malloc and copy of all events
-> is going to bring some serious overhead. Can avoid that if consuming
-> the event in finished_round works.
->
-> David
+Moreover once the flag is set, it will never be cleared, unless writing
+to the notify_on_release control file, so it can be quite confusing
+if we look at the output of debug.releasable.
 
-I've tried that:
+  # mount -t cgroup -o debug xxx /cgroup
+  # mkdir /cgroup/child
+  # cat /cgroup/child/debug.releasable
+  0   <-- shows 0 though the cgroup is empty
+  # echo $$ > /cgroup/child/tasks
+  # cat /cgroup/child/debug.releasable
+  0
+  # echo $$ > /cgroup/tasks && echo $$ > /cgroup/child/tasks
+  # cat /proc/child/debug.releasable
+  1   <-- shows 1 though the cgroup is not empty
 
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -737,7 +737,6 @@ static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
-                 * FIXME: Here we can't consume the event, as perf_session_queue_event will
-                 *        point to it, and it'll get possibly overwritten by the kernel.
-                 */
--               perf_evlist__mmap_consume(kvm->evlist, idx);
+This patch removes the flag, and now debug.releasable shows if the
+cgroup is empty or not.
+
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ include/linux/cgroup.h |  5 -----
+ kernel/cgroup.c        | 40 +++++++++++++---------------------------
+ 2 files changed, 13 insertions(+), 32 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 818a81f..1d51968 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -161,11 +161,6 @@ static inline void css_put(struct cgroup_subsys_state *css)
  
-                if (err) {
-                        pr_err("Failed to enqueue sample: %d\n", err);
-@@ -787,6 +786,10 @@ static int perf_kvm__mmap_read(struct perf_kvm_stat *kvm)
-        if (ntotal) {
-                kvm->session->ordered_samples.next_flush = flush_time;
-                err = kvm->tool.finished_round(&kvm->tool, NULL, kvm->session);
-+
-+               for (i = 0; i < kvm->evlist->nr_mmaps; i++)
-+                       perf_evlist__mmap_consume(kvm->evlist, i);
-+
-                if (err) {
-                        if (kvm->lost_events)
-                                pr_info("\nLost events: %" PRIu64
-                        "\n\n",
-
-It did't work. Turned out that there is at least one event alive after
-finished_round(), usually I get more - ~20. Not sure why, maybe it's
-another problem which should be solved at first?
-
-
-Also, I tried to follow 'perf-top' way:
-
-  while (perf_evlist__mmap_read() != NULL) {
-    perf_evlist__parse_sample();
-    perf_event__process_sample();
-    perf_evlist__mmap_consume();
-  }
-
-I.e. without session_queue. In this case perf won't crash, but it will
-process significantly less events.
+ /* bits in struct cgroup flags field */
+ enum {
+-	/*
+-	 * Control Group has previously had a child cgroup or a task,
+-	 * but no longer (only if CGRP_NOTIFY_ON_RELEASE is set)
+-	 */
+-	CGRP_RELEASABLE,
+ 	/* Control Group requires release notifications to userspace */
+ 	CGRP_NOTIFY_ON_RELEASE,
+ 	/*
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index de70b63..7f23551 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -329,14 +329,6 @@ bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor)
+ 	return false;
+ }
+ 
+-static int cgroup_is_releasable(const struct cgroup *cgrp)
+-{
+-	const int bits =
+-		(1 << CGRP_RELEASABLE) |
+-		(1 << CGRP_NOTIFY_ON_RELEASE);
+-	return (cgrp->flags & bits) == bits;
+-}
+-
+ static int notify_on_release(const struct cgroup *cgrp)
+ {
+ 	return test_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+@@ -491,7 +483,7 @@ static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
+ 	return key;
+ }
+ 
+-static void put_css_set_locked(struct css_set *cset, bool taskexit)
++static void put_css_set_locked(struct css_set *cset)
+ {
+ 	struct cgrp_cset_link *link, *tmp_link;
+ 	struct cgroup_subsys *ss;
+@@ -517,11 +509,7 @@ static void put_css_set_locked(struct css_set *cset, bool taskexit)
+ 		/* @cgrp can't go away while we're holding css_set_rwsem */
+ 		if (list_empty(&cgrp->cset_links)) {
+ 			cgroup_update_populated(cgrp, false);
+-			if (notify_on_release(cgrp)) {
+-				if (taskexit)
+-					set_bit(CGRP_RELEASABLE, &cgrp->flags);
+-				check_for_release(cgrp);
+-			}
++			check_for_release(cgrp);
+ 		}
+ 
+ 		kfree(link);
+@@ -530,7 +518,7 @@ static void put_css_set_locked(struct css_set *cset, bool taskexit)
+ 	kfree_rcu(cset, rcu_head);
+ }
+ 
+-static void put_css_set(struct css_set *cset, bool taskexit)
++static void put_css_set(struct css_set *cset)
+ {
+ 	/*
+ 	 * Ensure that the refcount doesn't hit zero while any readers
+@@ -541,7 +529,7 @@ static void put_css_set(struct css_set *cset, bool taskexit)
+ 		return;
+ 
+ 	down_write(&css_set_rwsem);
+-	put_css_set_locked(cset, taskexit);
++	put_css_set_locked(cset);
+ 	up_write(&css_set_rwsem);
+ }
+ 
+@@ -2037,8 +2025,7 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
+ 	 * task. As trading it for new_cset is protected by cgroup_mutex,
+ 	 * we're safe to drop it here; it will be freed under RCU.
+ 	 */
+-	set_bit(CGRP_RELEASABLE, &old_cgrp->flags);
+-	put_css_set_locked(old_cset, false);
++	put_css_set_locked(old_cset);
+ }
+ 
+ /**
+@@ -2059,7 +2046,7 @@ static void cgroup_migrate_finish(struct list_head *preloaded_csets)
+ 		cset->mg_src_cgrp = NULL;
+ 		cset->mg_dst_cset = NULL;
+ 		list_del_init(&cset->mg_preload_node);
+-		put_css_set_locked(cset, false);
++		put_css_set_locked(cset);
+ 	}
+ 	up_write(&css_set_rwsem);
+ }
+@@ -2153,8 +2140,8 @@ static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
+ 		if (src_cset == dst_cset) {
+ 			src_cset->mg_src_cgrp = NULL;
+ 			list_del_init(&src_cset->mg_preload_node);
+-			put_css_set(src_cset, false);
+-			put_css_set(dst_cset, false);
++			put_css_set(src_cset);
++			put_css_set(dst_cset);
+ 			continue;
+ 		}
+ 
+@@ -2163,7 +2150,7 @@ static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
+ 		if (list_empty(&dst_cset->mg_preload_node))
+ 			list_add(&dst_cset->mg_preload_node, &csets);
+ 		else
+-			put_css_set(dst_cset, false);
++			put_css_set(dst_cset);
+ 	}
+ 
+ 	list_splice_tail(&csets, preloaded_csets);
+@@ -4158,7 +4145,6 @@ static u64 cgroup_read_notify_on_release(struct cgroup_subsys_state *css,
+ static int cgroup_write_notify_on_release(struct cgroup_subsys_state *css,
+ 					  struct cftype *cft, u64 val)
+ {
+-	clear_bit(CGRP_RELEASABLE, &css->cgroup->flags);
+ 	if (val)
+ 		set_bit(CGRP_NOTIFY_ON_RELEASE, &css->cgroup->flags);
+ 	else
+@@ -4805,7 +4791,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	 */
+ 	kernfs_remove(cgrp->kn);
+ 
+-	set_bit(CGRP_RELEASABLE, &cgroup_parent(cgrp)->flags);
+ 	check_for_release(cgroup_parent(cgrp));
+ 
+ 	/* put the base reference */
+@@ -5243,12 +5228,12 @@ void cgroup_exit(struct task_struct *tsk)
+ 	}
+ 
+ 	if (put_cset)
+-		put_css_set(cset, true);
++		put_css_set(cset);
+ }
+ 
+ static void check_for_release(struct cgroup *cgrp)
+ {
+-	if (cgroup_is_releasable(cgrp) && !cgroup_has_tasks(cgrp) &&
++	if (notify_on_release(cgrp) && !cgroup_has_tasks(cgrp) &&
+ 	    !css_has_online_children(&cgrp->self) && !cgroup_is_dead(cgrp))
+ 		schedule_work(&cgrp->release_agent_work);
+ }
+@@ -5495,7 +5480,8 @@ static int cgroup_css_links_read(struct seq_file *seq, void *v)
+ 
+ static u64 releasable_read(struct cgroup_subsys_state *css, struct cftype *cft)
+ {
+-	return test_bit(CGRP_RELEASABLE, &css->cgroup->flags);
++	return (!cgroup_has_tasks(css->cgroup) &&
++		!css_has_online_children(&css->cgroup->self));
+ }
+ 
+ static struct cftype debug_files[] =  {
+-- 
+1.8.0.2
 
