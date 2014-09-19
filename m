@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975AbaISVm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 17:42:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55399 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845AbaISVm5 (ORCPT
+	id S1758033AbaISVof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 17:44:35 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41880 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757728AbaISVod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 17:42:57 -0400
-Date: Fri, 19 Sep 2014 14:42:57 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Roman Pen <r.peniaev@gmail.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [v4 PATCH 1/1] init: fix race between rootfs mount and firmware
- loading
-Message-ID: <20140919214257.GA27574@kroah.com>
-References: <20140918174127.GB340@redhat.com>
- <1411130664-10195-1-git-send-email-r.peniaev@gmail.com>
+	Fri, 19 Sep 2014 17:44:33 -0400
+Message-ID: <541CA3BA.6060905@collabora.co.uk>
+Date: Fri, 19 Sep 2014 23:44:26 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411130664-10195-1-git-send-email-r.peniaev@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Doug Anderson <dianders@chromium.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 5/6] rtc: max77686: Use ffs() to calculate tm_wday
+References: <1411122377-10426-1-git-send-email-javier.martinez@collabora.co.uk>	 <1411122377-10426-6-git-send-email-javier.martinez@collabora.co.uk>	 <1411137561.24444.5.camel@joe-AO725> <541C838B.7070207@collabora.co.uk> <1411156347.24444.31.camel@joe-AO725>
+In-Reply-To: <1411156347.24444.31.camel@joe-AO725>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 09:44:24PM +0900, Roman Pen wrote:
-> The thing is that built-in modules are being inited before
-> rootfs mount.  Some of the modules can request firmware loading
-> from another thread using async 'request_firmware_nowait' call
-> on inition, so we can catch this kind of race:
->    rootfs does not exist yet, but we are going to open and load
->    firmware file requesting it from the kernel thread.
+Hello Joe,
+
+On 09/19/2014 09:52 PM, Joe Perches wrote:
+> On Fri, 2014-09-19 at 21:27 +0200, Javier Martinez Canillas wrote:
+>> On 09/19/2014 04:39 PM, Joe Perches wrote:
+>> > On Fri, 2014-09-19 at 12:26 +0200, Javier Martinez Canillas wrote:
+>> >> The function max77686_rtc_calculate_wday() is used to
+>> >> calculate the day of the week to be filled in struct
+>> >> rtc_time but that function only calculates the number
+>> >> of bits shifted. So the ffs() function can be used to
+>> >> find the first bit set instead of a special function.
+>> > 
+>> > This isn't the same logic.  Perhaps you want fls.
+>> >
+>> 
+>> Right, the removed function has the same logic than fls() - 1 but the value
+>> stored in data[RTC_WEEKDAY] is:
+>> 
+>> data[RTC_WEEKDAY] = 1 << tm->tm_wday;
+>> 
+>> so for this particular case, it doesn't matter since ffs() == fls() always.
 > 
-> Solution is simple: before any rootfs access firmware loader
-> must wait for rootfs mount.
+> I didn't look that far.
+> 
+> I just wanted to show that the logic wasn't the same.
+> 
 
-Even simpler solution, don't do that :)
+No worries, thanks a lot for your feedback. Probably it would had been good to
+mention that in the commit message.
 
-If your hardware needs firmware this early, and you don't put the
-firmare into the initrd/initramfs, then it will just be loaded later on,
-when the root filesystem is needed and the driver asks for it again
-(your driver is failing "nicely" and allows the firmware to be loaded
-later, right?  If not, that should be fixed...)
+> Perhaps you can specify that ffs==fls in the changelog.
+> 
 
-Or, build the firmware into the kernel, I think we still have that
-option for some drivers that really wanted/needed this.
+I won't say I'm thrilled to do a whole re-spin of the series just to change
+that ;)
 
-What has changed recently that requires this type of patch?  What is
-wrong with the above solutions?
+Specially since I already did too many revisions and this series have been
+floating around for months but is up to Andrew to decide if is worth it.
 
-thanks,
+Best regards,
+Javier
 
-greg k-h
+
