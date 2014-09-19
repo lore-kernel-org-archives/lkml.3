@@ -1,35 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaISL0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:26:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59272 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524AbaISL0e (ORCPT
+	id S1756627AbaISL0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:26:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:51197 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756577AbaISL0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:26:34 -0400
-Date: Fri, 19 Sep 2014 04:26:33 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC v2 5/5] Check for O_NONBLOCK in all read_iter instances
-Message-ID: <20140919112633.GD4639@infradead.org>
-References: <cover.1410983998.git.milosz@adfin.com>
- <5d2507ee57b30987a1bbd495dce565f4ef86fdef.1410983999.git.milosz@adfin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5d2507ee57b30987a1bbd495dce565f4ef86fdef.1410983999.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 19 Sep 2014 07:26:40 -0400
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+To: shawn.guo@freescale.com
+Cc: stefan@agner.ch, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sanchayan Maity <maitysanchayan@gmail.com>
+Subject: [PATCH v2] Enable ADC support for Colibri VF61 modules
+Date: Fri, 19 Sep 2014 16:56:12 +0530
+Message-Id: <cover.1411122224.git.maitysanchayan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI, this should be folded into the previous patch.
+Changes since v1:
+Sorted the nodes alphabetically
+
+Initial discussion over here
+[1]: https://lkml.org/lkml/2014/9/19/145
+
+Sanchayan Maity (1):
+  ARM: dts: vf610-colibri: Add ADC support
+
+ arch/arm/boot/dts/vf610-colibri.dtsi |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+-- 
+1.7.9.5
 
