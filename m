@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769AbaISNOw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:14:52 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:59372 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372AbaISNOu (ORCPT
+	id S1756326AbaISNRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:17:13 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:42180 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398AbaISNRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:14:50 -0400
+	Fri, 19 Sep 2014 09:17:12 -0400
+Date: Fri, 19 Sep 2014 09:17:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zefan Li <lizefan@huawei.com>
+Cc: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH] cgroup: remove redundant check in cgroup_ino()
+Message-ID: <20140919131708.GA30493@mtj.dyndns.org>
+References: <541BE96B.1090605@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20140919075415.5149d5f2@as>
-References: <20140918135202.GA26038@khazad-dum.debian.net>
-	<541B2F33.8000002@amacapital.net>
-	<20140918145328.0253f009@as>
-	<9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
-	<20140918200659.GA5331@khazad-dum.debian.net>
-	<20140919001311.GB5331@khazad-dum.debian.net>
-	<CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
-	<20140919110014.GC29639@khazad-dum.debian.net>
-	<20140919112953.GA3256@nazgul.tnic>
-	<20140919075415.5149d5f2@as>
-Date: Fri, 19 Sep 2014 09:14:50 -0400
-X-Google-Sender-Auth: KY6gP-JqD1YwhiBFjiuw1WUrs9A
-Message-ID: <CA+5PVA7HTU_N0U5xxeGi3DJ_HCz9VjUfNsO23wJDT74J5xxLcQ@mail.gmail.com>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <541BE96B.1090605@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 8:54 AM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> On Fri, 19 Sep 2014 13:29:53 +0200
-> Borislav Petkov <bp@alien8.de> wrote:
->
->> On Fri, Sep 19, 2014 at 08:00:15AM -0300, Henrique de Moraes Holschuh wrote:
->> > We're also killing microcode update support outside of the initramfs in
->> > Debian.  It has become obvious that anything other than the early initramfs
->> > method of microcode updates should be considered a developer thing.
->>
->> That's simply not true: long-running systems which you can't reboot for
->> whatever reason will need the late microcode update.
->>
->
-> Assuming we can identify all the affected models and steppings, maybe
-> something like this would work:
->
-> 1) Refuse to finish booting if a microcode update that disables TSX
-> isn't applied before userspace starts running on those CPUs.
+On Fri, Sep 19, 2014 at 04:29:31PM +0800, Zefan Li wrote:
+> After we implemented default unified hierarchy, cgrp->kn can never
+> be NULL.
+> 
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
 
-How would you accomplish that when applying a microcode update
-requires userspace?  Or did you mean "before we transition out of the
-initramfs"?
+Applied to cgroup/for-3.18.
 
-josh
+Thanks.
+
+-- 
+tejun
