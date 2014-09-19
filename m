@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaISLr4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:47:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56079 "EHLO
+	id S1756823AbaISLsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:48:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56243 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756074AbaISLpb (ORCPT
+	with ESMTP id S1756766AbaISLsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:45:31 -0400
-Date: Fri, 19 Sep 2014 04:44:43 -0700
-From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-9c368b5b6eccce1cbd7f68142106b3b4ddb1c5b5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        tglx@linutronix.de, sgruszka@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        tglx@linutronix.de, sgruszka@redhat.com
-In-Reply-To: <1410527535-9814-3-git-send-email-riel@redhat.com>
-References: <1410527535-9814-3-git-send-email-riel@redhat.com>
+	Fri, 19 Sep 2014 07:48:03 -0400
+Date: Fri, 19 Sep 2014 04:46:44 -0700
+From: tip-bot for Aaron Tomlin <tipbot@zytor.com>
+Message-ID: <tip-a70857e46dd13e87ae06bf0e64cb6a2d4f436265@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        seiji.aguchi@hds.com, mpe@ellerman.id.au, atomlin@redhat.com,
+        jolsa@redhat.com, rostedt@goodmis.org, akpm@linux-foundation.org,
+        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, masami.hiramatsu.pt@hitachi.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, mpe@ellerman.id.au, seiji.aguchi@hds.com,
+        atomlin@redhat.com, jolsa@redhat.com, akpm@linux-foundation.org,
+        rostedt@goodmis.org, isimatu.yasuaki@jp.fujitsu.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <1410527779-8133-3-git-send-email-atomlin@redhat.com>
+References: <1410527779-8133-3-git-send-email-atomlin@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, time:
-  Fix lock inversion in thread_group_cputime()
-Git-Commit-ID: 9c368b5b6eccce1cbd7f68142106b3b4ddb1c5b5
+Subject: [tip:sched/core] sched:
+  Add helper for task stack page overrun checking
+Git-Commit-ID: a70857e46dd13e87ae06bf0e64cb6a2d4f436265
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,64 +41,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9c368b5b6eccce1cbd7f68142106b3b4ddb1c5b5
-Gitweb:     http://git.kernel.org/tip/9c368b5b6eccce1cbd7f68142106b3b4ddb1c5b5
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Fri, 12 Sep 2014 09:12:15 -0400
+Commit-ID:  a70857e46dd13e87ae06bf0e64cb6a2d4f436265
+Gitweb:     http://git.kernel.org/tip/a70857e46dd13e87ae06bf0e64cb6a2d4f436265
+Author:     Aaron Tomlin <atomlin@redhat.com>
+AuthorDate: Fri, 12 Sep 2014 14:16:18 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 19 Sep 2014 12:35:17 +0200
+CommitDate: Fri, 19 Sep 2014 12:35:23 +0200
 
-sched, time: Fix lock inversion in thread_group_cputime()
+sched: Add helper for task stack page overrun checking
 
-The sig->stats_lock nests inside the tasklist_lock and the
-sighand->siglock in __exit_signal and wait_task_zombie.
+This facility is used in a few places so let's introduce
+a helper function to improve code readability.
 
-However, both of those locks can be taken from irq context,
-which means we need to use the interrupt safe variant of
-read_seqbegin_or_lock. This blocks interrupts when the "lock"
-branch is taken (seq is odd), preventing the lock inversion.
-
-On the first (lockless) pass through the loop, irqs are not
-blocked.
-
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: prarit@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com
+Cc: dzickus@redhat.com
+Cc: bmr@redhat.com
+Cc: jcastillo@redhat.com
 Cc: oleg@redhat.com
+Cc: riel@redhat.com
+Cc: prarit@redhat.com
+Cc: jgh@redhat.com
+Cc: minchan@kernel.org
+Cc: mpe@ellerman.id.au
+Cc: tglx@linutronix.de
+Cc: hannes@cmpxchg.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1410527535-9814-3-git-send-email-riel@redhat.com
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linuxppc-dev@lists.ozlabs.org
+Link: http://lkml.kernel.org/r/1410527779-8133-3-git-send-email-atomlin@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/cputime.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/powerpc/mm/fault.c    | 4 +---
+ arch/x86/mm/fault.c        | 4 +---
+ include/linux/sched.h      | 2 ++
+ kernel/trace/trace_stack.c | 2 +-
+ 4 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 2b57031..64492df 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -289,13 +289,14 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- 	cputime_t utime, stime;
- 	struct task_struct *t;
- 	unsigned int seq, nextseq;
-+	unsigned long flags;
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+index 35d0760c..99b2f27 100644
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -507,7 +507,6 @@ bail:
+ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
+ {
+ 	const struct exception_table_entry *entry;
+-	unsigned long *stackend;
  
- 	rcu_read_lock();
- 	/* Attempt a lockless read on the first round. */
- 	nextseq = 0;
- 	do {
- 		seq = nextseq;
--		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-+		flags = read_seqbegin_or_lock_irqsave(&sig->stats_lock, &seq);
- 		times->utime = sig->utime;
- 		times->stime = sig->stime;
- 		times->sum_exec_runtime = sig->sum_sched_runtime;
-@@ -309,7 +310,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- 		/* If lockless access failed, take the lock. */
- 		nextseq = 1;
- 	} while (need_seqretry(&sig->stats_lock, seq));
--	done_seqretry(&sig->stats_lock, seq);
-+	done_seqretry_irqrestore(&sig->stats_lock, seq, flags);
- 	rcu_read_unlock();
+ 	/* Are we prepared to handle this fault?  */
+ 	if ((entry = search_exception_tables(regs->nip)) != NULL) {
+@@ -536,8 +535,7 @@ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
+ 	printk(KERN_ALERT "Faulting instruction address: 0x%08lx\n",
+ 		regs->nip);
+ 
+-	stackend = end_of_stack(current);
+-	if (*stackend != STACK_END_MAGIC)
++	if (task_stack_end_corrupted(current))
+ 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
+ 
+ 	die("Kernel access of bad area", regs, sig);
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index bc23a70..6240bc7 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -648,7 +648,6 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 	   unsigned long address, int signal, int si_code)
+ {
+ 	struct task_struct *tsk = current;
+-	unsigned long *stackend;
+ 	unsigned long flags;
+ 	int sig;
+ 
+@@ -708,8 +707,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 
+ 	show_fault_oops(regs, error_code, address);
+ 
+-	stackend = end_of_stack(tsk);
+-	if (*stackend != STACK_END_MAGIC)
++	if (task_stack_end_corrupted(tsk))
+ 		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
+ 
+ 	tsk->thread.cr2		= address;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 118dca7..18f5262 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2617,6 +2617,8 @@ static inline unsigned long *end_of_stack(struct task_struct *p)
  }
  
+ #endif
++#define task_stack_end_corrupted(task) \
++		(*(end_of_stack(task)) != STACK_END_MAGIC)
+ 
+ static inline int object_is_on_stack(void *obj)
+ {
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 1636e41..16eddb3 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -170,7 +170,7 @@ check_stack(unsigned long ip, unsigned long *stack)
+ 			i++;
+ 	}
+ 
+-	if (*end_of_stack(current) != STACK_END_MAGIC) {
++	if (task_stack_end_corrupted(current)) {
+ 		print_max_stack();
+ 		BUG();
+ 	}
