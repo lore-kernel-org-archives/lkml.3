@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614AbaISPck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 11:32:40 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:40982 "EHLO
+	id S1757720AbaISPcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 11:32:51 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:38886 "EHLO
 	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755AbaISPci (ORCPT
+	with ESMTP id S1757694AbaISPcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 11:32:38 -0400
+	Fri, 19 Sep 2014 11:32:48 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Josh Triplett <josh@joshtriplett.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
-Subject: [PATCH v2 1/1] rcu: Add early boot self tests
-Date: Fri, 19 Sep 2014 11:32:29 -0400
-Message-Id: <1411140752-27028-2-git-send-email-bobby.prani@gmail.com>
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2 3/3] rcutorture: Enable RCU self test in configs
+Date: Fri, 19 Sep 2014 11:32:31 -0400
+Message-Id: <1411140752-27028-4-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411140752-27028-1-git-send-email-bobby.prani@gmail.com>
 References: <1411140752-27028-1-git-send-email-bobby.prani@gmail.com>
@@ -24,150 +24,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add early boot self tests for RCU under CONFIG_PROVE_RCU.
-
-Currently the only test is adding a dummy callback which increments a counter
-which we then later verify after calling rcu_barrier*().
+Add config and boot parameters to enable the self tests in rcutorture testing.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- kernel/rcu/rcu.h    |  2 ++
- kernel/rcu/tiny.c   |  4 ++-
- kernel/rcu/tree.c   |  2 ++
- kernel/rcu/update.c | 84 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 91 insertions(+), 1 deletion(-)
+ tools/testing/selftests/rcutorture/configs/rcu/TINY02      | 2 ++
+ tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot | 2 ++
+ tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot | 1 +
+ tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot | 3 +++
+ tools/testing/selftests/rcutorture/configs/rcu/TREE08      | 2 ++
+ tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot | 2 ++
+ 6 files changed, 12 insertions(+)
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
 
-diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-index ff1a6de..07bb02e 100644
---- a/kernel/rcu/rcu.h
-+++ b/kernel/rcu/rcu.h
-@@ -135,4 +135,6 @@ int rcu_jiffies_till_stall_check(void);
-  */
- #define TPS(x)  tracepoint_string(x)
- 
-+void rcu_early_boot_tests(void);
-+
- #endif /* __LINUX_RCU_H */
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index c0623fc..d3d44c5 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -380,7 +380,9 @@ void call_rcu_bh(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
- }
- EXPORT_SYMBOL_GPL(call_rcu_bh);
- 
--void rcu_init(void)
-+void __init rcu_init(void)
- {
- 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
-+
-+	rcu_early_boot_tests();
- }
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index bc085e5..3db8f15 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -3774,6 +3774,8 @@ void __init rcu_init(void)
- 	pm_notifier(rcu_pm_notify, 0);
- 	for_each_online_cpu(cpu)
- 		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-+
-+	rcu_early_boot_tests();
- }
- 
- #include "tree_plugin.h"
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 3ef8ba5..99d47e6 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -690,3 +690,87 @@ static void rcu_spawn_tasks_kthread(void)
- }
- 
- #endif /* #ifdef CONFIG_TASKS_RCU */
-+
-+#ifdef CONFIG_PROVE_RCU
-+
-+/*
-+ * Early boot self test parameters, one for each flavor
-+ */
-+static bool rcu_self_test;
-+static bool rcu_self_test_bh;
-+static bool rcu_self_test_sched;
-+
-+module_param(rcu_self_test, bool, 0444);
-+module_param(rcu_self_test_bh, bool, 0444);
-+module_param(rcu_self_test_sched, bool, 0444);
-+
-+static int rcu_self_test_counter;
-+
-+static void test_callback(struct rcu_head *r)
-+{
-+	rcu_self_test_counter++;
-+	pr_info("RCU test callback executed %d\n", rcu_self_test_counter);
-+}
-+
-+static void early_boot_test_call_rcu(void)
-+{
-+	static struct rcu_head head;
-+
-+	call_rcu(&head, test_callback);
-+}
-+
-+static void early_boot_test_call_rcu_bh(void)
-+{
-+	static struct rcu_head head;
-+
-+	call_rcu_bh(&head, test_callback);
-+}
-+
-+static void early_boot_test_call_rcu_sched(void)
-+{
-+	static struct rcu_head head;
-+
-+	call_rcu_sched(&head, test_callback);
-+}
-+
-+void rcu_early_boot_tests(void)
-+{
-+	pr_info("Running RCU self tests\n");
-+
-+	if (rcu_self_test)
-+		early_boot_test_call_rcu();
-+	if (rcu_self_test_bh)
-+		early_boot_test_call_rcu_bh();
-+	if (rcu_self_test_sched)
-+		early_boot_test_call_rcu_sched();
-+}
-+
-+static int rcu_verify_early_boot_tests(void)
-+{
-+	int ret = 0;
-+	int early_boot_test_counter = 0;
-+
-+	if (rcu_self_test) {
-+		early_boot_test_counter++;
-+		rcu_barrier();
-+	}
-+	if (rcu_self_test_bh) {
-+		early_boot_test_counter++;
-+		rcu_barrier_bh();
-+	}
-+	if (rcu_self_test_sched) {
-+		early_boot_test_counter++;
-+		rcu_barrier_sched();
-+	}
-+
-+	if (rcu_self_test_counter != early_boot_test_counter) {
-+		WARN_ON(1);
-+		ret = -1;
-+	}
-+
-+	return ret;
-+}
-+late_initcall(rcu_verify_early_boot_tests);
-+#else
-+void rcu_early_boot_tests(void) {}
-+#endif /* CONFIG_PROVE_RCU */
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TINY02 b/tools/testing/selftests/rcutorture/configs/rcu/TINY02
+index f4feaee..36e41df 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TINY02
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TINY02
+@@ -7,6 +7,8 @@ CONFIG_HZ_PERIODIC=y
+ CONFIG_NO_HZ_IDLE=n
+ CONFIG_NO_HZ_FULL=n
+ CONFIG_RCU_TRACE=y
++CONFIG_PROVE_LOCKING=y
++CONFIG_PROVE_RCU=y
+ CONFIG_DEBUG_LOCK_ALLOC=y
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+ CONFIG_PREEMPT_COUNT=y
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot b/tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
+new file mode 100644
+index 0000000..0f08027
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
+@@ -0,0 +1,2 @@
++rcupdate.rcu_self_test=1
++rcupdate.rcu_self_test_bh=1
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot
+index 3b42b8b..15b3e1a 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot
+@@ -1 +1,2 @@
+ rcutorture.torture_type=sched
++rcupdate.rcu_self_test_sched=1
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
+new file mode 100644
+index 0000000..da9a03a
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
+@@ -0,0 +1,3 @@
++rcupdate.rcu_self_test=1
++rcupdate.rcu_self_test_bh=1
++rcupdate.rcu_self_test_sched=1
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE08 b/tools/testing/selftests/rcutorture/configs/rcu/TREE08
+index 316aa6c..1a9303d 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE08
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08
+@@ -18,6 +18,8 @@ CONFIG_RCU_FANOUT_LEAF=2
+ CONFIG_RCU_NOCB_CPU=y
+ CONFIG_RCU_NOCB_CPU_ALL=y
+ CONFIG_DEBUG_LOCK_ALLOC=n
++CONFIG_PROVE_LOCKING=y
++CONFIG_PROVE_RCU=y
+ CONFIG_RCU_CPU_STALL_INFO=n
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot
+index 3b42b8b..2561daf 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot
+@@ -1 +1,3 @@
+ rcutorture.torture_type=sched
++rcupdate.rcu_self_test=1
++rcupdate.rcu_self_test_sched=1
 -- 
 2.1.0
 
