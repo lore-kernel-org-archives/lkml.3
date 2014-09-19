@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbaISHiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 03:38:07 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:53722 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705AbaISHiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 03:38:05 -0400
-Message-ID: <541BDD58.6060707@c-s.fr>
-Date: Fri, 19 Sep 2014 09:38:00 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-Subject: Re: [PATCH v3 03/21] powerpc/8xx: exception InstructionAccess does
- not exist on MPC8xx
-References: <20140917163657.7737D1AB032@localhost.localdomain> <OF3CC96BF2.DF7CB060-ONC1257D57.00533ED7-C1257D57.0053CADF@transmode.se> <541B0B66.8030405@c-s.fr> <OFB7DFC74D.65FC1C31-ONC1257D57.00632BC3-C1257D57.00640A0B@transmode.se> <541B2E45.5070900@c-s.fr> <OFFF48B453.8913C6B0-ONC1257D57.006DED24-C1257D57.006E0FCC@transmode.se>
-In-Reply-To: <OFFF48B453.8913C6B0-ONC1257D57.006DED24-C1257D57.006E0FCC@transmode.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751427AbaISHoa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 03:44:30 -0400
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:50090 "EHLO
+	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750705AbaISHo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 03:44:29 -0400
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz,
+        heikki.krogerus@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCHv2] serial: 8250: Add Quark X1000 to 8250 PCI driver
+Date: Fri, 19 Sep 2014 08:43:49 +0100
+Message-Id: <1411112629-3238-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adds PCI identifier for the X1000
+Adds clocking and register size and register shift
 
-Le 18/09/2014 22:02, Joakim Tjernlund a écrit :
-> christophe leroy <christophe.leroy@c-s.fr> wrote on 2014/09/18 21:11:01:
->>
->> Le 18/09/2014 20:12, Joakim Tjernlund a écrit :
->>> leroy christophe <christophe.leroy@c-s.fr> wrote on 2014/09/18
-> 18:42:14:
->>>> Le 18/09/2014 17:15, Joakim Tjernlund a écrit :
->>>>> Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2014/09/17
->>> 18:36:57:
->>>>>> Exception InstructionAccess does not exist on MPC8xx. No need to
->>> branch
->>>>> there from somewhere else.
->>>>>> Handling can be done directly in InstructionTLBError Exception.
->>>>>>
->>>>>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
->>>>         . = 0x1200
->>>>     DataStoreTLBMiss:
->>>> @@ -477,7 +475,11 @@ DataStoreTLBMiss:
->>>>      */
->>>>         . = 0x1300
->>>>     InstructionTLBError:
->>>> -    b    InstructionAccess
->>>> +    EXCEPTION_PROLOG
->>>> +    mr    r4,r12
->>>> +    mr    r5,r9
->>>> +    /* 0x400 is InstructionAccess exception, needed by
-> bad_page_fault()
->>> */
->>>> +    EXC_XFER_LITE(0x400, handle_page_fault)
->>> You should have the code in TLBMiss and have the TLBError branch there
-> as
->>> that is the common case.
->> As far as I remember, I tried it already but we don't have enough space
->> in TLBmiss for that. We can only have 40 instructions.
-> Do your other optimizations first, then you might have space :)
->
->
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+---
+ drivers/tty/serial/8250/8250_pci.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-Even with the optimisation first, there is no chance to fit ITLBError 
-instructions after ITLBMiss and before DTLBMiss.
-After optimisation, TLBMiss goes from 0x1100 to 0x1174. TLBError goes 
-from 0x1300 to 0x13b4. DTLBMiss is at 0x1200
-And this is without CPU6 ERRATA. So this is hopeless I believe.
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 61830b1..5e72959 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1481,6 +1481,19 @@ byt_serial_setup(struct serial_private *priv,
+ 	return ret;
+ }
+ 
++#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
++
++static int
++pci_intel_qrk_setup(struct serial_private *priv,
++		const struct pciserial_board *board,
++		struct uart_8250_port *port, int idx)
++{
++	unsigned int bar, offset = board->first_offset;
++
++	bar = FL_GET_BASE(board->flags);
++
++	return setup_port(priv, port, bar, offset, board->reg_shift);
++}
+ static int
+ pci_omegapci_setup(struct serial_private *priv,
+ 		      const struct pciserial_board *board,
+@@ -1898,6 +1911,13 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.subdevice	= PCI_ANY_ID,
+ 		.setup		= byt_serial_setup,
+ 	},
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.setup		= pci_intel_qrk_setup,
++	},
+ 	/*
+ 	 * ITE
+ 	 */
+@@ -2740,6 +2760,7 @@ enum pci_board_num_t {
+ 	pbn_ADDIDATA_PCIe_8_3906250,
+ 	pbn_ce4100_1_115200,
+ 	pbn_byt,
++	pbn_qrk,
+ 	pbn_omegapci,
+ 	pbn_NETMOS9900_2s_115200,
+ 	pbn_brcm_trumanage,
+@@ -3490,6 +3511,12 @@ static struct pciserial_board pci_boards[] = {
+ 		.uart_offset	= 0x80,
+ 		.reg_shift      = 2,
+ 	},
++	[pbn_qrk] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 1,
++		.base_baud	= 2764800,
++		.reg_shift	= 2,
++	},
+ 	[pbn_omegapci] = {
+ 		.flags		= FL_BASE0,
+ 		.num_ports	= 8,
+@@ -5192,6 +5219,12 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 		pbn_byt },
+ 
+ 	/*
++	 * Intel Quark x1000
++	 */
++	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_qrk },
++	/*
+ 	 * Cronyx Omega PCI
+ 	 */
+ 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
+-- 
+1.9.1
 
-Christophe
