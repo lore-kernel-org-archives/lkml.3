@@ -1,177 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873AbaISCyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 22:54:47 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54223 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaISCyq (ORCPT
+	id S1756083AbaISC5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 22:57:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50047 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223AbaISC5O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 22:54:46 -0400
-Message-ID: <541B9ADA.2070107@roeck-us.net>
-Date: Thu, 18 Sep 2014 19:54:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 18 Sep 2014 22:57:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,551,1406617200"; 
+   d="scan'208";a="601976388"
+From: "Drokin, Oleg" <oleg.drokin@intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Julia Lawall <Julia.Lawall@lip6.fr>,
+        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "<kernel-janitors@vger.kernel.org>" <kernel-janitors@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<HPDD-discuss@ml01.01.org>" <HPDD-discuss@ml01.01.org>
+Subject: Re: [PATCH] staging: lustre: llite: Use kzalloc and rewrite null
+ tests
+Thread-Topic: [PATCH] staging: lustre: llite: Use kzalloc and rewrite null
+ tests
+Thread-Index: AQHP038cV7KKUWUf/U2QvPeJwPvEYJwIAvSAgAA2K4A=
+Date: Fri, 19 Sep 2014 02:57:03 +0000
+Message-ID: <E43F4FD2-3A79-485E-960B-A12960B3D2B7@intel.com>
+References: <1411071842-24714-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1411071842-24714-2-git-send-email-Julia.Lawall@lip6.fr>
+ <20140918234309.GP17875@mwanda>
+In-Reply-To: <20140918234309.GP17875@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.20.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <AC11593B060ADF45934B30D45AB4727F@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>
-Subject: Re: [PATCH] pinctrl: qcom: use restart_notifier mechanism for ps_hold
-References: <1411079579-10172-1-git-send-email-joshc@codeaurora.org>
-In-Reply-To: <1411079579-10172-1-git-send-email-joshc@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.541B9AF6.0010,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 03:32 PM, Josh Cartwright wrote:
-> By converting to the restart_notifier mechanism for restart, we allow
-> for other mechanisms, like the watchdog, to be used for restart in the
-> case where PS_HOLD has failed to reset the chip.
->
-> Choose priority 128, as according to documentation, this mechanism "is
-> sufficient to restart the entire system".
->
-> Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->   drivers/pinctrl/qcom/pinctrl-msm.c | 38 ++++++++++++++++++++++++++------------
->   1 file changed, 26 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> index d5ed127..9fced3b 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-> @@ -27,8 +27,7 @@
->   #include <linux/gpio.h>
->   #include <linux/interrupt.h>
->   #include <linux/spinlock.h>
-> -
-> -#include <asm/system_misc.h>
-> +#include <linux/reboot.h>
->
->   #include "../core.h"
->   #include "../pinconf.h"
-> @@ -43,6 +42,7 @@
->    * @dev:            device handle.
->    * @pctrl:          pinctrl handle.
->    * @chip:           gpiochip handle.
-> + * @restart_nb:     restart notifier block.
->    * @irq:            parent irq for the TLMM irq_chip.
->    * @lock:           Spinlock to protect register resources as well
->    *                  as msm_pinctrl data structures.
-> @@ -56,6 +56,7 @@ struct msm_pinctrl {
->   	struct device *dev;
->   	struct pinctrl_dev *pctrl;
->   	struct gpio_chip chip;
-> +	struct notifier_block restart_nb;
->   	int irq;
->
->   	spinlock_t lock;
-> @@ -852,13 +853,14 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
->   	return 0;
->   }
->
-> -#ifdef CONFIG_ARM
+Hello!
 
-Unrelated to this patch, but is this going to be executed (and potentially used)
-on any non-arm architectures ?
+On Sep 18, 2014, at 7:43 PM, Dan Carpenter wrote:
 
-Reason for asking that the restart handler mechanism is currently only
-implemented on arm and arm64. If it is going to be used with other
-architectures, we'll have to add the necessary call into the architecture
-restart code.
+> On Thu, Sep 18, 2014 at 10:24:02PM +0200, Julia Lawall wrote:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>> 
+>> This patch removes some kzalloc-related macros and rewrites the
+>> associated null tests to use !x rather than x == NULL.
+> This is sort of exactly what Oleg asked us not to do in his previous
+> email.  ;P
 
-> -static void __iomem *msm_ps_hold;
-> -
-> -static void msm_reset(enum reboot_mode reboot_mode, const char *cmd)
-> +static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
-> +			       void *data)
->   {
-> -	writel(0, msm_ps_hold);
-> +	struct msm_pinctrl *pctrl = container_of(nb, struct msm_pinctrl, restart_nb);
-> +
-> +	writel(0, pctrl->regs + PS_HOLD_OFFSET);
->   	mdelay(10000);
+Hey, Thanks for remembering me ;)
 
-Sure you still want to wait for 10 seconds here ?
-Would it make sense to choose a more reasonable timeout ?
+> I think there might be ways to get good enough tracing using standard
+> kernel features but it's legitimately tricky to update everything to
+> using mempools or whatever.  Maybe we should give Oleg some breathing
+> room to do this.
 
-Thanks,
-Guenter
+In fact I was mostly mourning ENTRY/EXIT/GOTO stuff back then - I don't know how to
+replace anything like that even one bit at the scale we need.
+the OBD_ALLOC()/FREE() served multiple purposes most of which could be done with other ways now:
+1. general accounting for lustre memory usage (all types directly allocated through the macros), with a message present at the module unload if we freed less than allocated - a warning is printed on unload which would set off a search for the leak (hey, at least we know there is a leak somewhat fast, we also know how much was leaked, and we might probably find out how many allocations were not freed if we wanted to add that stats). - I don't know how to replace that, so perhaps a macro for this still be useful.
+2. Hunting memory leaks (this is what the variable allocated, where it was allocated, where it was freed, and the address of the allocation printed) - on non-production systems this could be replaced with kernel memory leak detector now - in fact it's even more convenient since you don't need to match up logs with a script to see what allocated what, and there's even a convenient backtrace printed as a bonus. I used it and really liked the result.
+This is not really fitting in production, as kmemleak tends to eat memory like there's no tomorrow (at least in my config) and also might need a kernel rebuild. But it's not like getting people
+to gather proper debug logs was easy too. So we can probably do away with that.
+3. Fault injections - there's now a way to do this in the kernel, so we probably can do away with this too.
+4. Sometimes we need large allocations. general kmalloc is less reliable as system lives on and memory fragmentation worsens. So we have this "allocations over 2-4 pages get switched to vmalloc" logic,
+if there's a way to do that automatically - that would be great.
 
-> +	return NOTIFY_DONE;
->   }
->
->   static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
-> @@ -868,13 +870,16 @@ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
->
->   	for (; i <= pctrl->soc->nfunctions; i++)
->   		if (!strcmp(func[i].name, "ps_hold")) {
-> -			msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
-> -			arm_pm_restart = msm_reset;
-> +			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
-> +			pctrl->restart_nb.priority = 128;
-> +			if (register_restart_handler(&pctrl->restart_nb)) {
-> +				dev_err(pctrl->dev,
-> +					"failed to setup restart handler.\n");
-> +				pctrl->restart_nb.notifier_call = NULL;
-> +			}
-> +			break;
->   		}
->   }
-> -#else
-> -static void msm_pinctrl_setup_pm_reset(const struct msm_pinctrl *pctrl) {}
-> -#endif
->
->   int msm_pinctrl_probe(struct platform_device *pdev,
->   		      const struct msm_pinctrl_soc_data *soc_data)
-> @@ -943,6 +948,15 @@ int msm_pinctrl_remove(struct platform_device *pdev)
->
->   	pinctrl_unregister(pctrl->pctrl);
->
-> +	if (pctrl->restart_nb.notifier_call) {
-> +		ret = unregister_restart_handler(&pctrl->restart_nb);
-> +		if (ret) {
-> +			dev_err(&pdev->dev,
-> +				"unable to unregister restart handler\n");
-> +			return ret;
-> +		}
-> +	}
-> +
->   	return 0;
->   }
->   EXPORT_SYMBOL(msm_pinctrl_remove);
->
+> I hate looking at the OBD_ALLOC* macros, but really it's not as if we
+> don't have allocation helper functions anywhere in the rest of the
+> kernel.  It's just that the style of the lustre helpers is so very very
+> ugly.  It took me a while to spot that OBD_ALLOC() zeroes memory, for
+> example.
+> 
+> It should be relatively easy to re-write the macros so we can change
+> formats like this:
+> 
+> old:	OBD_ALLOC(ptr, size);
+> new:	ptr = obd_zalloc(size, GFP_NOFS);
+> 
+> old:	OBD_ALLOC_WAIT(ptr, size);
+> new:	ptr = obd_zalloc(size, GFP_KERNEL);
+> 
+> old:	OBD_ALLOC_PTR(ptr);
+> new:	ptr = obd_zalloc(sizeof(*ptr), GFP_NOFS);
+> 
+> etc...
+> 
+> Writing it this way means that we can't put the name of the pointer
+> we're allocating in the debug output but we could use the file and line
+> number instead or something.  Oleg, what do you think?
 
+I think we don't really need the allocated pointer and the name all that much now with kmemleak.
+But we still need to remember the allocation amount like we do now (and when freeing them later).
+This is where OBD_ALLOC_PTR/OBD_FREE_PTR come handy - the size is derived from structure size
+automatically - less space for error or unintentional mismatch (since kfree does not really care
+about number of bytes freed).
+so if you prefer to just have everything lowercased, we probably can do obd_zalloc and obd_zallc_ptr still?
+(of course in some other world, there might have been a "context-aware" general alloc/free functions
+that would have known if an allocation came from a module context and did the tallying internally,
+and then warned on module unload if something did not match. But I imagine such module context determination
+would not be easy to do. Perhaps registered callbacks for pools that could be called on alloc and on free - though such pools would also need to allow to allocate different sized chunks too).
+
+> If we decide to mass convert to standard functions later then it's dead
+> simple to do that with sed.
+
+It's more ugly with OBD_FREE*, though, where the size is needed, while kfree/vfee does not take size.
+Also if you convert allocs while not converting frees, that makes code even more ugly (see the current patch at hand even for the example of that).
+
+> The __OBD_MALLOC_VERBOSE() is hard to read.  It has side effect bugs if
+> you try to call OBD_ALLOC(ptr++, size);  The kernel already has a way to
+> inject kmalloc() failures for a specific module so that bit can be
+> removed.  Read Documentation/fault-injection/fault-injection.txt
+
+Yes, I think I agree here.
+
+Bye,
+    Oleg
