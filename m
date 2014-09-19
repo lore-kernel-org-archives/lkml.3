@@ -1,158 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaISNqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:46:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57790 "EHLO bear.ext.ti.com"
+	id S1756898AbaISNrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:47:07 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:49666 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755831AbaISNp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:45:58 -0400
-Message-ID: <541C3371.8080100@ti.com>
-Date: Fri, 19 Sep 2014 16:45:21 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753398AbaISNrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:47:05 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: srv_hongzhou.yang@mediatek.com, Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, srv_heupstream@mediatek.com,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "=Sascha Hauer" <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>
+Subject: Re: [PATCH 4/4] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+Date: Fri, 19 Sep 2014 15:48:57 +0200
+Message-ID: <8504020.ELHUosuJMo@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1411127306-13677-5-git-send-email-srv_hongzhou.yang@mediatek.com>
+References: <1411127306-13677-1-git-send-email-srv_hongzhou.yang@mediatek.com> <1411127306-13677-5-git-send-email-srv_hongzhou.yang@mediatek.com>
 MIME-Version: 1.0
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-CC: "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "peter.griffin@linaro.org" <peter.griffin@linaro.org>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "laurent.pinchart@ideasonboard.com" 
-	<laurent.pinchart@ideasonboard.com>,
-        "robdclark@gmail.com" <robdclark@gmail.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale SoCs
-References: <1409892517-29816-1-git-send-email-Li.Xiubo@freescale.com> <5412BE19.2010302@ti.com> <d94bf53d85884b4da0fb4da3041e5742@BY2PR0301MB0613.namprd03.prod.outlook.com>
-In-Reply-To: <d94bf53d85884b4da0fb4da3041e5742@BY2PR0301MB0613.namprd03.prod.outlook.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="kD6sMA5N5Mi0pHR01MnRK5aRQa8d1eKFC"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---kD6sMA5N5Mi0pHR01MnRK5aRQa8d1eKFC
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Am Freitag, 19. September 2014, 19:48:26 schrieb 
+srv_hongzhou.yang@mediatek.com:
+> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
+> 
+> Add devicetree bindings for Mediatek SoC pinctrl driver.
+> 
+> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+> ---
+>  .../devicetree/bindings/pinctrl/pinctrl-mt65xx.txt | 92
+> ++++++++++++++++++++++ 1 file changed, 92 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt new file
+> mode 100644
+> index 0000000..e2deff6
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> @@ -0,0 +1,92 @@
+> +* Mediatek MT65XX Pin Controller
+> +
+> +The Mediatek's Pin controller is used to control GPIO pins.
+> +
+> +Required properties:
+> +- compatible: value should be either of the following.
+> +    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
+> +- reg: Should contain the register physical address and length for the
+> +  pin controller.
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +- #gpio-cells: number of cells in GPIO specifier. Since the generic GPIO
+> +  binding is used, the amount of cells must be specified as 2. See the
+> below +  mentioned gpio binding representation for description of
+> particular cells. +
+> +	Eg: <&pio 6 0>
+> +	<[phandle of the gpio controller node]
+> +	[pin number within the gpio controller]
+> +	[flags]>
+> +
+> +	Values for gpio specifier:
+> +	- Pin number: is a value between 0 to 202.
+> +	- Flags:  bit field of flags, as defined in <dt-bindings/gpio/gpio.h>.
+> +            Only the following flags are supported:
+> +            0 - GPIO_ACTIVE_HIGH
+> +            1 - GPIO_ACTIVE_LOW
+> +
+> +Please refer to pinctrl-bindings.txt in this directory for details of the
+> +common pinctrl bindings used by client devices.
+> +
+> +A pinctrl node should contain at least one subnodes representing the
+> +pinctrl groups available on the machine. Each subnode will list the
+> +pins it needs, and how they should be configured, with regard to muxer
+> +configuration and pullups. If one of these options is
+> +not set, its actual value will be unspecified.
+> +
+> +Required subnode-properties:
+> +
+> +- mediatek,pinfunc: List of gpio number and function to mux.
+> +
+> +The mediatek,pinfunc can use defines directly,
+> +which are already defind in boot/dts/mt8135-pinfunc.h.
+> +
+> +Optional subnode-properties:
+> +- mediatek,pull: Integer, defines in dt-bindings/pinctrl/mt65xx.h.
+> +    MT_PIN_PULL_DISABLE: No resistor
+> +    MT_PIN_CONF_PULL_UP: Pull-up resistor
+> +    MT_PIN_CONF_PULL_DOWN: Pull-down resistor
 
-On 15/09/14 05:17, Li.Xiubo@freescale.com wrote:
-> Hi Tomi,
->=20
-> Thanks very much for your comments.
->=20
->=20
->> Subject: Re: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale So=
-Cs
->>
->> Hi,
->>
->> On 05/09/14 07:48, Xiubo Li wrote:
->>> Some Freescale SoCs, there has an DVI/HDMI controller and a PHY,
->>> attached to one of their display controller unit's LCDC interfaces.
->>> This patch adds a preliminary static support for such controllers.
->>>
->>> This will support for many modes and a dynamic switching between
->>> them.
->>>
->>> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
->>> ---
->>>  .../devicetree/bindings/video/fsl-sii902x.txt      |  17 +
->>>  drivers/video/fbdev/Kconfig                        |   7 +
->>>  drivers/video/fbdev/Makefile                       |   1 +
->>>  drivers/video/fbdev/fsl-sii902x.c                  | 526
->> +++++++++++++++++++++
->>>  4 files changed, 551 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/video/fsl-sii90=
-2x.txt
->>>  create mode 100644 drivers/video/fbdev/fsl-sii902x.c
->>
->> I don't know how you picked the names of the people you sent this patc=
-h
->> to, but looks to me that most of them are probably not interested in
->> this patch.
->>
->=20
-> I just using the get_maintainer.pl script.
+Please use the generic pinconfig for such options instead of defining your own.
 
-Yes, and that's good, but you have to use your judgment also.
-get_maintainer.pl gives you names of people who have at some point
-touched the files or directories you are changing. Usually only the
-first names returned by get_maintainer.pl are relevant.
+For examples on how to do this in a devicetree-context using 
+pinconf_generic_parse_dt_config() you could look at
 
->> Anyway, a few quick comments on the patch:
->>
->> - You should probably use regmap instead of direct i2c calls.
->> Interestingly, you define regmap variable, but you never use it.
->=20
-> Yes, this it's my another version in my local machine using regmap whic=
-h
-> need much more test.
->=20
->> - Use defines for register offsets, instead of magic numbers.
->=20
-> This will be fixed together with regmap using.
-
-Well, it's better to send the patch only when you have tested and
-cleaned up your driver.
-
->> - You should not use static variables. They prevent having multiple
->> instances of the device.
->>
->=20
-> Okay.
->=20
->> So the SiI902x chip is on the SoC, not on the board? And it's a plain
->> standard SiI902x in other aspects?
->>
->=20
-> No, it's on board.
->=20
-> And it will be used for i.MX and LS1+ platforms.
-
-Ok. In that case, I would suggest you to move to the DRM framework. The
-fbdev framework is not suited to adding external encoders. The end
-result with fbdev will be a SoC/board specific hack driver.
-
-That said, we already have such drivers for fbdev, so I'm not 100%
-against adding a new one. But I'm very very seriously recommending
-moving to DRM.
-
-And if this driver is added to fbdev, I think the device tree bindings
-should use the video ports/endpoints to describe the connections.
-
- Tomi
+drivers/pinctrl/nomadik/pinctrl-abx500.c
+drivers/pinctrl/pinctrl-tz1090.c
+drivers/pinctrl/sh-pfc/pinctrl.c
 
 
+Heiko
 
---kD6sMA5N5Mi0pHR01MnRK5aRQa8d1eKFC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> +
+> +The mediatek,pull can be either a single value or an array.
+> +If it is a single value, that means all pins use use this value for same.
+> +If it is an array, the means one value per pin.
+> +
+> +Examples:
+> +
+> +pinctrl@01c20800 {
+> +	compatible = "mediatek,mt8135-pinctrl";
+> +	reg = <0x01c20800 0x400>;
+> +	gpio-controller;
+> +	#gpio-cells = <2>;
+> +
+> +	i2c0_pins_a: i2c0@0 {
+> +		mediatek,pinfunc = <MT8135_PIN_100_SDA0__FUNC_SDA0
+> MT8135_PIN_101_SCL0__FUNC_SCL0>; +		mediatek,pull = 
+<MT_PIN_PULL_DISABLE>;
+> +	};
+> +
+> +	i2c1_pins_a: i2c1@0 {
+> +		mediatek,pinfunc = <MT8135_PIN_195_SDA1__FUNC_SDA1
+> MT8135_PIN_196_SCL1__FUNC_SCL1>; +		mediatek,pull = 
+<MT_PIN_PULL_DISABLE>;
+> +	};
+> +
+> +	i2c2_pins_a: i2c2@0 {
+> +		mediatek,pinfunc = <MT8135_PIN_193_SDA2__FUNC_SDA2
+> MT8135_PIN_194_SCL2__FUNC_SCL2>; +		mediatek,pull = 
+<MT_PIN_PULL_DISABLE>;
+> +	};
+> +
+> +	i2c3_pins_a: i2c3@0 {
+> +		mediatek,pinfunc = <MT8135_PIN_35_SCL3__FUNC_SCL3
+> MT8135_PIN_36_SDA3__FUNC_SDA3>; +		mediatek,pull = 
+<MT_PIN_PULL_DISABLE>;
+> +	};
+> +
+> +	uart2_pins_a: uart2@0 {
+> +		mediatek,pinfunc = <MT8135_PIN_53_URXD2__FUNC_URXD2
+> MT8135_PIN_54_UTXD2__FUNC_UTXD2>; +		mediatek,pull = 
+<MT_PIN_PULL_DISABLE>;
+> +	};
+> +
+> +	uart3_pins_a: uart3@0 {
+> +		mediatek,pinfunc = <MT8135_PIN_191_URXD3__FUNC_URXD3
+> MT8135_PIN_192_UTXD3__FUNC_UTXD3>; +		mediatek,pull =
+> <MT_PIN_PULL_DISABLE>;
+> +	};
+> +	...
+> +
+> +};
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUHDNxAAoJEPo9qoy8lh717+AP/j5nC1pCwcV3FVBtDn8EzTB9
-u+I8CFqAUQvdE+dlt2ayeK8rdUZMNDPK+AOGGGQ/hyymI3+VuTWO70SzPzW1JlFT
-y+P/KQ0i0Zk8E9vb3NpclxUAfannmfuUMOC80cyGJYXXHS55wAl8cG6SjIv9m2SW
-B0ZoUyBMY07Zc+IRstxtp/+s2CzwTKjS8m0myoqSWfQjb89f3/fVmejJIvkZd84/
-06EEBnTpj/tLoMSgpxsgjrhDVFGAwyYDjIcf2qvSurOQa90WaHphQAxHxpPbOpWG
-Tdk2q3ZL4MlPkWAw8DkWnRf2rtMvFsy6TDkbwscETfFgIGTKrYSTNrJVtp4RlHZC
-UfOaN2j2MTzQQ+SxgJbuGxIw1Xd/tMz0aj2+RI+crt70lp7LeBLWvowX3Gh1PBJX
-qutseE5AueMXzSTM6bg6f/3+w2hYB2flfnvdgh6G9pqnHKQQQujT2Q1esO33Gz8Z
-kEoAGz4BaZAxsE8ucIhu2h/LTeOBOi9N5MxDN1vtpn5DWWjyXOWDndnqWgV1Nmxk
-qQq06hZS94FgZZC7/0rOHfDX3cuLyB7YsOid814gsodFBrcTjcA/6w857Ij2pbSI
-XQKM+svRNB8ajaSI7Q/qoWF1YT7Bu5biJnAVIj8z7vEER8M/rDGeuQUw0FgOwBvT
-x+saK8ydZMTtNzRjQqlB
-=WqBq
------END PGP SIGNATURE-----
-
---kD6sMA5N5Mi0pHR01MnRK5aRQa8d1eKFC--
