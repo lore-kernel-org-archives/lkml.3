@@ -1,220 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287AbaISCei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 22:34:38 -0400
-Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:15280
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751223AbaISCeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 22:34:36 -0400
-X-Greylist: delayed 7402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Sep 2014 22:34:36 EDT
-Message-ID: <541B9630.5080402@freescale.com>
-Date: Thu, 18 Sep 2014 21:34:24 -0500
-From: German Rivera <German.Rivera@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755469AbaISCl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 22:41:28 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52472 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaISCl0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Sep 2014 22:41:26 -0400
+Message-ID: <541B97CD.60400@roeck-us.net>
+Date: Thu, 18 Sep 2014 19:41:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Kim Phillips <kim.phillips@freescale.com>,
-        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
-        "<arnd@arndb.de>" <arnd@arndb.de>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<stuart.yoder@freescale.com>" <stuart.yoder@freescale.com>,
-        "<scottwood@freescale.com>" <scottwood@freescale.com>,
-        "<linuxppc-release@linux.freescale.net>" 
-	<linuxppc-release@linux.freescale.net>
-Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
-References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com> <1410456864-27890-2-git-send-email-German.Rivera@freescale.com> <20140915184451.962a3a19c4940792d182f10a@freescale.com> <541A5CF1.8000409@freescale.com> <C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
-In-Reply-To: <C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Josh Cartwright <joshc@codeaurora.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+CC: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/3] watchdog: qcom: add support for KPSS WDT
+References: <cover.1411078425.git.joshc@codeaurora.org> <32d17907ad1dfdcafe4e76f33adc2ff22631cd28.1411078425.git.joshc@codeaurora.org>
+In-Reply-To: <32d17907ad1dfdcafe4e76f33adc2ff22631cd28.1411078425.git.joshc@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.88.168.50]
-X-ClientProxiedBy: DM2PR04CA042.namprd04.prod.outlook.com (10.141.154.160) To
- DM2PR03MB336.namprd03.prod.outlook.com (10.141.54.25)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB336;
-X-Forefront-PRVS: 0339F89554
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(51704005)(189002)(199003)(35774003)(377454003)(24454002)(479174003)(90102001)(42186005)(110136001)(80316001)(83072002)(47776003)(85306004)(23746002)(50466002)(65956001)(107046002)(86362001)(64706001)(65816999)(50986999)(92566001)(66066001)(93886004)(105586002)(92726001)(85852003)(95666004)(77096002)(87266999)(81542003)(33656002)(74662003)(102836001)(65806001)(54356999)(81342003)(99396002)(97736003)(64126003)(46102003)(76482002)(36756003)(106356001)(21056001)(31966008)(20776003)(76176999)(19580395003)(74502003)(77982003)(83506001)(83322001)(80022003)(87976001)(79102003)(4396001)(101416001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB336;H:[10.214.83.219];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-0.7
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.541B97D5.009A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 08:14 AM, Alexander Graf wrote:
+On 09/18/2014 03:26 PM, Josh Cartwright wrote:
+> Add a driver for the watchdog timer block found in the Krait Processor
+> Subsystem (KPSS) on the MSM8960, APQ8064, and IPQ8064.
+>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+
+Hi Josh,
+
+comments inline.
+
+Thanks,
+Guenter
+
+> ---
+>   drivers/watchdog/Kconfig    |  10 +++
+>   drivers/watchdog/Makefile   |   1 +
+>   drivers/watchdog/qcom-wdt.c | 145 ++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 156 insertions(+)
+>   create mode 100644 drivers/watchdog/qcom-wdt.c
+>
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 1d1330a..5ccb963 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -443,6 +443,16 @@ config TEGRA_WATCHDOG
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called tegra_wdt.
+>
+> +config QCOM_WDT
+> +	bool "QCOM watchdog"
+> +	depends on HAS_IOMEM
+> +	depends on ARCH_QCOM
+> +	select WATCHDOG_CORE
+> +	help
+> +	  Say Y here to include Watchdog timer support for the watchdog found
+> +	  on QCOM chipsets.  Currently supported targets are the MSM8960,
+> +	  APQ8064, and IPQ8064.
+> +
+>   # AVR32 Architecture
+>
+>   config AT32AP700X_WDT
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 468c320..d645448 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -57,6 +57,7 @@ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+>   obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+>   obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+>   obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+> +obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
+>   obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+>   obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+>
+> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
+> new file mode 100644
+> index 0000000..e9409f5
+> --- /dev/null
+> +++ b/drivers/watchdog/qcom-wdt.c
+> @@ -0,0 +1,145 @@
+> +/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +
+> +#define WDT_RST		0x0
+> +#define WDT_EN		0x8
+> +#define WDT_BITE_TIME	0x24
+> +
+> +struct qcom_wdt {
+> +	struct watchdog_device	wdd;
+> +	unsigned long		freq;
+> +	void __iomem		*base;
+> +};
+> +
+> +static inline
+> +struct qcom_wdt *to_qcom_wdt(struct watchdog_device *wdd)
+> +{
+> +	return container_of(wdd, struct qcom_wdt, wdd);
+> +}
+> +
+> +static int qcom_wdt_start(struct watchdog_device *wdd)
+> +{
+> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
+> +
+> +	writel(0, wdt->base + WDT_EN);
+> +	writel(1, wdt->base + WDT_RST);
+> +	writel(wdd->timeout * wdt->freq, wdt->base + WDT_BITE_TIME);
+> +	writel(1, wdt->base + WDT_EN);
+> +	return 0;
+> +}
+> +
+> +static int qcom_wdt_stop(struct watchdog_device *wdd)
+> +{
+> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
+> +
+> +	writel(0, wdt->base + WDT_EN);
+> +	return 0;
+> +}
+> +
+> +static int qcom_wdt_ping(struct watchdog_device *wdd)
+> +{
+> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
+> +
+> +	writel(1, wdt->base + WDT_RST);
+> +	return 0;
+> +}
+> +
+> +static int qcom_wdt_set_timeout(struct watchdog_device *wdd,
+> +				unsigned int timeout)
+> +{
+> +	wdd->timeout = timeout;
+> +	return qcom_wdt_start(wdd);
+> +}
+> +
+> +static const struct watchdog_ops qcom_wdt_ops = {
+> +	.start		= qcom_wdt_start,
+> +	.stop		= qcom_wdt_stop,
+> +	.ping		= qcom_wdt_ping,
+> +	.set_timeout	= qcom_wdt_set_timeout,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static const struct watchdog_info qcom_wdt_info = {
+> +	.options	= WDIOF_KEEPALIVEPING
+> +			| WDIOF_MAGICCLOSE
+> +			| WDIOF_SETTIMEOUT,
+> +	.identity	= KBUILD_MODNAME,
+> +};
+> +
+> +static int qcom_watchdog_probe(struct platform_device *pdev)
+> +{
+> +	struct qcom_wdt *wdt;
+> +	struct resource *res;
+> +	u32 tmp;
+> +	int ret;
+> +
+> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
+> +	if (!wdt)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, wdt);
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	wdt->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(wdt->base))
+> +		return PTR_ERR(wdt->base);
+> +
+> +	ret = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &tmp);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "unable to get clock-frequency\n");
+> +		return ret;
+> +	}
+> +
+
+You might want to use a clock property here, and the complete sequence of
+	devm_clk_get
+	clk_prepare_enable
+	clk_disable_unprepare
+	clk_get_rate
+
+> +	wdt->freq = tmp;
+> +
+> +	wdt->wdd.dev = &pdev->dev;
+> +	wdt->wdd.info = &qcom_wdt_info;
+> +	wdt->wdd.ops = &qcom_wdt_ops;
+> +	wdt->wdd.min_timeout = 1;
+> +	wdt->wdd.max_timeout = 0x10000000U / wdt->freq;
+
+As written, wdt->freq can be 0, which results in a nice division by zero here.
+
+> +	watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev);
+
+That leaves you with no default timeout if timeout-sec is not set in devicetree,
+which if I understand the code correctly might result in an immediate reset.
+Is this really what you want to happen ?
+
+> +
+> +	ret = watchdog_register_device(&wdt->wdd);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to register watchdog\n");
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id qcom_wdt_of_table[] = {
+> +	{ .compatible = "qcom,kpss-wdt-msm8960", },
+> +	{ .compatible = "qcom,kpss-wdt-apq8064", },
+> +	{ .compatible = "qcom,kpss-wdt-ipq8064", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, qcom_wdt_of_table);
+> +
+> +static struct platform_driver qcom_watchdog_driver = {
+> +	.probe	= qcom_watchdog_probe,
+
+No remove function ?
+
+Yes, you don't need it, because the driver can only be built into the kernel,
+but there is a practical impact: It means the driver must always be built
+into the kernel even if the image is supposed to be used on different systems,
+some of which may not support this specific watchdog.
+
+Sure, you might say that you don't care about images supporting more than one
+hardware, but the tendency seems to be multi-target images nowadays.
+
+> +	.driver	= {
+> +		.name		= KBUILD_MODNAME,
+> +		.of_match_table	= qcom_wdt_of_table,
+> +	},
+> +};
+> +module_platform_driver(qcom_watchdog_driver);
+> +
+> +MODULE_DESCRIPTION("QCOM KPSS Watchdog Driver");
+> +MODULE_LICENSE("GPL v2");
 >
 
->>>
->>>> +int __must_check fsl_create_mc_io(phys_addr_t mc_portal_phys_addr,
->>>> +                  uint32_t mc_portal_size,
->>>> +                  uint32_t flags, struct fsl_mc_io **new_mc_io)
->>>> +{
->>>> +    int error = -EINVAL;
->>>> +    struct fsl_mc_io *mc_io = NULL;
->>>> +
->>>> +    mc_io = kzalloc(sizeof(*mc_io), GFP_KERNEL);
->>>> +    if (mc_io == NULL) {
->>>> +        error = -ENOMEM;
->>>> +        pr_err("No memory to allocate mc_io\n");
->>>> +        goto error;
->>>> +    }
->>>> +
->>>> +    mc_io->magic = FSL_MC_IO_MAGIC;
->>>> +    mc_io->flags = flags;
->>>> +    mc_io->portal_phys_addr = mc_portal_phys_addr;
->>>> +    mc_io->portal_size = mc_portal_size;
->>>> +    spin_lock_init(&mc_io->spinlock);
->>>> +    error = map_mc_portal(mc_portal_phys_addr,
->>>> +                  mc_portal_size, &mc_io->portal_virt_addr);
->>>> +    if (error < 0)
->>>> +        goto error;
->>>> +
->>>> +    *new_mc_io = mc_io;
->>>> +    return 0;
->>>
->>> if a fn only returns an address or error, it can return ERR_PTR
->>> (e.g., -ENOMEM), and the callsite use IS_ERR() to determine whether
->>> there was an error or address returned.  This makes code much
->>> simpler instead of passing address values back by reference.
->> I disagree. I don't see why the alternative you suggest makes the code "much simpler".
->>
->>>> +error:
->>>> +    if (mc_io != NULL) {
->>>> +        if (mc_io->portal_virt_addr != NULL) {
->>>> +            unmap_mc_portal(mc_portal_phys_addr,
->>>> +                    mc_portal_size,
->>>> +                    mc_io->portal_virt_addr);
->>>> +        }
->>>> +
->>>> +        kfree(mc_io);
->>>
->>> kfree can handle being passed NULL, but again, might want to
->>> consider using devm_ functions instead.
->> No. We cannot use devm_ functions here as there is no device passed in.
->
-> Is it a good idea to lose your device context in any function? Whenever I dropped contexts in helper I usually ended up regretting it later ;).
->
-OK, I will add a dev param to this the fsl_mc_io_create() function, to
-enable the use of devm_ APIs.
-
->>>> +    if (mc_io->flags & FSL_MC_IO_PORTAL_SHARED) {
->>>> +        spin_lock_irqsave(&mc_io->spinlock, irqsave_flags);
->>>> +        lock_acquired = true;
->>>> +    }
->>>> +
->>>> +    mc_write_command(mc_io->portal_virt_addr, cmd);
->>>> +
->>>> +    for (;;) {
->>>> +        status = mc_read_response(mc_io->portal_virt_addr, cmd);
->>>> +        if (status != MC_CMD_STATUS_READY)
->>>> +            break;
->>>> +
->>>> +        /*
->>>> +         * TODO: When MC command completion interrupts are supported
->>>> +         * call wait function here instead of udelay()
->>>> +         */
->>>> +        udelay(MC_CMD_COMPLETION_POLLING_INTERVAL);
->>>> +        if (time_after_eq(jiffies, jiffies_until_timeout)) {
->>>> +            error = -ETIMEDOUT;
->>>> +            goto out;
->>>> +        }
->>>> +    }
->>>> +
->>>> +    error = mc_status_to_error(status);
->>>> +out:
->>>> +    if (lock_acquired)
->>>> +        spin_unlock_irqrestore(&mc_io->spinlock, irqsave_flags);
->>>
->>> so if the portal is shared, we take a lock, disable interrupts, and
->>> then potentially udelay for a whopping 500usec, then check to see if
->>> _100_usec have passed, and thus _always_ issue a timeout error, even
->>> if the device took < 100usec to consume the command???
->> That is not true. The 100 is in jiffies not in usec:
->
-> If you always wait for 100 jiffies, the timeout code suddenly depends on the HZ value which is kernel configuration, no? Wouldn't it be better to base the timeout on real wall time?
->
-I will change the value of the timeout to be a function of HZ instead of 
-a hard-coded jiffies value. Also, to avoid future confusion, I'll
-rename the timeout and delay macros to include their units:
-
-/**
-  * Timeout in jiffies to wait for the completion of an MC command
-  */
-#define MC_CMD_COMPLETION_TIMEOUT_JIFFIES   (HZ / 2)	/* 500 ms */
-
-/**
-  * Delay in microseconds between polling iterations while
-  * waiting for MC command completion
-  */
-#define MC_CMD_COMPLETION_POLLING_INTERVAL_USECS    500	/* 0.5 ms */
-
->>
->> /**
->> * Timeout in jiffies to wait for the completion of an MC command
->> */
->> #define MC_CMD_COMPLETION_TIMEOUT   100
->>
->> /**
->> * Delay in microseconds between polling iterations while
->> * waiting for MC command completion
->> */
->> #define MC_CMD_COMPLETION_POLLING_INTERVAL  500
->>
->>
->>> Not to mention this code will spin perpetually with IRQs disabled if
->>> the read_response never returns ready.  I also don't see a reason
->>> why IRQs are being disabled in the first place - it's not being used
->>> in an IRQ handler...perhaps we need to wait until command completion
->>> IRQs are supported :)
->> I agree that disabling interrupts while doing polling is not efficient. I was assuming the worst case scenario of sharing the portal: both
->> threads and interrupt handlers accessing the same portal at the same time. If only threads access the same portal, we don't need to disable interrupts and even further we can use a mutex instead of a spinlock.
->> If only interrupt handlers access a given portal (from multiple CPUs)
->> we have use a spinlock but we don't need to disabel interrupts.
->> If both threads and interrupt handlers access a given portal, then
->> we need to both use a spinlock and disable interrupts
->>
->> I will change synchronization logic in the v2 respin to avoid
->> disabling interrupts in the first two cases above.
->>
->>>> +/**
->>>> + * @brief    Management Complex firmware version information
->>>> + */
->>>> +#define MC_VER_MAJOR 2
->>>> +#define MC_VER_MINOR 0
->>>
->>> code should be adjusted to run on all *compatible* versions of h/w,
->>> not strictly the one set in these defines.
->> This comment is not precise enough be actionable.
->> What exactly you want to be changed  here?
->
-> I think the easy thing to do is to convert the exact version check into a ranged version check: have minimum and maximum versions you support. Or a list of exact versions you support. Or not check for the version at all - or only for the major version and guarantee that the major version indicates backwards compatibility.
->
-I will keep only the major version check and remove the minor version check.
-
->>
->>>> +/**
->>>> + * @brief    Disconnects one endpoint to remove its network link
->>>> + *
->>>> + * @param[in]   mc_io        Pointer to opaque I/O object
->>>> + * @param[in]    dprc_handle    Handle to the DPRC object
->>>> + * @param[in]   endpoint    Endpoint configuration parameters.
->>>> + *
->>>> + * @returns    '0' on Success; Error code otherwise.
->>>> + * */
->>>> +int dprc_disconnect(struct fsl_mc_io *mc_io, uint16_t dprc_handle,
->>>> +            struct dprc_endpoint *endpoint);
->>>> +
->>>> +/*! @} */
->>>
->>> this entire file is riddled with non-kernel-doc comment markers:  see
->>> Documentation/kernel-doc-nano-HOWTO.txt on how to write function and
->>> other types of comments in a kernel-doc compliant format.
->> This is because this file is using doxygen comments, as it was developed
->> by another team. Unless someone else has an objection, I will leave the doxygen comments alone and not make any change here.
->
-> Do you see any other source files in Linux using doxygen comments? Mixing different documentation styles can easily become a big mess, because you can't generate external documentation consistently for the whole tree.
->
->
-Stuart already answered this question.
-
-
-> Alex
->
