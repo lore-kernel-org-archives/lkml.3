@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067AbaISVIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 17:08:25 -0400
-Received: from mail-by2on0084.outbound.protection.outlook.com ([207.46.100.84]:30528
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757740AbaISVIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 17:08:24 -0400
-From: <dinguyen@opensource.altera.com>
-To: <a.zummo@towertech.it>
-CC: <dinh.linux@gmail.com>, <rtc-linux@googlegroups.com>,
-        <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCH] drivers/rtc/rtc-pcf8563.c: fix warning
-Date: Fri, 19 Sep 2014 16:04:40 -0500
-Message-ID: <1411160680-3869-1-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 2.0.3
+	id S1758078AbaISVIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 17:08:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51039 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757728AbaISVIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 17:08:42 -0400
+Date: Fri, 19 Sep 2014 16:08:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Take dwc2 driver through Felipe's tree?
+Message-ID: <20140919210837.GH19560@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <A2CA0424C0A6F04399FB9E1CD98E0304844D9D41@US01WEMBX2.internal.synopsys.com>
+ <20140919210150.GA25927@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BN1PR08CA0025.namprd08.prod.outlook.com (10.242.217.153) To
- BN3PR0301MB1188.namprd03.prod.outlook.com (25.160.156.15)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0339F89554
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(81542003)(74662003)(79102003)(50986999)(46102003)(101416001)(81342003)(104166001)(74502003)(80022003)(89996001)(102836001)(19580405001)(19580395003)(85852003)(92726001)(86152002)(92566001)(83072002)(86362001)(93916002)(88136002)(83322001)(31966008)(76482002)(77982003)(87976001)(50226001)(99396002)(69596002)(62966002)(4396001)(64706001)(81156004)(42186005)(110136001)(107046002)(77156001)(50466002)(53416004)(21056001)(20776003)(47776003)(66066001)(77096002)(95666004)(97736003)(90102001)(229853001)(106356001)(2351001)(33646002)(105586002)(48376002)(85306004)(87286001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1188;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="54u2kuW9sGWg/X+X"
+Content-Disposition: inline
+In-Reply-To: <20140919210150.GA25927@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
+--54u2kuW9sGWg/X+X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-drivers/rtc/rtc-pcf8563.c: In function pfc8563_irq:
-drivers/rtc/rtc-pcf8563.c:173:5: warning: pending may be used uninitialized
-in this function [-Wmaybe-uninitialized]
+On Fri, Sep 19, 2014 at 02:01:50PM -0700, gregkh@linuxfoundation.org wrote:
+> On Fri, Sep 19, 2014 at 08:52:07PM +0000, Paul Zimmerman wrote:
+> > Hi Greg,
+> >=20
+> > How would you feel about Felipe taking the dwc2 driver into his tree?
+> > There has been quite a bit of increased activity with dwc2 lately, and
+> > I know you already have more than enough stuff on your plate already.
+> > So this would mean one less thing for you to worry about. Plus it
+> > would mean an extra layer of review before getting to you.
+> >=20
+> > I've already talked to Felipe about it, and he's fine with it. If
+> > you're OK with it, I think I just need to send a patch adding a T:
+> > line to the MAINTAINERS entry, showing Felipe's tree?
+> >=20
+> > I guess we would want to do this just before you close your USB tree,
+> > and you could announce it then?
+>=20
+> No objection from me.  I'm working in my patch backlog right now, should
+> get through them by the end of the day, so feel free to send me a
+> MAINTAINERS patch I can use.
 
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
----
- drivers/rtc/rtc-pcf8563.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+alright, it's all set now. Starting on v3.18-rc, I'll start taking dwc2
+on my tree.
 
-diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
-index 5a197d9..29ba5e7 100644
---- a/drivers/rtc/rtc-pcf8563.c
-+++ b/drivers/rtc/rtc-pcf8563.c
-@@ -164,7 +164,7 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
- {
- 	struct pcf8563 *pcf8563 = i2c_get_clientdata(dev_id);
- 	int err;
--	char pending;
-+	char pending = 0;
- 
- 	err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
- 	if (err < 0)
--- 
-2.0.3
+--=20
+balbi
 
+--54u2kuW9sGWg/X+X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUHJtVAAoJEIaOsuA1yqREJA0P/0avMEDvcoScrX2WfRbTlyk+
+iUzfouvDvv5sFYzfg4z99zcmZrz4rGrmEMtwCpjzhbMPdv2KvTF6Go9B67z9ed6o
+BrvHCT1E6MlmV+balmYanyehWVkZUdBlngbJ79kpXCSqhKOTlNNr2XUn5abmgH7z
+CWYEcbncwxLQ79luq5mNC0PZjKK4DFvn1/yy7ATFKcNWjUIN0rk8JOaz30wM8hFF
+NHxvqvQiKu6HJe4mx8NsEkjfzJPSz8/6/tIsjlwAS9TdzaqdT5C/EzJsSxKfU+fa
+IztGUG6emAHMa3THLGgiJx5rUhlydADJJPcL8YFZdzc9n8PvsSuGvmcvyH3KXvxT
+yZvXc5Lu0QUTfW+qwfgh/yqVCUib5k30wLY6JOdhmxw6d74kC7o/FNeo3p0LDG9h
+g8Ghq53kAPTO+2gcGjOpHzr9mQU9wLCk/nbt+/n/sBrflPAjw1gExJOr981bNk84
++HRt++Nka0JAPUgw3R7mSz3ZPgOzzY5aMzVZ9A5qJWcrAgs2WfN3lYzA+nb2jK6C
+hJZKPz0ISlk4sb9dyrehf3xjz9JHx2YvfpDHQK2pnA+vgfAW+4R1AbcNaznj4lzq
+m+msDzTUb622sFGsRUY4R7mxeFkZrbeua2HgdRkwSunLdRqlTtWs+1VwXwwI7J+I
+3T462AX0/CSh3dhdFU4/
+=13Hb
+-----END PGP SIGNATURE-----
+
+--54u2kuW9sGWg/X+X--
