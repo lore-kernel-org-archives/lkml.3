@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162AbaISMDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:03:48 -0400
-Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:37739 "EHLO
-	smtp81.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755682AbaISMDq (ORCPT
+	id S1756253AbaISMEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:04:52 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:33780 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752300AbaISMEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:03:46 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: [PATCH] power: reset: use restart_notifier mechanism for msm poweroff
-Date: Fri, 19 Sep 2014 17:36:55 +0530
-Message-Id: <1411128415-20381-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 19 Sep 2014 08:04:51 -0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+To: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <87d2bdcask.wl%klamm@yandex-team.ru>
+References: <87d2bdcask.wl%klamm@yandex-team.ru>
+Subject: Re: [PATCH] net_dma: fix memory leak in dma_pin_iocvec_pages
+MIME-Version: 1.0
+Message-Id: <15011411128281@webcorp02h.yandex-team.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 19 Sep 2014 16:04:41 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change uses replaces use of arm_pm_restart with recently introduced
-reset mechanism in Linux kernel called restart_notifier.
+Ping?
 
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Josh Cartwright <joshc@codeaurora.org>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-pm@vger.kernel.org
-
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-
----
-
-This patch is tested on DB8074 Target and are based on patchset [1]
-by Guenter Roeck.
-
-[1]: https://patchwork.kernel.org/patch/4746721/
-
- drivers/power/reset/msm-poweroff.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
-index 774f9a3..59b368c 100644
---- a/drivers/power/reset/msm-poweroff.c
-+++ b/drivers/power/reset/msm-poweroff.c
-@@ -24,17 +24,21 @@
- #include <asm/system_misc.h>
- 
- static void __iomem *msm_ps_hold;
-+static struct notifier_block restart_nb;
- 
--static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static int do_msm_restart(struct notifier_block *nb, unsigned long action,
-+			   void *data)
- {
- 	writel(0, msm_ps_hold);
- 	mdelay(10000);
-+
-+	return NOTIFY_DONE;
- }
- 
- static void do_msm_poweroff(void)
- {
- 	/* TODO: Add poweroff capability */
--	do_msm_restart(REBOOT_HARD, NULL);
-+	do_msm_restart(&restart_nb, 0, NULL);
- }
- 
- static int msm_restart_probe(struct platform_device *pdev)
-@@ -47,8 +51,16 @@ static int msm_restart_probe(struct platform_device *pdev)
- 	if (IS_ERR(msm_ps_hold))
- 		return PTR_ERR(msm_ps_hold);
- 
-+	restart_nb.notifier_call = do_msm_restart;
-+	restart_nb.priority = 128;
-+	if (register_restart_handler(&restart_nb)) {
-+		dev_err(&pdev->dev,
-+			"failed to setup restart handler.\n");
-+			restart_nb.notifier_call = NULL;
-+	}
-+
- 	pm_power_off = do_msm_poweroff;
--	arm_pm_restart = do_msm_restart;
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
+03.09.2014, 13:38, "Roman Gushchin" <klamm@yandex-team.ru>:
+> šdma_pin_iovec_pages() calls get_user_pages() for each iovec. If
+> šget_user_pages() returns a number smaller than the requested number,
+> šdma_pin_iovec_pages() calls dma_unpin_iovec_pages(). It releases
+> špreviously allocated iovecs, but pages pinned by last get_user_pages()
+> šcall remain unreleased.
+> šFix this by calling put_page() for each such page.
+>
+> šSigned-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> š---
+> ššdrivers/dma/iovlock.c | 5 ++++-
+> šš1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> šdiff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
+> šindex bb48a57..c393cf9 100644
+> š--- a/drivers/dma/iovlock.c
+> š+++ b/drivers/dma/iovlock.c
+> š@@ -107,8 +107,11 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
+> ššššššššššššššššššššššššššNULL);
+> ššššššššššššššššššup_read(&current->mm->mmap_sem);
+>
+> š- if (ret != page_list->nr_pages)
+> š+ if (ret != page_list->nr_pages) {
+> š+ for (i = 0; i < ret; i++)
+> š+ put_page(page_list->pages[i]);
+> ššššššššššššššššššššššššššgoto unpin;
+> š+ }
+>
+> ššššššššššššššššššlocal_list->nr_iovecs = i + 1;
+> šššššššššš}
+> š--
+> š1.9.3
+>
+> š--
+> šTo unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> šthe body of a message to majordomo@vger.kernel.org
+> šMore majordomo info at šhttp://vger.kernel.org/majordomo-info.html
+> šPlease read the FAQ at šhttp://www.tux.org/lkml/
