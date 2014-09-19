@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524AbaISMdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:33:24 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:40274 "EHLO
+	id S1756327AbaISMim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:38:42 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:26037 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398AbaISMdX (ORCPT
+	with ESMTP id S1751829AbaISMik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:33:23 -0400
-Message-ID: <541C228F.70207@atmel.com>
-Date: Fri, 19 Sep 2014 14:33:19 +0200
+	Fri, 19 Sep 2014 08:38:40 -0400
+Message-ID: <541C23CB.9060208@atmel.com>
+Date: Fri, 19 Sep 2014 14:38:35 +0200
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 Organization: atmel
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 1/7] clk: at91: add a driver for the h32mx clock
-References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com> <1410797759-18675-2-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1410797759-18675-2-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCHv3 7/7] ARM: at91: document Atmel SMART compatibles
+References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com> <1410797759-18675-8-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1410797759-18675-8-git-send-email-alexandre.belloni@free-electrons.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
@@ -30,266 +29,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 15/09/2014 18:15, Alexandre Belloni :
-> Newer SoCs have two different AHB interconnect. The AHB 32 bits Matrix
-> interconnect (h32mx) has a clock that can be setup at the half of the h64mx
-> clock (which is mck). The h32mx clock can not exceed 90 MHz.
+> Document all the available compatibles for Atmel "SMART" SoCs.
 > 
 > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Okay on my side:
-
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
+Thanks
 
 > ---
-> Cc:Mike Turquette <mturquette@linaro.org>
-
-Mike,
-
-I guess that you didn't get this v3. Can you "Ack" this one of should we
-re-sent to you?
-
-I would like to take this patch with the rest of the SAMA5D4 series: is
-it okay for you?
-
-Bye,
-
-
->  .../devicetree/bindings/clock/at91-clock.txt       |  15 +++
->  arch/arm/mach-at91/Kconfig                         |   3 +
->  drivers/clk/at91/Makefile                          |   1 +
->  drivers/clk/at91/clk-h32mx.c                       | 123 +++++++++++++++++++++
->  drivers/clk/at91/pmc.c                             |   6 +
->  drivers/clk/at91/pmc.h                             |   5 +
->  include/linux/clk/at91_pmc.h                       |   1 +
->  7 files changed, 154 insertions(+)
->  create mode 100644 drivers/clk/at91/clk-h32mx.c
+>  .../devicetree/bindings/arm/atmel-at91.txt         | 37 ++++++++++++++++++++++
+>  1 file changed, 37 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> index b3d544ca522a..40dc2405de7c 100644
-> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> @@ -74,6 +74,9 @@ Required properties:
->  	"atmel,at91sam9x5-clk-utmi":
->  		at91 utmi clock
+> diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> index 6e3e3e5c611f..562cda9d86d9 100644
+> --- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> +++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> @@ -1,6 +1,43 @@
+>  Atmel AT91 device tree bindings.
+>  ================================
 >  
-> +	"atmel,sama5d4-clk-h32mx":
-> +		at91 h32mx clock
+> +Boards with a SoC of the Atmel AT91 or SMART family shall have the following
+> +properties:
 > +
->  Required properties for SCKC node:
->  - reg : defines the IO memory reserved for the SCKC.
->  - #size-cells : shall be 0 (reg is used to encode clk id).
-> @@ -447,3 +450,15 @@ For example:
->  		#clock-cells = <0>;
->  		clocks = <&main>;
->  	};
+> +Required root node properties:
+> +compatible: must be one of:
+> + * "atmel,at91rm9200"
 > +
-> +Required properties for 32 bits bus Matrix clock (h32mx clock):
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall be the master clock source phandle.
+> + * "atmel,at91sam9" for SoCs using an ARM926EJ-S core, shall be extended with
+> +   the specific SoC family or compatible:
+> +    o "atmel,at91sam9260"
+> +    o "atmel,at91sam9261"
+> +    o "atmel,at91sam9263"
+> +    o "atmel,at91sam9x5" for the 5 series, shall be extended with the specific
+> +      SoC compatible:
+> +       - "atmel,at91sam9g15"
+> +       - "atmel,at91sam9g25"
+> +       - "atmel,at91sam9g35"
+> +       - "atmel,at91sam9x25"
+> +       - "atmel,at91sam9x35"
+> +    o "atmel,at91sam9g20"
+> +    o "atmel,at91sam9g45"
+> +    o "atmel,at91sam9n12"
+> +    o "atmel,at91sam9rl"
+> + * "atmel,sama5" for SoCs using a Cortex-A5, shall be extended with the specific
+> +   SoC family:
+> +    o "atmel,sama5d3" shall be extended with the specific SoC compatible:
+> +       - "atmel,sama5d31"
+> +       - "atmel,sama5d33"
+> +       - "atmel,sama5d34"
+> +       - "atmel,sama5d35"
+> +       - "atmel,sama5d36"
+> +    o "atmel,sama5d4" shall be extended with the specific SoC compatible:
+> +       - "atmel,sama5d41"
+> +       - "atmel,sama5d42"
+> +       - "atmel,sama5d43"
+> +       - "atmel,sama5d44"
 > +
-> +For example:
-> +	h32ck: h32mxck {
-> +		#clock-cells = <0>;
-> +		compatible = "atmel,sama5d4-clk-h32mx";
-> +		clocks = <&mck>;
-> +	};
-> +
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 6eb3c658761d..fd177956dd56 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -39,6 +39,9 @@ config AT91_SAM9_TIME
->  config HAVE_AT91_SMD
->  	bool
->  
-> +config HAVE_AT91_H32MX
-> +	bool
-> +
->  config SOC_AT91SAM9
->  	bool
->  	select AT91_SAM9_TIME
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> index 4998aee59267..89a48a7bd5df 100644
-> --- a/drivers/clk/at91/Makefile
-> +++ b/drivers/clk/at91/Makefile
-> @@ -9,3 +9,4 @@ obj-y += clk-system.o clk-peripheral.o clk-programmable.o
->  obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
->  obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
->  obj-$(CONFIG_HAVE_AT91_SMD)		+= clk-smd.o
-> +obj-$(CONFIG_HAVE_AT91_H32MX)		+= clk-h32mx.o
-> diff --git a/drivers/clk/at91/clk-h32mx.c b/drivers/clk/at91/clk-h32mx.c
-> new file mode 100644
-> index 000000000000..152dcb3f7b5f
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-h32mx.c
-> @@ -0,0 +1,123 @@
-> +/*
-> + * clk-h32mx.c
-> + *
-> + *  Copyright (C) 2014 Atmel
-> + *
-> + * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91_pmc.h>
-> +#include <linux/delay.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/sched.h>
-> +#include <linux/wait.h>
-> +
-> +#include "pmc.h"
-> +
-> +#define H32MX_MAX_FREQ	90000000
-> +
-> +struct clk_sama5d4_h32mx {
-> +	struct clk_hw hw;
-> +	struct at91_pmc *pmc;
-> +};
-> +
-> +#define to_clk_sama5d4_h32mx(hw) container_of(hw, struct clk_sama5d4_h32mx, hw)
-> +
-> +static unsigned long clk_sama5d4_h32mx_recalc_rate(struct clk_hw *hw,
-> +						 unsigned long parent_rate)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
-> +
-> +	if (pmc_read(h32mxclk->pmc, AT91_PMC_MCKR) & AT91_PMC_H32MXDIV)
-> +		return parent_rate / 2;
-> +
-> +	if (parent_rate > H32MX_MAX_FREQ)
-> +		pr_warn("H32MX clock is too fast\n");
-> +	return parent_rate;
-> +}
-> +
-> +static long clk_sama5d4_h32mx_round_rate(struct clk_hw *hw, unsigned long rate,
-> +				       unsigned long *parent_rate)
-> +{
-> +	unsigned long div;
-> +
-> +	if (rate > *parent_rate)
-> +		return *parent_rate;
-> +	div = *parent_rate / 2;
-> +	if (rate < div)
-> +		return div;
-> +
-> +	if (rate - div < *parent_rate - rate)
-> +		return div;
-> +
-> +	return *parent_rate;
-> +}
-> +
-> +static int clk_sama5d4_h32mx_set_rate(struct clk_hw *hw, unsigned long rate,
-> +				    unsigned long parent_rate)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
-> +	struct at91_pmc *pmc = h32mxclk->pmc;
-> +	u32 tmp;
-> +
-> +	if (parent_rate != rate && (parent_rate / 2) != rate)
-> +		return -EINVAL;
-> +
-> +	pmc_lock(pmc);
-> +	tmp = pmc_read(pmc, AT91_PMC_MCKR) & ~AT91_PMC_H32MXDIV;
-> +	if ((parent_rate / 2) == rate)
-> +		tmp |= AT91_PMC_H32MXDIV;
-> +	pmc_write(pmc, AT91_PMC_MCKR, tmp);
-> +	pmc_unlock(pmc);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct clk_ops h32mx_ops = {
-> +	.recalc_rate = clk_sama5d4_h32mx_recalc_rate,
-> +	.round_rate = clk_sama5d4_h32mx_round_rate,
-> +	.set_rate = clk_sama5d4_h32mx_set_rate,
-> +};
-> +
-> +void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
-> +				     struct at91_pmc *pmc)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk;
-> +	struct clk_init_data init;
-> +	const char *parent_name;
-> +	struct clk *clk;
-> +
-> +	h32mxclk = kzalloc(sizeof(*h32mxclk), GFP_KERNEL);
-> +	if (!h32mxclk)
-> +		return;
-> +
-> +	parent_name = of_clk_get_parent_name(np, 0);
-> +
-> +	init.name = np->name;
-> +	init.ops = &h32mx_ops;
-> +	init.parent_names = parent_name ? &parent_name : NULL;
-> +	init.num_parents = parent_name ? 1 : 0;
-> +	init.flags = CLK_SET_RATE_GATE;
-> +
-> +	h32mxclk->hw.init = &init;
-> +	h32mxclk->pmc = pmc;
-> +
-> +	clk = clk_register(NULL, &h32mxclk->hw);
-> +	if (!clk)
-> +		return;
-> +
-> +	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> index 524196bb35a5..386999b4f8eb 100644
-> --- a/drivers/clk/at91/pmc.c
-> +++ b/drivers/clk/at91/pmc.c
-> @@ -337,6 +337,12 @@ static const struct of_device_id pmc_clk_ids[] __initconst = {
->  		.data = of_at91sam9x5_clk_smd_setup,
->  	},
->  #endif
-> +#if defined(CONFIG_HAVE_AT91_H32MX)
-> +	{
-> +		.compatible = "atmel,sama5d4-clk-h32mx",
-> +		.data = of_sama5d4_clk_h32mx_setup,
-> +	},
-> +#endif
->  	{ /*sentinel*/ }
->  };
->  
-> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-> index 6c7625976113..52d2041fa3f6 100644
-> --- a/drivers/clk/at91/pmc.h
-> +++ b/drivers/clk/at91/pmc.h
-> @@ -120,4 +120,9 @@ extern void __init of_at91sam9x5_clk_smd_setup(struct device_node *np,
->  					       struct at91_pmc *pmc);
->  #endif
->  
-> +#if defined(CONFIG_HAVE_AT91_SMD)
-> +extern void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
-> +					      struct at91_pmc *pmc);
-> +#endif
-> +
->  #endif /* __PMC_H_ */
-> diff --git a/include/linux/clk/at91_pmc.h b/include/linux/clk/at91_pmc.h
-> index de4268d4987a..c8e3b3d1eded 100644
-> --- a/include/linux/clk/at91_pmc.h
-> +++ b/include/linux/clk/at91_pmc.h
-> @@ -125,6 +125,7 @@ extern void __iomem *at91_pmc_base;
->  #define		AT91_PMC_PLLADIV2	(1 << 12)		/* PLLA divisor by 2 [some SAM9 only] */
->  #define			AT91_PMC_PLLADIV2_OFF		(0 << 12)
->  #define			AT91_PMC_PLLADIV2_ON		(1 << 12)
-> +#define		AT91_PMC_H32MXDIV	BIT(24)
->  
->  #define	AT91_PMC_USB		0x38			/* USB Clock Register [some SAM9 only] */
->  #define		AT91_PMC_USBS		(0x1 <<  0)		/* USB OHCI Input clock selection */
+>  PIT Timer required properties:
+>  - compatible: Should be "atmel,at91sam9260-pit"
+>  - reg: Should contain registers location and length
 > 
 
 
