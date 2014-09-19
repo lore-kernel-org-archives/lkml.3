@@ -1,72 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603AbaISMm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:42:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43553 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107AbaISMm6 convert rfc822-to-8bit (ORCPT
+	id S1756694AbaISMoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:44:04 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:52709 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752300AbaISMoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:42:58 -0400
-Message-ID: <541C24EC.1080200@arm.com>
-Date: Fri, 19 Sep 2014 13:43:24 +0100
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 19 Sep 2014 08:44:02 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <541C25E5.6080601@smartplayin.com>
+Date: Fri, 19 Sep 2014 18:17:33 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        "peterz@infradead.org" <peterz@infradead.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "raistlin@linux.it" <raistlin@linux.it>,
-        "michael@amarulasolutions.com" <michael@amarulasolutions.com>,
-        "fchecconi@gmail.com" <fchecconi@gmail.com>,
-        "vincent@legout.info" <vincent@legout.info>,
-        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] sched/deadline: clear dl_entity params when setscheduling
- to different class
-References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com> <1411118561-26323-2-git-send-email-juri.lelli@arm.com> <541C171E.6080900@bmw-carit.de>
-In-Reply-To: <541C171E.6080900@bmw-carit.de>
-X-OriginalArrivalTime: 19 Sep 2014 12:42:54.0367 (UTC) FILETIME=[3B699AF0:01CFD407]
-X-MC-Unique: 114091913425501401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Wim Van Sebroeck <wim@iguana.be>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] watchdog: qcom: register a restart notifier
+References: <cover.1411078425.git.joshc@codeaurora.org> <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
+In-Reply-To: <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Josh,
 
-On 19/09/14 12:44, Daniel Wagner wrote:
-> Hi,
+Tested this patch on IFC6410 by disabling pinctrl ps_hold reset
+implementation and on top of Guenter's patchset for restart_notifier.
+
+Tested-by: pramod.gurav@smartplayin.com
+
+I picked up DT changes from bindings as they are from this patchset.
+
+Thanks
+Pramod
+On Friday 19 September 2014 03:57 AM, Josh Cartwright wrote:
+> The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
+> resort mechanism for triggering chip reset.  Usually, other restart
+> methods (such as PS_HOLD) are preferrable for issuing a more complete
+> reset of the chip.  As such, keep the priority of the watchdog notifier
+> low.
 > 
-> On 09/19/2014 11:22 AM, Juri Lelli wrote:
->> When a task is using SCHED_DEADLINE and the user setschedules it to a different
->> class its sched_dl_entity static parameters are not cleaned up. This causes a
->> bug if the user sets it back to SCHED_DEADLINE with the same parameters again.
->> The problem resides in the check we perform at the very beginning of
->> dl_overflow():
->>
->> 	if (new_bw == p->dl.dl_bw)
->> 		return 0;
->>
->> This condition is met in the case depicted above, so the function returns and
->> dl_b->total_bw is not updated (the p->dl.dl_bw is not added to it). After this,
->> admission control is broken.
->>
->> This patch fixes the thing, properly clearing static parameters for a task
->> that ceases to use SCHED_DEADLINE.
->>
->> Reported-by: Daniele Alessandrelli <daniele.alessandrelli@gmail.com>
->> Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> ---
+>  drivers/watchdog/qcom-wdt.c | 31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
 > 
-> Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
+> index e9409f5..710ab43 100644
+> --- a/drivers/watchdog/qcom-wdt.c
+> +++ b/drivers/watchdog/qcom-wdt.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/reboot.h>
+>  #include <linux/watchdog.h>
+>  
+>  #define WDT_RST		0x0
+> @@ -24,6 +25,7 @@
+>  struct qcom_wdt {
+>  	struct watchdog_device	wdd;
+>  	unsigned long		freq;
+> +	struct notifier_block	restart_nb;
+>  	void __iomem		*base;
+>  };
+>  
+> @@ -82,6 +84,24 @@ static const struct watchdog_info qcom_wdt_info = {
+>  	.identity	= KBUILD_MODNAME,
+>  };
+>  
+> +static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
+> +			    void *data)
+> +{
+> +	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
+> +
+> +	/*
+> +	 * Trigger watchdog bite:
+> +	 *    Setup BITE_TIME to be very low, and enable WDT.
+> +	 */
+> +	mutex_lock(&wdt->wdd.lock);
+> +	writel_relaxed(0, wdt->base + WDT_EN);
+> +	writel_relaxed(1, wdt->base + WDT_RST);
+> +	writel_relaxed(0x31F3, wdt->base + WDT_BITE_TIME);
+> +	writel_relaxed(1, wdt->base + WDT_EN);
+> +	mutex_unlock(&wdt->wdd.lock);
+> +	return NOTIFY_DONE;
+> +}
+> +
+>  static int qcom_watchdog_probe(struct platform_device *pdev)
+>  {
+>  	struct qcom_wdt *wdt;
+> @@ -121,6 +141,17 @@ static int qcom_watchdog_probe(struct platform_device *pdev)
+>  		return ret;
+>  	}
+>  
+> +	/*
+> +	 * WDT restart notifier has priority 0 (use as a last resort)
+> +	 */
+> +	wdt->restart_nb.notifier_call = qcom_wdt_restart;
+> +	ret = register_restart_handler(&wdt->restart_nb);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to setup restart handler\n");
+> +		watchdog_unregister_device(&wdt->wdd);
+> +		return ret;
+> +	}
+> +
+>  	return 0;
+>  }
+>  
 > 
-> Fixes my problem.
-> 
-
-Great! Thanks for testing it.
-
-Best,
-
-- Juri
-
