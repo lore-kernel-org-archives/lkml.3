@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406AbaISU4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:56:22 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:64508 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757848AbaISU4T (ORCPT
+	id S932421AbaISU6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:58:06 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37593 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaISU6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:56:19 -0400
-Date: Fri, 19 Sep 2014 14:56:13 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH v11 04/10] PCI: OF: Fix the conversion of IO ranges into
- IO resources.
-Message-ID: <20140919205613.GG19374@google.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-5-git-send-email-Liviu.Dudau@arm.com>
+	Fri, 19 Sep 2014 16:58:04 -0400
+X-Originating-IP: 173.246.103.110
+Date: Fri, 19 Sep 2014 13:57:54 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] rcu: Change use of __this_cpu ops on a bool type
+Message-ID: <20140919205754.GE26432@jtriplet-mobl1>
+References: <1411147563-9136-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411003825-21521-5-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1411147563-9136-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 02:30:19AM +0100, Liviu Dudau wrote:
-> The ranges property for a host bridge controller in DT describes
-> the mapping between the PCI bus address and the CPU physical address.
-> The resources framework however expects that the IO resources start
-> at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
-> The conversion from pci ranges to resources failed to take that into account.
+On Fri, Sep 19, 2014 at 01:26:03PM -0400, Pranith Kumar wrote:
+> __this_cpu_{read/write}() uses sizeof() to determine the size of the variable.
+> Using this operation on a bool type causes sparse to complain.
 > 
-> In the process move the function into drivers/of/address.c as it now
-> depends on pci_address_to_pio() code and make it return an error code.
+> I checked the generated code and there is only a slight difference in
+> instructions generated.
+> 
+> I am not sure this warning by sparse is really valid, but let us silence it
+> anyways.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-I think you're talking about of_pci_range_to_resource().  Can you split
-this into one patch that moves it from of_address.h to of/address.c without
-changing its functionality, and a second one that does the actual change?
+I believe this warning was actually fixed with current versions of
+Sparse; there was some discussion and a patch on the linux-sparse
+mailing list.  Can you please recheck with the latest Sparse from git,
+and if it still breaks, please raise that on linux-sparse?
 
-Bjorn
+>  kernel/rcu/tree.c        | 12 ++++++++----
+>  kernel/rcu/tree_plugin.h |  6 ++++--
+>  2 files changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index bc085e5..85f228a 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -186,21 +186,25 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
+>   */
+>  void rcu_sched_qs(void)
+>  {
+> -	if (!__this_cpu_read(rcu_sched_data.passed_quiesce)) {
+> +	struct rcu_data *rdp = __this_cpu_ptr(&rcu_sched_data);
+> +
+> +	if (!rdp->passed_quiesce) {
+>  		trace_rcu_grace_period(TPS("rcu_sched"),
+>  				       __this_cpu_read(rcu_sched_data.gpnum),
+>  				       TPS("cpuqs"));
+> -		__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
+> +		rdp->passed_quiesce = true;
+>  	}
+>  }
+>  
+>  void rcu_bh_qs(void)
+>  {
+> -	if (!__this_cpu_read(rcu_bh_data.passed_quiesce)) {
+> +	struct rcu_data *rdp = __this_cpu_ptr(&rcu_bh_data);
+> +
+> +	if (!rdp->passed_quiesce) {
+>  		trace_rcu_grace_period(TPS("rcu_bh"),
+>  				       __this_cpu_read(rcu_bh_data.gpnum),
+>  				       TPS("cpuqs"));
+> -		__this_cpu_write(rcu_bh_data.passed_quiesce, 1);
+> +		rdp->passed_quiesce = true;
+>  	}
+>  }
+>  
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 77f9376..98de303 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -143,11 +143,13 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
+>   */
+>  static void rcu_preempt_qs(void)
+>  {
+> -	if (!__this_cpu_read(rcu_preempt_data.passed_quiesce)) {
+> +	struct rcu_data *rdp = __this_cpu_ptr(&rcu_preempt_data);
+> +
+> +	if (!rdp->passed_quiesce) {
+>  		trace_rcu_grace_period(TPS("rcu_preempt"),
+>  				       __this_cpu_read(rcu_preempt_data.gpnum),
+>  				       TPS("cpuqs"));
+> -		__this_cpu_write(rcu_preempt_data.passed_quiesce, 1);
+> +		rdp->passed_quiesce = true;
+>  		barrier(); /* Coordinate with rcu_preempt_check_callbacks(). */
+>  		current->rcu_read_unlock_special.b.need_qs = false;
+>  	}
+> -- 
+> 2.1.0
+> 
