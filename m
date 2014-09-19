@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403AbaISMaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:30:25 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15273 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085AbaISMaX (ORCPT
+	id S1756651AbaISMbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:31:04 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:59846 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107AbaISMbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:30:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 19 Sep 2014 05:31:02 -0700
-Date: Fri, 19 Sep 2014 15:30:20 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Fri, 19 Sep 2014 08:31:02 -0400
+Date: Fri, 19 Sep 2014 14:30:56 +0200
+From: Robert Richter <rric@kernel.org>
+To: Andrew Bresticker <abrestic@google.com>
+Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Marek <mmarek@suse.cz>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: pull request for Tegra clock updates for 3.18
-Message-ID: <20140919123020.GA12341@tbergstrom-lnx.Nvidia.com>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>
+Subject: Re: [PATCH 0/6] dts, kbuild: Implement support for dtb vendor subdirs
+Message-ID: <20140919123056.GC20170@rric.localhost>
+References: <1409899692-1455-1-git-send-email-rric@kernel.org>
+ <CAL1qeaGCeRyeKLo70E264bZcamOfBKoN9Y8_NDCjV5j4DoOw1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAL1qeaGCeRyeKLo70E264bZcamOfBKoN9Y8_NDCjV5j4DoOw1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+On 16.09.14 20:49:18, Andrew Bresticker wrote:
 
-A few fixes to enable PLL_M scaling for Tegra124 and improved error handling
-for clock initialization.
+> > Robert Richter (6):
+> >   dts, arm64: Add dtbs_install make target
+> >   dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
+> >   dts, arm/arm64: Remove dtbs build rules in sub-makes
+> >   dts, kbuild: Implement support for dtb vendor subdirs
+> >   dts, arm64: Move dts files to vendor subdirs
+> >   dts, arm: Remove $(MACHINE) variable from dtbs make recipes
+> 
+> I've tested this for arm64 and by adding a vendor sub-directory
+> locally for arm.  This series is also the base for my MIPS DT vendor
+> sub-directory series
+> (http://www.linux-mips.org/archives/linux-mips/2014-09/msg00217.html).
+> So, for the entire series,
+> 
+> Tested-by: Andrew Bresticker <abrestic@chromium.org>
+
+Andrew, thanks for testing and great this also works on mips.
+
+Anyone willing to take the patches for 3.18? Are any further acks
+needed?
 
 Thanks,
 
-Peter.
-
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
-
-  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
-
-are available in the git repository at:
-  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-3.18
-
-Mikko Perttunen (2):
-      ARM: tegra: Add PLL_M_UD and PLL_C_UD to tegra124-car binding header
-      clk: tegra124: Add PLL_M_UD and PLL_C_UD clocks
-
-Tomeu Vizoso (1):
-      clk: tegra: Make clock initialization more robust
-
- drivers/clk/tegra/clk-tegra124.c         |    8 ++++++++
- drivers/clk/tegra/clk.c                  |    9 +++++++--
- include/dt-bindings/clock/tegra124-car.h |    6 +++++-
- 3 files changed, 20 insertions(+), 3 deletions(-)
+-Robert
