@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaISFbc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:31:32 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:56930 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaISFba (ORCPT
+	id S1752464AbaISFtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:49:39 -0400
+Received: from regular1.263xmail.com ([211.150.99.131]:39512 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaISFtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:31:30 -0400
-Date: Thu, 18 Sep 2014 23:31:26 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: linux-pci@vger.kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
-        dougthompson@xmission.com, bp@alien8.de, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] pci_ids: Add PCI device IDs for F15h M60h
-Message-ID: <20140919053126.GC21128@google.com>
-References: <1411070195-10177-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411070195-10177-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Sep 2014 01:49:36 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <de5f4c84a5559b43647031a00a2a203a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v3 0/5] Add drm driver for Rockchip Socs
+Date: Fri, 19 Sep 2014 13:47:43 +0800
+Message-Id: <1411105668-32722-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 02:56:35PM -0500, Aravind Gopalakrishnan wrote:
-> Add F3, F4 device IDs to be used in amd_nb.c and amd64_edac.c
-> 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices, eDP. Future patches will add additional encoders/connectors,
+such as HDMI.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-Please merge this along with the rest of your series.
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- use panel-simple driver for primary display.
+- add vop and edp reset.
 
-> ---
->  include/linux/pci_ids.h | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index aa0d390..6a2a72a 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -522,6 +522,8 @@
->  #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
->  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
->  #define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
-> +#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F3 0x1573
-> +#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F4 0x1574
->  #define PCI_DEVICE_ID_AMD_15H_NB_F0	0x1600
->  #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
->  #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
-> -- 
-> 2.0.2
-> 
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
+
+Tested on rk3288 pinky board, use eDP encoders/connector, boot and display OK
+
+Mark yao (5):
+  drm/rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+  dt-bindings: video: Add documentation for rockchip edp
+  drm/rockchip: Add support for Rockchip Soc EDP
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-edp.txt     |   50 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   28 +
+ drivers/gpu/drm/rockchip/Makefile                  |   12 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  502 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |  120 ++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  231 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  405 ++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   76 ++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1387 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  187 +++
+ drivers/gpu/drm/rockchip/rockchip_edp_core.c       |  853 ++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_edp_core.h       |  309 +++++
+ drivers/gpu/drm/rockchip/rockchip_edp_reg.c        | 1202 +++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_edp_reg.h        |  345 +++++
+ include/uapi/drm/rockchip_drm.h                    |   97 ++
+ 22 files changed, 6133 insertions(+)
+
+-- 
+1.7.9.5
+
+
