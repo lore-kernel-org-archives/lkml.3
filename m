@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556AbaISHOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 03:14:07 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:55103 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbaISHOE (ORCPT
+	id S1757408AbaISHRI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 03:17:08 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:52086 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753906AbaISHRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 03:14:04 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Fri, 19 Sep 2014 09:11:39 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] gpio: add support for the Diolan DLN-2 USB GPIO
- driver
-Message-ID: <20140919071139.GE26817@localhost>
-References: <1410290686-6680-1-git-send-email-octavian.purdila@intel.com>
- <1410290686-6680-4-git-send-email-octavian.purdila@intel.com>
- <20140918105458.GA2337@localhost>
- <CAE1zot+_hX6TVkW-B6H9NzgyLhF54oQJZt+x_xXGjEB6A5dAZA@mail.gmail.com>
- <20140918124611.GA26817@localhost>
- <CAE1zotK7nb6VVp5a3n2_fnWZQHfizg4hFFy-ZVW5fzyFwmBMcA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE1zotK7nb6VVp5a3n2_fnWZQHfizg4hFFy-ZVW5fzyFwmBMcA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 19 Sep 2014 03:17:07 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: peterhuewe@gmx.de, ashley@ashleylai.com, tpmdd@selhorst.net
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kiran.padwal21@gmail.com, Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH] char: tpm: Add missing error check for devm_kzalloc
+Date: Fri, 19 Sep 2014 12:44:39 +0530
+Message-Id: <1411110879-4106-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 06:54:34PM +0300, Octavian Purdila wrote:
-> On Thu, Sep 18, 2014 at 3:46 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Thu, Sep 18, 2014 at 03:43:07PM +0300, Octavian Purdila wrote:
-> >> On Thu, Sep 18, 2014 at 1:54 PM, Johan Hovold <johan@kernel.org> wrote:
-> >> > On Tue, Sep 09, 2014 at 10:24:46PM +0300, Octavian Purdila wrote:
-> >
-> >> > Either way, it looks like this could race with get_direction() if you
-> >> > get a set_direction() while get_direction() is retrieving the direction
-> >> > from the device.
-> >> >
-> >> > This would break gpio_get().
-> >> >
-> >> I don't think gpio_set_direction() and gpio_get() are allowed to race.
-> >
-> > I wrote that set_direction() and get_direction() could race, which in
-> > turn would break gpio_get() as you would be caching the wrong
-> > direction setting.
-> >
-> 
-> OK, I now see the problem. I think doing this in get_direction() will
-> fix the issue:
-> 
->                 if (!test_and_set_bit(offset, dln2->pin_dir_set))
->                         set/clear_bit(offset, dln2->pin_dir);
-> 
-> because gpiolib calls get_direction() while requesting a pin and
-> request cannot race with itself. Which means that get_direction() can
-> not race with itself the first time it is called, when the set/clear
-> operation will be run.
-> 
-> And because we know that get_direction() is called first, we can even
-> remove the set/clear operation from set_direction().
+Currently these driver are missing a check on the return value of devm_kzalloc,
+which would cause a NULL pointer dereference in a OOM situation.
 
-Why not simply fetch the direction in request() and get rid of the
-pin_dir_set bitmask?
+This patch adds a missing check for tpm_i2c_atmel.c and tpm_i2c_nuvoton.c
 
-Johan
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+ drivers/char/tpm/tpm_i2c_atmel.c   |    4 ++++
+ drivers/char/tpm/tpm_i2c_nuvoton.c |    5 +++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/drivers/char/tpm/tpm_i2c_atmel.c b/drivers/char/tpm/tpm_i2c_atmel.c
+index 7727292..503a85a 100644
+--- a/drivers/char/tpm/tpm_i2c_atmel.c
++++ b/drivers/char/tpm/tpm_i2c_atmel.c
+@@ -168,6 +168,10 @@ static int i2c_atmel_probe(struct i2c_client *client,
+ 
+ 	chip->vendor.priv = devm_kzalloc(dev, sizeof(struct priv_data),
+ 					 GFP_KERNEL);
++	if (!chip->vendor.priv) {
++		rc = -ENOMEM;
++		goto out_err;
++	}
+ 
+ 	/* Default timeouts */
+ 	chip->vendor.timeout_a = msecs_to_jiffies(TPM_I2C_SHORT_TIMEOUT);
+diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
+index 7b158ef..23c7b13 100644
+--- a/drivers/char/tpm/tpm_i2c_nuvoton.c
++++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
+@@ -538,6 +538,11 @@ static int i2c_nuvoton_probe(struct i2c_client *client,
+ 
+ 	chip->vendor.priv = devm_kzalloc(dev, sizeof(struct priv_data),
+ 					 GFP_KERNEL);
++	if (!chip->vendor.priv) {
++		rc = -ENOMEM;
++		goto out_err;
++	}
++
+ 	init_waitqueue_head(&chip->vendor.read_queue);
+ 	init_waitqueue_head(&chip->vendor.int_queue);
+ 
+-- 
+1.7.9.5
+
