@@ -1,87 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013AbaISLKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 07:10:23 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:37080 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaISLKV (ORCPT
+	id S1756096AbaISLMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 07:12:03 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:29444 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaISLL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 07:10:21 -0400
-Message-ID: <541C0F19.9020103@gmail.com>
-Date: Fri, 19 Sep 2014 13:10:17 +0200
-From: Matthias Brugger <matthias.bgg@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: "Joe.C" <srv_yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        arm@kernel.org
-CC: linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
-        yingjoe.chen@gmail.com, yingjoe.chen@mediatek.com, hc.yen@mediatek.com,
-        eddie.huang@mediatek.com, nathan.chung@mediatek.com,
-        yh.chen@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Anders Berg <anders.berg@lsi.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/7] arm: Add basic support for MediaTek MT8127 & MT8135
- SoCs
-References: <1411095859-18737-1-git-send-email-srv_yingjoe.chen@mediatek.com>
-In-Reply-To: <1411095859-18737-1-git-send-email-srv_yingjoe.chen@mediatek.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Sep 2014 07:11:59 -0400
+X-AuditID: cbfee691-f79546d0000011a1-b4-541c0f7d92f9
+Message-id: <541C0F7E.1080808@samsung.com>
+Date: Fri, 19 Sep 2014 20:11:58 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.1
+MIME-version: 1.0
+To: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>
+Cc: Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, drake@endlessm.com,
+        daniel@ffwll.ch, m.szyprowski@samsung.com
+Subject: Re: [PATCH] drm/exynos: switch to universal plane API
+References: <1411046223-22703-1-git-send-email-a.hajda@samsung.com>
+ <541B8093.6040807@samsung.com> <541C0B5B.7010100@samsung.com>
+In-reply-to: <541C0B5B.7010100@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsWyRsSkULeWXybE4GWbucWtdedYLXrPnWSy
+	+L9tIrPFo/mPmS2ufH3PZjHp/gQWi94FV9kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYH
+	Ho9F37M89n5bwOKx/dsDVo/73ceZPPq2rGL0+LxJLoAtissmJTUnsyy1SN8ugSvj2tljTAVn
+	PCu+PljL1MA4xaaLkZNDQsBEYt7mM0wQtpjEhXvr2boYuTiEBJYySiz5sp0RpujxmrOsEIlF
+	jBKNC59CVb1mlFi57BAbSBWvgJbE1QttrCA2i4CqxOTdR5hBbDYBPYk7244DreDgEBUIk/h7
+	mxuiXFDix+R7LCC2iICHxPw3e5hBZjILzGOWWNP+HSwhLGAn8WvmTUaIZc2MElPfPAY7iVNA
+	W2L3t9tgQ5mBFty/qAUSZhaQl9i85i3YIAmBv+wSz19eZoI4SEDi2+RDLCD1EgKyEpsOMEN8
+	JilxcMUNlgmMYrOQ3DQLYeosJFMXMDKvYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiM2NP/
+	nk3cwXj/gPUhRgEORiUeXo806RAh1sSy4srcQ4ymQEdMZJYSTc4HpoW8knhDYzMjC1MTU2Mj
+	c0szJXFeHemfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY5wQqpCX9Sw0TUlByLRed93UO
+	y9eumwkXAkyimZY0+mx9dyLgu+k6W4bJZ0uqRV/weYUbMeoy3Fho2SQbIWdXvm3txe4ff7LV
+	WdteJH2abu8RMGmNlPzJ+lV3Y97J/9mQu34Vj1nzJN+VHy2zty548fT6qT/m5hd6Y/ijykMz
+	eqvaRa7re5gosRRnJBpqMRcVJwIAHvNyW9MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgG4tv0yIweML2ha31p1jteg9d5LJ
+	4v+2icwWj+Y/Zra48vU9m8Wk+xNYLHoXXGWzONv0ht3i8q45bBYzzu9jslh75C67xYzJL9kc
+	eDwWfc/y2PttAYvH9m8PWD3udx9n8ujbsorR4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl
+	7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygI5UUyhJzSoFCAYnFxUr6dpgmhIa46VrA
+	NEbo+oYEwfUYGaCBhDWMGdfOHmMqOONZ8fXBWqYGxik2XYycHBICJhKP15xlhbDFJC7cW8/W
+	xcjFISSwiFGiceFTKOc1o8TKZYfYQKp4BbQkrl5oA+tgEVCVmLz7CDOIzSagJ3Fn23GmLkYO
+	DlGBMIm/t7khygUlfky+xwJiiwh4SMx/s4cZZCazwDxmiTXt38ESwgJ2Er9m3mSEWNbMKDH1
+	zWNGkASngLbE7m+3wYYyAy24f1ELJMwsIC+xec1b5gmMArOQ7JiFUDULSdUCRuZVjKKpBckF
+	xUnpuYZ6xYm5xaV56XrJ+bmbGMHp4JnUDsaVDRaHGAU4GJV4eD3SpEOEWBPLiitzDzFKcDAr
+	ifBe/AcU4k1JrKxKLcqPLyrNSS0+xGgKDICJzFKiyfnAVJVXEm9obGJmZGlkbmhhZGyuJM57
+	oNU6UEggPbEkNTs1tSC1CKaPiYNTChgBB49u9tV/vbD07nqWX8WHrVcLP+qu6tl3RJj/2T4t
+	uwN7vGfy/d/EqV7rf/PGiz+ntrbO40vm7zh5xdHO737O5Y5VR3rl++zKK+YGdW3t2czEt3/Z
+	1K+dDxaEL8jLrbhjxhY4N+7w5lshDTGMsj+PTq0U/LNHvOR/i0HSK6vIheFne2ebf8pWYinO
+	SDTUYi4qTgQAh7OjKR0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+On 09/19/2014 07:54 PM, Andrzej Hajda wrote:
+> On 09/19/2014 03:02 AM, Joonyoung Shim wrote:
+>> Hi Andrzej,
+>>
+>> On 09/18/2014 10:17 PM, Andrzej Hajda wrote:
+>>> The patch replaces legacy functions
+>>> drm_plane_init() / drm_crtc_init() with
+>>> drm_universal_plane_init() and drm_crtc_init_with_planes().
+>>> It allows to replace fake primary plane with the real one.
+>>>
+>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>>> ---
+>>> Hi Inki,
+>>>
+>>> I have tested this patch with trats board, it looks OK.
+>>> As a side effect it should solve fb refcounting issues
+>>> reported by me and Daniel Drake.
+>>>
+>>> Regards
+>>> Andrzej
+>>> ---
+>>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c  | 63 ++++++++++++++++---------------
+>>>  drivers/gpu/drm/exynos/exynos_drm_drv.c   |  5 ++-
+>>>  drivers/gpu/drm/exynos/exynos_drm_plane.c | 17 +++++----
+>>>  drivers/gpu/drm/exynos/exynos_drm_plane.h |  3 +-
+>>>  4 files changed, 47 insertions(+), 41 deletions(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>> index b68e58f..d2f713e 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>> @@ -32,7 +32,6 @@ enum exynos_crtc_mode {
+>>>   * Exynos specific crtc structure.
+>>>   *
+>>>   * @drm_crtc: crtc object.
+>>> - * @drm_plane: pointer of private plane object for this crtc
+>>>   * @manager: the manager associated with this crtc
+>>>   * @pipe: a crtc index created at load() with a new crtc object creation
+>>>   *	and the crtc object would be set to private->crtc array
+>>> @@ -46,7 +45,6 @@ enum exynos_crtc_mode {
+>>>   */
+>>>  struct exynos_drm_crtc {
+>>>  	struct drm_crtc			drm_crtc;
+>>> -	struct drm_plane		*plane;
+>>>  	struct exynos_drm_manager	*manager;
+>>>  	unsigned int			pipe;
+>>>  	unsigned int			dpms;
+>>> @@ -94,12 +92,12 @@ static void exynos_drm_crtc_commit(struct drm_crtc *crtc)
+>>>  
+>>>  	exynos_drm_crtc_dpms(crtc, DRM_MODE_DPMS_ON);
+>>>  
+>>> -	exynos_plane_commit(exynos_crtc->plane);
+>>> +	exynos_plane_commit(crtc->primary);
+>>>  
+>>>  	if (manager->ops->commit)
+>>>  		manager->ops->commit(manager);
+>>>  
+>>> -	exynos_plane_dpms(exynos_crtc->plane, DRM_MODE_DPMS_ON);
+>>> +	exynos_plane_dpms(crtc->primary, DRM_MODE_DPMS_ON);
+>>>  }
+>>>  
+>>>  static bool
+>>> @@ -123,10 +121,9 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>>  {
+>>>  	struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
+>>>  	struct exynos_drm_manager *manager = exynos_crtc->manager;
+>>> -	struct drm_plane *plane = exynos_crtc->plane;
+>>> +	struct drm_framebuffer *fb = crtc->primary->fb;
+>>>  	unsigned int crtc_w;
+>>>  	unsigned int crtc_h;
+>>> -	int ret;
+>>>  
+>>>  	/*
+>>>  	 * copy the mode data adjusted by mode_fixup() into crtc->mode
+>>> @@ -134,29 +131,21 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>>  	 */
+>>>  	memcpy(&crtc->mode, adjusted_mode, sizeof(*adjusted_mode));
+>>>  
+>>> -	crtc_w = crtc->primary->fb->width - x;
+>>> -	crtc_h = crtc->primary->fb->height - y;
+>>> +	crtc_w = fb->width - x;
+>>> +	crtc_h = fb->height - y;
+>>>  
+>>>  	if (manager->ops->mode_set)
+>>>  		manager->ops->mode_set(manager, &crtc->mode);
+>>>  
+>>> -	ret = exynos_plane_mode_set(plane, crtc, crtc->primary->fb, 0, 0, crtc_w, crtc_h,
+>>> -				    x, y, crtc_w, crtc_h);
+>>> -	if (ret)
+>>> -		return ret;
+>>> -
+>>> -	plane->crtc = crtc;
+>>> -	plane->fb = crtc->primary->fb;
+>>> -	drm_framebuffer_reference(plane->fb);
+>>> -
+>>> -	return 0;
+>>> +	return exynos_plane_mode_set(crtc->primary, crtc, fb, 0, 0,
+>>> +				     crtc_w, crtc_h, x, y, crtc_w, crtc_h);
+>>>  }
+>>>  
+>>>  static int exynos_drm_crtc_mode_set_commit(struct drm_crtc *crtc, int x, int y,
+>>>  					  struct drm_framebuffer *old_fb)
+>>>  {
+>>>  	struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
+>>> -	struct drm_plane *plane = exynos_crtc->plane;
+>>> +	struct drm_framebuffer *fb = crtc->primary->fb;
+>>>  	unsigned int crtc_w;
+>>>  	unsigned int crtc_h;
+>>>  	int ret;
+>>> @@ -167,11 +156,11 @@ static int exynos_drm_crtc_mode_set_commit(struct drm_crtc *crtc, int x, int y,
+>>>  		return -EPERM;
+>>>  	}
+>>>  
+>>> -	crtc_w = crtc->primary->fb->width - x;
+>>> -	crtc_h = crtc->primary->fb->height - y;
+>>> +	crtc_w = fb->width - x;
+>>> +	crtc_h = fb->height - y;
+>>>  
+>>> -	ret = exynos_plane_mode_set(plane, crtc, crtc->primary->fb, 0, 0, crtc_w, crtc_h,
+>>> -				    x, y, crtc_w, crtc_h);
+>>> +	ret = exynos_plane_mode_set(crtc->primary, crtc, fb, 0, 0,
+>>> +				    crtc_w, crtc_h, x, y, crtc_w, crtc_h);
+>>>  	if (ret)
+>>>  		return ret;
+>>>  
+>>> @@ -279,6 +268,7 @@ static void exynos_drm_crtc_destroy(struct drm_crtc *crtc)
+>>>  
+>>>  	private->crtc[exynos_crtc->pipe] = NULL;
+>>>  
+>>> +	crtc->primary->funcs->destroy(crtc->primary);
+>> This is unnecessary.
+> 
+> The question is how these object should be destroyed. In current code
+> crtc is destroyed in fimd_unbind and it is called before
+> drm_mode_config_cleanup
+> which destroys all planes.
+> In such case primary plane will stay with .crtc pointing to non-existing
+> crtc.
+> Maybe performing crtcs cleanup after planes cleanup is better solution???
 
-On 19/09/14 05:04, Joe.C wrote:
-> This is v3 of adding basic device tree support for MT8127 & MT8135.
-> This series is based on Matthias' pull request for mediatek support [1]
-> 
-> We are planning to upstream drivers for MT8127 & MT8135 SoCs.
-> MT8135 is a tablet soc featuring 2 CA7 + 2 CA15. MT8127 is a
-> tablet soc with 4 CA7. They share many similar IP components
-> with MT65xx series.
-
-The patches look good to me.
-I will wait a couple of days if others have comments on them and if not
-send a pull request.
-
-Cheers,
-Matthias
+I think it's wrong to call destroy function of crtc in fimd_unbind, all
+objects should be destroyed by drm_mode_config_cleanup except error
+cases while initializing.
 
 > 
-> Changes in v3:
->  - Changing earlyprintk order and dt-binding based on Matthias' suggestion.
+>>
+>>>  	drm_crtc_cleanup(crtc);
+>>>  	kfree(exynos_crtc);
+>>>  }
+>>> @@ -304,8 +294,7 @@ static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
+>>>  			exynos_drm_crtc_commit(crtc);
+>>>  			break;
+>>>  		case CRTC_MODE_BLANK:
+>>> -			exynos_plane_dpms(exynos_crtc->plane,
+>>> -					  DRM_MODE_DPMS_OFF);
+>>> +			exynos_plane_dpms(crtc->primary, DRM_MODE_DPMS_OFF);
+>>>  			break;
+>>>  		default:
+>>>  			break;
+>>> @@ -351,8 +340,10 @@ static void exynos_drm_crtc_attach_mode_property(struct drm_crtc *crtc)
+>>>  int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>>  {
+>>>  	struct exynos_drm_crtc *exynos_crtc;
+>>> +	struct drm_plane *plane;
+>>>  	struct exynos_drm_private *private = manager->drm_dev->dev_private;
+>>>  	struct drm_crtc *crtc;
+>>> +	int ret;
+>>>  
+>>>  	exynos_crtc = kzalloc(sizeof(*exynos_crtc), GFP_KERNEL);
+>>>  	if (!exynos_crtc)
+>>> @@ -364,11 +355,11 @@ int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>>  	exynos_crtc->dpms = DRM_MODE_DPMS_OFF;
+>>>  	exynos_crtc->manager = manager;
+>>>  	exynos_crtc->pipe = manager->pipe;
+>>> -	exynos_crtc->plane = exynos_plane_init(manager->drm_dev,
+>>> -				1 << manager->pipe, true);
+>>> -	if (!exynos_crtc->plane) {
+>>> -		kfree(exynos_crtc);
+>>> -		return -ENOMEM;
+>>> +	plane = exynos_plane_init(manager->drm_dev, 1 << manager->pipe,
+>>> +				  DRM_PLANE_TYPE_PRIMARY);
+>>> +	if (IS_ERR(plane)) {
+>>> +		ret = PTR_ERR(plane);
+>>> +		goto err_plane;
+>>>  	}
+>>>  
+>>>  	manager->crtc = &exynos_crtc->drm_crtc;
+>>> @@ -376,12 +367,22 @@ int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>>  
+>>>  	private->crtc[manager->pipe] = crtc;
+>>>  
+>>> -	drm_crtc_init(manager->drm_dev, crtc, &exynos_crtc_funcs);
+>>> +	ret = drm_crtc_init_with_planes(manager->drm_dev, crtc, plane, NULL,
+>>> +					&exynos_crtc_funcs);
+>>> +	if (ret < 0)
+>>> +		goto err_crtc;
+>>> +
+>>>  	drm_crtc_helper_add(crtc, &exynos_crtc_helper_funcs);
+>>>  
+>>>  	exynos_drm_crtc_attach_mode_property(crtc);
+>>>  
+>>>  	return 0;
+>>> +
+>>> +err_crtc:
+>>> +	plane->funcs->destroy(plane);
+>>> +err_plane:
+>>> +	kfree(exynos_crtc);
+>>> +	return ret;
+>>>  }
+>>>  
+>>>  int exynos_drm_crtc_enable_vblank(struct drm_device *dev, int pipe)
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>>> index 9b00e4e..a439452 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>>> @@ -86,8 +86,9 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+>>>  		struct drm_plane *plane;
+>>>  		unsigned long possible_crtcs = (1 << MAX_CRTC) - 1;
+>>>  
+>>> -		plane = exynos_plane_init(dev, possible_crtcs, false);
+>>> -		if (!plane)
+>>> +		plane = exynos_plane_init(dev, possible_crtcs,
+>>> +					  DRM_PLANE_TYPE_OVERLAY);
+>>> +		if (IS_ERR(plane))
+>>>  			goto err_mode_config_cleanup;
+>>>  	}
+>>>  
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_plane.c b/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>>> index 8371cbd..15e37a0 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>>> @@ -139,6 +139,8 @@ int exynos_plane_mode_set(struct drm_plane *plane, struct drm_crtc *crtc,
+>>>  			overlay->crtc_x, overlay->crtc_y,
+>>>  			overlay->crtc_width, overlay->crtc_height);
+>>>  
+>>> +	plane->crtc = crtc;
+>>> +
+>> OK, then we can remove same code from exynos_update_plane().
 > 
-> v2:
->  - Change timer compatible string.
->  - Build dtb for mt8127 & mt8135
->  - Adding earlyprintk support for mt8127 & mt8135
+> Right.
 > 
-> Joe.C (7):
->   arm: MTK: Add basic support for mt8127
->   arm: mediatek: add dts for 8127 Moose board
->   arm: MTK: Add basic support for mt8135
->   arm: mediatek: add dts for MT8135 evaluation board.
->   dt-bindings: add more chips in documentation for Mediatek SoC
->   arm: dts: Build dtb for mt8127 & mt8135
->   arm: mediatek: Add earlyprintk support for mt8127 & mt8135
+>>
+>> One more, plane->crtc is NULL before mode_set or setplane so it's
+>> problem if call plane->funcs->destroy with plane->crtc == NULL.
+>> We need checking plane->crtc is NULL in exynos_disable_plane().
 > 
->  Documentation/devicetree/bindings/arm/mediatek.txt |  15 ++-
->  arch/arm/Kconfig.debug                             |  20 ++++
->  arch/arm/boot/dts/Makefile                         |   4 +-
->  arch/arm/boot/dts/mt8127-moose.dts                 |  24 +++++
->  arch/arm/boot/dts/mt8127.dtsi                      |  93 +++++++++++++++++
->  arch/arm/boot/dts/mt8135-evbp1.dts                 |  24 +++++
->  arch/arm/boot/dts/mt8135.dtsi                      | 115 +++++++++++++++++++++
->  arch/arm/mach-mediatek/mediatek.c                  |   2 +
->  8 files changed, 293 insertions(+), 4 deletions(-)
->  create mode 100644 arch/arm/boot/dts/mt8127-moose.dts
->  create mode 100644 arch/arm/boot/dts/mt8127.dtsi
->  create mode 100644 arch/arm/boot/dts/mt8135-evbp1.dts
->  create mode 100644 arch/arm/boot/dts/mt8135.dtsi
+> I can simply add checks, but why we allow the plane with NULL crtc to be
+> enabled?
 > 
+
+I mean plane disable case, not enable case.
+
+Thanks.
