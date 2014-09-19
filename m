@@ -1,105 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932AbaISDiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 23:38:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53779 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaISDiO (ORCPT
+	id S1756681AbaISDms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 23:42:48 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59371 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575AbaISDmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 23:38:14 -0400
-Date: Thu, 18 Sep 2014 22:32:02 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: qcom: register a restart notifier
-Message-ID: <20140919033202.GF3749@joshc.qualcomm.com>
-References: <cover.1411078425.git.joshc@codeaurora.org>
- <d0f4cd93ad3f6690d637413b1171ac3c71aba861.1411078426.git.joshc@codeaurora.org>
- <541B995A.6000609@roeck-us.net>
+	Thu, 18 Sep 2014 23:42:47 -0400
+Message-ID: <541BA5F7.1030704@roeck-us.net>
+Date: Thu, 18 Sep 2014 20:41:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <541B995A.6000609@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Wim Van Sebroeck <wim@iguana.be>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] watchdog: qcom: add support for KPSS WDT
+References: <cover.1411078425.git.joshc@codeaurora.org> <32d17907ad1dfdcafe4e76f33adc2ff22631cd28.1411078425.git.joshc@codeaurora.org> <541B97CD.60400@roeck-us.net> <20140919032416.GE3749@joshc.qualcomm.com>
+In-Reply-To: <20140919032416.GE3749@joshc.qualcomm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-0.7
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.541BA636.00CB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 07:47:54PM -0700, Guenter Roeck wrote:
-> On 09/18/2014 03:27 PM, Josh Cartwright wrote:
-> >The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
-> >resort mechanism for triggering chip reset.  Usually, other restart
-> >methods (such as PS_HOLD) are preferrable for issuing a more complete
-> >reset of the chip.  As such, keep the priority of the watchdog notifier
-> >low.
-> >
-> >Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-[..]
-> >+static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
-> >+			    void *data)
-> >+{
-> >+	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
-> >+
-> >+	/*
-> >+	 * Trigger watchdog bite:
-> >+	 *    Setup BITE_TIME to be very low, and enable WDT.
-> >+	 */
-> >+	mutex_lock(&wdt->wdd.lock);
-> 
-> At this time you don't need to worry about locks.
-> 
-> Actually, this might be dangerous if the lock happens to be taken,
-> as it won't be released (there is no other code running anymore
-> when this function is called).
+On 09/18/2014 08:24 PM, Josh Cartwright wrote:
+> On Thu, Sep 18, 2014 at 07:41:17PM -0700, Guenter Roeck wrote:
+>> On 09/18/2014 03:26 PM, Josh Cartwright wrote:
+>>> Add a driver for the watchdog timer block found in the Krait Processor
+>>> Subsystem (KPSS) on the MSM8960, APQ8064, and IPQ8064.
+>>>
+>>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+>>
+>> Hi Josh,
+>>
+>> comments inline.
+>
+> Thanks for taking a look!
+>
+> [..]
+>>> +static int qcom_watchdog_probe(struct platform_device *pdev)
+>>> +{
+>>> +	struct qcom_wdt *wdt;
+>>> +	struct resource *res;
+>>> +	u32 tmp;
+>>> +	int ret;
+>>> +
+>>> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
+>>> +	if (!wdt)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	platform_set_drvdata(pdev, wdt);
+>>> +
+>>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> +	wdt->base = devm_ioremap_resource(&pdev->dev, res);
+>>> +	if (IS_ERR(wdt->base))
+>>> +		return PTR_ERR(wdt->base);
+>>> +
+>>> +	ret = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &tmp);
+>>> +	if (ret) {
+>>> +		dev_err(&pdev->dev, "unable to get clock-frequency\n");
+>>> +		return ret;
+>>> +	}
+>>> +
+>>
+>> You might want to use a clock property here, and the complete sequence of
+>> 	devm_clk_get
+>> 	clk_prepare_enable
+>> 	clk_disable_unprepare
+>> 	clk_get_rate
+>
+> Agreed.  I think this would be ideal.  I'll need to take a closer look
+> at how this thing is clocked, and how/if the clocks are currently
+> being modelled.
+>
 
-Ah, great.  I'll drop the locking.
+I think you should be able to specify some kind of "fixed" clock.
+Other watchdog drivers use the mechanism; maybe you can find some examples.
 
-> >+	writel_relaxed(0, wdt->base + WDT_EN);
-> >+	writel_relaxed(1, wdt->base + WDT_RST);
-> >+	writel_relaxed(0x31F3, wdt->base + WDT_BITE_TIME);
-> 
-> What is the magic here, ie what does 0x31F3 stand for ?
+>>> +	wdt->freq = tmp;
+>>> +
+>>> +	wdt->wdd.dev = &pdev->dev;
+>>> +	wdt->wdd.info = &qcom_wdt_info;
+>>> +	wdt->wdd.ops = &qcom_wdt_ops;
+>>> +	wdt->wdd.min_timeout = 1;
+>>> +	wdt->wdd.max_timeout = 0x10000000U / wdt->freq;
+>>
+>> As written, wdt->freq can be 0, which results in a nice division by zero here.
+>
+> Indeed.  I'll add a check.
+>
+>>> +	watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev);
+>>
+>> That leaves you with no default timeout if timeout-sec is not set in devicetree,
+>> which if I understand the code correctly might result in an immediate reset.
+>> Is this really what you want to happen ?
+>
+> I think I'd like to handle timeout-sec being unspecified as an error at
+> probe.  If someone explicitly sets timeout-sec = <0>, then they get what
+> they ask for.  I'll take another look to see how to make this happen.
+>
 
-Nothing magic, it's just a reasonably low value to set the bite time
-counter at.  It also happens to be the value at reset.
+Hmm.. kind of unusual. Usual would be to initialize the timeout together
+with min_timeout / max_timeout above and only force the user to specify
+a value if the default timeout is not desirable. You don't really gain
+anything by making timeout-sec mandatory.
 
-> >+	writel_relaxed(1, wdt->base + WDT_EN);
-> >+	mutex_unlock(&wdt->wdd.lock);
-> >+	return NOTIFY_DONE;
-> >+}
-> >+
-> >  static int qcom_watchdog_probe(struct platform_device *pdev)
-> >  {
-> >  	struct qcom_wdt *wdt;
-> >@@ -121,6 +141,17 @@ static int qcom_watchdog_probe(struct platform_device *pdev)
-> >  		return ret;
-> >  	}
-> >
-> >+	/*
-> >+	 * WDT restart notifier has priority 0 (use as a last resort)
-> >+	 */
-> >+	wdt->restart_nb.notifier_call = qcom_wdt_restart;
-> >+	ret = register_restart_handler(&wdt->restart_nb);
-> >+	if (ret) {
-> >+		dev_err(&pdev->dev, "failed to setup restart handler\n");
-> >+		watchdog_unregister_device(&wdt->wdd);
-> >+		return ret;
-> 
-> Sure you want to return an error here ? The watchdog itself is still working,
-> and this is supposed to be a restart method of last resort. Causing the driver
-> to fail loading because it can not register its restart handler seems to be
-> a bit aggressive.
+>>> +
+>>> +	ret = watchdog_register_device(&wdt->wdd);
+>>> +	if (ret) {
+>>> +		dev_err(&pdev->dev, "failed to register watchdog\n");
+>>> +		return ret;
+>>> +	}
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +static const struct of_device_id qcom_wdt_of_table[] = {
+>>> +	{ .compatible = "qcom,kpss-wdt-msm8960", },
+>>> +	{ .compatible = "qcom,kpss-wdt-apq8064", },
+>>> +	{ .compatible = "qcom,kpss-wdt-ipq8064", },
+>>> +	{ },
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, qcom_wdt_of_table);
+>>> +
+>>> +static struct platform_driver qcom_watchdog_driver = {
+>>> +	.probe	= qcom_watchdog_probe,
+>>
+>> No remove function ?
+>>
+>> Yes, you don't need it, because the driver can only be built into the kernel,
+>> but there is a practical impact: It means the driver must always be built
+>> into the kernel even if the image is supposed to be used on different systems,
+>> some of which may not support this specific watchdog.
+>>
+>> Sure, you might say that you don't care about images supporting more than one
+>> hardware, but the tendency seems to be multi-target images nowadays.
+>
+> This was motivated by the addition of the restart_handler bits in patch
+> 3.  For some reason I was thinking there were race conditions between
+> module unloading/the restart_handler mechanism, but looking at it again,
+> I'm not so sure.  Is it safe to implement these handlers in modules?  If
+> so, I'll revisit this.
+>
+Yes, it is safe. To ensure there are no race conditions was one of the reasons
+for implementing the restart handler as notifier call chain.
 
-It is a bit aggressive.  I'll at least drop it to a dev_warn(); even
-though it is a "last resort", on some boards it's the only available
-mechanism for reliable restart.
+Guenter
 
-Thanks!
-  Josh
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
