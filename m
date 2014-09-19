@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbaISNhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:37:18 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:39924 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757090AbaISNhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:37:13 -0400
-Date: Fri, 19 Sep 2014 08:37:08 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes
- x86_capability
-Message-ID: <20140919083708.29c3b6ec@as>
-In-Reply-To: <CA+5PVA7HTU_N0U5xxeGi3DJ_HCz9VjUfNsO23wJDT74J5xxLcQ@mail.gmail.com>
-References: <20140918135202.GA26038@khazad-dum.debian.net>
-	<541B2F33.8000002@amacapital.net>
-	<20140918145328.0253f009@as>
-	<9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
-	<20140918200659.GA5331@khazad-dum.debian.net>
-	<20140919001311.GB5331@khazad-dum.debian.net>
-	<CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
-	<20140919110014.GC29639@khazad-dum.debian.net>
-	<20140919112953.GA3256@nazgul.tnic>
-	<20140919075415.5149d5f2@as>
-	<CA+5PVA7HTU_N0U5xxeGi3DJ_HCz9VjUfNsO23wJDT74J5xxLcQ@mail.gmail.com>
+	id S932122AbaISNjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:39:22 -0400
+Received: from mail-db3on0142.outbound.protection.outlook.com ([157.55.234.142]:33566
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755848AbaISNjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:39:21 -0400
+From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+To: <shawn.guo@freescale.com>
+CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+Subject: [PATCH v2 0/2] Add PWM and backlight support for Colibri VF61 modules
+Date: Fri, 19 Sep 2014 19:08:50 +0530
+Message-ID: <cover.1411130205.git.bhuvanchandra.dv@toradex.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [115.115.225.206]
+X-ClientProxiedBy: DM2PR10CA0043.namprd10.prod.outlook.com (10.141.241.11) To
+ AM3PR05MB257.eurprd05.prod.outlook.com (10.242.249.14)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0339F89554
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(66066001)(83072002)(50986999)(48376002)(93916002)(69596002)(81342003)(77096002)(77156001)(62966002)(101416001)(88136002)(102836001)(99396002)(36756003)(104166001)(31966008)(19580395003)(50226001)(97736003)(89996001)(46102003)(106356001)(86362001)(2371004)(92566001)(85306004)(74662003)(42186005)(33646002)(87976001)(53416004)(83322001)(21056001)(107046002)(105586002)(85852003)(90102001)(77982003)(2351001)(76482002)(4396001)(229853001)(79102003)(80022003)(47776003)(110136001)(95666004)(87286001)(81156004)(81542003)(92726001)(50466002)(74502003)(20776003)(7059019);DIR:OUT;SFP:1102;SCL:1;SRVR:AM3PR05MB257;H:trdx.toradex.int;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: toradex.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014 09:14:50 -0400
-Josh Boyer <jwboyer@fedoraproject.org> wrote:
+Changes since v1:
+[1] Sorted the node names alphabetically.
+[2] Updated the node name 'bl: backlight' to 'backlight: bl'.
+[3] Dropped the leading space in 'pwm-names' property of backlight.
 
-> On Fri, Sep 19, 2014 at 8:54 AM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> > On Fri, 19 Sep 2014 13:29:53 +0200
-> > Borislav Petkov <bp@alien8.de> wrote:
-> >
-> >> On Fri, Sep 19, 2014 at 08:00:15AM -0300, Henrique de Moraes Holschuh wrote:
-> >> > We're also killing microcode update support outside of the initramfs in
-> >> > Debian.  It has become obvious that anything other than the early initramfs
-> >> > method of microcode updates should be considered a developer thing.
-> >>
-> >> That's simply not true: long-running systems which you can't reboot for
-> >> whatever reason will need the late microcode update.
-> >>
-> >
-> > Assuming we can identify all the affected models and steppings, maybe
-> > something like this would work:
-> >
-> > 1) Refuse to finish booting if a microcode update that disables TSX
-> > isn't applied before userspace starts running on those CPUs.
-> 
-> How would you accomplish that when applying a microcode update
-> requires userspace?  Or did you mean "before we transition out of the
-> initramfs"?
-> 
+Bhuvanchandra DV (2):
+  ARM: dts: vf610-colibri: Add PWM support
+  ARM: dts: vf610-colibri: Add backlight support
 
-I guess I meant requiring the update be done with the early microcode
-method.
+ arch/arm/boot/dts/vf610-colibri-eval-v3.dts |   14 ++++++++++++
+ arch/arm/boot/dts/vf610-colibri.dtsi        |   33 +++++++++++++++++++++++++--
+ 2 files changed, 45 insertions(+), 2 deletions(-)
+
+-- 
+1.7.9.5
+
