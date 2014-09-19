@@ -1,121 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844AbaISNgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:36:13 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35509 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682AbaISNgG (ORCPT
+	id S1757019AbaISNgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:36:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56057 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756858AbaISNgj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:36:06 -0400
-Message-ID: <541C313C.8060402@linux.vnet.ibm.com>
-Date: Fri, 19 Sep 2014 21:35:56 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 19 Sep 2014 09:36:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,555,1406617200"; 
+   d="scan'208";a="478686513"
+From: "Drokin, Oleg" <oleg.drokin@intel.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "<kernel-janitors@vger.kernel.org>" <kernel-janitors@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<HPDD-discuss@ml01.01.org>" <HPDD-discuss@ml01.01.org>
+Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: llite: Use kzalloc and
+ rewrite null tests
+Thread-Topic: [HPDD-discuss] [PATCH] staging: lustre: llite: Use kzalloc and
+ rewrite null tests
+Thread-Index: AQHP038cV7KKUWUf/U2QvPeJwPvEYJwIAvSAgAA2K4D//6k1TIABCW6A
+Date: Fri, 19 Sep 2014 13:36:24 +0000
+Message-ID: <4533064F-A093-4DED-8294-CF049CB591A8@intel.com>
+References: <1411071842-24714-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1411071842-24714-2-git-send-email-Julia.Lawall@lip6.fr>
+ <20140918234309.GP17875@mwanda>
+ <E43F4FD2-3A79-485E-960B-A12960B3D2B7@intel.com>
+ <517B3353-BD3C-4326-A8F4-F1775B4865E5@intel.com>
+ <alpine.DEB.2.10.1409190637190.2507@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1409190637190.2507@hadrien>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.9.123]
+Content-Type: text/plain; charset="Windows-1252"
+Content-ID: <38ECBE9C0338C2439C5CF8B04415A4B4@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: Liang Chen <liangchen.linux@gmail.com>, pbonzini@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] KVM: x86: directly use kvm_make_request again
-References: <1411058317-23646-1-git-send-email-liangchen.linux@gmail.com> <1411058317-23646-3-git-send-email-liangchen.linux@gmail.com> <541BC949.4050602@linux.vnet.ibm.com> <20140919122502.GA29990@potion.brq.redhat.com>
-In-Reply-To: <20140919122502.GA29990@potion.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091913-0005-0000-0000-000001164C00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2014 08:25 PM, Radim KrÄmÃ¡Å™ wrote:
+Hello!
 
->>>   * Returns 1 to let __vcpu_run() continue the guest execution loop without
->>>   * exiting to the userspace.  Otherwise, the value will be returned to the
->>> @@ -6018,8 +6024,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->>>  		if (kvm_check_request(KVM_REQ_MMU_SYNC, vcpu))
->>>  			kvm_mmu_sync_roots(vcpu);
->>>  		if (kvm_check_request(KVM_REQ_TLB_FLUSH, vcpu)) {
->>> -			++vcpu->stat.tlb_flush;
->>> -			kvm_x86_ops->tlb_flush(vcpu);
->>> +			kvm_vcpu_flush_tlb(vcpu);
->>
->> NACK!
->>
->> Do not understand why you have to introduce a meaningful name
->> here - it's used just inner a function, which can not help to
->> improve a readability of the code at all.
-> 
-> I prefer the new hunk
->  - it makes the parent function simpler (not everyone wants to read how
->    we do tlb flushes when looking at vcpu_enter_guest)
+   First, thanks for your patches and efforts spent on these cleanups.
 
-Using one line instead of two lines does not simplify parent function much.
+On Sep 19, 2014, at 12:45 AM, Julia Lawall wrote:
 
->  - the function is properly named
+> With respect to the upper case lower case issue, does the thing need to be
+> a macro?  I think that the lowercase is more or less fine, but only if
+> what is behind it is a function.
 
-kvm_x86_ops->tlb_flush(vcpu) is also a good hit to tell the reader it is
-doing tlb flush. :)
+I don't have a strong opinion either way as long as we have all the functionality
+we need.
 
->  - we do a similar thing with kvm_gen_kvmclock_update
+> I say more or less fine, because normally in the kernel the special
+> allocators have special purposes, eg allocating and initializing the xyz
+> structure.  Here what is wanted is a general purpose allocator with lots
+> of special tracing features, so it is not quite the same thing.  And one
+> can wonder why all of these special tracing features are not relevant to
+> the kernel as a whole?
 
-I understand this raw-bit-set style is largely used in current kvm code,
-however, it does not mean it's a best way do it. It may be turned off
-someday as it is be used in more and more places.
+Like I explained in my previous email, many of the tracing features are already
+possible to replace with other existing in-kernel mechanisms like kmemleak.
 
-Anyway, the meaningful name wrapping raw-bit-set is a right direction
-and let's keep this right direction.
+Except the total tally of allocations/frees so that a memleak could be visibly
+easily seen on module unload time. I think this would be useful for other
+kinds of modules too, not just lustre, so having that as a generic allocator
+feature would be cool too.
 
-> 
->> What i suggested is renaming kvm_mmu_flush_tlb() since it's a
->> API used in multiple files - a good name helps developer to
->> know what it's doing and definitely easier typing.
-> 
-> I think it is a good idea.
-> The proposed name is definitely better than what we have now.
-> 
-> You can see reasons that led me to prefer raw request below.
-> (Preferring something else is no way means that I'm against your idea.)
+> In reading through the description of the needed features, it seems like
+> only the _ptr extension requires being a macro.  Do we need that?  The
 
-I understand that, Radim! :)
+We only need that as a less error-prone way of having
+x = obd_kzalloc(sizeof(*x), ….)
+…
+obd_free(…, sizeof(*x))
 
-> 
-> ---
-> I'm always trying to reach some ideal code in my mind, which makes me
-> seemingly oppose good proposals because I see how it could be even
-> better ...  and I opt not to do them.
-> (Pushing minor refactoring patches upstream is hard!)
-> 
-> My issues with kvm_mmu_flush_tlb:
-> 
->  - 'kvm_flush_remote_tlbs()' calls tlb request directly;
->     our wrapper thus cannot be extended with features, which makes it a
->     poor abstraction
+Real free function does not take size argument, but we need that for
+total allocated/freed accounting. Easy to have disconnect with
+the size argument of obd_free to be wrong.
 
-kvm_flush_remote_tlbs does not only set tlb request but also handles memory
-order and syncs the tlb state.
+> rest of the kernel manages to do x = kzalloc(sizeof(*x),...) ok.  It's
+> unpleasant to have an assignment hidden in this way.  And currently it is
+> not used consistently.  There are some OBD_ALLOCs that have the same form.
 
-I guess you wanted to say kvm_mmu_flush_tlb here, it is a API name and let
-it be easily used in other files. It's not worth committing a patch doing
-nothing except reverting the meaningful name.
+Yes, those are converted as thy are noticed.
 
->  - we don't do this for other requests
+> Sorry for overlooking the frees.  I was focusing on trying one thing at a
+> time...
 
-See above.
+I kind of think it's a related issue.
+Touching ones needs to touch the other if not in the same patch then in
+a next patch. And that's why I think consideations for what FREEs would need
+is needed from the start, so the FREEs removal patch does not goes and patches a bunch of just patched allocs.
 
->  - direct request isn't absolutely horrible to read and write
->    (I totally agree that it is bad.)
->  - we call one function 'kvm_mmu_flush_tlb()' and the second one
->    'kvm_flush_remote_tlbs()' and I'd need to look why
+Thanks.
 
-Yeah, this is why i suggested to rename kvm_mmu_flush_tlb since which clarifies
-things better:
-- kvm_flush_remote_tlbs: flush tlb in all vcpus
-- kvm_vcpu_flush_tlb: only flush tlb on the vcpu specified by @vcpu.
-
-> 
-> Which is why just removing it solves more problems for me :)
-
-Thank you for raising this question and letting me know the patch's history. :)
-
-
-
+Bye,
+    Oleg
