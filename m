@@ -1,149 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908AbaISUs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:48:26 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:50125 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757700AbaISUsX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:48:23 -0400
-Date: Fri, 19 Sep 2014 14:48:17 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v11 02/10] PCI: Introduce helper functions to deal with
- PCI I/O ranges.
-Message-ID: <20140919204817.GF19374@google.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-3-git-send-email-Liviu.Dudau@arm.com>
+	id S1758019AbaISUup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:50:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8996 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757894AbaISUuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 16:50:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,557,1406617200"; 
+   d="asc'?scan'208";a="605578768"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Richard Weinberger <richard@nod.at>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Ingo Molnar" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Brian Norris" <computersforpeace@gmail.com>
+Subject: Re: [PATCH 7/7] sched: Silence nested-externs warnings
+Thread-Topic: [PATCH 7/7] sched: Silence nested-externs warnings
+Thread-Index: AQHP1B6e1FZqApYsAUeDZBBK/84gU5wJTqGAgAAQ1oCAAAHIgIAAAmKA
+Date: Fri, 19 Sep 2014 20:49:53 +0000
+Message-ID: <09D2323D-79B7-423A-9BA6-504112AFE104@intel.com>
+References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <1411140580-20909-8-git-send-email-jeffrey.t.kirsher@intel.com>
+ <CAFLxGvwfuE-458duC9ARMLLMBCvZaBQnwDjPW6uJC4FAViBXjQ@mail.gmail.com>
+ <11081C57-805A-44F8-9768-271DC6B27F76@intel.com> <541C94F1.9020206@nod.at>
+In-Reply-To: <541C94F1.9020206@nod.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.176.66]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_FC277461-5FEE-49C4-BFF3-B55576FF17A4";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411003825-21521-3-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 02:30:17AM +0100, Liviu Dudau wrote:
-> Some architectures do not have a simple view of the PCI I/O space
-> and instead use a range of CPU addresses that map to bus addresses.
-> For some architectures these ranges will be expressed by OF bindings
-> in a device tree file.
-> 
-> This patch introduces a pci_register_io_range() helper function with
-> a generic implementation that can be used by such architectures to
-> keep track of the I/O ranges described by the PCI bindings. If the
-> PCI_IOBASE macro is not defined that signals lack of support for PCI
-> and we return an error.
-> 
-> In order to retrieve the CPU address associated with an I/O port, a
-> new helper function pci_pio_to_address() is introduced. This will
-> search in the list of ranges registered with pci_register_io_range()
-> and return the CPU address that corresponds to the given port.
-> 
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Rob Herring <robh@kernel.org>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> ---
->  drivers/of/address.c       | 100 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_address.h |   2 +
->  2 files changed, 102 insertions(+)
-> 
-> diff --git a/drivers/of/address.c b/drivers/of/address.c
-> index e371825..2373a92 100644
-> --- a/drivers/of/address.c
-> +++ b/drivers/of/address.c
-> @@ -5,6 +5,7 @@
->  #include <linux/module.h>
->  #include <linux/of_address.h>
->  #include <linux/pci_regs.h>
-> +#include <linux/slab.h>
->  #include <linux/string.h>
->  
->  /* Max address size we deal with */
-> @@ -601,12 +602,111 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
->  }
->  EXPORT_SYMBOL(of_get_address);
->  
-> +#ifdef PCI_IOBASE
-> +struct io_range {
-> +	struct list_head list;
-> +	phys_addr_t start;
-> +	resource_size_t size;
-> +};
-> +
-> +static LIST_HEAD(io_range_list);
-> +static DEFINE_SPINLOCK(io_range_lock);
-> +#endif
-> +
-> +/*
-> + * Record the PCI IO range (expressed as CPU physical address + size).
-> + * Return a negative value if an error has occured, zero otherwise
-> + */
-> +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-> +{
-> +#ifdef PCI_IOBASE
-> +	struct io_range *range;
-> +	resource_size_t allocated_size = 0;
-> +
-> +	/* check if the range hasn't been previously recorded */
-> +	spin_lock(&io_range_lock);
-> +	list_for_each_entry(range, &io_range_list, list) {
-> +		if (addr >= range->start && addr + size <= range->start + size)
-> +			return 0;
+--Apple-Mail=_FC277461-5FEE-49C4-BFF3-B55576FF17A4
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=iso-8859-1
 
-This returns while holding io_range_lock.
+On Sep 19, 2014, at 1:41 PM, Richard Weinberger <richard@nod.at> wrote:
 
-> +		allocated_size += range->size;
-> +	}
-> +	spin_unlock(&io_range_lock);
+> Am 19.09.2014 22:34, schrieb Rustad, Mark D:
+>> Excellent. I'll try adding an include of delayacct.h instead. My =
+patch was based on the assumption that the existing code was wanted in =
+that form for some reason, so the patch served a purpose in recognizing =
+that it isn't. So the macros have served a purpose before even being in =
+place. :-)
+>=20
+> I bet sched.h does not include delayacct.h for a good reason.
+> sched.h is included in a lot of files, maybe delayacct.h introduces =
+nasty dependency issues.
+> You'll find out. ;-)
 
-I think this is racy; because you drop the lock between (1) checking
-whether the range is already recorded and (2) adding the range to the list,
-it's still possible for two callers to add the same range.
+Right you are, but when I'm done, there will only be one extern =
+declaration for that global, which is better than more than one. I'll =
+think a little before settling on the best resolution.
 
-> +	/* range not registed yet, check for available space */
-> +	if (allocated_size + size - 1 > IO_SPACE_LIMIT) {
-> +		/* if it's too big check if 64K space can be reserved */
-> +		if (allocated_size + SZ_64K - 1 > IO_SPACE_LIMIT)
-> +			return -E2BIG;
-> +
-> +		size = SZ_64K;
-> +		pr_warn("Requested IO range too big, new size set to 64K\n");
-> +	}
-> +
-> +	/* add the range to the list */
-> +	range = kzalloc(sizeof(*range), GFP_KERNEL);
-> +	if (!range)
-> +		return -ENOMEM;
-> +
-> +	range->start = addr;
-> +	range->size = size;
-> +
-> +	spin_lock(&io_range_lock);
-> +	list_add_tail(&range->list, &io_range_list);
-> +	spin_unlock(&io_range_lock);
-> +#endif
-> +
-> +	return 0;
-> +}
+--=20
+Mark Rustad, Networking Division, Intel Corporation
+
+
+--Apple-Mail=_FC277461-5FEE-49C4-BFF3-B55576FF17A4
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJUHJbyAAoJEDwO/+eO4+5uPxQQAJVRXx4Od4WCkQCggtUxqkJN
+EDEnEqCSORD98TWjakQ/DRrdimzlnjZsK1gJLVHIp3kvB9iOs4Zq+Qto43UgtngR
+Uh4M4EFQ05OH4xou2s84i8vZ1H6T1m1z8sw8tpjYLpcPx9llQZX4/AdlmORDHyxt
+0YPBG4ivSHzywBe3eYA3DnUTfcVc64Akq5Bnau5+iKfaPsibSkNTGHWtbFH+CBRH
+GNZgrWWPQnSN5Sr3ApxQ/d1lRHChW6dmE49aRVHPEDkgJoHPD7cQAhkCGqk3y6qa
+/gd0heR7z6obzCfbWcz7PjsVoRdS2SdfpE1/Lo9Y/FPCrSXFr6QdB8fPeu8m0HBr
+RLVrcqy0+QVA7RUONQXp/hITMoBtrrFy47vD9Iy/A1NL2GY1UsZtizym+KAyKe8j
+gBiGUErhAoND9hHuMpwHSrMQ/WguEol16aPWAUTqWwx1oWBoJlQOcHcdyeHkwjer
+kub50MXstQO4lVeDo+OlgYmLHVBWbywrf03q7Rlr578y5FVW0d2FCxW0A/90zrX1
+T6gOIiZAD1iaNFFdFdrtwdkqTrW4yCHzAD5qUy2eaYfzDyuLjS3u4aNQDb4AI0RQ
+S7QA8m2Qatu4B4q8/33oc5HPrmaoLKxNuX4RYNonO9pnMI8hiv5ypKCbjBkixJu+
+mPkydO9WnYw4lWH8frnX
+=02gi
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_FC277461-5FEE-49C4-BFF3-B55576FF17A4--
