@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512AbaISDwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Sep 2014 23:52:09 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:55176 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaISDwH (ORCPT
+	id S1756677AbaISD6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Sep 2014 23:58:15 -0400
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:39308 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905AbaISD6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Sep 2014 23:52:07 -0400
-Date: Thu, 18 Sep 2014 23:52:03 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: Tree for Sep 1
-Message-ID: <20140919035203.GA28292@mtj.dyndns.org>
-References: <20140901230728.GM29327@sirena.org.uk>
- <1627064.QhxvejlWdk@amdc1032>
- <alpine.DEB.2.11.1409020857110.9201@gentwo.org>
- <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+	Thu, 18 Sep 2014 23:58:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140919003207.GA4296@kernel>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+	<1410976308-7683-1-git-send-email-andreslc@google.com>
+	<20140918002917.GA3921@kernel>
+	<20140918061326.GC30733@minantech.com>
+	<20140919003207.GA4296@kernel>
+Date: Thu, 18 Sep 2014 20:58:12 -0700
+Message-ID: <CAJu=L5_SPcqca0sBYcCLjt4hv6RQwa+QV8Fhi6t3mxz0+X=KSA@mail.gmail.com>
+Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
-> On Tue, 2 Sep 2014, Christoph Lameter wrote:
-> 
-> > Oww.. This is double indirection deal there. A percpu offset pointing to
-> > a pointer?
-> >
-> > Generally the following is true (definition from
-> > include/asm-generic/percpu.h that is used for ARM for raw_cpu_read):
-> >
-> > #define raw_cpu_read_4(pcp)             (*raw_cpu_ptr(&(pcp)))
-> 
-> I think what the issue is that we dropped the fetch of the percpu offset
-> in the patch. Instead we are using the address of the variable that
-> contains the offset. Does this patch fix it?
-> 
-> 
-> Subject: irqchip: Properly fetch the per cpu offset
-> 
-> The raw_cpu_read() conversion dropped the fetch of the offset
-> from base->percpu_base in gic_get_percpu_base.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Applied to percpu/for-3.18-consistent-ops.
-
+On Thu, Sep 18, 2014 at 5:32 PM, Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+> On Thu, Sep 18, 2014 at 09:13:26AM +0300, Gleb Natapov wrote:
+>>On Thu, Sep 18, 2014 at 08:29:17AM +0800, Wanpeng Li wrote:
+>>> Hi Andres,
+>>> On Wed, Sep 17, 2014 at 10:51:48AM -0700, Andres Lagar-Cavilla wrote:
+>>> [...]
+>>> > static inline int check_user_page_hwpoison(unsigned long addr)
+>>> > {
+>>> >    int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
+> Got it, thanks for your pointing out.
+>
+> Reviewed-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>
+> Regards,
+> Wanpeng Li
+>
 Thanks.
 
--- 
-tejun
+Paolo, should I recut including the recent Reviewed-by's?
+
+Thanks
+Andres
+ps: shrunk cc
+
+>>
+>>>        kvm_get_user_page_io
+>>>
+>>> page will always be ready after kvm_get_user_page_io which leads to APF
+>>> don't need to work any more.
+>>>
+>>> Regards,
+>>> Wanpeng Li
+>>>
+>>> >    if (npages != 1)
+>>> >            return npages;
+>>> >
+>>> >--
+>>> >2.1.0.rc2.206.gedb03e5
+>>> >
+>>> >--
+>>> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> >the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> >see: http://www.linux-mm.org/ .
+>>> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>>--
+>>                       Gleb.
