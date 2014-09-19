@@ -1,278 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453AbaISNUu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:20:50 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42742 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398AbaISNUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:20:48 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: support transparent huge pages under pressure
-Date: Fri, 19 Sep 2014 09:20:40 -0400
-Message-Id: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.0
+	id S1756815AbaISNWP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:22:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50859 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756513AbaISNWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:22:13 -0400
+Message-ID: <541C2E02.5000303@codeaurora.org>
+Date: Fri, 19 Sep 2014 09:22:10 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Peter Maydell <peter.maydell@linaro.org>
+CC: Sonny Rao <sonnyrao@chromium.org>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        Doug Anderson <dianders@chromium.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] arm: Handle starting up in secure mode
+References: <1410901756-20694-1-git-send-email-cov@codeaurora.org> <5418AA80.4090102@codeaurora.org> <54198BDE.8000509@codeaurora.org> <CAFEAcA-Z_KqCrBRKLxtEaca3jAH35Xx=CqOr36KgAGfFrE91nw@mail.gmail.com>
+In-Reply-To: <CAFEAcA-Z_KqCrBRKLxtEaca3jAH35Xx=CqOr36KgAGfFrE91nw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a memcg with even just moderate cache pressure, success rates for
-transparent huge page allocations drop to zero, wasting a lot of
-effort that the allocator puts into assembling these pages.
+Hi Peter,
 
-The reason for this is that the memcg reclaim code was never designed
-for higher-order charges.  It reclaims in small batches until there is
-room for at least one page.  Huge pages charges only succeed when
-these batches add up over a series of huge faults, which is unlikely
-under any significant load involving order-0 allocations in the group.
+On 09/19/2014 01:56 AM, Peter Maydell wrote:
+> On 17 September 2014 06:25, Christopher Covington <cov@codeaurora.org> wrote:
+>> On 09/16/2014 05:24 PM, Christopher Covington wrote:
+>>> On 09/16/2014 05:09 PM, Christopher Covington wrote:
+>>>> ARM Linux currently has the most features available to it in hypervisor
+>>>> (HYP) mode, so switch to it when possible. This can also ensure proper
+>>>> reset of newer registers such as CNTVOFF.
+>>>>
+>>>> The permissions on the Non-Secure Access Control Register (NSACR) are
+>>>> used to probe what the security setting currently is when in supervisor
+>>>> (SVC) mode.
+>>>
+>>> Sorry, this doesn't work yet. I was misinterpreting my test results. For what
+>>> it's worth, my testing and development methodology is to run it after hacked
+>>> up versions of the semihosting bootwrapper on the simulator that corresponds
+>>> to rtsm_ve-aemv8a.dtb (AEM VE FVP these days?) and examine the instruction traces.
+>>
+>> Looks like the real problem was that I was hacking up the bootwrapper
+>> incorrectly--my start-in-secure-mode bootwrapper variant wasn't setting up the
+>> GIC for non-secure access. With that changed, I've tested the following
+>> variations using the Image file in a single core configuration.
+>>
+>> Start in non-secure SVC with non-secure access to GIC configured.
+>>
+>> Start in secure SVC with non-secure access to GIC configured.
+>>
+>> Start in secure SVC with non-secure access to GIC configured and hypervisor
+>> support disabled in the model (-C cluster.has_el2=0). This required setting
+>> the VBAR again in non-secure SVC but with that fix it seems to work. I'll
+>> include this change in v2.
+> 
+> If you're relying on the boot loader to set up the GIC to support
+> non-secure access anyway, why not just have it boot the kernel in Hyp
+> like the boot protocol document recommends? (The same thing as the GIC
+> is going to apply for any other hardware that needs configuration to
+> allow NS access; if we need the firmware to deal with this we might as
+> well just have it boot us in the right mode too.)
 
-Remove that loop on the memcg side in favor of passing the actual
-reclaim goal to direct reclaim, which is already set up and optimized
-to meet higher-order goals efficiently.
+I'd like to get rid of as much of the bootwrapper as possible (having gotten
+spoiled by using QEMU's built-in bootloader). I'm just taking it one step at a
+time. Handling GIC initialization in the kernel is probably the next step.
 
-This brings memcg's THP policy in line with the system policy: if the
-allocator painstakingly assembles a hugepage, memcg will at least make
-an honest effort to charge it.  As a result, transparent hugepage
-allocation rates amid cache activity are drastically improved:
+> Incidentally, on a v7 CPU without the Security Extensions the VBAR
+> doesn't exist at all, so your code is going to UNDEF at an earlier
+> point than you think it is...
 
-                                      vanilla                 patched
-pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
-pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
-pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
-thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
-thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
+Thanks for pointing this out. I recently was digging through the ID registers
+and figured it would be good idea to guard attempting the SVC_S -> HYP switch
+with some PFR checks that Security and Virtualization extensions are
+implemented just right: PFR1.Virt_fac == 1 && PFR.Sec_frac == 1. (How to
+handle separate secure physical memory, PFR1.Sec_frac > 1, is a challenge I
+think I'd like to defer to a later patch).
 
-[ Note: this may in turn increase memory consumption from internal
-  fragmentation, which is an inherent risk of transparent hugepages.
-  Some setups may have to adjust the memcg limits accordingly to
-  accomodate this - or, if the machine is already packed to capacity,
-  disable the transparent huge page feature. ]
+Thanks,
+Christopher
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/swap.h |  6 ++--
- mm/memcontrol.c      | 86 +++++++++++-----------------------------------------
- mm/vmscan.c          |  7 +++--
- 3 files changed, 25 insertions(+), 74 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index ea4f926e6b9b..37a585beef5c 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -327,8 +327,10 @@ extern void lru_cache_add_active_or_unevictable(struct page *page,
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
- extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
--extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
--						  gfp_t gfp_mask, bool noswap);
-+extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-+						  unsigned long nr_pages,
-+						  gfp_t gfp_mask,
-+						  bool may_swap);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9431024e490c..e2def11f1ec1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -315,9 +315,6 @@ struct mem_cgroup {
- 	/* OOM-Killer disable */
- 	int		oom_kill_disable;
- 
--	/* set when res.limit == memsw.limit */
--	bool		memsw_is_minimum;
--
- 	/* protect arrays of thresholds */
- 	struct mutex thresholds_lock;
- 
-@@ -481,14 +478,6 @@ enum res_type {
- #define OOM_CONTROL		(0)
- 
- /*
-- * Reclaim flags for mem_cgroup_hierarchical_reclaim
-- */
--#define MEM_CGROUP_RECLAIM_NOSWAP_BIT	0x0
--#define MEM_CGROUP_RECLAIM_NOSWAP	(1 << MEM_CGROUP_RECLAIM_NOSWAP_BIT)
--#define MEM_CGROUP_RECLAIM_SHRINK_BIT	0x1
--#define MEM_CGROUP_RECLAIM_SHRINK	(1 << MEM_CGROUP_RECLAIM_SHRINK_BIT)
--
--/*
-  * The memcg_create_mutex will be held whenever a new cgroup is created.
-  * As a consequence, any change that needs to protect against new child cgroups
-  * appearing has to hold it as well.
-@@ -1794,42 +1783,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 			 NULL, "Memory cgroup out of memory");
- }
- 
--static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
--					gfp_t gfp_mask,
--					unsigned long flags)
--{
--	unsigned long total = 0;
--	bool noswap = false;
--	int loop;
--
--	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
--		noswap = true;
--	if (!(flags & MEM_CGROUP_RECLAIM_SHRINK) && memcg->memsw_is_minimum)
--		noswap = true;
--
--	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
--		if (loop)
--			drain_all_stock_async(memcg);
--		total += try_to_free_mem_cgroup_pages(memcg, gfp_mask, noswap);
--		/*
--		 * Allow limit shrinkers, which are triggered directly
--		 * by userspace, to catch signals and stop reclaim
--		 * after minimal progress, regardless of the margin.
--		 */
--		if (total && (flags & MEM_CGROUP_RECLAIM_SHRINK))
--			break;
--		if (mem_cgroup_margin(memcg))
--			break;
--		/*
--		 * If nothing was reclaimed after two attempts, there
--		 * may be no reclaimable pages in this hierarchy.
--		 */
--		if (loop && !total)
--			break;
--	}
--	return total;
--}
--
- /**
-  * test_mem_cgroup_node_reclaimable
-  * @memcg: the target memcg
-@@ -2532,8 +2485,9 @@ static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	struct mem_cgroup *mem_over_limit;
- 	struct res_counter *fail_res;
- 	unsigned long nr_reclaimed;
--	unsigned long flags = 0;
- 	unsigned long long size;
-+	bool may_swap = true;
-+	bool drained = false;
- 	int ret = 0;
- 
- 	if (mem_cgroup_is_root(memcg))
-@@ -2550,7 +2504,7 @@ retry:
- 			goto done_restock;
- 		res_counter_uncharge(&memcg->res, size);
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
--		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
-+		may_swap = false;
- 	} else
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
- 
-@@ -2576,11 +2530,18 @@ retry:
- 	if (!(gfp_mask & __GFP_WAIT))
- 		goto nomem;
- 
--	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
-+	nr_reclaimed = try_to_free_mem_cgroup_pages(mem_over_limit, nr_pages,
-+						    gfp_mask, may_swap);
- 
- 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
- 		goto retry;
- 
-+	if (!drained) {
-+		drain_all_stock_async(mem_over_limit);
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	if (gfp_mask & __GFP_NORETRY)
- 		goto nomem;
- 	/*
-@@ -3655,19 +3616,13 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
- 			enlarge = 1;
- 
- 		ret = res_counter_set_limit(&memcg->res, val);
--		if (!ret) {
--			if (memswlimit == val)
--				memcg->memsw_is_minimum = true;
--			else
--				memcg->memsw_is_minimum = false;
--		}
- 		mutex_unlock(&set_limit_mutex);
- 
- 		if (!ret)
- 			break;
- 
--		mem_cgroup_reclaim(memcg, GFP_KERNEL,
--				   MEM_CGROUP_RECLAIM_SHRINK);
-+		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, true);
-+
- 		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
- 		/* Usage is reduced ? */
- 		if (curusage >= oldusage)
-@@ -3714,20 +3669,13 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
- 		if (memswlimit < val)
- 			enlarge = 1;
- 		ret = res_counter_set_limit(&memcg->memsw, val);
--		if (!ret) {
--			if (memlimit == val)
--				memcg->memsw_is_minimum = true;
--			else
--				memcg->memsw_is_minimum = false;
--		}
- 		mutex_unlock(&set_limit_mutex);
- 
- 		if (!ret)
- 			break;
- 
--		mem_cgroup_reclaim(memcg, GFP_KERNEL,
--				   MEM_CGROUP_RECLAIM_NOSWAP |
--				   MEM_CGROUP_RECLAIM_SHRINK);
-+		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, false);
-+
- 		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
- 		/* Usage is reduced ? */
- 		if (curusage >= oldusage)
-@@ -3976,8 +3924,8 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
- 		if (signal_pending(current))
- 			return -EINTR;
- 
--		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
--						false);
-+		progress = try_to_free_mem_cgroup_pages(memcg, 1,
-+							GFP_KERNEL, true);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b672e2c6becc..97d31ec17d06 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2759,21 +2759,22 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
- }
- 
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-+					   unsigned long nr_pages,
- 					   gfp_t gfp_mask,
--					   bool noswap)
-+					   bool may_swap)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
- 	int nid;
- 	struct scan_control sc = {
--		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-+		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
- 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
- 		.target_mem_cgroup = memcg,
- 		.priority = DEF_PRIORITY,
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
--		.may_swap = !noswap,
-+		.may_swap = may_swap,
- 	};
- 
- 	/*
 -- 
-2.1.0
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
