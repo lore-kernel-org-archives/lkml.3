@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430AbaISQpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:45:25 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:38177 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002AbaISQpX (ORCPT
+	id S932132AbaISQqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:46:16 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52966 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232AbaISQqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:45:23 -0400
-Date: Fri, 19 Sep 2014 10:45:18 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>, Rajat Jain <rajatxjain@gmail.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [GIT PULL] PCI fixes for v3.17
-Message-ID: <20140919164518.GA19374@google.com>
+	Fri, 19 Sep 2014 12:46:15 -0400
+Date: Fri, 19 Sep 2014 09:46:03 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] eeepc-laptop: clean up coding style
+Message-ID: <20140919164603.GB34042@vmdeb7>
+References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
+ <1410990447-3210-2-git-send-email-fransklaver@gmail.com>
+ <1410991612.4290.10.camel@joe-AO725>
+ <642509cf-05f2-47f4-be2e-a3cfb9a93a04@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <642509cf-05f2-47f4-be2e-a3cfb9a93a04@email.android.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Sep 18, 2014 at 07:01:25AM +0200, Frans Klaver wrote:
+> On 18 September 2014 00:06:52 CEST, Joe Perches <joe@perches.com> wrote:
+> >On Wed, 2014-09-17 at 23:47 +0200, Frans Klaver wrote:
+> >> Correct indentation and brace usage to comply with
+> >> Documentation/CodingStyle.
+> >> 
+> >> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> >> ---
+> >>  drivers/platform/x86/eeepc-laptop.c | 8 +++++---
+> >>  1 file changed, 5 insertions(+), 3 deletions(-)
+> >> 
+> >> diff --git a/drivers/platform/x86/eeepc-laptop.c
+> >b/drivers/platform/x86/eeepc-laptop.c
+> >> index 3095d38..653999e 100644
+> >> --- a/drivers/platform/x86/eeepc-laptop.c
+> >> +++ b/drivers/platform/x86/eeepc-laptop.c
+> >> @@ -544,7 +544,7 @@ static int eeepc_led_init(struct eeepc_laptop
+> >*eeepc)
+> >>  	eeepc->tpd_led.name = "eeepc::touchpad";
+> >>  	eeepc->tpd_led.brightness_set = tpd_led_set;
+> >>  	if (get_acpi(eeepc, CM_ASL_TPD) >= 0) /* if method is available */
+> >> -	  eeepc->tpd_led.brightness_get = tpd_led_get;
+> >> +		eeepc->tpd_led.brightness_get = tpd_led_get;
+> >>  	eeepc->tpd_led.max_brightness = 1;
+> >>  
+> >>  	rv = led_classdev_register(&eeepc->platform_device->dev,
+> >> @@ -692,8 +692,9 @@ static int eeepc_register_rfkill_notifier(struct
+> >eeepc_laptop *eeepc,
+> >>  		 * changed during setup.
+> >>  		 */
+> >>  		eeepc_rfkill_hotplug(eeepc, handle);
+> >> -	} else
+> >> +	} else {
+> >>  		return -ENODEV;
+> >> +	}
+> >>  
+> >>  	return 0;
+> >>  }
+> >
+> >This sort of code:
+> >
+> >	if (foo) {
+> >		[ do_something ]
+> >	} else
+> >		return -ERRVAL;
+> >
+> >is generally better rewritten as:
+> >
+> >	if (!foo)
+> >		return -ERRVAL;
+> >
+> >	[ do_something ]
+> >
+> >This gives immediacy to the error handler and
+> >as well reduces unnecessary indentation.
+> 
+> I fully agree. 
+> 
+> Darren, do you still take this in one patch? 
 
-These fix:
+I'll take the cleanup patch as is. I'm happy to take a separate patch to improve
+the code flow.
 
-  - Boot video device detection on dual-GPU Apple systems
-  - Hotplug fiascos on VGA switcheroo with radeon & nouveau drivers
-  - Boot hang on Freescale i.MX6 systems
-  - Excessive "no hotplug settings from platform" warnings
-
-Bjorn
-
-
-
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.17-fixes-2
-
-for you to fetch changes up to 649ae75286793304130e747efa7d1a88daaf7e2e:
-
-  Merge branch 'pci/vga'; commit '6a73336bde29' into for-linus (2014-09-18 23:05:06 -0600)
-
-----------------------------------------------------------------
-PCI updates for v3.17:
-
-  Enumeration
-    - Don't default exclusively to first video device (Bruno Prémont)
-
-  PCI device hotplug
-    - Remove "no hotplug settings from platform" warning (Bjorn Helgaas)
-    - Add pci_ignore_hotplug() for VGA switcheroo (Bjorn Helgaas)
-
-  Freescale i.MX6
-    - Put LTSSM in "Detect" state before disabling (Lucas Stach)
-
-----------------------------------------------------------------
-Bjorn Helgaas (6):
-      Merge branch 'pci/host-imx6' into for-linus
-      PCI: Add pci_ignore_hotplug() to ignore hotplug events for a device
-      PCI: Remove "no hotplug settings from platform" warning
-      ACPIPHP / radeon / nouveau: Remove acpi_bus_no_hotplug()
-      Merge branch 'pci/hotplug-vga' into for-linus
-      Merge branch 'pci/vga'; commit '6a73336bde29' into for-linus
-
-Bruno Prémont (2):
-      vgaarb: Don't default exclusively to first video device with mem+io
-      vgaarb: Drop obsolete #ifndef
-
-Lucas Stach (2):
-      MAINTAINERS: Add Lucas Stach as co-maintainer for i.MX6 PCI driver
-      PCI: imx6: Put LTSSM in "Detect" state before disabling it
-
- MAINTAINERS                                  |  2 +-
- arch/ia64/pci/fixup.c                        | 24 +--------------
- arch/x86/pci/fixup.c                         | 24 +--------------
- drivers/acpi/bus.c                           | 10 ------
- drivers/gpu/drm/nouveau/nouveau_acpi.c       | 16 ++--------
- drivers/gpu/drm/nouveau/nouveau_drm.c        |  1 +
- drivers/gpu/drm/radeon/radeon_atpx_handler.c | 16 ++--------
- drivers/gpu/drm/radeon/radeon_drv.c          |  1 +
- drivers/gpu/vga/vgaarb.c                     | 46 ++++++++++++++++++++++------
- drivers/pci/host/pci-imx6.c                  | 38 +++++++++++++++++++++++
- drivers/pci/hotplug/acpiphp_glue.c           | 16 ++++------
- drivers/pci/hotplug/pciehp_hpc.c             | 12 ++++++++
- drivers/pci/hotplug/pcihp_slot.c             |  6 +---
- include/acpi/acpi_bus.h                      |  4 +--
- include/linux/pci.h                          |  6 ++++
- include/linux/vgaarb.h                       |  2 --
- 16 files changed, 110 insertions(+), 114 deletions(-)
+-- 
+Darren Hart
+Intel Open Source Technology Center
