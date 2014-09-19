@@ -1,81 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760AbaISN2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:28:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44506 "EHLO mga01.intel.com"
+	id S1756838AbaISN30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:29:26 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42752 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755904AbaISN2L convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:28:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="388606567"
-From: "Drokin, Oleg" <oleg.drokin@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Julia Lawall <Julia.Lawall@lip6.fr>,
-        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "<kernel-janitors@vger.kernel.org>" <kernel-janitors@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<HPDD-discuss@ml01.01.org>" <HPDD-discuss@ml01.01.org>
-Subject: Re: [PATCH] staging: lustre: llite: Use kzalloc and rewrite null
- tests
-Thread-Topic: [PATCH] staging: lustre: llite: Use kzalloc and rewrite null
- tests
-Thread-Index: AQHP038cV7KKUWUf/U2QvPeJwPvEYJwIAvSAgAA2K4CAAGi6gIAAR4MA
-Date: Fri, 19 Sep 2014 13:27:49 +0000
-Message-ID: <775505CF-0184-47D7-BF7A-47A5F1382E89@intel.com>
-References: <1411071842-24714-1-git-send-email-Julia.Lawall@lip6.fr>
- <1411071842-24714-2-git-send-email-Julia.Lawall@lip6.fr>
- <20140918234309.GP17875@mwanda>
- <E43F4FD2-3A79-485E-960B-A12960B3D2B7@intel.com>
- <20140919091151.GQ17875@mwanda>
-In-Reply-To: <20140919091151.GQ17875@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.9.123]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <EE01167EA4976642A5425A8C32C25E49@intel.com>
-Content-Transfer-Encoding: 8BIT
+	id S1755831AbaISN3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 09:29:25 -0400
+Date: Fri, 19 Sep 2014 09:29:19 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: linux-mm@kvack.org
+Cc: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140919132919.GA16184@cmpxchg.org>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dave,
 
-On Sep 19, 2014, at 5:11 AM, Dan Carpenter wrote:
+this patch removes the lock you saw with will-it-scale/page_fault2
+entirely, is there a chance you could give it a spin?  It's based on
+v3.17-rc4-mmots-2014-09-12-17-13-4 and that memcg THP fix.  That
+kernel also includes the recent root-memcg revert, so you'd have to
+run it in a memcg; which is as easy as:
 
-> On Fri, Sep 19, 2014 at 02:57:03AM +0000, Drokin, Oleg wrote:
->> 4. Sometimes we need large allocations. general kmalloc is less
->> reliable as system lives on and memory fragmentation worsens. So we
->> have this "allocations over 2-4 pages get switched to vmalloc" logic,
->> if there's a way to do that automatically - that would be great.
-> 
-> Julia's patch only changes OBD_ALLOC() functions and those are always
-> kmalloc so that's not an issue here.
+mkdir /sys/fs/cgroup/memory/foo
+echo $$ >/sys/fs/cgroup/memory/foo/tasks
+perf record -g -a ./runtest.py page_fault2
 
-That's true. Though it would be strange to convert just a subset of those
-allocating macros, and the solution for the OBD_ALLOC_LARGE would
-also be needed.
-> 
-> The OBD_ALLOC_LARGE() macro is vmalloc() or kmalloc() if the size is
-> small enough.  We don't really want to choose between kmalloc and
-> vmalloc automatically.  My instinct is that we should change all the
-> OBD_ALLOC_LARGE() to vmalloc() and trust it to allocate them in the most
-> sane way possible.  But I haven't really looked very closely.
-
-We found that vmalloc (at least with larger allocs, I did not look into details)
-has quite a big penalty with some internal lock that creates big contention at
-production loads.
-So of course the desire is there to reduce our allocations when we can.
-(additionally on 32 bit arches there's always this issue of vmalloc region
-possibly not being large enough to allocate everything we might want whenever
-we see a way for that).
-
-Thanks.
-
-Bye,
-    Oleg
+Thanks!
