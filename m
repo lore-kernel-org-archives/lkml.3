@@ -1,320 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962AbaISV2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 17:28:49 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48026 "EHLO gum.cmpxchg.org"
+	id S1758050AbaISV3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 17:29:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48640 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757728AbaISV2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 17:28:48 -0400
-Date: Fri, 19 Sep 2014 17:28:43 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch v2] mm: memcontrol: convert reclaim iterator to simple css
- refcounting
-Message-ID: <20140919212843.GA23861@cmpxchg.org>
-References: <1411161059-16552-1-git-send-email-hannes@cmpxchg.org>
+	id S1757728AbaISV3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 17:29:39 -0400
+Message-ID: <541CA01D.1000006@ti.com>
+Date: Sat, 20 Sep 2014 00:29:01 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411161059-16552-1-git-send-email-hannes@cmpxchg.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] ARM: edma: unconditionally ack the error interrupt
+References: <1410377960-26921-1-git-send-email-bigeasy@linutronix.de> <541AA900.4080506@ti.com> <20140918161225.GA10232@linutronix.de>
+In-Reply-To: <20140918161225.GA10232@linutronix.de>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eek, sent a stale version of this.  Here is the right one:
+On 09/18/2014 07:12 PM, Sebastian Andrzej Siewior wrote:
+> * Peter Ujfalusi | 2014-09-18 12:42:24 [+0300]:
+> 
+>> My hunch on what could be causing this that we might have unhandled dma event
+>> and another comes. This will flag the EDMA_EMR register. Any change in this
+>> register will assert error interrupt which can only be cleared by writing to
+>> EDMA_EMRC register.
+>> The EDMA_EMRC register bits also cleared on edma_start(), edma_stop() and
+>> edma_clean_channel() apart from the error interrupt handler.
+>> So it is possible that we have missed event on one of the channels but a stop
+>> might clear the event so in the interrupt hander we do not see this.
+>> I think it would be good to understand what is going on the backround...
+>> Can you print out the EDMA_EMCR just before we clear it in the places I have
+>> mentioned? We might get better understanding on which stage we clear it and
+>> probably we can understand how to fix this properly so we are not going to
+>> have missed events on channels.
+> 
+> Okay. For the protocol I applied this patch:
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index 160460ae3a49..16598625a4d1 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -422,20 +422,24 @@ static irqreturn_t dma_ccerr_handler(int irq, void *data)
+>  	int i;
+>  	int ctlr;
+>  	unsigned int cnt = 0;
+> +	u32 emr0;
+>  
+>  	ctlr = irq2ctlr(irq);
+>  	if (ctlr < 0)
+>  		return IRQ_NONE;
+>  
+>  	dev_dbg(data, "dma_ccerr_handler\n");
+> +	emr0 = edma_read_array(ctlr, EDMA_EMR, 0);
+>  
+> -	if ((edma_read_array(ctlr, EDMA_EMR, 0) == 0) &&
+> +	if ((emr0 == 0) &&
+>  	    (edma_read_array(ctlr, EDMA_EMR, 1) == 0) &&
+>  	    (edma_read(ctlr, EDMA_QEMR) == 0) &&
+>  	    (edma_read(ctlr, EDMA_CCERR) == 0)) {
+>  		edma_write(ctlr, EDMA_EEVAL, 1);
+> +		trace_printk("Unhandled\n");
+>  		return IRQ_NONE;
+>  	}
+> +	trace_printk("emr0: %x\n", emr0);
+>  
+>  	while (1) {
+>  		int j = -1;
+> @@ -1310,6 +1314,9 @@ int edma_start(unsigned channel)
+>  		pr_debug("EDMA: ER%d %08x\n", j,
+>  			edma_shadow0_read_array(ctlr, SH_ER, j));
+>  		/* Clear any pending event or error */
+> +		trace_printk("j%d mask%x EDMA_EMCR: %x\n",
+> +			     j, mask,
+> +			     edma_read_array(ctlr, EDMA_EMCR, j));
+>  		edma_write_array(ctlr, EDMA_ECR, j, mask);
+>  		edma_write_array(ctlr, EDMA_EMCR, j, mask);
+>  		/* Clear any SER */
+> @@ -1347,6 +1354,9 @@ void edma_stop(unsigned channel)
+>  		edma_shadow0_write_array(ctlr, SH_EECR, j, mask);
+>  		edma_shadow0_write_array(ctlr, SH_ECR, j, mask);
+>  		edma_shadow0_write_array(ctlr, SH_SECR, j, mask);
+> +		trace_printk("j%d mask%x EDMA_EMCR: %x\n",
+> +			     j, mask,
+> +			     edma_read_array(ctlr, EDMA_EMCR, j));
+>  		edma_write_array(ctlr, EDMA_EMCR, j, mask);
+>  
+>  		pr_debug("EDMA: EER%d %08x\n", j,
+> @@ -1387,6 +1397,9 @@ void edma_clean_channel(unsigned channel)
+>  				edma_read_array(ctlr, EDMA_EMR, j));
+>  		edma_shadow0_write_array(ctlr, SH_ECR, j, mask);
+>  		/* Clear the corresponding EMR bits */
+> +		trace_printk("j%d mask%x EDMA_EMCR: %x\n",
+> +			     j, mask,
+> +			     edma_read_array(ctlr, EDMA_EMCR, j));
+>  		edma_write_array(ctlr, EDMA_EMCR, j, mask);
+>  		/* Clear any SER */
+>  		edma_shadow0_write_array(ctlr, SH_SECR, j, mask);
+> 
+> --
+> 
+> and the result is something like this:
+> 
+>            <idle>-0     [000] dnh.   303.356403: edma_start: j0 mask8000000 EDMA_EMCR: 0
+>            <idle>-0     [000] d.h.   303.396721: edma_stop: j0 mask8000000 EDMA_EMCR: 0
+>            <idle>-0     [000] dnh.   303.557103: edma_start: j0 mask8000000 EDMA_EMCR: 0
+>            <idle>-0     [000] dnh.   303.557129: edma_stop: j0 mask4000000 EDMA_EMCR: 0
+>            <idle>-0     [000] dnH.   303.557142: dma_ccerr_handler: Unhandled
+>              less-2612  [000] d...   303.557237: edma_start: j0 mask4000000 EDMA_EMCR: 0
+>              less-2612  [000] d.h.   303.562491: edma_stop: j0 mask4000000 EDMA_EMCR: 0
+>              less-2612  [000] d...   303.564475: edma_start: j0 mask4000000 EDMA_EMCR: 0
+> 
+> The full trace is at [0]. I haven't found a single entry where EDMA_EMCR
+> was != 0 at those spots. *If* there is a edma_stop() before the
+> interrupt then the interrupt remains unhandled. If there is a
+> edma_start() with mask 8000000 then we have dma_ccerr_handler() with a
+> mask of 4000000.
 
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Fri, 19 Sep 2014 12:39:18 -0400
-Subject: [patch v2] mm: memcontrol: convert reclaim iterator to simple css
- refcounting
+mask 8000000 means URXEVT0 (UART0 rx), 4000000 is UTXEVT0 (UART0 tx) events.
+But it is clear that my theory was not even close to what's going on.
+Do you have some tool which can be used to reproduce this issue?
 
-The memcg reclaim iterators use a complicated weak reference scheme to
-prevent pinning cgroups indefinitely in the absence of memory pressure.
+> 
+> Fun fact: If I remove the write access to EDMA_EMCR register (the write
+> access after the read out) then I haven't seen [1] a single error interrupt
+> beeing "unhandled" out of 9. The former has three out of eight.
 
-However, during the ongoing cgroup core rework, css lifetime has been
-decoupled such that a pinned css no longer interferes with removal of
-the user-visible cgroup, and all this complexity is now unnecessary.
+Hrm, this is interesting. Am I interpret it right:
+if you clear the event missed register's bit for the event, you will receive
+the interrupt, but there if you read the EMR bits, they are all 0.
+if you do not clear the bit in the event missed register (even if it is not
+set) you will not receive the error interrupt. Right?
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 201 ++++++++++----------------------------------------------
- 1 file changed, 34 insertions(+), 167 deletions(-)
+I think this can be due to the fact how edma (if I read the TRM right) works:
+the error irq will be asserted if there is a transition from 0 to 1 in one of
+the error registers. If you had error and you did not cleared the error bit,
+the next error will not going to cause another transition so no interrupt will
+be triggered. Having said that, there should be at least one error interrupt
+coming since at some point we should have had 0 -> 1 transition...
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index dfd3b15a57e8..154161bb7d4c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -253,18 +253,6 @@ struct mem_cgroup_stat_cpu {
- 	unsigned long targets[MEM_CGROUP_NTARGETS];
- };
- 
--struct mem_cgroup_reclaim_iter {
--	/*
--	 * last scanned hierarchy member. Valid only if last_dead_count
--	 * matches memcg->dead_count of the hierarchy root group.
--	 */
--	struct mem_cgroup *last_visited;
--	int last_dead_count;
--
--	/* scan generation, increased every round-trip */
--	unsigned int generation;
--};
--
- /*
-  * per-zone information in memory controller.
-  */
-@@ -272,7 +260,7 @@ struct mem_cgroup_per_zone {
- 	struct lruvec		lruvec;
- 	unsigned long		lru_size[NR_LRU_LISTS];
- 
--	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
-+	struct mem_cgroup	*reclaim_iter[DEF_PRIORITY + 1];
- 
- 	struct rb_node		tree_node;	/* RB tree node */
- 	unsigned long		usage_in_excess;/* Set to the value by which */
-@@ -1174,111 +1162,6 @@ static struct mem_cgroup *get_mem_cgroup_from_mm(struct mm_struct *mm)
- 	return memcg;
- }
- 
--/*
-- * Returns a next (in a pre-order walk) alive memcg (with elevated css
-- * ref. count) or NULL if the whole root's subtree has been visited.
-- *
-- * helper function to be used by mem_cgroup_iter
-- */
--static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
--		struct mem_cgroup *last_visited)
--{
--	struct cgroup_subsys_state *prev_css, *next_css;
--
--	prev_css = last_visited ? &last_visited->css : NULL;
--skip_node:
--	next_css = css_next_descendant_pre(prev_css, &root->css);
--
--	/*
--	 * Even if we found a group we have to make sure it is
--	 * alive. css && !memcg means that the groups should be
--	 * skipped and we should continue the tree walk.
--	 * last_visited css is safe to use because it is
--	 * protected by css_get and the tree walk is rcu safe.
--	 *
--	 * We do not take a reference on the root of the tree walk
--	 * because we might race with the root removal when it would
--	 * be the only node in the iterated hierarchy and mem_cgroup_iter
--	 * would end up in an endless loop because it expects that at
--	 * least one valid node will be returned. Root cannot disappear
--	 * because caller of the iterator should hold it already so
--	 * skipping css reference should be safe.
--	 */
--	if (next_css) {
--		if ((next_css == &root->css) ||
--		    ((next_css->flags & CSS_ONLINE) &&
--		     css_tryget_online(next_css)))
--			return mem_cgroup_from_css(next_css);
--
--		prev_css = next_css;
--		goto skip_node;
--	}
--
--	return NULL;
--}
--
--static void mem_cgroup_iter_invalidate(struct mem_cgroup *root)
--{
--	/*
--	 * When a group in the hierarchy below root is destroyed, the
--	 * hierarchy iterator can no longer be trusted since it might
--	 * have pointed to the destroyed group.  Invalidate it.
--	 */
--	atomic_inc(&root->dead_count);
--}
--
--static struct mem_cgroup *
--mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
--		     struct mem_cgroup *root,
--		     int *sequence)
--{
--	struct mem_cgroup *position = NULL;
--	/*
--	 * A cgroup destruction happens in two stages: offlining and
--	 * release.  They are separated by a RCU grace period.
--	 *
--	 * If the iterator is valid, we may still race with an
--	 * offlining.  The RCU lock ensures the object won't be
--	 * released, tryget will fail if we lost the race.
--	 */
--	*sequence = atomic_read(&root->dead_count);
--	if (iter->last_dead_count == *sequence) {
--		smp_rmb();
--		position = iter->last_visited;
--
--		/*
--		 * We cannot take a reference to root because we might race
--		 * with root removal and returning NULL would end up in
--		 * an endless loop on the iterator user level when root
--		 * would be returned all the time.
--		 */
--		if (position && position != root &&
--		    !css_tryget_online(&position->css))
--			position = NULL;
--	}
--	return position;
--}
--
--static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
--				   struct mem_cgroup *last_visited,
--				   struct mem_cgroup *new_position,
--				   struct mem_cgroup *root,
--				   int sequence)
--{
--	/* root reference counting symmetric to mem_cgroup_iter_load */
--	if (last_visited && last_visited != root)
--		css_put(&last_visited->css);
--	/*
--	 * We store the sequence count from the time @last_visited was
--	 * loaded successfully instead of rereading it here so that we
--	 * don't lose destruction events in between.  We could have
--	 * raced with the destruction of @new_position after all.
--	 */
--	iter->last_visited = new_position;
--	smp_wmb();
--	iter->last_dead_count = sequence;
--}
--
- /**
-  * mem_cgroup_iter - iterate over memory cgroup hierarchy
-  * @root: hierarchy root
-@@ -1300,8 +1183,11 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 				   struct mem_cgroup *prev,
- 				   struct mem_cgroup_reclaim_cookie *reclaim)
- {
-+	struct mem_cgroup_per_zone *uninitialized_var(mz);
-+	struct cgroup_subsys_state *css = NULL;
-+	int uninitialized_var(priority);
- 	struct mem_cgroup *memcg = NULL;
--	struct mem_cgroup *last_visited = NULL;
-+	struct mem_cgroup *pos = NULL;
- 
- 	if (mem_cgroup_disabled())
- 		return NULL;
-@@ -1310,50 +1196,51 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		root = root_mem_cgroup;
- 
- 	if (prev && !reclaim)
--		last_visited = prev;
-+		pos = prev;
- 
- 	if (!root->use_hierarchy && root != root_mem_cgroup) {
- 		if (prev)
--			goto out_css_put;
-+			goto out;
- 		return root;
- 	}
- 
- 	rcu_read_lock();
--	while (!memcg) {
--		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
--		int uninitialized_var(seq);
- 
--		if (reclaim) {
--			struct mem_cgroup_per_zone *mz;
-+	if (reclaim) {
-+		mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
-+		priority = reclaim->priority;
- 
--			mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
--			iter = &mz->reclaim_iter[reclaim->priority];
--			if (prev && reclaim->generation != iter->generation) {
--				iter->last_visited = NULL;
--				goto out_unlock;
--			}
--
--			last_visited = mem_cgroup_iter_load(iter, root, &seq);
--		}
--
--		memcg = __mem_cgroup_iter_next(root, last_visited);
-+		do {
-+			pos = ACCESS_ONCE(mz->reclaim_iter[priority]);
-+		} while (pos && !css_tryget(&pos->css));
-+	}
- 
--		if (reclaim) {
--			mem_cgroup_iter_update(iter, last_visited, memcg, root,
--					seq);
-+	if (pos)
-+		css = &pos->css;
- 
--			if (!memcg)
--				iter->generation++;
--			else if (!prev && memcg)
--				reclaim->generation = iter->generation;
-+	for (;;) {
-+		css = css_next_descendant_pre(css, &root->css);
-+		if (!css) {
-+			if (prev)
-+				goto out_unlock;
-+			continue;
-+		}
-+		if (css == &root->css || css_tryget_online(css)) {
-+			memcg = mem_cgroup_from_css(css);
-+			break;
- 		}
-+	}
- 
--		if (prev && !memcg)
--			goto out_unlock;
-+	if (reclaim) {
-+		if (cmpxchg(&mz->reclaim_iter[priority], pos, memcg) == pos)
-+			css_get(&memcg->css);
-+		if (pos)
-+			css_put(&pos->css);
- 	}
-+
- out_unlock:
- 	rcu_read_unlock();
--out_css_put:
-+out:
- 	if (prev && prev != root)
- 		css_put(&prev->css);
- 
-@@ -5526,24 +5413,6 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
- }
- 
--/*
-- * Announce all parents that a group from their hierarchy is gone.
-- */
--static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
--{
--	struct mem_cgroup *parent = memcg;
--
--	while ((parent = parent_mem_cgroup(parent)))
--		mem_cgroup_iter_invalidate(parent);
--
--	/*
--	 * if the root memcg is not hierarchical we have to check it
--	 * explicitely.
--	 */
--	if (!root_mem_cgroup->use_hierarchy)
--		mem_cgroup_iter_invalidate(root_mem_cgroup);
--}
--
- static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-@@ -5564,8 +5433,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- 
- 	kmem_cgroup_css_offline(memcg);
- 
--	mem_cgroup_invalidate_reclaim_iterators(memcg);
--
- 	/*
- 	 * This requires that offlining is serialized.  Right now that is
- 	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
--- 
-2.1.0
+Can you print out also the EDMA_EMR at places you were printing EDMA_EMCR?
+
+> 
+> [0] https://breakpoint.cc/edma_trace.txt.xz
+> [1] https://breakpoint.cc/edma_trace_nowrite.txt.xz
+> 
+> Sebastian
+> 
 
 
+thanks,
+Péter
