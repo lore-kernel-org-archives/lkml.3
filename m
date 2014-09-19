@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395AbaISMlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:41:12 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:62702 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaISMlK (ORCPT
+	id S1756557AbaISMld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:41:33 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42747 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298AbaISMlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:41:10 -0400
+	Fri, 19 Sep 2014 08:41:31 -0400
+Message-ID: <541C2475.7070500@de.ibm.com>
+Date: Fri, 19 Sep 2014 14:41:25 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-In-Reply-To: <20140918174127.GB340@redhat.com>
-References: <20140917174647.GC19308@redhat.com>
-	<1411047228-2576-1-git-send-email-r.peniaev@gmail.com>
-	<20140918174127.GB340@redhat.com>
-Date: Fri, 19 Sep 2014 21:41:09 +0900
-Message-ID: <CACZ9PQWDynSqUREO_79e5DFKqhV62ra3ecYYaNttOdNx4wS6_A@mail.gmail.com>
-Subject: Re: [v3 PATCH 1/1] init: fix race between rootfs mount and firmware loading
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>, tom.leiming@gmail.com,
+        axboe@kernel.dk
+CC: kvm@vger.kernel.org, stable@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, mst@redhat.com,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] blk-mq: Avoid race condition with uninitialized requests
+References: <1411031071-40390-1-git-send-email-dahi@linux.vnet.ibm.com> <1411031071-40390-2-git-send-email-dahi@linux.vnet.ibm.com>
+In-Reply-To: <1411031071-40390-2-git-send-email-dahi@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091912-8372-0000-0000-0000013DE758
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 2:41 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 09/18, Roman Pen wrote:
->>
->> +void wait_for_rootfs(void)
->> +{
->> +     /* Avoid waiting for ourselves */
->> +     if (WARN_ON(is_global_init(current)))
->> +             return;
->> +     else
->> +             wait_event(rootfs_waitq, rootfs_mounted);
->> +}
->
-> Ah, wait, the is_global_init() check doesn't look right in any case.
->
-> What if /sbin/init does sys_init_module() and this module does
-> request_firmware() ?
+On 09/18/2014 11:04 AM, David Hildenbrand wrote:
+> This patch should fix the bug reported in https://lkml.org/lkml/2014/9/11/249.
+> 
+> We have to initialize at least the atomic_flags and the cmd_flags when
+> allocating storage for the requests.
+> 
+> Otherwise blk_mq_timeout_check() might dereference uninitialized pointers when
+> racing with the creation of a request.
+> 
+> Also move the reset of cmd_flags for the initializing code to the point where a
+> request is freed. So we will never end up with pending flush request indicators
+> that might trigger dereferences of invalid pointers in blk_mq_timeout_check().
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 
-Yeah, right. It turned out to be more tricky than I expected.
-Will fix.
+So far our testers were not able to reproduce the problem with this patch applied, we will continue testing over weekend. I will give an ACK/NACK on monday then.
 
->
-> I think we should only warn if init is going to wait,
->
->         /* Avoid waiting for ourselves */
->         if (rootfs_mounted || WARN_ON(is_global_init(current)))
->                 return;
->
->         __wait_event(rootfs_waitq, rootfs_mounted);
->
->
->> +EXPORT_SYMBOL(wait_for_rootfs);
->
-> Why?
+Thanks
 
-CONFIG_FW_LOADER (which includes firmware_class.c to compilation
-sequence) is declared as tristate,
-thus it can be built as module. Seems I can break  loading of this
-module if skip exporting, right?
 
---
-Roman
+> ---
+>  block/blk-mq.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index 383ea0c..eed6340 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -203,7 +203,6 @@ __blk_mq_alloc_request(struct blk_mq_alloc_data *data, int rw)
+>  	if (tag != BLK_MQ_TAG_FAIL) {
+>  		rq = data->hctx->tags->rqs[tag];
+> 
+> -		rq->cmd_flags = 0;
+>  		if (blk_mq_tag_busy(data->hctx)) {
+>  			rq->cmd_flags = REQ_MQ_INFLIGHT;
+>  			atomic_inc(&data->hctx->nr_active);
+> @@ -258,6 +257,7 @@ static void __blk_mq_free_request(struct blk_mq_hw_ctx *hctx,
+> 
+>  	if (rq->cmd_flags & REQ_MQ_INFLIGHT)
+>  		atomic_dec(&hctx->nr_active);
+> +	rq->cmd_flags = 0;
+> 
+>  	clear_bit(REQ_ATOM_STARTED, &rq->atomic_flags);
+>  	blk_mq_put_tag(hctx, tag, &ctx->last_tag);
+> @@ -1404,6 +1404,8 @@ static struct blk_mq_tags *blk_mq_init_rq_map(struct blk_mq_tag_set *set,
+>  		left -= to_do * rq_size;
+>  		for (j = 0; j < to_do; j++) {
+>  			tags->rqs[i] = p;
+> +			tags->rqs[i]->atomic_flags = 0;
+> +			tags->rqs[i]->cmd_flags = 0;
+>  			if (set->ops->init_request) {
+>  				if (set->ops->init_request(set->driver_data,
+>  						tags->rqs[i], hctx_idx, i,
+> 
+
