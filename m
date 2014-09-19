@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaISIi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 04:38:58 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:54502 "EHLO mailhub1.si.c-s.fr"
+	id S1756056AbaISIi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 04:38:56 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:54501 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306AbaISIgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754311AbaISIgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 04:36:16 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,15 +12,14 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v4 13/21] powerpc/8xx: Use PAGE size related consts
-Message-Id: <20140919083609.099A51AB03E@localhost.localdomain>
+Subject: [PATCH v4 15/21] powerpc/8xx: Implement 16k pages
+Message-Id: <20140919083609.594B11AB019@localhost.localdomain>
 Date: Fri, 19 Sep 2014 10:36:09 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For PAGE size related operations, use PAGE size consts in order to be able to
-use different page size in the futur.
+This patch activates the handling of 16k pages on the MPC8xx.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
@@ -34,106 +33,60 @@ Changes in v3:
 Changes in v4:
 - None
 
- arch/powerpc/kernel/head_8xx.S |   30 ++++++++++++++++++------------
- 1 files changed, 18 insertions(+), 12 deletions(-)
+ arch/powerpc/Kconfig               |    2 +-
+ arch/powerpc/include/asm/mmu-8xx.h |    2 ++
+ arch/powerpc/kernel/head_8xx.S     |    4 ++++
+ 3 files changed, 7 insertions(+), 1 deletions(-)
 
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 5f44d3b..dc5f64e 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -518,7 +518,7 @@ config PPC_4K_PAGES
+ 	bool "4k page size"
+ 
+ config PPC_16K_PAGES
+-	bool "16k page size" if 44x
++	bool "16k page size" if 44x || PPC_8xx
+ 
+ config PPC_64K_PAGES
+ 	bool "64k page size" if 44x || PPC_STD_MMU_64 || PPC_BOOK3E_64
+diff --git a/arch/powerpc/include/asm/mmu-8xx.h b/arch/powerpc/include/asm/mmu-8xx.h
+index 3d11d3c..986b9e1 100644
+--- a/arch/powerpc/include/asm/mmu-8xx.h
++++ b/arch/powerpc/include/asm/mmu-8xx.h
+@@ -56,6 +56,7 @@
+  * additional information from the MI_EPN, and MI_TWC registers.
+  */
+ #define SPRN_MI_RPN	790
++#define MI_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
+ 
+ /* Define an RPN value for mapping kernel memory to large virtual
+  * pages for boot initialization.  This has real page number of 0,
+@@ -129,6 +130,7 @@
+  * additional information from the MD_EPN, and MD_TWC registers.
+  */
+ #define SPRN_MD_RPN	798
++#define MD_SPS16K	0x00000008	/* Small page size (0 = 4k, 1 = 16k) */
+ 
+ /* This is a temporary storage register that could be used to save
+  * a processor working register during a tablewalk.
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 0f571f5..dcaee9f 100644
+index 8966262..4dd6be0 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -292,9 +292,9 @@ InstructionTLBMiss:
- 	mtspr	SPRN_SPRG_SCRATCH2, r10
- 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
- #ifdef CONFIG_8xx_CPU15
--	addi	r11, r10, 0x1000
-+	addi	r11, r10, PAGE_SIZE
- 	tlbie	r11
--	addi	r11, r10, -0x1000
-+	addi	r11, r10, -PAGE_SIZE
- 	tlbie	r11
- #endif
+@@ -45,7 +45,11 @@
+  * Value for the bits that have fixed value in RPN entries.
+  * Also used for tagging DAR for DTLBerror.
+  */
++#ifdef CONFIG_PPC_16K_PAGES
++#define RPN_PATTERN	(0x00f0 | MD_SPS16K)
++#else
+ #define RPN_PATTERN	0x00f0
++#endif
  
-@@ -313,7 +313,8 @@ InstructionTLBMiss:
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
- 3:
- #endif
--	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
-+	/* Extract level 1 index */
-+	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
- 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
- 	beq	2f		/* If zero, don't try to find a pte */
-@@ -325,7 +326,8 @@ InstructionTLBMiss:
- 	DO_8xx_CPU6(0x2b80, r3)
- 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
--	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	/* Extract level 2 index */
-+	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
- 	lwzx	r10, r10, r11	/* Get the pte */
- 
- #ifdef CONFIG_SWAP
-@@ -385,7 +387,8 @@ DataStoreTLBMiss:
- 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
- 3:
--	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
-+	/* Extract level 1 index */
-+	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
- 	rlwinm.	r10, r11,0,0,19	/* Extract page descriptor page address */
- 	beq	2f		/* If zero, don't try to find a pte */
-@@ -394,8 +397,8 @@ DataStoreTLBMiss:
- 	 */
- 	mfspr	r10, SPRN_MD_EPN	/* Get address of fault */
- 	/* Extract level 2 index */
--	rlwinm	r10, r10, 22, 20, 29
--	rlwimi	r10, r11, 0, 0, 19	/* Add level 2 base */
-+	rlwinm	r10, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
-+	rlwimi	r10, r11, 0, 0, 32 - PAGE_SHIFT - 1	/* Add level 2 base */
- 	lwz	r10, 0(r10)	/* Get the pte */
- 
- 	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
-@@ -526,18 +529,20 @@ FixupDAR:/* Entry point for dcbx workaround. */
- 	beq-	3f		/* Branch if user space */
- 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
- 	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
--3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
-+	/* Extract level 1 index */
-+3:	rlwinm	r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
- 	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
--	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	/* Extract level 2 index */
-+	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
- 	lwzx	r11, r10, r11	/* Get the pte */
- #ifdef CONFIG_8xx_CPU6
- 	lwz	r3, 8(r0)	/* restore r3 from memory */
- #endif
- 	/* concat physical page address(r11) and page offset(r10) */
- 	mfspr	r10, SPRN_SRR0
--	rlwimi	r11, r10, 0, 20, 31
-+	rlwimi	r11, r10, 0, 32 - PAGE_SHIFT, 31
- 	lwz	r11,0(r11)
- /* Check if it really is a dcbx instruction. */
- /* dcbt and dcbtst does not generate DTLB Misses/Errors,
-@@ -913,12 +918,13 @@ set_dec_cpu6:
- 	.globl	sdata
- sdata:
- 	.globl	empty_zero_page
-+	.align	PAGE_SHIFT
- empty_zero_page:
--	.space	4096
-+	.space	PAGE_SIZE
- 
- 	.globl	swapper_pg_dir
- swapper_pg_dir:
--	.space	4096
-+	.space	PGD_TABLE_SIZE
- 
- /* Room for two PTE table poiners, usually the kernel and current user
-  * pointer to their respective root page table (pgdir).
+ 	__HEAD
+ _ENTRY(_stext);
 -- 
 1.7.1
 
