@@ -1,216 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443AbaISQYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 12:24:21 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39940 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756738AbaISQYT (ORCPT
+	id S1757495AbaISQYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 12:24:39 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:44313 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392AbaISQYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 12:24:19 -0400
-Message-ID: <541C58B0.4060704@hurleysoftware.com>
-Date: Fri, 19 Sep 2014 12:24:16 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 19 Sep 2014 12:24:37 -0400
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Len Brown <len.brown@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Ian Malone <ibmalone@gmail.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel bug 60770
-References: <CA+5PVA4Ld3-VfPN6NWk=uqiuG2p99dL8Ro_X08NFb33_UtnWMA@mail.gmail.com>	 <CA+5PVA5XxcQe+Coy-OdMRsAxSCH=3B7QdsdXO2GqRkFDcAt0iA@mail.gmail.com> <1409234000.5212.7.camel@marge.simpson.net>
-In-Reply-To: <1409234000.5212.7.camel@marge.simpson.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <CAAQKjZMoctx9K0RfPDEEsGfj7cEWX8-hRT2saSyCvq5wBX9vPA@mail.gmail.com>
+References: <1411131533-15494-1-git-send-email-a.hajda@samsung.com>
+	<CAAQKjZMoctx9K0RfPDEEsGfj7cEWX8-hRT2saSyCvq5wBX9vPA@mail.gmail.com>
+Date: Sat, 20 Sep 2014 01:24:35 +0900
+X-Google-Sender-Auth: Z91xVqQx89dJvk0yFAYJ1tSW7qI
+Message-ID: <CAAQKjZOcjUZb2b_AUGqn6-Txt=bdAq2AUTCuZ9YCV9V1Xft7ug@mail.gmail.com>
+Subject: Re: [PATCH v2] drm/exynos: switch to universal plane API
+From: Inki Dae <inki.dae@samsung.com>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Seung-Woo Kim <sw0312.kim@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
+        Daniel Drake <drake@endlessm.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 09:53 AM, Mike Galbraith wrote:
-> On Thu, 2014-08-28 at 09:23 -0400, Josh Boyer wrote: 
->> On Sat, Aug 16, 2014 at 10:33 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->>> Hi Len,
->>>
->>> Kernel bug https://bugzilla.kernel.org/show_bug.cgi?id=60770 is marked
->>> as closed, but there is a patch that at least one user seems to need
->>> to get things booting properly.  It was sent upstream a while ago:
->>>
->>> http://marc.info/?l=linux-kernel&m=138976439211647&w=2
->>>
->>> but has never made it into the kernel.  Do you know why this is or
->>> what happened to the patch?
+2014-09-20 1:04 GMT+09:00 Inki Dae <inki.dae@samsung.com>:
+> 2014-09-19 21:58 GMT+09:00 Andrzej Hajda <a.hajda@samsung.com>:
+>> The patch replaces legacy functions
+>> drm_plane_init() / drm_crtc_init() with
+>> drm_universal_plane_init() and drm_crtc_init_with_planes().
+>> It allows to replace fake primary plane with the real one.
+>> Additionally the patch leaves cleanup of crtcs to core,
+>> this way planes and crtcs are cleaned in correct order.
 >>
->> Adding Peter and Ingo.  Len seems to be MIA or otherwise occupied.
+>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>> ---
+>> Hi Inki, Joonyoung,
 >>
->> Peter and Ingo, and thoughts on the bug/thread above?
-> 
-> That patch needs some bend adjustment, now looks like below here.
-> 
-> Patch also has a secondary benefit for core2 boxen, when booted
-> processor.max_cstate=1, box can still use mwait.
-> 
-> Subject: [PATCH REGRESSION FIX] x86 idle: restore mwait_idle()
-> From: Len Brown <lenb@kernel.org>
-> Date: Wed, 15 Jan 2014 00:37:34 -0500
-> 
-> From: Len Brown <len.brown@intel.com>
-> 
-> In Linux-3.9 we removed the mwait_idle() loop:
-> 'x86 idle: remove mwait_idle() and "idle=mwait" cmdline param'
-> (69fb3676df3329a7142803bb3502fa59dc0db2e3)
-> 
-> The reasoning was that modern machines should be sufficiently
-> happy during the boot process using the default_idle() HALT loop,
-> until cpuidle loads and either acpi_idle or intel_idle
-> invoke the newer MWAIT-with-hints idle loop.
-> 
-> But two machines reported problems:
-> 1. Certain Core2-era machines support MWAIT-C1 and HALT only.
->    MWAIT-C1 is preferred for optimal power and performance.
->    But if they support just C1, cpuidle never loads and
->    so they use the boot-time default idle loop forever.
-> 
-> 2. Some laptops will boot-hang if HALT is used,
->    but will boot successfully if MWAIT is used.
->    This appears to be a hidden assumption in BIOS SMI,
->    that is presumably valid on the proprietary OS
->    where the BIOS was validated.
-> 
->    https://bugzilla.kernel.org/show_bug.cgi?id=60770
-> 
-> So here we effectively revert the patch above, restoring
-> the mwait_idle() loop.  However, we don't bother restoring
-> the idle=mwait cmdline parameter, since it appears to add
-> no value.
-> 
-> Maintainer notes:
-> For 3.9, simply revert 69fb3676df
-> for 3.10, patch -F3 applies, fuzz needed due to __cpuinit use in context
-> For 3.11, 3.12, 3.13, this patch applies cleanly
-> 
-> Mike: add clflush barriers and resched IPI avoidance.
+>> This is 2nd version of the patch with addressed comments of Joonyoung.
+>
+> Picked it up.
 
-Mike,
+Oops, one more thing, there are trivial issues below. See the below
+comments. Anyway, I fixed them up and merged.
 
-The changes for clflush don't build prior to 3.17-rcX;
-X86_BUG_CLFLUSH_MONITOR was X86_FEATURE_CLFLUSH_MONITOR prior to
-commit 9b13a93df267af681a66a6a738bf1af10102da7d,
-'x86, cpufeature: Convert more "features" to bugs'.
+Thanks,
+Inki Dae
 
-Len,
+>
+> Thanks,
+> Inki Dae
+>
+>>
+>> Regards
+>> Andrzej
+>> ---
+>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c  | 62 +++++++++++++++----------------
+>>  drivers/gpu/drm/exynos/exynos_drm_drv.c   |  5 ++-
+>>  drivers/gpu/drm/exynos/exynos_drm_fimd.c  |  2 -
+>>  drivers/gpu/drm/exynos/exynos_drm_plane.c | 19 +++++-----
+>>  drivers/gpu/drm/exynos/exynos_drm_plane.h |  3 +-
+>>  drivers/gpu/drm/exynos/exynos_drm_vidi.c  |  1 -
+>>  drivers/gpu/drm/exynos/exynos_mixer.c     |  2 -
+>>  7 files changed, 46 insertions(+), 48 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>> index b68e58f..8e38e9f 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>> @@ -32,7 +32,6 @@ enum exynos_crtc_mode {
+>>   * Exynos specific crtc structure.
+>>   *
+>>   * @drm_crtc: crtc object.
+>> - * @drm_plane: pointer of private plane object for this crtc
+>>   * @manager: the manager associated with this crtc
+>>   * @pipe: a crtc index created at load() with a new crtc object creation
+>>   *     and the crtc object would be set to private->crtc array
+>> @@ -46,7 +45,6 @@ enum exynos_crtc_mode {
+>>   */
+>>  struct exynos_drm_crtc {
+>>         struct drm_crtc                 drm_crtc;
+>> -       struct drm_plane                *plane;
+>>         struct exynos_drm_manager       *manager;
+>>         unsigned int                    pipe;
+>>         unsigned int                    dpms;
+>> @@ -94,12 +92,12 @@ static void exynos_drm_crtc_commit(struct drm_crtc *crtc)
+>>
+>>         exynos_drm_crtc_dpms(crtc, DRM_MODE_DPMS_ON);
+>>
+>> -       exynos_plane_commit(exynos_crtc->plane);
+>> +       exynos_plane_commit(crtc->primary);
+>>
+>>         if (manager->ops->commit)
+>>                 manager->ops->commit(manager);
+>>
+>> -       exynos_plane_dpms(exynos_crtc->plane, DRM_MODE_DPMS_ON);
+>> +       exynos_plane_dpms(crtc->primary, DRM_MODE_DPMS_ON);
+>>  }
+>>
+>>  static bool
+>> @@ -123,10 +121,9 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>  {
+>>         struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
+>>         struct exynos_drm_manager *manager = exynos_crtc->manager;
+>> -       struct drm_plane *plane = exynos_crtc->plane;
+>> +       struct drm_framebuffer *fb = crtc->primary->fb;
+>>         unsigned int crtc_w;
+>>         unsigned int crtc_h;
+>> -       int ret;
+>>
+>>         /*
+>>          * copy the mode data adjusted by mode_fixup() into crtc->mode
+>> @@ -134,29 +131,21 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>          */
+>>         memcpy(&crtc->mode, adjusted_mode, sizeof(*adjusted_mode));
+>>
+>> -       crtc_w = crtc->primary->fb->width - x;
+>> -       crtc_h = crtc->primary->fb->height - y;
+>> +       crtc_w = fb->width - x;
+>> +       crtc_h = fb->height - y;
+>>
+>>         if (manager->ops->mode_set)
+>>                 manager->ops->mode_set(manager, &crtc->mode);
+>>
+>> -       ret = exynos_plane_mode_set(plane, crtc, crtc->primary->fb, 0, 0, crtc_w, crtc_h,
+>> -                                   x, y, crtc_w, crtc_h);
+>> -       if (ret)
+>> -               return ret;
+>> -
+>> -       plane->crtc = crtc;
+>> -       plane->fb = crtc->primary->fb;
+>> -       drm_framebuffer_reference(plane->fb);
+>> -
+>> -       return 0;
+>> +       return exynos_plane_mode_set(crtc->primary, crtc, fb, 0, 0,
+>> +                                    crtc_w, crtc_h, x, y, crtc_w, crtc_h);
+>>  }
+>>
+>>  static int exynos_drm_crtc_mode_set_commit(struct drm_crtc *crtc, int x, int y,
+>>                                           struct drm_framebuffer *old_fb)
+>>  {
+>>         struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
+>> -       struct drm_plane *plane = exynos_crtc->plane;
+>> +       struct drm_framebuffer *fb = crtc->primary->fb;
+>>         unsigned int crtc_w;
+>>         unsigned int crtc_h;
+>>         int ret;
+>> @@ -167,11 +156,11 @@ static int exynos_drm_crtc_mode_set_commit(struct drm_crtc *crtc, int x, int y,
+>>                 return -EPERM;
+>>         }
+>>
+>> -       crtc_w = crtc->primary->fb->width - x;
+>> -       crtc_h = crtc->primary->fb->height - y;
+>> +       crtc_w = fb->width - x;
+>> +       crtc_h = fb->height - y;
+>>
+>> -       ret = exynos_plane_mode_set(plane, crtc, crtc->primary->fb, 0, 0, crtc_w, crtc_h,
+>> -                                   x, y, crtc_w, crtc_h);
+>> +       ret = exynos_plane_mode_set(crtc->primary, crtc, fb, 0, 0,
+>> +                                   crtc_w, crtc_h, x, y, crtc_w, crtc_h);
+>>         if (ret)
+>>                 return ret;
+>>
+>> @@ -304,8 +293,7 @@ static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
+>>                         exynos_drm_crtc_commit(crtc);
+>>                         break;
+>>                 case CRTC_MODE_BLANK:
+>> -                       exynos_plane_dpms(exynos_crtc->plane,
+>> -                                         DRM_MODE_DPMS_OFF);
+>> +                       exynos_plane_dpms(crtc->primary, DRM_MODE_DPMS_OFF);
+>>                         break;
+>>                 default:
+>>                         break;
+>> @@ -351,8 +339,10 @@ static void exynos_drm_crtc_attach_mode_property(struct drm_crtc *crtc)
+>>  int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>  {
+>>         struct exynos_drm_crtc *exynos_crtc;
+>> +       struct drm_plane *plane;
+>>         struct exynos_drm_private *private = manager->drm_dev->dev_private;
+>>         struct drm_crtc *crtc;
+>> +       int ret;
+>>
+>>         exynos_crtc = kzalloc(sizeof(*exynos_crtc), GFP_KERNEL);
+>>         if (!exynos_crtc)
+>> @@ -364,11 +354,11 @@ int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>         exynos_crtc->dpms = DRM_MODE_DPMS_OFF;
+>>         exynos_crtc->manager = manager;
+>>         exynos_crtc->pipe = manager->pipe;
+>> -       exynos_crtc->plane = exynos_plane_init(manager->drm_dev,
+>> -                               1 << manager->pipe, true);
+>> -       if (!exynos_crtc->plane) {
+>> -               kfree(exynos_crtc);
+>> -               return -ENOMEM;
+>> +       plane = exynos_plane_init(manager->drm_dev, 1 << manager->pipe,
+>> +                                 DRM_PLANE_TYPE_PRIMARY);
+>> +       if (IS_ERR(plane)) {
+>> +               ret = PTR_ERR(plane);
+>> +               goto err_plane;
+>>         }
+>>
+>>         manager->crtc = &exynos_crtc->drm_crtc;
+>> @@ -376,12 +366,22 @@ int exynos_drm_crtc_create(struct exynos_drm_manager *manager)
+>>
+>>         private->crtc[manager->pipe] = crtc;
+>>
+>> -       drm_crtc_init(manager->drm_dev, crtc, &exynos_crtc_funcs);
+>> +       ret = drm_crtc_init_with_planes(manager->drm_dev, crtc, plane, NULL,
+>> +                                       &exynos_crtc_funcs);
+>> +       if (ret < 0)
+>> +               goto err_crtc;
+>> +
+>>         drm_crtc_helper_add(crtc, &exynos_crtc_helper_funcs);
+>>
+>>         exynos_drm_crtc_attach_mode_property(crtc);
+>>
+>>         return 0;
+>> +
+>> +err_crtc:
+>> +       plane->funcs->destroy(plane);
+>> +err_plane:
+>> +       kfree(exynos_crtc);
+>> +       return ret;
+>>  }
+>>
+>>  int exynos_drm_crtc_enable_vblank(struct drm_device *dev, int pipe)
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>> index dc4affd..49c15f6 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+>> @@ -86,8 +86,9 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+>>                 struct drm_plane *plane;
+>>                 unsigned long possible_crtcs = (1 << MAX_CRTC) - 1;
+>>
+>> -               plane = exynos_plane_init(dev, possible_crtcs, false);
+>> -               if (!plane)
+>> +               plane = exynos_plane_init(dev, possible_crtcs,
+>> +                                         DRM_PLANE_TYPE_OVERLAY);
+>> +               if (IS_ERR(plane))
+>>                         goto err_mode_config_cleanup;
+>>         }
+>>
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+>> index 2f896df..fb1a152 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
+>> @@ -1082,8 +1082,6 @@ static void fimd_unbind(struct device *dev, struct device *master,
+>>                 exynos_dpi_remove(dev);
+>>
+>>         fimd_mgr_remove(mgr);
+>> -
+>> -       crtc->funcs->destroy(crtc);
 
-FWIW, I tested this patch on a dual-socket Xeon E5420, and nothing died :)
-The change in core temps was not statistically significant though,
-and I don't have more accurate testing gear for monitoring cpu power
-consumption.
+crtc declaration isn't needed anymore by removing above line so that
+should be removed to avoid build warning.
 
-Regards,
-Peter Hurley
+>>  }
+>>
+>>  static const struct component_ops fimd_component_ops = {
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_plane.c b/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>> index 8371cbd..c7045a66 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_plane.c
+>> @@ -139,6 +139,8 @@ int exynos_plane_mode_set(struct drm_plane *plane, struct drm_crtc *crtc,
+>>                         overlay->crtc_x, overlay->crtc_y,
+>>                         overlay->crtc_width, overlay->crtc_height);
+>>
+>> +       plane->crtc = crtc;
+>> +
+>>         exynos_drm_crtc_plane_mode_set(crtc, overlay);
+>>
+>>         return 0;
+>> @@ -187,8 +189,6 @@ exynos_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>>         if (ret < 0)
+>>                 return ret;
+>>
+>> -       plane->crtc = crtc;
+>> -
+>>         exynos_plane_commit(plane);
+>>         exynos_plane_dpms(plane, DRM_MODE_DPMS_ON);
+>>
+>> @@ -254,25 +254,26 @@ static void exynos_plane_attach_zpos_property(struct drm_plane *plane)
+>>  }
+>>
+>>  struct drm_plane *exynos_plane_init(struct drm_device *dev,
+>> -                                   unsigned long possible_crtcs, bool priv)
+>> +                                   unsigned long possible_crtcs,
+>> +                                   enum drm_plane_type type)
+>>  {
+>>         struct exynos_plane *exynos_plane;
+>>         int err;
+>>
+>>         exynos_plane = kzalloc(sizeof(struct exynos_plane), GFP_KERNEL);
+>>         if (!exynos_plane)
+>> -               return NULL;
+>> +               return ERR_PTR(-ENOMEM);
+>>
+>> -       err = drm_plane_init(dev, &exynos_plane->base, possible_crtcs,
+>> -                             &exynos_plane_funcs, formats, ARRAY_SIZE(formats),
+>> -                             priv);
+>> +       err = drm_universal_plane_init(dev, &exynos_plane->base, possible_crtcs,
+>> +                                      &exynos_plane_funcs, formats,
+>> +                                      ARRAY_SIZE(formats), type);
+>>         if (err) {
+>>                 DRM_ERROR("failed to initialize plane\n");
+>>                 kfree(exynos_plane);
+>> -               return NULL;
+>> +               return ERR_PTR(err);
+>>         }
+>>
+>> -       if (priv)
+>> +       if (type == DRM_PLANE_TYPE_PRIMARY)
+>>                 exynos_plane->overlay.zpos = DEFAULT_ZPOS;
+>>         else
+>>                 exynos_plane_attach_zpos_property(&exynos_plane->base);
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_plane.h b/drivers/gpu/drm/exynos/exynos_drm_plane.h
+>> index 84d464c..0d1986b 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_plane.h
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_plane.h
+>> @@ -17,4 +17,5 @@ int exynos_plane_mode_set(struct drm_plane *plane, struct drm_crtc *crtc,
+>>  void exynos_plane_commit(struct drm_plane *plane);
+>>  void exynos_plane_dpms(struct drm_plane *plane, int mode);
+>>  struct drm_plane *exynos_plane_init(struct drm_device *dev,
+>> -                                   unsigned long possible_crtcs, bool priv);
+>> +                                   unsigned long possible_crtcs,
+>> +                                   enum drm_plane_type type);
+>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_vidi.c b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+>> index 9528d81..57e8adc 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+>> @@ -657,7 +657,6 @@ static int vidi_remove(struct platform_device *pdev)
+>>                 return -EINVAL;
+>>         }
+>>
+>> -       crtc->funcs->destroy(crtc);
 
+Ditto.
 
-> Cc: Mike Galbraith <bitbucket@online.de>
-> Cc: Ian Malone <ibmalone@gmail.com>
-> Cc: Josh Boyer <jwboyer@redhat.com>
-> Cc: <stable@vger.kernel.org> # 3.9, 3.10, 3.11, 3.12, 3.13
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> Signed-off-by: Mike Galbraith <bitbucket@online.de>
-> ---
->  arch/x86/include/asm/mwait.h |    8 ++++++
->  arch/x86/kernel/process.c    |   50 +++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 58 insertions(+)
-> 
-> --- a/arch/x86/include/asm/mwait.h
-> +++ b/arch/x86/include/asm/mwait.h
-> @@ -30,6 +30,14 @@ static inline void __mwait(unsigned long
->  		     :: "a" (eax), "c" (ecx));
->  }
->  
-> +static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
-> +{
-> +	trace_hardirqs_on();
-> +	/* "mwait %eax, %ecx;" */
-> +	asm volatile("sti; .byte 0x0f, 0x01, 0xc9;"
-> +		     :: "a" (eax), "c" (ecx));
-> +}
-> +
->  /*
->   * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
->   * which can obviate IPI to trigger checking of need_resched.
-> --- a/arch/x86/kernel/process.c
-> +++ b/arch/x86/kernel/process.c
-> @@ -28,6 +28,7 @@
->  #include <asm/fpu-internal.h>
->  #include <asm/debugreg.h>
->  #include <asm/nmi.h>
-> +#include <asm/mwait.h>
->  
->  /*
->   * per-CPU TSS segments. Threads are completely 'soft' on Linux,
-> @@ -396,6 +397,52 @@ static void amd_e400_idle(void)
->  		default_idle();
->  }
->  
-> +/*
-> + * Intel Core2 and older machines prefer MWAIT over HALT for C1.
-> + * We can't rely on cpuidle installing MWAIT, because it will not load
-> + * on systems that support only C1 -- so the boot default must be MWAIT.
-> + *
-> + * Some AMD machines are the opposite, they depend on using HALT.
-> + *
-> + * So for default C1, which is used during boot until cpuidle loads,
-> + * use MWAIT-C1 on Intel HW that has it, else use HALT.
-> + */
-> +static int prefer_mwait_c1_over_halt(const struct cpuinfo_x86 *c)
-> +{
-> +	if (c->x86_vendor != X86_VENDOR_INTEL)
-> +		return 0;
-> +
-> +	if (!cpu_has(c, X86_FEATURE_MWAIT))
-> +		return 0;
-> +
-> +	return 1;
-> +}
-> +
-> +/*
-> + * MONITOR/MWAIT with no hints, used for default default C1 state.
-> + * This invokes MWAIT with interrutps enabled and no flags,
-> + * which is backwards compatible with the original MWAIT implementation.
-> + */
-> +
-> +static void mwait_idle(void)
-> +{
-> +	if (!current_set_polling_and_test()) {
-> +		if (static_cpu_has_bug(X86_BUG_CLFLUSH_MONITOR)) {
-> +			mb();
-> +			clflush((void *)&current_thread_info()->flags);
-> +			mb();
-> +		}
-> +
-> +		__monitor((void *)&current_thread_info()->flags, 0, 0);
-> +		if (!need_resched())
-> +			__sti_mwait(0, 0);
-> +		else
-> +			local_irq_enable();
-> +	} else
-> +		local_irq_enable();
-> +	current_clr_polling();
-> +}
-> +
->  void select_idle_routine(const struct cpuinfo_x86 *c)
->  {
->  #ifdef CONFIG_SMP
-> @@ -409,6 +456,9 @@ void select_idle_routine(const struct cp
->  		/* E400: APIC timer interrupt does not wake up CPU from C1e */
->  		pr_info("using AMD E400 aware idle routine\n");
->  		x86_idle = amd_e400_idle;
-> +	} else if (prefer_mwait_c1_over_halt(c)) {
-> +		pr_info("using mwait in idle threads\n");
-> +		x86_idle = mwait_idle;
->  	} else
->  		x86_idle = default_idle;
->  }
+>>         encoder->funcs->destroy(encoder);
+>>         drm_connector_cleanup(&ctx->connector);
+>>
+>> diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
+>> index e8b4ec8..1a68106 100644
+>> --- a/drivers/gpu/drm/exynos/exynos_mixer.c
+>> +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
+>> @@ -1309,8 +1309,6 @@ static void mixer_unbind(struct device *dev, struct device *master, void *data)
+>>         mixer_mgr_remove(mgr);
+>>
+>>         pm_runtime_disable(dev);
+>> -
+>> -       crtc->funcs->destroy(crtc);
+
+Ditto.
 
 
+>>  }
+>>
+>>  static const struct component_ops mixer_component_ops = {
+>> --
+>> 1.9.1
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
