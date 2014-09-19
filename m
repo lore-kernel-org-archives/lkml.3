@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002AbaISU3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:29:39 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:41508 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966AbaISU3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:29:36 -0400
+	id S1758016AbaISUaR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:30:17 -0400
+Received: from mail-by2on0125.outbound.protection.outlook.com ([207.46.100.125]:8128
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757740AbaISUaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 16:30:12 -0400
+X-Greylist: delayed 86544 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Sep 2014 16:30:12 EDT
+Date: Fri, 19 Sep 2014 15:24:53 -0500
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Yoder Stuart-B08248 <stuart.yoder@freescale.com>
+CC: Rivera Jose-B46482 <German.Rivera@freescale.com>,
+        Alexander Graf <agraf@suse.de>,
+        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
+        "<arnd@arndb.de>" <arnd@arndb.de>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        Wood Scott-B07421 <scottwood@freescale.com>,
+        "<linuxppc-release@linux.freescale.net>" 
+	<linuxppc-release@linux.freescale.net>
+Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex
+ APIs
+Message-ID: <20140919152453.9a7095a77c0752998ed8621b@freescale.com>
+In-Reply-To: <3e06c5d2f97e446c8a9d8d8211c69a3e@CY1PR0301MB0748.namprd03.prod.outlook.com>
+References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
+	<1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
+	<20140915184451.962a3a19c4940792d182f10a@freescale.com>
+	<541A5CF1.8000409@freescale.com>
+	<C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
+	<20140918152233.41647ee517393816bb35b72a@freescale.com>
+	<541B9D5F.20008@freescale.com>
+	<20140919121912.197b15bd3b79fb90d7f97602@freescale.com>
+	<3e06c5d2f97e446c8a9d8d8211c69a3e@CY1PR0301MB0748.namprd03.prod.outlook.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1411113739-1934-3-git-send-email-zyw@rock-chips.com>
-References: <1411113739-1934-1-git-send-email-zyw@rock-chips.com>
-	<1411113739-1934-3-git-send-email-zyw@rock-chips.com>
-Date: Fri, 19 Sep 2014 13:29:34 -0700
-X-Google-Sender-Auth: Ghvo51wyayffFu9Wl6fgxo9tOx0
-Message-ID: <CAD=FV=Utonj4PJXMwbs7pJKOqdr3ztAd62OUabj_uMcYXdZkjg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] dt-bindings: add devicetree bindings for st-pwm regulator
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(199003)(189002)(51704005)(26826002)(97736003)(102836001)(68736004)(79102003)(36756003)(83322001)(6806004)(104016003)(50226001)(85306004)(88136002)(85852003)(46406003)(69596002)(77156001)(106466001)(84676001)(100306002)(62966002)(76482002)(81342003)(19580405001)(50986999)(46102003)(81542003)(50466002)(44976005)(83072002)(77982003)(80022003)(107046002)(105606002)(81156004)(20776003)(31966008)(87286001)(95666004)(19580395003)(92726001)(33646002)(89996001)(92566001)(74502003)(21056001)(76176999)(110136001)(4396001)(90102001)(64706001)(74662003)(23726002)(86362001)(99396002)(104166001)(93886004)(93916002)(47776003)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB333;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB333;
+X-Forefront-PRVS: 0339F89554
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On Fri, 19 Sep 2014 14:06:32 -0500
+Yoder Stuart-B08248 <stuart.yoder@freescale.com> wrote:
 
-On Fri, Sep 19, 2014 at 1:02 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Document the st-pwm regulator
->
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->
-> ---
->
-> Changes in v3:
-> Adviced by Doug Anderson
-> - update the Example
->
-> Changes in v2:
-> Adviced by Lee Jones
-> - rename the documentation
-> Adviced by Doug Anderson
-> - update the example
-> Adviced by Mark Rutland
-> - remove pwm-reg-period
->
->  .../bindings/regulator/pwm-regulator.txt           |   29 ++++++++++++++++++++
->  1 file changed, 29 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
->
-> diff --git a/Documentation/devicetree/bindings/regulator/pwm-regulator.txt b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-> new file mode 100644
-> index 0000000..eb46f7b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-> @@ -0,0 +1,29 @@
-> +pwm regulator bindings
-> +
-> +Required properties:
-> +- compatible: Should be "pwm-regulator"
-> +- pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-> +- voltage-table: voltage and duty table, include 2 merbers in each set of
-> +  brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-> +
-> +Any property defined as part of the core regulator binding defined in
-> +regulator.txt can also be used.
-> +
-> +Example:
-> +       pwm_regulator {
-> +               compatible = "pwm-regulator;
-> +               pwms = <&pwm1 0 8448 0>;
-> +
-> +               voltage-table = <1114000 0>,
-> +                               <1095000 10>,
-> +                               <1076000 20>,
-> +                               <1056000 30>,
-> +                               <1036000 40>,
-> +                               <1016000 50>;
-> +
-> +               regulator-always-on;
-> +               regulator-boot-on;
+> > > >>>>> +/**
+> > > >>>>> + * @brief    Management Complex firmware version information
+> > > >>>>> + */
+> > > >>>>> +#define MC_VER_MAJOR 2
+> > > >>>>> +#define MC_VER_MINOR 0
+> > > >>>>
+> > > >>>> code should be adjusted to run on all *compatible* versions of h/w,
+> > > >>>> not strictly the one set in these defines.
+> > > >>> This comment is not precise enough be actionable.
+> > > >>> What exactly you want to be changed  here?
+> > > >>
+> > > >> I think the easy thing to do is to convert the exact version check into a ranged version check: have
+> > minimum and maximum versions you support. Or a list of exact versions you support. Or not check for the
+> > version at all - or only for the major version and guarantee that the major version indicates backwards
+> > compatibility.
+> > > >
+> > > > yes, this was my point: elsewhere I noticed the code denies to run
+> > > > iff those defines are not matched exactly: that code should change
+> > > > to run as Alex describes.
+> > > >
+> > > As I mentioned in the reply to Alex, I will remove the minor version check.
+> > 
+> > the code should be able to run on all subsequent versions of the
+> > h/w, even in the major version case.
+> 
+> You're right, in the future if there are future major versions we would want this
+> same driver to function on multiple versions of the hardware.  But at this
+> point in time we don't know what future evolutions there will be and we 
+> need the check to error out for now.
 
-I think Mark suggested that the two properties above were not useful
-on a regulator that is always enabled.  That seems to match the code:
+why?  We have to make the standard assumption that newer versions
+will be backward compatible, in which case the driver should be left
+to run.
 
-/* If we don't know then assume that the regulator is always on */
-if (!rdev->desc->ops->is_enabled)
-  return 1;
+>   The driver will have to be changed
+> in the future to dynamically deal with different versions.
+> 
+> We could add a TODO in the driver to note that.
 
-...so I'd remove them from your example...
+"TODO: add support for new h/w versions" is almost universally true
+for all drivers, we don't need to write that down.
 
-Again, if there's no additional feedback you'd need Mark's advice
-about whether he wants a respin.
+Support for new h/w versions with new features should be
+incrementally added once they're known.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+Kim
