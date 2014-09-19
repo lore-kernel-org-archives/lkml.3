@@ -1,54 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaISJMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 05:12:23 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45957 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaISJMW (ORCPT
+	id S1754778AbaISJPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 05:15:14 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63631 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbaISJPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 05:12:22 -0400
-Date: Fri, 19 Sep 2014 12:11:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Drokin, Oleg" <oleg.drokin@intel.com>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "<kernel-janitors@vger.kernel.org>" <kernel-janitors@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<HPDD-discuss@ml01.01.org>" <HPDD-discuss@ml01.01.org>
-Subject: Re: [PATCH] staging: lustre: llite: Use kzalloc and rewrite null
- tests
-Message-ID: <20140919091151.GQ17875@mwanda>
-References: <1411071842-24714-1-git-send-email-Julia.Lawall@lip6.fr>
- <1411071842-24714-2-git-send-email-Julia.Lawall@lip6.fr>
- <20140918234309.GP17875@mwanda>
- <E43F4FD2-3A79-485E-960B-A12960B3D2B7@intel.com>
+	Fri, 19 Sep 2014 05:15:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E43F4FD2-3A79-485E-960B-A12960B3D2B7@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <CAAVeFuL1_H=wxP1K3zNmzYLUy0kiFFN9AgH-vY_eSXj_=OVa3w@mail.gmail.com>
+References: <1409930524-1529-1-git-send-email-octavian.purdila@intel.com>
+	<CAAVeFuL1_H=wxP1K3zNmzYLUy0kiFFN9AgH-vY_eSXj_=OVa3w@mail.gmail.com>
+Date: Fri, 19 Sep 2014 12:15:10 +0300
+Message-ID: <CAE1zotLjwsP+SFrusA6KvZoW1b-tEG84pD=R3Q=seFqJFU-P9A@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: fix a few issues with gpiochip_remove
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Johan Hovold <johan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 02:57:03AM +0000, Drokin, Oleg wrote:
-> 4. Sometimes we need large allocations. general kmalloc is less
-> reliable as system lives on and memory fragmentation worsens. So we
-> have this "allocations over 2-4 pages get switched to vmalloc" logic,
-> if there's a way to do that automatically - that would be great.
+On Fri, Sep 19, 2014 at 11:31 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Sat, Sep 6, 2014 at 12:22 AM, Octavian Purdila
+> <octavian.purdila@intel.com> wrote:
+>> The current implementation of gpiochip_remove() does not check to see
+>> if the GPIO pins are busy before removing the associated irqchip and
+>> this is causing the following warning:
+>>
+>> WARNING: CPU: 3 PID: 553 at fs/proc/generic.c:521 remove_proc_entry+0x19f/0x1b0()
+>> remove_proc_entry: removing non-empty directory 'irq/24', leaking at least 'bmc150_accel_event'
+>> Call Trace:
+>>  [<ffffffff81a78504>] dump_stack+0x4e/0x7a
+>>  [<ffffffff810c79bd>] warn_slowpath_common+0x7d/0xa0
+>>  [<ffffffff810c7a2c>] warn_slowpath_fmt+0x4c/0x50
+>>  [<ffffffff8125259f>] remove_proc_entry+0x19f/0x1b0
+>>  [<ffffffff811138ae>] unregister_irq_proc+0xce/0xf0
+>>  [<ffffffff8110dbc1>] free_desc+0x31/0x70
+>>  [<ffffffff8110dc3c>] irq_free_descs+0x3c/0x80
+>>  [<ffffffff81113096>] irq_dispose_mapping+0x36/0x50
+>>  [<ffffffff8148549a>] gpiochip_remove+0x5a/0x160
+>>  [<ffffffff814895d8>] dln2_do_remove+0x18/0x80
+>>  [<ffffffff8148966a>] dln2_gpio_remove+0x2a/0x30
+>>  [<ffffffff816143bd>] platform_drv_remove+0x1d/0x40
+>> ...
+>>
+>> and bug:
+>>
+>> BUG: sleeping function called from invalid context at kernel/locking/mutex.c:97
+>> in_atomic(): 1, irqs_disabled(): 1, pid: 553, name: khubd
+>> Preemption disabled at:[<ffffffff81485462>] gpiochip_remove+0x22/0x160
+>> Call Trace:
+>>  [<ffffffff81a78504>] dump_stack+0x4e/0x7a
+>>  [<ffffffff810e8dff>] __might_sleep+0x10f/0x180
+>>  [<ffffffff81a7f3f0>] mutex_lock+0x20/0x3d
+>>  [<ffffffff8110dbcd>] free_desc+0x3d/0x70
+>>  [<ffffffff8110dc3c>] irq_free_descs+0x3c/0x80
+>>  [<ffffffff81113096>] irq_dispose_mapping+0x36/0x50
+>>  [<ffffffff8148549a>] gpiochip_remove+0x5a/0x160
+>>  [<ffffffff814895d8>] dln2_do_remove+0x18/0x80
+>>  [<ffffffff8148966a>] dln2_gpio_remove+0x2a/0x30
+>>  [<ffffffff816143bd>] platform_drv_remove+0x1d/0x40
+>> ...
+>>
+>> The current implementaion also does a partial cleanup if one of the
+>> pins is busy, which makes it impossible to retry the remove operation
+>> later.
+>>
+>> A retry operation is needed in the case of MFD devices that bundles a
+>> GPIO device and another device that is an indirect consumer of the
+>> GPIO device (typical an I2C bus).
+>>
+>> In this case, when the MFD device is removed, if an I2C device
+>> associated with the I2C bus of the MFD device is using a GPIO pin (as
+>> an interrupt source for example), and the remove routine for the GPIO
+>> device is called first, then the removal of the gpio chip will fail.
+>>
+>> However, we can later retry the gpio chip removal, as the I2C bus will
+>> eventually be removed which will cause the I2C device to release the
+>> GPIO pin.
+>>
+>> This patch modifies gpiochip_remove to be atomic (i.e. if it fails no
+>> partial cleanup is done) and it also moves gpiochip_irqchip_remove()
+>> out of the spinlock to avoid the bug above.
+>>
+>> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+>> ---
+>>  drivers/gpio/gpiolib.c | 13 ++++++-------
+>>  1 file changed, 6 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>> index 15cc0bb..0f53bef 100644
+>> --- a/drivers/gpio/gpiolib.c
+>> +++ b/drivers/gpio/gpiolib.c
+>> @@ -314,14 +314,8 @@ int gpiochip_remove(struct gpio_chip *chip)
+>>         int             status = 0;
+>>         unsigned        id;
+>>
+>> -       acpi_gpiochip_remove(chip);
+>> -
+>>         spin_lock_irqsave(&gpio_lock, flags);
+>>
+>> -       gpiochip_irqchip_remove(chip);
+>> -       gpiochip_remove_pin_ranges(chip);
+>> -       of_gpiochip_remove(chip);
+>> -
+>>         for (id = 0; id < chip->ngpio; id++) {
+>>                 if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+>>                         status = -EBUSY;
+>> @@ -337,8 +331,13 @@ int gpiochip_remove(struct gpio_chip *chip)
+>>
+>>         spin_unlock_irqrestore(&gpio_lock, flags);
+>>
+>> -       if (status == 0)
+>> +       if (status == 0) {
+>> +               gpiochip_irqchip_remove(chip);
+>> +               gpiochip_remove_pin_ranges(chip);
+>> +               of_gpiochip_remove(chip);
+>> +               acpi_gpiochip_remove(chip);
+>>                 gpiochip_unexport(chip);
+>> +       }
+>>
+>>         return status;
+>>  }
+>
+> This seems to be much better this way indeed. But isn't it still
+> possible for a pin to become requested between the time the spinlock
+> is released and the time the function exits?
 
-Julia's patch only changes OBD_ALLOC() functions and those are always
-kmalloc so that's not an issue here.
+Good point. We probably need to add a flag to gpio_chip to mark that
+we are in the cleanup process and that we should not allow requesting
+pins after gpiochip_remove has been called.
 
-The OBD_ALLOC_LARGE() macro is vmalloc() or kmalloc() if the size is
-small enough.  We don't really want to choose between kmalloc and
-vmalloc automatically.  My instinct is that we should change all the
-OBD_ALLOC_LARGE() to vmalloc() and trust it to allocate them in the most
-sane way possible.  But I haven't really looked very closely.
+Johan raised another issues in a separate thread: if the pin is used
+by sysfs retrying won't help.
 
-regards,
-dan carpenter
-
+For GPIO devices that can be disconnected asynchronously (ike USB), I
+think we probably need a separate API that forcefully removes the
+gpio_chip.
