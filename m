@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbaISNMw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 09:12:52 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16813 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595AbaISNMs (ORCPT
+	id S1756769AbaISNOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 09:14:52 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:59372 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaISNOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 09:12:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 19 Sep 2014 06:13:01 -0700
-Date: Fri, 19 Sep 2014 16:12:45 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH 0/3] Introduce of_match_machine() helper
-Message-ID: <20140919131245.GQ26779@tbergstrom-lnx.Nvidia.com>
-References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>
- <53FB7642.1000808@wwwdotorg.org>
+	Fri, 19 Sep 2014 09:14:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53FB7642.1000808@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140919075415.5149d5f2@as>
+References: <20140918135202.GA26038@khazad-dum.debian.net>
+	<541B2F33.8000002@amacapital.net>
+	<20140918145328.0253f009@as>
+	<9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+	<20140918200659.GA5331@khazad-dum.debian.net>
+	<20140919001311.GB5331@khazad-dum.debian.net>
+	<CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+	<20140919110014.GC29639@khazad-dum.debian.net>
+	<20140919112953.GA3256@nazgul.tnic>
+	<20140919075415.5149d5f2@as>
+Date: Fri, 19 Sep 2014 09:14:50 -0400
+X-Google-Sender-Auth: KY6gP-JqD1YwhiBFjiuw1WUrs9A
+Message-ID: <CA+5PVA7HTU_N0U5xxeGi3DJ_HCz9VjUfNsO23wJDT74J5xxLcQ@mail.gmail.com>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 07:45:38PM +0200, Stephen Warren wrote:
-> On 08/07/2014 05:01 PM, Tuomas Tynkkynen wrote:
-> > Some mach-specific drivers that don't require their own node in the device tree
-> > (for example drivers/soc/*, cpufreq, cpuidle etc.) want to match on the device
-> > tree root compatible property instead. Instead of open-coding (and forgetting
-> > to call of_node_put on the root node) everywhere, add a helper to the OF core.
-> 
-> Tuomas, I assume there will be a new version of this series to address 
-> the review comments? For now, I'm not intending on applying this.
+On Fri, Sep 19, 2014 at 8:54 AM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+> On Fri, 19 Sep 2014 13:29:53 +0200
+> Borislav Petkov <bp@alien8.de> wrote:
+>
+>> On Fri, Sep 19, 2014 at 08:00:15AM -0300, Henrique de Moraes Holschuh wrote:
+>> > We're also killing microcode update support outside of the initramfs in
+>> > Debian.  It has become obvious that anything other than the early initramfs
+>> > method of microcode updates should be considered a developer thing.
+>>
+>> That's simply not true: long-running systems which you can't reboot for
+>> whatever reason will need the late microcode update.
+>>
+>
+> Assuming we can identify all the affected models and steppings, maybe
+> something like this would work:
+>
+> 1) Refuse to finish booting if a microcode update that disables TSX
+> isn't applied before userspace starts running on those CPUs.
 
-Given that Tuomas's internship ended, I'm willing to push this patch set
-forward, if there is interest. So are people still interested in this idea
-or should we drop it?
+How would you accomplish that when applying a microcode update
+requires userspace?  Or did you mean "before we transition out of the
+initramfs"?
 
-Thanks,
-
-Peter.
+josh
