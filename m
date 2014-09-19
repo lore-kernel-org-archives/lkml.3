@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758004AbaISUXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 16:23:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11106 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757853AbaISUXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 16:23:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,556,1406617200"; 
-   d="scan'208";a="594021740"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org
-Cc: arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v5 3/4] gpiolib: add irq_not_threaded flag to gpio_chip
-Date: Fri, 19 Sep 2014 23:22:44 +0300
-Message-Id: <1411158165-25794-4-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
+	id S1758037AbaISUYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 16:24:19 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61613 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757658AbaISUYP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 16:24:15 -0400
+Date: Fri, 19 Sep 2014 13:24:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: Re: linux-next: Tree for Sep 19
+Message-ID: <20140919202410.GA26329@roeck-us.net>
+References: <20140919165817.225eb8b8@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140919165817.225eb8b8@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some GPIO chips (e.g. the DLN2 USB adapter) have blocking get/set
-operation but do not need a threaded irq handler.
+On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20140917:
+> 
+> The fsl tree still had its build failure so I used the version from
+> next-20140917.
+> 
+> The v4l-dvb tree lost its build failure.
+> 
+> The security tree gained a conflict against the file-locks tree.
+> 
+> Non-merge commits (relative to Linus' tree): 6014
+>  5488 files changed, 217522 insertions(+), 129375 deletions(-)
+> 
+> ----------------------------------------------------------------------------
+> 
+i386:allyesconfig:
 
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- drivers/gpio/gpiolib.c      | 2 +-
- include/linux/gpio/driver.h | 3 +++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+fs/built-in.o: In function `bl_map_stripe':
+dev.c:(.text+0x3489ab): undefined reference to `__udivdi3'
+dev.c:(.text+0x3489ca): undefined reference to `__umoddi3'
+dev.c:(.text+0x348a83): undefined reference to `__udivdi3'
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 15cc0bb..3fa7e73 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -447,7 +447,7 @@ static int gpiochip_irq_map(struct irq_domain *d, unsigned int irq,
- 	irq_set_lockdep_class(irq, &gpiochip_irq_lock_class);
- 	irq_set_chip_and_handler(irq, chip->irqchip, chip->irq_handler);
- 	/* Chips that can sleep need nested thread handlers */
--	if (chip->can_sleep)
-+	if (chip->can_sleep && !chip->irq_not_threaded)
- 		irq_set_nested_thread(irq, 1);
- #ifdef CONFIG_ARM
- 	set_irq_flags(irq, IRQF_VALID);
-diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-index e78a237..44161ac 100644
---- a/include/linux/gpio/driver.h
-+++ b/include/linux/gpio/driver.h
-@@ -56,6 +56,8 @@ struct seq_file;
-  *	as the chip access may sleep when e.g. reading out the IRQ status
-  *	registers.
-  * @exported: flags if the gpiochip is exported for use from sysfs. Private.
-+ * @irq_not_threaded: flag must be set if @can_sleep is set but the
-+ *	IRQs don't need to be threaded
-  *
-  * A gpio_chip can help platforms abstract various sources of GPIOs so
-  * they can all be accessed through a common programing interface.
-@@ -101,6 +103,7 @@ struct gpio_chip {
- 	struct gpio_desc	*desc;
- 	const char		*const *names;
- 	bool			can_sleep;
-+	bool			irq_not_threaded;
- 	bool			exported;
- 
- #ifdef CONFIG_GPIOLIB_IRQCHIP
--- 
-1.9.1
+i386:allmodconfig:
+mips:allmodconfig:
 
+ERROR: "__udivdi3" [fs/nfs/blocklayout/blocklayoutdriver.ko] undefined!
+ERROR: "__umoddi3" [fs/nfs/blocklayout/blocklayoutdriver.ko] undefined!
+
+Obviously caused by commit 5c83746a0cf ('pnfs/blocklayout: in-kernel
+GETDEVICEINFO XDR parsing') which adds fs/nfs/blocklayout/dev.c.
