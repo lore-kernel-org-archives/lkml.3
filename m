@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400AbaISOmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 10:42:13 -0400
-Received: from [62.179.121.43] ([62.179.121.43]:44928 "EHLO
-	fep23.mx.upcmail.net" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756805AbaISOmK (ORCPT
+	id S1757302AbaISOmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 10:42:11 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:12150 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756626AbaISOmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 10:42:10 -0400
-X-SourceIP: 77.56.27.120
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <541C40AA.4060206@odi.ch>
-Date: Fri, 19 Sep 2014 16:41:46 +0200
-From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 19 Sep 2014 10:42:08 -0400
+Date: Fri, 19 Sep 2014 10:42:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/4] ftracetest: Initial commit for ftracetest
+Message-ID: <20140919104205.288cf493@gandalf.local.home>
+In-Reply-To: <541C3823.4090203@osg.samsung.com>
+References: <20140918120437.28308.72301.stgit@kbuild-f20.novalocal>
+	<20140918120445.28308.57538.stgit@kbuild-f20.novalocal>
+	<541AD905.6000700@osg.samsung.com>
+	<541B80DE.1060902@hitachi.com>
+	<541C3823.4090203@osg.samsung.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-Subject: Re: [BUG] nouveau regression: ext monitor dead after resume
-References: <541AE737.8070009@odi.ch> <CAKb7UvjcYsFm7TWzKXdWHVDVRDO1rFtcCTZoChYssDKqLMDGWw@mail.gmail.com>
-In-Reply-To: <CAKb7UvjcYsFm7TWzKXdWHVDVRDO1rFtcCTZoChYssDKqLMDGWw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 19 Sep 2014 08:05:23 -0600
+Shuah Khan <shuahkh@osg.samsung.com> wrote:
 
 
-On 18.09.2014 16:58, Ilia Mirkin wrote:
-> This has been reported a few times already -- probably the same thing
-> as bug https://bugs.freedesktop.org/show_bug.cgi?id=83550
+> I am not concerned about the spacing.
+> 
+> Thanks for doing running the make kselftest target and sharing
+> the results. selftests don't get built or run in integ test
+> rings. I am working on addressing this at the moment.
+> 
+> Steven!
+> 
+> Could you please take this through your tree. You have my
+> 
+> Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
+> 
+> for the selftests Makefile
 
-Ah, thanks. I would like to try with that commit reverted, but unfortunately it no longer reverts
-cleanly, and my attempts to make a sensible merge were futile. If you can send me a patch that
-reverts the changes on 3.17-rc5 or 3.16 I am glad to try it out and give you the requested feedback.
+OK, thanks!
 
-Ortwin
+I'll start trying to get my own personal tests working here.
+
+It may take some work as my tests may run for 10s of minutes, as they
+are more stress tests than a pass/fail thing. But I should have
+something other people can use. I'll continue using both my own
+personal tests as well as trying the new stuff that gets put here.
+
+-- Steve
+
