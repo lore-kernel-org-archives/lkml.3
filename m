@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851AbaISFVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 01:21:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52989 "EHLO
+	id S1757878AbaISFWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 01:22:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52990 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaISFVp (ORCPT
+	with ESMTP id S932225AbaISFVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 01:21:45 -0400
-Date: Thu, 18 Sep 2014 22:20:51 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-dc0a6202421170a6d8d2c6f5176575b3f60e0f85@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1406786474-9306-7-git-send-email-adrian.hunter@intel.com>
-References: <1406786474-9306-7-git-send-email-adrian.hunter@intel.com>
+	Fri, 19 Sep 2014 01:21:46 -0400
+Date: Thu, 18 Sep 2014 22:21:33 -0700
+From: tip-bot for Avi Kivity <tipbot@zytor.com>
+Message-ID: <tip-763122ade725592402190f5ff3b8d2edf42b87e8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, jolsa@redhat.com,
+        avi@cloudius-systems.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, jolsa@kernel.org, avi@cloudius-systems.com,
+        jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <1410581705-26968-1-git-send-email-avi@cloudius-systems.com>
+References: <1410581705-26968-1-git-send-email-avi@cloudius-systems.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tools:
-  Let default config be defined for a PMU
-Git-Commit-ID: dc0a6202421170a6d8d2c6f5176575b3f60e0f85
+  Disable kernel symbol demangling by default
+Git-Commit-ID: 763122ade725592402190f5ff3b8d2edf42b87e8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,227 +34,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dc0a6202421170a6d8d2c6f5176575b3f60e0f85
-Gitweb:     http://git.kernel.org/tip/dc0a6202421170a6d8d2c6f5176575b3f60e0f85
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 31 Jul 2014 09:00:49 +0300
+Commit-ID:  763122ade725592402190f5ff3b8d2edf42b87e8
+Gitweb:     http://git.kernel.org/tip/763122ade725592402190f5ff3b8d2edf42b87e8
+Author:     Avi Kivity <avi@cloudius-systems.com>
+AuthorDate: Sat, 13 Sep 2014 07:15:05 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Sep 2014 17:08:08 -0300
+CommitDate: Wed, 17 Sep 2014 17:08:09 -0300
 
-perf tools: Let default config be defined for a PMU
+perf tools: Disable kernel symbol demangling by default
 
-This allows default config terms to be provided for a PMU. So, for
-example, when the Intel PT PMU is added, it will be possible to specify:
+Some Linux symbols (for example __vt_event_wait) are interpreted by the
+demangler as C++ mangled names, which of course they aren't.
 
-	intel_pt//
+Disable kernel symbol demangling by default to avoid this, and allow
+enabling it with a new option --demangle-kernel for those who wish it.
 
-which will be the same as:
-
-	intel_pt/tsc=1,noretcomp=0/
-
-meaning that the trace should contain TSC timestamps and perform 'return
-compression'.
-
-An important consideration of this patch is that it must be possible to
-overwrite the default values.  That has meant changing the logic so that
-a zero value can replace a non-zero value.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Avi Kivity <avi@cloudius-systems.com>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-7-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1410581705-26968-1-git-send-email-avi@cloudius-systems.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/pmu.c         |  2 +-
- tools/perf/util/parse-events.c |  7 ++++++-
- tools/perf/util/pmu.c          | 42 ++++++++++++++++++++++++++----------------
- tools/perf/util/pmu.h          |  9 ++++++++-
- 4 files changed, 41 insertions(+), 19 deletions(-)
+ tools/perf/Documentation/perf-probe.txt  | 3 +++
+ tools/perf/Documentation/perf-report.txt | 3 +++
+ tools/perf/Documentation/perf-top.txt    | 3 +++
+ tools/perf/builtin-probe.c               | 2 ++
+ tools/perf/builtin-report.c              | 2 ++
+ tools/perf/builtin-top.c                 | 2 ++
+ tools/perf/util/symbol-elf.c             | 7 ++++++-
+ tools/perf/util/symbol.c                 | 1 +
+ tools/perf/util/symbol.h                 | 1 +
+ 9 files changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
-index 12b322f..eeb68bb1 100644
---- a/tools/perf/tests/pmu.c
-+++ b/tools/perf/tests/pmu.c
-@@ -152,7 +152,7 @@ int test__pmu(void)
- 		if (ret)
- 			break;
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 1513935..aaa869b 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -104,6 +104,9 @@ OPTIONS
+ 	Specify path to the executable or shared library file for user
+ 	space tracing. Can also be used with --funcs option.
  
--		ret = perf_pmu__config_terms(&formats, &attr, terms);
-+		ret = perf_pmu__config_terms(&formats, &attr, terms, false);
- 		if (ret)
- 			break;
++--demangle-kernel::
++	Demangle kernel symbols.
++
+ In absence of -m/-x options, perf probe checks if the first argument after
+ the options is an absolute path name. If its an absolute path, perf probe
+ uses it as a target module/target user space binary to probe.
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index d561e02..0927bf4 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -276,6 +276,9 @@ OPTIONS
+ 	Demangle symbol names to human readable form. It's enabled by default,
+ 	disable with --no-demangle.
  
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index e756288..61be3e6 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -643,7 +643,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	if (!pmu)
- 		return -EINVAL;
++--demangle-kernel::
++	Demangle kernel symbol names to human readable form (for C++ kernels).
++
+ --mem-mode::
+ 	Use the data addresses of samples in addition to instruction addresses
+ 	to build the histograms.  To generate meaningful output, the perf.data
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 28fdee3..3265b10 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -98,6 +98,9 @@ Default is to monitor all CPUS.
+ --hide_user_symbols::
+         Hide user symbols.
  
--	memset(&attr, 0, sizeof(attr));
-+	if (pmu->default_config) {
-+		memcpy(&attr, pmu->default_config,
-+		       sizeof(struct perf_event_attr));
-+	} else {
-+		memset(&attr, 0, sizeof(attr));
-+	}
- 
- 	if (!head_config) {
- 		attr.type = pmu->type;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 9bf5827..438bb26 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -2,6 +2,7 @@
- #include <sys/types.h>
- #include <unistd.h>
- #include <stdio.h>
-+#include <stdbool.h>
- #include <dirent.h>
- #include <api/fs/fs.h>
- #include <locale.h>
-@@ -387,6 +388,12 @@ static struct cpu_map *pmu_cpumask(const char *name)
- 	return cpus;
++--demangle-kernel::
++        Demangle kernel symbols.
++
+ -D::
+ --dump-symtab::
+         Dump the symbol table used for profiling.
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 347729e..4d6858d 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -376,6 +376,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"target executable name or path", opt_set_target),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
++	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
++		    "Enable kernel symbol demangling"),
+ 	OPT_END()
+ 	};
+ 	int ret;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3da59a8..8c0b3f2 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -680,6 +680,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
++	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
++		    "Enable kernel symbol demangling"),
+ 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
+ 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 9848e27..7da2c46 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1142,6 +1142,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN(0, "asm-raw", &symbol_conf.annotate_asm_raw,
+ 		    "Display raw encoding of assembly instructions (default)"),
++	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
++		    "Enable kernel symbol demangling"),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		    "objdump binary to use for disassembly and annotations"),
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 9fb5e9e..9c9b27f 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -680,6 +680,11 @@ static u64 ref_reloc(struct kmap *kmap)
+ 	return 0;
  }
  
-+struct perf_event_attr *__attribute__((weak))
-+perf_pmu__get_default_config(struct perf_pmu *pmu __maybe_unused)
++static bool want_demangle(bool is_kernel_sym)
 +{
-+	return NULL;
++	return is_kernel_sym ? symbol_conf.demangle_kernel : symbol_conf.demangle;
 +}
 +
- static struct perf_pmu *pmu_lookup(const char *name)
- {
- 	struct perf_pmu *pmu;
-@@ -421,6 +428,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
- 	pmu->name = strdup(name);
- 	pmu->type = type;
- 	list_add_tail(&pmu->list, &pmus);
-+
-+	pmu->default_config = perf_pmu__get_default_config(pmu);
-+
- 	return pmu;
- }
- 
-@@ -479,28 +489,24 @@ pmu_find_format(struct list_head *formats, char *name)
- }
- 
- /*
-- * Returns value based on the format definition (format parameter)
-+ * Sets value based on the format definition (format parameter)
-  * and unformated value (value parameter).
-- *
-- * TODO maybe optimize a little ;)
-  */
--static __u64 pmu_format_value(unsigned long *format, __u64 value)
-+static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
-+			     bool zero)
- {
- 	unsigned long fbit, vbit;
--	__u64 v = 0;
- 
- 	for (fbit = 0, vbit = 0; fbit < PERF_PMU_FORMAT_BITS; fbit++) {
- 
- 		if (!test_bit(fbit, format))
- 			continue;
- 
--		if (!(value & (1llu << vbit++)))
--			continue;
--
--		v |= (1llu << fbit);
-+		if (value & (1llu << vbit++))
-+			*v |= (1llu << fbit);
-+		else if (zero)
-+			*v &= ~(1llu << fbit);
- 	}
--
--	return v;
- }
- 
- /*
-@@ -509,7 +515,8 @@ static __u64 pmu_format_value(unsigned long *format, __u64 value)
-  */
- static int pmu_config_term(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct parse_events_term *term)
-+			   struct parse_events_term *term,
-+			   bool zero)
- {
- 	struct perf_pmu_format *format;
- 	__u64 *vp;
-@@ -548,18 +555,19 @@ static int pmu_config_term(struct list_head *formats,
- 	 * non-hardcoded terms, here's the place to translate
- 	 * them into value.
- 	 */
--	*vp |= pmu_format_value(format->bits, term->val.num);
-+	pmu_format_value(format->bits, term->val.num, vp, zero);
- 	return 0;
- }
- 
- int perf_pmu__config_terms(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct list_head *head_terms)
-+			   struct list_head *head_terms,
-+			   bool zero)
- {
- 	struct parse_events_term *term;
- 
- 	list_for_each_entry(term, head_terms, list)
--		if (pmu_config_term(formats, attr, term))
-+		if (pmu_config_term(formats, attr, term, zero))
- 			return -EINVAL;
- 
- 	return 0;
-@@ -573,8 +581,10 @@ int perf_pmu__config_terms(struct list_head *formats,
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms)
- {
-+	bool zero = !!pmu->default_config;
-+
- 	attr->type = pmu->type;
--	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
-+	return perf_pmu__config_terms(&pmu->format, attr, head_terms, zero);
- }
- 
- static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 1c1e2ee..413b9a6 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -13,9 +13,12 @@ enum {
- 
- #define PERF_PMU_FORMAT_BITS 64
- 
-+struct perf_event_attr;
-+
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
-+	struct perf_event_attr *default_config;
- 	struct cpu_map *cpus;
- 	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
- 	struct list_head aliases; /* HEAD struct perf_pmu_alias -> list */
-@@ -27,7 +30,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
- int perf_pmu__config_terms(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct list_head *head_terms);
-+			   struct list_head *head_terms,
-+			   bool zero);
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 			  const char **unit, double *scale);
- struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
-@@ -46,4 +50,7 @@ void print_pmu_events(const char *event_glob, bool name_only);
- bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
-+
-+struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
-+
- #endif /* __PMU_H */
+ int dso__load_sym(struct dso *dso, struct map *map,
+ 		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
+ 		  symbol_filter_t filter, int kmodule)
+@@ -938,7 +943,7 @@ new_symbol:
+ 		 * DWARF DW_compile_unit has this, but we don't always have access
+ 		 * to it...
+ 		 */
+-		if (symbol_conf.demangle) {
++		if (want_demangle(dso->kernel || kmodule)) {
+ 			int demangle_flags = DMGL_NO_OPTS;
+ 			if (verbose)
+ 				demangle_flags = DMGL_PARAMS | DMGL_ANSI;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ac098a3..1adb143 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -34,6 +34,7 @@ struct symbol_conf symbol_conf = {
+ 	.try_vmlinux_path	= true,
+ 	.annotate_src		= true,
+ 	.demangle		= true,
++	.demangle_kernel	= false,
+ 	.cumulate_callchain	= true,
+ 	.show_hist_headers	= true,
+ 	.symfs			= "",
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 3f95ea0..bec4b7b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -120,6 +120,7 @@ struct symbol_conf {
+ 			annotate_src,
+ 			event_group,
+ 			demangle,
++			demangle_kernel,
+ 			filter_relative,
+ 			show_hist_headers;
+ 	const char	*vmlinux_name,
