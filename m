@@ -1,181 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301AbaISMHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 08:07:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5245 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754988AbaISMHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 08:07:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,554,1406617200"; 
-   d="p7s'?scan'208";a="575665667"
-From: "Chew, Kean Ho" <kean.ho.chew@intel.com>
-To: "pure.logic@nexus-software.ie" <pure.logic@nexus-software.ie>,
-        "heikki.krogerus@linux.intel.com" <heikki.krogerus@linux.intel.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
+	id S1756059AbaISMP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 08:15:27 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:33144 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaISMPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 08:15:25 -0400
+X-Auth-Info: w6Hr3655FsD6K9eKwZ70MOuCLfKjP073TiP5n8kG5dE=
+From: Marek Vasut <marex@denx.de>
+To: Yao Yuan <yao.yuan@freescale.com>
+Subject: Re: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
+Date: Fri, 19 Sep 2014 14:15:21 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "LW@karo-electronics.de" <LW@karo-electronics.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Subject: RE: [PATCHv2] serial: 8250: Add Quark X1000 to 8250 PCI driver
-Thread-Topic: [PATCHv2] serial: 8250: Add Quark X1000 to 8250 PCI driver
-Thread-Index: AQHP092crDRkALQTgEOe6wm98ip9IZwHw3eAgAAKMoCAAIbxQA==
-Date: Fri, 19 Sep 2014 12:06:29 +0000
-Message-ID: <1E478852902BF549B22CC4F16C2AE67C0F472359@PGSMSX108.gar.corp.intel.com>
-References: <1411112629-3238-1-git-send-email-pure.logic@nexus-software.ie>
- <20140919105833.GB31784@xps8300> <541C14E7.8020208@nexus-software.ie>
-In-Reply-To: <541C14E7.8020208@nexus-software.ie>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_0019_01CFD445.32DD7580"
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+References: <1407923215-3749-1-git-send-email-yao.yuan@freescale.com> <201409172114.36617.marex@denx.de> <1411055145666.72178@freescale.com>
+In-Reply-To: <1411055145666.72178@freescale.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409191415.21528.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_NextPart_000_0019_01CFD445.32DD7580
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+On Thursday, September 18, 2014 at 05:46:04 PM, Yao Yuan wrote:
+> Marek Vasut wrote:
+> > On Wednesday, September 17, 2014 at 04:50:34 PM, Yao Yuan wrote:
+> > [...]
+> > 
+> > > > > > Would that mean that the "crashed" DMA would be running until the
+> > > > > > next transmission is scheduled ?
+> > > > > 
+> > > > > [Yuan Yao] No, In fact any DMA timeout will result the failure of
+> > > > > I2C transmission and then it will turn to report the exception and
+> > > > > wait for next transmission.
+> > > > 
+> > > > Can you tell when the next transmission will happen? What if I issue
+> > > > a single transmission and that one fails ? Will the DMA run until
+> > > > who knows when ?
+> > > 
+> > > [Yuan Yao]
+> > > Sorry for my unclear description. In fact, During the DMA transmission 
+> > > if an error happened or time out, DMA will stop at once and be
+> > > disabled. I just continue to route the TX and RX request to signal the
+> > > DMA controller. Because the DMA is disabled, it will ignore those
+> > > signals.
+> > > 
+> > > In a word, I just want to block the I2C TX, RX and interrupt signal
+> > > when DMA mode failed until the next I2C transmission start.
+> > 
+> > So the I2C block is in error state until you clean it up upon next
+> > transmission?
+> 
+> [Yuan Yao]
+> No, just DMAEN bit.
+> Other I2C error state will clean soon.
+> 
+> > > In fact, the bit "I2CR_DMAEN" is a switch which decide whether I2C
+> > > route the TX, RX and interrupt signal to DMA controller.
+> > > 
+> > > > The only thing I worried about is I2C may still receive some
+> > > > feedbacks after DMA timeout. In this case the feedbacks may lead to
+> > > > abnormal state in PIO mode.But it will be ignored in DMA model.
+> > > > That's why I tend to delay force-disable DMA until the next
+> > > > transmission begin. Could you please give me some suggestion?
+> > > > 
+> > > > No, this design just seems flawed to me. You should stop the DMA
+> > > > immediatelly if there is an error to avoid wasting resources and
+> > > > prevent possible other adverse effects.
+> > > 
+> > > [Yuan Yao]
+> > > Yes, I have stopped the DMA immediately. However I keep the I2C DMA
+> > > single route.
+> > > 
+> > > I don't have the exact evidence to prove that my design is acceptable.
+> > > So if you are sure it's flawed, I will change it in the next
+> > > version(V8).
+> > 
+> > I'm just trying to understand it.
+> 
+> [Yuan Yao]
+> Both of us know that we should stop DMA immediately when issue happened.
+> The only argument is that I want to set the DMAEN bit just before the next
+> transmission starts. But you think when I stop the DMA I should set it at
+> the same time. The bit is the switch which is used to decide whether Rx
+> and Tx signal can be routed to DMA. In fact, I deeply think about what is
+> the difference between our arguments for those days. I think the two ways
+> are almost the same. Your way is more acceptable because people tend to
+> clear the DMA status just after stopping it. So I think your way is
+> better.
 
-> > So we can take this now and when Kean Ho is ready he needs to
-> > basically revert it, or you could already introduce the new probe
-> > driver, 8250_quark.c, and Kean Ho can then add the DMA engine handling
-> > later to it.
-> >
-> > IMO we should add the 8250_quark.c already now.
-> Sounds great - is the 8250_quark.c code ready ? 
+OK, I am a bit lost, so let's see V8 and then go with that one I'd say.
 
-I'm still working on the DMA portion and requires more time.
-If the DMA section can be replaced by a placeholder, I should be good.
-
--KH
-
-------=_NextPart_000_0019_01CFD445.32DD7580
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-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
-uFCk8kURgMEQZrETbZM24AHXdA69KKfbIVYkTlk4eCtJQEvuBX8X4+xBwRwBDyvN8/w1LoX8Mrc8
-gCeOTlOP9Jbu63SxNrkTGQsJs0hrbe0PUIPDIjrair2viKu/bnEASzggeV/jube0NYPKqWlPjd7V
-wLrnm1fCdCh9t1LmcYYdmrCGT+uSgAml5aE1mcjpqgoWiIBiIvLvsHpqGnpeq+GW1LGX2kMdsPn0
-FkA5AiBbT2E3hlUciKBX0pvzqxA7qG70fDbeyxTGE6xOXdHjQOi/AgMBAAGjggLkMIIC4DALBgNV
-HQ8EBAMCB4AwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhsOMdYSZ5VGD/YEohY6fU4KRwAln
-gd69OZXwQwIBZAIBCDAdBgNVHQ4EFgQUCcQrEZzYHjQHr5nKZozN2cAv9xswHwYDVR0jBBgwFoAU
-HmkqtNwo/kcYTiELP7ysES/wmPUwgckGA1UdHwSBwTCBvjCBu6CBuKCBtYZUaHR0cDovL3d3dy5p
-bnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWlu
-ZyUyMENBJTIwNEEuY3Jshl1odHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5
-L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjA0QS5jcmwwge8G
-CCsGAQUFBwEBBIHiMIHfMGkGCCsGAQUFBzAChl1odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0
-b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
-MjA0QS5jcnQwcgYIKwYBBQUHMAKGZmh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9z
-aXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
-QSUyMDRBLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYKKwYBBAGCNwoDDDApBgkrBgEEAYI3FQoE
-HDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwwwSQYDVR0RBEIwQKAmBgorBgEEAYI3FAIDoBgM
-FmtlYW4uaG8uY2hld0BpbnRlbC5jb22BFmtlYW4uaG8uY2hld0BpbnRlbC5jb20wDQYJKoZIhvcN
-AQEFBQADggEBAHfEme+dGaVG9vHTbwzq/XnG3b9vP1BvIGrV854KDMufRLEtfX/DHowMN7SwP/T8
-a9EBjwXWNWShAUfhMouDnjPjdu2zGeW2TshM9TVE8pV3UpMdBGbiNHGOXk3DoMcy8WSw5gL3Ua1r
-ZNpGJ0XjYq6ZHkUROfPtCMpSUMDCGLoVhJ8ioGRtzvPxrgY0xtclBj37jwdOdIarzfbSXol2pRlq
-jU/J1kuSC1NjA8afunZWV/yHxnGmMzdei2/qshaduAb2Erb+kdBlmQmLvSVHmkUhMwgocskcRXqp
-ggo4o1snlu8J7udtB3l+ZbKXDbv8kOvt3OneCbrogUj+MUtVdOkwggZpMIIFUaADAgECAgoedSSQ
-AAAAAEacMA0GCSqGSIb3DQEBBQUAMHkxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEUMBIGA1UE
-BxMLU2FudGEgQ2xhcmExGjAYBgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRl
-bCBFeHRlcm5hbCBCYXNpYyBJc3N1aW5nIENBIDRBMB4XDTE0MDIxODA3NDcwNloXDTE3MDIwMjA3
-NDcwNlowPzEWMBQGA1UEAxMNQ2hldywgS2VhbiBIbzElMCMGCSqGSIb3DQEJARYWa2Vhbi5oby5j
-aGV3QGludGVsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKLweZLT0Cg8so88
-ke7J4FmSDXO/hWc9Tqe/ngQLsfuTz3qRh01GDUcveUnEoaD9Vfd8CqSGmn0rKc4ILU9CiKf1Oygi
-ZsQszVPIjLxgRN0mn/3u8j90CvcaGdQc1SaD3dWrK12V0yMdTz1AXsRL9h/Z1O+LoJ6T3LJPzikR
-WxkGk4KQBc6KPCaQdtu8K6bnK124XmVXMghBIhTuuC3EzanbyP/OLKiYc1SrPaddFIlSpf1pL5CG
-DK2hmlO8hycG0yVzQ5ITCB6MHPumoSJ+5cLhuRi9zkcv26TjFA+/yTqukgrTBoXfOKldp6t98Uqt
-HJs9nLS8W/HZfzoGugxcXhMCAwEAAaOCAyswggMnMAsGA1UdDwQEAwIEMDA9BgkrBgEEAYI3FQcE
-MDAuBiYrBgEEAYI3FQiGw4x1hJnlUYP9gSiFjp9TgpHACWeEudlBh4T/TgIBZAIBDTBEBgkqhkiG
-9w0BCQ8ENzA1MA4GCCqGSIb3DQMCAgIAgDAOBggqhkiG9w0DBAICAIAwBwYFKw4DAgcwCgYIKoZI
-hvcNAwcwHQYDVR0OBBYEFF7dc1RUnK9dvmSm9M68EWtFoBmCMB8GA1UdIwQYMBaAFB5pKrTcKP5H
-GE4hCz+8rBEv8Jj1MIHJBgNVHR8EgcEwgb4wgbuggbiggbWGVGh0dHA6Ly93d3cuaW50ZWwuY29t
-L3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUy
-MDRBLmNybIZdaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50
-ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3JsMIHvBggrBgEFBQcB
-AQSB4jCB3zBpBggrBgEFBQcwAoZdaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0
-aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3J0
-MHIGCCsGAQUFBzAChmZodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2Nl
-cnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjA0QS5j
-cnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwQwKQYJKwYBBAGCNxUKBBwwGjAKBggr
-BgEFBQcDBDAMBgorBgEEAYI3CgMEMEkGA1UdEQRCMECgJgYKKwYBBAGCNxQCA6AYDBZrZWFuLmhv
-LmNoZXdAaW50ZWwuY29tgRZrZWFuLmhvLmNoZXdAaW50ZWwuY29tMA0GCSqGSIb3DQEBBQUAA4IB
-AQBkE98oipRffYwrI1blYIErp/YbKrg9VBXmHIDs+BPEWJNDLUTNWacdLrS53+1sHqiQylDhj3y5
-l8wZc5E75sp2nT1SRPcnzTXHwED5ZADSP3NSigF+Vwe6uXvaXvqnm4fAjSdUiRoN5lOcEJi0Wjcg
-LveHEcEifNl20WxOvmWy/AwePfxSMWb5tj0UCpmX8ATs6nBFOFN6hmAznQcBzpGY/7FmzxzpEI7u
-9FKgJr2LUMcgxTX5M8sTQqbTMCNGxlsH9GzyNrXbHqxMbSYF2K2fs8xSweZ4Gek9M5QVvHWR1n9l
-cXAqxFoVdl2B0OH/aNHhExmr+3c3D7Q/nJ9MX9ZqMYIELzCCBCsCAQEwgYcweTELMAkGA1UEBhMC
-VVMxCzAJBgNVBAgTAkNBMRQwEgYDVQQHEwtTYW50YSBDbGFyYTEaMBgGA1UEChMRSW50ZWwgQ29y
-cG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgNEECCh51
-yD4AAAAARp0wCQYFKw4DAhoFAKCCAnwwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG
-9w0BCQUxDxcNMTQwOTE5MTIwNjI4WjAjBgkqhkiG9w0BCQQxFgQU+/PgXZy7jC6PQUcWxVm7r9Gd
-W28wTwYLKoZIhvcNAQkQAgExQDA+BB0AAAAAEAAAAGTW9sxW5sZKli5LnzCLcLYBAAAAAIABADAa
-MBiBFmtlYW4uaG8uY2hld0BpbnRlbC5jb20wgZMGCSqGSIb3DQEJDzGBhTCBgjALBglghkgBZQME
-ASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFlAwQBAjAOBggqhkiG9w0DAgICAIAw
-DQYIKoZIhvcNAwICAUAwBwYFKw4DAhowCwYJYIZIAWUDBAIDMAsGCWCGSAFlAwQCAjALBglghkgB
-ZQMEAgEwgZgGCSsGAQQBgjcQBDGBijCBhzB5MQswCQYDVQQGEwJVUzELMAkGA1UECBMCQ0ExFDAS
-BgNVBAcTC1NhbnRhIENsYXJhMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkGA1UEAxMi
-SW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSA0QQIKHnUkkAAAAABGnDCBmgYLKoZIhvcN
-AQkQAgsxgYqggYcweTELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRQwEgYDVQQHEwtTYW50YSBD
-bGFyYTEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFs
-IEJhc2ljIElzc3VpbmcgQ0EgNEECCh51JJAAAAAARpwwDQYJKoZIhvcNAQEBBQAEggEAXEhj+cMX
-sHvBCDU0ZDGehHCSVe4ORk3O1AeCEnd8w4BiDeippEjITfJb37/6XEJ3UY9Am7FSPmqZAzLS3/Lm
-Dr3gjsn5QPiaxxxwxB/xG3dtOWN0sAvenCLzK3FOm+EmPzctKHuMqJbXWLOGUEmz2/hvXC7RgCmS
-ace1esSRusRzGJ/ioSXqECXb5aILkCtFh61YUxEIm5rDjnyYElYfH8uELaiV/cLqKjbFSMjavXGC
-4n9NY1P/iQWfmhbeZEAJDWmDv7PU3dRGSFU791RniHVXWhJV/ZF9aLU/R+s1ss89YJ7T8Gt2Hfzs
-sfb/xQ1xUl/6AowRuFOEbMot0po3mwAAAAAAAA==
-
-------=_NextPart_000_0019_01CFD445.32DD7580--
+Best regards,
+Marek Vasut
