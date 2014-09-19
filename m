@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608AbaISRV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 13:21:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:40794 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756810AbaISRV2 (ORCPT
+	id S1757725AbaISRWd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 13:22:33 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:37136 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757219AbaISRWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 13:21:28 -0400
-Date: Fri, 19 Sep 2014 13:21:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Return a value from printk_ratelimited
-Message-ID: <20140919132123.418b276f@gandalf.local.home>
-In-Reply-To: <3629aa32fd3e434e41e5e5f4a97ab50adb8edcdc.1411116672.git.osandov@osandov.com>
-References: <cover.1411116672.git.osandov@osandov.com>
-	<3629aa32fd3e434e41e5e5f4a97ab50adb8edcdc.1411116672.git.osandov@osandov.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Fri, 19 Sep 2014 13:22:31 -0400
+X-Sasl-enc: 7RJSAR0VXAQPeyqvUvX9tHXrt7SMk/VpKYOhVlDGqKwB 1411147350
+Date: Fri, 19 Sep 2014 14:22:18 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140919172218.GF17456@khazad-dum.debian.net>
+References: <541B2F33.8000002@amacapital.net>
+ <20140918145328.0253f009@as>
+ <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+ <20140918200659.GA5331@khazad-dum.debian.net>
+ <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+ <20140919110014.GC29639@khazad-dum.debian.net>
+ <20140919112953.GA3256@nazgul.tnic>
+ <20140919135108.GB17456@khazad-dum.debian.net>
+ <20140919144937.GB5318@nazgul.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140919144937.GB5318@nazgul.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014 02:01:29 -0700
-Omar Sandoval <osandov@osandov.com> wrote:
-
-> printk returns an integer; there's no reason for printk_ratelimited to swallow
-> it.
+On Fri, 19 Sep 2014, Borislav Petkov wrote:
+> On Fri, Sep 19, 2014 at 10:51:08AM -0300, Henrique de Moraes Holschuh wrote:
+> > But I will not trigger a microcode update when the intel-microcode package
+> > gets updated/installed anymore.  The user will be warned of the need for
+> > either a reboot or a manually triggered microcode update.
 > 
-> Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> ---
->  include/linux/printk.h | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index d78125f..67534bc 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -343,12 +343,14 @@ extern asmlinkage void dump_stack(void) __cold;
->  #ifdef CONFIG_PRINTK
->  #define printk_ratelimited(fmt, ...)					\
->  ({									\
-> +	int __ret = 0;							\
+> That's also wrong - you need to warn only on the affected machines.
 
-My only issues is with the "__ret" name.
+I could enhance iucode_tool so that it can tell you when there are pending
+updates.  But it is a layering violation I don't like much, and it is a lot
+less future-proof than the stuff iucode-tool already does.  I will think
+about it... but I'm inclined to just tell the user that "microcode updates,
+if any, will be applied the next time this system reboots".
 
-It's not really unique enough. If something else uses __ret and does
+As for immediately updating the microcode on all processors other than Intel
+Haswell: this time, Felix Geyer found the issue early enough to save both
+Ubuntu and Debian users from harm, and I brought it to attention here as
+soon as I had a good idea of what was happening.
 
-  printk_ratelimit("some fmt string %d\n", __ret);
+But this was a close call as far as I'm concerned.  Next time, we might not
+be so lucky.
 
-This will not print the right value.
-
-printk_ratelimit can be used almost anywhere thus using a really unique
-value may be worth while here.
-
-What about:
-
-  int ______r
-
-?
-
--- Steve
-
->  	static DEFINE_RATELIMIT_STATE(_rs,				\
->  				      DEFAULT_RATELIMIT_INTERVAL,	\
->  				      DEFAULT_RATELIMIT_BURST);		\
->  									\
->  	if (__ratelimit(&_rs))						\
-> -		printk(fmt, ##__VA_ARGS__);				\
-> +		__ret = printk(fmt, ##__VA_ARGS__);			\
-> +	__ret;								\
->  })
->  #else
->  #define printk_ratelimited(fmt, ...)					\
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
