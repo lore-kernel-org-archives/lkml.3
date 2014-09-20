@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaITNbj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 09:31:39 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:54328 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaITNbg (ORCPT
+	id S1757136AbaITNcG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 09:32:06 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:53820 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198AbaITNbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 09:31:36 -0400
+	Sat, 20 Sep 2014 09:31:38 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: netdev@vger.kernel.org
 Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
@@ -18,42 +18,167 @@ Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
         Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: net: stmmac glue layer for Amlogic Meson SoCs
-Date: Sat, 20 Sep 2014 15:29:15 +0200
-Message-Id: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH 1/2] net: stmmac: add Amlogic Meson glue layer
+Date: Sat, 20 Sep 2014 15:29:16 +0200
+Message-Id: <1411219757-9201-2-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
+References: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-the Ethernet controller available in Amlogic Meson6 and Meson8 SoCs is
-a Synopsys DesignWare MAC IP core, already supported by the stmmac
+The Ethernet controller available in Meson6 and Meson8 SoCs is a
+Synopsys DesignWare MAC IP core, already supported by the stmmac
 driver.
 
-These patches add a glue layer to the driver for the platform-specific
-settings required by the Amlogic variant.
+This glue layer implements some platform-specific settings needed by
+the Amlogic variant.
 
-This has been tested on a Amlogic S802 device with the initial Meson
-support submitted by Carlo Caione [1].
-
-[1] http://lwn.net/Articles/612000/
-
-Beniamino Galvani (2):
-  net: stmmac: add Amlogic Meson glue layer
-  net: stmmac: meson: document device tree bindings
-
- .../devicetree/bindings/net/meson-dwmac.txt        | 25 ++++++++
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+---
  drivers/net/ethernet/stmicro/stmmac/Kconfig        | 10 ++++
  drivers/net/ethernet/stmicro/stmmac/Makefile       |  1 +
  drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c  | 67 ++++++++++++++++++++++
  drivers/net/ethernet/stmicro/stmmac/stmmac.h       |  3 +
  .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |  3 +
- 6 files changed, 109 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/meson-dwmac.txt
+ 5 files changed, 84 insertions(+)
  create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c
 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+index 2d09c11..b02d4a3 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
++++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+@@ -26,6 +26,16 @@ config STMMAC_PLATFORM
+ 
+ 	  If unsure, say N.
+ 
++config DWMAC_MESON
++	bool "Amlogic Meson dwmac support"
++	depends on STMMAC_PLATFORM && ARCH_MESON
++	help
++	  Support for Ethernet controller on Amlogic Meson SoCs.
++
++	  This selects the Amlogic Meson SoC glue layer support for
++	  the stmmac device driver. This driver is used for Meson6 and
++	  Meson8 SoCs.
++
+ config DWMAC_SOCFPGA
+ 	bool "SOCFPGA dwmac support"
+ 	depends on STMMAC_PLATFORM && MFD_SYSCON && (ARCH_SOCFPGA || COMPILE_TEST)
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Makefile b/drivers/net/ethernet/stmicro/stmmac/Makefile
+index 18695eb..0533d0b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Makefile
++++ b/drivers/net/ethernet/stmicro/stmmac/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_STMMAC_ETH) += stmmac.o
+ stmmac-$(CONFIG_STMMAC_PLATFORM) += stmmac_platform.o
+ stmmac-$(CONFIG_STMMAC_PCI) += stmmac_pci.o
++stmmac-$(CONFIG_DWMAC_MESON) += dwmac-meson.o
+ stmmac-$(CONFIG_DWMAC_SUNXI) += dwmac-sunxi.o
+ stmmac-$(CONFIG_DWMAC_STI) += dwmac-sti.o
+ stmmac-$(CONFIG_DWMAC_SOCFPGA) += dwmac-socfpga.o
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c
+new file mode 100644
+index 0000000..d225a60
+--- /dev/null
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c
+@@ -0,0 +1,67 @@
++/*
++ * Amlogic Meson DWMAC glue layer
++ *
++ * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program. If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/device.h>
++#include <linux/ethtool.h>
++#include <linux/io.h>
++#include <linux/ioport.h>
++#include <linux/platform_device.h>
++#include <linux/stmmac.h>
++
++#define ETHMAC_SPEED_100	BIT(1)
++
++struct meson_dwmac {
++	struct device	*dev;
++	void __iomem	*reg;
++};
++
++static void meson6_dwmac_fix_mac_speed(void *priv, unsigned int speed)
++{
++	struct meson_dwmac *dwmac = priv;
++	unsigned int val;
++
++	val = readl(dwmac->reg);
++
++	switch (speed) {
++	case SPEED_10:
++		val &= ~ETHMAC_SPEED_100;
++		break;
++	case SPEED_100:
++		val |= ETHMAC_SPEED_100;
++		break;
++	}
++
++	writel(val, dwmac->reg);
++}
++
++static void *meson6_dwmac_setup(struct platform_device *pdev)
++{
++	struct meson_dwmac *dwmac;
++	struct resource *res;
++
++	dwmac = devm_kzalloc(&pdev->dev, sizeof(*dwmac), GFP_KERNEL);
++	if (!dwmac)
++		return ERR_PTR(-ENOMEM);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	dwmac->reg = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(dwmac->reg))
++		return dwmac->reg;
++
++	return dwmac;
++}
++
++const struct stmmac_of_data meson6_dwmac_data = {
++	.setup		= meson6_dwmac_setup,
++	.fix_mac_speed	= meson6_dwmac_fix_mac_speed,
++};
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index 58097c0..4452889 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -137,6 +137,9 @@ void stmmac_disable_eee_mode(struct stmmac_priv *priv);
+ bool stmmac_eee_init(struct stmmac_priv *priv);
+ 
+ #ifdef CONFIG_STMMAC_PLATFORM
++#ifdef CONFIG_DWMAC_MESON
++extern const struct stmmac_of_data meson6_dwmac_data;
++#endif
+ #ifdef CONFIG_DWMAC_SUNXI
+ extern const struct stmmac_of_data sun7i_gmac_data;
+ #endif
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index bb524a9..6521717 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -30,6 +30,9 @@
+ #include "stmmac.h"
+ 
+ static const struct of_device_id stmmac_dt_ids[] = {
++#ifdef CONFIG_DWMAC_MESON
++	{ .compatible = "amlogic,meson6-dwmac", .data = &meson6_dwmac_data},
++#endif
+ #ifdef CONFIG_DWMAC_SUNXI
+ 	{ .compatible = "allwinner,sun7i-a20-gmac", .data = &sun7i_gmac_data},
+ #endif
 -- 
 1.9.1
 
