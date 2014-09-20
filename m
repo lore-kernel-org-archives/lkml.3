@@ -1,105 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632AbaITO2K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 10:28:10 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:42816 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502AbaITO2F (ORCPT
+	id S1757041AbaITO0k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 10:26:40 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55043 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756628AbaITO0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 10:28:05 -0400
-Date: Sat, 20 Sep 2014 16:28:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, james.hogan@imgtec.com,
-        atomlin@redhat.com, tglx@linutronix.de
-Subject: Re: [tip:sched/urgent] sched: Fix end_of_stack()  and location of
- stack canary for architectures using CONFIG_STACK_GROWSUP
-Message-ID: <20140920142800.GA25366@gmail.com>
-References: <20140919093505.62681e43@as>
- <tip-a3215fb47c7ecb814dc16815245db4f375841268@git.kernel.org>
- <20140920065810.794d6bbd@as>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140920065810.794d6bbd@as>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 20 Sep 2014 10:26:31 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 03/13] staging: rtl8188eu: Rework function odm_RX_HWAntDivInit()
+Date: Sat, 20 Sep 2014 19:55:49 +0530
+Message-Id: <1411223160-17292-3-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
+References: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rename CamelCase function name.
+Remove unnecessary comments.
 
-* Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/hal/odm_RTL8188E.c |   31 +++++++++++++-------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
-> On Fri, 19 Sep 2014 23:42:37 -0700
-> tip-bot for Chuck Ebbert <tipbot@zytor.com> wrote:
-> 
-> > Commit-ID:  a3215fb47c7ecb814dc16815245db4f375841268
-> > Gitweb:     http://git.kernel.org/tip/a3215fb47c7ecb814dc16815245db4f375841268
-> > Author:     Chuck Ebbert <cebbert.lkml@gmail.com>
-> > AuthorDate: Fri, 19 Sep 2014 09:35:05 -0500
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Sat, 20 Sep 2014 08:38:16 +0200
-> > 
-> > sched: Fix end_of_stack() and location of stack canary for architectures using CONFIG_STACK_GROWSUP
-> > 
-> > Aaron Tomlin recently posted patches to enable checking the
-> > stack canary on every task switch:
-> > 
-> >   http://lkml.org/lkml/2014/9/12/293
-> > 
-> > Looking at the canary code, I realized that every arch
-> > (except ia64, which adds some space for register spill
-> > above the stack) shares a definition of end_of_stack()
-> > that makes it the first long after the threadinfo.
-> > 
-> > For stacks that grow down, this low address is correct
-> > because the stack starts at the end of the thread area
-> > and grows toward lower addresses. However, for stacks
-> > that grow up, toward higher addresses, this is wrong.
-> > (The stack actually grows away from the canary.)
-> > 
-> > On these archs end_of_stack() should return the address
-> > of the last long, at the highest possible address for
-> > the stack.
-> > 
-> > Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
-> > Tested-by: James Hogan <james.hogan@imgtec.com> [metag]
-> > Acked-by: James Hogan <james.hogan@imgtec.com>
-> > Acked-by: Aaron Tomlin <atomlin@redhat.com>
-> > Link: http://lkml.kernel.org/r/20140919093505.62681e43@as
-> > [ Added comments to end_of_stack(). ]
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> > ---
-> >  include/linux/sched.h | 13 +++++++++++++
-> >  1 file changed, 13 insertions(+)
-> > 
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 5c2c885..0e20a24 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -2608,9 +2608,22 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
-> >  	task_thread_info(p)->task = p;
-> >  }
-> >  
-> > +/*
-> > + * Return the address of the first long before (or after,
-> > + * depending on the architecture's default stack growth
-> > + * direction) * a task's task_info structure, which is the
-> > + * kernel stack's last usable spot.
-> > + *
-> > + * This is the point of no return, if the stack grows
-> > + * beyond that position, we corrupt the task's state.
-> > + */
-> 
-> This comment you added is not correct for archs where the stack grows
-> up. The threadinfo is always at the lowest address on the stack in
-> every case. Instead of corrupting the thread info, a stack overflow
-> will corrupt whatever is on the next page after the stack if it grows
-> upward.
+diff --git a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
+index 095078d..4b8bafe 100644
+--- a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
++++ b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
+@@ -21,34 +21,35 @@
+ #include "odm_precomp.h"
+ #include "phy.h"
+ 
+-static void odm_RX_HWAntDivInit(struct odm_dm_struct *dm_odm)
++static void dm_rx_hw_antena_div_init(struct odm_dm_struct *dm_odm)
+ {
+ 	struct adapter *adapter = dm_odm->Adapter;
+-	u32	value32;
++	u32 value32;
+ 
+ 	if (*(dm_odm->mp_mode) == 1) {
+ 		dm_odm->AntDivType = CGCS_RX_SW_ANTDIV;
+-		phy_set_bb_reg(adapter, ODM_REG_IGI_A_11N, BIT7, 0); /*  disable HW AntDiv */
+-		phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT31, 1);  /*  1:CG, 0:CS */
++		phy_set_bb_reg(adapter, ODM_REG_IGI_A_11N, BIT7, 0);
++		phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT31, 1);
+ 		return;
+ 	}
+-	ODM_RT_TRACE(dm_odm, ODM_COMP_ANT_DIV, ODM_DBG_LOUD, ("odm_RX_HWAntDivInit()\n"));
+ 
+ 	/* MAC Setting */
+ 	value32 = phy_query_bb_reg(adapter, ODM_REG_ANTSEL_PIN_11N, bMaskDWord);
+-	phy_set_bb_reg(adapter, ODM_REG_ANTSEL_PIN_11N, bMaskDWord, value32|(BIT23|BIT25)); /* Reg4C[25]=1, Reg4C[23]=1 for pin output */
++	phy_set_bb_reg(adapter, ODM_REG_ANTSEL_PIN_11N, bMaskDWord,
++		       value32|(BIT23|BIT25));
+ 	/* Pin Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_PIN_CTRL_11N, BIT9|BIT8, 0);/* Reg870[8]=1'b0, Reg870[9]=1'b0	antsel antselb by HW */
+-	phy_set_bb_reg(adapter, ODM_REG_RX_ANT_CTRL_11N, BIT10, 0);	/* Reg864[10]=1'b0	antsel2 by HW */
+-	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT22, 1);	/* Regb2c[22]=1'b0	disable CS/CG switch */
+-	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT31, 1);	/* Regb2c[31]=1'b1	output at CG only */
++	phy_set_bb_reg(adapter, ODM_REG_PIN_CTRL_11N, BIT9|BIT8, 0);
++	phy_set_bb_reg(adapter, ODM_REG_RX_ANT_CTRL_11N, BIT10, 0);
++	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT22, 1);
++	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT31, 1);
+ 	/* OFDM Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_ANTDIV_PARA1_11N, bMaskDWord, 0x000000a0);
++	phy_set_bb_reg(adapter, ODM_REG_ANTDIV_PARA1_11N, bMaskDWord,
++		       0x000000a0);
+ 	/* CCK Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_BB_PWR_SAV4_11N, BIT7, 1); /* Fix CCK PHY status report issue */
+-	phy_set_bb_reg(adapter, ODM_REG_CCK_ANTDIV_PARA2_11N, BIT4, 1); /* CCK complete HW AntDiv within 64 samples */
++	phy_set_bb_reg(adapter, ODM_REG_BB_PWR_SAV4_11N, BIT7, 1);
++	phy_set_bb_reg(adapter, ODM_REG_CCK_ANTDIV_PARA2_11N, BIT4, 1);
+ 	ODM_UpdateRxIdleAnt_88E(dm_odm, MAIN_ANT);
+-	phy_set_bb_reg(adapter, ODM_REG_ANT_MAPPING1_11N, 0xFFFF, 0x0201);	/* antenna mapping table */
++	phy_set_bb_reg(adapter, ODM_REG_ANT_MAPPING1_11N, 0xFFFF, 0x0201);
+ }
+ 
+ static void odm_TRX_HWAntDivInit(struct odm_dm_struct *dm_odm)
+@@ -177,7 +178,7 @@ void ODM_AntennaDiversityInit_88E(struct odm_dm_struct *dm_odm)
+ 	ODM_RT_TRACE(dm_odm, ODM_COMP_ANT_DIV, ODM_DBG_LOUD, ("dm_odm->bIsMPChip=%s\n", (dm_odm->bIsMPChip ? "true" : "false")));
+ 
+ 	if (dm_odm->AntDivType == CGCS_RX_HW_ANTDIV)
+-		odm_RX_HWAntDivInit(dm_odm);
++		dm_rx_hw_antena_div_init(dm_odm);
+ 	else if (dm_odm->AntDivType == CG_TRX_HW_ANTDIV)
+ 		odm_TRX_HWAntDivInit(dm_odm);
+ 	else if (dm_odm->AntDivType == CG_TRX_SMART_ANTDIV)
+-- 
+1.7.10.4
 
-Okay, I've zapped the commit, please resubmit the patch with the 
-comment corrected.
-
-Thanks,
-
-	Ingo
