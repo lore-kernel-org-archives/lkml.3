@@ -1,792 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816AbaITQcM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 12:32:12 -0400
-Received: from mail-by2on0128.outbound.protection.outlook.com ([207.46.100.128]:9248
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756508AbaITQcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 12:32:06 -0400
-X-WSS-ID: 0NC7KLD-07-WGV-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>
-CC: <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
-        <liviu.dudau@arm.com>, <tglx@linutronix.de>,
-        <Harish.Kasiviswanathan@amd.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: [V8 2/2] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
-Date: Sat, 20 Sep 2014 09:31:38 -0700
-Message-ID: <1411230698-8081-3-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411230698-8081-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1411230698-8081-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1756883AbaITQfD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 12:35:03 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:57263 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317AbaITQfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 12:35:00 -0400
+Date: Sat, 20 Sep 2014 18:34:57 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140920163457.GA302@x4>
+References: <20140916170709.73ef2993@gandalf.local.home>
+ <20140916212250.GI1205@quack.suse.cz>
+ <20140916173328.6306a5c2@gandalf.local.home>
+ <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+ <20140920113220.26e7434a@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(77096002)(47776003)(90102001)(48376002)(89996001)(50466002)(80022003)(81342003)(81542003)(74502003)(4396001)(97736003)(77982003)(79102003)(46102003)(74662003)(86362001)(31966008)(20776003)(105586002)(50226001)(68736004)(33646002)(95666004)(50986999)(21056001)(76176999)(104166001)(102836001)(76482002)(83322001)(19580405001)(229853001)(19580395003)(107046002)(101416001)(83072002)(36756003)(64706001)(62966002)(85852003)(86152002)(92566001)(106466001)(99396002)(77156001)(53416004)(2201001)(87936001)(85306004)(44976005)(87286001)(92726001)(84676001)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB208;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
-X-Forefront-PRVS: 0340850FCD
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140920113220.26e7434a@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On 2014.09.20 at 11:32 -0400, Steven Rostedt wrote:
+> On Sat, 20 Sep 2014 07:12:24 +0200
+> Jan Kara <jack@suse.cz> wrote:
+> 
+> > On Thu 18-09-14 19:34:14, Peter Zijlstra wrote:
+> > > On Wed, Sep 17, 2014 at 08:31:35PM -0400, Steven Rostedt wrote:
+> > > > I totally didn't get what you wrote.
+> > > 
+> > > :-)
+> > > 
+> > > > We don't want to know if it got delayed, then the patch to remove that
+> > > > print seems correct.
+> > > 
+> > > Why would you not want to know that? Also was that the actual argument?
+> > > Lemme go check the earlier emails -- I cannot find that argument in the
+> > > first few emails.
+> >   Well, so what gets delayed is printing from kernel buffer to console.
+> > So this is the same as when you do printk() when console lock is taken by
+> > someone else. So it seems a bit strange to prepend [delayed] in some cases
+> > and not in others.
+> > 
+> > Another question is what the [delayed] prefix would be useful for? If the
+> > message eventually gets printed to console I don't see why you would care
+> > it was printed few ms after it entered the kernel buffer (after all the
+> > time stamp before the line will be the time when it entered the kernel
+> > buffer). And if the kernel crashes in such a way that the message doesn't
+> > get printed, then bad luck but prefix in the kernel log buffer isn't going
+> > to make that any better :)
+> > 
+> > This all feels like bikeshedding, I don't deeply care what gets done but I
+> > wanted to point out I don't really see a use for [delayed]...
+> > 
+> 
+> I pretty much agree with this assessment. I don't really care if
+> there's a "[delayed]" message or not. I now agree that it isn't really
+> that useful. Now what I do care about is that there's a bug with the
+> current code, and the non bikeshed argument is how to fix this bug.
+> 
+> The bug is that there's users of printk_deferred() that use KERN_WARN
+> in the format. This ends up showing "[delayed]<whacky-characters>
+> message". The fix needs to remove those whacky characters.
+> 
+> There's three ways to fix this bug.
+> 
+> 1) change printk() to check for whacky characters before adding
+> "[delayed]" and either move them before it or remove them all together.
+> 
+> 2) change all users of printk_deferred() to not add the KERN_WARN.
+> 
+> 3) just get rid of adding the "[delayed]" message and make printk()
+> itself a bit cleaner.
+> 
+> I'm leaning towards #3 as I don't see the usefulness of that
+> "[delayed]" message if there's other cases that can also delay printk.
+> Remember, the code has been changed since the delayed message was added
+> to make sure that the printk_deferred() message gets into the printk
+> message in sequence of other printk's happening. The original way (when
+> the "delayed" message was added) used its own buffer and would write to
+> the log buffer at a later time, where the printk_deferred() could
+> actually come out of sequence with other printk()s, and the "[delayed]"
+> message would be useful for that case. But it's not useful anymore.
+> 
+> #1 of above will just makes printk more complex, and being such a
+> critical function which is already complex enough, I would like to not
+> do so.
+> 
+> #2 can fix the issue for now, until someone else adds a
+> printk_deferred() with another KERN_WARN. Worse yet, someone may add
+> one of the other KERN_* log levels and it will be ignored.
 
-ARM GICv2m specification extends GICv2 to support MSI(-X) with
-a new set of register frame. This patch introduces support for
-the non-secure GICv2m register frame. Currently, GICV2m is available
-in certain version of GIC-400.
+There are already two "printk_deferred(KERN_ERR" in kernel/time/ntp.c,
+that get currently transformed to KERN_WARN.
 
-The patch introduces a new property in ARM gic binding, the v2m subnode.
-It is optional.
+> Getting beyond the bikeshedding, there's a real bug that should be
+> fixed. We just need to figure out what's the best way to do so.
 
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Acked-by: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>
----
- Documentation/devicetree/bindings/arm/gic.txt |  55 ++++
- arch/arm64/Kconfig                            |   1 +
- drivers/irqchip/Kconfig                       |   5 +
- drivers/irqchip/Makefile                      |   1 +
- drivers/irqchip/irq-gic-common.c              |  12 +
- drivers/irqchip/irq-gic-common.h              |   4 +
- drivers/irqchip/irq-gic-v2m.c                 | 356 ++++++++++++++++++++++++++
- drivers/irqchip/irq-gic.c                     |  82 +++---
- drivers/irqchip/irq-gic.h                     |  54 ++++
- 9 files changed, 540 insertions(+), 30 deletions(-)
- create mode 100644 drivers/irqchip/irq-gic-v2m.c
- create mode 100644 drivers/irqchip/irq-gic.h
+I agree that 3) is the best solution. Feel free to just add the
+description of why it now makes sense to the patch.
 
-diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-index c7d2fa1..38b2156 100644
---- a/Documentation/devicetree/bindings/arm/gic.txt
-+++ b/Documentation/devicetree/bindings/arm/gic.txt
-@@ -96,3 +96,58 @@ Example:
- 		      <0x2c006000 0x2000>;
- 		interrupts = <1 9 0xf04>;
- 	};
-+
-+
-+* GICv2m extension for MSI/MSI-x support (Optional)
-+
-+Certain revision of GIC-400 supports MSI/MSI-x via V2M register frame.
-+This is enabled by specifying v2m sub-node.
-+
-+Required properties:
-+
-+- compatible        : The value here should be "arm,gic-v2m-frame".
-+
-+- msi-controller    : Identifies the node as an MSI controller.
-+
-+- reg               : GICv2m MSI interface register base and size
-+
-+Optional properties:
-+
-+- arm,msi-base-spi  : Specify base SPI the MSI frame.
-+                      The SPI base value can be from 32 to 1019.
-+
-+- arm,msi-num-spi   : Returns the number of contiguous SPIs assigned
-+		      to the frame.
-+
-+Note: "arm,msi-base-spi" and "arm,msi-num-spi" are used mainly for
-+       providing HW workaround in the case where the MSI_TYPER register
-+       is corrupted.
-+
-+Example:
-+
-+	interrupt-controller@e1101000 {
-+		compatible = "arm,gic-400";
-+		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		interrupt-controller;
-+		interrupts = <1 8 0xf04>;
-+		ranges = <0 0 0 0xe1100000 0 0x100000>;
-+		reg = <0x0 0xe1110000 0 0x01000>,
-+		      <0x0 0xe112f000 0 0x02000>,
-+		      <0x0 0xe1140000 0 0x10000>,
-+		      <0x0 0xe1160000 0 0x10000>;
-+		v2m0: v2m@0x8000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x80000 0 0x1000>;
-+		};
-+
-+		....
-+
-+		v2mN: v2m@0x9000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x90000 0 0x1000>;
-+		};
-+	};
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index fd4e81a..83d5556 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -12,6 +12,7 @@ config ARM64
- 	select ARM_ARCH_TIMER
- 	select ARM_GIC
- 	select AUDIT_ARCH_COMPAT_GENERIC
-+	select ARM_GIC_V2M
- 	select ARM_GIC_V3
- 	select BUILDTIME_EXTABLE_SORT
- 	select CLONE_BACKWARDS
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index b8632bf..61d18d9 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -7,6 +7,11 @@ config ARM_GIC
- 	select IRQ_DOMAIN
- 	select MULTI_IRQ_HANDLER
- 
-+config ARM_GIC_V2M
-+	bool
-+	depends on ARM_GIC
-+	depends on PCI && PCI_MSI
-+
- config GIC_NON_BANKED
- 	bool
- 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 73052ba..3bda951 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi-nmi.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o irq-gic-common.o
-+obj-$(CONFIG_ARM_GIC_V2M)		+= irq-gic-v2m.o
- obj-$(CONFIG_ARM_GIC_V3)		+= irq-gic-v3.o irq-gic-common.o
- obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
- obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
-diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
-index 60ac704..4b8cff2 100644
---- a/drivers/irqchip/irq-gic-common.c
-+++ b/drivers/irqchip/irq-gic-common.c
-@@ -113,3 +113,15 @@ void gic_cpu_config(void __iomem *base, void (*sync_access)(void))
- 	if (sync_access)
- 		sync_access();
- }
-+
-+int gic_msi_get_vec_count(struct pci_dev *pdev, struct msi_desc *desc)
-+{
-+	int ret = -EINVAL;
-+#ifdef CONFIG_PCI_MSI
-+	if (desc->msi_attrib.is_msix)
-+		ret = pci_msix_vec_count(pdev);
-+	else
-+		ret = pci_msi_vec_count(pdev);
-+#endif
-+	return ret;
-+}
-diff --git a/drivers/irqchip/irq-gic-common.h b/drivers/irqchip/irq-gic-common.h
-index b41f024..95049e5 100644
---- a/drivers/irqchip/irq-gic-common.h
-+++ b/drivers/irqchip/irq-gic-common.h
-@@ -19,6 +19,8 @@
- 
- #include <linux/of.h>
- #include <linux/irqdomain.h>
-+#include <linux/pci.h>
-+#include <linux/msi.h>
- 
- void gic_configure_irq(unsigned int irq, unsigned int type,
-                        void __iomem *base, void (*sync_access)(void));
-@@ -26,4 +28,6 @@ void gic_dist_config(void __iomem *base, int gic_irqs,
- 		     void (*sync_access)(void));
- void gic_cpu_config(void __iomem *base, void (*sync_access)(void));
- 
-+int gic_msi_get_vec_count(struct pci_dev *pdev, struct msi_desc *desc);
-+
- #endif /* _IRQ_GIC_COMMON_H */
-diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
-new file mode 100644
-index 0000000..554b1b1
---- /dev/null
-+++ b/drivers/irqchip/irq-gic-v2m.c
-@@ -0,0 +1,356 @@
-+/*
-+ * ARM GIC v2m MSI(-X) support
-+ * Support for Message Signaled Interrupts for systems that
-+ * implement ARM Generic Interrupt Controller: GICv2m.
-+ *
-+ * Copyright (C) 2014 Advanced Micro Devices, Inc.
-+ * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-+ *          Harish Kasiviswanathan <harish.kasiviswanathan@amd.com>
-+ *          Brandon Anderson <brandon.anderson@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#define pr_fmt(fmt) "GICv2m: " fmt
-+
-+#include <linux/bitmap.h>
-+#include <linux/irq.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_pci.h>
-+#include <linux/pci.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+#include "irqchip.h"
-+#include "irq-gic.h"
-+#include "irq-gic-common.h"
-+
-+/*
-+* MSI_TYPER:
-+*     [31:26] Reserved
-+*     [25:16] lowest SPI assigned to MSI
-+*     [15:10] Reserved
-+*     [9:0]   Numer of SPIs assigned to MSI
-+*/
-+#define V2M_MSI_TYPER			0x008
-+#define V2M_MSI_TYPER_BASE_SHIFT	16
-+#define V2M_MSI_TYPER_BASE_MASK		0x3FF
-+#define V2M_MSI_TYPER_NUM_MASK		0x3FF
-+#define V2M_MSI_SETSPI_NS		0x040
-+#define V2M_MIN_SPI			32
-+#define V2M_MAX_SPI			1019
-+
-+#define V2M_MSI_TYPER_BASE_SPI(x)	\
-+		(((x) >> V2M_MSI_TYPER_BASE_SHIFT) & V2M_MSI_TYPER_BASE_MASK)
-+
-+#define V2M_MSI_TYPER_NUM_SPI(x)	((x) & V2M_MSI_TYPER_NUM_MASK)
-+
-+/*
-+ * alloc_msi_irq - Allocate MSIs from available MSI bitmap.
-+ * @data: Pointer to v2m_data
-+ * @nvec: Number of interrupts to allocate
-+ * @irq: Pointer to the allocated irq
-+ *
-+ * Allocates interrupts only if the contiguous range of MSIs
-+ * with specified nvec are available. Otherwise return the number
-+ * of available interrupts. If none are available, then returns -ENOENT.
-+ */
-+static int alloc_msi_irq(struct v2m_data *data, int nvec, int *irq)
-+{
-+	int size = data->nr_spis;
-+	int next = size, i = nvec, ret;
-+
-+	/* We should never allocate more than available nr_spis */
-+	if (i >= size)
-+		i = size;
-+
-+	spin_lock(&data->msi_cnt_lock);
-+
-+	for (; i > 0; i--) {
-+		next = bitmap_find_next_zero_area(data->bm,
-+					size, 0, i, 0);
-+		if (next < size)
-+			break;
-+	}
-+
-+	if (i != nvec) {
-+		ret = i ? : -ENOENT;
-+	} else {
-+		bitmap_set(data->bm, next, nvec);
-+		*irq = data->spi_start + next;
-+		ret = 0;
-+	}
-+
-+	spin_unlock(&data->msi_cnt_lock);
-+
-+	return ret;
-+}
-+
-+static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
-+{
-+	int pos;
-+	struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
-+
-+	spin_lock(&data->msi_cnt_lock);
-+
-+	pos = irq - data->spi_start;
-+	if (pos >= 0 && pos < data->nr_spis)
-+		bitmap_clear(data->bm, pos, 1);
-+
-+	spin_unlock(&data->msi_cnt_lock);
-+}
-+
-+bool gicv2m_check_msi_range(struct gic_chip_data *gic, irq_hw_number_t hw)
-+{
-+	struct v2m_data *v2m = NULL;
-+
-+	list_for_each_entry(v2m, &gic->v2m_list, list) {
-+		if (hw >= v2m->spi_start &&
-+		    hw <  v2m->spi_start + v2m->nr_spis)
-+			return true;
-+	}
-+	return false;
-+}
-+
-+static int gicv2m_setup_msi_irq(struct msi_chip *chip,
-+				struct pci_dev *pdev,
-+				struct msi_desc *desc)
-+{
-+	int i, irq, nvec, avail;
-+	struct msi_msg msg;
-+	phys_addr_t addr;
-+	struct msi_desc *entry;
-+	struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
-+
-+	if (!desc) {
-+		dev_err(&pdev->dev,
-+			"MSI setup failed. Invalid msi descriptor\n");
-+		return -EINVAL;
-+	}
-+
-+	if (desc->msi_attrib.is_msix) {
-+		/**
-+		 * For MSIx:
-+		 * We allocate one irq at a time
-+		 */
-+		avail = alloc_msi_irq(data, 1, &irq);
-+		if (avail != 0) {
-+			dev_err(&pdev->dev,
-+				"MSI setup failed. Cannnot allocate IRQ\n");
-+			return -ENOSPC;
-+		}
-+
-+		irq_set_chip_data(irq, chip);
-+		irq_set_msi_desc(irq, desc);
-+		irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-+	} else {
-+		/**
-+		 * For MSI and Multi-MSI:
-+		 * All requested irqs are allocated and setup at
-+		 * once. Subsequent calls to this function would simply return
-+		 * success. This is to avoid having to implement a separate
-+		 * function for setting up multiple irqs.
-+		 */
-+		BUG_ON(list_empty(&pdev->msi_list));
-+		WARN_ON(!list_is_singular(&pdev->msi_list));
-+
-+		nvec = gic_msi_get_vec_count(pdev, desc);
-+		if (WARN_ON(nvec <= 0))
-+			return nvec;
-+
-+		entry = list_first_entry(&pdev->msi_list,
-+					 struct msi_desc, list);
-+
-+		if ((nvec > 1) && (entry->msi_attrib.multiple))
-+			return 0;
-+
-+		avail = alloc_msi_irq(data, nvec, &irq);
-+		if (avail != 0) {
-+			dev_err(&pdev->dev,
-+				"Failed to allocate %d irqs.\n", nvec);
-+			return avail;
-+		}
-+
-+		if (nvec > 1) {
-+			/* Set lowest of the new interrupts assigned
-+			 * to the PCI device
-+			 */
-+			entry->nvec_used = nvec;
-+			entry->msi_attrib.multiple = ilog2(
-+						__roundup_pow_of_two(nvec));
-+		}
-+
-+		for (i = 0; i < nvec; i++) {
-+			irq_set_chip_data(irq+i, chip);
-+			if (irq_set_msi_desc_off(irq, i, entry)) {
-+				dev_err(&pdev->dev,
-+					"Failed to set up MSI irq %d\n",
-+					(irq+i));
-+				return -EINVAL;
-+			}
-+
-+			irq_set_irq_type((irq+i), IRQ_TYPE_EDGE_RISING);
-+		}
-+	}
-+
-+	addr = data->res.start + V2M_MSI_SETSPI_NS;
-+	msg.address_hi = (u32)(addr >> 32);
-+	msg.address_lo = (u32)(addr);
-+	msg.data = irq;
-+	write_msi_msg(irq, &msg);
-+
-+	return 0;
-+}
-+
-+static void gicv2m_mask_irq(struct irq_data *d)
-+{
-+	gic_mask_irq(d);
-+	if (d->msi_desc)
-+		mask_msi_irq(d);
-+}
-+
-+static void gicv2m_unmask_irq(struct irq_data *d)
-+{
-+	gic_unmask_irq(d);
-+	if (d->msi_desc)
-+		unmask_msi_irq(d);
-+}
-+
-+static bool is_msi_spi_valid(u32 base, u32 num)
-+{
-+	if (base < V2M_MIN_SPI) {
-+		pr_err("Invalid MSI base SPI (base:%u)\n", base);
-+		return false;
-+	}
-+
-+	if ((num == 0) || (base + num > V2M_MAX_SPI)) {
-+		pr_err("Number of SPIs (%u) exceed maximum (%u)\n",
-+		       num, V2M_MAX_SPI - V2M_MIN_SPI + 1);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static int __init
-+gicv2m_init_one(struct device_node *node, struct v2m_data **v,
-+		struct gic_chip_data *gic)
-+{
-+	int ret;
-+	struct v2m_data *v2m = NULL;
-+
-+	*v = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
-+	if (!*v) {
-+		pr_err("Failed to allocate struct v2m_data.\n");
-+		return -ENOMEM;
-+	}
-+
-+	v2m = *v;
-+	v2m->gic = gic;
-+	v2m->msi_chip.owner = THIS_MODULE;
-+	v2m->msi_chip.of_node = node;
-+	v2m->msi_chip.setup_irq = gicv2m_setup_msi_irq;
-+	v2m->msi_chip.teardown_irq = gicv2m_teardown_msi_irq;
-+	ret = of_address_to_resource(node, 0, &v2m->res);
-+	if (ret) {
-+		pr_err("Failed to allocate v2m resource.\n");
-+		goto err_out;
-+	}
-+
-+	v2m->base = ioremap(v2m->res.start, resource_size(&v2m->res));
-+	if (!v2m->base) {
-+		pr_err("Failed to map GICv2m resource\n");
-+		ret = -EINVAL;
-+		goto err_out;
-+	}
-+
-+	ret = of_pci_msi_chip_add(&v2m->msi_chip);
-+	if (ret) {
-+		pr_info("Failed to add msi_chip.\n");
-+		goto err_out;
-+	}
-+
-+	if (!of_property_read_u32(node, "arm,msi-base-spi", &v2m->spi_start) &&
-+	    !of_property_read_u32(node, "arm,msi-num-spi", &v2m->nr_spis)) {
-+		pr_info("Overriding V2M MSI_TYPER (base:%u, num:%u)\n",
-+			v2m->spi_start, v2m->nr_spis);
-+	} else {
-+		u32 typer = readl_relaxed(v2m->base + V2M_MSI_TYPER);
-+
-+		v2m->spi_start = V2M_MSI_TYPER_BASE_SPI(typer);
-+		v2m->nr_spis = V2M_MSI_TYPER_NUM_SPI(typer);
-+	}
-+
-+	if (!is_msi_spi_valid(v2m->spi_start, v2m->nr_spis)) {
-+		ret = -EINVAL;
-+		goto err_out;
-+	}
-+
-+	v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
-+			  GFP_KERNEL);
-+	if (!v2m->bm) {
-+		pr_err("Failed to allocate MSI bitmap\n");
-+		ret = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	spin_lock_init(&v2m->msi_cnt_lock);
-+
-+	pr_info("Node %s: range[%#lx:%#lx], SPI[%d:%d]\n", node->name,
-+		(unsigned long)v2m->res.start, (unsigned long)v2m->res.end,
-+		v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
-+
-+	return 0;
-+err_out:
-+	of_pci_msi_chip_remove(&v2m->msi_chip);
-+	if (v2m->base)
-+		iounmap(v2m->base);
-+	kfree(v2m);
-+	return ret;
-+}
-+
-+int __init gicv2m_of_init(struct device_node *node,
-+			  struct gic_chip_data *gic,
-+			  struct irq_chip *v2m_chip)
-+{
-+	int ret = 0;
-+	struct v2m_data *v2m;
-+	struct device_node *child = NULL;
-+
-+	INIT_LIST_HEAD(&gic->v2m_list);
-+
-+	v2m_chip->irq_mask = gicv2m_mask_irq;
-+	v2m_chip->irq_unmask = gicv2m_unmask_irq;
-+
-+	for (;;) {
-+		child = of_get_next_child(node, child);
-+		if (!child)
-+			break;
-+
-+		if (!of_device_is_compatible(child, "arm,gic-v2m-frame"))
-+			continue;
-+
-+		if (!of_find_property(child, "msi-controller", NULL))
-+			continue;
-+
-+		ret = gicv2m_init_one(child, &v2m, gic);
-+		if (ret) {
-+			of_node_put(node);
-+			break;
-+		}
-+
-+		list_add_tail(&v2m->list, &gic->v2m_list);
-+	}
-+
-+	if (ret && list_empty(&gic->v2m_list)) {
-+		pr_warn("Warning: Failed to enable GICv2m support.\n");
-+		return -EINVAL;
-+	}
-+
-+	return ret;
-+}
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4b959e6..9f8e1e0 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -46,30 +46,9 @@
- #include <asm/smp_plat.h>
- 
- #include "irq-gic-common.h"
-+#include "irq-gic.h"
- #include "irqchip.h"
- 
--union gic_base {
--	void __iomem *common_base;
--	void __percpu * __iomem *percpu_base;
--};
--
--struct gic_chip_data {
--	union gic_base dist_base;
--	union gic_base cpu_base;
--#ifdef CONFIG_CPU_PM
--	u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
--	u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
--	u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
--	u32 __percpu *saved_ppi_enable;
--	u32 __percpu *saved_ppi_conf;
--#endif
--	struct irq_domain *domain;
--	unsigned int gic_irqs;
--#ifdef CONFIG_GIC_NON_BANKED
--	void __iomem *(*get_base)(union gic_base *);
--#endif
--};
--
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- 
- /*
-@@ -131,15 +110,36 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
- #define gic_set_base_accessor(d, f)
- #endif
- 
-+static inline
-+struct gic_chip_data *irq_data_get_gic_chip_data(struct irq_data *d)
-+{
-+	struct gic_chip_data *gic_data;
-+	struct msi_chip *mchip;
-+	struct v2m_data *v2mdat;
-+
-+	/*
-+	 * For MSI, irq_data.chip_data points to struct msi_chip.
-+	 * For non-MSI, irq_data.chip_data points to struct gic_chip_data.
-+	 */
-+	if (d->msi_desc) {
-+		mchip = irq_data_get_irq_chip_data(d);
-+		v2mdat = container_of(mchip, struct v2m_data, msi_chip);
-+		gic_data = v2mdat->gic;
-+	} else {
-+		gic_data = irq_data_get_irq_chip_data(d);
-+	}
-+	return gic_data;
-+}
-+
- static inline void __iomem *gic_dist_base(struct irq_data *d)
- {
--	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-+	struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
- 	return gic_data_dist_base(gic_data);
- }
- 
- static inline void __iomem *gic_cpu_base(struct irq_data *d)
- {
--	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-+	struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
- 	return gic_data_cpu_base(gic_data);
- }
- 
-@@ -151,7 +151,7 @@ static inline unsigned int gic_irq(struct irq_data *d)
- /*
-  * Routines to acknowledge, disable and enable interrupts
-  */
--static void gic_mask_irq(struct irq_data *d)
-+void gic_mask_irq(struct irq_data *d)
- {
- 	u32 mask = 1 << (gic_irq(d) % 32);
- 
-@@ -162,7 +162,7 @@ static void gic_mask_irq(struct irq_data *d)
- 	raw_spin_unlock(&irq_controller_lock);
- }
- 
--static void gic_unmask_irq(struct irq_data *d)
-+void gic_unmask_irq(struct irq_data *d)
- {
- 	u32 mask = 1 << (gic_irq(d) % 32);
- 
-@@ -325,6 +325,15 @@ static struct irq_chip gic_chip = {
- 	.irq_set_wake		= gic_set_wake,
- };
- 
-+static struct irq_chip v2m_chip = {
-+	.name			= "GICv2m",
-+	.irq_eoi		= gic_eoi_irq,
-+	.irq_set_type		= gic_set_type,
-+#ifdef CONFIG_SMP
-+	.irq_set_affinity	= gic_set_affinity,
-+#endif
-+};
-+
- void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
- {
- 	if (gic_nr >= MAX_GIC_NR)
-@@ -767,19 +776,29 @@ void __init gic_init_physaddr(struct device_node *node)
- static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
- 				irq_hw_number_t hw)
- {
-+	struct gic_chip_data *gic = d->host_data;
-+
-+	irq_set_chip_data(irq, gic);
-+
- 	if (hw < 32) {
-+		/* PPIs */
- 		irq_set_percpu_devid(irq);
- 		irq_set_chip_and_handler(irq, &gic_chip,
- 					 handle_percpu_devid_irq);
- 		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
- 	} else {
--		irq_set_chip_and_handler(irq, &gic_chip,
--					 handle_fasteoi_irq);
-+		/* SPIs */
- 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
- 
--		gic_routable_irq_domain_ops->map(d, irq, hw);
-+		if (!gicv2m_check_msi_range(gic, hw)) {
-+			irq_set_chip_and_handler(irq, &gic_chip,
-+						 handle_fasteoi_irq);
-+			gic_routable_irq_domain_ops->map(d, irq, hw);
-+		} else {
-+			irq_set_chip_and_handler(irq, &v2m_chip,
-+					 handle_fasteoi_irq);
-+		}
- 	}
--	irq_set_chip_data(irq, d->host_data);
- 	return 0;
- }
- 
-@@ -1010,6 +1029,9 @@ gic_of_init(struct device_node *node, struct device_node *parent)
- 	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
- 		percpu_offset = 0;
- 
-+	if (IS_ENABLED(CONFIG_ARM_GIC_V2M))
-+		gicv2m_of_init(node, &gic_data[gic_cnt], &v2m_chip);
-+
- 	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
- 	if (!gic_cnt)
- 		gic_init_physaddr(node);
-diff --git a/drivers/irqchip/irq-gic.h b/drivers/irqchip/irq-gic.h
-new file mode 100644
-index 0000000..3021665
---- /dev/null
-+++ b/drivers/irqchip/irq-gic.h
-@@ -0,0 +1,54 @@
-+#ifndef _IRQ_GIC_H_
-+#define _IRQ_GIC_H_
-+
-+#include <linux/msi.h>
-+#include <linux/pci.h>
-+
-+union gic_base {
-+	void __iomem *common_base;
-+	void __percpu * __iomem *percpu_base;
-+};
-+
-+struct gic_chip_data;
-+
-+struct v2m_data {
-+#ifdef CONFIG_ARM_GIC_V2M
-+	struct list_head list;
-+	spinlock_t msi_cnt_lock;
-+	struct msi_chip msi_chip;
-+	struct resource res;      /* GICv2m resource */
-+	void __iomem *base;       /* GICv2m virt address */
-+	unsigned int spi_start;   /* The SPI number that MSIs start */
-+	unsigned int nr_spis;     /* The number of SPIs for MSIs */
-+	unsigned long *bm;        /* MSI vector bitmap */
-+	struct gic_chip_data *gic;
-+#endif
-+};
-+
-+struct gic_chip_data {
-+	union gic_base dist_base;
-+	union gic_base cpu_base;
-+#ifdef CONFIG_CPU_PM
-+	u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
-+	u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
-+	u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
-+	u32 __percpu *saved_ppi_enable;
-+	u32 __percpu *saved_ppi_conf;
-+#endif
-+	struct irq_domain *domain;
-+	unsigned int gic_irqs;
-+#ifdef CONFIG_GIC_NON_BANKED
-+	void __iomem *(*get_base)(union gic_base *);
-+#endif
-+#ifdef CONFIG_ARM_GIC_V2M
-+	struct list_head v2m_list;
-+#endif
-+};
-+
-+void gic_mask_irq(struct irq_data *d);
-+void gic_unmask_irq(struct irq_data *d);
-+int gicv2m_of_init(struct device_node *node, struct gic_chip_data *gic,
-+		   struct irq_chip *v2m_chip) __init;
-+bool gicv2m_check_msi_range(struct gic_chip_data *gic, irq_hw_number_t hw);
-+
-+#endif /* _IRQ_GIC_H_ */
 -- 
-1.9.3
-
+Markus
