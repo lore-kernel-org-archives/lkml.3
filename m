@@ -1,260 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964AbaITUBj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 16:01:39 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48116 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756723AbaITUAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 16:00:51 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 1/3] mm: memcontrol: take a css reference for each charged page
-Date: Sat, 20 Sep 2014 16:00:33 -0400
-Message-Id: <1411243235-24680-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
+	id S1757847AbaITUJQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 16:09:16 -0400
+Received: from forward1l.mail.yandex.net ([84.201.143.144]:39499 "EHLO
+	forward1l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934AbaITUJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 16:09:14 -0400
+X-Yandex-Uniq: 963c6c6c-6eb8-4535-a3a7-238cc5ea81bb
+Authentication-Results: smtp4o.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1411243745.3396.7.camel@localhost.localdomain>
+Subject: Re: [PATCH 2/7] sched: Fix picking a task switching on other cpu
+ (__ARCH_WANT_UNLOCKED_CTXSW)
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <ktkhai@parallels.com>, ralf@linux-mips.org
+Date: Sun, 21 Sep 2014 00:09:05 +0400
+In-Reply-To: <20140920185434.GE3037@worktop.localdomain>
+References: <20140920165116.16299.1381.stgit@localhost>
+	 <20140920165122.16299.31150.stgit@localhost>
+	 <20140920183326.GT2832@worktop.localdomain>
+	 <20140920185434.GE3037@worktop.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Charges currently pin the css indirectly by playing tricks during
-css_offline(): user pages stall the offlining process until all of
-them have been reparented, whereas kmemcg acquires a keep-alive
-reference if outstanding kernel pages are detected at that point.
+В Сб, 20/09/2014 в 20:54 +0200, Peter Zijlstra пишет:
+> On Sat, Sep 20, 2014 at 08:33:26PM +0200, Peter Zijlstra wrote:
+> > On Sat, Sep 20, 2014 at 08:51:22PM +0400, Kirill Tkhai wrote:
+> > > From: Kirill Tkhai <ktkhai@parallels.com>
+> > > 
+> > > We may pick a task which is in context_switch() on other cpu at the moment.
+> > > Parallel using of a single stack by two processes is not a good idea.
+> > 
+> > Please elaborate on who exactly that might happen. Its best to have
+> > comprehensive changelogs for issues that fix races.
+> 
+> FWIW IIRC we can remove UNLOCKED_CTXSW from IA64 and I forgot if I
+> audited MIPS, but I suspect we can (and should) remove it there too.
+> 
+> That would make this exception go away and clean up some of this ugly.
 
-In preparation for removing all this complexity, make the pinning
-explicit and acquire a css references for every charged page.
+Yeah, you've said me about IA64:
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/cgroup.h          | 26 +++++++++++++++++++++++++
- include/linux/percpu-refcount.h | 43 ++++++++++++++++++++++++++++++++---------
- mm/memcontrol.c                 | 17 +++++++++++++++-
- 3 files changed, 76 insertions(+), 10 deletions(-)
+http://www.spinics.net/lists/linux-ia64/msg10229.html
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b5223c570eba..a9fe70d9c7c5 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -113,6 +113,19 @@ static inline void css_get(struct cgroup_subsys_state *css)
- }
+It's about 10 years since the logic, which was documented in ia64
+header, has been removed. It looks like, ia64 maintainers are not
+interested much...
+
+***
+
+To do not to start a new message. I've found the above when I was
+analysing if the optimisation below is OK (assume, we have accessor
+cpu_relax__while_on_cpu()):
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7d0d023..8d765ba 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1699,8 +1699,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 		goto stat;
  
- /**
-+ * css_get_many - obtain references on the specified css
-+ * @css: target css
-+ * @n: number of references to get
-+ *
-+ * The caller must already have a reference.
-+ */
-+static inline void css_get_many(struct cgroup_subsys_state *css, unsigned int n)
-+{
-+	if (!(css->flags & CSS_NO_REF))
-+		percpu_ref_get_many(&css->refcnt, n);
-+}
+ #ifdef CONFIG_SMP
+-	cpu_relax__while_on_cpu(p);
+-
+ 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
+ 	p->state = TASK_WAKING;
+ 
+@@ -1708,6 +1706,9 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 		p->sched_class->task_waking(p);
+ 
+ 	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
 +
-+/**
-  * css_tryget - try to obtain a reference on the specified css
-  * @css: target css
-  *
-@@ -159,6 +172,19 @@ static inline void css_put(struct cgroup_subsys_state *css)
- 		percpu_ref_put(&css->refcnt);
- }
- 
-+/**
-+ * css_put_many - put css references
-+ * @css: target css
-+ * @n: number of references to put
-+ *
-+ * Put references obtained via css_get() and css_tryget_online().
-+ */
-+static inline void css_put_many(struct cgroup_subsys_state *css, unsigned int n)
-+{
-+	if (!(css->flags & CSS_NO_REF))
-+		percpu_ref_put_many(&css->refcnt, n);
-+}
++	cpu_relax__while_on_cpu(p);
 +
- /* bits in struct cgroup flags field */
- enum {
- 	/*
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index b1973ba1d5f3..a4551456e06f 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -112,26 +112,38 @@ static inline bool __pcpu_ref_alive(struct percpu_ref *ref,
- }
- 
- /**
-- * percpu_ref_get - increment a percpu refcount
-+ * percpu_ref_get_many - increment a percpu refcount
-  * @ref: percpu_ref to get
-+ * @nr: number of references to get
-  *
-- * Analagous to atomic_inc().
-+ * Analagous to atomic_add().
-   */
--static inline void percpu_ref_get(struct percpu_ref *ref)
-+static inline void percpu_ref_get_many(struct percpu_ref *ref, unsigned long nr)
- {
- 	unsigned long __percpu *pcpu_count;
- 
- 	rcu_read_lock_sched();
- 
- 	if (__pcpu_ref_alive(ref, &pcpu_count))
--		this_cpu_inc(*pcpu_count);
-+		this_cpu_add(*pcpu_count, nr);
- 	else
--		atomic_long_inc(&ref->count);
-+		atomic_long_add(nr, &ref->count);
- 
- 	rcu_read_unlock_sched();
- }
- 
- /**
-+ * percpu_ref_get - increment a percpu refcount
-+ * @ref: percpu_ref to get
-+ *
-+ * Analagous to atomic_inc().
-+  */
-+static inline void percpu_ref_get(struct percpu_ref *ref)
-+{
-+	percpu_ref_get_many(ref, 1);
-+}
-+
-+/**
-  * percpu_ref_tryget - try to increment a percpu refcount
-  * @ref: percpu_ref to try-get
-  *
-@@ -191,27 +203,40 @@ static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
- }
- 
- /**
-- * percpu_ref_put - decrement a percpu refcount
-+ * percpu_ref_put_many - decrement a percpu refcount
-  * @ref: percpu_ref to put
-+ * @nr: number of references to put
-  *
-  * Decrement the refcount, and if 0, call the release function (which was passed
-  * to percpu_ref_init())
-  */
--static inline void percpu_ref_put(struct percpu_ref *ref)
-+static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
- {
- 	unsigned long __percpu *pcpu_count;
- 
- 	rcu_read_lock_sched();
- 
- 	if (__pcpu_ref_alive(ref, &pcpu_count))
--		this_cpu_dec(*pcpu_count);
--	else if (unlikely(atomic_long_dec_and_test(&ref->count)))
-+		this_cpu_sub(*pcpu_count, nr);
-+	else if (unlikely(atomic_long_sub_and_test(nr, &ref->count)))
- 		ref->release(ref);
- 
- 	rcu_read_unlock_sched();
- }
- 
- /**
-+ * percpu_ref_put - decrement a percpu refcount
-+ * @ref: percpu_ref to put
-+ *
-+ * Decrement the refcount, and if 0, call the release function (which was passed
-+ * to percpu_ref_init())
-+ */
-+static inline void percpu_ref_put(struct percpu_ref *ref)
-+{
-+	percpu_ref_put_many(ref, 1);
-+}
-+
-+/**
-  * percpu_ref_is_zero - test whether a percpu refcount reached zero
-  * @ref: percpu_ref to test
-  *
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 154161bb7d4c..b832c87ec43b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2317,6 +2317,7 @@ static void drain_stock(struct memcg_stock_pcp *stock)
- 		page_counter_uncharge(&old->memory, stock->nr_pages);
- 		if (do_swap_account)
- 			page_counter_uncharge(&old->memsw, stock->nr_pages);
-+		css_put_many(&old->css, stock->nr_pages);
- 		stock->nr_pages = 0;
- 	}
- 	stock->cached = NULL;
-@@ -2573,6 +2574,7 @@ bypass:
- 	return -EINTR;
- 
- done_restock:
-+	css_get_many(&memcg->css, batch);
- 	if (batch > nr_pages)
- 		refill_stock(memcg, batch - nr_pages);
- done:
-@@ -2587,6 +2589,8 @@ static void cancel_charge(struct mem_cgroup *memcg, unsigned int nr_pages)
- 	page_counter_uncharge(&memcg->memory, nr_pages);
- 	if (do_swap_account)
- 		page_counter_uncharge(&memcg->memsw, nr_pages);
-+
-+	css_put_many(&memcg->css, nr_pages);
- }
- 
- /*
-@@ -2788,6 +2792,7 @@ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp,
- 		page_counter_charge(&memcg->memory, nr_pages, NULL);
- 		if (do_swap_account)
- 			page_counter_charge(&memcg->memsw, nr_pages, NULL);
-+		css_get_many(&memcg->css, nr_pages);
- 		ret = 0;
- 	} else if (ret)
- 		page_counter_uncharge(&memcg->kmem, nr_pages);
-@@ -2803,8 +2808,10 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg,
- 		page_counter_uncharge(&memcg->memsw, nr_pages);
- 
- 	/* Not down to 0 */
--	if (page_counter_uncharge(&memcg->kmem, nr_pages))
-+	if (page_counter_uncharge(&memcg->kmem, nr_pages)) {
-+		css_put_many(&memcg->css, nr_pages);
- 		return;
-+	}
- 
- 	/*
- 	 * Releases a reference taken in kmem_cgroup_css_offline in case
-@@ -2816,6 +2823,8 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg,
- 	 */
- 	if (memcg_kmem_test_and_clear_dead(memcg))
- 		css_put(&memcg->css);
-+
-+	css_put_many(&memcg->css, nr_pages);
- }
- 
- /*
-@@ -3444,10 +3453,13 @@ static int mem_cgroup_move_parent(struct page *page,
- 	ret = mem_cgroup_move_account(page, nr_pages,
- 				pc, child, parent);
- 	if (!ret) {
-+		if (!mem_cgroup_is_root(parent))
-+			css_get_many(&parent->css, nr_pages);
- 		/* Take charge off the local counters */
- 		page_counter_cancel(&child->memory, nr_pages);
- 		if (do_swap_account)
- 			page_counter_cancel(&child->memsw, nr_pages);
-+		css_put_many(&child->css, nr_pages);
- 	}
- 
- 	if (nr_pages > 1)
-@@ -6379,6 +6391,9 @@ static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
- 	__this_cpu_add(memcg->stat->nr_page_events, nr_anon + nr_file);
- 	memcg_check_events(memcg, dummy_page);
- 	local_irq_restore(flags);
-+
-+	if (!mem_cgroup_is_root(memcg))
-+		css_put_many(&memcg->css, max(nr_mem, nr_memsw));
- }
- 
- static void uncharge_list(struct list_head *page_list)
--- 
-2.1.0
+ 	if (task_cpu(p) != cpu) {
+ 		wake_flags |= WF_MIGRATED;
+ 		set_task_cpu(p, cpu);
+
+Looks like, now problem here. Task p is dequeued, we can set sched_contributes_to_load and state
+here, also task_waking does not produce problems, only arithmetics is there. select_task_rq()
+is R/O function.
+
+Now I'm testing this.
 
