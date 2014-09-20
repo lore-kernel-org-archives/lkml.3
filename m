@@ -1,163 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243AbaITF4H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 01:56:07 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:61320 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164AbaITF4F (ORCPT
+	id S932341AbaITF5L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 01:57:11 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:59959 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164AbaITF5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 01:56:05 -0400
-Message-ID: <541D16EA.70407@huawei.com>
-Date: Sat, 20 Sep 2014 13:55:54 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sat, 20 Sep 2014 01:57:09 -0400
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: <peterz@infradead.org>, <mingo@redhat.com>, <tj@kernel.org>,
-        <akpm@linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <fernando_b1@lab.ntt.co.jp>
-Subject: Re: Racy manipulation of task_struct->flags in cgroups code causes
- hard to reproduce kernel panics
-References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
-In-Reply-To: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CACRpkdYbmcxi=BXEyGzLpxN4omt+v_Cg_BxCiN4vS9ZUwYTLzQ@mail.gmail.com>
+References: <1410176880-22524-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
+ <CAAVeFuKK0BNpYPwZ8c4DbhWmbFnRVuaDo2AqfSNBgBPyUou0_A@mail.gmail.com> <CACRpkdYbmcxi=BXEyGzLpxN4omt+v_Cg_BxCiN4vS9ZUwYTLzQ@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sat, 20 Sep 2014 14:56:48 +0900
+Message-ID: <CAAVeFuL46SVb_X2is6yNSK30_FjUVw+Cbnm6B8q59PHN69ZA1w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86, gpio: Increase ARCH_NR_GPIOs to 512
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Then, what made current->flags to unexpectedly preserve PF_USED_MATH flag?
-> The user is running cgrulesengd process in order to utilize cpuset cgroup.
-> Thus, cpuset_update_task_spread_flag() is called when cgrulesengd process
-> writes someone's pid to /cgroup/cpuset/$group/tasks interface.
-> 
-> cpuset_update_task_spread_flag() is updating other thread's
-> "struct task_struct"->flags without exclusion control or atomic
-> operations!
-> 
-> ---------- linux-2.6.32-358.23.2.el6/kernel/cpuset.c ----------
-> 300:/*
-> 301: * update task's spread flag if cpuset's page/slab spread flag is set
-> 302: *
-> 303: * Called with callback_mutex/cgroup_mutex held
-> 304: */
-> 305:static void cpuset_update_task_spread_flag(struct cpuset *cs,
-> 306:                                    struct task_struct *tsk)
-> 307:{
-> 308:    if (is_spread_page(cs))
-> 309:            tsk->flags |= PF_SPREAD_PAGE;
-> 310:    else
-> 311:            tsk->flags &= ~PF_SPREAD_PAGE;
-> 312:    if (is_spread_slab(cs))
-> 313:            tsk->flags |= PF_SPREAD_SLAB;
-> 314:    else
-> 315:            tsk->flags &= ~PF_SPREAD_SLAB;
-> 316:}
+On Sat, Sep 20, 2014 at 2:48 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Sep 19, 2014 at 12:20 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> On Tue, Sep 9, 2014 at 4:24 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>
+>>> This however makes it *impossible* to use things like desc_to_gpio()
+>>> and/or gpio_to_desc() so the code has to be augmented all over the
+>>> place to avoid any uses of GPIO numbers on that architecture,
+>>> but I am sure it *can* be done on pure ACPI or device tree
+>>> systems, and that's what we should aim for.
+>>
+>> desc_to_gpio()/gpio_to_desc() could still work even if we remove the
+>> big array of GPIO descriptors. Actually that's what I intended to do
+>> when I first submitted the gpiod patches some time ago but it was
+>> rejected for performance reasons.
+>
+> OK. I'm ready to revisit the subject.
+>
+>> desc_to_gpio() actually doesn't even access this array - it does its
+>> job using the chip base and the beginning address of its descriptors
+>> array.
+>
+> Right.
+>
+>> gpio_to_desc() would suffer a performance hit. What I initially
+>> proposed was to parse the linked list of GPIO chips and check if the
+>> requested number is in their assigned range. This is obviously slower
+>> than accessing an array, but if we consider that we generally don't
+>> have too many GPIO chips on a given hardware I don't think the hit
+>> would be that bad. It would also give some incentive for people to
+>> move to the gpiod interface.
+>
+> I think the performance hit is acceptable, because this should
+> not be on a hot path anyway. I would say go ahead with this refactoring.
 
-We should make the updating of this flag atomic.
+Great! I will come with something once my holidays are over. It should
+not be a complex change.
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index 0d4e067..2f073db 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -94,12 +94,12 @@ extern int cpuset_slab_spread_node(void);
- 
- static inline int cpuset_do_page_mem_spread(void)
- {
--	return current->flags & PF_SPREAD_PAGE;
-+	return task_spread_page(current);
- }
- 
- static inline int cpuset_do_slab_mem_spread(void)
- {
--	return current->flags & PF_SPREAD_SLAB;
-+	return task_spread_slab(current);
- }
- 
- extern int current_cpuset_is_being_rebound(void);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..1e448a3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1903,8 +1903,6 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
- #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
- #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
- #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
--#define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
--#define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
- #define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
- #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
- #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
-@@ -1958,6 +1956,8 @@ static inline void memalloc_noio_restore(unsigned int flags)
- 
- /* Per-process atomic flags. */
- #define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
-+#define PFA_SPREAD_PAGE  0x00000002	/* Spread page cache over cpuset */
-+#define PFA_SPREAD_SLAB  0x00000004	/* Spread some slab caches over cpuset */
- 
- static inline bool task_no_new_privs(struct task_struct *p)
- {
-@@ -1969,6 +1969,36 @@ static inline void task_set_no_new_privs(struct task_struct *p)
- 	set_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
- }
- 
-+static inline bool task_spread_page(struct task_struct *p)
-+{
-+	return test_bit(PFA_SPREAD_PAGE, &p->atomic_flags);
-+}
-+
-+static inline void task_set_spread_page(struct task_struct *p)
-+{
-+	set_bit(PFA_SPREAD_PAGE, &p->atomic_flags);
-+}
-+
-+static inline void task_clear_spread_page(struct task_struct *p)
-+{
-+	clear_bit(PFA_SPREAD_PAGE, &p->atomic_flags);
-+}
-+
-+static inline bool task_spread_slab(struct task_struct *p)
-+{
-+	return test_bit(PFA_SPREAD_SLAB, &p->atomic_flags);
-+}
-+
-+static inline void task_set_spread_slab(struct task_struct *p)
-+{
-+	set_bit(PFA_SPREAD_SLAB, &p->atomic_flags);
-+}
-+
-+static inline void task_clear_spread_slab(struct task_struct *p)
-+{
-+	clear_bit(PFA_SPREAD_SLAB, &p->atomic_flags);
-+}
-+
- /*
-  * task->jobctl flags
-  */
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index a37f4ed..1f107c7 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -365,13 +365,14 @@ static void cpuset_update_task_spread_flag(struct cpuset *cs,
- 					struct task_struct *tsk)
- {
- 	if (is_spread_page(cs))
--		tsk->flags |= PF_SPREAD_PAGE;
-+		task_set_spread_page(tsk);
- 	else
--		tsk->flags &= ~PF_SPREAD_PAGE;
-+		task_clear_spread_page(tsk);
-+
- 	if (is_spread_slab(cs))
--		tsk->flags |= PF_SPREAD_SLAB;
-+		task_set_spread_slab(tsk);
- 	else
--		tsk->flags &= ~PF_SPREAD_SLAB;
-+		task_clear_spread_slab(tsk);
- }
- 
- /*
+>
+>> I also have a patch in my queue that enables multiple users on the
+>> same GPIO descriptor (something requested since some time already).
+>> What happens with it is that descriptors ownership is fully
+>> transferred to the gpio_chip instances, and the static array becomes a
+>> array of double-pointers, making it considerable smaller and reducing
+>> the impact of increasing its size. Maybe I should submit that change
+>> just for this case?
+>
+> Ummmmm I think that is an orthogonal thing, but honestly I'm
+> not following the double-pointers thing, so I guess I need to see
+> the patch.
 
-
+Yes, this is completely orthogonal, and actually this won't be needed
+if we decide to get rid of that array.
