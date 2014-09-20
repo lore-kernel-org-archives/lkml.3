@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991AbaITSIM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 14:08:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46864 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794AbaITSIK (ORCPT
+	id S1757311AbaITSQw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 14:16:52 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57061 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665AbaITSQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 14:08:10 -0400
-Date: Sat, 20 Sep 2014 20:08:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Joe Perches <joe@perches.com>, Jan Kara <jack@suse.cz>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140920180800.GS2832@worktop.localdomain>
-References: <20140916173328.6306a5c2@gandalf.local.home>
- <20140917141816.GO2840@worktop.localdomain>
- <20140917102255.5cd03071@gandalf.local.home>
- <20140917223633.GE2848@worktop.localdomain>
- <20140917203135.6db2ee5e@gandalf.local.home>
- <20140918173414.GU2840@worktop.localdomain>
- <20140920051224.GA5573@quack.suse.cz>
- <20140920154733.GM2832@worktop.localdomain>
- <1411229447.24444.53.camel@joe-AO725>
- <20140920123001.4ac60dba@gandalf.local.home>
+	Sat, 20 Sep 2014 14:16:51 -0400
+Date: Sat, 20 Sep 2014 23:46:35 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Grzegorz Swirski <grzegorz@swirski.name>
+Cc: gregkh@linuxfoundation.org, josh@joshtriplett.org,
+        stankus.modestas@gmail.com, vitaly.osipov@gmail.com,
+        Johannes.Stadlinger@fau.de, himangi774@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: wlan-ng: remove unused 'result' var
+Message-ID: <20140920181635.GA2379@sudip-PC>
+References: <1411211351-4207-1-git-send-email-grzegorz@swirski.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140920123001.4ac60dba@gandalf.local.home>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1411211351-4207-1-git-send-email-grzegorz@swirski.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 12:30:01PM -0400, Steven Rostedt wrote:
-> On Sat, 20 Sep 2014 09:10:47 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > On Sat, 2014-09-20 at 17:47 +0200, Peter Zijlstra wrote:
-> > > On a whole, printk() is entirely useless for debugging these days, its
-> > > far too fragile/unreliable to be taken seriously so I really don't care
-> > > on that point either.
-> > 
-> > That's unfortunate.
-> > 
-> > Care to enumerate the issues that you believe make
-> > printk too fragile/unreliable for debugging?
-> 
-> I seldom use printk these days. It's far too limited in its uses. For
-> one, most things worth debugging happen thousands of times a second,
-> and printk will just slow things down to a crawl if it is used.
-> Another, is that it can not be used in most critical sections (NMI
-> handlers and anything that deals with the scheduler). Also, as it no
-> longer blocks when another CPU is doing a printk, a bug can happen
-> which crashes the system and the output of that bug will never get
-> printed due to the delayed output from another CPU having the console
-> lock.
+On Sat, Sep 20, 2014 at 12:09:11PM +0100, Grzegorz Swirski wrote:
+> Signed-off-by: Grzegorz Swirski <grzegorz@swirski.name>
+you have not mentioned any commit log
 
-If you're trying to debug a dying machine the early_serial_console which
-basically only does a stream of OUTBs to the right port is the only
-reliable thing. For anything else, trace_printk().
+> ---
+>  drivers/staging/wlan-ng/prism2mib.c | 11 ++++-------
+>  1 file changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/prism2mib.c b/drivers/staging/wlan-ng/prism2mib.c
+> index f471708..0163e06 100644
+> --- a/drivers/staging/wlan-ng/prism2mib.c
+> +++ b/drivers/staging/wlan-ng/prism2mib.c
+> @@ -717,8 +717,6 @@ static int prism2mib_priv(struct mibrec *mib,
+>  {
+>  	p80211pstrd_t *pstr = (p80211pstrd_t *) data;
+>  
+> -	int result;
+> -
+>  	switch (mib->did) {
+>  	case DIDmib_lnx_lnxConfigTable_lnxRSNAIE:{
+>  			hfa384x_WPAData_t wpa;
+> @@ -734,11 +732,10 @@ static int prism2mib_priv(struct mibrec *mib,
+>  				wpa.datalen = cpu_to_le16(pstr->len);
+>  				memcpy(wpa.data, pstr->data, pstr->len);
+>  
+> -				result =
+> -				    hfa384x_drvr_setconfig(hw,
+> -						   HFA384x_RID_CNFWPADATA,
+> -						   (u8 *) &wpa,
+> -						   sizeof(wpa));
+> +				hfa384x_drvr_setconfig(hw,
+> +						       HFA384x_RID_CNFWPADATA,
+> +						       (u8 *) &wpa,
+if you check your patch with --strict option then you will see one warning here.
 
-Now all I need to figure out is how to keep suspend from killing the
-early_serial_console setup :-)
+thanks
+sudip
+> +						       sizeof(wpa));
+>  			}
+>  			break;
+>  		}
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
