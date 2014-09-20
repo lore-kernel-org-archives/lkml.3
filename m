@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604AbaITSUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 14:20:16 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:33493 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508AbaITSUO (ORCPT
+	id S1757595AbaITSfQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 14:35:16 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:50104 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794AbaITSfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 14:20:14 -0400
-Message-ID: <541DC55A.9080702@gmail.com>
-Date: Sat, 20 Sep 2014 20:20:10 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Sat, 20 Sep 2014 14:35:14 -0400
+Date: Sat, 20 Sep 2014 19:35:09 +0100
+From: Grzegorz Swirski <grzegorz@swirski.name>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: gregkh@linuxfoundation.org, josh@joshtriplett.org,
+        stankus.modestas@gmail.com, vitaly.osipov@gmail.com,
+        Johannes.Stadlinger@fau.de, himangi774@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: wlan-ng: remove unused 'result' var
+Message-ID: <20140920183509.GA4515@computer.home.gateway>
+References: <1411211351-4207-1-git-send-email-grzegorz@swirski.name>
+ <20140920181635.GA2379@sudip-PC>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH] clk: s5pv210: add missing call to samsung_clk_of_add_provider()
-References: <1411117216-11456-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1411117216-11456-1-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140920181635.GA2379@sudip-PC>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.09.2014 11:00, Marek Szyprowski wrote:
-> Commit d5e136a21b2028fb1f45143ea7112d5869bfc6c7 ("clk: samsung: Register
-> clk provider only after registering its all clocks", merged to v3.17-rc1)
-> modified a way that driver registers registers to core framework. This
-> change has not been applied to s5pv210 clocks driver, which has been
-> merged in parallel to that commit. This patch adds a missing call to
-> samsung_clk_of_add_provider(), so the driver is operational again.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
-> Hello!
-> 
-> This is an important fix to v3.17-rcX. Without it support for Samsung
-> S5PV210 SoCs is not functional.
-> 
-> Mike, could you take it to the fixes branch?
+> you have not mentioned any commit log
 
-Acked-by: Tomasz Figa <tomasz.figa@gmail.com>
+Sorry. Patch against linux-next, commit
+d7cf2b3139909a354a71e2885c942e21a60ea062
 
-Mike, since it seems like this is the only fix to be queued for next -rc
-release, I think it would be reasonable if you picked it up directly.
+> > @@ -734,11 +732,10 @@ static int prism2mib_priv(struct mibrec *mib,
+> >  				wpa.datalen = cpu_to_le16(pstr->len);
+> >  				memcpy(wpa.data, pstr->data, pstr->len);
+> >  
+> > -				result =
+> > -				    hfa384x_drvr_setconfig(hw,
+> > -						   HFA384x_RID_CNFWPADATA,
+> > -						   (u8 *) &wpa,
+> > -						   sizeof(wpa));
+> > +				hfa384x_drvr_setconfig(hw,
+> > +						       HFA384x_RID_CNFWPADATA,
+> > +						       (u8 *) &wpa,
+> if you check your patch with --strict option then you will see one warning here.
 
-Best regards,
-Tomasz
+There are many styling offences in this file. I didn't want to include
+unrelated changes in one patch.
+
+Grzegorz Swirski.
