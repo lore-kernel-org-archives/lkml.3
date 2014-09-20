@@ -1,110 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924AbaITUnB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 16:43:01 -0400
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:37034 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934AbaITUm7 convert rfc822-to-8bit (ORCPT
+	id S1757861AbaITVBz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 17:01:55 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41354 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaITVBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 16:42:59 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Petr Mladek <pmladek@suse.cz>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 0/6] usb: hub: convert khubd into workqueue
-Thread-Topic: [PATCH v3 0/6] usb: hub: convert khubd into workqueue
-Thread-Index: AQHP1B9bcm7MVl0xDEOZ6DfHMQG8MZwJT8YAgAErtJA=
-Date: Sat, 20 Sep 2014 20:41:21 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844D9FFC@US01WEMBX2.internal.synopsys.com>
-References: <1411140744-21424-1-git-send-email-pmladek@suse.cz>
- <Pine.LNX.4.44L0.1409191536000.1133-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1409191536000.1133-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 20 Sep 2014 17:01:53 -0400
+Message-ID: <541DEB33.2070508@roeck-us.net>
+Date: Sat, 20 Sep 2014 14:01:39 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Helge Deller <deller@gmx.de>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: linux-next: Tree for Sep 19
+References: <20140919165817.225eb8b8@canb.auug.org.au> <20140919191514.GA5358@roeck-us.net> <541DD754.4040000@gmx.de>
+In-Reply-To: <541DD754.4040000@gmx.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.541DEB41.0036,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Alan Stern
-> Sent: Friday, September 19, 2014 12:39 PM
-> 
-> On Fri, 19 Sep 2014, Petr Mladek wrote:
-> 
-> > The 3rd version of the patchset is slightly reordered and refactored
-> > as suggested earlier. See below for more details.
-> >
-> > IMHO, the result is more clean. But feel free to ask me to revert it.
-> > I do not want to make the review more complicated. Well, I double checked
-> > the diff of patches files between v2 and v3. It is pretty small and only
-> > the expected changes are there.
-> >
-> > Changes in:
-> >     + v3:
-> > 	+ split the optimization of hub->hdev reference counting
-> > 	  into separate patch; usable standalone (1st patch)
-> >
-> > 	+ switch order of the two patches that convert the kthread
-> > 	  and that remove the while cycle in hub_event(); it is
-> > 	  cleaner (2nd and 3rd patch)
-> >
-> > 	+ use ordered workqueue by default; it makes it compatible
-> > 	  with the original kthread solution (3rd patch)
-> >
-> >         + added optional patch that allows to process events
-> > 	  in parallel (6th patch)
-> >
-> > 	+ fixed the suggested stylistic problems (2nd and 3rd patch)
-> >
-> >
-> >     + v2:
-> > 	+ solved potential races:
-> > 	  	 + get hub->kref in kick_hub_wq()
-> > 		 + call usb_get_dev(hdev) in hub_probe()
-> > 		   and 	usb_put_dev(hdev) in hub_release()
-> > 		 + INIT_WORK only once in hub_probe()
-> >
-> > 	 + do not call cancel_work_sync() in hub_disconnect()
-> > 	   to keep it fast
-> >
-> > 	 + rename kick_khubd() to kick_hub_wq() already
-> > 	   in the first patch; IMHO, it is cleaner while
-> > 	   adding only very few changes
-> >
-> >
-> > The workqueue API is well defined and tested. It has many options
-> > that could be used to tune the scheduling. The code is usually
-> > easier and thus more safe. It allows to avoid the extra thread
-> > in most cases. It has has clearly defined behavior vrt. system suspend.
-> >
-> > This patchset converts khubd into the workqueue. It saves one thread,
-> > lock, and list.
-> >
-> > It  looks huge but the main change is in the first patch. The rest is
-> > simple renaming of functions, comments and documentation.
-> >
-> >
-> > Thanks a lot Alan Stern and Tejun Heo for hints and guidance.
-> >
-> > The patches can be applied either against Linus' tree or linux-next.
-> 
-> Very nice work.  I haven't tried it out, but it all looks good.  No
-> doubt we will be able to sort out unforeseen troubles if any arise,
-> without much difficulty.
+On 09/20/2014 12:36 PM, Helge Deller wrote:
+> Hi Günter,
+>
+> On 09/19/2014 09:15 PM, Guenter Roeck wrote:
+>> On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+>>> Changes since 20140917:
+>>>
+>>> The fsl tree still had its build failure so I used the version from
+>>> next-20140917.
+>>>
+>>> The v4l-dvb tree lost its build failure.
+>>>
+>>> The security tree gained a conflict against the file-locks tree.
+>>>
+>>> Non-merge commits (relative to Linus' tree): 6014
+>>>   5488 files changed, 217522 insertions(+), 129375 deletions(-)
+>>>
+>>> ----------------------------------------------------------------------------
+>>>
+>>
+>> parisc:defconfig, parisc:generic-32bit_defconfig:
+>>
+>> --------------
+>> Error log:
+>> arch/parisc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
+>> arch/parisc/kernel/ptrace.c:274:2: error: implicit declaration of function
+>> 'secure_computing' [-Werror=implicit-function-declaration]
+>> cc1: some warnings being treated as errors
+>> make[1]: *** [arch/parisc/kernel/ptrace.o] Error 1
+>>
+>> Bisect points to commit 273299fb6380 ('Merge branch 'x86/seccomp') which
+>> obviously doesn't help much. Suspected culprit is c90f06943e05 ('parisc: Wire up
+>> seccomp, getrandom and memfd_create syscalls') which seems to be missing an
+>> include file.
+>
+> I could not reproduce this error with current git head.
+>
+With next-20140919 ?
 
-Hmm. What are the odds that some old kernel monitoring program, in an
-ancient Fedora distribution let's say, will be checking for 'khubd' in
-the kernel process list? Pretty high I would think.
+> Nevertheless, it probably makes sense to #include <linux/seccomp.h> in ptrace.c to
+> avoid a dependency on other header files to include it instead.
+> I've added this patch to my for-next tree:
+> http://git.kernel.org/cgit/linux/kernel/git/deller/parisc-linux.git/commit/?h=for-next&id=0f18557b017b3469e1f8edf5cf34c1cba856fdbe
+>
+> Could you try again?
+>
 
-I guess we'll find out once this hits mainline ;)
+That doesn't solve the problem for me, most likely because
+HAVE_ARCH_SECCOMP_FILTER is not set for parisc in next-20140919.
+This is what seccomp.h does with it:
 
--- 
-Paul
+#ifdef CONFIG_HAVE_ARCH_SECCOMP_FILTER
+static inline int secure_computing(void) { return 0; }
+#else
+static inline void secure_computing_strict(int this_syscall) { return; }
+#endif
+
+You don't have this flag in your tree. It was introduced in -next with
+commit 'seccomp,x86,arm,mips,s390: Remove nr parameter from secure_computing'.
+
+Guenter
 
