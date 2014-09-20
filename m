@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751009AbaITEDV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 00:03:21 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43379 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaITEDT (ORCPT
+	id S1751633AbaITEIk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 00:08:40 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59595 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaITEIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 00:03:19 -0400
-Date: Fri, 19 Sep 2014 21:03:15 -0700
-From: Amber Thrall <amber.rose.thrall@gmail.com>
-To: m.chehab@samsung.com
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Media: USB: usbtv: Fixed all coding style issues in usbtv
- source files.
-Message-ID: <20140920040314.GA17113@gmail.com>
+	Sat, 20 Sep 2014 00:08:39 -0400
+Message-ID: <541CFDBE.6090600@gmail.com>
+Date: Sat, 20 Sep 2014 12:08:30 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jesper Nilsson <jesper.nilsson@axis.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default 'screen_info"
+ for fixing compiling break
+References: <541552B8.8020807@gmail.com> <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com> <20140915085029.GY4659@axis.com> <5416C941.9020503@gmail.com>
+In-Reply-To: <5416C941.9020503@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed various coding styles, ignoring coding style error on line 5 for all files containing a link that is longer than 80 characters long.
+On 09/15/2014 07:10 PM, Chen Gang wrote:
+> On 9/15/14 16:50, Jesper Nilsson wrote:
+>> On Sun, Sep 14, 2014 at 10:45:23AM +0200, Geert Uytterhoeven wrote:
+[...]
+>>
+>> Sounds reasonable, at least it can avoid the specific depends on !*arch* cruft.
+>>
+> 
+> Thank you very much, next when I try the ARCH_MIGHT_HAVE_VGA, I shall
+> process it (remove useless "screen_info").
+> 
 
-Signed-off-by: Amber Thrall <amber.rose.thrall@gmail.com>
----
- drivers/media/usb/usbtv/usbtv-audio.c | 1 +
- drivers/media/usb/usbtv/usbtv-core.c  | 1 +
- drivers/media/usb/usbtv/usbtv-video.c | 3 +++
- 3 files changed, 5 insertions(+)
+Excuse me, after some trying, I guess, at present, I am not suitable to
+perform global architecture wide patches (e.g. ARCH_MIGHT_HAVE_VGA). So
+welcome any other members to help try.
 
-diff --git a/drivers/media/usb/usbtv/usbtv-audio.c b/drivers/media/usb/usbtv/usbtv-audio.c
-index 2d8795f..78c12d2 100644
---- a/drivers/media/usb/usbtv/usbtv-audio.c
-+++ b/drivers/media/usb/usbtv/usbtv-audio.c
-@@ -311,6 +311,7 @@ static int snd_usbtv_card_trigger(struct snd_pcm_substream *substream, int cmd)
- static snd_pcm_uframes_t snd_usbtv_pointer(struct snd_pcm_substream *substream)
- {
- 	struct usbtv *chip = snd_pcm_substream_chip(substream);
-+
- 	return chip->snd_buffer_pos;
- }
- 
-diff --git a/drivers/media/usb/usbtv/usbtv-core.c b/drivers/media/usb/usbtv/usbtv-core.c
-index bf25ecf..29428be 100644
---- a/drivers/media/usb/usbtv/usbtv-core.c
-+++ b/drivers/media/usb/usbtv/usbtv-core.c
-@@ -108,6 +108,7 @@ usbtv_video_fail:
- static void usbtv_disconnect(struct usb_interface *intf)
- {
- 	struct usbtv *usbtv = usb_get_intfdata(intf);
-+
- 	usb_set_intfdata(intf, NULL);
- 
- 	if (!usbtv)
-diff --git a/drivers/media/usb/usbtv/usbtv-video.c b/drivers/media/usb/usbtv/usbtv-video.c
-index 3d6ed1f..9d3525f 100644
---- a/drivers/media/usb/usbtv/usbtv-video.c
-+++ b/drivers/media/usb/usbtv/usbtv-video.c
-@@ -263,6 +263,7 @@ static void usbtv_chunk_to_vbuf(u32 *frame, __be32 *src, int chunk_no, int odd)
- 		int part_index = (line * 2 + !odd) * 3 + (part_no % 3);
- 
- 		u32 *dst = &frame[part_index * USBTV_CHUNK/2];
-+
- 		memcpy(dst, src, USBTV_CHUNK/2 * sizeof(*src));
- 		src += USBTV_CHUNK/2;
- 	}
-@@ -407,6 +408,7 @@ static void usbtv_stop(struct usbtv *usbtv)
- 	/* Cancel running transfers. */
- 	for (i = 0; i < USBTV_ISOC_TRANSFERS; i++) {
- 		struct urb *ip = usbtv->isoc_urbs[i];
-+
- 		if (ip == NULL)
- 			continue;
- 		usb_kill_urb(ip);
-@@ -560,6 +562,7 @@ static int usbtv_g_input(struct file *file, void *priv, unsigned int *i)
- static int usbtv_s_input(struct file *file, void *priv, unsigned int i)
- {
- 	struct usbtv *usbtv = video_drvdata(file);
-+
- 	return usbtv_select_input(usbtv, i);
- }
- 
+I guess, in the future, after I finish all architectures allmodconfig,
+I shall be suitable for sending global architecture wide patches.
+
+
+Thanks.
 -- 
-2.1.0
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
