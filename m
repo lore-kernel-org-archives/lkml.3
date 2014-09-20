@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaITPcZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 11:32:25 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:40702 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751030AbaITPcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 11:32:23 -0400
-Date: Sat, 20 Sep 2014 11:32:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140920113220.26e7434a@gandalf.local.home>
-In-Reply-To: <20140920051224.GA5573@quack.suse.cz>
-References: <20140916111331.14303381@gandalf.local.home>
-	<20140916203510.GF1205@quack.suse.cz>
-	<20140916170709.73ef2993@gandalf.local.home>
-	<20140916212250.GI1205@quack.suse.cz>
-	<20140916173328.6306a5c2@gandalf.local.home>
-	<20140917141816.GO2840@worktop.localdomain>
-	<20140917102255.5cd03071@gandalf.local.home>
-	<20140917223633.GE2848@worktop.localdomain>
-	<20140917203135.6db2ee5e@gandalf.local.home>
-	<20140918173414.GU2840@worktop.localdomain>
-	<20140920051224.GA5573@quack.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1753815AbaITPhM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 11:37:12 -0400
+Received: from mail-bn1bon0137.outbound.protection.outlook.com ([157.56.111.137]:18553
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750963AbaITPhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 11:37:10 -0400
+From: Stuart Yoder <stuart.yoder@freescale.com>
+To: Alexander Graf <agraf@suse.de>, Scott Wood <scottwood@freescale.com>
+CC: Kim Phillips <Kim.Phillips@freescale.com>,
+        Jose Rivera <German.Rivera@freescale.com>,
+        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
+        "<arnd@arndb.de>" <arnd@arndb.de>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linuxppc-release@linux.freescale.net>" 
+	<linuxppc-release@linux.freescale.net>
+Subject: RE: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
+Thread-Topic: [PATCH 1/4] drivers/bus: Added Freescale Management Complex APIs
+Thread-Index: AQHP0veD82/OvXJh/kGwROtkyAcbyZwG3uaAgAB3uYCAAHB1gIAA7qUAgAAQKlCAACO3gIAAAkGAgAACgoCAABIZAIABKEfA
+Date: Sat, 20 Sep 2014 15:36:59 +0000
+Message-ID: <b0d1eee4a8684153baac4f2aea099fa4@CY1PR0301MB0748.namprd03.prod.outlook.com>
+References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
+	 <1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
+	 <20140915184451.962a3a19c4940792d182f10a@freescale.com>
+	 <541A5CF1.8000409@freescale.com>
+	 <C6468126-D7AF-4144-992A-311C642CAD7F@suse.de>
+	 <20140918152233.41647ee517393816bb35b72a@freescale.com>
+	 <541B9D5F.20008@freescale.com>
+	 <20140919121912.197b15bd3b79fb90d7f97602@freescale.com>
+	 <3e06c5d2f97e446c8a9d8d8211c69a3e@CY1PR0301MB0748.namprd03.prod.outlook.com>
+	 <20140919152453.9a7095a77c0752998ed8621b@freescale.com>
+	 <541C92F9.1020805@suse.de> <1411159315.13320.81.camel@snotra.buserror.net>
+ <541CA442.5080201@suse.de>
+In-Reply-To: <541CA442.5080201@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [192.88.168.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0340850FCD
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(86362001)(90102001)(85306004)(106356001)(76576001)(83072002)(15975445006)(108616004)(101416001)(74316001)(77096002)(46102003)(15202345003)(93886004)(2656002)(64706001)(79102003)(77982003)(107046002)(4396001)(19580395003)(31966008)(87936001)(81342003)(99396002)(54356999)(95666004)(74502003)(105586002)(50986999)(33646002)(81542003)(76482002)(80022003)(92566001)(99286002)(20776003)(106116001)(66066001)(76176999)(74662003)(21056001)(85852003)(83322001)(97736003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0714;H:CY1PR0301MB0748.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8KFbbjx021464
 
-On Sat, 20 Sep 2014 07:12:24 +0200
-Jan Kara <jack@suse.cz> wrote:
+> Speaking of which, how does Linux find this new bus? I couldn't find
+> anything that describes the device tree bindings, but maybe I just
+> missed them.
 
-> On Thu 18-09-14 19:34:14, Peter Zijlstra wrote:
-> > On Wed, Sep 17, 2014 at 08:31:35PM -0400, Steven Rostedt wrote:
-> > > I totally didn't get what you wrote.
-> > 
-> > :-)
-> > 
-> > > We don't want to know if it got delayed, then the patch to remove that
-> > > print seems correct.
-> > 
-> > Why would you not want to know that? Also was that the actual argument?
-> > Lemme go check the earlier emails -- I cannot find that argument in the
-> > first few emails.
->   Well, so what gets delayed is printing from kernel buffer to console.
-> So this is the same as when you do printk() when console lock is taken by
-> someone else. So it seems a bit strange to prepend [delayed] in some cases
-> and not in others.
-> 
-> Another question is what the [delayed] prefix would be useful for? If the
-> message eventually gets printed to console I don't see why you would care
-> it was printed few ms after it entered the kernel buffer (after all the
-> time stamp before the line will be the time when it entered the kernel
-> buffer). And if the kernel crashes in such a way that the message doesn't
-> get printed, then bad luck but prefix in the kernel log buffer isn't going
-> to make that any better :)
-> 
-> This all feels like bikeshedding, I don't deeply care what gets done but I
-> wanted to point out I don't really see a use for [delayed]...
-> 
+There is a separate thread on the ARM mailing list with the device tree
+and binding (device tree will be in arch/arm64):
 
-I pretty much agree with this assessment. I don't really care if
-there's a "[delayed]" message or not. I now agree that it isn't really
-that useful. Now what I do care about is that there's a bug with the
-current code, and the non bikeshed argument is how to fix this bug.
+http://www.spinics.net/lists/arm-kernel/msg354635.html
 
-The bug is that there's users of printk_deferred() that use KERN_WARN
-in the format. This ends up showing "[delayed]<whacky-characters>
-message". The fix needs to remove those whacky characters.
-
-There's three ways to fix this bug.
-
-1) change printk() to check for whacky characters before adding
-"[delayed]" and either move them before it or remove them all together.
-
-2) change all users of printk_deferred() to not add the KERN_WARN.
-
-3) just get rid of adding the "[delayed]" message and make printk()
-itself a bit cleaner.
-
-I'm leaning towards #3 as I don't see the usefulness of that
-"[delayed]" message if there's other cases that can also delay printk.
-Remember, the code has been changed since the delayed message was added
-to make sure that the printk_deferred() message gets into the printk
-message in sequence of other printk's happening. The original way (when
-the "delayed" message was added) used its own buffer and would write to
-the log buffer at a later time, where the printk_deferred() could
-actually come out of sequence with other printk()s, and the "[delayed]"
-message would be useful for that case. But it's not useful anymore.
-
-#1 of above will just makes printk more complex, and being such a
-critical function which is already complex enough, I would like to not
-do so.
-
-#2 can fix the issue for now, until someone else adds a
-printk_deferred() with another KERN_WARN. Worse yet, someone may add
-one of the other KERN_* log levels and it will be ignored.
-
-
-Getting beyond the bikeshedding, there's a real bug that should be
-fixed. We just need to figure out what's the best way to do so.
-
--- Steve
+Stuart
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
