@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150AbaITNTy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 09:19:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41250 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756028AbaITNTx (ORCPT
+	id S1756428AbaITNUa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 09:20:30 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:46850 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756178AbaITNU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 09:19:53 -0400
-Date: Sat, 20 Sep 2014 15:19:50 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: linux-kernel@vger.kernel.org, computersforpeace@gmail.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Subject: Re: [PATCH 1/2] bus: brcmstb_gisb: register the fault code hook
-Message-ID: <20140920151950.443b7ea9@free-electrons.com>
-In-Reply-To: <1411155880-23447-2-git-send-email-f.fainelli@gmail.com>
-References: <1411155880-23447-1-git-send-email-f.fainelli@gmail.com>
-	<1411155880-23447-2-git-send-email-f.fainelli@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sat, 20 Sep 2014 09:20:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140919194547.GB4402@redhat.com>
+References: <20140918174127.GB340@redhat.com>
+	<1411130664-10195-1-git-send-email-r.peniaev@gmail.com>
+	<20140919194547.GB4402@redhat.com>
+Date: Sat, 20 Sep 2014 22:20:27 +0900
+Message-ID: <CACZ9PQUwP2_dNa1LF9nZUE0JV60zq30kkPUtWt0e4nAz3MUNQg@mail.gmail.com>
+Subject: Re: [v4 PATCH 1/1] init: fix race between rootfs mount and firmware loading
+From: Roman Peniaev <r.peniaev@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Florian Fainelli,
+Thanks, Oleg, for the review.
 
-On Fri, 19 Sep 2014 12:44:39 -0700, Florian Fainelli wrote:
+--
+Roman
 
-> -void __init brcmstb_hook_fault_code(void)
-> +static int __init brcmstb_hook_fault_code(void)
->  {
->  	hook_fault_code(22, brcmstb_bus_error_handler, SIGBUS, 0,
->  			"imprecise external abort");
-> +	return 0;
->  }
-> +arch_initcall(brcmstb_hook_fault_code)
-
-I don't have the entire context, but if your platform is part of
-multi-platform, it means that regardless of which platform is actually
-booting your system, you will register your fault hook. Is this the
-intended behavior?
-
-Generally speaking, in a multiplatform context, many arch_initcall()
-should have a conditional to check whether we're really on a platform
-where the initcall is needed.
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+On Sat, Sep 20, 2014 at 4:45 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 09/19, Roman Pen wrote:
+>>
+>> +void wait_for_rootfs(void)
+>> +{
+>> +     /* Here we try to protect from a few things:
+>> +      * 1. Avoid waiting for ourselves, when init thread has not
+>> +      *    mounted rootfs yet.
+>> +      * 2. Avoid warning if call chain was initiated from userspace
+>> +      *    /sbin/init. For example when /sbin/init loads the driver,
+>> +      *    which, in turn, wants to access rootfs (e.g. firmware loading),
+>> +      *    thus it has to be sure, that rootfs has been successfully
+>> +      *    mounted.
+>> +      */
+>> +     if (rootfs_mounted || WARN_ON(is_global_init(current)))
+>> +             return;
+>> +     else
+>> +             wait_event(rootfs_waitq, rootfs_mounted);
+>> +}
+>
+> Well, in this case __wait_event() makes more sense, we already checked
+> rootfs_mounted, but this is minor.
+>
+> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+>
+>
+> But I hope that Greg can take a look too. I do not understand the problem
+> space enough, so I am not sure this is the "right" fix. Say, perhaps we
+> should change the drivers which abuse request_firmware(), or do something
+> else.
+>
+> Oleg.
+>
