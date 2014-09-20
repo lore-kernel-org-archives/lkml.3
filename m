@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaITGwq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 02:52:46 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:56032 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752315AbaITGwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 02:52:43 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-mmc@vger.kernel.org
-Subject: [PATCH 2/2] mmc: atmel-mci: Release mmc resources on failure in probe
-Date: Sat, 20 Sep 2014 12:22:31 +0530
-Message-Id: <1411195951-10630-2-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1411195951-10630-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1411195951-10630-1-git-send-email-pramod.gurav@smartplayin.com>
+	id S1751212AbaITHOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 03:14:14 -0400
+Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:49582 "EHLO
+	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750707AbaITHON convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 03:14:13 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=Daq5x7peQTZG5JcO7WbcljS9mPiqDMY23hclUajVz3U= c=1 sm=2
+ a=7-sIokkr2u0A:10 a=Rw-gbsmgLOMA:10 a=IkcTkHD0fZMA:10
+ a=CMrfILTmy1Pq4ZzpbDwA:9 a=QEXdDO2ut3YA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArwSAM8oHVTD7hTT/2dsb2JhbAAZAUYOgn+BKoMBskkBAQEBAQEGm38BfRYBeYQDAQEBAwEjVgULBQQCGAICGA4CAlcGExGIJQyPfyKcR4Z/jwcYgSyEYYlGMweCeIFTBbJhgyBCOy+CSgEBAQ
+Date: Sat, 20 Sep 2014 09:14:11 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <1623224162.140196.1411197251348.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <20140918204455.GA26995@thunk.org>
+References: <1411064974-18304-1-git-send-email-fabf@skynet.be> <20140918204455.GA26995@thunk.org>
+Subject: Re: [PATCH 1/1 linux-next] jbd2: Fix sparse context imbalance
+ warning
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change takes care of releasing mmc resources on error cases in
-probe function which was missing. Also release timer in remove function.
 
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/mmc/host/atmel-mci.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index 21a222c..6db1531 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -2373,7 +2373,7 @@ static int __init atmci_probe(struct platform_device *pdev)
- 	struct resource			*regs;
- 	unsigned int			nr_slots;
- 	int				irq;
--	int				ret;
-+	int				ret, i;
- 
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!regs)
-@@ -2480,7 +2480,7 @@ static int __init atmci_probe(struct platform_device *pdev)
- 		if (!host->buffer) {
- 			ret = -ENOMEM;
- 			dev_err(&pdev->dev, "buffer allocation failed\n");
--			goto err_init_slot;
-+			goto err_dma_alloc;
- 		}
- 	}
- 
-@@ -2490,10 +2490,16 @@ static int __init atmci_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
-+err_dma_alloc:
-+	for (i = 0; i < ATMCI_MAX_NR_SLOTS; i++) {
-+		if (host->slot[i])
-+			atmci_cleanup_slot(host->slot[i], i);
-+	}
-+
- err_init_slot:
-+	del_timer_sync(&host->timer);
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
--
- 	return ret;
- }
- 
-@@ -2517,6 +2523,7 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 	atmci_readl(host, ATMCI_SR);
- 	clk_disable_unprepare(host->mck);
- 
-+	del_timer_sync(&host->timer);
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
- 
--- 
-1.8.3.2
+> On 18 September 2014 at 22:44 Theodore Ts'o <tytso@mit.edu> wrote:
+>
+>
+> On Thu, Sep 18, 2014 at 08:29:34PM +0200, Fabian Frederick wrote:
+> > spin_unlock after spin_lock only.
+> >
+> > This fixes the following sparse warning:
+> > fs/jbd2/transaction.c:1102:20: warning: context imbalance
+> > in 'jbd2_journal_get_create_access' - different lock contexts for basic
+> > block
+> >
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+>
+> NAK, this is a case where I think it's better to make the static
+> analyzers better.  In any case sparse gives a lot of false positives
+> for this particular warning, so adding lines of code to try to shut up
+> sparse for every single false positive seems to be a losing
+> proposition.
+>
+> I'll note that these sorts of bugs are much more easily picked up
+> using lockdep in any case, so we're probably better of just ignoring
+> these sorts of warnings.  Better to let the 0day kernel tester warn
+> for new sparse warnings, instead of trying to drive sparse warnings
+> down to zero.
+>
+> Cheers,
+>
+>                                       - Ted
 
+Thanks a lot for explanation Ted. I didn't see J_ASSERT_JH above which BUG_ON
+if b_transaction is not ok.
+
+
+Regards,
+Fabian
