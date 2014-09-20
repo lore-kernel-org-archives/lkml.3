@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487AbaITKbh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 06:31:37 -0400
-Received: from mailsec108.isp.belgacom.be ([195.238.20.104]:55454 "EHLO
-	mailsec108.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750927AbaITKbg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 06:31:36 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=UGN7JNw3bPEHpwjh5ACRRBK85/3fvewMg9DN/Z6sboU= c=1 sm=2
- a=XryuEu0TkPcA:10 a=qeYcf6Gh41QA:10 a=IkcTkHD0fZMA:10 a=IJv9LcIfAAAA:8
- a=pyTQFJ9HQLFcPeAzTYIA:9 a=QEXdDO2ut3YA:10 a=K6kUPx8HyhEA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhkLAPRWHVTD7hTU/2dsb2JhbABfgw1TV4MBslABAQEBAQEGlCqHVQF9FgF5hAMBAQEDASNWBQsFBAIYAgIYDgICVwYTEYglDJAknEeGf48jgSyEYYlGMweCeIFTBZYMiGiTbYNiOy+CSgEBAQ
-Date: Sat, 20 Sep 2014 12:31:34 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Message-ID: <2022098628.197398.1411209094968.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <1410885094.16519.6.camel@joe-AO725>
-References: <1410806637-3510-1-git-send-email-fabf@skynet.be> <1410837769.18787.40.camel@joe-AO725> <1685749151.185639.1410884118738.open-xchange@webmail.nmp.skynet.be> <1410885094.16519.6.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] checkpatch: check for subject uniqueness in git
- repository.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+	id S1753692AbaITKmw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 06:42:52 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:40996 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaITKmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 06:42:50 -0400
+To: keescook@chromium.org, linux-kernel@vger.kernel.org
+Cc: james.l.morris@oracle.com, oleg@redhat.com, luto@amacapital.net,
+        drysdale@google.com, mtk.manpages@gmail.com, wad@chromium.org,
+        jln@chromium.org, linux-api@vger.kernel.org, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH 3.17-rc5] Fix confusing PFA_NO_NEW_PRIVS constant.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
+	<541D16EA.70407@huawei.com>
+In-Reply-To: <541D16EA.70407@huawei.com>
+Message-Id: <201409201940.AHG21834.LJOFFHSFQOtVMO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 20 Sep 2014 19:40:30 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Can you apply below patch before new PFA_* are defined?
+Cgroups code might want to define PFA_SPREAD_PAGE as 1 and PFA_SPREAD_SLAB as 2.
+----------------------------------------
+>From 8543e68adb210142fa347d8bc9d83df0bb2c5291 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sat, 20 Sep 2014 19:24:23 +0900
+Subject: [PATCH 3.17-rc5] Fix confusing PFA_NO_NEW_PRIVS constant.
 
+Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
+defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
+because it is used as bit number. Redefine it as decimal bit number.
 
-> On 16 September 2014 at 18:31 Joe Perches <joe@perches.com> wrote:
->
->
-> On Tue, 2014-09-16 at 18:15 +0200, Fabian Frederick wrote:
-> > > On 16 September 2014 at 05:22 Joe Perches <joe@perches.com> wrote:
-> > > On Mon, 2014-09-15 at 20:43 +0200, Fabian Frederick wrote:
-> > > > Adding patch subject uniqueness check in checkpatch --strict mode.
-> > > > See Documentation/SubmittingPatches/globally-unique identifier.
-> > >
-> > > Perhaps something like this?
-> []
-> > > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> []
-> > > +     if ($check && $#git_commits < 1 && which("git") && -e ".git") {
-> > > +             my $output = `git log --no-color --format='%H %s' 2>&1`;
-> > > +             $output =~ s/^\s*//gm;
-> > > +             @git_commits = split("\n", $output);
-> > > +     }
->
-> > Perfect ! :)
->
-> Except for that _really, really_ long time to do the
-> git log of all commits...
->
-> Maybe the git log should be enabled only with another
-> command-line option.
->
-Hello Joe,
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ include/linux/sched.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-checkpatck does already execute git log in seed_camelcase_includes and
-git_commit_info when .git exists
-so we could add some specific option instead like --complete --verbose
---checkduplicates or something for this test ?
-
-Regards,
-Fabian
- 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..4557765 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
+ }
+ 
+ /* Per-process atomic flags. */
+-#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
++#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+ 
+ static inline bool task_no_new_privs(struct task_struct *p)
+ {
+-- 
+1.7.1
