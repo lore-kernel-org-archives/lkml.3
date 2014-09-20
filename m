@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311AbaITSQw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 14:16:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57061 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665AbaITSQv (ORCPT
+	id S1757604AbaITSUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 14:20:16 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:33493 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756508AbaITSUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 14:16:51 -0400
-Date: Sat, 20 Sep 2014 23:46:35 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Grzegorz Swirski <grzegorz@swirski.name>
-Cc: gregkh@linuxfoundation.org, josh@joshtriplett.org,
-        stankus.modestas@gmail.com, vitaly.osipov@gmail.com,
-        Johannes.Stadlinger@fau.de, himangi774@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: wlan-ng: remove unused 'result' var
-Message-ID: <20140920181635.GA2379@sudip-PC>
-References: <1411211351-4207-1-git-send-email-grzegorz@swirski.name>
+	Sat, 20 Sep 2014 14:20:14 -0400
+Message-ID: <541DC55A.9080702@gmail.com>
+Date: Sat, 20 Sep 2014 20:20:10 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411211351-4207-1-git-send-email-grzegorz@swirski.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH] clk: s5pv210: add missing call to samsung_clk_of_add_provider()
+References: <1411117216-11456-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1411117216-11456-1-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 12:09:11PM +0100, Grzegorz Swirski wrote:
-> Signed-off-by: Grzegorz Swirski <grzegorz@swirski.name>
-you have not mentioned any commit log
-
+On 19.09.2014 11:00, Marek Szyprowski wrote:
+> Commit d5e136a21b2028fb1f45143ea7112d5869bfc6c7 ("clk: samsung: Register
+> clk provider only after registering its all clocks", merged to v3.17-rc1)
+> modified a way that driver registers registers to core framework. This
+> change has not been applied to s5pv210 clocks driver, which has been
+> merged in parallel to that commit. This patch adds a missing call to
+> samsung_clk_of_add_provider(), so the driver is operational again.
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 > ---
->  drivers/staging/wlan-ng/prism2mib.c | 11 ++++-------
->  1 file changed, 4 insertions(+), 7 deletions(-)
+> Hello!
 > 
-> diff --git a/drivers/staging/wlan-ng/prism2mib.c b/drivers/staging/wlan-ng/prism2mib.c
-> index f471708..0163e06 100644
-> --- a/drivers/staging/wlan-ng/prism2mib.c
-> +++ b/drivers/staging/wlan-ng/prism2mib.c
-> @@ -717,8 +717,6 @@ static int prism2mib_priv(struct mibrec *mib,
->  {
->  	p80211pstrd_t *pstr = (p80211pstrd_t *) data;
->  
-> -	int result;
-> -
->  	switch (mib->did) {
->  	case DIDmib_lnx_lnxConfigTable_lnxRSNAIE:{
->  			hfa384x_WPAData_t wpa;
-> @@ -734,11 +732,10 @@ static int prism2mib_priv(struct mibrec *mib,
->  				wpa.datalen = cpu_to_le16(pstr->len);
->  				memcpy(wpa.data, pstr->data, pstr->len);
->  
-> -				result =
-> -				    hfa384x_drvr_setconfig(hw,
-> -						   HFA384x_RID_CNFWPADATA,
-> -						   (u8 *) &wpa,
-> -						   sizeof(wpa));
-> +				hfa384x_drvr_setconfig(hw,
-> +						       HFA384x_RID_CNFWPADATA,
-> +						       (u8 *) &wpa,
-if you check your patch with --strict option then you will see one warning here.
+> This is an important fix to v3.17-rcX. Without it support for Samsung
+> S5PV210 SoCs is not functional.
+> 
+> Mike, could you take it to the fixes branch?
 
-thanks
-sudip
-> +						       sizeof(wpa));
->  			}
->  			break;
->  		}
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Acked-by: Tomasz Figa <tomasz.figa@gmail.com>
+
+Mike, since it seems like this is the only fix to be queued for next -rc
+release, I think it would be reasonable if you picked it up directly.
+
+Best regards,
+Tomasz
