@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220AbaITAgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 20:36:18 -0400
-Received: from email-1.wow.lk ([202.124.160.15]:44318 "EHLO email-1.wow.lk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756608AbaITAgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 20:36:17 -0400
-X-Greylist: delayed 4623 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Sep 2014 20:36:16 EDT
-Message-ID: <0e28d9e94b9bc5b894e002405f72603c.squirrel@webmail.wow.lk>
-Date: Sat, 20 Sep 2014 00:18:51 +0100 (BST)
-Subject: VIRUS DETECTED! UPGRADE YOUR ACCOUNT.
-From: "ONLINE WEBMAIL TEAM" <info@webmailteam.com.wow.lk>
-Reply-To: onlinewebteam@outlook.com
-User-Agent: SquirrelMail/1.4.17
+	id S1758194AbaITBJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 21:09:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44197 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392AbaITBJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 21:09:29 -0400
+Message-ID: <541CD3C3.3010905@infradead.org>
+Date: Fri, 19 Sep 2014 18:09:23 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+To: Guenter Roeck <linux@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anish Bhatt <anish@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: linux-next: Tree for Sep 19
+References: <20140919165817.225eb8b8@canb.auug.org.au> <20140919211404.GA24856@roeck-us.net> <541CAC81.9040404@infradead.org> <541CC721.2010207@roeck-us.net>
+In-Reply-To: <541CC721.2010207@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/19/14 17:15, Guenter Roeck wrote:
+> On 09/19/2014 03:21 PM, Randy Dunlap wrote:
+>> On 09/19/14 14:14, Guenter Roeck wrote:
+>>> On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20140917:
+>>>>
+>>>> The fsl tree still had its build failure so I used the version from
+>>>> next-20140917.
+>>>>
+>>>> The v4l-dvb tree lost its build failure.
+>>>>
+>>>> The security tree gained a conflict against the file-locks tree.
+>>>>
+>>>> Non-merge commits (relative to Linus' tree): 6014
+>>>>   5488 files changed, 217522 insertions(+), 129375 deletions(-)
+>>>>
+>>>> ----------------------------------------------------------------------------
+>>>>
+>>> Guess this is most difficult one.
+>>>
+>>> mips:nlm_xlp_defconfig:
+>>>
+>>> warning: (SCSI_BNX2X_FCOE && LIBFCOE && TCM_QLA2XXX) selects LIBFC which has
+>>> unmet direct dependencies (SCSI_LOWLEVEL && SCSI && SCSI_FC_ATTRS)
+>>> warning: (SCSI_BNX2X_FCOE && LIBFCOE && TCM_QLA2XXX) selects LIBFC which has
+>>> unmet direct dependencies (SCSI_LOWLEVEL && SCSI && SCSI_FC_ATTRS)
+>>
+>> Yes, I have a patch sitting on my hard drive that makes LIBFCOE and TCM_QLA2XXX
+>> and SCSI_BNX2X_FCOE depend on SCSI_FC_ATTRS, but I'm not entirely happy about
+>> having to hunt these down (even with the help of kconfig warnings).
+>>
+> 
+> One key problem is that nlm_xlp_defconfig does not configure NET anymore.
+> this is after 'scsi_netlink : Make SCSI_NETLINK dependent on NET instead
+> of selecting NET' was applied.
+> 
+> In fact, there are many more affected configurations; the change from
+> "select XXX" to "depends XXX" has far reaching consequences, as many
+> configurations are no longer valid. For mips alone I find that this commit
+> changes the following configurations.
+> 
+> e55_defconfig
+> gpr_defconfig
+> ip27_defconfig
+> jazz_defconfig
+> loongson3_defconfig
+> malta_defconfig
+> malta_kvm_defconfig
+> malta_kvm_guest_defconfig
+> mtx1_defconfig
+> nlm_xlp_defconfig
+> nlm_xlr_defconfig
+> rm200_defconfig
+> 
+> e55_defconfig is almost the same as before, but only because CONFIG_NET
+> was not configured for it to start with. For all others, CONFIG_NET is
+> no longer set. This effectively means that out of 55 mips configurations,
+> 11 or 20% are now bad. This is 3.17-rc5. vs. next-20140919.
+> 
+> Frankly, I don't think this change was really helpful. On the contrary,
+> we will be in a lot of trouble when this change makes it upstream.
+> It might be be a good idea to be much more careful when making such
+> changes. Cleaning up configuration dependencies is a laudable goal,
+> but when it breaks configurations all over the place it does more damage
+> than it is worth.
 
+Yes, I suspect that we should just drop this effort and redo the original
+problem's "fix".
 
+Dave?
 
-Help Desk
-onlinewebteam@outlook.com
+Anish, if you can remind me of the original problem and hopefully a kernel
+.config file for it, I'll try to help with it.
 
-Security Notification,
-
-A DGTJTO virus has been detected in your folders. Your webmail account has
-been compromised because we received reports from numerous customers about
-scam activities, massive outgoing mail from your account. Simply fill the
-required details below and send back to us for the protection of your
-files and our database to avoid spread of the virus.
-
-Email:
-Password:
-Retype-Password:
-Anti Virus Code:
-
-WARNING! WebMail Account owner, that refuses to update his/her account,
-your account will be excluded permanently from our WebMail Database we
-will not be responsible for the loss of your account.
-
-Thank you for your cooperation.
-Webmail Support Centre.
-Copyright ©2014. All Rights Reserved.
-
+-- 
+~Randy
