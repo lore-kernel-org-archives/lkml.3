@@ -1,52 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755AbaITF05 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 01:26:57 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:54515 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457AbaITF04 (ORCPT
+	id S1756865AbaITFau (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 01:30:50 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:50749 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921AbaITFar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 01:26:56 -0400
-Date: Sat, 20 Sep 2014 01:26:53 -0400
-From: Tejun Heo <tj@kernel.org>
-To: cl@linux-foundation.org, kmo@daterainc.com
-Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 3/3] percpu-refcount: make percpu_ref based on longs
- instead of ints
-Message-ID: <20140920052653.GB7926@mtj.dyndns.org>
-References: <1410142342-8185-1-git-send-email-tj@kernel.org>
- <1410142342-8185-4-git-send-email-tj@kernel.org>
+	Sat, 20 Sep 2014 01:30:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410142342-8185-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CADU+-uAw8wLbY6E0msuwZFgW9hDXz8a6oeDJBTSURUfS3aO1gw@mail.gmail.com>
+References: <1410912351-31273-1-git-send-email-rlarocque@google.com>
+ <CALCETrXtYV5xKkTxothuqNb7ra80Be7ZXJ-hDnC6p-bfEPZ=Lw@mail.gmail.com>
+ <CABgu+=NC1ZMQkV0J2c9-MD1+TAmTjDm4ACZASPnfX2Fwiu5rMQ@mail.gmail.com>
+ <CALCETrWj8Pj8d8YjybvOKG-=xmy-XGFo9cGQ9qn0V4t9Oj+dOw@mail.gmail.com>
+ <CADU+-uCguxhkw259MefABuzOxvyK_F6bhwza0YhveCCJxEV8wQ@mail.gmail.com>
+ <54194A4A.7030104@zytor.com> <CALCETrXsx2-1yf6q4OLzBdisr8P1086rNrsAt=WbyJaiT-cMpw@mail.gmail.com>
+ <CALCETrXpB4qOS+JUBqJnTY8JUfQ=A6DaebU6e=32sSv=0c0QCg@mail.gmail.com>
+ <CADU+-uBMc9THr0ADntsOqwh1--ULYMcssgPBvTesvFR+KQUfRg@mail.gmail.com>
+ <CALCETrXOeD=zBPvYV+-j0Ok6MXNZwdjRaz73rjuLGShx+o6Y0w@mail.gmail.com>
+ <CADU+-uBmQdKSX==5NrYfSEWLg-X4cvJYXj=N8UdMdN_rHnWk4w@mail.gmail.com>
+ <CALCETrV7thL-0mST4O6YZgDNm1LyLqB=_bQ3vwwrAPYZCB=W+A@mail.gmail.com>
+ <CADU+-uBoMrF=vbOM4TW7YzD5cdHSn8BJdfs5nnPM6uS9-6n_Ag@mail.gmail.com>
+ <CALCETrUgtveB-ddeL2t0cK18r_VeP5T7LrWCzszfFo+8GcdmEg@mail.gmail.com> <CADU+-uAw8wLbY6E0msuwZFgW9hDXz8a6oeDJBTSURUfS3aO1gw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 19 Sep 2014 22:30:25 -0700
+Message-ID: <CALCETrVvLwOncX1LinLPyzPSgO2U6bmeKE5M2VDi2Mo0j8ihow@mail.gmail.com>
+Subject: Re: [PATCH] x86/vdso: Add prctl to set per-process VDSO load
+To: Filipe Brandenburger <filbranden@google.com>
+Cc: Greg Thelen <gthelen@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        X86 ML <x86@kernel.org>, Michael Davidson <md@google.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Richard Larocque <rlarocque@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 11:12:22AM +0900, Tejun Heo wrote:
-> percpu_ref is currently based on ints and the number of refs it can
-> cover is (1 << 31).  This makes it impossible to use a percpu_ref to
-> count memory objects or pages on 64bit machines as it may overflow.
-> This forces those users to somehow aggregate the references before
-> contributing to the percpu_ref which is often cumbersome and sometimes
-> challenging to get the same level of performance as using the
-> percpu_ref directly.
-> 
-> While using ints for the percpu counters makes them pack tighter on
-> 64bit machines, the possible gain from using ints instead of longs is
-> extremely small compared to the overall gain from per-cpu operation.
-> This patch makes percpu_ref based on longs so that it can be used to
-> directly count memory objects or pages.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
+On Sep 19, 2014 8:46 PM, "Filipe Brandenburger" <filbranden@google.com> wrote:
+>
+> On Fri, Sep 19, 2014 at 8:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> I thought of doing that from the prctl but AFAICT remap_pfn_range
+> >> requires that it's unmapped before the call (remap_pte_range has
+> >> BUG_ON(!pte_none(*pte));) and doing a zap_page_range followed by
+> >> remap_pfn_range might incur a race condition if another thread of the
+> >> same process is accessing the vvar page at that time... Am I wrong
+> >> about that race?
+> >
+> > No, you're right.  Ugh.
+> >
+> > It might pay to add an explicit .fault callback to vm_special_mapping,
+> > but your approach will work, too.  The main downside is more memory
+> > overhead per mm.
+>
+> One way to limit that overhead was to keep only two static
+> vm_special_mapping structs (one for the real vvar page and one for the
+> zero page) and then change the vma->vm_private_data to point to one or
+> the other when the prctl is called. I just thought of that recently
+> and haven't tried it yet so not sure if it will cause other
+> problems...
 
-Applied 1 and 3 to percpu/for-3.18.
+Sneaky :)
 
-Thanks.
+This might have interesting effects if someone races with you.
+mmap_sem could be enough.
 
--- 
-tejun
+On the other hand, holding mmap_sem for write could be enough to let
+you zap the pte and remap it.
+
+>
+> >>> Changing out the text is a whole can of worms involving self-modifying
+> >>> code, although it may be completely safe if done through the page
+> >>> tables.  But I don't think you can't use remap_pfn_range for that.
+> >>
+> >> No, I'm not planning to change the text, just replacing the vvar page
+> >> swapping the one where the vsyscall_gtod_data lives with a zero page
+> >> (and back depending on the parameter of the prctl.)
+> >
+> > Hmm.  This will break the _COARSE timing functions as well as
+> > __vdso_time.  That'll need fixing, either by swapping out the code
+> > (yuck!) or by adding a branch to all of those code paths.
+> >
+> > Maybe there's a non-branchy way, though.  Let me think.
+>
+> So this is what I was thinking of extending the vvar region to include
+> one extra page (right now it's two pages, the one with the
+> vsyscall_gtod_data and the one with the hrtimer I/O mapping, so this
+> would be a third page.) This third page would be initially mapped to
+> the zero page, so it wouldn't cost an extra page of memory per process
+> or even globally.
+>
+> The prctl would swap that page with another page allocated as the
+> prctl is called. That one page that's allocated with the prctl would
+> be inherited over forks and execs, so if you have a bunch of processes
+> that need the same offset then they'd all share that one single page.
+>
+> The vdso clock routines would get the base clock information from
+> vsyscall_gtod_data, hpet, tsc, etc. and would simply add the offsets
+> from the task_vvar page (not too branch-y, just a few extra adds.) In
+> the regular case, that would be a zero page so it would be simply
+> adding zero. If we need to apply offsets, then we replace that page
+> with one that has a struct with the right offsets for each clock type.
+>
+> When running in kernel mode, the clock code (and timer code, etc.)
+> would find that page through the mm_struct and find the clock offsets
+> that way.
+
+This seems like a lot of complexity and non-negligible overhead (extra
+adds, cacheline misses, and even TLB misses) in the common case just
+to have fast timing under very unusual circumstances.
+
+I'd much rather do something to the vvar page that causes all the
+timing calls to turn into normal syscalls and then handle the offset
+in the timing syscalls.  Are you really doing something that's
+performance-sensitive enough to justify all of the complexity of
+making this work without syscalls?
+
+To do that, the only real tricky part is handling the coarse timing
+calls.  The could be done with extra branches, text patches, or
+trickery involving setting up an alternate vvar page that always fails
+the seqcount retry check.
+
+>
+> I was working on this approach before you suggested swapping the
+> actual vvar page (and not sure if you were actually looking at
+> hot-swapping the vdso itself.) I can go back to working on it and send
+> you a few commits since I still have some of that code around.
+>
+> Cheers,
+> Filipe
