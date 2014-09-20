@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaITUbE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 16:31:04 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:39611 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757980AbaITUao (ORCPT
+	id S932162AbaITUbB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 16:31:01 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58170 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948AbaITUak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 16:30:44 -0400
+	Sat, 20 Sep 2014 16:30:40 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -17,9 +17,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
         Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>,
         Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 8/8] nohz: nohz full depends on irq work self IPI support
-Date: Sat, 20 Sep 2014 22:30:24 +0200
-Message-Id: <1411245024-10339-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 6/8] arm64: Tell irq work about self IPI support
+Date: Sat, 20 Sep 2014 22:30:22 +0200
+Message-Id: <1411245024-10339-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411245024-10339-1-git-send-email-fweisbec@gmail.com>
 References: <1411245024-10339-1-git-send-email-fweisbec@gmail.com>
@@ -27,53 +27,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nohz full functionality depends on IRQ work to trigger its own
-interrupts. As it's used to restart the tick, we can't rely on the tick
-fallback for irq work callbacks, ie: we can't use the tick to restart
-the tick itself.
+ARM64 irq work self-IPI support depends on __smp_cross_call to point to
+some relevant IRQ controller operations. This information should be
+available after the call to init_IRQ().
 
-Lets reject the full dynticks initialization if that arch support isn't
-available.
-
-As a side effect, this makes sure that nohz kick is never called from
-the tick. That otherwise would result in illegal hrtimer self-cancellation
-and lockup.
+Lets implement arch_irq_work_has_interrupt() accordingly.
 
 Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/time/tick-sched.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/arm64/include/asm/Kbuild     |  1 -
+ arch/arm64/include/asm/irq_work.h | 11 +++++++++++
+ arch/arm64/include/asm/smp.h      |  2 ++
+ arch/arm64/kernel/smp.c           |  2 +-
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm64/include/asm/irq_work.h
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index eb4af01..5a9ff24 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -365,6 +365,20 @@ void __init tick_nohz_init(void)
- 		return;
- 	}
- 
-+	/*
-+	 * Full dynticks uses irq work to drive the tick rescheduling on safe
-+	 * locking contexts. But then we need irq work to raise its own
-+	 * interrupts to avoid circular dependency on the tick
-+	 */
-+	if (!arch_irq_work_has_interrupt()) {
-+		pr_warning("NO_HZ: Can't run full dynticks because arch doesn't "
-+			   "support irq work self-IPIs\n");
-+		cpumask_clear(tick_nohz_full_mask);
-+		cpumask_copy(housekeeping_mask, cpu_possible_mask);
-+		tick_nohz_full_running = false;
-+		return;
-+	}
+diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
+index d617789..c196847 100644
+--- a/arch/arm64/include/asm/Kbuild
++++ b/arch/arm64/include/asm/Kbuild
+@@ -19,7 +19,6 @@ generic-y += ioctl.h
+ generic-y += ioctls.h
+ generic-y += ipcbuf.h
+ generic-y += irq_regs.h
+-generic-y += irq_work.h
+ generic-y += kdebug.h
+ generic-y += kmap_types.h
+ generic-y += kvm_para.h
+diff --git a/arch/arm64/include/asm/irq_work.h b/arch/arm64/include/asm/irq_work.h
+new file mode 100644
+index 0000000..8e24ef3
+--- /dev/null
++++ b/arch/arm64/include/asm/irq_work.h
+@@ -0,0 +1,11 @@
++#ifndef __ASM_IRQ_WORK_H
++#define __ASM_IRQ_WORK_H
 +
- 	cpu = smp_processor_id();
++#include <asm/smp.h>
++
++static inline bool arch_irq_work_has_interrupt(void)
++{
++	return !!__smp_cross_call;
++}
++
++#endif /* __ASM_IRQ_WORK_H */
+diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+index a498f2c..780f82c 100644
+--- a/arch/arm64/include/asm/smp.h
++++ b/arch/arm64/include/asm/smp.h
+@@ -48,6 +48,8 @@ extern void smp_init_cpus(void);
+  */
+ extern void set_smp_cross_call(void (*)(const struct cpumask *, unsigned int));
  
- 	if (cpumask_test_cpu(cpu, tick_nohz_full_mask)) {
++extern void (*__smp_cross_call)(const struct cpumask *, unsigned int);
++
+ /*
+  * Called from the secondary holding pen, this is the secondary CPU entry point.
+  */
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 4743397..b06d1d9 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -470,7 +470,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ }
+ 
+-static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
++void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+ 
+ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+ {
 -- 
 2.1.0
 
