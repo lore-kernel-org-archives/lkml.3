@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894AbaITCHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 22:07:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33385 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919AbaITCHd (ORCPT
+	id S1758217AbaITCJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 22:09:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:32934 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398AbaITCI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 22:07:33 -0400
-Date: Fri, 19 Sep 2014 21:07:06 -0500 (CDT)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tony Lindgren <tony@atomide.com>
-cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
-        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
-        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
-In-Reply-To: <20140919195738.GR14505@atomide.com>
-Message-ID: <alpine.DEB.2.10.1409192100380.23826@nanos>
-References: <1411067086-16613-1-git-send-email-nm@ti.com> <1411067086-16613-4-git-send-email-nm@ti.com> <alpine.DEB.2.10.1409181749170.4206@nanos> <20140919030333.GA6088@kahuna> <alpine.DEB.2.10.1409190710320.5612@nanos> <20140919161927.GA28613@kahuna>
- <alpine.DEB.2.10.1409191027330.5612@nanos> <20140919191649.GQ14505@atomide.com> <alpine.DEB.2.10.1409191233590.4213@nanos> <20140919195738.GR14505@atomide.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 19 Sep 2014 22:08:58 -0400
+Date: Fri, 19 Sep 2014 22:08:56 -0400 (EDT)
+Message-Id: <20140919.220856.2166907140359359148.davem@davemloft.net>
+To: anish@chelsio.com
+Cc: rdunlap@infradead.org, linux@roeck-us.net, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        JBottomley@parallels.com, mchan@broadcom.com
+Subject: Re: linux-next: Tree for Sep 19
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <525DB349B3FB5444AE057A887CB2A8D88EF892@nice.asicdesigners.com>
+References: <541CC721.2010207@roeck-us.net>
+	<541CD3C3.3010905@infradead.org>
+	<525DB349B3FB5444AE057A887CB2A8D88EF892@nice.asicdesigners.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 19 Sep 2014 19:08:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014, Tony Lindgren wrote:
-> * Thomas Gleixner <tglx@linutronix.de> [140919 12:47]:
-> > Why on earth are you wanting tasklets in there? That's just silly,
-> > really.
+From: Anish Bhatt <anish@chelsio.com>
+Date: Sat, 20 Sep 2014 01:43:05 +0000
+
+> Original config causing issues can be seen here :
+> https://lkml.org/lkml/2014/9/9/500
 > 
-> Lack of a framework on driver side to cope with this in a generic
-> way? :p
+> As CNIC depends on IPV6, CNIC can be only compiled as a module when IPV6 is 
+> compiled as a module. This was the patch I originally commited. Previous 
+> behaviour was to disable all ipv6 code in such a case. However, having bnx2fc/i 
+>  as built-in overrides CNIC's tristate from m to built-in (as they select CNIC), 
+>  causing build issues. As far as I know, there is no way to control the state 
+> that select sets.
 
-So instead of creating such a thing we rather have a completely ass
-backward workaround which spreads itself all over the tree?
+Really, nothing that has dependencies should be "select"'d, ever.
 
-You SoC folks really need a quarterly sanity check.
+What people hack up is that they try to do this, and "make it work"
+by "select"'ing all of the selected object's dependencies.  And
+then you have to do this recursively for dependencies which have
+dependencies.
 
-Thanks,
+This is really incredibly stupid.
 
-	tglx
+And once something in that chain gains a new dependency, all of
+these "select" instances break.
+
+I really want all of these netlink users to "depend" on "NET"
+rather than "select" it, and so on and so forth down to the
+users of these netlink using subsystems.
