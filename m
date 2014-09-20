@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaITMls (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 08:41:48 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:48205 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110AbaITMlq (ORCPT
+	id S1755925AbaITNSl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 09:18:41 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:43825 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567AbaITNSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 08:41:46 -0400
+	Sat, 20 Sep 2014 09:18:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com>
-References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Sat, 20 Sep 2014 18:11:04 +0530
-Message-ID: <CAGOxZ535gC4cqogQrpgbjqf4qU1NrhJD7oNnReu8OwzjcWTkqg@mail.gmail.com>
-Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
-To: gregkh@linuxfoundation.org
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        robh@kernel.org, Thomas P Abraham <thomas.ab@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>
+In-Reply-To: <20140919214257.GA27574@kroah.com>
+References: <20140918174127.GB340@redhat.com>
+	<1411130664-10195-1-git-send-email-r.peniaev@gmail.com>
+	<20140919214257.GA27574@kroah.com>
+Date: Sat, 20 Sep 2014 22:18:39 +0900
+Message-ID: <CACZ9PQVEmzCSjaVX53ZoNw0MHCGeMVpXg63+URq8rYLXns6C0w@mail.gmail.com>
+Subject: Re: [v4 PATCH 1/1] init: fix race between rootfs mount and firmware loading
+From: Roman Peniaev <r.peniaev@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just realized that linux-arm-kernel email-id was wrongly typed.
-
-CCing the correct linux-arm-kernel email-id now.
-
-Sorry for the noise.
-
-
-On Tue, Sep 16, 2014 at 5:02 PM, Alim Akhtar <alim.akhtar@samsung.com> wrote:
-> Add earlycon support for the samsung serial port. This allows enabling
-> the samsung serial port for console when early_params are parse and processed.
+On Sat, Sep 20, 2014 at 6:42 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Sep 19, 2014 at 09:44:24PM +0900, Roman Pen wrote:
+>> The thing is that built-in modules are being inited before
+>> rootfs mount.  Some of the modules can request firmware loading
+>> from another thread using async 'request_firmware_nowait' call
+>> on inition, so we can catch this kind of race:
+>>    rootfs does not exist yet, but we are going to open and load
+>>    firmware file requesting it from the kernel thread.
+>>
+>> Solution is simple: before any rootfs access firmware loader
+>> must wait for rootfs mount.
 >
-> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
-> ---
->  Documentation/kernel-parameters.txt |    6 ++++++
->  drivers/tty/serial/Kconfig          |    1 +
->  drivers/tty/serial/samsung.c        |   17 +++++++++++++++++
->  3 files changed, 24 insertions(+)
+> Even simpler solution, don't do that :)
 >
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 5ae8608..e01c0e5 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -936,6 +936,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->                         must already be setup and configured. Options are not
->                         yet supported.
+> If your hardware needs firmware this early, and you don't put the
+> firmare into the initrd/initramfs, then it will just be loaded later on,
+> when the root filesystem is needed and the driver asks for it again
+> (your driver is failing "nicely" and allows the firmware to be loaded
+> later, right?  If not, that should be fixed...)
 >
-> +               samsung,<addr>
-> +                       Start an early, polled-mode console on a samsung serial
-> +                       port at the specified address. The samsung serial port
-> +                       must already be setup and configured. Options are not
-> +                       yet supported.
-> +
->                 smh     Use ARM semihosting calls for early console.
+> Or, build the firmware into the kernel, I think we still have that
+> option for some drivers that really wanted/needed this.
 >
->         earlyprintk=    [X86,SH,BLACKFIN,ARM,M68k]
-> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> index 249e340..9d42ac8 100644
-> --- a/drivers/tty/serial/Kconfig
-> +++ b/drivers/tty/serial/Kconfig
-> @@ -257,6 +257,7 @@ config SERIAL_SAMSUNG_CONSOLE
->         bool "Support for console on Samsung SoC serial port"
->         depends on SERIAL_SAMSUNG=y
->         select SERIAL_CORE_CONSOLE
-> +       select SERIAL_EARLYCON
->         help
->           Allow selection of the S3C24XX on-board serial ports for use as
->           an virtual console.
-> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-> index c78f43a..f32e9c8 100644
-> --- a/drivers/tty/serial/samsung.c
-> +++ b/drivers/tty/serial/samsung.c
-> @@ -917,6 +917,7 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
->  #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
->
->  static struct console s3c24xx_serial_console;
-> +static void s3c24xx_serial_console_putchar(struct uart_port *port, int ch);
->
->  static int __init s3c24xx_serial_console_init(void)
->  {
-> @@ -926,6 +927,22 @@ static int __init s3c24xx_serial_console_init(void)
->  console_initcall(s3c24xx_serial_console_init);
->
->  #define S3C24XX_SERIAL_CONSOLE &s3c24xx_serial_console
-> +static void samsung_early_write(struct console *con, const char *s, unsigned n)
-> +{
-> +       struct earlycon_device *dev = con->data;
-> +
-> +       uart_console_write(&dev->port, s, n, s3c24xx_serial_console_putchar);
-> +}
-> +
-> +static int __init samsung_early_console_setup(struct earlycon_device *device,
-> +                                             const char *opt)
-> +{
-> +       if (!device->port.membase)
-> +               return -ENODEV;
-> +       device->con->write = samsung_early_write;
-> +       return 0;
-> +}
-> +EARLYCON_DECLARE(samsung, samsung_early_console_setup);
->  #else
->  #define S3C24XX_SERIAL_CONSOLE NULL
->  #endif
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> What has changed recently that requires this type of patch?  What is
+> wrong with the above solutions?
 
 
+I definitely agree with that "do not do that", I do agree.
+But, I did not find any other solution, because in my case this "to be loaded
+later" really matters. The source of the problem is the rtlwifi, which randomly
+delays the startup, it randomly warns me about "firmware loading failed" and
+repeats loading later. This later costs around one second. For my tiny arm
+setup it is important. And it happens because of this race.
 
--- 
-Regards,
-Alim
+So, all I want to say with this patch is:
+
+1. 'mount / firmware loading' race exists, and it can cost time.
+2. it affects the path of firmware loading (under the path I mean call
+chain, not
+    the path on the rootfs): sometimes firmware can be loaded on first
+try by the
+    request from the kernel, sometimes it can be loaded by push from userspace,
+    sometimes it can be loaded from next retry from kernel
+3. the firmware loading path is always unpredictable.
+
+It turns out to be that to have predictable loading path and predictable timings
+I have to build firmware into the kernel, that means that
+request_firmware mechanics
+does not work as expected, because it relies on the 'rootfs exists'
+statement, but it is
+not always true.
+
+Frankly speaking I also do not like this patch, but as I told I did
+not find any other _good_
+solution . If we can discuss here better way, I can do further work
+towards improvements
+of request_firmware. Of course if it really makes any sense.
+
+--
+Roman
