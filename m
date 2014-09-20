@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbaITJQI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 05:16:08 -0400
-Received: from sauhun.de ([89.238.76.85]:58280 "EHLO pokefinder.org"
+	id S1752389AbaITJYo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 05:24:44 -0400
+Received: from sauhun.de ([89.238.76.85]:58336 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaITJQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 05:16:04 -0400
-Date: Sat, 20 Sep 2014 11:16:22 +0200
+	id S1751030AbaITJYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 05:24:42 -0400
+Date: Sat, 20 Sep 2014 11:24:57 +0200
 From: Wolfram Sang <wsa@the-dreams.de>
-To: Mikko Perttunen <cyndis@kapsi.fi>
-Cc: ldewangan@nvidia.com, swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-i2c@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH v2] i2c: i2c-tegra: Move clk_prepare/clk_set_rate to probe
-Message-ID: <20140920091622.GC1612@katana>
-References: <1409909298-11361-1-git-send-email-cyndis@kapsi.fi>
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, atull@opensource.altera.com,
+        baruch@tkos.co.il, grant.likely@linaro.org, robh+dt@kernel.org,
+        skuribay@pobox.com, alan@linux.intel.com, devicetree@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com, Romain Baeriswyl <romainba@abilis.com>
+Subject: Re: [PATCH] i2c designware add support of I2C standard mode
+Message-ID: <20140920092456.GD1612@katana>
+References: <20140820124231.GD21734@leverpostej>
+ <1408544948-22339-1-git-send-email-romainba@abilis.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
+	protocol="application/pgp-signature"; boundary="IMjqdzrDRly81ofr"
 Content-Disposition: inline
-In-Reply-To: <1409909298-11361-1-git-send-email-cyndis@kapsi.fi>
+In-Reply-To: <1408544948-22339-1-git-send-email-romainba@abilis.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---oJ71EGRlYNjSvfq7
+--IMjqdzrDRly81ofr
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Sep 05, 2014 at 12:28:18PM +0300, Mikko Perttunen wrote:
-> From: Mikko Perttunen <mperttunen@nvidia.com>
+On Wed, Aug 20, 2014 at 04:29:08PM +0200, Romain Baeriswyl wrote:
+> From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
 >=20
-> Currently the i2c-tegra bus driver prepares, enables
-> and set_rates its clocks separately for each transfer.
-> This causes locking problems when doing I2C transfers
-> from clock notifiers; see
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/268653.ht=
-ml
+> Some legacy devices support ony I2C standard mode at 100kHz.
+> This patch allows to select the standard mode through the DTS
+> with the use of the existing clock-frequency parameter.
 >=20
-> This patch moves clk_prepare/unprepare and clk_set_rate calls to
-> the probe function, leaving only clk_enable/disable to be
-> done on each transfer. This solves the locking issue.
+> When clock-frequency parameter is not set, the fast mode is selected.
+> Only when the parameter is set at 100000, the standard mode is selected.
 >=20
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
+> Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-Applied to for-current, thanks!
+Applied to for-next, thanks to all involved!
 
 
---oJ71EGRlYNjSvfq7
+--IMjqdzrDRly81ofr
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUHUXmAAoJEBQN5MwUoCm28ZYP/iIYviAk+B8pKLMWEIh1eX9I
-oKYcs4KqGu3tH5ArnHUHwaG0CAd/i/GWCKmNpaC3OQDhUxl39bZ5DIYMsF1dYtpL
-eUaBOUfOOzO8JepOosvwwZfoW4dETpsmSabogNAOyQdtE+kLKJN26/Cl1wj6fQTR
-753pdVN+2v4tEMQ4Thvo10gwyxS8yNzilhS/kBDWEcl3qyxE/RehpxZxGg8MFckj
-dx3MlKGLZ0G8+NUkqpvKWid8cf7j+ApvZCCHSD1cUV9/LxgfX0XuKlZcE8Ac981N
-vZxpLmvTt2u9NwPHFXbBXyFOH+Q49dWMYDrLayoBulvTLnbvH8YJ67RqzlRKFSOt
-RwqHGkXgHWrzhBbmDFGXoKPn5d5Cv7OamWMg/jzNPu6YoHCRxatKeCoHrH8U31gG
-0j+7kRdCtrNlUYKGurIHLiCimwLGCyqH9YoBW69mKuOmiP/IAr0P3IzoTAB2g5Nc
-SZCpesj29QpO9ovqLQy4g0DBJl2qwli5haJjtXhcOJrjRgUW+aLTh8RKSAwmMm9/
-HWwDnqPFG8EVhY/vi88DK94n1bRKbjK26Ivvvhr2S8FW6BkKnp8Uj9QmzHsduzJx
-oDugZRlQNeATxHbnULQnUqnDPsPRpBjdhUMbI+l8YrxN90JDYelOUtOxXEMongwk
-nX2KELemU4A30tSClQEg
-=ZLCh
+iQIcBAEBAgAGBQJUHUfnAAoJEBQN5MwUoCm2t9QP/12DCp+hYOUOhe3RXptqazuS
+CemJ/K01ugpHiL6/VS8iqFZ6WHNp6+1sz/rAf6xJqf65HaWDvAX5BKRQpJW37EH6
+/GcxYDfsPlDFZbGcCd3kR3r+i5KBrCeWdlBHQIbWo1IiLD0OElsCJdAEothT2wZC
+llXjAHJYNBYXUQbyVoeyt6HDdWvJVZdjrBi5eT5EL5oP+w3Fl5sh3vnEdHFi88cw
+IYhqcUP/9MpRSsQ+4LpsNe6fGBZ6ss49ELKKnAfNPdurYAZy/X4Vv9vJZwJh6zly
+c89lIfBtSikVjBq/utMXqh35Wgeb15HLaw0qxW7q7mqOLYxEYlpVTv+p9kXQrvxk
+rKXwQqpkPi2SYfTmxQFEvrhbFSBZiHwCI77BZA7WZ1AbysnagCtPx5mWVNMx0q2t
+jB4TVGo/hHmkDkvWKOpKxFN80Bnga8iwTZpVY2eKeXkh6MUniVrkhUnpvWSGMqRz
+z+GCCLShW8mokEDCk6esPMyLR2GQzYrUDGACiglbEagxyorHncnXypBAeo+XpSwK
+vjTsUXigsQGgA98fGZGWVWP8eQqUHFJIbUg42sSkHwoHKkSk1wVGwFRg/DDP3C+U
+bR13tjmM9CzuGbuHSVszh9JnSYHCfAuLzgCmaxD7fnF4MuQ4EVwqz7v1b3EYxWHo
+XfNsKTZIirQPmgDsgG1P
+=7Dl/
 -----END PGP SIGNATURE-----
 
---oJ71EGRlYNjSvfq7--
+--IMjqdzrDRly81ofr--
