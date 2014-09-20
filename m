@@ -1,246 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaITXWk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 19:22:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12731 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaITXWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 19:22:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,562,1406617200"; 
-   d="scan'208";a="594356439"
-Message-ID: <1411255352.10688.7.camel@yhuang-mobile.sh.intel.com>
-Subject: Re: [PATCH 3/3] f2fs: fix roll-forward missing scenarios
-From: Huang Ying <ying.huang@intel.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Date: Sun, 21 Sep 2014 07:22:32 +0800
-In-Reply-To: <20140920162358.GA18133@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1411019468-2201-1-git-send-email-jaegeuk@kernel.org>
-	 <1411019468-2201-3-git-send-email-jaegeuk@kernel.org>
-	 <CAC=cRTPotgNXbuPwG95HHuWiicS2OiD5R3HsOqdMG+2b=8ZyEg@mail.gmail.com>
-	 <20140920162358.GA18133@jaegeuk-mac02.hsd1.ca.comcast.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751358AbaITXa7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 19:30:59 -0400
+Received: from rgout06.bt.lon5.cpcloud.co.uk ([65.20.0.183]:11397 "EHLO
+	rgout06.bt.lon5.cpcloud.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750912AbaITXa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 19:30:58 -0400
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Sep 2014 19:30:58 EDT
+X-CTCH-RefID: str=0001.0A090204.541E0CA9.004E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-Junkmail-Premium-Raw: score=28/50,refid=2.7.2:2014.9.19.71820:17:28.905,ip=31.50.239.172,rules=__HAS_FROM,
+ __PHISH_FROM2, __FRAUD_WEBMAIL_FROM, __TO_MALFORMED_2, __TO_NO_NAME,
+ __MULTIPLE_RCPTS_CC_X2, __SUBJ_ALPHA_END, __HAS_MSGID, __SANE_MSGID,
+ __HAS_X_MAILER, __ANY_URI, __FRAUD_BODY_WEBMAIL, __URI_NO_WWW, __URI_NO_PATH,
+ BODYTEXTP_SIZE_3000_LESS, BODY_SIZE_1200_1299, __MIME_TEXT_ONLY,
+ RDNS_GENERIC_POOLED, __URI_NS, SXL_IP_DYNAMIC[172.239.50.31.fur], HTML_00_01,
+ HTML_00_10, BODY_SIZE_5000_LESS, RDNS_SUSP_GENERIC, __PHISH_FROM,
+ MULTIPLE_RCPTS, __PHISH_SPEAR_STRUCTURE_1, RDNS_SUSP, BODY_SIZE_2000_LESS,
+ __FRAUD_WEBMAIL, BODY_SIZE_7000_LESS
+X-CTCH-Spam: Unknown
+From: Mike Roocroft <mike.linux@btinternet.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        mike.linux@btinternet.com
+Subject: [PATCH] Staging: Skein: skein_block: fixed 3 tab coding style isses
+Date: Sun, 21 Sep 2014 00:27:07 +0100
+Message-Id: <1411255627-27297-1-git-send-email-mike.linux@btinternet.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-09-20 at 09:23 -0700, Jaegeuk Kim wrote:
-> On Thu, Sep 18, 2014 at 09:04:11PM +0800, huang ying wrote:
-> > On Thu, Sep 18, 2014 at 1:51 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> > 
-> > > We can summarize the roll forward recovery scenarios as follows.
-> > >
-> > > [Term] F: fsync_mark, D: dentry_mark
-> > >
-> > > 1. inode(x) | CP | inode(x) | dnode(F)
-> > > -> Update the latest inode(x).
-> > >
-> > > 2. inode(x) | CP | inode(F) | dnode(F)
-> > > -> No problem.
-> > >
-> > > 3. inode(x) | CP | dnode(F) | inode(x)
-> > > -> Recover to the latest dnode(F), and drop the last inode(x)
-> > >
-> > > 4. inode(x) | CP | dnode(F) | inode(F)
-> > > -> No problem.
-> > >
-> > > 5. CP | inode(x) | dnode(F)
-> > > -> The inode(DF) was missing. Should drop this dnode(F).
-> > >
-> > > 6. CP | inode(DF) | dnode(F)
-> > > -> No problem.
-> > >
-> > > 7. CP | dnode(F) | inode(DF)
-> > > -> If f2fs_iget fails, then goto next to find inode(DF).
-> > >
-> > > 8. CP | dnode(F) | inode(x)
-> > > -> If f2fs_iget fails, then goto next to find inode(DF).
-> > >    But it will fail due to no inode(DF).
-> > >
-> > > So, this patch adds some missing points such as #1, #5, #7, and #8.
-> > >
-> > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > ---
-> > >  fs/f2fs/recovery.c | 71
-> > > +++++++++++++++++++++++++++++++++++++++++++++---------
-> > >  1 file changed, 60 insertions(+), 11 deletions(-)
-> > >
-> > > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> > > index 36d4f73..a4eb978 100644
-> > > --- a/fs/f2fs/recovery.c
-> > > +++ b/fs/f2fs/recovery.c
-> > > @@ -14,6 +14,37 @@
-> > >  #include "node.h"
-> > >  #include "segment.h"
-> > >
-> > > +/*
-> > > + * Roll forward recovery scenarios.
-> > > + *
-> > > + * [Term] F: fsync_mark, D: dentry_mark
-> > > + *
-> > > + * 1. inode(x) | CP | inode(x) | dnode(F)
-> > > + * -> Update the latest inode(x).
-> > > + *
-> > > + * 2. inode(x) | CP | inode(F) | dnode(F)
-> > > + * -> No problem.
-> > > + *
-> > > + * 3. inode(x) | CP | dnode(F) | inode(x)
-> > > + * -> Recover to the latest dnode(F), and drop the last inode(x)
-> > > + *
-> > > + * 4. inode(x) | CP | dnode(F) | inode(F)
-> > > + * -> No problem.
-> > > + *
-> > > + * 5. CP | inode(x) | dnode(F)
-> > > + * -> The inode(DF) was missing. Should drop this dnode(F).
-> > > + *
-> > > + * 6. CP | inode(DF) | dnode(F)
-> > > + * -> No problem.
-> > > + *
-> > > + * 7. CP | dnode(F) | inode(DF)
-> > > + * -> If f2fs_iget fails, then goto next to find inode(DF).
-> > > + *
-> > > + * 8. CP | dnode(F) | inode(x)
-> > > + * -> If f2fs_iget fails, then goto next to find inode(DF).
-> > > + *    But it will fail due to no inode(DF).
-> > > + */
-> > > +
-> > >  static struct kmem_cache *fsync_entry_slab;
-> > >
-> > >  bool space_for_roll_forward(struct f2fs_sb_info *sbi)
-> > > @@ -110,27 +141,32 @@ out:
-> > >         return err;
-> > >  }
-> > >
-> > > -static int recover_inode(struct inode *inode, struct page *node_page)
-> > > +static void __recover_inode(struct inode *inode, struct page *page)
-> > >  {
-> > > -       struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
-> > > +       struct f2fs_inode *raw = F2FS_INODE(page);
-> > > +
-> > > +       inode->i_mode = le16_to_cpu(raw->i_mode);
-> > > +       i_size_write(inode, le64_to_cpu(raw->i_size));
-> > > +       inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
-> > > +       inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
-> > > +       inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
-> > > +       inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-> > > +       inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
-> > > +       inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-> > > +}
-> > >
-> > > +static int recover_inode(struct inode *inode, struct page *node_page)
-> > > +{
-> > >         if (!IS_INODE(node_page))
-> > >                 return 0;
-> > >
-> > > -       inode->i_mode = le16_to_cpu(raw_inode->i_mode);
-> > > -       i_size_write(inode, le64_to_cpu(raw_inode->i_size));
-> > > -       inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-> > > -       inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
-> > > -       inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-> > > -       inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-> > > -       inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
-> > > -       inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-> > > +       __recover_inode(inode, node_page);
-> > >
-> > >         if (is_dent_dnode(node_page))
-> > >                 return recover_dentry(node_page, inode);
-> > >
-> > >         f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name
-> > > = %s",
-> > > -                       ino_of_node(node_page), raw_inode->i_name);
-> > > +                       ino_of_node(node_page),
-> > > F2FS_INODE(node_page)->i_name);
-> > >         return 0;
-> > >  }
-> > >
-> > > @@ -183,10 +219,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info
-> > > *sbi, struct list_head *head)
-> > >                                 break;
-> > >                         }
-> > >
-> > > +                       /*
-> > > +                        * CP | dnode(F) | inode(DF)
-> > > +                        * For this case, we should not give up now.
-> > > +                        */
-> > >                         entry->inode = f2fs_iget(sbi->sb,
-> > > ino_of_node(page));
-> > >                         if (IS_ERR(entry->inode)) {
-> > >                                 err = PTR_ERR(entry->inode);
-> > >                                 kmem_cache_free(fsync_entry_slab, entry);
-> > > +                               if (err == -ENOENT)
-> > > +                                       goto next;
-> > >                                 break;
-> > >                         }
-> > >                         list_add_tail(&entry->list, head);
-> > > @@ -423,6 +465,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
-> > >                 entry = get_fsync_inode(head, ino_of_node(page));
-> > >                 if (!entry)
-> > >                         goto next;
-> > > +               /*
-> > > +                * inode(x) | CP | inode(x) | dnode(F)
-> > > +                * In this case, we can lose the latest inode(x).
-> > > +                * So, call __recover_inode for the inode update.
-> > > +                */
-> > >
-> > 
-> > With 2/3, because both IS_CHECKPOINTED and HAS_FSYNCED_INODE flag are unset
-> > for inode, we will append a inode(F).
-> 
-> No, inode(F) is not appended.
-> Please check the fsync rule #1.
+Fixed a coding style issue
 
->From implementation of need_inode_block_update, we do not append an
-inode(F) or inode(DF), only if:
+Signed-off-by: Mike Roocroft <mike.linux@btinternet.com>
+---
+ drivers/staging/skein/skein_block.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-  get_nat_flag(e, HAS_LAST_FSYNC) &&
-          (get_nat_flag(e, IS_CHECKPOINTED) ||
-           get_nat_flag(e, HAS_FSYNCED_INODE)))
-
-e is nat entry for the inode.
-
-For inode(x) | CP | inode(x) | dnode(F)
-
-We have:
-
-HAS_LAST_FSYNC:    true
-IS_CHECKPOINTED:   false
-HAS_FSYNCED_INODE: false
-
-So we will append a inode(DF) here.
-
-> > So we do not need to call
-> > __recover_inode here?
-
-Thought again, __recover_inode here may be helpful here for the
-following situation:
-
-inode(x) | CP | inode(x) | dnode(F) | inode(DF)
-                                    |
-                                    v
-                               Sudden power off
-
-That is, sudden power off before writing inode(DF).
-
-So I think we should keep the code, but maybe change the comments?
-
-Best Regards,
-Huang, Ying
-
-> > 
-> > 
-> > > +               if (IS_INODE(page))
-> > > +                       __recover_inode(entry->inode, page);
-> > >
-> > >                 err = do_recover_data(sbi, entry->inode, page, blkaddr);
-> > >                 if (err) {
-> > > --
-> > >
-
+diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
+index 04ce1d0..b969fe1 100644
+--- a/drivers/staging/skein/skein_block.c
++++ b/drivers/staging/skein/skein_block.c
+@@ -34,7 +34,7 @@
+ 
+ #ifdef SKEIN_DEBUG
+ #define debug_save_tweak(ctx) { \
+-                        ctx->h.tweak[0] = ts[0]; ctx->h.tweak[1] = ts[1]; }
++			ctx->h.tweak[0] = ts[0]; ctx->h.tweak[1] = ts[1]; }
+ #else
+ #define debug_save_tweak(ctx)
+ #endif
+@@ -378,7 +378,7 @@ do { \
+ 	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
+ } while (0)
+ 
+-		for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
++	for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
+ #endif /* end of looped code definitions */
+ 		{
+ #define R512_8_ROUNDS(R)  /* do 8 full rounds */  \
+@@ -657,7 +657,7 @@ do { \
+ 	skein_show_r_ptr(BLK_BITSi, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
+ } while (0)
+ 
+-		for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
++	for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
+ #endif
+ 		{
+ #define R1024_8_ROUNDS(R) \
+-- 
+2.1.0
 
