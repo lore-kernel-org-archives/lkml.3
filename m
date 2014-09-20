@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226AbaITR2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 13:28:24 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:57377 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665AbaITR2W (ORCPT
+	id S1757132AbaITRdh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 13:33:37 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39464 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794AbaITRdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 13:28:22 -0400
-Date: Sat, 20 Sep 2014 13:28:19 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zefan Li <lizefan@huawei.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, peterz@infradead.org,
-        mingo@redhat.com, akpm@linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fernando_b1@lab.ntt.co.jp
-Subject: Re: Racy manipulation of task_struct->flags in cgroups code causes
- hard to reproduce kernel panics
-Message-ID: <20140920172819.GD3681@htj.dyndns.org>
-References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
- <541D16EA.70407@huawei.com>
+	Sat, 20 Sep 2014 13:33:33 -0400
+Message-ID: <541DBA65.60107@hitachi.com>
+Date: Sun, 21 Sep 2014 02:33:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <541D16EA.70407@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/4] ftracetest: Initial commit for ftracetest
+References: <20140918120437.28308.72301.stgit@kbuild-f20.novalocal> <20140918120445.28308.57538.stgit@kbuild-f20.novalocal> <541AD905.6000700@osg.samsung.com> <541B80DE.1060902@hitachi.com> <541C3823.4090203@osg.samsung.com> <20140919104205.288cf493@gandalf.local.home>
+In-Reply-To: <20140919104205.288cf493@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Sat, Sep 20, 2014 at 01:55:54PM +0800, Zefan Li wrote:
-> > Then, what made current->flags to unexpectedly preserve PF_USED_MATH flag?
-> > The user is running cgrulesengd process in order to utilize cpuset cgroup.
-> > Thus, cpuset_update_task_spread_flag() is called when cgrulesengd process
-> > writes someone's pid to /cgroup/cpuset/$group/tasks interface.
-> > 
-> > cpuset_update_task_spread_flag() is updating other thread's
-> > "struct task_struct"->flags without exclusion control or atomic
-> > operations!
-> > 
-> > ---------- linux-2.6.32-358.23.2.el6/kernel/cpuset.c ----------
-> > 300:/*
-> > 301: * update task's spread flag if cpuset's page/slab spread flag is set
-> > 302: *
-> > 303: * Called with callback_mutex/cgroup_mutex held
-> > 304: */
-> > 305:static void cpuset_update_task_spread_flag(struct cpuset *cs,
-> > 306:                                    struct task_struct *tsk)
-> > 307:{
-> > 308:    if (is_spread_page(cs))
-> > 309:            tsk->flags |= PF_SPREAD_PAGE;
-> > 310:    else
-> > 311:            tsk->flags &= ~PF_SPREAD_PAGE;
-> > 312:    if (is_spread_slab(cs))
-> > 313:            tsk->flags |= PF_SPREAD_SLAB;
-> > 314:    else
-> > 315:            tsk->flags &= ~PF_SPREAD_SLAB;
-> > 316:}
+(2014/09/19 23:42), Steven Rostedt wrote:
+> On Fri, 19 Sep 2014 08:05:23 -0600
+> Shuah Khan <shuahkh@osg.samsung.com> wrote:
 > 
-> We should make the updating of this flag atomic.
+> 
+>> I am not concerned about the spacing.
+>>
+>> Thanks for doing running the make kselftest target and sharing
+>> the results. selftests don't get built or run in integ test
+>> rings. I am working on addressing this at the moment.
+>>
+>> Steven!
+>>
+>> Could you please take this through your tree. You have my
+>>
+>> Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
+>>
+>> for the selftests Makefile
+> 
+> OK, thanks!
+> 
+> I'll start trying to get my own personal tests working here.
 
-Ugh, why do we even implement that in cpuset.  This should be handled
-by MPOL_INTERLEAVE.  It feels like people have been using cpuset as
-the dumpsite that people used w/o thinking much.  Going forward, let's
-please confine cpuset to collective cpu and memory affinity
-configuration.  It really shouldn't be implementing novel features for
-scheduler or mm.
+Great :)
 
-Anyways, yeah, the patch looks correct to me.  Can you please send a
-version w/ proper description and sob?
+> 
+> It may take some work as my tests may run for 10s of minutes, as they
+> are more stress tests than a pass/fail thing. But I should have
+> something other people can use. I'll continue using both my own
+> personal tests as well as trying the new stuff that gets put here.
 
-Thanks.
+I think you can also put your stress tests in the ftrace/ directory
+(or just make a sub-directory for them). Even ftracetest doesn't
+run them, we can update Makefile so that kselftest can run them.
+For example, I will add a testcase for my IPMODFIY as a separated
+test(ftrace/ipmodify), since it involves some special kernel modules
+and doesn't use ftrace debugfs interface but tests ftrace(function trace).
+
+Thank you,
+
 
 -- 
-tejun
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
