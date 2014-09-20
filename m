@@ -1,35 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753AbaITOKH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 10:10:07 -0400
-Received: from [58.27.64.247] ([58.27.64.247]:33048 "EHLO
-	mail2.airforce.gov.my" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149AbaITOKF (ORCPT
+	id S1756278AbaITOPt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 10:15:49 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:39320 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754921AbaITOPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 10:10:05 -0400
-X-Greylist: delayed 1896 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Sep 2014 10:10:03 EDT
-DKIM-Filter: OpenDKIM Filter v2.8.4 mail.airforce.gov.my 1D99A1983ED7
-Date: Sat, 20 Sep 2014 22:09:41 +0800 (MYT)
-From: Finance Department <bu.subang@airforce.gov.my>
-Reply-To: Finance Department <dpfuk@qq.com>
-Message-ID: <817703956.125780.1411222181255.JavaMail.zimbra@airforce.gov.my>
-Subject: Payment
+	Sat, 20 Sep 2014 10:15:48 -0400
+From: Valentin Rothberg <valentinrothberg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Stefan Hengelein <stefan.hengelein@fau.de>
+Subject: [PATCH] checkkconfigsymbols.sh: reimplementation in python
+Date: Sat, 20 Sep 2014 16:15:24 +0200
+Message-Id: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [197.220.169.18]
-X-Mailer: Zimbra 8.0.6_GA_5922 (zclient/8.0.6_GA_5922)
-Thread-Topic: Payment
-Thread-Index: nTnDa8M2xPOt4zFPLAqAgOTzxaQp4g==
-X-FEAS-SYSTEM-WL: 10.1.1.21
-X-FEAS-DKIM: Valid
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Recipient,
+The scripts/checkkconfigsymbols.sh script searches Kconfig features
+in the source code that are not defined in Kconfig. Such identifiers
+always evaluate to false and are the source of various kinds of bugs.
+However, the shell script is slow and it does not detect such broken
+references in Kbuild and Kconfig files (e.g., ``depends on UNDEFINED´´).
+Furthermore, it generates false positives (4 of 526 in v3.17-rc1).
+The script is also hard to read and understand, and is thereby difficult
+to maintain.
 
-You have been awarded the sum of  8,000,000.00 (Eight Million Pounds sterling) with reference number 77100146 by office of the ministry of finance UK.Send us your personal details to deliver your funds.
+This patch replaces the shell script with an implementation in Python,
+which:
+    (a) detects the same bugs, but does not report false positives
+    (b) additionally detects broken references in Kconfig and Kbuild files
+    (c) is up to 75 times faster than the shell script
 
-Gloria Pete
+The new script reduces the runtime on my machine (i7-2620M, 8GB RAM, SSD)
+from 3m47s to 0m3s, and detects 572 broken references in Linux v3.17-rc1;
+49 additional references of which 17 are located in Kconfig files.
+
+Moreover, we intentionally include references in C comments, which have been
+ignored until now. Such comments may be leftovers of features that have
+been removed or renamed in Kconfig (e.g., ``#endif /* CONFIG_MPC52xx */´´).
+These references can be misleading and should be removed or replaced.
+
+Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
+Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+---
+ scripts/checkkconfigsymbols.py | 134 +++++++++++++++++++++++++++++++++++++++++
+ scripts/checkkconfigsymbols.sh |  59 ------------------
+ 2 files changed, 134 insertions(+), 59 deletions(-)
+ create mode 100644 scripts/checkkconfigsymbols.py
+ delete mode 100755 scripts/checkkconfigsymbols.sh
+
+diff --git a/scripts/checkkconfigsymbols.py b/scripts/checkkconfigsymbols.py
+new file mode 100644
+index 0000000..0157426
+--- /dev/null
++++ b/scripts/checkkconfigsymbols.py
+@@ -0,0 +1,134 @@
++#!/usr/bin/env python
++
++"""Find Kconfig identifieres that are referenced but not defined."""
++
++# Copyright (C) 2014 Valentin Rothberg <valentinrothberg@gmail.com>
++# Copyright (C) 2014 Stefan Hengelein <stefan.hengelein@fau.de>
++#
++# This program is free software; you can redistribute it and/or modify it
++# under the terms and conditions of the GNU General Public License,
++# version 2, as published by the Free Software Foundation.
++#
++# This program is distributed in the hope it will be useful, but WITHOUT
++# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
++# more details.
++
++
++import os
++import re
++import sys
++
++# REGEX EXPRESSIONS
++OPERATORS = r"[|\s|&|\(|\)|\||\!]"
++FEATURE = r"[\w]*[A-Z]+[\w]*"
++EXPR = OPERATORS + r"*([" + FEATURE + r"]*)*" + OPERATORS + r"*"
++IF_STMT = r"^\s*if\s+" + EXPR + r""
++SELECT_STMT = r"^\s*select\s+" + EXPR + r""
++DEPENDS_STMT = r"^\s*depends\s+on\s+" + EXPR + r""
++CONFIG_STMT = r"^\s*[menu]*config\s+(" + FEATURE + r")"
++
++# REGEX OBJECTS
++REGEX_EXPR = re.compile(EXPR)
++REGEX_KCONFIG = re.compile(r"Kconfig[\.\w+]*")
++REGEX_SOURCE = re.compile(r"\.[cSh]$")
++REGEX_MAKE = re.compile(r"Makefile|Kbuild[\.\w+]*")
++REGEX_KCONFIG_HELP = re.compile(r"[\s|-]*help[\s|-]*")
++REGEX_CONFIG_STMT = re.compile(CONFIG_STMT)
++REGEX_DEPENDS_STMT = re.compile(DEPENDS_STMT)
++REGEX_SELECT_STMT = re.compile(SELECT_STMT)
++REGEX_IF_STMT = re.compile(IF_STMT)
++REGEX_FEATURES = re.compile(r"[\W]+CONFIG_(" + FEATURE + r")[.]*")
++
++
++def main():
++    """Main function of this module."""
++    output = []
++    kconfig_files = []
++    source_files = []
++    defined_features = set()
++    referenced_features = dict()
++
++    for root, _, files in os.walk("."):
++        for fil in files:
++            if REGEX_KCONFIG.match(fil):
++                kconfig_files.append(os.path.join(root, fil))
++            elif REGEX_SOURCE.search(fil) or REGEX_MAKE.match(fil):
++                source_files.append(os.path.join(root, fil))
++
++    for kfile in kconfig_files:
++        parse_kconfig_file(kfile, defined_features, referenced_features)
++    for sfile in source_files:
++        parse_source_file(sfile, referenced_features)
++
++    print "File list\tundefined symbol used"
++    for feature in referenced_features.keys():
++        if feature not in defined_features:
++            files = referenced_features.get(feature)
++            output.append("%s:\t%s" % (", ".join(files), feature))
++    for out in sorted(output):
++        print out
++
++
++def parse_source_file(sfile, referenced_features):
++    """Parse @sfile for referenced Kconfig features."""
++    lines = []
++    with open(sfile, "r") as stream:
++        lines = stream.readlines()
++
++    for line in lines:
++        if not "CONFIG_" in line:
++            continue
++        features = REGEX_FEATURES.findall(line)
++        for feat in features:
++            if feat.endswith("_MODULE"):
++                feat = feat[:-len("_MODULE")]
++            paths = referenced_features.get(feat, set())
++            paths.add(sfile)
++            referenced_features[feat] = paths
++
++
++def get_items_in_line(line):
++    """Return mentioned kconfig items in @line."""
++    return REGEX_EXPR.findall(line)
++
++
++def parse_kconfig_file(kfile, defined_features, referenced_features):
++    """Parse @kfile and update feature definitions and references."""
++    lines = []
++    with open(kfile, "r") as stream:
++        lines = stream.readlines()
++
++    skip = False
++    for i in range(len(lines)):
++        line = lines[i]
++        line = line.strip('\n')
++        line = line.split("#")[0]  # Ignore right side of comments
++
++        definition = REGEX_CONFIG_STMT.findall(line)
++        if definition:
++            defined_features.add(definition[0])
++            skip = False
++        elif REGEX_KCONFIG_HELP.match(line):
++            skip = True
++        elif skip:
++            # Ignore content of help messages
++            pass
++        elif REGEX_DEPENDS_STMT.match(line) or \
++                REGEX_SELECT_STMT.match(line) or \
++                REGEX_IF_STMT.match(line):
++            items = get_items_in_line(line)
++            # Multi-line statements
++            while line.endswith("\\"):
++                i += 1
++                line = lines[i]
++                line = line.strip('\n')
++                items.extend(get_items_in_line(line))
++            for item in set(items):
++                paths = referenced_features.get(kfile, set())
++                paths.add(kfile)
++                referenced_features[item] = paths
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/checkkconfigsymbols.sh b/scripts/checkkconfigsymbols.sh
+deleted file mode 100755
+index ccb3391..0000000
+--- a/scripts/checkkconfigsymbols.sh
++++ /dev/null
+@@ -1,59 +0,0 @@
+-#!/bin/sh
+-# Find Kconfig variables used in source code but never defined in Kconfig
+-# Copyright (C) 2007, Paolo 'Blaisorblade' Giarrusso <blaisorblade@yahoo.it>
+-
+-# Tested with dash.
+-paths="$@"
+-[ -z "$paths" ] && paths=.
+-
+-# Doing this once at the beginning saves a lot of time, on a cache-hot tree.
+-Kconfigs="`find . -name 'Kconfig' -o -name 'Kconfig*[^~]'`"
+-
+-printf "File list \tundefined symbol used\n"
+-find $paths -name '*.[chS]' -o -name 'Makefile' -o -name 'Makefile*[^~]'| while read i
+-do
+-	# Output the bare Kconfig variable and the filename; the _MODULE part at
+-	# the end is not removed here (would need perl an not-hungry regexp for that).
+-	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Za-z_]\+\).*!\2 '$i'!p' < $i
+-done | \
+-# Smart "sort|uniq" implemented in awk and tuned to collect the names of all
+-# files which use a given symbol
+-awk '{map[$1, count[$1]++] = $2; }
+-END {
+-	for (combIdx in map) {
+-		split(combIdx, separate, SUBSEP);
+-		# The value may have been removed.
+-		if (! ( (separate[1], separate[2]) in map ) )
+-			continue;
+-		symb=separate[1];
+-		printf "%s ", symb;
+-		#Use gawk extension to delete the names vector
+-		delete names;
+-		#Portably delete the names vector
+-		#split("", names);
+-		for (i=0; i < count[symb]; i++) {
+-			names[map[symb, i]] = 1;
+-			# Unfortunately, we may still encounter symb, i in the
+-			# outside iteration.
+-			delete map[symb, i];
+-		}
+-		i=0;
+-		for (name in names) {
+-			if (i > 0)
+-				printf ", %s", name;
+-			else
+-				printf "%s", name;
+-			i++;
+-		}
+-		printf "\n";
+-	}
+-}' |
+-while read symb files; do
+-	# Remove the _MODULE suffix when checking the variable name. This should
+-	# be done only on tristate symbols, actually, but Kconfig parsing is
+-	# beyond the purpose of this script.
+-	symb_bare=`echo $symb | sed -e 's/_MODULE//'`
+-	if ! grep -q "\<$symb_bare\>" $Kconfigs; then
+-		printf "$files: \t$symb\n"
+-	fi
+-done|sort
+-- 
+1.9.1
+
