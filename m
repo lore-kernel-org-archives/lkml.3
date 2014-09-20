@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbaITGnO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 02:43:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36879 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaITGnM (ORCPT
+	id S1751621AbaITGtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 02:49:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:10635 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaITGtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 02:43:12 -0400
-Date: Fri, 19 Sep 2014 23:42:37 -0700
-From: tip-bot for Chuck Ebbert <tipbot@zytor.com>
-Message-ID: <tip-a3215fb47c7ecb814dc16815245db4f375841268@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        cebbert.lkml@gmail.com, james.hogan@imgtec.com, atomlin@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cebbert.lkml@gmail.com, james.hogan@imgtec.com, tglx@linutronix.de,
-        atomlin@redhat.com
-In-Reply-To: <20140919093505.62681e43@as>
-References: <20140919093505.62681e43@as>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix end_of_stack()
-  and location of stack canary for architectures using CONFIG_STACK_GROWSUP
-Git-Commit-ID: a3215fb47c7ecb814dc16815245db4f375841268
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 20 Sep 2014 02:49:15 -0400
+Message-ID: <541D2366.2020107@huawei.com>
+Date: Sat, 20 Sep 2014 14:49:10 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Tejun Heo <tj@kernel.org>
+CC: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cgroup: remove redundant variable in cgroup_mount()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a3215fb47c7ecb814dc16815245db4f375841268
-Gitweb:     http://git.kernel.org/tip/a3215fb47c7ecb814dc16815245db4f375841268
-Author:     Chuck Ebbert <cebbert.lkml@gmail.com>
-AuthorDate: Fri, 19 Sep 2014 09:35:05 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 20 Sep 2014 08:38:16 +0200
+Both pinned_sb and new_sb indicate if a new superblock is needed,
+so we can just remove new_sb.
 
-sched: Fix end_of_stack() and location of stack canary for architectures using CONFIG_STACK_GROWSUP
+Note now we must check if kernfs_tryget_sb() returns NULL, because
+when it returns NULL, kernfs_mount() may still re-use an existing
+superblock, which is just allocated by another concurent mount.
 
-Aaron Tomlin recently posted patches to enable checking the
-stack canary on every task switch:
-
-  http://lkml.org/lkml/2014/9/12/293
-
-Looking at the canary code, I realized that every arch
-(except ia64, which adds some space for register spill
-above the stack) shares a definition of end_of_stack()
-that makes it the first long after the threadinfo.
-
-For stacks that grow down, this low address is correct
-because the stack starts at the end of the thread area
-and grows toward lower addresses. However, for stacks
-that grow up, toward higher addresses, this is wrong.
-(The stack actually grows away from the canary.)
-
-On these archs end_of_stack() should return the address
-of the last long, at the highest possible address for
-the stack.
-
-Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
-Tested-by: James Hogan <james.hogan@imgtec.com> [metag]
-Acked-by: James Hogan <james.hogan@imgtec.com>
-Acked-by: Aaron Tomlin <atomlin@redhat.com>
-Link: http://lkml.kernel.org/r/20140919093505.62681e43@as
-[ Added comments to end_of_stack(). ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Suggested-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- include/linux/sched.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..0e20a24 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2608,9 +2608,22 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
- 	task_thread_info(p)->task = p;
- }
+Hi Tejun,
+
+I think you wanted to see the @new_sb argument removed from kernfs_mount(),
+but it's also used in debugfs and we can't use kernfs_tryget_sb() to
+replace the new_sb check.
+
+---
+ kernel/cgroup.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 33f15b3..15a2387 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1694,7 +1694,6 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	struct dentry *dentry;
+ 	int ret;
+ 	int i;
+-	bool new_sb;
  
-+/*
-+ * Return the address of the first long before (or after,
-+ * depending on the architecture's default stack growth
-+ * direction) * a task's task_info structure, which is the
-+ * kernel stack's last usable spot.
-+ *
-+ * This is the point of no return, if the stack grows
-+ * beyond that position, we corrupt the task's state.
-+ */
- static inline unsigned long *end_of_stack(struct task_struct *p)
- {
-+#ifdef CONFIG_STACK_GROWSUP
-+	return (unsigned long *)((unsigned long)task_thread_info(p) + THREAD_SIZE) - 1;
-+#else
- 	return (unsigned long *)(task_thread_info(p) + 1);
-+#endif
- }
+ 	/*
+ 	 * The first time anyone tries to mount a cgroup, enable the list
+@@ -1785,7 +1784,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		 * path is super cold.  Let's just sleep a bit and retry.
+ 		 */
+ 		pinned_sb = kernfs_pin_sb(root->kf_root, NULL);
+-		if (IS_ERR(pinned_sb) ||
++		if (IS_ERR_OR_NULL(pinned_sb) ||
+ 		    !percpu_ref_tryget_live(&root->cgrp.self.refcnt)) {
+ 			mutex_unlock(&cgroup_mutex);
+ 			if (!IS_ERR_OR_NULL(pinned_sb))
+@@ -1831,18 +1830,16 @@ out_free:
+ 		return ERR_PTR(ret);
  
- #endif
+ 	dentry = kernfs_mount(fs_type, flags, root->kf_root,
+-				CGROUP_SUPER_MAGIC, &new_sb);
+-	if (IS_ERR(dentry) || !new_sb)
++				CGROUP_SUPER_MAGIC, NULL);
++	if (IS_ERR(dentry) || pinned_sb)
+ 		cgroup_put(&root->cgrp);
+ 
+ 	/*
+ 	 * If @pinned_sb, we're reusing an existing root and holding an
+ 	 * extra ref on its sb.  Mount is complete.  Put the extra ref.
+ 	 */
+-	if (pinned_sb) {
+-		WARN_ON(new_sb);
++	if (pinned_sb)
+ 		deactivate_super(pinned_sb);
+-	}
+ 
+ 	return dentry;
+ }
+-- 
+1.8.0.2
+
