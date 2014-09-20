@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281AbaITDIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 23:08:25 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34093 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaITDIX (ORCPT
+	id S1758287AbaITDKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 23:10:22 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:52599 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166AbaITDKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 23:08:23 -0400
-Message-ID: <541CEF86.9070606@roeck-us.net>
-Date: Fri, 19 Sep 2014 20:07:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 19 Sep 2014 23:10:19 -0400
 MIME-Version: 1.0
-To: Jisheng Zhang <jszhang@marvell.com>, wim@iguana.be
-CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] watchdog: dw_wdt: add restart handler support
-References: <1411108199-1280-1-git-send-email-jszhang@marvell.com> <1411108199-1280-3-git-send-email-jszhang@marvell.com>
-In-Reply-To: <1411108199-1280-3-git-send-email-jszhang@marvell.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.541CEFA6.00D3,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CALCETrV7thL-0mST4O6YZgDNm1LyLqB=_bQ3vwwrAPYZCB=W+A@mail.gmail.com>
+References: <1410912351-31273-1-git-send-email-rlarocque@google.com>
+	<CALCETrXtYV5xKkTxothuqNb7ra80Be7ZXJ-hDnC6p-bfEPZ=Lw@mail.gmail.com>
+	<CABgu+=NC1ZMQkV0J2c9-MD1+TAmTjDm4ACZASPnfX2Fwiu5rMQ@mail.gmail.com>
+	<CALCETrWj8Pj8d8YjybvOKG-=xmy-XGFo9cGQ9qn0V4t9Oj+dOw@mail.gmail.com>
+	<CADU+-uCguxhkw259MefABuzOxvyK_F6bhwza0YhveCCJxEV8wQ@mail.gmail.com>
+	<54194A4A.7030104@zytor.com>
+	<CALCETrXsx2-1yf6q4OLzBdisr8P1086rNrsAt=WbyJaiT-cMpw@mail.gmail.com>
+	<CALCETrXpB4qOS+JUBqJnTY8JUfQ=A6DaebU6e=32sSv=0c0QCg@mail.gmail.com>
+	<CADU+-uBMc9THr0ADntsOqwh1--ULYMcssgPBvTesvFR+KQUfRg@mail.gmail.com>
+	<CALCETrXOeD=zBPvYV+-j0Ok6MXNZwdjRaz73rjuLGShx+o6Y0w@mail.gmail.com>
+	<CADU+-uBmQdKSX==5NrYfSEWLg-X4cvJYXj=N8UdMdN_rHnWk4w@mail.gmail.com>
+	<CALCETrV7thL-0mST4O6YZgDNm1LyLqB=_bQ3vwwrAPYZCB=W+A@mail.gmail.com>
+Date: Fri, 19 Sep 2014 20:10:18 -0700
+Message-ID: <CADU+-uBoMrF=vbOM4TW7YzD5cdHSn8BJdfs5nnPM6uS9-6n_Ag@mail.gmail.com>
+Subject: Re: [PATCH] x86/vdso: Add prctl to set per-process VDSO load
+From: Filipe Brandenburger <filbranden@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg Thelen <gthelen@google.com>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Michael Davidson <md@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Richard Larocque <rlarocque@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 11:29 PM, Jisheng Zhang wrote:
-> The kernel core now provides an API to trigger a system restart.
-> Register with it to support restarting the system via. watchdog.
->
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->   drivers/watchdog/dw_wdt.c | 27 +++++++++++++++++++++++++++
->   1 file changed, 27 insertions(+)
->
-> diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-> index ad0619d..4ca41e9 100644
-> --- a/drivers/watchdog/dw_wdt.c
-> +++ b/drivers/watchdog/dw_wdt.c
-> @@ -29,9 +29,11 @@
->   #include <linux/miscdevice.h>
->   #include <linux/module.h>
->   #include <linux/moduleparam.h>
-> +#include <linux/notifier.h>
->   #include <linux/of.h>
->   #include <linux/pm.h>
->   #include <linux/platform_device.h>
-> +#include <linux/reboot.h>
->   #include <linux/spinlock.h>
->   #include <linux/timer.h>
->   #include <linux/uaccess.h>
-> @@ -62,6 +64,7 @@ static struct {
->   	unsigned long		next_heartbeat;
->   	struct timer_list	timer;
->   	int			expect_close;
-> +	struct notifier_block	restart_handler;
->   } dw_wdt;
->
->   static inline int dw_wdt_is_enabled(void)
-> @@ -119,6 +122,22 @@ static void dw_wdt_keepalive(void)
->   	       WDOG_COUNTER_RESTART_REG_OFFSET);
->   }
->
-> +static int dw_wdt_restart_handle(struct notifier_block *this,
-> +				unsigned long mode, void *cmd)
-> +{
-> +	u32 val;
-> +
-> +	writel(0, dw_wdt.regs + WDOG_TIMEOUT_RANGE_REG_OFFSET);
-> +	val = readl(dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
-> +	if (val & WDOG_CONTROL_REG_WDT_EN_MASK)
-> +		writel(WDOG_COUNTER_RESTART_KICK_VALUE, dw_wdt.regs +
-> +			WDOG_COUNTER_RESTART_REG_OFFSET);
-> +	else
-> +		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
-> +		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
+Hi Andy,
 
-Don't you have to write WDOG_COUNTER_RESTART_KICK_VALUE into
-WDOG_COUNTER_RESTART_REG_OFFSET in the else case as well ?
+On Fri, Sep 19, 2014 at 3:31 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Sorry if I wasn't clear... That's the exact point of my patch, to make
+>> vm_special_mapping local to the task.
+>>
+>> I started with an approach of keeping a struct vm_special_mapping + a
+>> struct page * array per mm_struct.
+>>
+>> I was also looking at keeping two static vm_special_mapping structs,
+>> one with the actual vvar page and the other with the zero page and
+>> then swapping vma->vm_private_data to point to the appropriate one.
+>
+> This sounds like it may be more complicated than necessary.  Is there
+> any reason that just doing remap_pfn_range on the vvar page isn't
+> enough?
 
-Guenter
+I thought of doing that from the prctl but AFAICT remap_pfn_range
+requires that it's unmapped before the call (remap_pte_range has
+BUG_ON(!pte_none(*pte));) and doing a zap_page_range followed by
+remap_pfn_range might incur a race condition if another thread of the
+same process is accessing the vvar page at that time... Am I wrong
+about that race?
 
+> Changing out the text is a whole can of worms involving self-modifying
+> code, although it may be completely safe if done through the page
+> tables.  But I don't think you can't use remap_pfn_range for that.
+
+No, I'm not planning to change the text, just replacing the vvar page
+swapping the one where the vsyscall_gtod_data lives with a zero page
+(and back depending on the parameter of the prctl.)
+
+> Maybe better: what exactly are you trying to do?
+
+Just replace the page mapped to the vvar address.
+
+But nevermind my ramblings here, looks like you're almost there so go
+ahead and when you have a working patch I'll take a look at it.
+
+My offer to help still stands, so let me know if you'd like to see
+some of my code (unfinished as it is now or if you'd like me to show
+you something that works in a few days.)
+
+Cheers,
+Filipe
