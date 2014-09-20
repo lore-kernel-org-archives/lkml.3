@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaITO1V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 10:27:21 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:51518 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212AbaITO1S (ORCPT
+	id S932497AbaITO1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 10:27:33 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:59631 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756019AbaITO1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 10:27:18 -0400
+	Sat, 20 Sep 2014 10:27:32 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 08/13] staging: rtl8188eu: Rework function odm_UpdateTxAnt_88E()
-Date: Sat, 20 Sep 2014 19:55:54 +0530
-Message-Id: <1411223160-17292-8-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 09/13] staging: rtl8188eu: Rework function ODM_SetTxAntByTxInfo_88E()
+Date: Sat, 20 Sep 2014 19:55:55 +0530
+Message-Id: <1411223160-17292-9-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
 References: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
@@ -22,60 +22,69 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Rename CamelCase function name and local variables.
-Remove unnecessary debugging messages.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/odm_RTL8188E.c |   25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+ drivers/staging/rtl8188eu/hal/odm_RTL8188E.c     |   12 +++++++-----
+ drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c   |    3 ++-
+ drivers/staging/rtl8188eu/include/odm_RTL8188E.h |    4 ++--
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
-index 8b886c6..f3a4e28 100644
+index f3a4e28..5a51405 100644
 --- a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
 +++ b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
-@@ -222,25 +222,18 @@ void rtl88eu_dm_update_rx_idle_ant(struct odm_dm_struct *dm_odm, u8 ant)
- 	dm_fat_tbl->RxIdleAnt = ant;
+@@ -236,14 +236,16 @@ static void update_tx_ant_88eu(struct odm_dm_struct *dm_odm, u8 ant, u32 mac_id)
+ 	dm_fat_tbl->antsel_c[mac_id] = (target_ant&BIT2)>>2;
  }
  
--static void odm_UpdateTxAnt_88E(struct odm_dm_struct *dm_odm, u8 Ant, u32 MacId)
-+static void update_tx_ant_88eu(struct odm_dm_struct *dm_odm, u8 ant, u32 mac_id)
+-void ODM_SetTxAntByTxInfo_88E(struct odm_dm_struct *dm_odm, u8 *pDesc, u8 macId)
++void rtl88eu_dm_set_tx_ant_by_tx_info(struct odm_dm_struct *dm_odm,
++				      u8 *desc, u8 mac_id)
  {
  	struct fast_ant_train *dm_fat_tbl = &dm_odm->DM_FatTable;
--	u8	TargetAnt;
-+	u8 target_ant;
  
--	if (Ant == MAIN_ANT)
--		TargetAnt = MAIN_ANT_CG_TRX;
-+	if (ant == MAIN_ANT)
-+		target_ant = MAIN_ANT_CG_TRX;
- 	else
--		TargetAnt = AUX_ANT_CG_TRX;
--	dm_fat_tbl->antsel_a[MacId] = TargetAnt&BIT0;
--	dm_fat_tbl->antsel_b[MacId] = (TargetAnt&BIT1)>>1;
--	dm_fat_tbl->antsel_c[MacId] = (TargetAnt&BIT2)>>2;
--
--	ODM_RT_TRACE(dm_odm, ODM_COMP_ANT_DIV, ODM_DBG_LOUD,
--		     ("Tx from TxInfo, TargetAnt=%s\n",
--		     (Ant == MAIN_ANT) ? "MAIN_ANT" : "AUX_ANT"));
--	ODM_RT_TRACE(dm_odm, ODM_COMP_ANT_DIV, ODM_DBG_LOUD,
--		     ("antsel_tr_mux=3'b%d%d%d\n",
--		     dm_fat_tbl->antsel_c[MacId], dm_fat_tbl->antsel_b[MacId], dm_fat_tbl->antsel_a[MacId]));
-+		target_ant = AUX_ANT_CG_TRX;
-+	dm_fat_tbl->antsel_a[mac_id] = target_ant&BIT0;
-+	dm_fat_tbl->antsel_b[mac_id] = (target_ant&BIT1)>>1;
-+	dm_fat_tbl->antsel_c[mac_id] = (target_ant&BIT2)>>2;
+-	if ((dm_odm->AntDivType == CG_TRX_HW_ANTDIV) || (dm_odm->AntDivType == CG_TRX_SMART_ANTDIV)) {
+-		SET_TX_DESC_ANTSEL_A_88E(pDesc, dm_fat_tbl->antsel_a[macId]);
+-		SET_TX_DESC_ANTSEL_B_88E(pDesc, dm_fat_tbl->antsel_b[macId]);
+-		SET_TX_DESC_ANTSEL_C_88E(pDesc, dm_fat_tbl->antsel_c[macId]);
++	if ((dm_odm->AntDivType == CG_TRX_HW_ANTDIV) ||
++	    (dm_odm->AntDivType == CG_TRX_SMART_ANTDIV)) {
++		SET_TX_DESC_ANTSEL_A_88E(desc, dm_fat_tbl->antsel_a[mac_id]);
++		SET_TX_DESC_ANTSEL_B_88E(desc, dm_fat_tbl->antsel_b[mac_id]);
++		SET_TX_DESC_ANTSEL_C_88E(desc, dm_fat_tbl->antsel_c[mac_id]);
+ 	}
  }
  
- void ODM_SetTxAntByTxInfo_88E(struct odm_dm_struct *dm_odm, u8 *pDesc, u8 macId)
-@@ -322,7 +315,7 @@ static void odm_HWAntDiv(struct odm_dm_struct *dm_odm)
- 			}
- 			/* 2 Select TRX Antenna */
- 			if (dm_odm->AntDivType == CG_TRX_HW_ANTDIV)
--				odm_UpdateTxAnt_88E(dm_odm, TargetAnt, i);
-+				update_tx_ant_88eu(dm_odm, TargetAnt, i);
- 		}
- 		dm_fat_tbl->MainAnt_Sum[i] = 0;
- 		dm_fat_tbl->AuxAnt_Sum[i] = 0;
+diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c
+index 3494ac6..be9eede 100644
+--- a/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c
++++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c
+@@ -336,7 +336,8 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz, u8 bag
+ 		ptxdesc->txdw4 |= cpu_to_le32(HW_SSN);	/*  Hw set sequence number */
+ 	}
+ 
+-	ODM_SetTxAntByTxInfo_88E(&haldata->odmpriv, pmem, pattrib->mac_id);
++	rtl88eu_dm_set_tx_ant_by_tx_info(&haldata->odmpriv, pmem,
++					 pattrib->mac_id);
+ 
+ 	rtl8188eu_cal_txdesc_chksum(ptxdesc);
+ 	_dbg_dump_tx_info(adapt, pxmitframe->frame_tag, ptxdesc);
+diff --git a/drivers/staging/rtl8188eu/include/odm_RTL8188E.h b/drivers/staging/rtl8188eu/include/odm_RTL8188E.h
+index 7dc2698..7a10101 100644
+--- a/drivers/staging/rtl8188eu/include/odm_RTL8188E.h
++++ b/drivers/staging/rtl8188eu/include/odm_RTL8188E.h
+@@ -33,8 +33,8 @@ void rtl88eu_dm_antenna_div_init(struct odm_dm_struct *dm_odm);
+ 
+ void ODM_AntennaDiversity_88E(struct odm_dm_struct *pDM_Odm);
+ 
+-void ODM_SetTxAntByTxInfo_88E(struct odm_dm_struct *pDM_Odm, u8 *pDesc,
+-			      u8 macId);
++void rtl88eu_dm_set_tx_ant_by_tx_info(struct odm_dm_struct *dm_odm, u8 *desc,
++				      u8 mac_id);
+ 
+ void rtl88eu_dm_update_rx_idle_ant(struct odm_dm_struct *dm_odm, u8 ant);
+ 
 -- 
 1.7.10.4
 
