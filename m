@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284AbaITNw0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 09:52:26 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:52338 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054AbaITNwY (ORCPT
+	id S1756113AbaITOH0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 10:07:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43977 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754054AbaITOHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 09:52:24 -0400
-Message-ID: <541D867C.6080407@roeck-us.net>
-Date: Sat, 20 Sep 2014 06:51:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 20 Sep 2014 10:07:24 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Q7FYRv4A+eG766sXExy2F
+Date: Sat, 20 Sep 2014 07:07:12 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
+Message-ID: <20140920140712.GA27096@atomide.com>
+References: <1411067086-16613-4-git-send-email-nm@ti.com>
+ <alpine.DEB.2.10.1409181749170.4206@nanos>
+ <20140919030333.GA6088@kahuna>
+ <alpine.DEB.2.10.1409190710320.5612@nanos>
+ <20140919161927.GA28613@kahuna>
+ <alpine.DEB.2.10.1409191027330.5612@nanos>
+ <20140919191649.GQ14505@atomide.com>
+ <alpine.DEB.2.10.1409191233590.4213@nanos>
+ <20140919195738.GR14505@atomide.com>
+ <alpine.DEB.2.10.1409192100380.23826@nanos>
 MIME-Version: 1.0
-To: Jisheng Zhang <jszhang@marvell.com>, wim@iguana.be
-CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] watchdog: dw_wdt: restart the counter immediately
- after enabling WDT
-References: <1411108199-1280-1-git-send-email-jszhang@marvell.com> <1411108199-1280-2-git-send-email-jszhang@marvell.com>
-In-Reply-To: <1411108199-1280-2-git-send-email-jszhang@marvell.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.541D8697.010E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1409192100380.23826@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 11:29 PM, Jisheng Zhang wrote:
-> The TOP_INIT may be zero, so the timeout period may be very short after
-> initialization is done, thus the system may be reset soon after enabling.
-> We fix this problem by restarting the counter immediately after enabling
-> WDT.
->
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->   drivers/watchdog/dw_wdt.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-> index 9f21029..ad0619d 100644
-> --- a/drivers/watchdog/dw_wdt.c
-> +++ b/drivers/watchdog/dw_wdt.c
-> @@ -146,6 +146,7 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
->   		dw_wdt_set_top(DW_WDT_MAX_TOP);
->   		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
->   		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
-> +		dw_wdt_keepalive();
->   	}
->
->   	dw_wdt_set_next_heartbeat();
->
-After getting access to the datasheet, I concluded that this fix is wrong
-or at least more risky than necessary. The datasheet states that top_init,
-ie bit 4-7 of the wdt_torr register, needs to be initialized with the desired
-timeout period prior to enabling the watchdog. dw_wdt_set_top() sets it to
-0 instead, ie to the lowest possible timeout period.
+* Thomas Gleixner <tglx@linutronix.de> [140919 19:08]:
+> On Fri, 19 Sep 2014, Tony Lindgren wrote:
+> > * Thomas Gleixner <tglx@linutronix.de> [140919 12:47]:
+> > > Why on earth are you wanting tasklets in there? That's just silly,
+> > > really.
+> > 
+> > Lack of a framework on driver side to cope with this in a generic
+> > way? :p
+> 
+> So instead of creating such a thing we rather have a completely ass
+> backward workaround which spreads itself all over the tree?
 
-Guenter
+I'm not kidding, you're the first one who was able to come up with
+such a simple solution and also describe why it should be done
+that way.
+ 
+> You SoC folks really need a quarterly sanity check.
 
+Probably time for me to file a bios bug on that yeah :)
+
+Regards,
+
+Tony
