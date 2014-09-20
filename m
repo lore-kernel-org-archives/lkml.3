@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615AbaITCFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 22:05:35 -0400
-Received: from tundra.namei.org ([65.99.196.166]:34469 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155AbaITCFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 22:05:34 -0400
-Date: Sat, 20 Sep 2014 12:05:26 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] KEYS: Changes for keyrings for security/next
-In-Reply-To: <32370.1410886755@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.11.1409201204460.31120@namei.org>
-References: <32370.1410886755@warthog.procyon.org.uk>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1756894AbaITCHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 22:07:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33385 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919AbaITCHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Sep 2014 22:07:33 -0400
+Date: Fri, 19 Sep 2014 21:07:06 -0500 (CDT)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Lindgren <tony@atomide.com>
+cc: Nishanth Menon <nm@ti.com>, lee.jones@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V3 3/3] mfd: palmas: Add support for optional wakeup
+In-Reply-To: <20140919195738.GR14505@atomide.com>
+Message-ID: <alpine.DEB.2.10.1409192100380.23826@nanos>
+References: <1411067086-16613-1-git-send-email-nm@ti.com> <1411067086-16613-4-git-send-email-nm@ti.com> <alpine.DEB.2.10.1409181749170.4206@nanos> <20140919030333.GA6088@kahuna> <alpine.DEB.2.10.1409190710320.5612@nanos> <20140919161927.GA28613@kahuna>
+ <alpine.DEB.2.10.1409191027330.5612@nanos> <20140919191649.GQ14505@atomide.com> <alpine.DEB.2.10.1409191233590.4213@nanos> <20140919195738.GR14505@atomide.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014, David Howells wrote:
-
-> Hi James,
+On Fri, 19 Sep 2014, Tony Lindgren wrote:
+> * Thomas Gleixner <tglx@linutronix.de> [140919 12:47]:
+> > Why on earth are you wanting tasklets in there? That's just silly,
+> > really.
 > 
-> Can you please pull these changes into security/next.  They include the fixes
-> tag I previously requested as there's a dependency between these changes and
-> the fixes.
-> 
+> Lack of a framework on driver side to cope with this in a generic
+> way? :p
 
-I'm getting this warning after pulling your code:
+So instead of creating such a thing we rather have a completely ass
+backward workaround which spreads itself all over the tree?
 
-  CC      crypto/hash_info.o
-crypto/asymmetric_keys/asymmetric_type.c: In function 
-asymmetric_key_hex_to_key_id:
-crypto/asymmetric_keys/asymmetric_type.c:110: warning: ignoring return 
-value of hex2bin, declared with attribute warn_unused_result
+You SoC folks really need a quarterly sanity check.
 
+Thanks,
 
-
--- 
-James Morris
-<jmorris@namei.org>
-
+	tglx
