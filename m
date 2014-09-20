@@ -1,80 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaITRT7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 13:19:59 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:43892 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014AbaITRT5 (ORCPT
+	id S1756247AbaITR0a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 13:26:30 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:43873 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbaITR03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 13:19:57 -0400
+	Sat, 20 Sep 2014 13:26:29 -0400
+Message-ID: <541DB8C1.2000101@gmail.com>
+Date: Sat, 20 Sep 2014 13:26:25 -0400
+From: nick <yocto6@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <201409201940.AHG21834.LJOFFHSFQOtVMO@I-love.SAKURA.ne.jp>
-References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
-	<541D16EA.70407@huawei.com>
-	<201409201940.AHG21834.LJOFFHSFQOtVMO@I-love.SAKURA.ne.jp>
-Date: Sat, 20 Sep 2014 10:19:56 -0700
-X-Google-Sender-Auth: Lt9yeWj59SHYbGBtJAA-5Sb0WGw
-Message-ID: <CAGXu5jLf3st2WBV5ycEOgCJGk8z5TP1SuvLQcD=sC2cs_4CF8w@mail.gmail.com>
-Subject: Re: [PATCH 3.17-rc5] Fix confusing PFA_NO_NEW_PRIVS constant.
-From: Kees Cook <keescook@chromium.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        David Drysdale <drysdale@google.com>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: gregkh@linuxfoundation.org
+CC: julia.lawall@lip6.fr, oneukum@suse.de, himangi774@gmail.com,
+        stern@rowland.harvard.edu, paul.gortmaker@windriver.com,
+        peter.chen@freescale.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: FIX ME in  oxu210p-hcd.c
+References: <541DB6BF.7090909@gmail.com>
+In-Reply-To: <541DB6BF.7090909@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 3:40 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Can you apply below patch before new PFA_* are defined?
-> Cgroups code might want to define PFA_SPREAD_PAGE as 1 and PFA_SPREAD_SLAB as 2.
-> ----------------------------------------
-> >From 8543e68adb210142fa347d8bc9d83df0bb2c5291 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Sat, 20 Sep 2014 19:24:23 +0900
-> Subject: [PATCH 3.17-rc5] Fix confusing PFA_NO_NEW_PRIVS constant.
->
-> Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
-> defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
-> because it is used as bit number. Redefine it as decimal bit number.
->
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
->  include/linux/sched.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 5c2c885..4557765 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
->  }
->
->  /* Per-process atomic flags. */
-> -#define PFA_NO_NEW_PRIVS 0x00000001    /* May not gain new privileges. */
-> +#define PFA_NO_NEW_PRIVS 0     /* May not gain new privileges. */
->
->  static inline bool task_no_new_privs(struct task_struct *p)
->  {
 
-Thanks, good catch.
+I found a unfixed FIX ME in the file stated in my above message. I am wondering what to set hcd->self.comtroller->dma_mask 
+to as it's now been defined to NULL and clearly even as a newbie this seem incorrect.
+Regards Nick  
 
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
