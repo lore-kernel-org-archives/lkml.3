@@ -1,281 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346AbaITLY0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 07:24:26 -0400
-Received: from mout.gmx.net ([212.227.15.19]:60235 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903AbaITLYY convert rfc822-to-8bit (ORCPT
+	id S1755053AbaITL3s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 07:29:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41010 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753225AbaITL3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 07:24:24 -0400
-Date: Sat, 20 Sep 2014 13:23:50 +0200
-From: Andreas Werner <wernerandy@gmx.de>
-To: kavitha bk <bk.kavitha1@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: eeprom Board Information EEPROM
-Message-ID: <20140920112350.GA1720@awedesk.fritz.box>
-References: <20140829205639.GA584@awedesk.fritz.box>
- <CACx5bVzvJ-x7EdnGX+AraNBwKaxKNwRVvBwN1-0DNY3O155U5Q@mail.gmail.com>
- <20140902095253.GA693@awedesk.fritz.box>
- <CACx5bVwUaHXOD0NxOiGzEMVQ0HYF2eLXVBL3nu1s=xAemYP9LQ@mail.gmail.com>
- <20140903143415.GA3684@awedesk.fritz.box>
- <CACx5bVxpGW=vb8zXLLJ9ewUOfw3ib0g=YBHUcTAS=vMhZ7NnHg@mail.gmail.com>
- <20140915172255.GA798@awedesk.fritz.box>
- <CACx5bVwHo4AUN8UXarX1ygCr9jddYWnM8A-BCOF9W97FcMLJuQ@mail.gmail.com>
+	Sat, 20 Sep 2014 07:29:46 -0400
+Date: Sat, 20 Sep 2014 13:29:43 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mtd: nand: support ONFI timings mode retrieval for
+ non-ONFI NANDs
+Message-ID: <20140920132943.7775f318@bbrezillon>
+In-Reply-To: <20140920044607.GE8127@brian-ubuntu>
+References: <1406539012-16320-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1406539012-16320-2-git-send-email-boris.brezillon@free-electrons.com>
+	<20140920044607.GE8127@brian-ubuntu>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CACx5bVwHo4AUN8UXarX1ygCr9jddYWnM8A-BCOF9W97FcMLJuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:LwRyhZWe857Z+2Uw0fmmHyT/JG+D88oGuue+dSoycksCS92wlh2
- 4Haxqie/rBABnZom8r68DkbMb7NhGn4WZDxUb/SI7POv7Crhzr/w1/f4rX0xIzWFQOENVlq
- pPnZ+7ksD9prHRln29hgdvdHwtetye5tw+oUntTu0sK/3pv5WRt3yGfNWRq6Gv0DfWwHolE
- 06QA6TR1WXchik322Botw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 01:14:36PM +0530, kavitha bk wrote:
-> On Mon, Sep 15, 2014 at 10:52 PM, Andreas Werner <wernerandy@gmx.de> wrote:
+On Fri, 19 Sep 2014 21:46:07 -0700
+Brian Norris <computersforpeace@gmail.com> wrote:
+
+> Since you were asking about this series, I have a comment:
 > 
-> > On Thu, Sep 04, 2014 at 09:59:53PM +0530, kavitha bk wrote:
-> > > On Wed, Sep 3, 2014 at 8:04 PM, Andreas Werner <wernerandy@gmx.de>
-> > wrote:
-> > >
-> > > > Is there a way to access the eeprom data from within another driver?
-> > > >
-> > > Yes I had to access mac address from eeprom from smsc [ethernet driver]
-> > > so I exported a function from  eeprom driver
-> > >
-> > >
-> > > > I have seen in at24 using the memory_accessor struct to allow access
-> > e.g.
-> > > > from platform driver,
-> > > > but this is not want i want.
-> > > >
-> > > > Current driver sysfs iface:
-> > > >         Predefined sections exported (24byte):
-> > > >                 - revision
-> > > >                 - serialnr
-> > > >                 - prod_date
-> > > >                 - rep_date
-> > > >                 - hw_name
-> > > >
-> > > >         User memory (232 byte):
-> > > >                 - user_eeprom (binary)
-> > > >
-> > > > This allows the userland to access the predefined data easily through
-> > > > sysfs without
-> > > > the need to format the eeprom bytes to get the right data.
-> > > >
-> > > > I also need an interface to have access within another driver e.g. we
-> > have
-> > > > an ethernet
-> > > > driver which needs to read the serialnumber of the board.
-> > > >
-> > > > How can I do this?
-> > > >
-> > >
-> > >
-> > > Easy way is export a function in at24 driver but very bad it is
-> > > Best way using memory_accessor.
-> > > Explore  memory_accessor
-> > >
-> > >
-> > >
-> > >
-> > >         struct memory_accessor *mem_acc =
-> > driver->access_eeprom->serial_no
-> > >
-> > >
-> > >         if (!mem_acc->read || !mem_acc->write)
-> > >                 return -EIO;
-> > >
-> > >         ret = mem_acc->read(mem_acc, serial_no, offset, len);
-> > >         if (ret != len)
-> > >                 return -EIO;
-> > >
-> > >         return 0;
-> > >
-> > >
-> > > > Regards
-> > > > Andy
-> > > >
-> >
-> > Hi,
-> > i have checked the memory accessor. If i understand it right it is good if
-> > I have some platform code.
-> > The problem I have is, if I have some x86 system without platform config
-> > (we normally have no BSP for x86)
-> > the solution cannot work.
-> >
-> > Just a description of my problem.
-> > I have an Ethernet driver which is a driver for a FPGA IP Core. The eth
-> > runs at most on x86 systems.
-> > Inside the driver i need a interface to the eeprom were I can access the
-> > Serialnumber.
-> >
-> > For me the solution to export a function in the eeprom driver is the best
-> > way to do it, isn´t it?
-> >
+> On Mon, Jul 28, 2014 at 11:16:51AM +0200, Boris BREZILLON wrote:
+> > Add an onfi_timing_mode_ds field to nand_chip and nand_flash_dev in order
+> > to support NAND timings definition for non-ONFI NAND.
+> > 
+> > NAND that support better timings mode than the default one (timings mode 0)
+> > have to define a new entry in the nand_ids table.
+> > 
+> > The timings mode should be deduced from timings description from the
+> > datasheet and the ONFI specification
+> > (www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf, chapter 4.15
+> > "Timing Parameters").
+> > You should choose the closest mode that fit the timings requirements of
+> > your NAND chip.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/mtd/nand/nand_base.c | 1 +
+> >  include/linux/mtd/nand.h     | 7 +++++++
+> >  2 files changed, 8 insertions(+)
+> > 
+> > diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+> > index d8cdf06..c952c21 100644
+> > --- a/drivers/mtd/nand/nand_base.c
+> > +++ b/drivers/mtd/nand/nand_base.c
+> > @@ -3576,6 +3576,7 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
+> >  		chip->options |= type->options;
+> >  		chip->ecc_strength_ds = NAND_ECC_STRENGTH(type);
+> >  		chip->ecc_step_ds = NAND_ECC_STEP(type);
+> > +		chip->onfi_timing_mode_ds = type->onfi_timing_mode_ds;
+> >  
+> >  		*busw = type->options & NAND_BUSWIDTH_16;
+> >  
+> > diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+> > index 3083c53..435c005 100644
+> > --- a/include/linux/mtd/nand.h
+> > +++ b/include/linux/mtd/nand.h
+> > @@ -587,6 +587,7 @@ struct nand_buffers {
+> >   * @ecc_step_ds:	[INTERN] ECC step required by the @ecc_strength_ds,
+> >   *                      also from the datasheet. It is the recommended ECC step
+> >   *			size, if known; if unknown, set to zero.
+> > + * @onfi_timing_mode_ds:[INTERN] ONFI timing mode deduced from datasheet.
 > 
+> Might want at least one space between '[INTERN]' and 'ONFI'?
+
+You mean between the colon and '[INTERN]', right ?
+
 > 
-> Yes may be it is appropriate to it this way in your case
+> >   * @numchips:		[INTERN] number of physical chips
+> >   * @chipsize:		[INTERN] the size of one chip for multichip arrays
+> >   * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
+> > @@ -671,6 +672,7 @@ struct nand_chip {
+> >  	uint8_t bits_per_cell;
+> >  	uint16_t ecc_strength_ds;
+> >  	uint16_t ecc_step_ds;
+> > +	int onfi_timing_mode_ds;
 > 
+> I'm not sure if we'll just want a field specific to non-ONFI chips,
+> faking an ONFI timing mode; can we make this into a more generally
+> useful field, that represents something consistent across all NAND
+> types? I was thinking a "highest mode supported", but that actually
+> isn't great, since for true ONFI modes (except mode 0) require a SET
+> FEATURES command to change to a higher mode.
+> 
+> Maybe just something like onfi_timing_mode_default, which we could then
+> use as mode 0 for ONFI chips.
+> 
+> Ideally, we could centralize as much of this as possible, so that a NAND
+> driver only has to know the mechanics of "how do I translate an ONFI
+> mode to a timing configuration for my NAND controller,"
 
-Hi,
-i have also tried to export a function, but the problem is that the data of the eeprom is stored
-in a structure of the eeprom driver, and i do not know how to get a pointer/reference to
-this structure to get access from within another driver.
+I guess you meant "how do I translate a NAND timing config given by
+nand_sdr_timings to my specific NAND controller config", right ?
 
-Does anybody of you have another idea how to access eeprom data from within another driver?
+> instead of any
+> details of how to choose from one of many supported ONFI modes. i.e., it
+> could implement something like the following hook:
+> 
+> 	int (*set_timing_mode)(struct nand_sdr_timings *timing);
 
-Thanks
-Andy
+I'm not opposed to this solution (I actually think this is how it
+should be done :-), and, IIRC, Jason proposed to do the same kind of
+things a while ago), but this means the conversion would be done by the
+NAND FW and passed to the NAND driver, and this implies reworking the
+drivers already directly using ONFI modes to configure their NAND
+timings to make use nand_sdr_timings instead.
+
+Moreover, I think we should define a union to handle several kind of
+timings (ddr NAND are coming :-P):
+
+enum nand_timings_type /* or nand_bus_type or something else ;-) */ {
+	SDR_NAND,
+	DDR_NAND,
+}
+
+struct nand_timings {
+	enum nand_timings_type type;
+	union {
+		struct nand_sdr_timings sdr;
+		struct nand_ddr_timings ddr;
+	} timings;
+};
+
+But this is another story ;-).
+
+> 
+> But anyway, that's out of the scope of this series, and it may be harder
+> than I make it sound. I just wanted to throw that out there.
+
+If you don't mind I'd like to get something simple first: just renaming
+onfi_timing_mode_ds is fine, but adding the whole conversion stuff to
+the core implies much more changes. And I can work on a more
+integrated solution as a second step.
+
+Let me know what you think. 
+
+Best Regards,
+
+Boris
 
 
-> >
-> > I hope it is clear what i want.
-> >
-> > Regards
-> > Andy
-> >
-> >
-> >
-> >
-> >
-> > > > On Tue, Sep 02, 2014 at 01:30:52PM +0530, kavitha bk wrote:
-> > > > > static ssize_t eeprom_read(struct device *dev,
-> > > > >                         struct device_attribute *attr,
-> > > > >                         char *buf) {
-> > > > >         struct i2c_client *client = to_i2c_client(dev);
-> > > > >         int ret = -1,i = 0;
-> > > > >         unsigned char sn[256];
-> > > > >
-> > > > >         sn[0] = 0x00;
-> > > > >         sn[1] = 0x00;
-> > > > >
-> > > > >         ret = i2c_master_send(client, sn, 2);
-> > > > >
-> > > > >         if(ret == -1)
-> > > > >                 pr_info("ERROR: I2C send error\n");
-> > > > >
-> > > > >         ret = i2c_master_recv(client, sn, 256);
-> > > > >         if(ret == -1)
-> > > > >                 pr_info("I2C read error\n");
-> > > > >
-> > > > >
-> > > > >         return sprintf(buf, "%s\n", sn);
-> > > > > }
-> > > > > static DEVICE_ATTR(eeprom, 0644, eeprom_read, NULL);
-> > > > >
-> > > > >
-> > > > >
-> > > > > In probe
-> > > > >
-> > > > >   err = device_create_file(&client->dev,&dev_attr_eeprom);
-> > > > >                 if(err < 0) {
-> > > > >                         pr_err("%s : failed to device create file\n",
-> > > > > __func__);
-> > > > >                         goto err_device_create_file_failed;
-> > > > >                 }
-> > > > >
-> > > > >
-> > > > >
-> > > > > Sample code for reference
-> > > > >
-> > > > >
-> > > > > Kavitha
-> > > > >
-> > > > >
-> > > > >
-> > > > >
-> > > > > On Tue, Sep 2, 2014 at 3:22 PM, Andreas Werner <wernerandy@gmx.de>
-> > > > wrote:
-> > > > >
-> > > > > > On Mon, Sep 01, 2014 at 01:52:10PM +0530, kavitha bk wrote:
-> > > > > > > On Sat, Aug 30, 2014 at 2:26 AM, Andreas Werner <
-> > wernerandy@gmx.de>
-> > > > > > wrote:
-> > > > > > >
-> > > > > > > > I have a question regarding a driver for a Board Information
-> > > > EEPROM.
-> > > > > > > >
-> > > > > > > > I want to give our customer easy access to our Board
-> > Information
-> > > > EEPROM
-> > > > > > > > which is an 256byte I2C eeprom.
-> > > > > > > >
-> > > > > > >
-> > > > > > >
-> > > > > > > >
-> > > > > > > > There is a defined structure of information at the beginning
-> > of the
-> > > > > > eeprom
-> > > > > > > > which includes board name, serialnumber, production date,
-> > repair
-> > > > date
-> > > > > > and
-> > > > > > > > a eeprom structure ident number.
-> > > > > > > >
-> > > > > > > > The rest of the eeprom is for user defined settings where
-> > customer
-> > > > can
-> > > > > > > > write
-> > > > > > > > any data to.
-> > > > > > > >
-> > > > > > > > I want to have access to the eeprom without any special to and
-> > > > without
-> > > > > > > > installing
-> > > > > > > > anything just running linux and to a cat/echo to sysfs entries
-> > to
-> > > > > > > > read/write
-> > > > > > > > data to the eeprom.
-> > > > > > > >
-> > > > > > > > What i want to do is to create sysfs entries for the pre
-> > defined
-> > > > > > settings
-> > > > > > > > and
-> > > > > > > > on entrie where customer can access the rest of the eeprom
-> > bytes.
-> > > > > > > >
-> > > > > > > > Is drivers/misc/eeprom the right place to put those kind of
-> > driver
-> > > > in?
-> > > > > > >
-> > > > > > >
-> > > > > > > Yes You can add here
-> > > > > > >
-> > > > > > > > Or are
-> > > > > > > > there any other options to write those kind of driver?
-> > > > > > > >
-> > > > > > >
-> > > > > > > Which eeprom are you using? You can explore CONFIG_EEPROM_AT24
-> > > > driver for
-> > > > > > > writing a sys interface
-> > > > > > >
-> > > > > >
-> > > > > > Ok i will check it out.
-> > > > > >
-> > > > > > Thanks.
-> > > > > >
-> > > > > > Regards
-> > > > > > Andy
-> > > > > >
-> > > > > > >
-> > > > > > > >
-> > > > > > > >
-> > > > > > > > Regards
-> > > > > > > > Andy
-> > > > > > > > --
-> > > > > > > > To unsubscribe from this list: send the line "unsubscribe
-> > > > > > linux-kernel" in
-> > > > > > > > the body of a message to majordomo@vger.kernel.org
-> > > > > > > > More majordomo info at
-> > http://vger.kernel.org/majordomo-info.html
-> > > > > > > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > > > > > >
-> > > > > >
-> > > >
-> >
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
