@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627AbaITDqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 23:46:44 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:49437 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884AbaITDqm (ORCPT
+	id S1751009AbaITEDV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 00:03:21 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43379 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaITEDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 23:46:42 -0400
+	Sat, 20 Sep 2014 00:03:19 -0400
+Date: Fri, 19 Sep 2014 21:03:15 -0700
+From: Amber Thrall <amber.rose.thrall@gmail.com>
+To: m.chehab@samsung.com
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Media: USB: usbtv: Fixed all coding style issues in usbtv
+ source files.
+Message-ID: <20140920040314.GA17113@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUgtveB-ddeL2t0cK18r_VeP5T7LrWCzszfFo+8GcdmEg@mail.gmail.com>
-References: <1410912351-31273-1-git-send-email-rlarocque@google.com>
-	<CALCETrXtYV5xKkTxothuqNb7ra80Be7ZXJ-hDnC6p-bfEPZ=Lw@mail.gmail.com>
-	<CABgu+=NC1ZMQkV0J2c9-MD1+TAmTjDm4ACZASPnfX2Fwiu5rMQ@mail.gmail.com>
-	<CALCETrWj8Pj8d8YjybvOKG-=xmy-XGFo9cGQ9qn0V4t9Oj+dOw@mail.gmail.com>
-	<CADU+-uCguxhkw259MefABuzOxvyK_F6bhwza0YhveCCJxEV8wQ@mail.gmail.com>
-	<54194A4A.7030104@zytor.com>
-	<CALCETrXsx2-1yf6q4OLzBdisr8P1086rNrsAt=WbyJaiT-cMpw@mail.gmail.com>
-	<CALCETrXpB4qOS+JUBqJnTY8JUfQ=A6DaebU6e=32sSv=0c0QCg@mail.gmail.com>
-	<CADU+-uBMc9THr0ADntsOqwh1--ULYMcssgPBvTesvFR+KQUfRg@mail.gmail.com>
-	<CALCETrXOeD=zBPvYV+-j0Ok6MXNZwdjRaz73rjuLGShx+o6Y0w@mail.gmail.com>
-	<CADU+-uBmQdKSX==5NrYfSEWLg-X4cvJYXj=N8UdMdN_rHnWk4w@mail.gmail.com>
-	<CALCETrV7thL-0mST4O6YZgDNm1LyLqB=_bQ3vwwrAPYZCB=W+A@mail.gmail.com>
-	<CADU+-uBoMrF=vbOM4TW7YzD5cdHSn8BJdfs5nnPM6uS9-6n_Ag@mail.gmail.com>
-	<CALCETrUgtveB-ddeL2t0cK18r_VeP5T7LrWCzszfFo+8GcdmEg@mail.gmail.com>
-Date: Fri, 19 Sep 2014 20:46:41 -0700
-Message-ID: <CADU+-uAw8wLbY6E0msuwZFgW9hDXz8a6oeDJBTSURUfS3aO1gw@mail.gmail.com>
-Subject: Re: [PATCH] x86/vdso: Add prctl to set per-process VDSO load
-From: Filipe Brandenburger <filbranden@google.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg Thelen <gthelen@google.com>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Michael Davidson <md@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Richard Larocque <rlarocque@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 8:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> I thought of doing that from the prctl but AFAICT remap_pfn_range
->> requires that it's unmapped before the call (remap_pte_range has
->> BUG_ON(!pte_none(*pte));) and doing a zap_page_range followed by
->> remap_pfn_range might incur a race condition if another thread of the
->> same process is accessing the vvar page at that time... Am I wrong
->> about that race?
->
-> No, you're right.  Ugh.
->
-> It might pay to add an explicit .fault callback to vm_special_mapping,
-> but your approach will work, too.  The main downside is more memory
-> overhead per mm.
+Fixed various coding styles, ignoring coding style error on line 5 for all files containing a link that is longer than 80 characters long.
 
-One way to limit that overhead was to keep only two static
-vm_special_mapping structs (one for the real vvar page and one for the
-zero page) and then change the vma->vm_private_data to point to one or
-the other when the prctl is called. I just thought of that recently
-and haven't tried it yet so not sure if it will cause other
-problems...
+Signed-off-by: Amber Thrall <amber.rose.thrall@gmail.com>
+---
+ drivers/media/usb/usbtv/usbtv-audio.c | 1 +
+ drivers/media/usb/usbtv/usbtv-core.c  | 1 +
+ drivers/media/usb/usbtv/usbtv-video.c | 3 +++
+ 3 files changed, 5 insertions(+)
 
->>> Changing out the text is a whole can of worms involving self-modifying
->>> code, although it may be completely safe if done through the page
->>> tables.  But I don't think you can't use remap_pfn_range for that.
->>
->> No, I'm not planning to change the text, just replacing the vvar page
->> swapping the one where the vsyscall_gtod_data lives with a zero page
->> (and back depending on the parameter of the prctl.)
->
-> Hmm.  This will break the _COARSE timing functions as well as
-> __vdso_time.  That'll need fixing, either by swapping out the code
-> (yuck!) or by adding a branch to all of those code paths.
->
-> Maybe there's a non-branchy way, though.  Let me think.
-
-So this is what I was thinking of extending the vvar region to include
-one extra page (right now it's two pages, the one with the
-vsyscall_gtod_data and the one with the hrtimer I/O mapping, so this
-would be a third page.) This third page would be initially mapped to
-the zero page, so it wouldn't cost an extra page of memory per process
-or even globally.
-
-The prctl would swap that page with another page allocated as the
-prctl is called. That one page that's allocated with the prctl would
-be inherited over forks and execs, so if you have a bunch of processes
-that need the same offset then they'd all share that one single page.
-
-The vdso clock routines would get the base clock information from
-vsyscall_gtod_data, hpet, tsc, etc. and would simply add the offsets
-from the task_vvar page (not too branch-y, just a few extra adds.) In
-the regular case, that would be a zero page so it would be simply
-adding zero. If we need to apply offsets, then we replace that page
-with one that has a struct with the right offsets for each clock type.
-
-When running in kernel mode, the clock code (and timer code, etc.)
-would find that page through the mm_struct and find the clock offsets
-that way.
-
-I was working on this approach before you suggested swapping the
-actual vvar page (and not sure if you were actually looking at
-hot-swapping the vdso itself.) I can go back to working on it and send
-you a few commits since I still have some of that code around.
-
-Cheers,
-Filipe
+diff --git a/drivers/media/usb/usbtv/usbtv-audio.c b/drivers/media/usb/usbtv/usbtv-audio.c
+index 2d8795f..78c12d2 100644
+--- a/drivers/media/usb/usbtv/usbtv-audio.c
++++ b/drivers/media/usb/usbtv/usbtv-audio.c
+@@ -311,6 +311,7 @@ static int snd_usbtv_card_trigger(struct snd_pcm_substream *substream, int cmd)
+ static snd_pcm_uframes_t snd_usbtv_pointer(struct snd_pcm_substream *substream)
+ {
+ 	struct usbtv *chip = snd_pcm_substream_chip(substream);
++
+ 	return chip->snd_buffer_pos;
+ }
+ 
+diff --git a/drivers/media/usb/usbtv/usbtv-core.c b/drivers/media/usb/usbtv/usbtv-core.c
+index bf25ecf..29428be 100644
+--- a/drivers/media/usb/usbtv/usbtv-core.c
++++ b/drivers/media/usb/usbtv/usbtv-core.c
+@@ -108,6 +108,7 @@ usbtv_video_fail:
+ static void usbtv_disconnect(struct usb_interface *intf)
+ {
+ 	struct usbtv *usbtv = usb_get_intfdata(intf);
++
+ 	usb_set_intfdata(intf, NULL);
+ 
+ 	if (!usbtv)
+diff --git a/drivers/media/usb/usbtv/usbtv-video.c b/drivers/media/usb/usbtv/usbtv-video.c
+index 3d6ed1f..9d3525f 100644
+--- a/drivers/media/usb/usbtv/usbtv-video.c
++++ b/drivers/media/usb/usbtv/usbtv-video.c
+@@ -263,6 +263,7 @@ static void usbtv_chunk_to_vbuf(u32 *frame, __be32 *src, int chunk_no, int odd)
+ 		int part_index = (line * 2 + !odd) * 3 + (part_no % 3);
+ 
+ 		u32 *dst = &frame[part_index * USBTV_CHUNK/2];
++
+ 		memcpy(dst, src, USBTV_CHUNK/2 * sizeof(*src));
+ 		src += USBTV_CHUNK/2;
+ 	}
+@@ -407,6 +408,7 @@ static void usbtv_stop(struct usbtv *usbtv)
+ 	/* Cancel running transfers. */
+ 	for (i = 0; i < USBTV_ISOC_TRANSFERS; i++) {
+ 		struct urb *ip = usbtv->isoc_urbs[i];
++
+ 		if (ip == NULL)
+ 			continue;
+ 		usb_kill_urb(ip);
+@@ -560,6 +562,7 @@ static int usbtv_g_input(struct file *file, void *priv, unsigned int *i)
+ static int usbtv_s_input(struct file *file, void *priv, unsigned int i)
+ {
+ 	struct usbtv *usbtv = video_drvdata(file);
++
+ 	return usbtv_select_input(usbtv, i);
+ }
+ 
+-- 
+2.1.0
