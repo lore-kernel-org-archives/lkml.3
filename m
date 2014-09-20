@@ -1,81 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaITPrm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 11:47:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44223 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaITPrl (ORCPT
+	id S1753656AbaITQH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 12:07:27 -0400
+Received: from smtprelay0022.hostedemail.com ([216.40.44.22]:48637 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750963AbaITQH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 11:47:41 -0400
-Date: Sat, 20 Sep 2014 17:47:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140920154733.GM2832@worktop.localdomain>
-References: <20140916203510.GF1205@quack.suse.cz>
- <20140916170709.73ef2993@gandalf.local.home>
- <20140916212250.GI1205@quack.suse.cz>
- <20140916173328.6306a5c2@gandalf.local.home>
- <20140917141816.GO2840@worktop.localdomain>
- <20140917102255.5cd03071@gandalf.local.home>
- <20140917223633.GE2848@worktop.localdomain>
- <20140917203135.6db2ee5e@gandalf.local.home>
- <20140918173414.GU2840@worktop.localdomain>
- <20140920051224.GA5573@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140920051224.GA5573@quack.suse.cz>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Sat, 20 Sep 2014 12:07:26 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3165:3355:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:6119:6691:7652:7875:7903:8531:8828:8957:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12663:12679:12740:13161:13229:13548:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mask18_23892c244971f
+X-Filterd-Recvd-Size: 3654
+Message-ID: <1411229243.24444.51.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] checkpatch: check for subject uniqueness in git
+ repository.
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Date: Sat, 20 Sep 2014 09:07:23 -0700
+In-Reply-To: <2022098628.197398.1411209094968.open-xchange@webmail.nmp.skynet.be>
+References: <1410806637-3510-1-git-send-email-fabf@skynet.be>
+	 <1410837769.18787.40.camel@joe-AO725>
+	 <1685749151.185639.1410884118738.open-xchange@webmail.nmp.skynet.be>
+	 <1410885094.16519.6.camel@joe-AO725>
+	 <2022098628.197398.1411209094968.open-xchange@webmail.nmp.skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 07:12:24AM +0200, Jan Kara wrote:
-> On Thu 18-09-14 19:34:14, Peter Zijlstra wrote:
-> > On Wed, Sep 17, 2014 at 08:31:35PM -0400, Steven Rostedt wrote:
-> > > I totally didn't get what you wrote.
-> > 
-> > :-)
-> > 
-> > > We don't want to know if it got delayed, then the patch to remove that
-> > > print seems correct.
-> > 
-> > Why would you not want to know that? Also was that the actual argument?
-> > Lemme go check the earlier emails -- I cannot find that argument in the
-> > first few emails.
->   Well, so what gets delayed is printing from kernel buffer to console.
-> So this is the same as when you do printk() when console lock is taken by
-> someone else. So it seems a bit strange to prepend [delayed] in some cases
-> and not in others.
+On Sat, 2014-09-20 at 12:31 +0200, Fabian Frederick wrote:
+> > On 16 September 2014 at 18:31 Joe Perches <joe@perches.com> wrote:
+> > On Tue, 2014-09-16 at 18:15 +0200, Fabian Frederick wrote:
+> > > > On 16 September 2014 at 05:22 Joe Perches <joe@perches.com> wrote:
+> > > > On Mon, 2014-09-15 at 20:43 +0200, Fabian Frederick wrote:
+> > > > > Adding patch subject uniqueness check in checkpatch --strict mode.
+> > > > > See Documentation/SubmittingPatches/globally-unique identifier.
+> > > >
+> > > > Perhaps something like this?
+> > []
+> > > > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> > []
+> > > > +     if ($check && $#git_commits < 1 && which("git") && -e ".git") {
+> > > > +             my $output = `git log --no-color --format='%H %s' 2>&1`;
+> > > > +             $output =~ s/^\s*//gm;
+> > > > +             @git_commits = split("\n", $output);
+> > > > +     }
+> >
+> > > Perfect ! :)
+> >
+> > Except for that _really, really_ long time to do the
+> > git log of all commits...
+> >
+> > Maybe the git log should be enabled only with another
+> > command-line option.
+> >
+> Hello Joe,
 
-The difference is that when someone else has the console lock, he
-guarantees it gets out. Whereas with the delayed thing it can take a
-virtual forever to get out.
+Dag Fabian:
 
-> Another question is what the [delayed] prefix would be useful for? If the
-> message eventually gets printed to console I don't see why you would care
-> it was printed few ms after it entered the kernel buffer (after all the
-> time stamp before the line will be the time when it entered the kernel
-> buffer). And if the kernel crashes in such a way that the message doesn't
-> get printed, then bad luck but prefix in the kernel log buffer isn't going
-> to make that any better :)
-> 
-> This all feels like bikeshedding, I don't deeply care what gets done but I
-> wanted to point out I don't really see a use for [delayed]...
+> checkpatck does already execute git log in seed_camelcase_includes and
+> git_commit_info when .git exists
 
-Sure, I was just pointing out that those arguments had not been made. I
-think you're right, if you see the msg it obviously made it out. If you
-don't see it, you don't know either way.
+which takes almost no time
 
-But a patch removing it _must_ make those arguments, it did not.
+$ time git log --no-merges --pretty=format:"%h%n" -1 -- include
+40182b1
 
-On a whole, printk() is entirely useless for debugging these days, its
-far too fragile/unreliable to be taken seriously so I really don't care
-on that point either.
+real	0m0.013s
+user	0m0.008s
+sys	0m0.000s
+
+and
+
+$ time git log --no-color --format='%H %s' -1 ^HEAD 2>&1
+
+real	0m0.013s
+user	0m0.004s
+sys	0m0.004s
+
+vs
+
+$ time git log --no-merges --pretty=format:"%H %s" > /dev/null 2>&1
+
+real	0m19.386s
+user	0m17.264s
+sys	0m1.008s
+
+> so we could add some specific option instead like --complete --verbose
+> --checkduplicates or something for this test ?
+
+Maybe.
+
+I'm still dubious about both the git use because of
+the runtime and the checkpatch use as it's after the
+fact.
+
+The concept seems more suited to a git commit-msg hook
+to me.  The runtime there is still a consideration too.
+
+In a bit more detail:
+
+If this modified checkpatch was run on a branch where
+the patch was committed, in this sort of sequence:
+
+	git checkout -b [some_branch]
+	[make changes]
+	git commit [etc]
+	git format-patch -1
+	./scripts/checkpatch.pl <patch from git format-patch>
+
+then this new warning would trigger which seems senseless.
+
+And in the case where multiple patches are done and then
+scanned with checkpatch in a single block, the damage has
+already been done and the defect was not found when it
+occurred.
+
+Andrew? Do you have an opinion?
+
