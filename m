@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbaITHOO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 03:14:14 -0400
-Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:49582 "EHLO
-	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750707AbaITHON convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 03:14:13 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=Daq5x7peQTZG5JcO7WbcljS9mPiqDMY23hclUajVz3U= c=1 sm=2
- a=7-sIokkr2u0A:10 a=Rw-gbsmgLOMA:10 a=IkcTkHD0fZMA:10
- a=CMrfILTmy1Pq4ZzpbDwA:9 a=QEXdDO2ut3YA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArwSAM8oHVTD7hTT/2dsb2JhbAAZAUYOgn+BKoMBskkBAQEBAQEGm38BfRYBeYQDAQEBAwEjVgULBQQCGAICGA4CAlcGExGIJQyPfyKcR4Z/jwcYgSyEYYlGMweCeIFTBbJhgyBCOy+CSgEBAQ
-Date: Sat, 20 Sep 2014 09:14:11 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <1623224162.140196.1411197251348.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <20140918204455.GA26995@thunk.org>
-References: <1411064974-18304-1-git-send-email-fabf@skynet.be> <20140918204455.GA26995@thunk.org>
-Subject: Re: [PATCH 1/1 linux-next] jbd2: Fix sparse context imbalance
- warning
+	id S1751681AbaITHZG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 03:25:06 -0400
+Received: from mout.gmx.net ([212.227.15.15]:54646 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707AbaITHZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 03:25:04 -0400
+Date: Sat, 20 Sep 2014 09:24:38 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Philipp Zabel <p.zabel@pengutronix.de>
+cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
+Subject: Re: [PATCH v3 1/8] [media] soc_camera: Do not decrement endpoint
+ node refcount in the loop
+In-Reply-To: <1410449587-1677-2-git-send-email-p.zabel@pengutronix.de>
+Message-ID: <Pine.LNX.4.64.1409200923160.21175@axis700.grange>
+References: <1410449587-1677-1-git-send-email-p.zabel@pengutronix.de>
+ <1410449587-1677-2-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V03:K0:GAZUwHm3EmW+BXkrFrV7YyBa57p1eXweHvzZHfb553vgQfB5saf
+ Xr3pb4TOreYjdAhmPcTN8j718wNMXNEknqicKx4TOoP4CJXGHP3i3sYhvfMGGnq9CMest6P
+ u5v0L3R36fl1cx91vVAAZ/YmRU9C/RdB8jli1NUFLANLxgzh1x2uklAzj4HhzUEbFVVdc0H
+ xpab3SOqxTSyiO45R54TA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Philippe,
 
+On Thu, 11 Sep 2014, Philipp Zabel wrote:
 
-> On 18 September 2014 at 22:44 Theodore Ts'o <tytso@mit.edu> wrote:
->
->
-> On Thu, Sep 18, 2014 at 08:29:34PM +0200, Fabian Frederick wrote:
-> > spin_unlock after spin_lock only.
-> >
-> > This fixes the following sparse warning:
-> > fs/jbd2/transaction.c:1102:20: warning: context imbalance
-> > in 'jbd2_journal_get_create_access' - different lock contexts for basic
-> > block
-> >
-> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
->
-> NAK, this is a case where I think it's better to make the static
-> analyzers better.  In any case sparse gives a lot of false positives
-> for this particular warning, so adding lines of code to try to shut up
-> sparse for every single false positive seems to be a losing
-> proposition.
->
-> I'll note that these sorts of bugs are much more easily picked up
-> using lockdep in any case, so we're probably better of just ignoring
-> these sorts of warnings.  Better to let the 0day kernel tester warn
-> for new sparse warnings, instead of trying to drive sparse warnings
-> down to zero.
->
-> Cheers,
->
->                                       - Ted
+> In preparation for a following patch, stop decrementing the endpoint node
+> refcount in the loop. This temporarily leaks a reference to the endpoint node,
+> which will be fixed by having of_graph_get_next_endpoint decrement the refcount
+> of its prev argument instead.
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  drivers/media/platform/soc_camera/soc_camera.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
+> index f4308fe..f752489 100644
+> --- a/drivers/media/platform/soc_camera/soc_camera.c
+> +++ b/drivers/media/platform/soc_camera/soc_camera.c
+> @@ -1696,11 +1696,11 @@ static void scan_of_host(struct soc_camera_host *ici)
+>  		if (!i)
+>  			soc_of_bind(ici, epn, ren->parent);
+>  
+> -		of_node_put(epn);
+>  		of_node_put(ren);
+>  
+>  		if (i) {
+>  			dev_err(dev, "multiple subdevices aren't supported yet!\n");
+> +			of_node_put(epn);
 
-Thanks a lot for explanation Ted. I didn't see J_ASSERT_JH above which BUG_ON
-if b_transaction is not ok.
+Sorry, this doesn't look right to me. I think you want to drop the last 
+reference _after_ the loop, not in this temporary check for multiple 
+endpoints, which your patch has nothing to do with.
 
+Thanks
+Guennadi
 
-Regards,
-Fabian
+>  			break;
+>  		}
+>  	}
+> -- 
+> 2.1.0
+> 
