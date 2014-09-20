@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaITJgS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 05:36:18 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:44406 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750751AbaITJgQ (ORCPT
+	id S1753528AbaITJvc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 05:51:32 -0400
+Received: from 212.183.200.200.static.user.ono.com ([212.183.200.200]:39918
+	"EHLO mail.promovil.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaITJvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 05:36:16 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: android-goldfish: Remove unnecessary NULL check on host
-Date: Sat, 20 Sep 2014 15:06:08 +0530
-Message-Id: <1411205768-3830-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 20 Sep 2014 05:51:31 -0400
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Sep 2014 05:51:30 EDT
+X-Amavis-Modified: Mail body modified (using disclaimer) - mail.promovil.es
+Date: Sat, 20 Sep 2014 13:44:17 +0400 (MSK)
+From: Sarah Chanda Davis <sofia@promovil.es>
+Reply-To: "sarahchadada@hotmail.com" <sarahchadada@hotmail.com>
+Message-ID: <670218395.479912.1411206257385.JavaMail.root@promovil.es>
+In-Reply-To: <2064668173.479894.1411206237121.JavaMail.root@promovil.es>
+Subject: Comply with me to set up a legal business relationship
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [175.139.126.120]
+X-Mailer: Zimbra 8.0.1_GA_5438 (ZimbraWebClient - FF33 (Win)/8.0.1_GA_5438)
+Thread-Topic: Comply with me to set up a legal business relationship
+Thread-Index: PWU0mVK7aIamvVdl2Xs6ZmHiY/l1/w==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change removes unwanted NULL check around mmc private data
-structure in remove function as the probe would not have succeeded
-with this structure variable as NULL.
 
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/mmc/host/android-goldfish.c | 2 --
- 1 file changed, 2 deletions(-)
+Good Day,
 
-diff --git a/drivers/mmc/host/android-goldfish.c b/drivers/mmc/host/android-goldfish.c
-index 8b4e20a..76696e5 100644
---- a/drivers/mmc/host/android-goldfish.c
-+++ b/drivers/mmc/host/android-goldfish.c
-@@ -546,8 +546,6 @@ static int goldfish_mmc_remove(struct platform_device *pdev)
- {
- 	struct goldfish_mmc_host *host = platform_get_drvdata(pdev);
- 
--	BUG_ON(host == NULL);
--
- 	mmc_remove_host(host->mmc);
- 	free_irq(host->irq, host);
- 	dma_free_coherent(&pdev->dev, BUFFER_SIZE, host->virt_base, host->phys_base);
--- 
-1.8.3.2
+I am writing this particular message to you to ascertain whether you could be able to handle this matter effectively in your area or any place of your choice. Be inform that i wish to enter into business relationship with you which must be under your complete control and management.
+
+On indication of your interests to comply with me to set up a legal business relationship with each other,i should give you the full detailed information's for us to move forward,I expect your urgent reply.
+
+Yours faithfully
+Mrs Sarah Chanda Davis
 
