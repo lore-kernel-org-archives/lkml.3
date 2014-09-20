@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374AbaITW1D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 18:27:03 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:62935 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaITW07 (ORCPT
+	id S1751311AbaITW7J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 18:59:09 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:58126 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaITW7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 18:26:59 -0400
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Landley <rob@landley.net>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
-In-Reply-To: <87fvfmynw0.fsf@gmail.com>
-References: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com> <1387463671-1164-2-git-send-email-b.brezillon@overkiz.com> <20131219164109.GB27409@kroah.com> <87fvfmynw0.fsf@gmail.com>
-User-Agent: Notmuch/0.18+69~g2295f35 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 20 Sep 2014 18:26:54 -0400
-Message-ID: <87a95uylld.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	Sat, 20 Sep 2014 18:59:07 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>, Brett Rudley <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] brcmfmac: Fix off by one bug in brcmf_count_20mhz_channels()
+Date: Sun, 21 Sep 2014 00:58:52 +0200
+Message-Id: <1411253932-27973-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain
+In the brcmf_count_20mhz_channels function we are looping through a list
+of channels received from firmware. Since the index of the first channel
+is 0 the condition leads to an off by one bug. This is causing us to hit
+the WARN_ON_ONCE(1) calls in the brcmu_d11n_decchspec function, which is
+how I discovered the bug.
 
-Ben Gamari <bgamari.foss@gmail.com> writes:
+Introduced by:
+commit b48d891676f756d48b4d0ee131e4a7a5d43ca417
+("brcmfmac: rework wiphy structure setup")
 
-> Hi Boris,
->
-> I'm just returning to this now.
->
->
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->
->> I don't understand what makes GPIO's "special" enough to get included in
->> the driver core like this, and called for each and every device that is
->> added to the system.
->>
-> I'm also a bit confused why GPIOs ended up in the driver core but
-> perhaps I'm missing something. What was your motivation here?
->
-Somehow I overlooked the message in which you responded to this. Ignore
-the above.
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers,
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+index 02fe706..93b5dd9 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -4918,7 +4918,7 @@ static void brcmf_count_20mhz_channels(struct brcmf_cfg80211_info *cfg,
+ 	struct brcmu_chan ch;
+ 	int i;
+ 
+-	for (i = 0; i <= total; i++) {
++	for (i = 0; i < total; i++) {
+ 		ch.chspec = (u16)le32_to_cpu(chlist->element[i]);
+ 		cfg->d11inf.decchspec(&ch);
+ 
+-- 
+2.1.0
 
-- Ben
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUHf8uAAoJEErkyLZmeNiDA3QH+wRXGjXScBmI5Urn09LLfQX+
-XSkYi9g9MB93LRhdpHdJ5RINzR4BdfqmUXn6M8oia16OiaoxMHdA/o5HmJGUWYBr
-5+gf4wAkc7xtefV2KMmkeH44u7tpdpLvyRv/NALdSjsl68fefk8k+q6/LqrSOmOH
-0Dqz6rq6TvEHoONoX6yzs1cgl3zTXdIxmQYgL44w/+q6vQRjEkOiXUV/0LRY+EkD
-jex4wmKbfPVdHATLw5Rn9CIaLFMBXHb/GaynSEOtpzLicClKgwgUQn4iVuniMvp/
-/gbymKQy5dxfztLqmdD8H46YWC1CtbWQNUqlOue3EMkH2edAQ/mRC/pPWFnIcGY=
-=UOUS
------END PGP SIGNATURE-----
---=-=-=--
