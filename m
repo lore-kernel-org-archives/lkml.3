@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612AbaITO15 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 10:27:57 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:36139 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502AbaITO1z (ORCPT
+	id S932632AbaITO2K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 10:28:10 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:42816 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932502AbaITO2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 10:27:55 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 13/13] staging: rtl8188eu: odm.h: Remove unused struct dyn_primary_cca
-Date: Sat, 20 Sep 2014 19:55:59 +0530
-Message-Id: <1411223160-17292-13-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
-References: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
+	Sat, 20 Sep 2014 10:28:05 -0400
+Date: Sat, 20 Sep 2014 16:28:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, james.hogan@imgtec.com,
+        atomlin@redhat.com, tglx@linutronix.de
+Subject: Re: [tip:sched/urgent] sched: Fix end_of_stack()  and location of
+ stack canary for architectures using CONFIG_STACK_GROWSUP
+Message-ID: <20140920142800.GA25366@gmail.com>
+References: <20140919093505.62681e43@as>
+ <tip-a3215fb47c7ecb814dc16815245db4f375841268@git.kernel.org>
+ <20140920065810.794d6bbd@as>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140920065810.794d6bbd@as>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct odm_dm_struct has a member of struct dyn_primary_cca,
-which is initialized once and then never used by driver, so
-we can remove struct dyn_promary_cca and code which initialize
-it.
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/hal/odm.c              |    1 -
- drivers/staging/rtl8188eu/hal/odm_RTL8188E.c     |   15 ---------------
- drivers/staging/rtl8188eu/include/odm.h          |    9 ---------
- drivers/staging/rtl8188eu/include/odm_RTL8188E.h |    2 --
- 4 files changed, 27 deletions(-)
+* Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
 
-diff --git a/drivers/staging/rtl8188eu/hal/odm.c b/drivers/staging/rtl8188eu/hal/odm.c
-index 7da7fd7..e4df837 100644
---- a/drivers/staging/rtl8188eu/hal/odm.c
-+++ b/drivers/staging/rtl8188eu/hal/odm.c
-@@ -191,7 +191,6 @@ void ODM_DMInit(struct odm_dm_struct *pDM_Odm)
- 	odm_DIGInit(pDM_Odm);
- 	odm_RateAdaptiveMaskInit(pDM_Odm);
- 
--	odm_PrimaryCCA_Init(pDM_Odm);    /*  Gary */
- 	odm_DynamicTxPowerInit(pDM_Odm);
- 	odm_TXPowerTrackingInit(pDM_Odm);
- 	ODM_EdcaTurboInit(pDM_Odm);
-diff --git a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
-index 495d9ec..5342af7 100644
---- a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
-+++ b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
-@@ -370,18 +370,3 @@ void rtl88eu_dm_antenna_diversity(struct odm_dm_struct *dm_odm)
- 	    (dm_odm->AntDivType == CGCS_RX_HW_ANTDIV))
- 		rtl88eu_dm_hw_ant_div(dm_odm);
- }
--
--/* 3============================================================ */
--/* 3 Dynamic Primary CCA */
--/* 3============================================================ */
--
--void odm_PrimaryCCA_Init(struct odm_dm_struct *dm_odm)
--{
--	struct dyn_primary_cca *PrimaryCCA = &(dm_odm->DM_PriCCA);
--
--	PrimaryCCA->DupRTS_flag = 0;
--	PrimaryCCA->intf_flag = 0;
--	PrimaryCCA->intf_type = 0;
--	PrimaryCCA->Monitor_flag = 0;
--	PrimaryCCA->PriCCA_flag = 0;
--}
-diff --git a/drivers/staging/rtl8188eu/include/odm.h b/drivers/staging/rtl8188eu/include/odm.h
-index e83812f..525eb10 100644
---- a/drivers/staging/rtl8188eu/include/odm.h
-+++ b/drivers/staging/rtl8188eu/include/odm.h
-@@ -164,14 +164,6 @@ struct false_alarm_stats {
- 	u32	Cnt_BW_LSC;	/* Gary */
- };
- 
--struct dyn_primary_cca {
--	u8		PriCCA_flag;
--	u8		intf_flag;
--	u8		intf_type;
--	u8		DupRTS_flag;
--	u8		Monitor_flag;
--};
--
- struct rx_hpc {
- 	u8		RXHP_flag;
- 	u8		PSD_func_trigger;
-@@ -867,7 +859,6 @@ struct odm_dm_struct {
- 	struct fast_ant_train DM_FatTable;
- 	struct rtw_dig	DM_DigTable;
- 	struct rtl_ps	DM_PSTable;
--	struct dyn_primary_cca DM_PriCCA;
- 	struct rx_hpc	DM_RXHP_Table;
- 	struct false_alarm_stats FalseAlmCnt;
- 	struct false_alarm_stats FlaseAlmCntBuddyAdapter;
-diff --git a/drivers/staging/rtl8188eu/include/odm_RTL8188E.h b/drivers/staging/rtl8188eu/include/odm_RTL8188E.h
-index eabef39..14dce6c 100644
---- a/drivers/staging/rtl8188eu/include/odm_RTL8188E.h
-+++ b/drivers/staging/rtl8188eu/include/odm_RTL8188E.h
-@@ -47,8 +47,6 @@ void odm_FastAntTrainingCallback(struct odm_dm_struct *pDM_Odm);
- 
- void odm_FastAntTrainingWorkItemCallback(struct odm_dm_struct *pDM_Odm);
- 
--void odm_PrimaryCCA_Init(struct odm_dm_struct *pDM_Odm);
--
- bool ODM_DynamicPrimaryCCA_DupRTS(struct odm_dm_struct *pDM_Odm);
- 
- #endif
--- 
-1.7.10.4
+> On Fri, 19 Sep 2014 23:42:37 -0700
+> tip-bot for Chuck Ebbert <tipbot@zytor.com> wrote:
+> 
+> > Commit-ID:  a3215fb47c7ecb814dc16815245db4f375841268
+> > Gitweb:     http://git.kernel.org/tip/a3215fb47c7ecb814dc16815245db4f375841268
+> > Author:     Chuck Ebbert <cebbert.lkml@gmail.com>
+> > AuthorDate: Fri, 19 Sep 2014 09:35:05 -0500
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Sat, 20 Sep 2014 08:38:16 +0200
+> > 
+> > sched: Fix end_of_stack() and location of stack canary for architectures using CONFIG_STACK_GROWSUP
+> > 
+> > Aaron Tomlin recently posted patches to enable checking the
+> > stack canary on every task switch:
+> > 
+> >   http://lkml.org/lkml/2014/9/12/293
+> > 
+> > Looking at the canary code, I realized that every arch
+> > (except ia64, which adds some space for register spill
+> > above the stack) shares a definition of end_of_stack()
+> > that makes it the first long after the threadinfo.
+> > 
+> > For stacks that grow down, this low address is correct
+> > because the stack starts at the end of the thread area
+> > and grows toward lower addresses. However, for stacks
+> > that grow up, toward higher addresses, this is wrong.
+> > (The stack actually grows away from the canary.)
+> > 
+> > On these archs end_of_stack() should return the address
+> > of the last long, at the highest possible address for
+> > the stack.
+> > 
+> > Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
+> > Tested-by: James Hogan <james.hogan@imgtec.com> [metag]
+> > Acked-by: James Hogan <james.hogan@imgtec.com>
+> > Acked-by: Aaron Tomlin <atomlin@redhat.com>
+> > Link: http://lkml.kernel.org/r/20140919093505.62681e43@as
+> > [ Added comments to end_of_stack(). ]
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> > ---
+> >  include/linux/sched.h | 13 +++++++++++++
+> >  1 file changed, 13 insertions(+)
+> > 
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 5c2c885..0e20a24 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -2608,9 +2608,22 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
+> >  	task_thread_info(p)->task = p;
+> >  }
+> >  
+> > +/*
+> > + * Return the address of the first long before (or after,
+> > + * depending on the architecture's default stack growth
+> > + * direction) * a task's task_info structure, which is the
+> > + * kernel stack's last usable spot.
+> > + *
+> > + * This is the point of no return, if the stack grows
+> > + * beyond that position, we corrupt the task's state.
+> > + */
+> 
+> This comment you added is not correct for archs where the stack grows
+> up. The threadinfo is always at the lowest address on the stack in
+> every case. Instead of corrupting the thread info, a stack overflow
+> will corrupt whatever is on the next page after the stack if it grows
+> upward.
 
+Okay, I've zapped the commit, please resubmit the patch with the 
+comment corrected.
+
+Thanks,
+
+	Ingo
