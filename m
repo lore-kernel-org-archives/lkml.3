@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178AbaITSAV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 14:00:21 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:56489 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143AbaITSAT (ORCPT
+	id S1757819AbaITSCB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 14:02:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46822 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153AbaITSCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 14:00:19 -0400
-Message-ID: <541DC0AF.2060704@gmail.com>
-Date: Sat, 20 Sep 2014 13:00:15 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Sat, 20 Sep 2014 14:02:00 -0400
+Date: Sat, 20 Sep 2014 20:01:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140920180148.GP2832@worktop.localdomain>
+References: <20140916212250.GI1205@quack.suse.cz>
+ <20140916173328.6306a5c2@gandalf.local.home>
+ <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+ <20140920154733.GM2832@worktop.localdomain>
+ <1411229447.24444.53.camel@joe-AO725>
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>, Alim Akhtar <alim.akhtar@samsung.com>,
-        gregkh@linuxfoundation.org
-CC: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        thomas.ab@samsung.com, Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
-References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com> <541D83AE.1050006@gmail.com>
-In-Reply-To: <541D83AE.1050006@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411229447.24444.53.camel@joe-AO725>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2014 08:39 AM, Tomasz Figa wrote:
-> Hi Alim,
+On Sat, Sep 20, 2014 at 09:10:47AM -0700, Joe Perches wrote:
+> On Sat, 2014-09-20 at 17:47 +0200, Peter Zijlstra wrote:
+> > On a whole, printk() is entirely useless for debugging these days, its
+> > far too fragile/unreliable to be taken seriously so I really don't care
+> > on that point either.
 > 
-> Please see my comments inline.
+> That's unfortunate.
 > 
-> On 16.09.2014 13:32, Alim Akhtar wrote:
->> Add earlycon support for the samsung serial port. This allows enabling
->> the samsung serial port for console when early_params are parse and processed.
->>
->> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
->> ---
->>  Documentation/kernel-parameters.txt |    6 ++++++
->>  drivers/tty/serial/Kconfig          |    1 +
->>  drivers/tty/serial/samsung.c        |   17 +++++++++++++++++
->>  3 files changed, 24 insertions(+)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 5ae8608..e01c0e5 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -936,6 +936,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>  			must already be setup and configured. Options are not
->>  			yet supported.
->>  
->> +		samsung,<addr>
+> Care to enumerate the issues that you believe make
+> printk too fragile/unreliable for debugging?
 
-There will only ever be 1 samsung uart? This is an ABI to some extent,
-so you will be stuck with it.
+Look at what it takes to end up at console->write(), and then realize
+that some console implementations require scheduling and other nonsense
+to actually implement ->write().
 
->> +			Start an early, polled-mode console on a samsung serial
->> +			port at the specified address. The samsung serial port
->> +			must already be setup and configured. Options are not
->> +			yet supported.
->> +
-> 
-> Couldn't you simply parse this from DT? I believe there is already code
-> parsing stdout property in chosen node for earlycon purposes present in
-> the kernel.
-
-You should support both and it is just a OF_EARLYCON_DECLARE line to add.
-
-> Anyway, we already had a patch for this in our internal tree, but it
-> wasn't submitted because there was no support for early ioremap on ARM
-> at that time. I haven't been following it since then (and I'm no longer
-> at Samsung; Marek might be able to take this topic), is it already
-> available?
-
-No, but should be soonish. fixmap parts are being worked on by Kees.
-
-Rob
-
+The (only) reliable option is early_printk() with the
+early_serial_console driver. The rest is useless crap these days.
