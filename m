@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370AbaITKqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 06:46:17 -0400
+	id S1756224AbaITKqk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 06:46:40 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:20742 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750903AbaITKqQ (ORCPT
+	with ESMTP id S1756072AbaITKqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 06:46:16 -0400
+	Sat, 20 Sep 2014 06:46:37 -0400
 X-IronPort-AV: E=Sophos;i="5.04,559,1406563200"; 
-   d="scan'208";a="36212229"
+   d="scan'208";a="36212246"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
         <jan.kiszka@web.de>, <pbonzini@redhat.com>
 CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
         <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
         <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v7 0/9] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
-Date: Sat, 20 Sep 2014 18:47:42 +0800
-Message-ID: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v7 8/9] kvm, mem-hotplug: Add arch specific mmu notifier to handle apic access migration.
+Date: Sat, 20 Sep 2014 18:47:50 +0800
+Message-ID: <1411210071-14727-9-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.167.226.71]
@@ -26,59 +28,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ept identity pagetable and apic access page in kvm are pinned in memory.
-As a result, they cannot be migrated/hot-removed.
+We are handling "L1 and L2 share one apic access page" situation when migrating
+apic access page. We should do some handling when migration happens in the
+following situations:
 
-But actually they don't need to be pinned in memory.
+   1) when L0 is running: Update L1's vmcs in the next L0->L1 entry and L2's
+      vmcs in the next L1->L2 entry.
 
-[For ept identity page]
-Just do not pin it. When it is migrated, guest will be able to find the
-new page in the next ept violation.
+   2) when L1 is running: Force a L1->L0 exit, update L1's vmcs in the next
+      L0->L1 entry and L2's vmcs in the next L1->L2 entry.
 
-[For apic access page]
-The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
-When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
-for each vcpu in addition.
+   3) when L2 is running: Force a L2->L0 exit, update L2's vmcs in the next
+      L0->L2 entry and L1's vmcs in the next L2->L1 exit.
 
-This patch-set is based on Linux 3.17.0-rc5.
+This patch force a L1->L0 exit or L2->L0 exit when shared apic access page is
+migrated using mmu notifier. Since apic access page is only used on intel x86,
+this is arch specific code.
 
-NOTE: Tested with -cpu xxx,-x2apic option.
-      But since nested vm pins some other pages in memory, if user uses nested
-      vm, memory hot-remove will not work.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/kvm/x86.c       | 11 +++++++++++
+ include/linux/kvm_host.h | 14 +++++++++++++-
+ virt/kvm/kvm_main.c      |  3 +++
+ 3 files changed, 27 insertions(+), 1 deletion(-)
 
-Change log v6 -> v7:
-1. Patch 1/9~3/9 are applied to kvm/queue by Paolo Bonzini <pbonzini@redhat.com>.
-   Just resend them, no changes.
-2. In the new patch 4/9, add a new interface to check if secondary exec 
-   virtualized apic access is enabled.
-3. In new patch 6/9, rename make_all_cpus_request() to kvm_make_all_cpus_request() 
-   and make it non-static so that we can use it in other patches.
-4. In new patch 8/9, add arch specific function to make apic access page reload 
-   request in mmu notifier.
-
-Tang Chen (9):
-  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
-  kvm: Remove ept_identity_pagetable from struct kvm_arch.
-  kvm: Make init_rmode_identity_map() return 0 on success.
-  kvm: Add interface to check if secondary exec virtualzed apic accesses
-    is enabled.
-  kvm, mem-hotplug: Reload L1's apic access page in vcpu_enter_guest().
-  kvm: Rename make_all_cpus_request() to kvm_make_all_cpus_request() and
-    make it non-static.
-  kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
-    running.
-  kvm, mem-hotplug: Add arch specific mmu notifier to handle apic access
-    migration.
-  kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
-
- arch/x86/include/asm/kvm_host.h |   6 ++-
- arch/x86/kvm/svm.c              |  15 +++++-
- arch/x86/kvm/vmx.c              | 104 ++++++++++++++++++++++++----------------
- arch/x86/kvm/x86.c              |  47 ++++++++++++++++--
- include/linux/kvm_host.h        |  16 ++++++-
- virt/kvm/kvm_main.c             |  13 +++--
- 6 files changed, 146 insertions(+), 55 deletions(-)
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 2ae2dc7..7dd4179 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6011,6 +6011,17 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
+ 
++void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
++					   unsigned long address)
++{
++	/*
++	 * The physical address of apic access page is stored in VMCS.
++	 * Update it when it becomes invalid.
++	 */
++	if (address == gfn_to_hva(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT))
++		kvm_make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
++}
++
+ /*
+  * Returns 1 to let __vcpu_run() continue the guest execution loop without
+  * exiting to the userspace.  Otherwise, the value will be returned to the
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 73de13c..b6e4d38 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -917,7 +917,19 @@ static inline int mmu_notifier_retry(struct kvm *kvm, unsigned long mmu_seq)
+ 		return 1;
+ 	return 0;
+ }
+-#endif
++
++#ifdef _ASM_X86_KVM_HOST_H
++void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
++					   unsigned long address);
++#else /* _ASM_X86_KVM_HOST_H */
++inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
++						  unsigned long address)
++{
++	return;
++}
++#endif /* _ASM_X86_KVM_HOST_H */
++
++#endif /* CONFIG_MMU_NOTIFIER & KVM_ARCH_WANT_MMU_NOTIFIER */
+ 
+ #ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
+ 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 0f8b6f6..5427973d 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -295,6 +295,9 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
+ 		kvm_flush_remote_tlbs(kvm);
+ 
+ 	spin_unlock(&kvm->mmu_lock);
++
++	kvm_arch_mmu_notifier_invalidate_page(kvm, address);
++
+ 	srcu_read_unlock(&kvm->srcu, idx);
+ }
+ 
 -- 
 1.8.3.1
 
