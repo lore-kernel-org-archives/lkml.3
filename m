@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903AbaITTDu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 15:03:50 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50841 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662AbaITTDt (ORCPT
+	id S1757820AbaITTFw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 15:05:52 -0400
+Received: from forward8l.mail.yandex.net ([84.201.143.141]:45386 "EHLO
+	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729AbaITTFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 15:03:49 -0400
-Date: Sat, 20 Sep 2014 21:03:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Kirill Tkhai <ktkhai@parallels.com>
-Subject: Re: [PATCH 2/7] sched: Fix picking a task switching on other cpu
- (__ARCH_WANT_UNLOCKED_CTXSW)
-Message-ID: <20140920190347.GF3037@worktop.localdomain>
-References: <20140920165116.16299.1381.stgit@localhost>
- <20140920165122.16299.31150.stgit@localhost>
- <20140920183326.GT2832@worktop.localdomain>
+	Sat, 20 Sep 2014 15:05:51 -0400
+X-Yandex-Uniq: 00a972ce-851f-463b-ab87-8cb586993f0c
+Authentication-Results: smtp1h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <541DD00A.9010905@yandex.ru>
+Date: Sat, 20 Sep 2014 23:05:46 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140920183326.GT2832@worktop.localdomain>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <ktkhai@parallels.com>
+Subject: Re: [PATCH 5/7] sched: Use rq->rd in sched_setaffinity() under RCU
+ read lock
+References: <20140920165116.16299.1381.stgit@localhost> <20140920165140.16299.45521.stgit@localhost> <20140920185901.GV2832@worktop.localdomain>
+In-Reply-To: <20140920185901.GV2832@worktop.localdomain>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 08:33:26PM +0200, Peter Zijlstra wrote:
-> On Sat, Sep 20, 2014 at 08:51:22PM +0400, Kirill Tkhai wrote:
-> > From: Kirill Tkhai <ktkhai@parallels.com>
-> > 
-> > We may pick a task which is in context_switch() on other cpu at the moment.
-> > Parallel using of a single stack by two processes is not a good idea.
+On 20.09.2014 22:59, Peter Zijlstra wrote:
+> On Sat, Sep 20, 2014 at 08:51:40PM +0400, Kirill Tkhai wrote:
+>> From: Kirill Tkhai <ktkhai@parallels.com>
+>>
+>> task_rq(p)->rd and task_rq(p)->rd->span may be used-after-free here.
+>> Probability of NULL pointer derefference isn't zero in this place.
 > 
-> Please elaborate on who exactly that might happen. Its best to have
-> comprehensive changelogs for issues that fix races.
+> I don't see NULL derefs, just use-after-free.
+> 
 
-typing hard, ugh. s/who/how/
+It's very paranod case :). Two pointers are here:
+
+task_rq(p)->rd (somebody zeroed it "rd") ->span
