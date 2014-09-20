@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945AbaITNcC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 09:32:02 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:38170 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaITNbl (ORCPT
+	id S1755732AbaITNkF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 09:40:05 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53266 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401AbaITNkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 09:31:41 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Carlo Caione <carlo@caione.org>,
-        Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 2/2] net: stmmac: meson: document device tree bindings
-Date: Sat, 20 Sep 2014 15:29:17 +0200
-Message-Id: <1411219757-9201-3-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
-References: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
+	Sat, 20 Sep 2014 09:40:03 -0400
+Message-ID: <541D83AE.1050006@gmail.com>
+Date: Sat, 20 Sep 2014 15:39:58 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Alim Akhtar <alim.akhtar@samsung.com>, gregkh@linuxfoundation.org
+CC: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh@kernel.org>,
+        thomas.ab@samsung.com, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
+References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com>
+In-Reply-To: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device tree bindings documentation for the Amlogic Meson
-variant of the Synopsys DesignWare MAC.
+Hi Alim,
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- .../devicetree/bindings/net/meson-dwmac.txt        | 25 ++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/meson-dwmac.txt
+Please see my comments inline.
 
-diff --git a/Documentation/devicetree/bindings/net/meson-dwmac.txt b/Documentation/devicetree/bindings/net/meson-dwmac.txt
-new file mode 100644
-index 0000000..ec633d7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/meson-dwmac.txt
-@@ -0,0 +1,25 @@
-+* Amlogic Meson DWMAC Ethernet controller
-+
-+The device inherits all the properties of the dwmac/stmmac devices
-+described in the file net/stmmac.txt with the following changes.
-+
-+Required properties:
-+
-+- compatible: should be "amlogic,meson6-dwmac" along with "snps,dwmac"
-+	      and any applicable more detailed version number
-+	      described in net/stmmac.txt
-+
-+- reg: should contain a register range for the dwmac controller and
-+       another one for the Amlogic specific configuration
-+
-+Example:
-+
-+	ethmac: ethernet@c9410000 {
-+		compatible = "amlogic,meson6-dwmac", "snps,dwmac";
-+		reg = <0xc9410000 0x10000
-+		       0xc1108108 0x4>;
-+		interrupts = <0 8 1>;
-+		interrupt-names = "macirq";
-+		clocks = <&clk81>;
-+		clock-names = "stmmaceth";
-+	}
--- 
-1.9.1
+On 16.09.2014 13:32, Alim Akhtar wrote:
+> Add earlycon support for the samsung serial port. This allows enabling
+> the samsung serial port for console when early_params are parse and processed.
+> 
+> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
+> ---
+>  Documentation/kernel-parameters.txt |    6 ++++++
+>  drivers/tty/serial/Kconfig          |    1 +
+>  drivers/tty/serial/samsung.c        |   17 +++++++++++++++++
+>  3 files changed, 24 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 5ae8608..e01c0e5 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -936,6 +936,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			must already be setup and configured. Options are not
+>  			yet supported.
+>  
+> +		samsung,<addr>
+> +			Start an early, polled-mode console on a samsung serial
+> +			port at the specified address. The samsung serial port
+> +			must already be setup and configured. Options are not
+> +			yet supported.
+> +
 
+Couldn't you simply parse this from DT? I believe there is already code
+parsing stdout property in chosen node for earlycon purposes present in
+the kernel.
+
+Anyway, we already had a patch for this in our internal tree, but it
+wasn't submitted because there was no support for early ioremap on ARM
+at that time. I haven't been following it since then (and I'm no longer
+at Samsung; Marek might be able to take this topic), is it already
+available?
+
+>  		smh	Use ARM semihosting calls for early console.
+>  
+>  	earlyprintk=	[X86,SH,BLACKFIN,ARM,M68k]
+> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> index 249e340..9d42ac8 100644
+> --- a/drivers/tty/serial/Kconfig
+> +++ b/drivers/tty/serial/Kconfig
+> @@ -257,6 +257,7 @@ config SERIAL_SAMSUNG_CONSOLE
+>  	bool "Support for console on Samsung SoC serial port"
+>  	depends on SERIAL_SAMSUNG=y
+>  	select SERIAL_CORE_CONSOLE
+> +	select SERIAL_EARLYCON
+>  	help
+>  	  Allow selection of the S3C24XX on-board serial ports for use as
+>  	  an virtual console.
+> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+> index c78f43a..f32e9c8 100644
+> --- a/drivers/tty/serial/samsung.c
+> +++ b/drivers/tty/serial/samsung.c
+> @@ -917,6 +917,7 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
+>  #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
+>  
+>  static struct console s3c24xx_serial_console;
+> +static void s3c24xx_serial_console_putchar(struct uart_port *port, int ch);
+>  
+>  static int __init s3c24xx_serial_console_init(void)
+>  {
+> @@ -926,6 +927,22 @@ static int __init s3c24xx_serial_console_init(void)
+>  console_initcall(s3c24xx_serial_console_init);
+>  
+>  #define S3C24XX_SERIAL_CONSOLE &s3c24xx_serial_console
+> +static void samsung_early_write(struct console *con, const char *s, unsigned n)
+> +{
+> +	struct earlycon_device *dev = con->data;
+> +
+> +	uart_console_write(&dev->port, s, n, s3c24xx_serial_console_putchar);
+
+Hmm, I'm not sure how this is supposed to work before the driver is
+fully initialized.
+
+s3c24xx_serial_console_putchar() will call
+s3c24xx_serial_console_txrdy(), which in turn requires the port argument
+to be a pointer to the member of a s3c24xx_uart_port struct, with filled
+info pointer, which I believe is ready only after s3c24xx_serial_probe().
+
+Has this patch been tested with earlycon enabled and it was indeed
+verified that earlycon is actually used?
+
+Best regards,
+Tomasz
