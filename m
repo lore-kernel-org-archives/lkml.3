@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaITRMh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 13:12:37 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:63749 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898AbaITRMf (ORCPT
+	id S1756771AbaITRPw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 13:15:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50548 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241AbaITRPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 13:12:35 -0400
-Date: Sat, 20 Sep 2014 13:12:31 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zefan Li <lizefan@huawei.com>
-Cc: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: remove redundant variable in cgroup_mount()
-Message-ID: <20140920171231.GB3681@htj.dyndns.org>
-References: <541D2366.2020107@huawei.com>
+	Sat, 20 Sep 2014 13:15:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <541D2366.2020107@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140920143012.GL2832@worktop.localdomain>
+References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
+	<541D16EA.70407@huawei.com>
+	<20140920143012.GL2832@worktop.localdomain>
+Date: Sat, 20 Sep 2014 10:15:50 -0700
+X-Google-Sender-Auth: wuRjIj59P-bDjv2taXVTLbh_wbw
+Message-ID: <CAGXu5j+P_kcgZuqYsemgL0KU_zRhz5HGJ6seh2oLyyst=cZP6g@mail.gmail.com>
+Subject: Re: Racy manipulation of task_struct->flags in cgroups code causes
+ hard to reproduce kernel panics
+From: Kees Cook <keescook@chromium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Zefan Li <lizefan@huawei.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, fernando_b1@lab.ntt.co.jp
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+On Sat, Sep 20, 2014 at 7:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sat, Sep 20, 2014 at 01:55:54PM +0800, Zefan Li wrote:
+>> We should make the updating of this flag atomic.
+>
+>>  /* Per-process atomic flags. */
+>>  #define PFA_NO_NEW_PRIVS 0x00000001  /* May not gain new privileges. */
+>> +#define PFA_SPREAD_PAGE  0x00000002  /* Spread page cache over cpuset */
+>> +#define PFA_SPREAD_SLAB  0x00000004  /* Spread some slab caches over cpuset */
+>
+> Ooh, I was not ware we had those.. /me checks where that came from. Hmm
+> weird, while I did get that patch it had a seccomp prefix when landing
+> in my inbox so I ignored it. However the commit has a sched prefix
+> (which I would not have ignored). Dubious things happened here.
 
-On Sat, Sep 20, 2014 at 02:49:10PM +0800, Zefan Li wrote:
-> Both pinned_sb and new_sb indicate if a new superblock is needed,
-> so we can just remove new_sb.
-> 
-> Note now we must check if kernfs_tryget_sb() returns NULL, because
-> when it returns NULL, kernfs_mount() may still re-use an existing
-> superblock, which is just allocated by another concurent mount.
-> 
-> Suggested-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Zefan Li <lizefan@huawei.com>
+The series went through a lot of revisions, so it probably gained the
+sched prefix later in its life. Is there anything that needs changing
+about how this has been implemented?
 
-Ah, this is so much better.  Thanks for doing this.  Applied to
-cgroup/for-3.18.
-
-> ---
-> 
-> Hi Tejun,
-> 
-> I think you wanted to see the @new_sb argument removed from kernfs_mount(),
-> but it's also used in debugfs and we can't use kernfs_tryget_sb() to
-> replace the new_sb check.
-
-Bummer, someday. :)
-
-Thanks.
+-Kees
 
 -- 
-tejun
+Kees Cook
+Chrome OS Security
