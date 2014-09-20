@@ -1,110 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaITO0V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 10:26:21 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35983 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921AbaITO0U (ORCPT
+	id S932201AbaITO0n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 10:26:43 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:34825 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756628AbaITO0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 10:26:20 -0400
+	Sat, 20 Sep 2014 10:26:40 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 01/13] staging: rtl8188eu: Remove odm_debug.c
-Date: Sat, 20 Sep 2014 19:55:47 +0530
-Message-Id: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 04/13] staging: rtl8188eu: Rework function odm_TRX_HWAntDivInit()
+Date: Sat, 20 Sep 2014 19:55:50 +0530
+Message-Id: <1411223160-17292-4-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
+References: <1411223160-17292-1-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move a function and global variable from odm_debug.c to odm.c
+Rename CamelCase function name.
+Remove unnecessary comments.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/Makefile        |    1 -
- drivers/staging/rtl8188eu/hal/odm.c       |    8 ++++++++
- drivers/staging/rtl8188eu/hal/odm_debug.c |   32 -----------------------------
- 3 files changed, 8 insertions(+), 33 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/hal/odm_debug.c
+ drivers/staging/rtl8188eu/hal/odm_RTL8188E.c |   39 +++++++++++++++-----------
+ 1 file changed, 22 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
-index 33cd34d..31ac159 100644
---- a/drivers/staging/rtl8188eu/Makefile
-+++ b/drivers/staging/rtl8188eu/Makefile
-@@ -27,7 +27,6 @@ r8188eu-y :=				\
- 		hal/hal_intf.o		\
- 		hal/hal_com.o		\
- 		hal/odm.o		\
--		hal/odm_debug.o		\
- 		hal/odm_HWConfig.o	\
- 		hal/odm_RTL8188E.o	\
- 		hal/rtl8188e_cmd.o	\
-diff --git a/drivers/staging/rtl8188eu/hal/odm.c b/drivers/staging/rtl8188eu/hal/odm.c
-index 3a929bf..ae98379 100644
---- a/drivers/staging/rtl8188eu/hal/odm.c
-+++ b/drivers/staging/rtl8188eu/hal/odm.c
-@@ -23,6 +23,7 @@
- #include "odm_precomp.h"
- #include "phy.h"
+diff --git a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
+index 4b8bafe..8cbd578 100644
+--- a/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
++++ b/drivers/staging/rtl8188eu/hal/odm_RTL8188E.c
+@@ -52,42 +52,47 @@ static void dm_rx_hw_antena_div_init(struct odm_dm_struct *dm_odm)
+ 	phy_set_bb_reg(adapter, ODM_REG_ANT_MAPPING1_11N, 0xFFFF, 0x0201);
+ }
  
-+u32 GlobalDebugLevel;
- static const u16 dB_Invert_Table[8][12] = {
- 	{1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4},
- 	{4, 5, 6, 6, 7, 8, 9, 10, 11, 13, 14, 16},
-@@ -172,6 +173,13 @@ u8 CCKSwingTable_Ch14[CCK_TABLE_SIZE][8] = {
- #define		RxDefaultAnt1		0x65a9
- #define	RxDefaultAnt2		0x569a
+-static void odm_TRX_HWAntDivInit(struct odm_dm_struct *dm_odm)
++static void dm_trx_hw_antenna_div_init(struct odm_dm_struct *dm_odm)
+ {
+ 	struct adapter *adapter = dm_odm->Adapter;
+ 	u32	value32;
  
-+void ODM_InitDebugSetting(struct odm_dm_struct *pDM_Odm)
-+{
-+	pDM_Odm->DebugLevel = ODM_DBG_TRACE;
-+
-+	pDM_Odm->DebugComponents = 0;
-+}
-+
- /* 3 Export Interface */
+ 	if (*(dm_odm->mp_mode) == 1) {
+ 		dm_odm->AntDivType = CGCS_RX_SW_ANTDIV;
+-		phy_set_bb_reg(adapter, ODM_REG_IGI_A_11N, BIT7, 0); /*  disable HW AntDiv */
+-		phy_set_bb_reg(adapter, ODM_REG_RX_ANT_CTRL_11N, BIT5|BIT4|BIT3, 0); /* Default RX   (0/1) */
++		phy_set_bb_reg(adapter, ODM_REG_IGI_A_11N, BIT7, 0);
++		phy_set_bb_reg(adapter, ODM_REG_RX_ANT_CTRL_11N,
++			       BIT5|BIT4|BIT3, 0);
+ 		return;
+ 	}
+-	ODM_RT_TRACE(dm_odm, ODM_COMP_ANT_DIV, ODM_DBG_LOUD, ("odm_TRX_HWAntDivInit()\n"));
  
- /*  2011/09/21 MH Add to describe different team necessary resource allocate?? */
-diff --git a/drivers/staging/rtl8188eu/hal/odm_debug.c b/drivers/staging/rtl8188eu/hal/odm_debug.c
-deleted file mode 100644
-index 84caadd..0000000
---- a/drivers/staging/rtl8188eu/hal/odm_debug.c
-+++ /dev/null
-@@ -1,32 +0,0 @@
--/******************************************************************************
-- *
-- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of version 2 of the GNU General Public License as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-- *
-- *
-- ******************************************************************************/
--
--/*  include files */
--
--#include "odm_precomp.h"
--
--void ODM_InitDebugSetting(struct odm_dm_struct *pDM_Odm)
--{
--	pDM_Odm->DebugLevel = ODM_DBG_TRACE;
--
--	pDM_Odm->DebugComponents = 0;
--}
--
--u32 GlobalDebugLevel;
+ 	/* MAC Setting */
+ 	value32 = phy_query_bb_reg(adapter, ODM_REG_ANTSEL_PIN_11N, bMaskDWord);
+-	phy_set_bb_reg(adapter, ODM_REG_ANTSEL_PIN_11N, bMaskDWord, value32|(BIT23|BIT25)); /* Reg4C[25]=1, Reg4C[23]=1 for pin output */
++	phy_set_bb_reg(adapter, ODM_REG_ANTSEL_PIN_11N, bMaskDWord,
++		       value32|(BIT23|BIT25));
+ 	/* Pin Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_PIN_CTRL_11N, BIT9|BIT8, 0);/* Reg870[8]=1'b0, Reg870[9]=1'b0		antsel antselb by HW */
+-	phy_set_bb_reg(adapter, ODM_REG_RX_ANT_CTRL_11N, BIT10, 0);	/* Reg864[10]=1'b0	antsel2 by HW */
+-	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT22, 0);	/* Regb2c[22]=1'b0	disable CS/CG switch */
+-	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT31, 1);	/* Regb2c[31]=1'b1	output at CG only */
++	phy_set_bb_reg(adapter, ODM_REG_PIN_CTRL_11N, BIT9|BIT8, 0);
++	phy_set_bb_reg(adapter, ODM_REG_RX_ANT_CTRL_11N, BIT10, 0);
++	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT22, 0);
++	phy_set_bb_reg(adapter, ODM_REG_LNA_SWITCH_11N, BIT31, 1);
+ 	/* OFDM Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_ANTDIV_PARA1_11N, bMaskDWord, 0x000000a0);
++	phy_set_bb_reg(adapter, ODM_REG_ANTDIV_PARA1_11N, bMaskDWord,
++		       0x000000a0);
+ 	/* CCK Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_BB_PWR_SAV4_11N, BIT7, 1); /* Fix CCK PHY status report issue */
+-	phy_set_bb_reg(adapter, ODM_REG_CCK_ANTDIV_PARA2_11N, BIT4, 1); /* CCK complete HW AntDiv within 64 samples */
++	phy_set_bb_reg(adapter, ODM_REG_BB_PWR_SAV4_11N, BIT7, 1);
++	phy_set_bb_reg(adapter, ODM_REG_CCK_ANTDIV_PARA2_11N, BIT4, 1);
+ 	/* Tx Settings */
+-	phy_set_bb_reg(adapter, ODM_REG_TX_ANT_CTRL_11N, BIT21, 0); /* Reg80c[21]=1'b0		from TX Reg */
++	phy_set_bb_reg(adapter, ODM_REG_TX_ANT_CTRL_11N, BIT21, 0);
+ 	ODM_UpdateRxIdleAnt_88E(dm_odm, MAIN_ANT);
+ 
+ 	/* antenna mapping table */
+ 	if (!dm_odm->bIsMPChip) { /* testchip */
+-		phy_set_bb_reg(adapter, ODM_REG_RX_DEFUALT_A_11N, BIT10|BIT9|BIT8, 1);	/* Reg858[10:8]=3'b001 */
+-		phy_set_bb_reg(adapter, ODM_REG_RX_DEFUALT_A_11N, BIT13|BIT12|BIT11, 2);	/* Reg858[13:11]=3'b010 */
++		phy_set_bb_reg(adapter, ODM_REG_RX_DEFUALT_A_11N,
++			       BIT10|BIT9|BIT8, 1);
++		phy_set_bb_reg(adapter, ODM_REG_RX_DEFUALT_A_11N,
++			       BIT13|BIT12|BIT11, 2);
+ 	} else { /* MPchip */
+-		phy_set_bb_reg(adapter, ODM_REG_ANT_MAPPING1_11N, bMaskDWord, 0x0201);	/* Reg914=3'b010, Reg915=3'b001 */
++		phy_set_bb_reg(adapter, ODM_REG_ANT_MAPPING1_11N, bMaskDWord,
++			       0x0201);
+ 	}
+ }
+ 
+@@ -180,7 +185,7 @@ void ODM_AntennaDiversityInit_88E(struct odm_dm_struct *dm_odm)
+ 	if (dm_odm->AntDivType == CGCS_RX_HW_ANTDIV)
+ 		dm_rx_hw_antena_div_init(dm_odm);
+ 	else if (dm_odm->AntDivType == CG_TRX_HW_ANTDIV)
+-		odm_TRX_HWAntDivInit(dm_odm);
++		dm_trx_hw_antenna_div_init(dm_odm);
+ 	else if (dm_odm->AntDivType == CG_TRX_SMART_ANTDIV)
+ 		odm_FastAntTrainingInit(dm_odm);
+ }
 -- 
 1.7.10.4
 
