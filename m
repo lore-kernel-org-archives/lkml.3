@@ -1,92 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaITGtQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 02:49:16 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:10635 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaITGtP (ORCPT
+	id S1752180AbaITGwk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 02:52:40 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:47726 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750872AbaITGwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 02:49:15 -0400
-Message-ID: <541D2366.2020107@huawei.com>
-Date: Sat, 20 Sep 2014 14:49:10 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cgroup: remove redundant variable in cgroup_mount()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	Sat, 20 Sep 2014 02:52:38 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH 1/2] mmc: atmel-mci: Switch to using managed resource in probe
+Date: Sat, 20 Sep 2014 12:22:30 +0530
+Message-Id: <1411195951-10630-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both pinned_sb and new_sb indicate if a new superblock is needed,
-so we can just remove new_sb.
+This change uses managed resource APIs to allocate resources such as,
+clk, gpio, irq in order to simplify the driver unload or failure cases.
+Hence does away with release statements of the same resorces in error
+lables and remove function.
 
-Note now we must check if kernfs_tryget_sb() returns NULL, because
-when it returns NULL, kernfs_mount() may still re-use an existing
-superblock, which is just allocated by another concurent mount.
-
-Suggested-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
+Cc: Chris Ball <chris@printf.net>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-mmc@vger.kernel.org
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
+ drivers/mmc/host/atmel-mci.c | 57 ++++++++++++++++----------------------------
+ 1 file changed, 20 insertions(+), 37 deletions(-)
 
-Hi Tejun,
-
-I think you wanted to see the @new_sb argument removed from kernfs_mount(),
-but it's also used in debugfs and we can't use kernfs_tryget_sb() to
-replace the new_sb check.
-
----
- kernel/cgroup.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 33f15b3..15a2387 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1694,7 +1694,6 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	struct dentry *dentry;
- 	int ret;
- 	int i;
--	bool new_sb;
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index bb585d9..21a222c 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -17,6 +17,7 @@
+ #include <linux/gpio.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
++#include <linux/io.h>
+ #include <linux/ioport.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -2195,7 +2196,8 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+ 	/* Assume card is present initially */
+ 	set_bit(ATMCI_CARD_PRESENT, &slot->flags);
+ 	if (gpio_is_valid(slot->detect_pin)) {
+-		if (gpio_request(slot->detect_pin, "mmc_detect")) {
++		if (devm_gpio_request(&host->pdev->dev, slot->detect_pin,
++				      "mmc_detect")) {
+ 			dev_dbg(&mmc->class_dev, "no detect pin available\n");
+ 			slot->detect_pin = -EBUSY;
+ 		} else if (gpio_get_value(slot->detect_pin) ^
+@@ -2208,7 +2210,8 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+ 		mmc->caps |= MMC_CAP_NEEDS_POLL;
  
- 	/*
- 	 * The first time anyone tries to mount a cgroup, enable the list
-@@ -1785,7 +1784,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 		 * path is super cold.  Let's just sleep a bit and retry.
- 		 */
- 		pinned_sb = kernfs_pin_sb(root->kf_root, NULL);
--		if (IS_ERR(pinned_sb) ||
-+		if (IS_ERR_OR_NULL(pinned_sb) ||
- 		    !percpu_ref_tryget_live(&root->cgrp.self.refcnt)) {
- 			mutex_unlock(&cgroup_mutex);
- 			if (!IS_ERR_OR_NULL(pinned_sb))
-@@ -1831,18 +1830,16 @@ out_free:
- 		return ERR_PTR(ret);
+ 	if (gpio_is_valid(slot->wp_pin)) {
+-		if (gpio_request(slot->wp_pin, "mmc_wp")) {
++		if (devm_gpio_request(&host->pdev->dev, slot->wp_pin,
++				      "mmc_wp")) {
+ 			dev_dbg(&mmc->class_dev, "no WP pin available\n");
+ 			slot->wp_pin = -EBUSY;
+ 		}
+@@ -2224,7 +2227,8 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+ 		setup_timer(&slot->detect_timer, atmci_detect_change,
+ 				(unsigned long)slot);
  
- 	dentry = kernfs_mount(fs_type, flags, root->kf_root,
--				CGROUP_SUPER_MAGIC, &new_sb);
--	if (IS_ERR(dentry) || !new_sb)
-+				CGROUP_SUPER_MAGIC, NULL);
-+	if (IS_ERR(dentry) || pinned_sb)
- 		cgroup_put(&root->cgrp);
+-		ret = request_irq(gpio_to_irq(slot->detect_pin),
++		ret = devm_request_irq(&host->pdev->dev,
++				gpio_to_irq(slot->detect_pin),
+ 				atmci_detect_interrupt,
+ 				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+ 				"mmc-detect", slot);
+@@ -2232,7 +2236,6 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+ 			dev_dbg(&mmc->class_dev,
+ 				"could not request IRQ %d for detect pin\n",
+ 				gpio_to_irq(slot->detect_pin));
+-			gpio_free(slot->detect_pin);
+ 			slot->detect_pin = -EBUSY;
+ 		}
+ 	}
+@@ -2252,15 +2255,8 @@ static void __exit atmci_cleanup_slot(struct atmel_mci_slot *slot,
  
- 	/*
- 	 * If @pinned_sb, we're reusing an existing root and holding an
- 	 * extra ref on its sb.  Mount is complete.  Put the extra ref.
- 	 */
--	if (pinned_sb) {
--		WARN_ON(new_sb);
-+	if (pinned_sb)
- 		deactivate_super(pinned_sb);
+ 	mmc_remove_host(slot->mmc);
+ 
+-	if (gpio_is_valid(slot->detect_pin)) {
+-		int pin = slot->detect_pin;
+-
+-		free_irq(gpio_to_irq(pin), slot);
++	if (gpio_is_valid(slot->detect_pin))
+ 		del_timer_sync(&slot->detect_timer);
+-		gpio_free(pin);
 -	}
+-	if (gpio_is_valid(slot->wp_pin))
+-		gpio_free(slot->wp_pin);
  
- 	return dentry;
+ 	slot->host->slot[id] = NULL;
+ 	mmc_free_host(slot->mmc);
+@@ -2395,7 +2391,7 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 	if (irq < 0)
+ 		return irq;
+ 
+-	host = kzalloc(sizeof(struct atmel_mci), GFP_KERNEL);
++	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
+ 	if (!host)
+ 		return -ENOMEM;
+ 
+@@ -2403,20 +2399,18 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 	spin_lock_init(&host->lock);
+ 	INIT_LIST_HEAD(&host->queue);
+ 
+-	host->mck = clk_get(&pdev->dev, "mci_clk");
+-	if (IS_ERR(host->mck)) {
+-		ret = PTR_ERR(host->mck);
+-		goto err_clk_get;
+-	}
++	host->mck = devm_clk_get(&pdev->dev, "mci_clk");
++	if (IS_ERR(host->mck))
++		return PTR_ERR(host->mck);
+ 
+-	ret = -ENOMEM;
+-	host->regs = ioremap(regs->start, resource_size(regs));
++	host->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
+ 	if (!host->regs)
+-		goto err_ioremap;
++		return -ENOMEM;
+ 
+ 	ret = clk_prepare_enable(host->mck);
+ 	if (ret)
+-		goto err_request_irq;
++		return ret;
++
+ 	atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+ 	host->bus_hz = clk_get_rate(host->mck);
+ 	clk_disable_unprepare(host->mck);
+@@ -2425,9 +2419,10 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 
+ 	tasklet_init(&host->tasklet, atmci_tasklet_func, (unsigned long)host);
+ 
+-	ret = request_irq(irq, atmci_interrupt, 0, dev_name(&pdev->dev), host);
++	ret = devm_request_irq(&pdev->dev, irq, atmci_interrupt, 0,
++			       dev_name(&pdev->dev), host);
+ 	if (ret)
+-		goto err_request_irq;
++		return ret;
+ 
+ 	/* Get MCI capabilities and set operations according to it */
+ 	atmci_get_cap(host);
+@@ -2498,13 +2493,7 @@ static int __init atmci_probe(struct platform_device *pdev)
+ err_init_slot:
+ 	if (host->dma.chan)
+ 		dma_release_channel(host->dma.chan);
+-	free_irq(irq, host);
+-err_request_irq:
+-	iounmap(host->regs);
+-err_ioremap:
+-	clk_put(host->mck);
+-err_clk_get:
+-	kfree(host);
++
+ 	return ret;
  }
+ 
+@@ -2531,12 +2520,6 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 	if (host->dma.chan)
+ 		dma_release_channel(host->dma.chan);
+ 
+-	free_irq(platform_get_irq(pdev, 0), host);
+-	iounmap(host->regs);
+-
+-	clk_put(host->mck);
+-	kfree(host);
+-
+ 	return 0;
+ }
+ 
 -- 
-1.8.0.2
+1.8.3.2
 
