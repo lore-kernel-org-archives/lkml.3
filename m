@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaITGjL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 02:39:11 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:52998 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaITGjK (ORCPT
+	id S1755237AbaITGnO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 02:43:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36879 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaITGnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 02:39:10 -0400
-Message-ID: <541D2108.1090308@vlnb.net>
-Date: Fri, 19 Sep 2014 23:39:04 -0700
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
+	Sat, 20 Sep 2014 02:43:12 -0400
+Date: Fri, 19 Sep 2014 23:42:37 -0700
+From: tip-bot for Chuck Ebbert <tipbot@zytor.com>
+Message-ID: <tip-a3215fb47c7ecb814dc16815245db4f375841268@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        cebbert.lkml@gmail.com, james.hogan@imgtec.com, atomlin@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        cebbert.lkml@gmail.com, james.hogan@imgtec.com, tglx@linutronix.de,
+        atomlin@redhat.com
+In-Reply-To: <20140919093505.62681e43@as>
+References: <20140919093505.62681e43@as>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix end_of_stack()
+  and location of stack canary for architectures using CONFIG_STACK_GROWSUP
+Git-Commit-ID: a3215fb47c7ecb814dc16815245db4f375841268
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: scst-devel <scst-devel@lists.sourceforge.net>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [ANNOUNCE]: SCST 3.0 released
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:J5qokUjar66ZHLG5BiebIbORS+rcFPjiCA3yrCz8H64
- 2bUVNh00SiM51L/mYuZBuRPIpVMB+ZveO0u7QUd9pUwcZucvje
- PzTF3B1259FEoH7QFqePGSyZkm4fKqoNmMsbCN144z5nrNFYn7
- bBWSEee2ZKSd5a0YsBvXL8/cnFLwXkGKfre49dXdwzWq687HmX
- Ld6+H6sSZ+M0XW7e6IE7CS91YOHWpBn3KK58ZQQiZtgHEyAE22
- rsC4g3I+TQQWM2FPS4bfL2S0p0MGZ8xrzt2bxfbPRVpcsguT58
- 9clJBsUeWElSd411BRIbBDB4KKCiEO2eMztDO7ILrfr3XkJPVx
- IyCwcGGFyZSt/skhtMYc=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Commit-ID:  a3215fb47c7ecb814dc16815245db4f375841268
+Gitweb:     http://git.kernel.org/tip/a3215fb47c7ecb814dc16815245db4f375841268
+Author:     Chuck Ebbert <cebbert.lkml@gmail.com>
+AuthorDate: Fri, 19 Sep 2014 09:35:05 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 20 Sep 2014 08:38:16 +0200
 
-I'm glad to announce that SCST 3.0 has just been released. This release includes SCST 
-core, target drivers iSCSI-SCST for iSCSI, including iSER support (thanks to 
-Mellanox!), qla2x00t for QLogic Fibre Channel adapters, ib_srpt for InfiniBand SRP, 
-fcst for FCoE and scst_local for local loopback-like access as well as SCST management 
-utility scstadmin. Also separately you can download from Emulex development portal 
-stable and fully functional target driver for the current generation of Emulex Fibre 
-Channel adapters.
+sched: Fix end_of_stack() and location of stack canary for architectures using CONFIG_STACK_GROWSUP
 
-SCST is alternative SCSI target stack for Linux. SCST allows creation of sophisticated 
-storage devices, which provide advanced functionality, like replication, thin 
-provisioning, deduplication, high availability, automatic backup, etc. Majority of 
-recently developed SAN appliances, especially higher end ones, are SCST based. It might 
-well be that your favorite storage appliance running SCST in the firmware.
+Aaron Tomlin recently posted patches to enable checking the
+stack canary on every task switch:
 
-More info about SCST and its modules you can find on: http://scst.sourceforge.net
+  http://lkml.org/lkml/2014/9/12/293
 
-Thanks to all who made it happen!
+Looking at the canary code, I realized that every arch
+(except ia64, which adds some space for register spill
+above the stack) shares a definition of end_of_stack()
+that makes it the first long after the threadinfo.
 
-Vlad
+For stacks that grow down, this low address is correct
+because the stack starts at the end of the thread area
+and grows toward lower addresses. However, for stacks
+that grow up, toward higher addresses, this is wrong.
+(The stack actually grows away from the canary.)
+
+On these archs end_of_stack() should return the address
+of the last long, at the highest possible address for
+the stack.
+
+Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
+Tested-by: James Hogan <james.hogan@imgtec.com> [metag]
+Acked-by: James Hogan <james.hogan@imgtec.com>
+Acked-by: Aaron Tomlin <atomlin@redhat.com>
+Link: http://lkml.kernel.org/r/20140919093505.62681e43@as
+[ Added comments to end_of_stack(). ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..0e20a24 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2608,9 +2608,22 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
+ 	task_thread_info(p)->task = p;
+ }
+ 
++/*
++ * Return the address of the first long before (or after,
++ * depending on the architecture's default stack growth
++ * direction) * a task's task_info structure, which is the
++ * kernel stack's last usable spot.
++ *
++ * This is the point of no return, if the stack grows
++ * beyond that position, we corrupt the task's state.
++ */
+ static inline unsigned long *end_of_stack(struct task_struct *p)
+ {
++#ifdef CONFIG_STACK_GROWSUP
++	return (unsigned long *)((unsigned long)task_thread_info(p) + THREAD_SIZE) - 1;
++#else
+ 	return (unsigned long *)(task_thread_info(p) + 1);
++#endif
+ }
+ 
+ #endif
