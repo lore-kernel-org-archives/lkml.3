@@ -1,258 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678AbaITPpD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 11:45:03 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58117 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaITPo7 (ORCPT
+	id S1756039AbaITPrm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 11:47:42 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44223 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaITPrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 11:44:59 -0400
-Subject: Re: [PATCH] modified error code when perf_session__new() fail
-From: Namhyung Kim <namhyung@kernel.org>
-To: taeung <treeze.taeung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        acme@kernel.org, jolsa@redhat.com
-In-Reply-To: <541946D8.1080209@gmail.com>
-References: <541946D8.1080209@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 21 Sep 2014 00:44:55 +0900
-Message-ID: <1411227895.1690.23.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Sat, 20 Sep 2014 11:47:41 -0400
+Date: Sat, 20 Sep 2014 17:47:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140920154733.GM2832@worktop.localdomain>
+References: <20140916203510.GF1205@quack.suse.cz>
+ <20140916170709.73ef2993@gandalf.local.home>
+ <20140916212250.GI1205@quack.suse.cz>
+ <20140916173328.6306a5c2@gandalf.local.home>
+ <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140920051224.GA5573@quack.suse.cz>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Taeung,
+On Sat, Sep 20, 2014 at 07:12:24AM +0200, Jan Kara wrote:
+> On Thu 18-09-14 19:34:14, Peter Zijlstra wrote:
+> > On Wed, Sep 17, 2014 at 08:31:35PM -0400, Steven Rostedt wrote:
+> > > I totally didn't get what you wrote.
+> > 
+> > :-)
+> > 
+> > > We don't want to know if it got delayed, then the patch to remove that
+> > > print seems correct.
+> > 
+> > Why would you not want to know that? Also was that the actual argument?
+> > Lemme go check the earlier emails -- I cannot find that argument in the
+> > first few emails.
+>   Well, so what gets delayed is printing from kernel buffer to console.
+> So this is the same as when you do printk() when console lock is taken by
+> someone else. So it seems a bit strange to prepend [delayed] in some cases
+> and not in others.
 
-Please CC perf maintainers when you send a perf patch.  I'm adding
-Arnaldo who maintains tooling part and Jiri who suggested this change.
+The difference is that when someone else has the console lock, he
+guarantees it gets out. Whereas with the delayed thing it can take a
+virtual forever to get out.
 
+> Another question is what the [delayed] prefix would be useful for? If the
+> message eventually gets printed to console I don't see why you would care
+> it was printed few ms after it entered the kernel buffer (after all the
+> time stamp before the line will be the time when it entered the kernel
+> buffer). And if the kernel crashes in such a way that the message doesn't
+> get printed, then bad luck but prefix in the kernel log buffer isn't going
+> to make that any better :)
+> 
+> This all feels like bikeshedding, I don't deeply care what gets done but I
+> wanted to point out I don't really see a use for [delayed]...
 
-2014-09-17 (수), 17:31 +0900, taeung:
-> Hi,
-> 
-> I modified error code for the requirement as below.
-> 
-> Author: taeung <treeze.taeung@gmail.com>
-> Date:   Sat Sep 13 16:22:53 2014 +0900
-> 
->       modified error code when perf_session__new() fail
-> 
->          Because perf_session__new() could fail
->          for more reasons than just ENOMEM,
->          I modified error code(ENOMEM or EINVAL)
->          into -1.
+Sure, I was just pointing out that those arguments had not been made. I
+think you're right, if you see the msg it obviously made it out. If you
+don't see it, you don't know either way.
 
-Hmm.. this seems you copied output of "git show" and send it via an
-email client.  I recommend you to use "git format-patch" and "git
-send-email" later.
+But a patch removing it _must_ make those arguments, it did not.
 
-In addition, you forgot to add your Signed-off-by.
-
-That being said I'm okay with the patch itself.  Jiri, this is what you
-wanted to do, right?
-
-Thanks,
-Namhyung
-
-> 
-> 
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 1ec429f..81c9fda 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -199,7 +199,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
-> 
->       session = perf_session__new(&file, false, &ann->tool);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       machines__set_symbol_filter(&session->machines, 
-> symbol__annotate_init);
-> 
-> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-> index 9a5a035..3363dce 100644
-> --- a/tools/perf/builtin-diff.c
-> +++ b/tools/perf/builtin-diff.c
-> @@ -683,7 +683,7 @@ static int __cmd_diff(void)
->           d->session = perf_session__new(&d->file, false, &tool);
->           if (!d->session) {
->               pr_err("Failed to open %s\n", d->file.path);
-> -            ret = -ENOMEM;
-> +            ret = -1;
->               goto out_delete;
->           }
-> 
-> diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-> index 66e12f5..0f93f85 100644
-> --- a/tools/perf/builtin-evlist.c
-> +++ b/tools/perf/builtin-evlist.c
-> @@ -28,7 +28,7 @@ static int __cmd_evlist(const char *file_name, struct 
-> perf_attr_details *details
-> 
->       session = perf_session__new(&file, 0, NULL);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       evlist__for_each(session->evlist, pos)
->           perf_evsel__fprintf(pos, details, stdout);
-> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-> index 9a02807..8dbdd13 100644
-> --- a/tools/perf/builtin-inject.c
-> +++ b/tools/perf/builtin-inject.c
-> @@ -359,7 +359,7 @@ static int __cmd_inject(struct perf_inject *inject)
-> 
->       session = perf_session__new(&file, true, &inject->tool);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       if (inject->build_ids) {
->           inject->tool.sample = perf_event__inject_buildid;
-> diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-> index bef3376..b518f4b 100644
-> --- a/tools/perf/builtin-kmem.c
-> +++ b/tools/perf/builtin-kmem.c
-> @@ -422,7 +422,7 @@ static int __cmd_kmem(void)
-> 
->       session = perf_session__new(&file, false, &perf_kmem);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       if (perf_session__create_kernel_maps(session) < 0)
->           goto out_delete;
-> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-> index 43367eb..828e706 100644
-> --- a/tools/perf/builtin-kvm.c
-> +++ b/tools/perf/builtin-kvm.c
-> @@ -1060,7 +1060,7 @@ static int read_events(struct perf_kvm_stat *kvm)
->           .comm            = perf_event__process_comm,
->           .ordered_samples    = true,
->       };
-> -    struct perf_data_file file = {
-> +    struct perf_data_file file = {
->           .path = kvm->file_name,
->           .mode = PERF_DATA_MODE_READ,
->       };
-> @@ -1069,7 +1069,7 @@ static int read_events(struct perf_kvm_stat *kvm)
->       kvm->session = perf_session__new(&file, false, &kvm->tool);
->       if (!kvm->session) {
->           pr_err("Initializing perf session failed\n");
-> -        return -EINVAL;
-> +        return -1;
->       }
-> 
->       if (!perf_session__has_traces(kvm->session, "kvm record"))
-> @@ -1369,7 +1369,7 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
->        */
->       kvm->session = perf_session__new(&file, false, &kvm->tool);
->       if (kvm->session == NULL) {
-> -        err = -ENOMEM;
-> +        err = -1;
->           goto out;
->       }
->       kvm->session->evlist = kvm->evlist;
-> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> index 6148afc..49f1e30 100644
-> --- a/tools/perf/builtin-lock.c
-> +++ b/tools/perf/builtin-lock.c
-> @@ -862,7 +862,7 @@ static int __cmd_report(bool display_info)
->       session = perf_session__new(&file, false, &eops);
->       if (!session) {
->           pr_err("Initializing perf session failed\n");
-> -        return -ENOMEM;
-> +        return -1;
->       }
-> 
->       if (!perf_session__has_traces(session, "lock record"))
-> diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-> index 4a1a6c9..75976ce 100644
-> --- a/tools/perf/builtin-mem.c
-> +++ b/tools/perf/builtin-mem.c
-> @@ -124,7 +124,7 @@ static int report_raw_events(struct perf_mem *mem)
->                                &mem->tool);
-> 
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       if (mem->cpu_list) {
->           ret = perf_session__cpu_bitmap(session, mem->cpu_list,
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 21d830b..1a7abac 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -712,7 +712,7 @@ int cmd_report(int argc, const char **argv, const 
-> char *prefix __maybe_unused)
->   repeat:
->       session = perf_session__new(&file, false, &report.tool);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       report.session = session;
-> 
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index f57035b..77cef60 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -1725,7 +1725,7 @@ int cmd_script(int argc, const char **argv, const 
-> char *prefix __maybe_unused)
-> 
->       session = perf_session__new(&file, false, &script.tool);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       if (header || header_only) {
->           perf_session__fprintf_info(session, stdout, show_full_info);
-> diff --git a/tools/perf/builtin-timechart.c 
-> b/tools/perf/builtin-timechart.c
-> index 2f1a522..dc9a465 100644
-> --- a/tools/perf/builtin-timechart.c
-> +++ b/tools/perf/builtin-timechart.c
-> @@ -1605,7 +1605,7 @@ static int __cmd_timechart(struct timechart 
-> *tchart, const char *output_name)
->       int ret = -EINVAL;
-> 
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       (void)perf_header__process_sections(&session->header,
->                           perf_data_file__fd(session->file),
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index 377971d..8217b5d 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -911,7 +911,7 @@ static int __cmd_top(struct perf_top *top)
-> 
->       top->session = perf_session__new(NULL, false, NULL);
->       if (top->session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       machines__set_symbol_filter(&top->session->machines, symbol_filter);
-> 
-> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-> index a6c3752..9e23293 100644
-> --- a/tools/perf/builtin-trace.c
-> +++ b/tools/perf/builtin-trace.c
-> @@ -2220,7 +2220,7 @@ static int trace__replay(struct trace *trace)
-> 
->       session = perf_session__new(&file, false, &trace->tool);
->       if (session == NULL)
-> -        return -ENOMEM;
-> +        return -1;
-> 
->       trace->host = &session->machines.host;
-> 
-> Thanks,
-
-
-
+On a whole, printk() is entirely useless for debugging these days, its
+far too fragile/unreliable to be taken seriously so I really don't care
+on that point either.
