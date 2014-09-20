@@ -1,279 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083AbaITQT4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 12:19:56 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:54829 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215AbaITQSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 12:18:41 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Milian Wolff <mail@milianw.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] perf tools: Move some callchain parser functions to callchain.c
-Date: Sun, 21 Sep 2014 01:18:04 +0900
-Message-Id: <1411229886-24390-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411229886-24390-1-git-send-email-namhyung@kernel.org>
-References: <1411229886-24390-1-git-send-email-namhyung@kernel.org>
+	id S932146AbaITQYC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 12:24:02 -0400
+Received: from mail.kernel.org ([198.145.19.201]:60738 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751586AbaITQYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 12:24:00 -0400
+Date: Sat, 20 Sep 2014 09:23:58 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH 3/3] f2fs: fix roll-forward missing scenarios
+Message-ID: <20140920162358.GA18133@jaegeuk-mac02.hsd1.ca.comcast.net>
+References: <1411019468-2201-1-git-send-email-jaegeuk@kernel.org>
+ <1411019468-2201-3-git-send-email-jaegeuk@kernel.org>
+ <CAC=cRTPotgNXbuPwG95HHuWiicS2OiD5R3HsOqdMG+2b=8ZyEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAC=cRTPotgNXbuPwG95HHuWiicS2OiD5R3HsOqdMG+2b=8ZyEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And rename record_callchain_parse() to parse_callchain_record_opt() in
-accordance to parse_callchain_report_opt().
+On Thu, Sep 18, 2014 at 09:04:11PM +0800, huang ying wrote:
+> On Thu, Sep 18, 2014 at 1:51 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
+> 
+> > We can summarize the roll forward recovery scenarios as follows.
+> >
+> > [Term] F: fsync_mark, D: dentry_mark
+> >
+> > 1. inode(x) | CP | inode(x) | dnode(F)
+> > -> Update the latest inode(x).
+> >
+> > 2. inode(x) | CP | inode(F) | dnode(F)
+> > -> No problem.
+> >
+> > 3. inode(x) | CP | dnode(F) | inode(x)
+> > -> Recover to the latest dnode(F), and drop the last inode(x)
+> >
+> > 4. inode(x) | CP | dnode(F) | inode(F)
+> > -> No problem.
+> >
+> > 5. CP | inode(x) | dnode(F)
+> > -> The inode(DF) was missing. Should drop this dnode(F).
+> >
+> > 6. CP | inode(DF) | dnode(F)
+> > -> No problem.
+> >
+> > 7. CP | dnode(F) | inode(DF)
+> > -> If f2fs_iget fails, then goto next to find inode(DF).
+> >
+> > 8. CP | dnode(F) | inode(x)
+> > -> If f2fs_iget fails, then goto next to find inode(DF).
+> >    But it will fail due to no inode(DF).
+> >
+> > So, this patch adds some missing points such as #1, #5, #7, and #8.
+> >
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  fs/f2fs/recovery.c | 71
+> > +++++++++++++++++++++++++++++++++++++++++++++---------
+> >  1 file changed, 60 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> > index 36d4f73..a4eb978 100644
+> > --- a/fs/f2fs/recovery.c
+> > +++ b/fs/f2fs/recovery.c
+> > @@ -14,6 +14,37 @@
+> >  #include "node.h"
+> >  #include "segment.h"
+> >
+> > +/*
+> > + * Roll forward recovery scenarios.
+> > + *
+> > + * [Term] F: fsync_mark, D: dentry_mark
+> > + *
+> > + * 1. inode(x) | CP | inode(x) | dnode(F)
+> > + * -> Update the latest inode(x).
+> > + *
+> > + * 2. inode(x) | CP | inode(F) | dnode(F)
+> > + * -> No problem.
+> > + *
+> > + * 3. inode(x) | CP | dnode(F) | inode(x)
+> > + * -> Recover to the latest dnode(F), and drop the last inode(x)
+> > + *
+> > + * 4. inode(x) | CP | dnode(F) | inode(F)
+> > + * -> No problem.
+> > + *
+> > + * 5. CP | inode(x) | dnode(F)
+> > + * -> The inode(DF) was missing. Should drop this dnode(F).
+> > + *
+> > + * 6. CP | inode(DF) | dnode(F)
+> > + * -> No problem.
+> > + *
+> > + * 7. CP | dnode(F) | inode(DF)
+> > + * -> If f2fs_iget fails, then goto next to find inode(DF).
+> > + *
+> > + * 8. CP | dnode(F) | inode(x)
+> > + * -> If f2fs_iget fails, then goto next to find inode(DF).
+> > + *    But it will fail due to no inode(DF).
+> > + */
+> > +
+> >  static struct kmem_cache *fsync_entry_slab;
+> >
+> >  bool space_for_roll_forward(struct f2fs_sb_info *sbi)
+> > @@ -110,27 +141,32 @@ out:
+> >         return err;
+> >  }
+> >
+> > -static int recover_inode(struct inode *inode, struct page *node_page)
+> > +static void __recover_inode(struct inode *inode, struct page *page)
+> >  {
+> > -       struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
+> > +       struct f2fs_inode *raw = F2FS_INODE(page);
+> > +
+> > +       inode->i_mode = le16_to_cpu(raw->i_mode);
+> > +       i_size_write(inode, le64_to_cpu(raw->i_size));
+> > +       inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
+> > +       inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
+> > +       inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
+> > +       inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> > +       inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
+> > +       inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> > +}
+> >
+> > +static int recover_inode(struct inode *inode, struct page *node_page)
+> > +{
+> >         if (!IS_INODE(node_page))
+> >                 return 0;
+> >
+> > -       inode->i_mode = le16_to_cpu(raw_inode->i_mode);
+> > -       i_size_write(inode, le64_to_cpu(raw_inode->i_size));
+> > -       inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
+> > -       inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
+> > -       inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
+> > -       inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+> > -       inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
+> > -       inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+> > +       __recover_inode(inode, node_page);
+> >
+> >         if (is_dent_dnode(node_page))
+> >                 return recover_dentry(node_page, inode);
+> >
+> >         f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name
+> > = %s",
+> > -                       ino_of_node(node_page), raw_inode->i_name);
+> > +                       ino_of_node(node_page),
+> > F2FS_INODE(node_page)->i_name);
+> >         return 0;
+> >  }
+> >
+> > @@ -183,10 +219,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info
+> > *sbi, struct list_head *head)
+> >                                 break;
+> >                         }
+> >
+> > +                       /*
+> > +                        * CP | dnode(F) | inode(DF)
+> > +                        * For this case, we should not give up now.
+> > +                        */
+> >                         entry->inode = f2fs_iget(sbi->sb,
+> > ino_of_node(page));
+> >                         if (IS_ERR(entry->inode)) {
+> >                                 err = PTR_ERR(entry->inode);
+> >                                 kmem_cache_free(fsync_entry_slab, entry);
+> > +                               if (err == -ENOENT)
+> > +                                       goto next;
+> >                                 break;
+> >                         }
+> >                         list_add_tail(&entry->list, head);
+> > @@ -423,6 +465,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
+> >                 entry = get_fsync_inode(head, ino_of_node(page));
+> >                 if (!entry)
+> >                         goto next;
+> > +               /*
+> > +                * inode(x) | CP | inode(x) | dnode(F)
+> > +                * In this case, we can lose the latest inode(x).
+> > +                * So, call __recover_inode for the inode update.
+> > +                */
+> >
+> 
+> With 2/3, because both IS_CHECKPOINTED and HAS_FSYNCED_INODE flag are unset
+> for inode, we will append a inode(F).
 
-Signek-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-record.c | 88 ++-------------------------------------------
- tools/perf/builtin-top.c    |  2 +-
- tools/perf/util/callchain.c | 84 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/callchain.h |  2 +-
- 4 files changed, 88 insertions(+), 88 deletions(-)
+No, inode(F) is not appended.
+Please check the fsync rule #1.
+Thanks,
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4de632cd677b..12e1f2255f89 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -621,90 +621,6 @@ error:
- 	return ret;
- }
- 
--#ifdef HAVE_DWARF_UNWIND_SUPPORT
--static int get_stack_size(char *str, unsigned long *_size)
--{
--	char *endptr;
--	unsigned long size;
--	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
--
--	size = strtoul(str, &endptr, 0);
--
--	do {
--		if (*endptr)
--			break;
--
--		size = round_up(size, sizeof(u64));
--		if (!size || size > max_size)
--			break;
--
--		*_size = size;
--		return 0;
--
--	} while (0);
--
--	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
--	       max_size, str);
--	return -1;
--}
--#endif /* HAVE_DWARF_UNWIND_SUPPORT */
--
--int record_parse_callchain(const char *arg)
--{
--	char *tok, *name, *saveptr = NULL;
--	char *buf;
--	int ret = -1;
--
--	/* We need buffer that we know we can write to. */
--	buf = malloc(strlen(arg) + 1);
--	if (!buf)
--		return -ENOMEM;
--
--	strcpy(buf, arg);
--
--	tok = strtok_r((char *)buf, ",", &saveptr);
--	name = tok ? : (char *)buf;
--
--	do {
--		/* Framepointer style */
--		if (!strncmp(name, "fp", sizeof("fp"))) {
--			if (!strtok_r(NULL, ",", &saveptr)) {
--				callchain_param.record_mode = CALLCHAIN_FP;
--				ret = 0;
--			} else
--				pr_err("callchain: No more arguments "
--				       "needed for -g fp\n");
--			break;
--
--#ifdef HAVE_DWARF_UNWIND_SUPPORT
--		/* Dwarf style */
--		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
--			const unsigned long default_stack_dump_size = 8192;
--
--			ret = 0;
--			callchain_param.record_mode = CALLCHAIN_DWARF;
--			callchain_param.dump_size = default_stack_dump_size;
--
--			tok = strtok_r(NULL, ",", &saveptr);
--			if (tok) {
--				unsigned long size = 0;
--
--				ret = get_stack_size(tok, &size);
--				callchain_param.dump_size = size;
--			}
--#endif /* HAVE_DWARF_UNWIND_SUPPORT */
--		} else {
--			pr_err("callchain: Unknown --call-graph option "
--			       "value: %s\n", arg);
--			break;
--		}
--
--	} while (0);
--
--	free(buf);
--	return ret;
--}
--
- static void callchain_debug(void)
- {
- 	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF" };
-@@ -731,7 +647,7 @@ int record_parse_callchain_opt(const struct option *opt __maybe_unused,
- 		return 0;
- 	}
- 
--	ret = record_parse_callchain(arg);
-+	ret = parse_callchain_record_opt(arg);
- 	if (!ret)
- 		callchain_debug();
- 
-@@ -754,7 +670,7 @@ int record_callchain_opt(const struct option *opt __maybe_unused,
- static int perf_record_config(const char *var, const char *value, void *cb)
- {
- 	if (!strcmp(var, "record.call-graph"))
--		return record_parse_callchain(value);
-+		return parse_callchain_record_opt(value);
- 
- 	return perf_default_config(var, value, cb);
- }
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 200a44b370c3..45a3a461286f 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1021,7 +1021,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- static int perf_top_config(const char *var, const char *value, void *cb)
- {
- 	if (!strcmp(var, "top.call-graph"))
--		return record_parse_callchain(value);
-+		return parse_callchain_record_opt(value);
- 	if (!strcmp(var, "top.children")) {
- 		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
- 		return 0;
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 08f0fbf5527c..ba7297230143 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -25,6 +25,90 @@
- 
- __thread struct callchain_cursor callchain_cursor;
- 
-+#ifdef HAVE_DWARF_UNWIND_SUPPORT
-+static int get_stack_size(const char *str, unsigned long *_size)
-+{
-+	char *endptr;
-+	unsigned long size;
-+	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
-+
-+	size = strtoul(str, &endptr, 0);
-+
-+	do {
-+		if (*endptr)
-+			break;
-+
-+		size = round_up(size, sizeof(u64));
-+		if (!size || size > max_size)
-+			break;
-+
-+		*_size = size;
-+		return 0;
-+
-+	} while (0);
-+
-+	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
-+	       max_size, str);
-+	return -1;
-+}
-+#endif /* HAVE_DWARF_UNWIND_SUPPORT */
-+
-+int parse_callchain_record_opt(const char *arg)
-+{
-+	char *tok, *name, *saveptr = NULL;
-+	char *buf;
-+	int ret = -1;
-+
-+	/* We need buffer that we know we can write to. */
-+	buf = malloc(strlen(arg) + 1);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	strcpy(buf, arg);
-+
-+	tok = strtok_r((char *)buf, ",", &saveptr);
-+	name = tok ? : (char *)buf;
-+
-+	do {
-+		/* Framepointer style */
-+		if (!strncmp(name, "fp", sizeof("fp"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				callchain_param.record_mode = CALLCHAIN_FP;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+				       "needed for -g fp\n");
-+			break;
-+
-+#ifdef HAVE_DWARF_UNWIND_SUPPORT
-+		/* Dwarf style */
-+		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
-+			const unsigned long default_stack_dump_size = 8192;
-+
-+			ret = 0;
-+			callchain_param.record_mode = CALLCHAIN_DWARF;
-+			callchain_param.dump_size = default_stack_dump_size;
-+
-+			tok = strtok_r(NULL, ",", &saveptr);
-+			if (tok) {
-+				unsigned long size = 0;
-+
-+				ret = get_stack_size(tok, &size);
-+				callchain_param.dump_size = size;
-+			}
-+#endif /* HAVE_DWARF_UNWIND_SUPPORT */
-+		} else {
-+			pr_err("callchain: Unknown --call-graph option "
-+			       "value: %s\n", arg);
-+			break;
-+		}
-+
-+	} while (0);
-+
-+	free(buf);
-+	return ret;
-+}
-+
- int
- parse_callchain_report_opt(const char *arg)
- {
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 819ae4f61e08..8adfbf0bab5c 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -157,7 +157,6 @@ static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
- struct option;
- struct hist_entry;
- 
--int record_parse_callchain(const char *arg);
- int record_parse_callchain_opt(const struct option *opt, const char *arg, int unset);
- int record_callchain_opt(const struct option *opt, const char *arg, int unset);
- 
-@@ -169,6 +168,7 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
- 			bool hide_unresolved);
- 
- extern const char record_callchain_help[];
-+int parse_callchain_record_opt(const char *arg);
- int parse_callchain_report_opt(const char *arg);
- 
- static inline void callchain_cursor_snapshot(struct callchain_cursor *dest,
--- 
-2.1.0
-
+> So we do not need to call
+> __recover_inode here?
+> 
+> Best Regards,
+> Huang, Ying
+> 
+> 
+> > +               if (IS_INODE(page))
+> > +                       __recover_inode(entry->inode, page);
+> >
+> >                 err = do_recover_data(sbi, entry->inode, page, blkaddr);
+> >                 if (err) {
+> > --
+> >
