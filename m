@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449AbaITSEb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 14:04:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46838 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052AbaITSEa (ORCPT
+	id S1757774AbaITSGl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 14:06:41 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62477 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143AbaITSGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 14:04:30 -0400
-Date: Sat, 20 Sep 2014 20:04:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Zefan Li <lizefan@huawei.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, fernando_b1@lab.ntt.co.jp
-Subject: Re: Racy manipulation of task_struct->flags in cgroups code causes
- hard to reproduce kernel panics
-Message-ID: <20140920180418.GR2832@worktop.localdomain>
-References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
- <541D16EA.70407@huawei.com>
- <20140920143012.GL2832@worktop.localdomain>
- <CAGXu5j+P_kcgZuqYsemgL0KU_zRhz5HGJ6seh2oLyyst=cZP6g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+P_kcgZuqYsemgL0KU_zRhz5HGJ6seh2oLyyst=cZP6g@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Sat, 20 Sep 2014 14:06:39 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/5] PCI: mvebu: Count number of lanes
+Date: Sat, 20 Sep 2014 20:06:28 +0200
+Message-Id: <1411236391-422-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1411236391-422-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1411236391-422-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 10:15:50AM -0700, Kees Cook wrote:
-> On Sat, Sep 20, 2014 at 7:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Sat, Sep 20, 2014 at 01:55:54PM +0800, Zefan Li wrote:
-> >> We should make the updating of this flag atomic.
-> >
-> >>  /* Per-process atomic flags. */
-> >>  #define PFA_NO_NEW_PRIVS 0x00000001  /* May not gain new privileges. */
-> >> +#define PFA_SPREAD_PAGE  0x00000002  /* Spread page cache over cpuset */
-> >> +#define PFA_SPREAD_SLAB  0x00000004  /* Spread some slab caches over cpuset */
-> >
-> > Ooh, I was not ware we had those.. /me checks where that came from. Hmm
-> > weird, while I did get that patch it had a seccomp prefix when landing
-> > in my inbox so I ignored it. However the commit has a sched prefix
-> > (which I would not have ignored). Dubious things happened here.
-> 
-> The series went through a lot of revisions, so it probably gained the
-> sched prefix later in its life. Is there anything that needs changing
-> about how this has been implemented?
+Some PCIe controllers found on Armada XP SoCs can be configured as
+either four single-lane x1 or one quad-lane x4 PCIe. Although we are
+not (yet) interested in the physical configuration of the PCIe
+controller, we will need it when proper PHY support for PCIe is added.
+Adapt the driver to the amended DT semantic and count the number of
+PCIe lanes.
 
-No, don't think so, just got surprised.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Rob Herring <robh+dt@kernel.org> 
+Cc: Pawel Moll <pawel.moll@arm.com> 
+Cc: Mark Rutland <mark.rutland@arm.com> 
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk> 
+Cc: Kumar Gala <galak@codeaurora.org> 
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jason Cooper <jason@lakedaemon.net> 
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com> 
+Cc: devicetree@vger.kernel.org 
+Cc: linux-kernel@vger.kernel.org 
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ drivers/pci/host/pci-mvebu.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index a8c6f1a92e0f..0feee6cd395c 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -115,6 +115,7 @@ struct mvebu_pcie_port {
+ 	void __iomem *base;
+ 	u32 port;
+ 	u32 lane;
++	int num_lanes;
+ 	int devfn;
+ 	unsigned int mem_target;
+ 	unsigned int mem_attr;
+@@ -982,9 +983,17 @@ static int mvebu_pcie_probe(struct platform_device *pdev)
+ 			continue;
+ 		}
+ 
+-		if (of_property_read_u32(child, "marvell,pcie-lane",
+-					 &port->lane))
++		/*
++		 * If there are multiple lanes, we are only interested in the
++		 * number of the first lane and the lane count.
++		 */
++		if (of_property_read_u32_index(child, "marvell,pcie-lane",
++					       0, &port->lane))
+ 			port->lane = 0;
++		port->num_lanes = of_property_count_u32_elems(child,
++						      "marvell,pcie-lane");
++		if (!port->num_lanes)
++			port->num_lanes = 1;
+ 
+ 		port->name = kasprintf(GFP_KERNEL, "pcie%d.%d",
+ 				       port->port, port->lane);
+-- 
+2.0.0
+
