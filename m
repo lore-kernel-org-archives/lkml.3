@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855AbaITTcW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 15:32:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47075 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757455AbaITTcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 15:32:20 -0400
-Date: Sat, 20 Sep 2014 21:32:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Kirill Tkhai <ktkhai@parallels.com>
-Subject: Re: [PATCH 3/7] sched: Use dl_bw_of() under RCU read lock
-Message-ID: <20140920193212.GY2832@worktop.localdomain>
-References: <20140920165116.16299.1381.stgit@localhost>
- <20140920165128.16299.20888.stgit@localhost>
- <20140920185705.GU2832@worktop.localdomain>
- <541DD4B3.7080400@yandex.ru>
+	id S1757894AbaITThJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 15:37:09 -0400
+Received: from mout.gmx.net ([212.227.15.18]:61012 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754691AbaITThG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 15:37:06 -0400
+Message-ID: <541DD754.4040000@gmx.de>
+Date: Sat, 20 Sep 2014 21:36:52 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <541DD4B3.7080400@yandex.ru>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Guenter Roeck <linux@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: linux-next: Tree for Sep 19
+References: <20140919165817.225eb8b8@canb.auug.org.au> <20140919191514.GA5358@roeck-us.net>
+In-Reply-To: <20140919191514.GA5358@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:a5ylRhYaoVay1mYoNnDenvwkuyXWdvvpSsGQN8MZxi7U/iur+Hw
+ LLr6mqoHk5npqW2J1AOvPx6YlEWFRjDOcK8nCPb9soKnj/IJAIW3VKvwC2jUlI8T+zgGIsy
+ GG13KKYk9cYXNn40vRYtgp4PTBEd9T6Ot8Hdil/o3WJ6lMNlK9jepizIbVHWS25Z46oqKep
+ Mp6dzcENOe7mlyzgOkusw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 11:25:39PM +0400, Kirill Tkhai wrote:
-> On 20.09.2014 22:57, Peter Zijlstra wrote:
-> > On Sat, Sep 20, 2014 at 08:51:28PM +0400, Kirill Tkhai wrote:
-> >> From: Kirill Tkhai <ktkhai@parallels.com>
-> >>
-> >> dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
-> >> Probability of use-after-free and memory corruption aren't zero here.
-> >>
-> > 
-> > Additionally we might want to add something like:
-> > lockdep_assert_held_rcu() and put that in dl_bw_of() and other such
-> > places.
-> 
-> Should we change (not now, in general) RCU-related pointers to use
-> rcu_dereference() to have unlocked RCU warnings in dmesg? To catch
-> a problems like that.
-> 
-> This may make code worse readable though.
+Hi Günter,
 
-Possibly, we should probably use rcu_assign_pointer() and
-rcu_dereference() on rq->rd. Sometimes you can avoid that if you're
-playing games with static objects, but I don't think that is true here.
+On 09/19/2014 09:15 PM, Guenter Roeck wrote:
+> On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+>> Changes since 20140917:
+>>
+>> The fsl tree still had its build failure so I used the version from
+>> next-20140917.
+>>
+>> The v4l-dvb tree lost its build failure.
+>>
+>> The security tree gained a conflict against the file-locks tree.
+>>
+>> Non-merge commits (relative to Linus' tree): 6014
+>>   5488 files changed, 217522 insertions(+), 129375 deletions(-)
+>>
+>> ----------------------------------------------------------------------------
+>>
+>
+> parisc:defconfig, parisc:generic-32bit_defconfig:
+>
+> --------------
+> Error log:
+> arch/parisc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
+> arch/parisc/kernel/ptrace.c:274:2: error: implicit declaration of function
+> 'secure_computing' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> make[1]: *** [arch/parisc/kernel/ptrace.o] Error 1
+>
+> Bisect points to commit 273299fb6380 ('Merge branch 'x86/seccomp') which
+> obviously doesn't help much. Suspected culprit is c90f06943e05 ('parisc: Wire up
+> seccomp, getrandom and memfd_create syscalls') which seems to be missing an
+> include file.
+
+I could not reproduce this error with current git head.
+
+Nevertheless, it probably makes sense to #include <linux/seccomp.h> in ptrace.c to
+avoid a dependency on other header files to include it instead.
+I've added this patch to my for-next tree:
+http://git.kernel.org/cgit/linux/kernel/git/deller/parisc-linux.git/commit/?h=for-next&id=0f18557b017b3469e1f8edf5cf34c1cba856fdbe
+
+Could you try again?
+
+Helge
