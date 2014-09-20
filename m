@@ -1,38 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355AbaITAPb (ORCPT <rfc822;w@1wt.eu>);
+	id S1758160AbaITAPb (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Sep 2014 20:15:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:58462 "EHLO
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:49034 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756485AbaITAP3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752139AbaITAP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Sep 2014 20:15:29 -0400
-Message-Id: <20140920001506.161041448@goodmis.org>
+Message-Id: <20140920001528.541090828@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 19 Sep 2014 20:15:06 -0400
+Date: Fri, 19 Sep 2014 20:15:07 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 0/2] ktest: Updates for 3.18
-X-RR-Connecting-IP: 107.14.168.130:25
+Subject: [for-next][PATCH 1/2] ktest: Add PATCHCHECK_CHERRY
+References: <20140920001506.161041448@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-ktest-Add-PATCHCHECK_CHERRY.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
-for-next
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Head SHA1: fee9d3e61d04422628a3d22ed5eb8370dcef259b
+Add a way to run a patchcheck test on the commits that are in one branch
+but not in another. This uses git cherry to find a list of commits to
+test each one with.
 
-
-Chris J Arges (1):
-      ktest: add ability to skip during BISECT_MANUAL
-
-Steven Rostedt (Red Hat) (1):
-      ktest: Add PATCHCHECK_CHERRY
-
-----
- tools/testing/ktest/ktest.pl    | 41 +++++++++++++++++++++++++++++++++--------
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/ktest/ktest.pl    | 35 +++++++++++++++++++++++++++++------
  tools/testing/ktest/sample.conf | 10 ++++++++++
- 2 files changed, 43 insertions(+), 8 deletions(-)
+ 2 files changed, 39 insertions(+), 6 deletions(-)
+
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 55ab700f6ba5..3b7a180d9c0d 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -194,6 +194,7 @@ my $config_bisect_check;
+ 
+ my $patchcheck_type;
+ my $patchcheck_start;
++my $patchcheck_cherry;
+ my $patchcheck_end;
+ 
+ # set when a test is something other that just building or install
+@@ -320,6 +321,7 @@ my %option_map = (
+ 
+     "PATCHCHECK_TYPE"		=> \$patchcheck_type,
+     "PATCHCHECK_START"		=> \$patchcheck_start,
++    "PATCHCHECK_CHERRY"		=> \$patchcheck_cherry,
+     "PATCHCHECK_END"		=> \$patchcheck_end,
+ );
+ 
+@@ -3181,9 +3183,16 @@ sub patchcheck {
+ 
+     my $start = $patchcheck_start;
+ 
++    my $cherry = $patchcheck_cherry;
++    if (!defined($cherry)) {
++	$cherry = 0;
++    }
++
+     my $end = "HEAD";
+     if (defined($patchcheck_end)) {
+ 	$end = $patchcheck_end;
++    } elsif ($cherry) {
++	die "PATCHCHECK_END must be defined with PATCHCHECK_CHERRY\n";
+     }
+ 
+     # Get the true sha1's since we can use things like HEAD~3
+@@ -3197,24 +3206,38 @@ sub patchcheck {
+ 	$type = "boot";
+     }
+ 
+-    open (IN, "git log --pretty=oneline $end|") or
+-	dodie "could not get git list";
++    if ($cherry) {
++	open (IN, "git cherry -v $start $end|") or
++	    dodie "could not get git list";
++    } else {
++	open (IN, "git log --pretty=oneline $end|") or
++	    dodie "could not get git list";
++    }
+ 
+     my @list;
+ 
+     while (<IN>) {
+ 	chomp;
++	# git cherry adds a '+' we want to remove
++	s/^\+ //;
+ 	$list[$#list+1] = $_;
+ 	last if (/^$start/);
+     }
+     close(IN);
+ 
+-    if ($list[$#list] !~ /^$start/) {
+-	fail "SHA1 $start not found";
++    if (!$cherry) {
++	if ($list[$#list] !~ /^$start/) {
++	    fail "SHA1 $start not found";
++	}
++
++	# go backwards in the list
++	@list = reverse @list;
+     }
+ 
+-    # go backwards in the list
+-    @list = reverse @list;
++    doprint("Going to test the following commits:\n");
++    foreach my $l (@list) {
++	doprint "$l\n";
++    }
+ 
+     my $save_clean = $noclean;
+     my %ignored_warnings;
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+index 911e45ad657a..6c58cd8bbbae 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -906,6 +906,16 @@
+ #
+ #  PATCHCHECK_END is the last patch to check (default HEAD)
+ #
++#  PATCHCHECK_CHERRY if set to non zero, then git cherry will be
++#      performed against PATCHCHECK_START and PATCHCHECK_END. That is
++#
++#      git cherry ${PATCHCHECK_START} ${PATCHCHECK_END}
++#
++#      Then the changes found will be tested.
++#
++#      Note, PATCHCHECK_CHERRY requires PATCHCHECK_END to be defined.
++#      (default 0)
++#
+ #  PATCHCHECK_TYPE is required and is the type of test to run:
+ #      build, boot, test.
+ #
+-- 
+2.0.1
+
+
