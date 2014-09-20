@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaITKmw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 06:42:52 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:40996 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaITKmu (ORCPT
+	id S1754370AbaITKqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 06:46:17 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:20742 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750903AbaITKqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 06:42:50 -0400
-To: keescook@chromium.org, linux-kernel@vger.kernel.org
-Cc: james.l.morris@oracle.com, oleg@redhat.com, luto@amacapital.net,
-        drysdale@google.com, mtk.manpages@gmail.com, wad@chromium.org,
-        jln@chromium.org, linux-api@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH 3.17-rc5] Fix confusing PFA_NO_NEW_PRIVS constant.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp>
-	<541D16EA.70407@huawei.com>
-In-Reply-To: <541D16EA.70407@huawei.com>
-Message-Id: <201409201940.AHG21834.LJOFFHSFQOtVMO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 20 Sep 2014 19:40:30 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sat, 20 Sep 2014 06:46:16 -0400
+X-IronPort-AV: E=Sophos;i="5.04,559,1406563200"; 
+   d="scan'208";a="36212229"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
+        <jan.kiszka@web.de>, <pbonzini@redhat.com>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: [PATCH v7 0/9] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
+Date: Sat, 20 Sep 2014 18:47:42 +0800
+Message-ID: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you apply below patch before new PFA_* are defined?
-Cgroups code might want to define PFA_SPREAD_PAGE as 1 and PFA_SPREAD_SLAB as 2.
-----------------------------------------
->From 8543e68adb210142fa347d8bc9d83df0bb2c5291 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sat, 20 Sep 2014 19:24:23 +0900
-Subject: [PATCH 3.17-rc5] Fix confusing PFA_NO_NEW_PRIVS constant.
+ept identity pagetable and apic access page in kvm are pinned in memory.
+As a result, they cannot be migrated/hot-removed.
 
-Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
-defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
-because it is used as bit number. Redefine it as decimal bit number.
+But actually they don't need to be pinned in memory.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- include/linux/sched.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+[For ept identity page]
+Just do not pin it. When it is migrated, guest will be able to find the
+new page in the next ept violation.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..4557765 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
- }
- 
- /* Per-process atomic flags. */
--#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
-+#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
- 
- static inline bool task_no_new_privs(struct task_struct *p)
- {
+[For apic access page]
+The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+for each vcpu in addition.
+
+This patch-set is based on Linux 3.17.0-rc5.
+
+NOTE: Tested with -cpu xxx,-x2apic option.
+      But since nested vm pins some other pages in memory, if user uses nested
+      vm, memory hot-remove will not work.
+
+Change log v6 -> v7:
+1. Patch 1/9~3/9 are applied to kvm/queue by Paolo Bonzini <pbonzini@redhat.com>.
+   Just resend them, no changes.
+2. In the new patch 4/9, add a new interface to check if secondary exec 
+   virtualized apic access is enabled.
+3. In new patch 6/9, rename make_all_cpus_request() to kvm_make_all_cpus_request() 
+   and make it non-static so that we can use it in other patches.
+4. In new patch 8/9, add arch specific function to make apic access page reload 
+   request in mmu notifier.
+
+Tang Chen (9):
+  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+  kvm: Remove ept_identity_pagetable from struct kvm_arch.
+  kvm: Make init_rmode_identity_map() return 0 on success.
+  kvm: Add interface to check if secondary exec virtualzed apic accesses
+    is enabled.
+  kvm, mem-hotplug: Reload L1's apic access page in vcpu_enter_guest().
+  kvm: Rename make_all_cpus_request() to kvm_make_all_cpus_request() and
+    make it non-static.
+  kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
+    running.
+  kvm, mem-hotplug: Add arch specific mmu notifier to handle apic access
+    migration.
+  kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
+
+ arch/x86/include/asm/kvm_host.h |   6 ++-
+ arch/x86/kvm/svm.c              |  15 +++++-
+ arch/x86/kvm/vmx.c              | 104 ++++++++++++++++++++++++----------------
+ arch/x86/kvm/x86.c              |  47 ++++++++++++++++--
+ include/linux/kvm_host.h        |  16 ++++++-
+ virt/kvm/kvm_main.c             |  13 +++--
+ 6 files changed, 146 insertions(+), 55 deletions(-)
+
 -- 
-1.7.1
+1.8.3.1
+
