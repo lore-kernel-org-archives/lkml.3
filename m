@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275AbaITRqH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 13:46:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41073 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665AbaITRqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 13:46:06 -0400
-Date: Sat, 20 Sep 2014 10:45:35 -0700
-From: tip-bot for Chuck Ebbert <tipbot@zytor.com>
-Message-ID: <tip-6a40281ab5c1ed8ba2253857118a5d400a2d084b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        cebbert.lkml@gmail.com, james.hogan@imgtec.com, atomlin@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cebbert.lkml@gmail.com, james.hogan@imgtec.com, tglx@linutronix.de,
-        atomlin@redhat.com
-In-Reply-To: <20140920101751.6c5166b6@as>
-References: <20140920101751.6c5166b6@as>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix end_of_stack()
-  and location of stack canary for architectures using CONFIG_STACK_GROWSUP
-Git-Commit-ID: 6a40281ab5c1ed8ba2253857118a5d400a2d084b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757170AbaITRwA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 13:52:00 -0400
+Received: from mout.gmx.net ([212.227.17.20]:55579 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756044AbaITRv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Sep 2014 13:51:58 -0400
+Date: Sat, 20 Sep 2014 19:51:43 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+cc: linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: usdhi6rol0: Remove unnecessary header files
+In-Reply-To: <1411234994-25520-1-git-send-email-pramod.gurav@smartplayin.com>
+Message-ID: <Pine.LNX.4.64.1409201948520.25711@axis700.grange>
+References: <1411234994-25520-1-git-send-email-pramod.gurav@smartplayin.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V03:K0:WorbYGFb3faDYpj83RgXkPiAKwL6OOsDLnEOt7QqkxiB96sO9eY
+ g/+nBYVNbhDMj3TsRfpV/9h1xWUXPOUUCQ852tLd73HmdC+42r1SCGziLXh3JwdwMem8na0
+ tZ7qhAiLgRKTEcgjHmeeY2uroHCdjrJmrkevJtkFN0lRNQpZoi6yKX9mY/Ukvb3Okjttirg
+ mfHXsjV79bdCr5T/72B7g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a40281ab5c1ed8ba2253857118a5d400a2d084b
-Gitweb:     http://git.kernel.org/tip/6a40281ab5c1ed8ba2253857118a5d400a2d084b
-Author:     Chuck Ebbert <cebbert.lkml@gmail.com>
-AuthorDate: Sat, 20 Sep 2014 10:17:51 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 20 Sep 2014 19:44:04 +0200
+On Sat, 20 Sep 2014, Pramod Gurav wrote:
 
-sched: Fix end_of_stack() and location of stack canary for architectures using CONFIG_STACK_GROWSUP
+> These headers are not required hence this change removes them from
+> the driver.
+> 
+> Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> Cc: Chris Ball <chris@printf.net>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: linux-mmc@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Aaron Tomlin recently posted patches [1] to enable checking the
-stack canary on every task switch. Looking at the canary code, I
-realized that every arch (except ia64, which adds some space for
-register spill above the stack) shares a definition of
-end_of_stack() that makes it the first long after the
-threadinfo.
+NAK. The fact, that code builds without certain headers doesn't mean, they 
+aren't needed. E.g. string.h is needed for memcpy(), scatterlist.h is 
+needed for struct scatterlist etc.
 
-For stacks that grow down, this low address is correct because
-the stack starts at the end of the thread area and grows toward
-lower addresses. However, for stacks that grow up, toward higher
-addresses, this is wrong. (The stack actually grows away from
-the canary.) On these archs end_of_stack() should return the
-address of the last long, at the highest possible address for the stack.
+Thanks
+Guennadi
 
-[1] http://lkml.org/lkml/2014/9/12/293
-
-Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
-Link: http://lkml.kernel.org/r/20140920101751.6c5166b6@as
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Tested-by: James Hogan <james.hogan@imgtec.com> [metag]
-Acked-by: James Hogan <james.hogan@imgtec.com>
-Acked-by: Aaron Tomlin <atomlin@redhat.com>
----
- include/linux/sched.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..1f07040 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2608,9 +2608,22 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
- 	task_thread_info(p)->task = p;
- }
- 
-+/*
-+ * Return the address of the last usable long on the stack.
-+ *
-+ * When the stack grows down, this is just above the thread
-+ * info struct. Going any lower will corrupt the threadinfo.
-+ *
-+ * When the stack grows up, this is the highest address.
-+ * Beyond that position, we corrupt data on the next page.
-+ */
- static inline unsigned long *end_of_stack(struct task_struct *p)
- {
-+#ifdef CONFIG_STACK_GROWSUP
-+	return (unsigned long *)((unsigned long)task_thread_info(p) + THREAD_SIZE) - 1;
-+#else
- 	return (unsigned long *)(task_thread_info(p) + 1);
-+#endif
- }
- 
- #endif
+> ---
+>  drivers/mmc/host/usdhi6rol0.c | 7 -------
+>  1 file changed, 7 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/usdhi6rol0.c b/drivers/mmc/host/usdhi6rol0.c
+> index f0a39eb..4094d8f 100644
+> --- a/drivers/mmc/host/usdhi6rol0.c
+> +++ b/drivers/mmc/host/usdhi6rol0.c
+> @@ -12,21 +12,14 @@
+>  #include <linux/device.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/dmaengine.h>
+> -#include <linux/highmem.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+> -#include <linux/log2.h>
+>  #include <linux/mmc/host.h>
+>  #include <linux/mmc/mmc.h>
+> -#include <linux/mmc/sd.h>
+>  #include <linux/mmc/sdio.h>
+>  #include <linux/module.h>
+>  #include <linux/pagemap.h>
+>  #include <linux/platform_device.h>
+> -#include <linux/scatterlist.h>
+> -#include <linux/string.h>
+> -#include <linux/time.h>
+> -#include <linux/virtio.h>
+>  #include <linux/workqueue.h>
+>  
+>  #define USDHI6_SD_CMD		0x0000
+> -- 
+> 1.8.3.2
+> 
