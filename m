@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258AbaITCYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Sep 2014 22:24:47 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:64367 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaITCYp (ORCPT
+	id S1758274AbaITCk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Sep 2014 22:40:56 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59518 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585AbaITCky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Sep 2014 22:24:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v11 07/10] OF: Introduce helper function for getting PCI domain_nr
-Date: Sat, 20 Sep 2014 04:24:20 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-pci" <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        "linux-arch" <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com> <1411003825-21521-8-git-send-email-Liviu.Dudau@arm.com>
-In-Reply-To: <1411003825-21521-8-git-send-email-Liviu.Dudau@arm.com>
+	Fri, 19 Sep 2014 22:40:54 -0400
+Message-ID: <541CE92D.70301@roeck-us.net>
+Date: Fri, 19 Sep 2014 19:40:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: David Miller <davem@davemloft.net>, anish@chelsio.com
+CC: rdunlap@infradead.org, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, JBottomley@parallels.com,
+        mchan@broadcom.com
+Subject: Re: linux-next: Tree for Sep 19
+References: <541CC721.2010207@roeck-us.net>	<541CD3C3.3010905@infradead.org>	<525DB349B3FB5444AE057A887CB2A8D88EF892@nice.asicdesigners.com> <20140919.220856.2166907140359359148.davem@davemloft.net>
+In-Reply-To: <20140919.220856.2166907140359359148.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201409200424.20538.arnd@arndb.de>
-X-Provags-ID: V02:K0:z9RvVgGGjVDwnwfbopS5u1dbki0QdjOIvgWiEO8y1QZ
- cGH2QkvcHw7hFp8AMYJ4GIiSg2R/fzEhvg8WbnSukHQdtDfTR4
- vJEf+9EI16+ayDJ/T5rgkR67/FoJyKMBJbXeI/5MVC1jPWOuq9
- 9tW4LfaTegKNegiY//W6D8YRcywG42kpmsXOu6Fy8l7BKMLylO
- IMnLvpE3/2A3T5do64oQxRreqoZ3IRaneqWQWePoQryhTmVmVo
- ymPVO234OmrbhrtJ4V050iDUBXXY1/BLVWJpgT+xXiQGCWv+I6
- yhi+h2WBZKdXart/rUDTFxepj0AzQhNYt3nl1R11jD21D5tfx0
- MRGCsKDc0DOVeIsJIvj4=
-X-UI-Out-Filterresults: notjunk:1;
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-0.4
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.541CE936.0028,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 September 2014, Liviu Dudau wrote:
-> 
-> Add of_pci_get_domain_nr() to retrieve the PCI domain number
-> of a given device from DT. If the information is not present,
-> the function can be requested to allocate a new domain number.
-> 
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+On 09/19/2014 07:08 PM, David Miller wrote:
+> From: Anish Bhatt <anish@chelsio.com>
+> Date: Sat, 20 Sep 2014 01:43:05 +0000
+>
+>> Original config causing issues can be seen here :
+>> https://lkml.org/lkml/2014/9/9/500
+>>
+>> As CNIC depends on IPV6, CNIC can be only compiled as a module when IPV6 is
+>> compiled as a module. This was the patch I originally commited. Previous
+>> behaviour was to disable all ipv6 code in such a case. However, having bnx2fc/i
+>>   as built-in overrides CNIC's tristate from m to built-in (as they select CNIC),
+>>   causing build issues. As far as I know, there is no way to control the state
+>> that select sets.
+>
+> Really, nothing that has dependencies should be "select"'d, ever.
+>
+> What people hack up is that they try to do this, and "make it work"
+> by "select"'ing all of the selected object's dependencies.  And
+> then you have to do this recursively for dependencies which have
+> dependencies.
+>
+> This is really incredibly stupid.
+>
+> And once something in that chain gains a new dependency, all of
+> these "select" instances break.
+>
+> I really want all of these netlink users to "depend" on "NET"
+> rather than "select" it, and so on and so forth down to the
+> users of these netlink using subsystems.
+>
 
-This is more elaborate than I remember it, and while the simpler
-version (which potentially resulted in a conflict for inconsistent
-DTs) was fine, this one also seems ok.
+Sure, that makes sense on some level, but you would have to make sure
+that any changes made are clean and don't break existing configurations,
+and/or you would have to make sure that all affected configurations are
+updated as needed. A single-line change in a configuration file, to hell
+with the consequences, just doesn't cut it.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+We already know that 11 out of 55 mips configurations are broken in
+linux-next. I don't even want to know what else is broken. That is
+a pretty high price to pay to achieve purity.
+
+Guenter
+
