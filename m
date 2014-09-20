@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915AbaITQve (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 12:51:34 -0400
-Received: from forward9l.mail.yandex.net ([84.201.143.142]:35978 "EHLO
-	forward9l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898AbaITQvc (ORCPT
+	id S1757349AbaITQvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 12:51:47 -0400
+Received: from forward10l.mail.yandex.net ([84.201.143.143]:40887 "EHLO
+	forward10l.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757178AbaITQvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 12:51:32 -0400
-X-Yandex-Uniq: d4afbbcb-d861-40fb-8452-2983c1de25c1
-Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH 3/7] sched: Use dl_bw_of() under RCU read lock
+	Sat, 20 Sep 2014 12:51:43 -0400
+X-Yandex-Uniq: 9b88e02b-91df-4ad5-bdbe-18ad38fa216b
+Authentication-Results: smtp4h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH 5/7] sched: Use rq->rd in sched_setaffinity() under RCU read
+ lock
 From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Kirill Tkhai <ktkhai@parallels.com>
-Date: Sat, 20 Sep 2014 20:51:28 +0400
-Message-ID: <20140920165128.16299.20888.stgit@localhost>
+Date: Sat, 20 Sep 2014 20:51:40 +0400
+Message-ID: <20140920165140.16299.45521.stgit@localhost>
 In-Reply-To: <20140920165116.16299.1381.stgit@localhost>
 References: <20140920165116.16299.1381.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -28,51 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <ktkhai@parallels.com>
 
-dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
-Probability of use-after-free and memory corruption aren't zero here.
+task_rq(p)->rd and task_rq(p)->rd->span may be used-after-free here.
+Probability of NULL pointer derefference isn't zero in this place.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 Cc: <stable@vger.kernel.org> # v3.14+
 ---
- kernel/sched/core.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/sched/core.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c8d754f..00a024c 100644
+index 65655a887..a40d6e1 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -7619,6 +7619,8 @@ static int sched_dl_global_constraints(void)
- 	int cpu, ret = 0;
- 	unsigned long flags;
- 
-+	rcu_read_lock();
-+
- 	/*
- 	 * Here we want to check the bandwidth not being set to some
- 	 * value smaller than the currently allocated bandwidth in
-@@ -7640,6 +7642,8 @@ static int sched_dl_global_constraints(void)
- 			break;
- 	}
- 
-+	rcu_read_unlock();
-+
- 	return ret;
- }
- 
-@@ -7655,6 +7659,7 @@ static void sched_dl_do_global(void)
- 	if (global_rt_runtime() != RUNTIME_INF)
- 		new_bw = to_ratio(global_rt_period(), global_rt_runtime());
- 
-+	rcu_read_lock();
- 	/*
- 	 * FIXME: As above...
+@@ -4015,13 +4015,14 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 	 * root_domain.
  	 */
-@@ -7665,6 +7670,7 @@ static void sched_dl_do_global(void)
- 		dl_b->bw = new_bw;
- 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+ #ifdef CONFIG_SMP
+-	if (task_has_dl_policy(p)) {
+-		const struct cpumask *span = task_rq(p)->rd->span;
+-
+-		if (dl_bandwidth_enabled() && !cpumask_subset(span, new_mask)) {
++	if (task_has_dl_policy(p) && dl_bandwidth_enabled()) {
++		rcu_read_lock();
++		if (!cpumask_subset(task_rq(p)->rd->span, new_mask)) {
+ 			retval = -EBUSY;
++			rcu_read_unlock();
+ 			goto out_free_new_mask;
+ 		}
++		rcu_read_unlock();
  	}
-+	rcu_read_unlock();
- }
- 
- static int sched_rt_global_validate(void)
+ #endif
+ again:
 
