@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866AbaITSGn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 14:06:43 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:48562 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211AbaITSGj (ORCPT
+	id S1757944AbaITSHL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 14:07:11 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:63709 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756803AbaITSGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 14:06:39 -0400
+	Sat, 20 Sep 2014 14:06:40 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -18,232 +18,336 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/5] PCI: mvebu: Amend PCIe controler node documentation
-Date: Sat, 20 Sep 2014 20:06:27 +0200
-Message-Id: <1411236391-422-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 4/5] ARM: mvebu: armada-xp: Use PCIe node aliases
+Date: Sat, 20 Sep 2014 20:06:30 +0200
+Message-Id: <1411236391-422-5-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1411236391-422-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1411236391-422-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some PCIe controllers found on Armada XP SoCs can be configured as
-either four single-lane x1 or one quad-lane x4 PCIe. The current
-binding documentation is a bit unclear about it, so amend the
-property description of "marvell,pcie-lane" to allow multiple lanes
-to be passed. Also, rework the binding example to not only show x1
-configuration but both x4 and x1. While at it, correct misnumbered
-PCIe port nodes to reflect pcie@<port>,<lane> numbering scheme.
+Armada XP pcie controller and port nodes gained aliases, make use of them.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Rob Herring <robh+dt@kernel.org> 
+Cc: Pawel Moll <pawel.moll@arm.com> 
+Cc: Mark Rutland <mark.rutland@arm.com> 
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk> 
+Cc: Kumar Gala <galak@codeaurora.org> 
 Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Jason Cooper <jason@lakedaemon.net> 
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com> 
+Cc: devicetree@vger.kernel.org 
+Cc: linux-kernel@vger.kernel.org 
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- .../devicetree/bindings/pci/mvebu-pci.txt          | 93 ++++++++--------------
- 1 file changed, 31 insertions(+), 62 deletions(-)
+ arch/arm/boot/dts/armada-xp-axpwifiap.dts        | 30 +++++++----------
+ arch/arm/boot/dts/armada-xp-db.dts               | 42 +++++++++---------------
+ arch/arm/boot/dts/armada-xp-gp.dts               | 27 +++++----------
+ arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts  | 24 ++++++--------
+ arch/arm/boot/dts/armada-xp-matrix.dts           | 12 +++----
+ arch/arm/boot/dts/armada-xp-netgear-rn2120.dts   | 30 +++++++----------
+ arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts | 13 +++-----
+ 7 files changed, 65 insertions(+), 113 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pci/mvebu-pci.txt b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-index 08c716b2c6b6..0f09c933e025 100644
---- a/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-+++ b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-@@ -74,14 +74,29 @@ PCIe interface, having the following mandatory properties:
-   define the mapping of the PCIe interface to interrupt numbers.
+diff --git a/arch/arm/boot/dts/armada-xp-axpwifiap.dts b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
+index 1b2dd3a4000b..88c63ec6f355 100644
+--- a/arch/arm/boot/dts/armada-xp-axpwifiap.dts
++++ b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
+@@ -37,25 +37,6 @@
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xf1000000 0x100000
+ 			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
  
- and the following optional properties:
--- marvell,pcie-lane: the physical PCIe lane number, for ports having
--  multiple lanes. If this property is not found, we assume that the
--  value is 0.
-+- marvell,pcie-lane: array of physical PCIe lanes. If this property is
-+  not found, we assume that the value is 0, i.e. x1 PCIe on lane 0.
- - reset-gpios: optional gpio to PERST#
- - reset-delay-us: delay in us to wait after reset de-assertion
+-		pcie: pcie-controller {
+-			status = "okay";
+-
+-			/* First mini-PCIe port */
+-			pcie00: pcie@0,0 {
+-				status = "okay";
+-			};
+-
+-			/* Second mini-PCIe port */
+-			pcie01: pcie@0,1 {
+-				status = "okay";
+-			};
+-
+-			/* Renesas uPD720202 USB 3.0 controller */
+-			pcie03: pcie@0,3 {
+-				status = "okay";
+-			};
+-		};
+-
+ 		internal-regs {
+ 			serial@12000 {
+ 				status = "okay";
+@@ -126,6 +107,17 @@
+ 	};
+ };
  
- Example:
- 
-+/*
-+ * Armada XP has two 4x1/1x4 PCIe controllers on Port 0 and 1 that can
-+ * be configured either as four single-lane x1 or one quad-lane x4 PCIe.
-+ * Ports 2 and 3 are single-lane x1 only.
-+ *
-+ * The pcie-controller node below describes Armada XP PCIe configured as
-+ *
-+ * - Quad PCIe x4 on Port 0, Lanes 0-3
-+ * - Single PCIe x1 on Port 1, Lane 0
-+ * - Single PCIe x1 on Port 1, Lane 1
-+ * - Single PCIe x1 on Port 1, Lane 2
-+ * - Single PCIe x1 on Port 1, Lane 3
-+ * - Single PCIe x1 on Port 2
-+ * - Single PCIe x1 on Port 3
-+ */
++&pcie { status = "okay"; };
 +
- pcie-controller {
- 	compatible = "marvell,armada-xp-pcie";
- 	status = "disabled";
-@@ -128,7 +143,7 @@ pcie-controller {
- 		0x82000000 0xa 0     MBUS_ID(0x08, 0xf8) 0 1 0 /* Port 3.0 MEM */
- 		0x81000000 0xa 0     MBUS_ID(0x08, 0xf0) 0 1 0 /* Port 3.0 IO  */>;
++/* First mini-PCIe port */
++&pcie00 { status = "okay"; };
++
++/* Second mini-PCIe port */
++&pcie01 { status = "okay"; };
++
++/* Renesas uPD720202 USB 3.0 controller */
++&pcie03 { status = "okay"; };
++
+ &pinctrl {
+ 	pinctrl-0 = <&pmx_phy_int>;
+ 	pinctrl-names = "default";
+diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
+index 3cda0f6e5c37..58c2892783a7 100644
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -71,33 +71,6 @@
+ 			};
+ 		};
  
--	pcie@1,0 {
-+	pcie@0,0 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82000800 0 0x40000 0 0x2000>;
- 		reg = <0x0800 0 0 0 0>;
-@@ -139,8 +154,9 @@ pcie-controller {
- 			  0x81000000 0 0 0x81000000 0x1 0 1 0>;
- 		interrupt-map-mask = <0 0 0 0>;
- 		interrupt-map = <0 0 0 0 &mpic 58>;
-+		/* Quad lane PCIe x4 on Port 0, Lanes 0-3 */
- 		marvell,pcie-port = <0>;
--		marvell,pcie-lane = <0>;
-+		marvell,pcie-lane = <0 1 2 3>;
- 		/* low-active PERST# reset on GPIO 25 */
- 		reset-gpios = <&gpio0 25 1>;
- 		/* wait 20ms for device settle after reset deassertion */
-@@ -149,58 +165,7 @@ pcie-controller {
- 		status = "disabled";
- 	};
- 
--	pcie@2,0 {
--		device_type = "pci";
--		assigned-addresses = <0x82001000 0 0x44000 0 0x2000>;
--		reg = <0x1000 0 0 0 0>;
--		#address-cells = <3>;
--		#size-cells = <2>;
--		#interrupt-cells = <1>;
--		ranges = <0x82000000 0 0 0x82000000 0x2 0 1 0
--			  0x81000000 0 0 0x81000000 0x2 0 1 0>;
--		interrupt-map-mask = <0 0 0 0>;
--		interrupt-map = <0 0 0 0 &mpic 59>;
--		marvell,pcie-port = <0>;
--		marvell,pcie-lane = <1>;
--		clocks = <&gateclk 6>;
--		status = "disabled";
--	};
+-		pcie: pcie-controller {
+-			status = "okay";
 -
--	pcie@3,0 {
--		device_type = "pci";
--		assigned-addresses = <0x82001800 0 0x48000 0 0x2000>;
--		reg = <0x1800 0 0 0 0>;
--		#address-cells = <3>;
--		#size-cells = <2>;
--		#interrupt-cells = <1>;
--		ranges = <0x82000000 0 0 0x82000000 0x3 0 1 0
--			  0x81000000 0 0 0x81000000 0x3 0 1 0>;
--		interrupt-map-mask = <0 0 0 0>;
--		interrupt-map = <0 0 0 0 &mpic 60>;
--		marvell,pcie-port = <0>;
--		marvell,pcie-lane = <2>;
--		clocks = <&gateclk 7>;
--		status = "disabled";
--	};
+-			/*
+-			 * All 6 slots are physically present as
+-			 * standard PCIe slots on the board.
+-			 */
+-			pcie00: pcie@0,0 {
+-				status = "okay";
+-			};
+-			pcie01: pcie@0,1 {
+-				status = "okay";
+-			};
+-			pcie02: pcie@0,2 {
+-				status = "okay";
+-			};
+-			pcie03: pcie@0,3 {
+-				status = "okay";
+-			};
+-			pcie20: pcie@2,0 {
+-				status = "okay";
+-			};
+-			pcie30: pcie@3,0 {
+-				status = "okay";
+-			};
+-		};
 -
--	pcie@4,0 {
--		device_type = "pci";
--		assigned-addresses = <0x82002000 0 0x4c000 0 0x2000>;
--		reg = <0x2000 0 0 0 0>;
--		#address-cells = <3>;
--		#size-cells = <2>;
--		#interrupt-cells = <1>;
--		ranges = <0x82000000 0 0 0x82000000 0x4 0 1 0
--			  0x81000000 0 0 0x81000000 0x4 0 1 0>;
--		interrupt-map-mask = <0 0 0 0>;
--		interrupt-map = <0 0 0 0 &mpic 61>;
--		marvell,pcie-port = <0>;
--		marvell,pcie-lane = <3>;
--		clocks = <&gateclk 8>;
--		status = "disabled";
--	};
+ 		internal-regs {
+ 			serial@12000 {
+ 				status = "okay";
+@@ -190,3 +163,18 @@
+ 		};
+ 	};
+ };
++
++/* All 6 slots are physically present as standard PCIe slots on the board. */
++&pcie { status = "okay"; };
++
++&pcie00 { status = "okay"; };
++
++&pcie01 { status = "okay"; };
++
++&pcie02 { status = "okay"; };
++
++&pcie03 { status = "okay"; };
++
++&pcie20 { status = "okay"; };
++
++&pcie30 { status = "okay"; };
+diff --git a/arch/arm/boot/dts/armada-xp-gp.dts b/arch/arm/boot/dts/armada-xp-gp.dts
+index 30435e85ff33..ee92bcf0d4bd 100644
+--- a/arch/arm/boot/dts/armada-xp-gp.dts
++++ b/arch/arm/boot/dts/armada-xp-gp.dts
+@@ -81,24 +81,6 @@
+ 			};
+ 		};
+ 
+-		pcie: pcie-controller {
+-			status = "okay";
 -
--	pcie@5,0 {
-+	pcie@1,0 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82002800 0 0x80000 0 0x2000>;
- 		reg = <0x2800 0 0 0 0>;
-@@ -211,13 +176,14 @@ pcie-controller {
- 			  0x81000000 0 0 0x81000000 0x5 0 1 0>;
- 		interrupt-map-mask = <0 0 0 0>;
- 		interrupt-map = <0 0 0 0 &mpic 62>;
-+		/* Single lane PCIe x1 on Port 1, Lane 0 */
- 		marvell,pcie-port = <1>;
- 		marvell,pcie-lane = <0>;
- 		clocks = <&gateclk 9>;
- 		status = "disabled";
+-			/*
+-			 * The 3 slots are physically present as
+-			 * standard PCIe slots on the board.
+-			 */
+-			pcie00: pcie@0,0 {
+-				status = "okay";
+-			};
+-			pcie20: pcie@2,0 {
+-				status = "okay";
+-			};
+-			pcie30: pcie@3,0 {
+-				status = "okay";
+-			};
+-		};
+-
+ 		internal-regs {
+ 			serial@12000 {
+ 				status = "okay";
+@@ -189,3 +171,12 @@
+ 		};
  	};
+ };
++
++/* The 3 slots are physically present as standard PCIe slots on the board. */
++&pcie { status = "okay"; };
++
++&pcie00 { status = "okay"; };
++
++&pcie20 { status = "okay"; };
++
++&pcie30 { status = "okay"; };
+diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+index d7607009ecdc..86be971f8fec 100644
+--- a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
++++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+@@ -34,20 +34,6 @@
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xd0000000 0x100000
+ 			MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
  
--	pcie@6,0 {
-+	pcie@1,1 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82003000 0 0x84000 0 0x2000>;
- 		reg = <0x3000 0 0 0 0>;
-@@ -228,13 +194,14 @@ pcie-controller {
- 			  0x81000000 0 0 0x81000000 0x6 0 1 0>;
- 		interrupt-map-mask = <0 0 0 0>;
- 		interrupt-map = <0 0 0 0 &mpic 63>;
-+		/* Single lane PCIe x1 on Port 1, Lane 1 */
- 		marvell,pcie-port = <1>;
- 		marvell,pcie-lane = <1>;
- 		clocks = <&gateclk 10>;
- 		status = "disabled";
+-		pcie: pcie-controller {
+-			status = "okay";
+-
+-			/* Quad port sata: Marvell 88SX7042 */
+-			pcie00: pcie@0,0 {
+-				status = "okay";
+-			};
+-
+-			/* USB 3.0 xHCI controller: NEC D720200F1 */
+-			pcie10: pcie@1,0 {
+-				status = "okay";
+-			};
+-		};
+-
+ 		internal-regs {
+ 			serial@12000 {
+ 				status = "okay";
+@@ -259,6 +245,16 @@
  	};
+ };
  
--	pcie@7,0 {
-+	pcie@1,2 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82003800 0 0x88000 0 0x2000>;
- 		reg = <0x3800 0 0 0 0>;
-@@ -245,13 +212,14 @@ pcie-controller {
- 			  0x81000000 0 0 0x81000000 0x7 0 1 0>;
- 		interrupt-map-mask = <0 0 0 0>;
- 		interrupt-map = <0 0 0 0 &mpic 64>;
-+		/* Single lane PCIe x1 on Port 1, Lane 2 */
- 		marvell,pcie-port = <1>;
- 		marvell,pcie-lane = <2>;
- 		clocks = <&gateclk 11>;
- 		status = "disabled";
++&pcie { status = "okay"; };
++
++/* Quad port SATA: Marvell 88SX7042 */
++&pcie00 {
++	status = "okay";
++};
++
++/* USB 3.0 xHCI controller: NEC D720200F1 */
++&pcie10 { status = "okay"; };
++
+ &pinctrl {
+ 	poweroff_pin: poweroff-pin {
+ 		marvell,pins = "mpp24";
+diff --git a/arch/arm/boot/dts/armada-xp-matrix.dts b/arch/arm/boot/dts/armada-xp-matrix.dts
+index 77f9f01a9920..97db958bbf02 100644
+--- a/arch/arm/boot/dts/armada-xp-matrix.dts
++++ b/arch/arm/boot/dts/armada-xp-matrix.dts
+@@ -63,17 +63,13 @@
+ 				};
+ 			};
+ 
+-			pcie: pcie-controller {
+-				status = "okay";
+-
+-				pcie00: pcie@0,0 {
+-					status = "okay";
+-				};
+-			};
+-
+ 			usb@50000 {
+ 				status = "okay";
+ 			};
+ 		};
  	};
+ };
++
++&pcie { status = "okay"; };
++
++&pcie00 { status = "okay"; };
+diff --git a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
+index 98beb572a46c..733e5448298b 100644
+--- a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
++++ b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
+@@ -32,25 +32,6 @@
+ 		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xd0000000 0x100000
+ 			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
  
--	pcie@8,0 {
-+	pcie@1,3 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82004000 0 0x8c000 0 0x2000>;
- 		reg = <0x4000 0 0 0 0>;
-@@ -262,13 +230,14 @@ pcie-controller {
- 			  0x81000000 0 0 0x81000000 0x8 0 1 0>;
- 		interrupt-map-mask = <0 0 0 0>;
- 		interrupt-map = <0 0 0 0 &mpic 65>;
-+		/* Single lane PCIe x1 on Port 1, Lane 3 */
- 		marvell,pcie-port = <1>;
- 		marvell,pcie-lane = <3>;
- 		clocks = <&gateclk 12>;
- 		status = "disabled";
+-		pcie: pcie-controller {
+-			status = "okay";
+-
+-			/* Connected to first Marvell 88SE9170 SATA controller */
+-			pcie00: pcie@0,0 {
+-				status = "okay";
+-			};
+-
+-			/* Connected to second Marvell 88SE9170 SATA controller */
+-			pcie01: pcie@0,1 {
+-				status = "okay";
+-			};
+-
+-			/* Connected to Fresco Logic FL1009 USB 3.0 controller */
+-			pcie10: pcie@1,0 {
+-				status = "okay";
+-			};
+-		};
+-
+ 		internal-regs {
+ 			serial@12000 {
+ 				status = "okay";
+@@ -240,6 +221,17 @@
  	};
+ };
  
--	pcie@9,0 {
-+	pcie@2,0 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82004800 0 0x42000 0 0x2000>;
- 		reg = <0x4800 0 0 0 0>;
-@@ -285,7 +254,7 @@ pcie-controller {
- 		status = "disabled";
++&pcie { status = "okay"; };
++
++/* Connected to first Marvell 88SE9170 SATA controller */
++&pcie00 { status = "okay"; };
++
++/* Connected to second Marvell 88SE9170 SATA controller */
++&pcie01 { status = "okay"; };
++
++/* Connected to Fresco Logic FL1009 USB 3.0 controller */
++&pcie10 { status = "okay"; };
++
+ &pinctrl {
+ 	poweroff: poweroff {
+ 		marvell,pins = "mpp42";
+diff --git a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
+index 781818614adc..e0c1331e3236 100644
+--- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
++++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
+@@ -61,14 +61,6 @@
+ 			};
+ 		};
+ 
+-		pcie: pcie-controller {
+-			status = "okay";
+-			/* Internal mini-PCIe connector */
+-			pcie00: pcie@0,0 {
+-				status = "okay";
+-			};
+-		};
+-
+ 		internal-regs {
+ 			serial@12000 {
+ 				status = "okay";
+@@ -182,6 +174,11 @@
  	};
+ };
  
--	pcie@10,0 {
-+	pcie@3,0 {
- 		device_type = "pci";
- 		assigned-addresses = <0x82005000 0 0x82000 0 0x2000>;
- 		reg = <0x5000 0 0 0 0>;
++&pcie { status = "okay"; };
++
++/* Internal mini-PCIe connector */
++&pcie00 { status = "okay"; };
++
+ &pinctrl {
+ 	led_pins: led-pins-0 {
+ 		marvell,pins = "mpp49", "mpp51", "mpp53";
 -- 
 2.0.0
 
