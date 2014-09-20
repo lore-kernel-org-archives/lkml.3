@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbaITL3s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 07:29:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41010 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753225AbaITL3q (ORCPT
+	id S1755209AbaITL6Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 07:58:16 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:59190 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601AbaITL6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 07:29:46 -0400
-Date: Sat, 20 Sep 2014 13:29:43 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mtd: nand: support ONFI timings mode retrieval for
- non-ONFI NANDs
-Message-ID: <20140920132943.7775f318@bbrezillon>
-In-Reply-To: <20140920044607.GE8127@brian-ubuntu>
-References: <1406539012-16320-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1406539012-16320-2-git-send-email-boris.brezillon@free-electrons.com>
-	<20140920044607.GE8127@brian-ubuntu>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sat, 20 Sep 2014 07:58:15 -0400
+Date: Sat, 20 Sep 2014 06:58:10 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, james.hogan@imgtec.com,
+        atomlin@redhat.com, tglx@linutronix.de
+Subject: Re: [tip:sched/urgent] sched: Fix end_of_stack()  and location of
+ stack canary for architectures using CONFIG_STACK_GROWSUP
+Message-ID: <20140920065810.794d6bbd@as>
+In-Reply-To: <tip-a3215fb47c7ecb814dc16815245db4f375841268@git.kernel.org>
+References: <20140919093505.62681e43@as>
+	<tip-a3215fb47c7ecb814dc16815245db4f375841268@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,132 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Sep 2014 21:46:07 -0700
-Brian Norris <computersforpeace@gmail.com> wrote:
+On Fri, 19 Sep 2014 23:42:37 -0700
+tip-bot for Chuck Ebbert <tipbot@zytor.com> wrote:
 
-> Since you were asking about this series, I have a comment:
+> Commit-ID:  a3215fb47c7ecb814dc16815245db4f375841268
+> Gitweb:     http://git.kernel.org/tip/a3215fb47c7ecb814dc16815245db4f375841268
+> Author:     Chuck Ebbert <cebbert.lkml@gmail.com>
+> AuthorDate: Fri, 19 Sep 2014 09:35:05 -0500
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Sat, 20 Sep 2014 08:38:16 +0200
 > 
-> On Mon, Jul 28, 2014 at 11:16:51AM +0200, Boris BREZILLON wrote:
-> > Add an onfi_timing_mode_ds field to nand_chip and nand_flash_dev in order
-> > to support NAND timings definition for non-ONFI NAND.
-> > 
-> > NAND that support better timings mode than the default one (timings mode 0)
-> > have to define a new entry in the nand_ids table.
-> > 
-> > The timings mode should be deduced from timings description from the
-> > datasheet and the ONFI specification
-> > (www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf, chapter 4.15
-> > "Timing Parameters").
-> > You should choose the closest mode that fit the timings requirements of
-> > your NAND chip.
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/mtd/nand/nand_base.c | 1 +
-> >  include/linux/mtd/nand.h     | 7 +++++++
-> >  2 files changed, 8 insertions(+)
-> > 
-> > diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> > index d8cdf06..c952c21 100644
-> > --- a/drivers/mtd/nand/nand_base.c
-> > +++ b/drivers/mtd/nand/nand_base.c
-> > @@ -3576,6 +3576,7 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
-> >  		chip->options |= type->options;
-> >  		chip->ecc_strength_ds = NAND_ECC_STRENGTH(type);
-> >  		chip->ecc_step_ds = NAND_ECC_STEP(type);
-> > +		chip->onfi_timing_mode_ds = type->onfi_timing_mode_ds;
-> >  
-> >  		*busw = type->options & NAND_BUSWIDTH_16;
-> >  
-> > diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-> > index 3083c53..435c005 100644
-> > --- a/include/linux/mtd/nand.h
-> > +++ b/include/linux/mtd/nand.h
-> > @@ -587,6 +587,7 @@ struct nand_buffers {
-> >   * @ecc_step_ds:	[INTERN] ECC step required by the @ecc_strength_ds,
-> >   *                      also from the datasheet. It is the recommended ECC step
-> >   *			size, if known; if unknown, set to zero.
-> > + * @onfi_timing_mode_ds:[INTERN] ONFI timing mode deduced from datasheet.
+> sched: Fix end_of_stack() and location of stack canary for architectures using CONFIG_STACK_GROWSUP
 > 
-> Might want at least one space between '[INTERN]' and 'ONFI'?
-
-You mean between the colon and '[INTERN]', right ?
-
+> Aaron Tomlin recently posted patches to enable checking the
+> stack canary on every task switch:
 > 
-> >   * @numchips:		[INTERN] number of physical chips
-> >   * @chipsize:		[INTERN] the size of one chip for multichip arrays
-> >   * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
-> > @@ -671,6 +672,7 @@ struct nand_chip {
-> >  	uint8_t bits_per_cell;
-> >  	uint16_t ecc_strength_ds;
-> >  	uint16_t ecc_step_ds;
-> > +	int onfi_timing_mode_ds;
+>   http://lkml.org/lkml/2014/9/12/293
 > 
-> I'm not sure if we'll just want a field specific to non-ONFI chips,
-> faking an ONFI timing mode; can we make this into a more generally
-> useful field, that represents something consistent across all NAND
-> types? I was thinking a "highest mode supported", but that actually
-> isn't great, since for true ONFI modes (except mode 0) require a SET
-> FEATURES command to change to a higher mode.
+> Looking at the canary code, I realized that every arch
+> (except ia64, which adds some space for register spill
+> above the stack) shares a definition of end_of_stack()
+> that makes it the first long after the threadinfo.
 > 
-> Maybe just something like onfi_timing_mode_default, which we could then
-> use as mode 0 for ONFI chips.
+> For stacks that grow down, this low address is correct
+> because the stack starts at the end of the thread area
+> and grows toward lower addresses. However, for stacks
+> that grow up, toward higher addresses, this is wrong.
+> (The stack actually grows away from the canary.)
 > 
-> Ideally, we could centralize as much of this as possible, so that a NAND
-> driver only has to know the mechanics of "how do I translate an ONFI
-> mode to a timing configuration for my NAND controller,"
-
-I guess you meant "how do I translate a NAND timing config given by
-nand_sdr_timings to my specific NAND controller config", right ?
-
-> instead of any
-> details of how to choose from one of many supported ONFI modes. i.e., it
-> could implement something like the following hook:
+> On these archs end_of_stack() should return the address
+> of the last long, at the highest possible address for
+> the stack.
 > 
-> 	int (*set_timing_mode)(struct nand_sdr_timings *timing);
-
-I'm not opposed to this solution (I actually think this is how it
-should be done :-), and, IIRC, Jason proposed to do the same kind of
-things a while ago), but this means the conversion would be done by the
-NAND FW and passed to the NAND driver, and this implies reworking the
-drivers already directly using ONFI modes to configure their NAND
-timings to make use nand_sdr_timings instead.
-
-Moreover, I think we should define a union to handle several kind of
-timings (ddr NAND are coming :-P):
-
-enum nand_timings_type /* or nand_bus_type or something else ;-) */ {
-	SDR_NAND,
-	DDR_NAND,
-}
-
-struct nand_timings {
-	enum nand_timings_type type;
-	union {
-		struct nand_sdr_timings sdr;
-		struct nand_ddr_timings ddr;
-	} timings;
-};
-
-But this is another story ;-).
-
+> Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
+> Tested-by: James Hogan <james.hogan@imgtec.com> [metag]
+> Acked-by: James Hogan <james.hogan@imgtec.com>
+> Acked-by: Aaron Tomlin <atomlin@redhat.com>
+> Link: http://lkml.kernel.org/r/20140919093505.62681e43@as
+> [ Added comments to end_of_stack(). ]
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  include/linux/sched.h | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
 > 
-> But anyway, that's out of the scope of this series, and it may be harder
-> than I make it sound. I just wanted to throw that out there.
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 5c2c885..0e20a24 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2608,9 +2608,22 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
+>  	task_thread_info(p)->task = p;
+>  }
+>  
+> +/*
+> + * Return the address of the first long before (or after,
+> + * depending on the architecture's default stack growth
+> + * direction) * a task's task_info structure, which is the
+> + * kernel stack's last usable spot.
+> + *
+> + * This is the point of no return, if the stack grows
+> + * beyond that position, we corrupt the task's state.
+> + */
 
-If you don't mind I'd like to get something simple first: just renaming
-onfi_timing_mode_ds is fine, but adding the whole conversion stuff to
-the core implies much more changes. And I can work on a more
-integrated solution as a second step.
+This comment you added is not correct for archs where the stack grows
+up. The threadinfo is always at the lowest address on the stack in
+every case. Instead of corrupting the thread info, a stack overflow
+will corrupt whatever is on the next page after the stack if it grows
+upward.
 
-Let me know what you think. 
+>  static inline unsigned long *end_of_stack(struct task_struct *p)
+>  {
+> +#ifdef CONFIG_STACK_GROWSUP
+> +	return (unsigned long *)((unsigned long)task_thread_info(p) + THREAD_SIZE) - 1;
+> +#else
+>  	return (unsigned long *)(task_thread_info(p) + 1);
+> +#endif
+>  }
+>  
+>  #endif
 
-Best Regards,
-
-Boris
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
