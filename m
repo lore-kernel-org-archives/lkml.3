@@ -1,115 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaIUNUT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 09:20:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33006 "EHLO mx1.redhat.com"
+	id S1751735AbaIUNUR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 09:20:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29260 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179AbaIUNTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 09:19:48 -0400
+	id S1751328AbaIUNT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 09:19:57 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>, linux-ide@vger.kernel.org
-Subject: [PATCH RESEND v3 1/6] AHCI: Cleanup checking of multiple MSIs/SLM modes
-Date: Sun, 21 Sep 2014 15:19:24 +0200
-Message-Id: <e5b010c7698160c8b93c92e7463f5dbb4cf33e52.1411297686.git.agordeev@redhat.com>
+Subject: [PATCH RESEND v3 6/6] AHCI: Do not read HOST_IRQ_STAT reg in multi-MSI mode
+Date: Sun, 21 Sep 2014 15:19:29 +0200
+Message-Id: <bad782a13ebaedbe1fd39bcefad2b98712dfe373.1411297686.git.agordeev@redhat.com>
 In-Reply-To: <cover.1411297686.git.agordeev@redhat.com>
 References: <cover.1411297686.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sharing Last Message (SLM) mode is currently checked in two
-functions: ahci_host_activate() and ahci_init_interrupts().
-This update consolidates SLM mode check with activation of
-multiple MSIs mode.
+As described in AHCI v1.0 specification chapter 10.6.2.2
+"Multiple MSI Based Messages" generation of interrupts
+is not controlled through the HOST_IRQ_STAT register.
+
+Considering MMIO access is expensive remove unnecessary
+reading and writing of HOST_IRQ_STAT register.
+
+Further, serializing access to the host data is no longer
+needed and the interrupt service routine can avoid competing
+on the host lock.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Suggested-by: "Jiang, Dave" <dave.jiang@intel.com>
 Cc: linux-ide@vger.kernel.org
 ---
- drivers/ata/ahci.c | 18 +++++++-----------
- drivers/ata/ahci.h |  2 +-
- 2 files changed, 8 insertions(+), 12 deletions(-)
+ drivers/ata/ahci.h    |  2 ++
+ drivers/ata/libahci.c | 59 ++++++++++++---------------------------------------
+ 2 files changed, 15 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index a0cc0ed..7a86b32 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1221,6 +1221,9 @@ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 		goto single_msi;
- 	}
- 
-+	if (nvec > 1)
-+		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
-+
- 	return nvec;
- 
- single_msi:
-@@ -1237,7 +1240,6 @@ intx:
-  *	ahci_host_activate - start AHCI host, request IRQs and register it
-  *	@host: target ATA host
-  *	@irq: base IRQ number to request
-- *	@n_msis: number of MSIs allocated for this host
-  *	@irq_handler: irq_handler used when requesting IRQs
-  *	@irq_flags: irq_flags used when requesting IRQs
-  *
-@@ -1251,14 +1253,10 @@ intx:
-  *	RETURNS:
-  *	0 on success, -errno otherwise.
-  */
--int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
-+int ahci_host_activate(struct ata_host *host, int irq)
- {
- 	int i, rc;
- 
--	/* Sharing Last Message among several ports is not supported */
--	if (n_msis < host->n_ports)
--		return -EINVAL;
--
- 	rc = ata_host_start(host);
- 	if (rc)
- 		return rc;
-@@ -1306,7 +1304,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	struct device *dev = &pdev->dev;
- 	struct ahci_host_priv *hpriv;
- 	struct ata_host *host;
--	int n_ports, n_msis, i, rc;
-+	int n_ports, i, rc;
- 	int ahci_pci_bar = AHCI_PCI_BAR_STANDARD;
- 
- 	VPRINTK("ENTER\n");
-@@ -1459,9 +1457,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 */
- 	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
- 
--	n_msis = ahci_init_interrupts(pdev, n_ports, hpriv);
--	if (n_msis > 1)
--		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
-+	ahci_init_interrupts(pdev, n_ports, hpriv);
- 
- 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
- 	if (!host)
-@@ -1514,7 +1510,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	pci_set_master(pdev);
- 
- 	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
--		return ahci_host_activate(host, pdev->irq, n_msis);
-+		return ahci_host_activate(host, pdev->irq);
- 
- 	return ata_host_activate(host, pdev->irq, ahci_interrupt, IRQF_SHARED,
- 				 &ahci_sht);
 diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 59ae0ee..a2a31af 100644
+index c12f590..2476024 100644
 --- a/drivers/ata/ahci.h
 +++ b/drivers/ata/ahci.h
-@@ -392,7 +392,7 @@ irqreturn_t ahci_interrupt(int irq, void *dev_instance);
- irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance);
- irqreturn_t ahci_thread_fn(int irq, void *dev_instance);
- void ahci_print_info(struct ata_host *host, const char *scc_s);
--int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis);
-+int ahci_host_activate(struct ata_host *host, int irq);
- void ahci_error_handler(struct ata_port *ap);
+@@ -305,6 +305,8 @@ struct ahci_port_priv {
+ 	unsigned int		ncq_saw_dmas:1;
+ 	unsigned int		ncq_saw_sdb:1;
+ 	u32			intr_status;	/* interrupts to handle */
++	spinlock_t		*intr_lock;	/* interrupt context lock */
++	spinlock_t		__intr_lock;	/* protects intr_status */
+ 	spinlock_t		lock;		/* protects parent ata_port */
+ 	u32 			intr_mask;	/* interrupts to enable */
+ 	bool			fbs_supported;	/* set iff FBS is supported */
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 169c272..beaeb76 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1785,11 +1785,11 @@ irqreturn_t ahci_port_thread_fn(int irq, void *dev_instance)
+ 	unsigned long flags;
+ 	u32 status;
  
- static inline void __iomem *__ahci_port_base(struct ata_host *host,
+-	spin_lock_irqsave(&ap->host->lock, flags);
++	spin_lock_irqsave(pp->intr_lock, flags);
+ 	status = pp->intr_status;
+ 	if (status)
+ 		pp->intr_status = 0;
+-	spin_unlock_irqrestore(&ap->host->lock, flags);
++	spin_unlock_irqrestore(pp->intr_lock, flags);
+ 
+ 	spin_lock_bh(ap->lock);
+ 	ahci_handle_port_interrupt(ap, status);
+@@ -1842,53 +1842,14 @@ static void ahci_update_intr_status(struct ata_port *ap)
+ 
+ irqreturn_t ahci_multi_irqs_intr(int irq, void *dev_instance)
+ {
+-	struct ata_port *ap_this = dev_instance;
+-	struct ahci_port_priv *pp = ap_this->private_data;
+-	struct ata_host *host = ap_this->host;
+-	struct ahci_host_priv *hpriv = host->private_data;
+-	void __iomem *mmio = hpriv->mmio;
+-	unsigned int i;
+-	u32 irq_stat, irq_masked;
++	struct ata_port *ap = dev_instance;
++	struct ahci_port_priv *pp = ap->private_data;
+ 
+ 	VPRINTK("ENTER\n");
+ 
+-	spin_lock(&host->lock);
+-
+-	irq_stat = readl(mmio + HOST_IRQ_STAT);
+-
+-	if (!irq_stat) {
+-		u32 status = pp->intr_status;
+-
+-		spin_unlock(&host->lock);
+-
+-		VPRINTK("EXIT\n");
+-
+-		return status ? IRQ_WAKE_THREAD : IRQ_NONE;
+-	}
+-
+-	irq_masked = irq_stat & hpriv->port_map;
+-
+-	for (i = 0; i < host->n_ports; i++) {
+-		struct ata_port *ap;
+-
+-		if (!(irq_masked & (1 << i)))
+-			continue;
+-
+-		ap = host->ports[i];
+-		if (ap) {
+-			ahci_update_intr_status(ap);
+-			VPRINTK("port %u\n", i);
+-		} else {
+-			VPRINTK("port %u (no irq)\n", i);
+-			if (ata_ratelimit())
+-				dev_warn(host->dev,
+-					 "interrupt on disabled port %u\n", i);
+-		}
+-	}
+-
+-	writel(irq_stat, mmio + HOST_IRQ_STAT);
+-
+-	spin_unlock(&host->lock);
++	spin_lock(pp->intr_lock);
++	ahci_update_intr_status(ap);
++	spin_unlock(pp->intr_lock);
+ 
+ 	VPRINTK("EXIT\n");
+ 
+@@ -2366,6 +2327,12 @@ static int ahci_port_start(struct ata_port *ap)
+ 	 */
+ 	pp->intr_mask = DEF_PORT_IRQ;
+ 
++	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI) {
++		spin_lock_init(&pp->__intr_lock);
++		pp->intr_lock = &pp->__intr_lock;
++	} else {
++		pp->intr_lock = &ap->host->lock;
++	}
+ 	spin_lock_init(&pp->lock);
+ 	ap->lock = &pp->lock;
+ 
 -- 
 1.8.3.1
 
