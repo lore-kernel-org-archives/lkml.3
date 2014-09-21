@@ -1,190 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaIUXLU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 19:11:20 -0400
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:64420 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaIUXLS (ORCPT
+	id S1752274AbaIUXMO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 19:12:14 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:35078 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaIUXMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 19:11:18 -0400
+	Sun, 21 Sep 2014 19:12:13 -0400
+Message-ID: <541F5B39.4070400@gmail.com>
+Date: Mon, 22 Sep 2014 07:11:53 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <541F09B4.6050907@gmail.com>
-References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com>
- <541D83AE.1050006@gmail.com> <CAGOxZ52HY0eEukbWdt0OnUzcfrLi3Y726om+GQAQ_Q0vmwk-=Q@mail.gmail.com>
- <541F09B4.6050907@gmail.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Mon, 22 Sep 2014 04:40:37 +0530
-Message-ID: <CAGOxZ504AXRJ4gYdD1NdvomLeBX4oeLT+XDeDxrS6swYCm4rog@mail.gmail.com>
-Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Alim Akhtar <alim.akhtar@samsung.com>, gregkh@linuxfoundation.org,
-        Rob Herring <robh@kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased during
+ cpu hotplug
+References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+Ping Ingo, Peter Z, HPA,
 
-On Sun, Sep 21, 2014 at 10:54 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On 21.09.2014 16:36, Alim Akhtar wrote:
->> Hi Tomasz,
->> Thanks for your valuable feedback on this patch.
+ÓÚ 14-9-17 ÏÂÎç3:17, Wanpeng Li Ð´µÀ:
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+> IP: [..] find_busiest_group
+> PGD 5a9d5067 PUD 13067 PMD 0
+> Oops: 0000 [#3] SMP
+> [...]
+> Call Trace:
+> load_balance
+> ? _raw_spin_unlock_irqrestore
+> idle_balance
+> __schedule
+> schedule
+> schedule_timeout
+> ? lock_timer_base
+> schedule_timeout_uninterruptible
+> msleep
+> lock_device_hotplug_sysfs
+> online_store
+> dev_attr_store
+> sysfs_write_file
+> vfs_write
+> SyS_write
+> system_call_fastpath
 >
-> You're welcome.
+> This bug can be triggered by hot add and remove large number of xen
+> domain0's vcpus repeatedly.
 >
->>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>>> index 5ae8608..e01c0e5 100644
->>>> --- a/Documentation/kernel-parameters.txt
->>>> +++ b/Documentation/kernel-parameters.txt
->>>> @@ -936,6 +936,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>>                       must already be setup and configured. Options are not
->>>>                       yet supported.
->>>>
->>>> +             samsung,<addr>
->>>> +                     Start an early, polled-mode console on a samsung serial
->>>> +                     port at the specified address. The samsung serial port
->>>> +                     must already be setup and configured. Options are not
->>>> +                     yet supported.
->>>> +
->>>
->>> Couldn't you simply parse this from DT? I believe there is already code
->>> parsing stdout property in chosen node for earlycon purposes present in
->>> the kernel.
->>>
->>> Anyway, we already had a patch for this in our internal tree, but it
->>> wasn't submitted because there was no support for early ioremap on ARM
->>> at that time. I haven't been following it since then (and I'm no longer
->>> at Samsung; Marek might be able to take this topic), is it already
->>> available?
->> I am not sure what you have internally, any further suggestions on
->> this is most welcome.
+> Last level cache shared map is built during cpu up and build sched domain 
+> routine takes advantage of it to setup sched domain cpu topology, however, 
+> llc shared map is unreleased during cpu disable which lead to invalid sched 
+> domain cpu topology. This patch fix it by release llc shared map correctly
+> during cpu disable.
 >
-> I believe Marek should be able to post our internal patch, so maybe you
-> could reuse it and adapt for your needs.
+> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Tested-by: Linn Crosetto <linn@hp.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v4 -> v5:
+>  * add the description when the bug can occur
+> v3 -> v4:
+>  * simplify backtrace
+> v2 -> v3:
+>  * simplify backtrace 
+> v1 -> v2:
+>  * fix subject line
 >
->> As you said there is no support for ioremap on ARM, so this is not
->> tested on ARM.
+>  arch/x86/kernel/smpboot.c | 3 +++
+>  1 file changed, 3 insertions(+)
 >
-> Don't forget that this driver is primarily targeted for ARM platforms
-> (versus just one ARM64-based Exynos7), so either this feature should be
-> clearly added as ARM64-specific (and compiled in conditionally) or made
-> work for all supported platforms.
->
-Well, this will work on every platform which uses
-"samsung,exynos4210-uart" as a UART controller.
-Exynos7 also use same, there is nothing special about ARM64 bit here.
-please see[1].
-For "s3c24xx-uart", this has to be implemented separably as that is a
-bit different.
->>>
->>>>               smh     Use ARM semihosting calls for early console.
->>>>
->>>>       earlyprintk=    [X86,SH,BLACKFIN,ARM,M68k]
->>>> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
->>>> index 249e340..9d42ac8 100644
->>>> --- a/drivers/tty/serial/Kconfig
->>>> +++ b/drivers/tty/serial/Kconfig
->>>> @@ -257,6 +257,7 @@ config SERIAL_SAMSUNG_CONSOLE
->>>>       bool "Support for console on Samsung SoC serial port"
->>>>       depends on SERIAL_SAMSUNG=y
->>>>       select SERIAL_CORE_CONSOLE
->>>> +     select SERIAL_EARLYCON
->>>>       help
->>>>         Allow selection of the S3C24XX on-board serial ports for use as
->>>>         an virtual console.
->>>> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
->>>> index c78f43a..f32e9c8 100644
->>>> --- a/drivers/tty/serial/samsung.c
->>>> +++ b/drivers/tty/serial/samsung.c
->>>> @@ -917,6 +917,7 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
->>>>  #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
->>>>
->>>>  static struct console s3c24xx_serial_console;
->>>> +static void s3c24xx_serial_console_putchar(struct uart_port *port, int ch);
->>>>
->>>>  static int __init s3c24xx_serial_console_init(void)
->>>>  {
->>>> @@ -926,6 +927,22 @@ static int __init s3c24xx_serial_console_init(void)
->>>>  console_initcall(s3c24xx_serial_console_init);
->>>>
->>>>  #define S3C24XX_SERIAL_CONSOLE &s3c24xx_serial_console
->>>> +static void samsung_early_write(struct console *con, const char *s, unsigned n)
->>>> +{
->>>> +     struct earlycon_device *dev = con->data;
->>>> +
->>>> +     uart_console_write(&dev->port, s, n, s3c24xx_serial_console_putchar);
->>>
->>> Hmm, I'm not sure how this is supposed to work before the driver is
->>> fully initialized.
->>>
->>> s3c24xx_serial_console_putchar() will call
->>> s3c24xx_serial_console_txrdy(), which in turn requires the port argument
->>> to be a pointer to the member of a s3c24xx_uart_port struct, with filled
->>> info pointer, which I believe is ready only after s3c24xx_serial_probe().
->>>
->> I see your point here, but I did not hit any error or any  runtime
->> crash with this patch when test on ARM64. In order to keep my changes
->> minimal I tried to reused the code already there in this file and that
->> worked for me. The reason why this is working is, if you see
->> s3c24xx_serial_console_txdy(), _info_ pointer is used in a conditional
->> operator and not really involved in any manipulation.
->> I am not sure if compiler should have give some warnings or error here.
->>
->
-> The info pointer is always used whenever FIFO mode is enabled at
-> boot-up, which is often the case on many boards (and depends on
-> firmware). So the fact that it worked for you was purely a coincidence
-> due to your bootloader not using this mode. (Btw. it should be mentioned
-> in patch description on what hardware it was tested.)
->
->> But certainly this is not the way this is suppose to work probably.
->> Let me avoid a call to s3c24xx_serial_console_putchar() in my next respin.
->> As this is a very early call and earlycon expect that port are already
->> initialized (by bootloader), I will write a new function to be used
->> instead of s3c24xx_serial_console_putchar() that will directly write
->> to the serial port.
->>
->
-> The mentioned patch already has this implemented, including support for
-> all hardware variants. I'd strongly suggest basing your work on top of that.
->
-> Marek, could you post that patch as an RFC, so that Alim could continue
-> his work?
->
-Please CC me when you post that.
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 5492798..0134ec7 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+>  
+>  	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+>  		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
+> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
+> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
+> +	cpumask_clear(cpu_llc_shared_mask(cpu));
+>  	cpumask_clear(cpu_sibling_mask(cpu));
+>  	cpumask_clear(cpu_core_mask(cpu));
+>  	c->phys_proc_id = 0;
 
-Tomasz/Marek,
-Do you think something like below make sense here?
-
-+static void exynos4210_serial_console_putc(struct uart_port *port, int ch)
-+{
-+       while (!(readl(port->membase + S3C2410_UFCON) & S3C2410_UFCON_FIFOMODE))
-+               ;
-+
-+       wr_regb(port, S3C2410_UTXH, ch);
-+
-+       while ((readl(port->membase + S3C2410_UFSTAT) & S5PV210_UFSTAT_TXFULL))
-+               ;
-+}
-
-and call exynos4210_serial_console_putc() in samsung_early_write()?
-Anyway functions names need to be changes accordingly.
-
-[1] http://www.spinics.net/lists/devicetree/msg49918.html
-
-> Best regards,
-> Tomasz
-
-
-
--- 
-Regards,
-Alim
