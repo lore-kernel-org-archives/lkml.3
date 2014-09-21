@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719AbaIUXc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 19:32:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51935 "EHLO mx1.redhat.com"
+	id S1752347AbaIUXdY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 19:33:24 -0400
+Received: from mout.web.de ([212.227.15.14]:51125 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463AbaIUXc1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 19:32:27 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
-References: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
-To: vgoyal@redhat.com
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/10] Check hex2bin()'s return when generating an asymmetric key ID
+	id S1751939AbaIUXdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 19:33:23 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: netdev@vger.kernel.org
+Cc: bridge@lists.linux-foundation.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCH] bridge: fix netfilter/NF_BR_LOCAL_OUT for own, locally generated queries
+Date: Mon, 22 Sep 2014 01:32:44 +0200
+Message-Id: <1411342364-4791-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <22565.1411342339.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 22 Sep 2014 00:32:19 +0100
-Message-ID: <22566.1411342339@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:KHKPuKH5cauyZjTHv0+XRBtj8ayXmO2ZY1XrAKTgtoswu8SJSTY
+ WwLAWK2xa/HWPQ06BriiGuKy0SfQv3neK3tPBaob9mkGx7Gb9sM8VQ1pjW2KMFgMdGAiFnZ
+ +3aeSb6jKbvxYGnpsOan1BUShoTs3YJ9WXomkUVv9ycF65L75VMGNZejlJKwwFJ/5EhkGg+
+ NX7F7+C/ZQWh9wLjvCT2Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As it stands, the code to generate an asymmetric key ID prechecks the hex
-string it is given whilst determining the length, before it allocates the
-buffer for hex2bin() to translate into - which mean that checking the result of
-hex2bin() is redundant.
+Ebtables on the OUTPUT chain (NF_BR_LOCAL_OUT) would not work as expected
+for both locally generated IGMP and MLD queries. The IP header specific
+filter options are off by 14 Bytes for netfilter (actual output on
+interfaces is fine).
 
-Unfortunately, hex2bin() is marked as __must_check, which means that the
-following warning may be generated if the return value isn't checked:
+NF_HOOK() expects the skb->data to point to the IP header, not the
+ethernet one (while dev_queue_xmit() does not). Luckily there is an
+br_dev_queue_push_xmit() helper function already - let's just use that.
 
-	crypto/asymmetric_keys/asymmetric_type.c: In function
-	asymmetric_key_hex_to_key_id:
-	crypto/asymmetric_keys/asymmetric_type.c:110: warning: ignoring return
-	value of hex2bin, declared with attribute warn_unused_result
+Introduced by eb1d16414339a6e113d89e2cca2556005d7ce919
+("bridge: Add core IGMP snooping support")
 
-The warning can't be avoided by casting the result to void.
+Ebtables example:
 
-Instead, use strlen() to check the length of the string and ignore the fact
-that the string might not be entirely valid hex until after the allocation has
-been done - in which case we can use the result of hex2bin() for this.
+$ ebtables -I OUTPUT -p IPv6 -o eth1 --logical-out br0 \
+	--log --log-level 6 --log-ip6 --log-prefix="~EBT: " -j DROP
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+before (broken):
+
+~EBT:  IN= OUT=eth1 MAC source = 02:04:64:a4:39:c2 \
+	MAC dest = 33:33:00:00:00:01 proto = 0x86dd IPv6 \
+	SRC=64a4:39c2:86dd:6000:0000:0020:0001:fe80 IPv6 \
+	DST=0000:0000:0000:0004:64ff:fea4:39c2:ff02, \
+	IPv6 priority=0x3, Next Header=2
+
+after (working):
+
+~EBT:  IN= OUT=eth1 MAC source = 02:04:64:a4:39:c2 \
+	MAC dest = 33:33:00:00:00:01 proto = 0x86dd IPv6 \
+	SRC=fe80:0000:0000:0000:0004:64ff:fea4:39c2 IPv6 \
+	DST=ff02:0000:0000:0000:0000:0000:0000:0001, \
+	IPv6 priority=0x0, Next Header=0
+
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 ---
- asymmetric_type.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ net/bridge/br_multicast.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 718e779a010e..f0f2111d2c66 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -90,15 +90,12 @@ EXPORT_SYMBOL_GPL(asymmetric_match_key_ids);
- struct asymmetric_key_id *asymmetric_key_hex_to_key_id(const char *id)
- {
- 	struct asymmetric_key_id *match_id;
--	const char *p;
--	ptrdiff_t hexlen;
-+	size_t hexlen;
-+	int ret;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 7751c92..9d02e6c 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -813,10 +813,9 @@ static void __br_multicast_send_query(struct net_bridge *br,
+ 		return;
  
- 	if (!*id)
- 		return ERR_PTR(-EINVAL);
--	for (p = id; *p; p++)
--		if (!isxdigit(*p))
--			return ERR_PTR(-EINVAL);
--	hexlen = p - id;
-+	hexlen = strlen(id);
- 	if (hexlen & 1)
- 		return ERR_PTR(-EINVAL);
- 
-@@ -107,7 +104,11 @@ struct asymmetric_key_id *asymmetric_key_hex_to_key_id(const char *id)
- 	if (!match_id)
- 		return ERR_PTR(-ENOMEM);
- 	match_id->len = hexlen / 2;
--	(void)hex2bin(match_id->data, id, hexlen / 2);
-+	ret = hex2bin(match_id->data, id, hexlen / 2);
-+	if (ret < 0) {
-+		kfree(match_id);
-+		return ERR_PTR(-EINVAL);
-+	}
- 	return match_id;
- }
- 
+ 	if (port) {
+-		__skb_push(skb, sizeof(struct ethhdr));
+ 		skb->dev = port->dev;
+ 		NF_HOOK(NFPROTO_BRIDGE, NF_BR_LOCAL_OUT, skb, NULL, skb->dev,
+-			dev_queue_xmit);
++			br_dev_queue_push_xmit);
+ 	} else {
+ 		br_multicast_select_own_querier(br, ip, skb);
+ 		netif_rx(skb);
+-- 
+1.7.10.4
+
