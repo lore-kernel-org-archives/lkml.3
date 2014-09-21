@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335AbaIUNiP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 09:38:15 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60691 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126AbaIUNiO (ORCPT
+	id S1751322AbaIUNus (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 09:50:48 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50951 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaIUNuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 09:38:14 -0400
-Message-ID: <541ED4C2.2050009@colorfullife.com>
-Date: Sun, 21 Sep 2014 15:38:10 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Sun, 21 Sep 2014 09:50:46 -0400
+Message-ID: <541ED7B3.6050306@gmail.com>
+Date: Sun, 21 Sep 2014 15:50:43 +0200
+From: Tobias Oberstein <tobias.oberstein@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dbueso@suse.de
-Subject: Re: [PATCH] V1 1/2] ipc: let message queues use SIGEV_THREAD_ID with
- mq_notify
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Eduardo Silva <edsiper@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: SO_REUSEPORT and Unix domain sockets
+References: <538460FE.8030000@gmail.com> <CAMAQheOpXxa-ndT1EuOqJgae3yzEWbRTLMs+y800S930w-xKsw@mail.gmail.com>
+In-Reply-To: <CAMAQheOpXxa-ndT1EuOqJgae3yzEWbRTLMs+y800S930w-xKsw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+Am 20.09.2014 03:44, schrieb Eduardo Silva:
+>>
+>> How can this be used for sockets of type AF_UNIX?
+>>
+>> I can only get it working with TCP sockets, not Unix domain sockets.
+>>
+>> When using TCP, the incoming clients will get nicely balanced to all
+>> processes listening. With Unix domain sockets, the incoming clients all get
+>> connected only to the last started process.
+>>
+>> The test code (Python) I was trying is here:
+>>
+>> http://stackoverflow.com/questions/23742368/can-so-reuseport-be-used-on-unix-domain-sockets
+>>
+>> Any hints appreciated,
+>> /Tobias
+>
+>
+> Looking at the original patch looks like the implementation is only
+> done for TCP and UDP:
+>
+>       http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c617f398edd4db2b8567a28e899a88f8f574798d
+>
 
-You wrote:
-> Currently the only thread-safe way of using mq_notify with message 
-> queues is to use the SIGEV_THREAD option.
-Could you explain what you mean with "only thread-safe way"?
-I'm a bit relunctant to extend mq_notify() without understanding the reason.
+Ok, I see. Unfortunate.
 
-What about:
-- use sigprocmask()
-- create one worker thread
-- then in a loop in that worker thread: use sigwaitinfo() or signalfd() 
-to collect the signals.
+> UNIX domain sockets use the file system as the address name space, so
+> SO_REUSEPORT would not be applicable.
+>
 
+Yes, in case of Unix domain sockets, it's about "reusing paths", not ports.
 
-And one point I don't like: Within timer_create():
->  SIGEV_THREAD_ID (Linux-specific)
->  [...]
-> The sigev_notify_thread_id field specifies a kernel thread ID, that 
-> is, the value returned by clone(2) or gettid(2).
-Does that mean that SIGEV_THREAD_ID is guaranteed to remain 
-Linux-specific, it's implicitely linked to the Linux clone()/gettid() 
-threading model?
+Such an option for in-kernel load-balancing of Unix domain sockets would 
+be useful ..
 
-> This flag is intended only for use by threading libraries.
-
-
---
-     Manfred
+/Tobias
