@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaITXa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 19:30:59 -0400
-Received: from rgout06.bt.lon5.cpcloud.co.uk ([65.20.0.183]:11397 "EHLO
-	rgout06.bt.lon5.cpcloud.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912AbaITXa6 (ORCPT
+	id S1751388AbaITXpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 19:45:04 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59203 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751067AbaITXpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 19:30:58 -0400
-X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Sep 2014 19:30:58 EDT
-X-CTCH-RefID: str=0001.0A090204.541E0CA9.004E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-Junkmail-Premium-Raw: score=28/50,refid=2.7.2:2014.9.19.71820:17:28.905,ip=31.50.239.172,rules=__HAS_FROM,
- __PHISH_FROM2, __FRAUD_WEBMAIL_FROM, __TO_MALFORMED_2, __TO_NO_NAME,
- __MULTIPLE_RCPTS_CC_X2, __SUBJ_ALPHA_END, __HAS_MSGID, __SANE_MSGID,
- __HAS_X_MAILER, __ANY_URI, __FRAUD_BODY_WEBMAIL, __URI_NO_WWW, __URI_NO_PATH,
- BODYTEXTP_SIZE_3000_LESS, BODY_SIZE_1200_1299, __MIME_TEXT_ONLY,
- RDNS_GENERIC_POOLED, __URI_NS, SXL_IP_DYNAMIC[172.239.50.31.fur], HTML_00_01,
- HTML_00_10, BODY_SIZE_5000_LESS, RDNS_SUSP_GENERIC, __PHISH_FROM,
- MULTIPLE_RCPTS, __PHISH_SPEAR_STRUCTURE_1, RDNS_SUSP, BODY_SIZE_2000_LESS,
- __FRAUD_WEBMAIL, BODY_SIZE_7000_LESS
-X-CTCH-Spam: Unknown
-From: Mike Roocroft <mike.linux@btinternet.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        mike.linux@btinternet.com
-Subject: [PATCH] Staging: Skein: skein_block: fixed 3 tab coding style isses
-Date: Sun, 21 Sep 2014 00:27:07 +0100
-Message-Id: <1411255627-27297-1-git-send-email-mike.linux@btinternet.com>
-X-Mailer: git-send-email 2.1.0
+	Sat, 20 Sep 2014 19:45:01 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Amit Pundir <amit.pundir@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Todd Poynor <toddpoynor@google.com>,
+        Pavel Machek <pavel@ucw.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH v2] PM: Print wall time at suspend entry and exit
+Date: Sun, 21 Sep 2014 02:04:45 +0200
+Message-ID: <11057554.xulDPUC6Ej@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411082832-4713-1-git-send-email-amit.pundir@linaro.org>
+References: <1411082832-4713-1-git-send-email-amit.pundir@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue
+On Friday, September 19, 2014 04:57:12 AM Amit Pundir wrote:
+> From: Todd Poynor <toddpoynor@google.com>
+> 
+> Existing timestamps in a dmesg only log suspend activities
+> (e.g. filesystem syncs, freezing/unfreezing tasks etc) while the
+> system has already started to enter/exit the suspend state.
+> 
+> Sometimes it is handy to have suspend entry/exit overhead
+> information while debugging suspend issues. This patch print
+> markers with wall timestamps at suspend Entry and Exit in
+> the kernel log. These timestamps can be used to compute how
+> long the system spent in low-power suspend state plus the
+> entry/exit overhead.
 
-Signed-off-by: Mike Roocroft <mike.linux@btinternet.com>
----
- drivers/staging/skein/skein_block.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Don't we already have tracepoints for that?
 
-diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-index 04ce1d0..b969fe1 100644
---- a/drivers/staging/skein/skein_block.c
-+++ b/drivers/staging/skein/skein_block.c
-@@ -34,7 +34,7 @@
- 
- #ifdef SKEIN_DEBUG
- #define debug_save_tweak(ctx) { \
--                        ctx->h.tweak[0] = ts[0]; ctx->h.tweak[1] = ts[1]; }
-+			ctx->h.tweak[0] = ts[0]; ctx->h.tweak[1] = ts[1]; }
- #else
- #define debug_save_tweak(ctx)
- #endif
-@@ -378,7 +378,7 @@ do { \
- 	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- 
--		for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
-+	for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
- #endif /* end of looped code definitions */
- 		{
- #define R512_8_ROUNDS(R)  /* do 8 full rounds */  \
-@@ -657,7 +657,7 @@ do { \
- 	skein_show_r_ptr(BLK_BITSi, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- 
--		for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
-+	for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
- #endif
- 		{
- #define R1024_8_ROUNDS(R) \
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> [Amit Pundir: Reworded the commit message]
+> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+> ---
+> Resending this patch assuming that it might have got lost in between merge
+> window rush last time and now people might have some time to look at it.
+> 
+>  kernel/power/suspend.c | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 18c6219..5390c6c 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/suspend.h>
+>  #include <linux/syscore_ops.h>
+>  #include <linux/ftrace.h>
+> +#include <linux/rtc.h>
+>  #include <trace/events/power.h>
+>  #include <linux/compiler.h>
+>  
+> @@ -443,6 +444,18 @@ static int enter_state(suspend_state_t state)
+>  	return error;
+>  }
+>  
+> +static void pm_suspend_marker(char *annotation)
+> +{
+> +	struct timespec ts;
+> +	struct rtc_time tm;
+> +
+> +	getnstimeofday(&ts);
+> +	rtc_time_to_tm(ts.tv_sec, &tm);
+> +	pr_info("PM: suspend %s %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
+> +		annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+> +		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
+> +}
+> +
+>  /**
+>   * pm_suspend - Externally visible function for suspending the system.
+>   * @state: System sleep state to enter.
+> @@ -457,6 +470,7 @@ int pm_suspend(suspend_state_t state)
+>  	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
+>  		return -EINVAL;
+>  
+> +	pm_suspend_marker("entry");
+>  	error = enter_state(state);
+>  	if (error) {
+>  		suspend_stats.fail++;
+> @@ -464,6 +478,7 @@ int pm_suspend(suspend_state_t state)
+>  	} else {
+>  		suspend_stats.success++;
+>  	}
+> +	pm_suspend_marker("exit");
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(pm_suspend);
+> 
+
 -- 
-2.1.0
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
