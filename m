@@ -1,36 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025AbaIUJlz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 05:41:55 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49777 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaIUJlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 05:41:53 -0400
+	id S1751103AbaIUJ6k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 05:58:40 -0400
+Received: from svenfoo.org ([82.94.215.22]:33406 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761AbaIUJ6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 05:58:37 -0400
+Message-ID: <541EA149.5000408@zonque.org>
+Date: Sun, 21 Sep 2014 11:58:33 +0200
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Date: Sun, 21 Sep 2014 11:41:52 +0200
-X-Google-Sender-Auth: cRUIYqJOv5E6dLfxXP2EITOoB-c
-Message-ID: <CAMb5mbMkPvgb18k2hMV6EVWBU-0zJCKeXYDL_Y29hvW=5GoY9w@mail.gmail.com>
-Subject: STRICTLY AND CONFIDENTIAL:
-From: Zirifa Oussesni <zirifaoussesni1@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
+To: Matt Ranostay <mranostay@gmail.com>, galak@codeaurora.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, robh+dt@kernel.org
+CC: devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/3] cap1106: Add support for various cap11xx devices
+References: <1411268469-21283-1-git-send-email-mranostay@gmail.com> <1411268469-21283-2-git-send-email-mranostay@gmail.com>
+In-Reply-To: <1411268469-21283-2-git-send-email-mranostay@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+Hi,
 
-Greetings to you and your family, I am the Bill and Exchange Manager
-here in Bank of Africa, I have a business proposal in the tune of
-$15.5m,(Fifteen Million Five Hundred Thousand  Dollars Only) to be
-transfer into your Bank account over there in your country, and after
-the  successful transfer, we shall share in ratio of 40% for you and
-60% for me, Please contact me with this
-email(zirifaoussesni1@gmail.com) and send me your personal
-informations so we can commence all arrangements and i will give you
-more information on how we  would handle this project.
+On 09/21/2014 05:01 AM, Matt Ranostay wrote:
+> Several other variants of the cap11xx device exists with a varying
+> number of capacitance detection channels. Add support for creating
+> the channels dynamically.
 
-Kind Regards,
-Mr.Zirifa Oussesni,
-Bill And Exchange Manager.
+Thanks for the patches!
+
+> 
+> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+> ---
+>  drivers/input/keyboard/cap1106.c | 54 +++++++++++++++++++---------------------
+
+Please also add a patch to rename the file to cap11xx.c, and make sure
+to export the patch with 'git format-patch -M' to detect the rename.
+
+> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+> index d70b65a..b9c43b5 100644
+> --- a/drivers/input/keyboard/cap1106.c
+> +++ b/drivers/input/keyboard/cap1106.c
+> @@ -55,8 +55,6 @@
+>  #define CAP1106_REG_MANUFACTURER_ID	0xfe
+>  #define CAP1106_REG_REVISION		0xff
+>  
+> -#define CAP1106_NUM_CHN 6
+> -#define CAP1106_PRODUCT_ID	0x55
+>  #define CAP1106_MANUFACTURER_ID	0x5d
+>  
+>  struct cap1106_priv {
+> @@ -64,7 +62,8 @@ struct cap1106_priv {
+>  	struct input_dev *idev;
+>  
+>  	/* config */
+> -	unsigned short keycodes[CAP1106_NUM_CHN];
+> +	u32 *keycodes;
+
+unsigned short *, please. See below.
+
+> @@ -189,27 +188,23 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>  	struct cap1106_priv *priv;
+>  	struct device_node *node;
+>  	int i, error, irq, gain = 0;
+> -	unsigned int val, rev;
+> -	u32 gain32, keycodes[CAP1106_NUM_CHN];
+> +	unsigned int val, prod, rev;
+> +	u32 gain32;
+>  
+>  	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+>  	if (!priv)
+>  		return -ENOMEM;
+>  
+> +	priv->num_channels = (unsigned long) id->driver_data;
+
+priv->num_channels is unsigned int.
+
+Also, a BUG_ON(!priv->num_channels) wouldn't harm.
+
+> +	priv->keycodes = devm_kzalloc(dev,
+> +		sizeof(u32) * priv->num_channels, GFP_KERNEL);
+
+Use devm_kcalloc() to allocate an array.
+
+> @@ -235,17 +234,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>  			dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+>  	}
+>  
+> -	BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
+> -
+>  	/* Provide some useful defaults */
+> -	for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+> -		keycodes[i] = KEY_A + i;
+> +	for (i = 0; i < priv->num_channels; i++)
+> +		priv->keycodes[i] = KEY_A + i;
+>  
+>  	of_property_read_u32_array(node, "linux,keycodes",
+> -				   keycodes, ARRAY_SIZE(keycodes));
+> -
+> -	for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+> -		priv->keycodes[i] = keycodes[i];
+> +				  priv->keycodes, priv->num_channels);
+
+Hmm, no. Internally, you have to store the keycodes as unsigned short,
+otherwise EVIOC{G|S}KEYCODE from usespace doesn't work.
+
+of_property_read_u16_array() should work here for unsigned short, I
+guess. Otherwise, you'd have to open-code the routine.
+
+> @@ -313,12 +307,16 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>  
+>  static const struct of_device_id cap1106_dt_ids[] = {
+>  	{ .compatible = "microchip,cap1106", },
+> +	{ .compatible = "microchip,cap1126", },
+> +	{ .compatible = "microchip,cap1188", },
+
+Hmm, how can that work unless you set .data to the number of channels
+here? Did you test that with a DT-enabled board?
+
+
+Thanks,
+Daniel
