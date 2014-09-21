@@ -1,195 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385AbaIUOhK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 10:37:10 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:60997 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbaIUOhI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 10:37:08 -0400
+	id S1751463AbaIUOub (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 10:50:31 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:36964 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751147AbaIUOu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 10:50:29 -0400
+Date: Sun, 21 Sep 2014 11:50:23 -0300
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [GIT PULL for v3.17-rc6] media fixes
+Message-ID: <20140921115023.06f6dba4@recife.lan>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <541D83AE.1050006@gmail.com>
-References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com> <541D83AE.1050006@gmail.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Sun, 21 Sep 2014 20:06:26 +0530
-Message-ID: <CAGOxZ52HY0eEukbWdt0OnUzcfrLi3Y726om+GQAQ_Q0vmwk-=Q@mail.gmail.com>
-Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Alim Akhtar <alim.akhtar@samsung.com>, gregkh@linuxfoundation.org,
-        Rob Herring <robh@kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
-Thanks for your valuable feedback on this patch.
-Please see my comments inline.
+Hi Linus,
 
-On Sat, Sep 20, 2014 at 7:09 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Alim,
->
-> Please see my comments inline.
->
-> On 16.09.2014 13:32, Alim Akhtar wrote:
->> Add earlycon support for the samsung serial port. This allows enabling
->> the samsung serial port for console when early_params are parse and processed.
->>
->> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
->> ---
->>  Documentation/kernel-parameters.txt |    6 ++++++
->>  drivers/tty/serial/Kconfig          |    1 +
->>  drivers/tty/serial/samsung.c        |   17 +++++++++++++++++
->>  3 files changed, 24 insertions(+)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 5ae8608..e01c0e5 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -936,6 +936,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>                       must already be setup and configured. Options are not
->>                       yet supported.
->>
->> +             samsung,<addr>
->> +                     Start an early, polled-mode console on a samsung serial
->> +                     port at the specified address. The samsung serial port
->> +                     must already be setup and configured. Options are not
->> +                     yet supported.
->> +
->
-> Couldn't you simply parse this from DT? I believe there is already code
-> parsing stdout property in chosen node for earlycon purposes present in
-> the kernel.
->
-> Anyway, we already had a patch for this in our internal tree, but it
-> wasn't submitted because there was no support for early ioremap on ARM
-> at that time. I haven't been following it since then (and I'm no longer
-> at Samsung; Marek might be able to take this topic), is it already
-> available?
-I am not sure what you have internally, any further suggestions on
-this is most welcome.
-As you said there is no support for ioremap on ARM, so this is not
-tested on ARM.
->
->>               smh     Use ARM semihosting calls for early console.
->>
->>       earlyprintk=    [X86,SH,BLACKFIN,ARM,M68k]
->> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
->> index 249e340..9d42ac8 100644
->> --- a/drivers/tty/serial/Kconfig
->> +++ b/drivers/tty/serial/Kconfig
->> @@ -257,6 +257,7 @@ config SERIAL_SAMSUNG_CONSOLE
->>       bool "Support for console on Samsung SoC serial port"
->>       depends on SERIAL_SAMSUNG=y
->>       select SERIAL_CORE_CONSOLE
->> +     select SERIAL_EARLYCON
->>       help
->>         Allow selection of the S3C24XX on-board serial ports for use as
->>         an virtual console.
->> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
->> index c78f43a..f32e9c8 100644
->> --- a/drivers/tty/serial/samsung.c
->> +++ b/drivers/tty/serial/samsung.c
->> @@ -917,6 +917,7 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
->>  #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
->>
->>  static struct console s3c24xx_serial_console;
->> +static void s3c24xx_serial_console_putchar(struct uart_port *port, int ch);
->>
->>  static int __init s3c24xx_serial_console_init(void)
->>  {
->> @@ -926,6 +927,22 @@ static int __init s3c24xx_serial_console_init(void)
->>  console_initcall(s3c24xx_serial_console_init);
->>
->>  #define S3C24XX_SERIAL_CONSOLE &s3c24xx_serial_console
->> +static void samsung_early_write(struct console *con, const char *s, unsigned n)
->> +{
->> +     struct earlycon_device *dev = con->data;
->> +
->> +     uart_console_write(&dev->port, s, n, s3c24xx_serial_console_putchar);
->
-> Hmm, I'm not sure how this is supposed to work before the driver is
-> fully initialized.
->
-> s3c24xx_serial_console_putchar() will call
-> s3c24xx_serial_console_txrdy(), which in turn requires the port argument
-> to be a pointer to the member of a s3c24xx_uart_port struct, with filled
-> info pointer, which I believe is ready only after s3c24xx_serial_probe().
->
-I see your point here, but I did not hit any error or any  runtime
-crash with this patch when test on ARM64. In order to keep my changes
-minimal I tried to reused the code already there in this file and that
-worked for me. The reason why this is working is, if you see
-s3c24xx_serial_console_txdy(), _info_ pointer is used in a conditional
-operator and not really involved in any manipulation.
-I am not sure if compiler should have give some warnings or error here.
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media-v3.17-rc6
 
-But certainly this is not the way this is suppose to work probably.
-Let me avoid a call to s3c24xx_serial_console_putchar() in my next respin.
-As this is a very early call and earlycon expect that port are already
-initialized (by bootloader), I will write a new function to be used
-instead of s3c24xx_serial_console_putchar() that will directly write
-to the serial port.
+For some media bug fixes:
+	- a Kconfig dependency issue;
+	- Some fixes for af9033/it913x demod to be more reliable and address a
+	  performance regression;
+	- cx18: fix an oops on devices with tda8290 tuner;
+	- two new USB IDs for af9035;
+	- a couple fixes on smapp driver.
 
-> Has this patch been tested with earlycon enabled and it was indeed
-> verified that earlycon is actually used?
->
-Yes, this is tested on ARM64 with earlycon enabled, the way I tested is:
-"Disabled" serial dt node in the device tree file,
-passed earlycon = samsung,<addr> in CMDLINE
-put some debug prints in setup() method, and it is getting printed on
-console very early.
-Below is my partial bootlog:
-
------
-Initializing cgroup subsys cpu
-Linux version 3.17.0-rc5+ (alim@alim) (gcc version 4.8.3 20140106 (prerelease)
-CPU: AArch64 Processor
-Detected VIPT I-cache on CPU0
-Early serial console at I/O port 0x0 (options '')
-samsung_early_console_setup:954
-bootconsole [uart0] enabled
-.
-.
-Kernel command line: earlycon=samsung,0x14c30000 console=ttySAC0,115200
-.
-.
-io scheduler noop registered
-io scheduler cfq registered (default)
-Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-.
-.
-TCP: cubic registered
-NET: Registered protocol family 17
-9pnet: Installing 9P2000 support
-bootconsole [uart0] disabled
--------
-As I disabled serial node from DT, it did not printed any further
-bootlog after "bootconsole [uar0] disabled"
-And removing "earlycon" from CMDLINE does not give any bootlog on console.
-So I believe earlycon is working on this platform atleast.
-
-Let me know if this test is convincing to you.
-
-Thanks,
-
-> Best regards,
-> Tomasz
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
-
--- 
 Regards,
-Alim
+Mauro
+
+PS.: FYI, I'm now starting to use mchehab@osg.samsung.com e-mail address.
+The old one (m.chehab@samsung.com) is still valid, but we're using the
+OSG subdomain for the Samsung's Open Source Group.
+
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media-v3.17-rc6
+
+for you to fetch changes up to a04646c045cab08a9e62b9be8f01ecbb0632d24e:
+
+  [media] af9035: new IDs: add support for PCTV 78e and PCTV 79e (2014-09-04 12:24:19 -0300)
+
+----------------------------------------------------------------
+media fixes for v3.17-rc6
+
+----------------------------------------------------------------
+Antti Palosaari (2):
+      [media] Kconfig: do not select SPI bus on sub-driver auto-select
+      [media] af9033: feed clock to RF tuner
+
+Bimow Chen (2):
+      [media] af9033: update IT9135 tuner inittabs
+      [media] it913x: init tuner on attach
+
+Hans Verkuil (1):
+      [media] cx18: fix kernel oops with tda8290 tuner
+
+Malcolm Priestley (1):
+      [media] af9035: new IDs: add support for PCTV 78e and PCTV 79e
+
+Sakari Ailus (2):
+      [media] smiapp: Fix power count handling
+      [media] smiapp: Set sub-device owner
+
+ drivers/media/Kconfig                     |  1 -
+ drivers/media/dvb-core/dvb-usb-ids.h      |  2 ++
+ drivers/media/dvb-frontends/af9033.c      | 13 +++++++++++++
+ drivers/media/dvb-frontends/af9033_priv.h | 20 +++++++++-----------
+ drivers/media/i2c/smiapp/smiapp-core.c    | 13 +++----------
+ drivers/media/pci/cx18/cx18-driver.c      |  1 +
+ drivers/media/tuners/tuner_it913x.c       |  6 ++++++
+ drivers/media/usb/dvb-usb-v2/af9035.c     |  4 ++++
+ 8 files changed, 38 insertions(+), 22 deletions(-)
+
