@@ -1,229 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaIUMk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 08:40:57 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49103 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188AbaIUMkz (ORCPT
+	id S1751230AbaIUMtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 08:49:09 -0400
+Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:43128 "EHLO
+	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751025AbaIUMtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 08:40:55 -0400
-Message-ID: <541EC752.5010100@kernel.org>
-Date: Sun, 21 Sep 2014 13:40:50 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Sun, 21 Sep 2014 08:49:07 -0400
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Sep 2014 08:49:07 EDT
+X-RRZE-Submit-IP: 2001:a60:f0c5:0:16da:e9ff:feee:da1
+Date: Sun, 21 Sep 2014 14:43:41 +0200
+From: Dominik Paulus <dominik.paulus@fau.de>
+To: Max Vozeler <max@hinterhof.net>
+Cc: Maximilian Eschenbacher <maximilian@eschenbacher.email>,
+        linux-kernel@vger.kernel.org, valentina.manea.m@gmail.com,
+        shuah.kh@samsung.com, gregkh@linuxfoundation.org,
+        Dominik Paulus <dominik.paulus@fau.de>,
+        Fjodor Schelichow <fjodor.schelichow@hotmail.com>,
+        Johannes Stadlinger <johannes.stadlinger@fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>
+Subject: Re: [PATCH 02/18] usbip: Add support for client authentication
+Message-ID: <20140921124340.GB2097@d-paulus.de>
+References: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
+ <1410910735-27929-3-git-send-email-maximilian@eschenbacher.email>
+ <20140921004259.GA23120@x201t.vpn.hinterhof.net>
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>,
-        =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3] iio: adc: rockchip_saradc: add support for rk3066-tsadc
- variant
-References: <2689686.WEM6GuFSAn@diego> <5418B4D4.2070806@gmx.de>
-In-Reply-To: <5418B4D4.2070806@gmx.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140921004259.GA23120@x201t.vpn.hinterhof.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/09/14 23:08, Hartmut Knaack wrote:
-> Heiko Stübner schrieb, Am 15.09.2014 23:47:
->> Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
->> for temperature measurements. This so called tsadc does not contain any
->> active parts like temperature interrupts and only supports polling the
->> current temperature. The returned voltage can then be converted by a
->> suitable thermal driver to and actual temperature and used for thermal
->> handling.
->>
->> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Acked-by: Hartmut Knaack <knaack.h@gmx.de>
-Applied to the togreg branch of iio.git -initially pushed out as testing
-for the autobuilders to play.
+Hi,
 
-Thanks,
+thanks for your feedback!
 
-Jonathan
->> ---
->> changes since v2:
->> - adapt message about the clk rate
->> changes since v1:
->> - use GENMASK instead of creating the mask manually
->>   as suggested by Hartmut Knaack
->>
->>  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
->>  drivers/iio/adc/rockchip_saradc.c                  | 64 +++++++++++++++++-----
->>  2 files changed, 51 insertions(+), 15 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
->> index 5d3ec1d..a9a5fe1 100644
->> --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
->> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
->> @@ -1,7 +1,7 @@
->>  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
->>  
->>  Required properties:
->> -- compatible: Should be "rockchip,saradc"
->> +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
->>  - reg: physical base address of the controller and length of memory mapped
->>         region.
->>  - interrupts: The interrupt number to the cpu. The interrupt specifier format
->> diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
->> index e074a0b..b546bc1 100644
->> --- a/drivers/iio/adc/rockchip_saradc.c
->> +++ b/drivers/iio/adc/rockchip_saradc.c
->> @@ -18,13 +18,13 @@
->>  #include <linux/interrupt.h>
->>  #include <linux/io.h>
->>  #include <linux/of.h>
->> +#include <linux/of_device.h>
->>  #include <linux/clk.h>
->>  #include <linux/completion.h>
->>  #include <linux/regulator/consumer.h>
->>  #include <linux/iio/iio.h>
->>  
->>  #define SARADC_DATA			0x00
->> -#define SARADC_DATA_MASK		0x3ff
->>  
->>  #define SARADC_STAS			0x04
->>  #define SARADC_STAS_BUSY		BIT(0)
->> @@ -38,15 +38,22 @@
->>  #define SARADC_DLY_PU_SOC		0x0c
->>  #define SARADC_DLY_PU_SOC_MASK		0x3f
->>  
->> -#define SARADC_BITS			10
->>  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
->>  
->> +struct rockchip_saradc_data {
->> +	int				num_bits;
->> +	const struct iio_chan_spec	*channels;
->> +	int				num_channels;
->> +	unsigned long			clk_rate;
->> +};
->> +
->>  struct rockchip_saradc {
->>  	void __iomem		*regs;
->>  	struct clk		*pclk;
->>  	struct clk		*clk;
->>  	struct completion	completion;
->>  	struct regulator	*vref;
->> +	const struct rockchip_saradc_data *data;
->>  	u16			last_val;
->>  };
->>  
->> @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
->>  		}
->>  
->>  		*val = ret / 1000;
->> -		*val2 = SARADC_BITS;
->> +		*val2 = info->data->num_bits;
->>  		return IIO_VAL_FRACTIONAL_LOG2;
->>  	default:
->>  		return -EINVAL;
->> @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
->>  
->>  	/* Read value */
->>  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
->> -	info->last_val &= SARADC_DATA_MASK;
->> +	info->last_val &= GENMASK(info->data->num_bits - 1, 0);
->>  
->>  	/* Clear irq & power down adc */
->>  	writel_relaxed(0, info->regs + SARADC_CTRL);
->> @@ -133,12 +140,44 @@ static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
->>  	ADC_CHANNEL(2, "adc2"),
->>  };
->>  
->> +static const struct rockchip_saradc_data saradc_data = {
->> +	.num_bits = 10,
->> +	.channels = rockchip_saradc_iio_channels,
->> +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
->> +	.clk_rate = 1000000,
->> +};
->> +
->> +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] = {
->> +	ADC_CHANNEL(0, "adc0"),
->> +	ADC_CHANNEL(1, "adc1"),
->> +};
->> +
->> +static const struct rockchip_saradc_data rk3066_tsadc_data = {
->> +	.num_bits = 12,
->> +	.channels = rockchip_rk3066_tsadc_iio_channels,
->> +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
->> +	.clk_rate = 50000,
->> +};
->> +
->> +static const struct of_device_id rockchip_saradc_match[] = {
->> +	{
->> +		.compatible = "rockchip,saradc",
->> +		.data = &saradc_data,
->> +	}, {
->> +		.compatible = "rockchip,rk3066-tsadc",
->> +		.data = &rk3066_tsadc_data,
->> +	},
->> +	{},
->> +};
->> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
->> +
->>  static int rockchip_saradc_probe(struct platform_device *pdev)
->>  {
->>  	struct rockchip_saradc *info = NULL;
->>  	struct device_node *np = pdev->dev.of_node;
->>  	struct iio_dev *indio_dev = NULL;
->>  	struct resource	*mem;
->> +	const struct of_device_id *match;
->>  	int ret;
->>  	int irq;
->>  
->> @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
->>  	}
->>  	info = iio_priv(indio_dev);
->>  
->> +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
->> +	info->data = match->data;
->> +
->>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
->>  	if (IS_ERR(info->regs))
->> @@ -192,10 +234,10 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
->>  	}
->>  
->>  	/*
->> -	 * Use a default of 1MHz for the converter clock.
->> +	 * Use a default value for the converter clock.
->>  	 * This may become user-configurable in the future.
->>  	 */
->> -	ret = clk_set_rate(info->clk, 1000000);
->> +	ret = clk_set_rate(info->clk, info->data->clk_rate);
->>  	if (ret < 0) {
->>  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
->>  		return ret;
->> @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
->>  	indio_dev->info = &rockchip_saradc_iio_info;
->>  	indio_dev->modes = INDIO_DIRECT_MODE;
->>  
->> -	indio_dev->channels = rockchip_saradc_iio_channels;
->> -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
->> +	indio_dev->channels = info->data->channels;
->> +	indio_dev->num_channels = info->data->num_channels;
->>  
->>  	ret = iio_device_register(indio_dev);
->>  	if (ret)
->> @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
->>  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
->>  			 rockchip_saradc_suspend, rockchip_saradc_resume);
->>  
->> -static const struct of_device_id rockchip_saradc_match[] = {
->> -	{ .compatible = "rockchip,saradc" },
->> -	{},
->> -};
->> -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
->> -
->>  static struct platform_driver rockchip_saradc_driver = {
->>  	.probe		= rockchip_saradc_probe,
->>  	.remove		= rockchip_saradc_remove,
->>
+On Sun, Sep 21, 2014 at 02:42:59AM +0200, Max Vozeler wrote:
+> > +	if (strcmp(username, "dummyuser"))
+> > +		/* User invalid, stored dummy data in g and n. */
+> > +		return 1;
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Could you describe the role of "dummyuser" in a comment? It seems to be
+> a placeholder for GnuTLS SRP requiring a username.
+
+It is, SRP is designed for username/password authentication, but we only
+do password.
+
 > 
+> > +	return 0;
+> > +}
+> > +
+> > +int usbip_net_init_gnutls(void)
+> > +{
+> > +	int ret;
+> > +
+> > +	gnutls_global_init();
+> > +
+> > +	usbip_net_srp_salt.data = gnutls_malloc(16);
+> 
+> This should be freed somewhere.
+
+Actually, it is used for the whole lifetime of the process.
+
+> > +	/*
+> > +	 * Process opcodes. We might receive more than one, as the
+> > +	 * client might send STARTTLS first
+> > +	 */
+> > +	while (cont) {
+> > +		uint16_t code = OP_UNSPEC;
+> >  
+> > -	if (ret == 0)
+> > -		info("request %#0x(%d): complete", code, connfd);
+> > -	else
+> > -		info("request %#0x(%d): failed", code, connfd);
+> > +		ret = usbip_net_recv_op_common(connfd, &code);
+> > +		if (ret < 0) {
+> > +			dbg("could not receive opcode: %#0x", code);
+> > +			return -1;
+> > +		}
+> > +
+> > +		info("received request: %#0x(%d)", code, connfd);
+> > +
+> > +		/* We require an authenticated encryption */
+> > +		if (!auth && code != OP_REQ_STARTTLS) {
+> > +			usbip_net_send_op_common(connfd, OP_REPLY, ST_NA);
+> > +			return -1;
+> > +		}
+> > +
+> > +		switch (code) {
+> > +#ifdef HAVE_GNUTLS
+> > +		case OP_REQ_STARTTLS:
+> > +			if (!need_auth) {
+> > +				ret = -1;
+> > +				err("Unexpected TLS handshake attempt (client uses password, server doesn't)");
+> > +			} else {
+> > +				ret = net_srp_server_handshake(connfd);
+> > +				if (ret != 0)
+> > +					err("TLS handshake failed");
+> > +				auth = 1;
+> 
+> This marks the connection as authenticated even if the handshake has
+> failed, which doesn't seem right.
+> 
+> The err() used here is a macro that merely logs the error and moves
+> on. It does not exit() like the err.h err() functions.
+> 
+> So this should probably be
+> 
+> > +				if (ret != 0)
+> > +					err("TLS handshake failed");
+> 				else
+> > +					auth = 1;
+> 
+> instead?
+
+It might be even better to just drop the connection after a failed
+handshake, as existing clients aren't going to do more than one
+authentication attempt, anyway.
+
+Note that - after patch 11/18 has been applied, too -
+net_srp_server_handshake() sets the "have_crypto" flag on the connection
+handle, thus, all subsequent network operations are going to fail
+anyway, as no TLS session has been established. Thus, the incorrectly
+set "auth" flag doesn't have any security implications here.
+
+Regards,
+Dominik
