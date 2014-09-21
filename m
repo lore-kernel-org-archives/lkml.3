@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaIUUJJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 16:09:09 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58858 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaIUUJH (ORCPT
+	id S1751655AbaIUUds (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 16:33:48 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33195 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaIUUdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 16:09:07 -0400
-Message-ID: <541F3055.4060706@roeck-us.net>
-Date: Sun, 21 Sep 2014 13:08:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 21 Sep 2014 16:33:46 -0400
 MIME-Version: 1.0
-To: Waldemar Brodkorb <mail@waldemar-brodkorb.de>
-CC: Mikael Starvik <mikael.starvik@axis.com>,
+In-Reply-To: <541F2BCD.2040007@linux.intel.com>
+References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
+	<1411313216-2641-3-git-send-email-minipli@googlemail.com>
+	<541F2BCD.2040007@linux.intel.com>
+Date: Sun, 21 Sep 2014 22:33:45 +0200
+Message-ID: <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
+Subject: Re: [PATCHv2 2/3] x86, ptdump: Simplify page flag evaluation code
+From: Mathias Krause <minipli@googlemail.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [RFC PATCH 8/8] Revert "percpu: free percpu allocation info for
- uniprocessor system"
-References: <1411316838-15135-1-git-send-email-linux@roeck-us.net> <1411316838-15135-9-git-send-email-linux@roeck-us.net> <1C04F98F-4DA4-4038-B1D1-930BBC592147@axis.com> <541F1AFF.9040509@roeck-us.net> <20140921191919.GS14691@waldemar-brodkorb.de>
-In-Reply-To: <20140921191919.GS14691@waldemar-brodkorb.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.541F3062.0016,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+        x86-ml <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2014 12:19 PM, Waldemar Brodkorb wrote:
-> Hi Guenter,
-> Guenter Roeck wrote,
->
->> On 09/21/2014 10:23 AM, Mikael Starvik wrote:
->>> Thanks for all your work with CRIS! CRISv10 is alive but is currently used as small helper CPUs close to hardware blocks.
->>>
+On 21 September 2014 21:49, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 9/21/2014 8:26 AM, Mathias Krause wrote:
 >>
->> You are welcome. Now it would be even better if we could get the upstream code to work
->> with qemu. Which leads to the questions - is CRISv32 alive, and is there a chance
->> to get there ? Also, if CRISv10 is alive, is there any interest or even benefit to
->> maintain it in the latest kernel ? Because if not, we might as well drop v10 support
->> to simplify kernel maintenance.
+>> -               if (pr & _PAGE_PCD)
+>> -                       pt_dump_cont_printf(m, dmsg, "PCD ");
+>> -               else
+>> -                       pt_dump_cont_printf(m, dmsg, "    ");
+>> +               pt_dump_cont(m, dmsg, "%-4s", pr & _PAGE_USER ? "USR" :
+>> "");
 >
-> Please do not drop crisv10 support.
-> Don't kill my foxboard lx cluster ;)
 >
-> http://www.openadk.org/cris/cris1.jpg
-> http://www.openadk.org/cris/cris2.jpg
->
+> while you have some nice cleanups in your patch, I can't say I consider this
+> an improvement.
+> Yes the C standard allows ? to be used like this
+> but no, I don't think it improves readability in general.
 
-No problem as long as it's working and someone keeps it maintained.
+Not in general, but in this case, it does, IMHO.
 
-Guenter
+> (I think for me the main exception is NULL pointer cases, but this is not
+> one of these)
 
+Apparently such a pattern (using the question mark operator combined
+with a bit test to choose string constants) is used quite often in the
+linux kernel as a simple grep tells me (probably catches a few false
+positives but still a representative number):
+
+$ git grep '[^&]&[^&].*? *"' | wc -l
+2668
+
+And, honestly, the bit test combined with the question mark operator
+makes the code way more readable for me. It not only makes the code
+more compact (1 instead of 4 lines). It also allows to have the common
+parts written only once and thereby removing the possibility of having
+them conflict with each other, e.g. make them generate strings of
+different lengths.
+
+Would you prefer the bit test to be surrounded by braces to make it
+more easy to understand? Even though, the operator precedence is
+clearly defined by the C standard for this case, so no braces are
+needed.
+
+
+Thanks,
+Mathias
