@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaIUXMO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 19:12:14 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:35078 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaIUXMN (ORCPT
+	id S1751905AbaIUXTv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 19:19:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38683 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaIUXTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 19:12:13 -0400
-Message-ID: <541F5B39.4070400@gmail.com>
-Date: Mon, 22 Sep 2014 07:11:53 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 21 Sep 2014 19:19:50 -0400
+Message-ID: <541F5D12.6080605@gmail.com>
+Date: Mon, 22 Sep 2014 01:19:46 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased during
- cpu hotplug
-References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=GB2312
+To: Alim Akhtar <alim.akhtar@gmail.com>
+CC: Alim Akhtar <alim.akhtar@samsung.com>, gregkh@linuxfoundation.org,
+        Rob Herring <robh@kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas P Abraham <thomas.ab@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
+References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com> <541D83AE.1050006@gmail.com> <CAGOxZ52HY0eEukbWdt0OnUzcfrLi3Y726om+GQAQ_Q0vmwk-=Q@mail.gmail.com> <541F09B4.6050907@gmail.com> <CAGOxZ504AXRJ4gYdD1NdvomLeBX4oeLT+XDeDxrS6swYCm4rog@mail.gmail.com>
+In-Reply-To: <CAGOxZ504AXRJ4gYdD1NdvomLeBX4oeLT+XDeDxrS6swYCm4rog@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Ingo, Peter Z, HPA,
+On 22.09.2014 01:10, Alim Akhtar wrote:
 
-ÓÚ 14-9-17 ÏÂÎç3:17, Wanpeng Li Ð´µÀ:
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-> IP: [..] find_busiest_group
-> PGD 5a9d5067 PUD 13067 PMD 0
-> Oops: 0000 [#3] SMP
-> [...]
-> Call Trace:
-> load_balance
-> ? _raw_spin_unlock_irqrestore
-> idle_balance
-> __schedule
-> schedule
-> schedule_timeout
-> ? lock_timer_base
-> schedule_timeout_uninterruptible
-> msleep
-> lock_device_hotplug_sysfs
-> online_store
-> dev_attr_store
-> sysfs_write_file
-> vfs_write
-> SyS_write
-> system_call_fastpath
->
-> This bug can be triggered by hot add and remove large number of xen
-> domain0's vcpus repeatedly.
->
-> Last level cache shared map is built during cpu up and build sched domain 
-> routine takes advantage of it to setup sched domain cpu topology, however, 
-> llc shared map is unreleased during cpu disable which lead to invalid sched 
-> domain cpu topology. This patch fix it by release llc shared map correctly
-> during cpu disable.
->
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Tested-by: Linn Crosetto <linn@hp.com>
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v4 -> v5:
->  * add the description when the bug can occur
-> v3 -> v4:
->  * simplify backtrace
-> v2 -> v3:
->  * simplify backtrace 
-> v1 -> v2:
->  * fix subject line
->
->  arch/x86/kernel/smpboot.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 5492798..0134ec7 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
->  
->  	for_each_cpu(sibling, cpu_sibling_mask(cpu))
->  		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-> +	cpumask_clear(cpu_llc_shared_mask(cpu));
->  	cpumask_clear(cpu_sibling_mask(cpu));
->  	cpumask_clear(cpu_core_mask(cpu));
->  	c->phys_proc_id = 0;
+[snip]
 
+>>> As you said there is no support for ioremap on ARM, so this is not
+>>> tested on ARM.
+>>
+>> Don't forget that this driver is primarily targeted for ARM platforms
+>> (versus just one ARM64-based Exynos7), so either this feature should be
+>> clearly added as ARM64-specific (and compiled in conditionally) or made
+>> work for all supported platforms.
+>>
+> Well, this will work on every platform which uses
+> "samsung,exynos4210-uart" as a UART controller.
+> Exynos7 also use same, there is nothing special about ARM64 bit here.
+> please see[1].
+> For "s3c24xx-uart", this has to be implemented separably as that is a
+> bit different.
+
+For this feature, they differ only in locations and lengths of
+FIFO-related bit fields. We had this already implemented for all
+hardware variants and so my recommendation to reuse that code.
+
+>>>>
+>>>>>               smh     Use ARM semihosting calls for early console.
+>>>>>
+>>>>>       earlyprintk=    [X86,SH,BLACKFIN,ARM,M68k]
+
+[snip]
+
+> Tomasz/Marek,
+> Do you think something like below make sense here?
+> 
+> +static void exynos4210_serial_console_putc(struct uart_port *port, int ch)
+> +{
+> +       while (!(readl(port->membase + S3C2410_UFCON) & S3C2410_UFCON_FIFOMODE))
+> +               ;
+
+Waiting in a loop for a software-writable FIFO mode enable bit doesn't
+look reasonable to me. Probably a typo?
+
+> +
+> +       wr_regb(port, S3C2410_UTXH, ch);
+> +
+> +       while ((readl(port->membase + S3C2410_UFSTAT) & S5PV210_UFSTAT_TXFULL))
+> +               ;
+
+I wonder if you need to wait for the character to be sent. If you ensure
+before writing a character that there is no previous one in the buffer
+or there is space in FIFO then I believe you should be fine.
+
+> +}
+> 
+> and call exynos4210_serial_console_putc() in samsung_early_write()?
+> Anyway functions names need to be changes accordingly.
+
+Yes, this is exactly what we had implemented in the patch I mentioned,
+except that the putc function was generic for all hardware variants.
+
+Best regards,
+Tomasz
