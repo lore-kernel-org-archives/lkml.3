@@ -1,177 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaIUXgj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 19:36:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaIUXgg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 19:36:36 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <alpine.LRH.2.11.1409201204460.31120@namei.org>
-References: <alpine.LRH.2.11.1409201204460.31120@namei.org> <32370.1410886755@warthog.procyon.org.uk>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] KEYS: Changes for keyrings for security/next
+	id S1751885AbaIUXxI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 19:53:08 -0400
+Received: from mail-bl2on0146.outbound.protection.outlook.com ([65.55.169.146]:30055
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751194AbaIUXxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 19:53:06 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: nick <yocto6@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>,
+        "oneukum@suse.de" <oneukum@suse.de>,
+        "himangi774@gmail.com" <himangi774@gmail.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: FIX ME in  oxu210p-hcd.c
+Thread-Topic: FIX ME in  oxu210p-hcd.c
+Thread-Index: AQHP1PgEnm/39G8KQ0aBJF+T0X3g1pwMRAsA
+Date: Sun, 21 Sep 2014 23:53:01 +0000
+Message-ID: <2d062bb368d94327b89cba3d547bff9d@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <541DB6BF.7090909@gmail.com> <541DB8C1.2000101@gmail.com>
+In-Reply-To: <541DB8C1.2000101@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 034119E4F6
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(189002)(199003)(51704005)(74662003)(74502003)(79102003)(2501002)(76482002)(107046002)(21056001)(77096002)(90102001)(81542003)(66066001)(108616004)(95666004)(74316001)(77982003)(85306004)(81342003)(46102003)(106116001)(99286002)(33646002)(80022003)(76576001)(97736003)(92566001)(2656002)(99396002)(50986999)(54356999)(20776003)(83072002)(83322001)(31966008)(4396001)(86362001)(76176999)(85852003)(64706001)(105586002)(101416001)(106356001)(120916001)(87936001)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0772;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <22596.1411342588.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 22 Sep 2014 00:36:28 +0100
-Message-ID: <22597.1411342588@warthog.procyon.org.uk>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8LNrX7h025214
 
-James Morris <jmorris@namei.org> wrote:
 
-> > Can you please pull these changes into security/next.  They include the fixes
-> > tag I previously requested as there's a dependency between these changes and
-> > the fixes.
-> > 
+ 
+> Subject: Re: FIX ME in oxu210p-hcd.c
 > 
-> I'm getting this warning after pulling your code:
 > 
->   CC      crypto/hash_info.o
-> crypto/asymmetric_keys/asymmetric_type.c: In function 
-> asymmetric_key_hex_to_key_id:
-> crypto/asymmetric_keys/asymmetric_type.c:110: warning: ignoring return 
-> value of hex2bin, declared with attribute warn_unused_result
+> I found a unfixed FIX ME in the file stated in my above message. I am
+> wondering what to set hcd->self.comtroller->dma_mask to as it's now been
+> defined to NULL and clearly even as a newbie this seem incorrect.
+> Regards Nick
 
-I've posted an additional patch that moves some of the prevalidation to after
-the memory allocation in asymmetric_key_hex_to_key_id() and added it onto the
-keys-next branch.  Here's a revised pull request.
----
-Can you please pull these changes into security/next.  They include the fixes
-tag I previously requested as there's a dependency between these changes and
-the fixes.
+Usually, it is set at its controller driver or pass through through device tree or
+platform data.
 
-So, there are the fixes to go upstream:
-
- (1) Reinstate the production of EPERM for key types beginning with '.' in
-     requests from userspace.
-
- (2) Tidy up the cleanup of PKCS#7 message signed information blocks and fix a
-     bug this made more obvious.
-
-There are some additional fixes which can go through security/next:
-
- (1) Insert some missing 'static' annotations.
-
-And then there are some improvements to X.509 and PKCS#7:
-
-Changes for next to improve the matching of asymmetric keys and to improve the
-handling of PKCS#7 certificates:
-
- (1) Provide a method to preparse the data supplied for matching a key.  This
-     permits they key type to extract out the bits it needs for matching once
-     only.
-
-     Further, the type of search (direct lookup or iterative) can be set and
-     the function used to actually check the match can be set by preparse
-     rather than being hard coded for the type.
-
- (2) Improves asymmetric keys identification.
-
-     Keys derived from X.509 certs now get labelled with IDs derived from their
-     issuer and certificate number (required to match PKCS#7) and from their
-     SKID and subject (required to match X.509).
-
-     IDs are now binary and match criterion preparsing is provided so that
-     criteria can be turned into binary blobs to make matching faster.
-
- (3) Improves PKCS#7 message handling to permit PKCS#7 messages without X.509
-     cert lists to be matched to trusted keys, thereby allowing minimally sized
-     PKCS#7 certs to be used.
-
- (4) Improves PKCS#7 message handling to better handle certificate chains that
-     are broken due to unsupported crypto that can otherwise by used to
-     intersect a trust keyring.
-
- (5) An alteration to to get rid of a warning due to the return value of
-     hex2bin() not being checked.
-
-David
----
-The following changes since commit ac60ab4b4968b54fb5af20eac9dd78e36ad910c1:
-
-  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity into next (2014-09-12 22:40:22 +1000)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20140922
-
-for you to fetch changes up to d1ac5540455c3a2a11e943e19e2dc044cebe147d:
-
-  KEYS: Check hex2bin()'s return when generating an asymmetric key ID (2014-09-22 00:02:01 +0100)
-
-----------------------------------------------------------------
-(from the branch description for keys-next local branch)
-
-Keyrings for linux-next
-Keyrings changes for next
-
-----------------------------------------------------------------
-David Howells (19):
-      KEYS: Fix missing statics
-      PKCS#7: Add a missing static
-      KEYS: Reinstate EPERM for a key type name beginning with a '.'
-      PKCS#7: Provide a single place to do signed info block freeing
-      PKCS#7: Fix the parser cleanup to drain parsed out X.509 certs
-      Merge tag 'keys-fixes-20140916' into keys-next
-      Merge tag 'keys-next-fixes-20140916' into keys-next
-      Provide a binary to hex conversion function
-      KEYS: Preparse match data
-      KEYS: Remove key_type::def_lookup_type
-      KEYS: Remove key_type::match in favour of overriding default by match_preparse
-      KEYS: Make the key matching functions return bool
-      KEYS: Update the keyrings documentation for match changes
-      KEYS: Implement binary asymmetric key ID handling
-      KEYS: Overhaul key identification when searching for asymmetric keys
-      PKCS#7: Better handling of unsupported crypto
-      PKCS#7: Handle PKCS#7 messages that contain no X.509 certs
-      Merge tag 'keys-pkcs7-20140916' into keys-next
-      KEYS: Check hex2bin()'s return when generating an asymmetric key ID
-
- Documentation/security/keys.txt           |  65 +++++++--
- crypto/asymmetric_keys/asymmetric_keys.h  |   8 +-
- crypto/asymmetric_keys/asymmetric_type.c  | 223 +++++++++++++++++++++---------
- crypto/asymmetric_keys/pkcs7_key_type.c   |   2 -
- crypto/asymmetric_keys/pkcs7_parser.c     |  99 +++++++------
- crypto/asymmetric_keys/pkcs7_parser.h     |   6 +-
- crypto/asymmetric_keys/pkcs7_trust.c      |  87 ++++++++----
- crypto/asymmetric_keys/pkcs7_verify.c     | 102 +++++++++-----
- crypto/asymmetric_keys/x509_cert_parser.c |  55 +++++---
- crypto/asymmetric_keys/x509_parser.h      |   6 +-
- crypto/asymmetric_keys/x509_public_key.c  | 102 ++++++++------
- fs/cifs/cifs_spnego.c                     |   1 -
- fs/cifs/cifsacl.c                         |   1 -
- fs/nfs/idmap.c                            |   2 -
- include/crypto/public_key.h               |   5 +-
- include/keys/asymmetric-type.h            |  38 +++++
- include/keys/user-type.h                  |   1 -
- include/linux/kernel.h                    |   1 +
- include/linux/key-type.h                  |  34 ++++-
- lib/hexdump.c                             |  16 +++
- net/ceph/crypto.c                         |   1 -
- net/dns_resolver/dns_key.c                |  18 ++-
- net/rxrpc/ar-key.c                        |   2 -
- security/keys/big_key.c                   |   2 -
- security/keys/encrypted-keys/encrypted.c  |   1 -
- security/keys/internal.h                  |  21 ++-
- security/keys/key.c                       |   2 +-
- security/keys/keyctl.c                    |   2 +
- security/keys/keyring.c                   |  58 +++++---
- security/keys/proc.c                      |   8 +-
- security/keys/process_keys.c              |  13 +-
- security/keys/request_key.c               |  21 ++-
- security/keys/request_key_auth.c          |  10 +-
- security/keys/trusted.c                   |   1 -
- security/keys/user_defined.c              |  14 --
- 35 files changed, 690 insertions(+), 338 deletions(-)
+Peter
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
