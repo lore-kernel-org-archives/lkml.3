@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaIUTtg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 15:49:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48250 "EHLO mga09.intel.com"
+	id S1752372AbaIUTus (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 15:50:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20105 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374AbaIUTtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 15:49:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,566,1406617200"; 
-   d="scan'208";a="606173172"
-Message-ID: <541F2BCD.2040007@linux.intel.com>
-Date: Sun, 21 Sep 2014 12:49:33 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752135AbaIUTur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 15:50:47 -0400
+Date: Sun, 21 Sep 2014 21:47:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sched/numa: kill the wrong/dead TASK_DEAD check in
+	task_numa_fault()
+Message-ID: <20140921194743.GA30114@redhat.com>
 MIME-Version: 1.0
-To: Mathias Krause <minipli@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCHv2 2/3] x86, ptdump: Simplify page flag evaluation code
-References: <1411313216-2641-1-git-send-email-minipli@googlemail.com> <1411313216-2641-3-git-send-email-minipli@googlemail.com>
-In-Reply-To: <1411313216-2641-3-git-send-email-minipli@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/21/2014 8:26 AM, Mathias Krause wrote:
-> -		if (pr & _PAGE_PCD)
-> -			pt_dump_cont_printf(m, dmsg, "PCD ");
-> -		else
-> -			pt_dump_cont_printf(m, dmsg, "    ");
-> +		pt_dump_cont(m, dmsg, "%-4s", pr & _PAGE_USER ? "USR" : "");
+current->state == TASK_DEAD means that the task is doing its last
+schedule(), page fault is obviously impossible at this stage.
 
-while you have some nice cleanups in your patch, I can't say I consider this an improvement.
-Yes the C standard allows ? to be used like this
-but no, I don't think it improves readability in general.
-(I think for me the main exception is NULL pointer cases, but this is not one of these)
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/sched/fair.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 82088b2..0090e8c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1804,10 +1804,6 @@ void task_numa_fault(int last_cpupid, int mem_node, int pages, int flags)
+ 	if (!p->mm)
+ 		return;
+ 
+-	/* Do not worry about placement if exiting */
+-	if (p->state == TASK_DEAD)
+-		return;
+-
+ 	/* Allocate buffer to track faults on a per-node basis */
+ 	if (unlikely(!p->numa_faults_memory)) {
+ 		int size = sizeof(*p->numa_faults_memory) *
+-- 
+1.5.5.1
 
 
