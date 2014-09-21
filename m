@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755AbaIUPPn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 11:15:43 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56061 "EHLO
+	id S1753062AbaIUPSH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 11:18:07 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:56367 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbaIUPPU (ORCPT
+	with ESMTP id S1751425AbaIUPPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 11:15:20 -0400
+	Sun, 21 Sep 2014 11:15:42 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
@@ -16,9 +16,9 @@ CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>
-Subject: [PATCH -mm 04/14] memcg: use mem_cgroup_id for per memcg cache naming
-Date: Sun, 21 Sep 2014 19:14:36 +0400
-Message-ID: <8f5c3a4575d8ac265363dbb43aed53c64433ca3b.1411301245.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 08/14] memcg: release memcg_cache_id on css offline
+Date: Sun, 21 Sep 2014 19:14:40 +0400
+Message-ID: <f9e1e0befe41f243d8685ab3a578cd9fd84843d6.1411301245.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1411301245.git.vdavydov@parallels.com>
 References: <cover.1411301245.git.vdavydov@parallels.com>
@@ -29,120 +29,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use memcg_cache_id as a part of a per memcg cache name.
-Since memcg_cache_id is released only on css free, this guarantees cache
-name uniqueness.
+The memcg_cache_id (mem_cgroup->kmemcg_id) is used as the index in root
+cache's memcg_cache_params->memcg_caches array. Whenever a new kmem
+active cgroup is created we must allocate an id for it. As a result, the
+array size must always be greater than or equal to the number of memory
+cgroups that have memcg_cache_id assigned to them.
 
-However, it's a bad practice to keep memcg_cache_id till css free,
-because it occupies a slot in kmem_cache->memcg_params->memcg_caches
-arrays. So I'm going to make memcg release memcg_cache_id on css
-offline. As a result, memcg_cache_id won't guarantee cache name
-uniqueness any more.
+Currently we release the id only on css free. This is bad, because css
+can be zombieing around for quite a long time after css offline due to
+pending charges, occupying an array slot and making the arrays grow
+larger and larger. Although the number of arrays is limited - only root
+kmem caches have them - we can still experience problems while creating
+new kmem active cgroups, because they might require arrays relocation
+and each array relocation will require costly high-order page
+allocations if there are a lot of ids allocated. The situation will
+become even worse when per-memcg list_lru's are introduced, because each
+super block has a list_lru, and the number of super blocks is
+practically unlimited.
+
+This patch makes memcg release memcg_cache_id on css offline. The id of
+a dead memcg is set to its parent cgroup's id. Currently ids are not
+used after cgroup death so we could set it to -1, however, once per
+memcg list_lru is introduced, we will have to deal with list_lru entries
+accounted to the memcg somehow. I'm planning to move those entries to
+parent cgroup's list_lru, so we have to set kmemcg_id appropriately.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    2 +-
- mm/memcontrol.c      |   13 +++++++++++--
- mm/slab_common.c     |   15 +++------------
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ mm/memcontrol.c |   64 ++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 56 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index c265bec6a57d..f4d489aee6cb 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -118,7 +118,7 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
- #ifdef CONFIG_MEMCG_KMEM
- struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *,
- 					   struct kmem_cache *,
--					   const char *);
-+					   char *);
- #endif
- void kmem_cache_destroy(struct kmem_cache *);
- int kmem_cache_shrink(struct kmem_cache *);
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7361bd8b720a..16fcdbef1b7d 100644
+index 9ae2627bd3b1..d665d715090b 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2995,6 +2995,7 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
- 	static char memcg_name_buf[NAME_MAX + 1]; /* protected by
- 						     memcg_slab_mutex */
- 	struct kmem_cache *cachep;
-+	char *cache_name;
- 	int id;
+@@ -646,14 +646,10 @@ int memcg_limited_groups_array_size;
+ struct static_key memcg_kmem_enabled_key;
+ EXPORT_SYMBOL(memcg_kmem_enabled_key);
  
- 	lockdep_assert_held(&memcg_slab_mutex);
-@@ -3010,14 +3011,22 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
- 		return;
- 
- 	cgroup_name(memcg->css.cgroup, memcg_name_buf, NAME_MAX + 1);
--	cachep = memcg_create_kmem_cache(memcg, root_cache, memcg_name_buf);
-+
-+	cache_name = kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
-+			       mem_cgroup_id(memcg), memcg_name_buf);
-+	if (!cache_name)
-+		return;
-+
-+	cachep = memcg_create_kmem_cache(memcg, root_cache, cache_name);
- 	/*
- 	 * If we could not create a memcg cache, do not complain, because
- 	 * that's not critical at all as we can always proceed with the root
- 	 * cache.
- 	 */
--	if (!cachep)
-+	if (!cachep) {
-+		kfree(cache_name);
- 		return;
-+	}
- 
- 	css_get(&memcg->css);
- 	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 800314e2a075..8b486f05c414 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -345,7 +345,7 @@ EXPORT_SYMBOL(kmem_cache_create);
-  * memcg_create_kmem_cache - Create a cache for a memory cgroup.
-  * @memcg: The memory cgroup the new cache is for.
-  * @root_cache: The parent of the new cache.
-- * @memcg_name: The name of the memory cgroup (used for naming the new cache).
-+ * @cache_name: The string to be used as the new cache name.
-  *
-  * This function attempts to create a kmem cache that will serve allocation
-  * requests going from @memcg to @root_cache. The new cache inherits properties
-@@ -353,31 +353,22 @@ EXPORT_SYMBOL(kmem_cache_create);
-  */
- struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 					   struct kmem_cache *root_cache,
--					   const char *memcg_name)
-+					   char *cache_name)
- {
- 	struct kmem_cache *s = NULL;
--	char *cache_name;
- 
- 	get_online_cpus();
- 	get_online_mems();
- 
- 	mutex_lock(&slab_mutex);
- 
--	cache_name = kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
--			       memcg_cache_id(memcg), memcg_name);
--	if (!cache_name)
--		goto out_unlock;
+-static void memcg_free_cache_id(int id);
 -
- 	s = do_kmem_cache_create(cache_name, root_cache->object_size,
- 				 root_cache->size, root_cache->align,
- 				 root_cache->flags, root_cache->ctor,
- 				 memcg, root_cache);
--	if (IS_ERR(s)) {
--		kfree(cache_name);
-+	if (IS_ERR(s))
- 		s = NULL;
+ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+ {
+-	if (memcg_kmem_is_active(memcg)) {
++	if (memcg_kmem_is_active(memcg))
+ 		static_key_slow_dec(&memcg_kmem_enabled_key);
+-		memcg_free_cache_id(memcg->kmemcg_id);
 -	}
+ 	/*
+ 	 * This check can't live in kmem destruction function,
+ 	 * since the charges will outlive the cgroup
+@@ -2988,6 +2984,12 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
+ 	lockdep_assert_held(&memcg_slab_mutex);
  
--out_unlock:
- 	mutex_unlock(&slab_mutex);
+ 	id = memcg_cache_id(memcg);
++	/*
++	 * This might happen if the cgroup was taken offline while the create
++	 * work was pending.
++	 */
++	if (id < 0)
++		return;
  
- 	put_online_mems();
+ 	/*
+ 	 * Since per-memcg caches are created asynchronously on first
+@@ -3036,8 +3038,15 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
+ 	memcg = cachep->memcg_params->memcg;
+ 	id = memcg_cache_id(memcg);
+ 
+-	BUG_ON(cache_from_memcg_idx(root_cache, id) != cachep);
+-	cache_install_at_memcg_idx(root_cache, id, NULL);
++	/*
++	 * This function can be called both after and before css offline. If
++	 * it's called before css offline, which happens on the root cache
++	 * destruction, we should clear the slot corresponding to the cache in
++	 * memcg_caches array. Otherwise the slot must have already been
++	 * cleared in memcg_unregister_all_caches.
++	 */
++	if (id >= 0 && cache_from_memcg_idx(root_cache, id) == cachep)
++		cache_install_at_memcg_idx(root_cache, id, NULL);
+ 
+ 	list_del(&cachep->memcg_params->list);
+ 
+@@ -3093,19 +3102,49 @@ void __memcg_cleanup_cache_params(struct kmem_cache *s)
+ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ {
+ 	struct memcg_cache_params *params, *tmp;
++	int id = memcg_cache_id(memcg);
++	struct cgroup_subsys_state *iter;
++	struct mem_cgroup *parent;
++	int parent_id;
+ 
+ 	if (!memcg_kmem_is_active(memcg))
+ 		return;
+ 
++	/*
++	 * Clear the slots corresponding to this cgroup in all root caches'
++	 * memcg_params->memcg_caches arrays. If a cache is empty, remove it.
++	 */
+ 	mutex_lock(&memcg_slab_mutex);
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		struct kmem_cache *cachep = params->cachep;
++		struct kmem_cache *root_cache = params->root_cache;
++
++		BUG_ON(cache_from_memcg_idx(root_cache, id) != cachep);
++		cache_install_at_memcg_idx(root_cache, id, NULL);
+ 
+ 		kmem_cache_shrink(cachep);
+ 		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
+ 			memcg_unregister_cache(cachep);
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
++
++	/*
++	 * Change kmemcg_id of this cgroup and all its descendants (which are
++	 * already dead) to the parent cgroup's id.
++	 */
++	parent = parent_mem_cgroup(memcg);
++	if (parent && !mem_cgroup_is_root(parent)) {
++		BUG_ON(!memcg_kmem_is_active(parent));
++		parent_id = parent->kmemcg_id;
++	} else
++		parent_id = -1;
++
++	/* Safe, because we are holding the cgroup_mutex */
++	css_for_each_descendant_post(iter, &memcg->css)
++		mem_cgroup_from_css(iter)->kmemcg_id = parent_id;
++
++	/* The id is not used anymore, free it so that it could be reused. */
++	memcg_free_cache_id(id);
+ }
+ 
+ struct memcg_register_cache_work {
+@@ -3204,6 +3243,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ {
+ 	struct mem_cgroup *memcg;
+ 	struct kmem_cache *memcg_cachep;
++	int id;
+ 
+ 	VM_BUG_ON(!cachep->memcg_params);
+ 	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
+@@ -3217,7 +3257,15 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	if (!memcg_can_account_kmem(memcg))
+ 		goto out;
+ 
+-	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
++	id = memcg_cache_id(memcg);
++	/*
++	 * This might happen if current was migrated to another cgroup and this
++	 * cgroup was taken offline after we issued mem_cgroup_from_task above.
++	 */
++	if (unlikely(id < 0))
++		goto out;
++
++	memcg_cachep = cache_from_memcg_idx(cachep, id);
+ 	if (likely(memcg_cachep)) {
+ 		cachep = memcg_cachep;
+ 		goto out;
 -- 
 1.7.10.4
 
