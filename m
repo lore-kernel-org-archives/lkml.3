@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaIUAph (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 20:45:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55326 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaIUApf (ORCPT
+	id S1752222AbaIUAqp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 20:46:45 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:64738 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaIUAqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 20:45:35 -0400
+	Sat, 20 Sep 2014 20:46:44 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: Randy Dunlap <rdunlap@infradead.org>,
         "David S. Miller" <davem@davemloft.net>,
         Anish Bhatt <anish@chelsio.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
 Subject: [RFC PATCH 00/11] next: mips: Fix default configurations
-Date: Sat, 20 Sep 2014 17:45:19 -0700
-Message-Id: <1411260330-6716-1-git-send-email-linux@roeck-us.net>
+Date: Sat, 20 Sep 2014 17:46:15 -0700
+Message-Id: <1411260386-6800-1-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
