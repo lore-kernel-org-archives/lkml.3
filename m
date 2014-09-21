@@ -1,268 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaIUTxb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 15:53:31 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:59575 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaIUTx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 15:53:29 -0400
-From: Valentin Rothberg <valentinrothberg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, valentinrothberg@gmail.com,
-        stefan.hengelein@fau.de
-Subject: [PATCH v3] checkkconfigsymbols.sh: reimplementation in python
-Date: Sun, 21 Sep 2014 21:53:17 +0200
-Message-Id: <1411329197-15102-1-git-send-email-valentinrothberg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
-References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752344AbaIUUGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 16:06:20 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:37226 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751603AbaIUUGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 16:06:18 -0400
+From: Heiko Stuebner <heiko@sntech.de>
+To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, dianders@chromium.org, heiko@sntech.de
+Subject: [PATCH v2 0/3] gpio-charger: add devicetree support
+Date: Sun, 21 Sep 2014 22:05:20 +0200
+Message-Id: <1411329923-15912-1-git-send-email-heiko@sntech.de>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scripts/checkkconfigsymbols.sh script searches Kconfig features
-in the source code that are not defined in Kconfig. Such identifiers
-always evaluate to false and are the source of various kinds of bugs.
-However, the shell script is slow and it does not detect such broken
-references in Kbuild and Kconfig files (e.g., ``depends on UNDEFINED´´).
-Furthermore, it generates false positives (4 of 526 in v3.17-rc1).
-The script is also hard to read and understand, and is thereby difficult
-to maintain.
+This series adds devicetree support to the gpio-charger and fixes a small
+issue with the return value of gpio_get_value.
 
-This patch replaces the shell script with an implementation in Python,
-which:
-    (a) detects the same bugs, but does not report false positives
-    (b) additionally detects broken references in Kconfig and Kbuild files
-    (c) is up to 75 times faster than the shell script
+changes since v1:
+- adapt binding example to show how the charger fits into the
+  power-supplies structure
 
-The new script reduces the runtime on my machine (i7-2620M, 8GB RAM, SSD)
-from 3m47s to 0m3s, and reports 570 broken references in Linux v3.17-rc1;
-49 additional reports of which 16 are located in Kconfig files.
+Heiko Stuebner (3):
+  dt-bindings: document gpio-charger bindings
+  power: gpio-charger: add device tree support
+  power: gpio-charger: do not use gpio value directly
 
-Moreover, we intentionally include references in C comments, which have been
-ignored until now. Such comments may be leftovers of features that have
-been removed or renamed in Kconfig (e.g., ``#endif /* CONFIG_MPC52xx */´´).
-These references can be misleading and should be removed or replaced.
+ .../bindings/power_supply/gpio-charger.txt         | 27 +++++++++
+ drivers/power/gpio-charger.c                       | 68 ++++++++++++++++++++--
+ 2 files changed, 91 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/gpio-charger.txt
 
-Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
-Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
----
-Changelog:
-v2: Fix of regural expressions
-v3: Changelog replacement, and add changes of v2
----
- scripts/checkkconfigsymbols.py | 131 +++++++++++++++++++++++++++++++++++++++++
- scripts/checkkconfigsymbols.sh |  59 -------------------
- 2 files changed, 131 insertions(+), 59 deletions(-)
- create mode 100644 scripts/checkkconfigsymbols.py
- delete mode 100755 scripts/checkkconfigsymbols.sh
-
-diff --git a/scripts/checkkconfigsymbols.py b/scripts/checkkconfigsymbols.py
-new file mode 100644
-index 0000000..5c51dd1
---- /dev/null
-+++ b/scripts/checkkconfigsymbols.py
-@@ -0,0 +1,131 @@
-+#!/usr/bin/env python
-+
-+"""Find Kconfig identifieres that are referenced but not defined."""
-+
-+# Copyright (C) 2014 Valentin Rothberg <valentinrothberg@gmail.com>
-+# Copyright (C) 2014 Stefan Hengelein <stefan.hengelein@fau.de>
-+#
-+# This program is free software; you can redistribute it and/or modify it
-+# under the terms and conditions of the GNU General Public License,
-+# version 2, as published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope it will be useful, but WITHOUT
-+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-+# more details.
-+
-+
-+import os
-+import re
-+
-+
-+# REGEX EXPRESSIONS
-+OPERATORS = r"&|\(|\)|\||\!"
-+FEATURE = r"\w*[A-Z]{1}\w*"
-+FEATURE_DEF = r"^\s*(menu){,1}config\s+" + FEATURE + r"\s*"
-+EXPR = r"(" + OPERATORS + r"|\s|" + FEATURE + r")*"
-+STMT = r"^\s*(if|select|depends\s+on)\s+" + EXPR
-+
-+# REGEX OBJECTS
-+REGEX_FILE_KCONFIG = re.compile(r"Kconfig[\.\w+\-]*$")
-+REGEX_FILE_SOURCE = re.compile(r"\.[cSh]$")
-+REGEX_FILE_MAKE = re.compile(r"Makefile|Kbuild[\.\w+]*$")
-+REGEX_FEATURE = re.compile(r"(" + FEATURE + r")")
-+REGEX_FEATURE_DEF = re.compile(FEATURE_DEF)
-+REGEX_CPP_FEATURE = re.compile(r"\W+CONFIG_(" + FEATURE + r")[.]*")
-+REGEX_KCONFIG_EXPR = re.compile(EXPR)
-+REGEX_KCONFIG_STMT = re.compile(STMT)
-+REGEX_KCONFIG_HELP = re.compile(r"^[\s|-]*help[\s|-]*")
-+
-+
-+def main():
-+    """Main function of this module."""
-+    output = []
-+    source_files = []
-+    kconfig_files = []
-+    defined_features = set()
-+    referenced_features = dict()
-+
-+    for root, _, files in os.walk("."):
-+        for fil in files:
-+            if REGEX_FILE_KCONFIG.match(fil):
-+                kconfig_files.append(os.path.join(root, fil))
-+            elif REGEX_FILE_SOURCE.search(fil) or REGEX_FILE_MAKE.match(fil):
-+                source_files.append(os.path.join(root, fil))
-+
-+    for kfile in kconfig_files:
-+        parse_kconfig_file(kfile, defined_features, referenced_features)
-+
-+    for sfile in source_files:
-+        parse_source_file(sfile, referenced_features)
-+
-+    print "File list\tundefined symbol used"
-+    for feature in referenced_features:
-+        if feature not in defined_features:
-+            files = referenced_features.get(feature)
-+            output.append("%s:\t%s" % (", ".join(files), feature))
-+    for out in sorted(output):
-+        print out
-+
-+
-+def parse_source_file(sfile, referenced_features):
-+    """Parse @sfile for referenced Kconfig features."""
-+    lines = []
-+    with open(sfile, "r") as stream:
-+        lines = stream.readlines()
-+
-+    for line in lines:
-+        if not "CONFIG_" in line:
-+            continue
-+        features = REGEX_CPP_FEATURE.findall(line)
-+        for feature in features:
-+            if feature.endswith("_MODULE"):
-+                feature = feature[:-len("_MODULE")]
-+            paths = referenced_features.get(feature, set())
-+            paths.add(sfile)
-+            referenced_features[feature] = paths
-+
-+
-+def get_features_in_line(line):
-+    """Return mentioned kconfig features in @line."""
-+    return REGEX_FEATURE.findall(line)
-+
-+
-+def parse_kconfig_file(kfile, defined_features, referenced_features):
-+    """Parse @kfile and update feature definitions and references."""
-+    lines = []
-+    skip = False
-+
-+    with open(kfile, "r") as stream:
-+        lines = stream.readlines()
-+
-+    for i in range(len(lines)):
-+        line = lines[i]
-+        line = line.strip('\n')
-+        line = line.split("#")[0]  # Ignore right side of comments
-+
-+        if REGEX_FEATURE_DEF.match(line):
-+            feature_def = REGEX_FEATURE.findall(line)
-+            defined_features.add(feature_def[0])
-+            skip = False
-+        elif REGEX_KCONFIG_HELP.match(line):
-+            skip = True
-+        elif skip:
-+            # Ignore content of help messages
-+            pass
-+        elif REGEX_KCONFIG_STMT.match(line):
-+            features = get_features_in_line(line)
-+            # Multi-line statements
-+            while line.endswith("\\"):
-+                i += 1
-+                line = lines[i]
-+                line = line.strip('\n')
-+                features.extend(get_features_in_line(line))
-+            for feature in set(features):
-+                paths = referenced_features.get(feature, set())
-+                paths.add(kfile)
-+                referenced_features[feature] = paths
-+
-+
-+if __name__ == "__main__":
-+    main()
-diff --git a/scripts/checkkconfigsymbols.sh b/scripts/checkkconfigsymbols.sh
-deleted file mode 100755
-index ccb3391..0000000
---- a/scripts/checkkconfigsymbols.sh
-+++ /dev/null
-@@ -1,59 +0,0 @@
--#!/bin/sh
--# Find Kconfig variables used in source code but never defined in Kconfig
--# Copyright (C) 2007, Paolo 'Blaisorblade' Giarrusso <blaisorblade@yahoo.it>
--
--# Tested with dash.
--paths="$@"
--[ -z "$paths" ] && paths=.
--
--# Doing this once at the beginning saves a lot of time, on a cache-hot tree.
--Kconfigs="`find . -name 'Kconfig' -o -name 'Kconfig*[^~]'`"
--
--printf "File list \tundefined symbol used\n"
--find $paths -name '*.[chS]' -o -name 'Makefile' -o -name 'Makefile*[^~]'| while read i
--do
--	# Output the bare Kconfig variable and the filename; the _MODULE part at
--	# the end is not removed here (would need perl an not-hungry regexp for that).
--	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Za-z_]\+\).*!\2 '$i'!p' < $i
--done | \
--# Smart "sort|uniq" implemented in awk and tuned to collect the names of all
--# files which use a given symbol
--awk '{map[$1, count[$1]++] = $2; }
--END {
--	for (combIdx in map) {
--		split(combIdx, separate, SUBSEP);
--		# The value may have been removed.
--		if (! ( (separate[1], separate[2]) in map ) )
--			continue;
--		symb=separate[1];
--		printf "%s ", symb;
--		#Use gawk extension to delete the names vector
--		delete names;
--		#Portably delete the names vector
--		#split("", names);
--		for (i=0; i < count[symb]; i++) {
--			names[map[symb, i]] = 1;
--			# Unfortunately, we may still encounter symb, i in the
--			# outside iteration.
--			delete map[symb, i];
--		}
--		i=0;
--		for (name in names) {
--			if (i > 0)
--				printf ", %s", name;
--			else
--				printf "%s", name;
--			i++;
--		}
--		printf "\n";
--	}
--}' |
--while read symb files; do
--	# Remove the _MODULE suffix when checking the variable name. This should
--	# be done only on tristate symbols, actually, but Kconfig parsing is
--	# beyond the purpose of this script.
--	symb_bare=`echo $symb | sed -e 's/_MODULE//'`
--	if ! grep -q "\<$symb_bare\>" $Kconfigs; then
--		printf "$files: \t$symb\n"
--	fi
--done|sort
---
-1.9.1
+-- 
+1.9.0
 
