@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaIUAsf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 20:48:35 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:59685 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaIUArD (ORCPT
+	id S1753380AbaIUAtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 20:49:09 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:49511 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaIUAq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 20:47:03 -0400
+	Sat, 20 Sep 2014 20:46:57 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: Randy Dunlap <rdunlap@infradead.org>,
@@ -14,9 +14,9 @@ Cc: Randy Dunlap <rdunlap@infradead.org>,
         Anish Bhatt <anish@chelsio.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 07/11] next: mips: Fix malta_kvm_guest_defconfig
-Date: Sat, 20 Sep 2014 17:46:22 -0700
-Message-Id: <1411260386-6800-8-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 05/11] next: mips: Fix malta_defconfig
+Date: Sat, 20 Sep 2014 17:46:20 -0700
+Message-Id: <1411260386-6800-6-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411260386-6800-1-git-send-email-linux@roeck-us.net>
 References: <1411260386-6800-1-git-send-email-linux@roeck-us.net>
@@ -41,13 +41,13 @@ The command sequence to create the new configuration is as follows.
 Fixes: 5d6be6a5d486 ('scsi_netlink : Make SCSI_NETLINK dependent on NET instead of selecting NET')
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/mips/configs/malta_kvm_guest_defconfig | 6 +-----
+ arch/mips/configs/malta_defconfig | 6 +-----
  1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/arch/mips/configs/malta_kvm_guest_defconfig b/arch/mips/configs/malta_kvm_guest_defconfig
-index edd9ec9..2decf36 100644
---- a/arch/mips/configs/malta_kvm_guest_defconfig
-+++ b/arch/mips/configs/malta_kvm_guest_defconfig
+diff --git a/arch/mips/configs/malta_defconfig b/arch/mips/configs/malta_defconfig
+index e18741e..7c3973f 100644
+--- a/arch/mips/configs/malta_defconfig
++++ b/arch/mips/configs/malta_defconfig
 @@ -19,6 +19,7 @@ CONFIG_MODULE_UNLOAD=y
  CONFIG_MODVERSIONS=y
  CONFIG_MODULE_SRCVERSION_ALL=y
@@ -81,7 +81,7 @@ index edd9ec9..2decf36 100644
  CONFIG_MAC80211_MESH=y
  CONFIG_RFKILL=m
  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-@@ -260,7 +257,6 @@ CONFIG_CHR_DEV_OSST=m
+@@ -259,7 +256,6 @@ CONFIG_CHR_DEV_OSST=m
  CONFIG_BLK_DEV_SR=m
  CONFIG_BLK_DEV_SR_VENDOR=y
  CONFIG_CHR_DEV_SG=m
