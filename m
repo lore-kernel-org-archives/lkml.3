@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985AbaIUPPq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 11:15:46 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56145 "EHLO
+	id S1751883AbaIUPPo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 11:15:44 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:55899 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaIUPPZ (ORCPT
+	with ESMTP id S1751328AbaIUPPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 11:15:25 -0400
+	Sun, 21 Sep 2014 11:15:10 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
@@ -16,9 +16,9 @@ CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>
-Subject: [PATCH -mm 05/14] memcg: add pointer to owner cache to memcg_cache_params
-Date: Sun, 21 Sep 2014 19:14:37 +0400
-Message-ID: <acf095a7af0c7538bec8f119cf4ed9a913e4d036.1411301245.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 02/14] fs: consolidate {nr,free}_cached_objects args in shrink_control
+Date: Sun, 21 Sep 2014 19:14:34 +0400
+Message-ID: <484383ac4979e1f428020d7cd2d5dbd2e89c683d.1411301245.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1411301245.git.vdavydov@parallels.com>
 References: <cover.1411301245.git.vdavydov@parallels.com>
@@ -29,108 +29,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't keep a pointer to the owner kmem cache in the
-memcg_cache_params struct, because we can always get the cache by
-reading the slot corresponding to the owner memcg in the root cache's
-memcg_caches array (see memcg_params_to_cache).
+We are going to make FS shrinkers memcg-aware. To achieve that, we will
+have to pass the memcg to scan to the nr_cached_objects and
+free_cached_objects VFS methods, which currently take only the NUMA node
+to scan. Since the shrink_control structure already holds the node, and
+the memcg to scan will be added to it when we introduce memcg-aware
+vmscan, let us consolidate the methods' arguments in this structure to
+keep things clean.
 
-However, this means that offline css's, which can be zombieing around
-for quite a long time, will occupy slots in memcg_caches arrays, making
-them grow larger and larger, which doesn't sound good. Therefore I'm
-going to make memcg release the slots on offline, which will render
-memcg_params_to_cache invalid. So I'm removing it and adding a back
-pointer to memcg_cache_params instead.
-
+Suggested-by: Dave Chinner <dchinner@redhat.com>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    2 ++
- mm/memcontrol.c      |   19 +++----------------
- mm/slab_common.c     |    1 +
- 3 files changed, 6 insertions(+), 16 deletions(-)
+ fs/super.c         |   12 ++++++------
+ fs/xfs/xfs_super.c |    7 +++----
+ include/linux/fs.h |    6 ++++--
+ 3 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index f4d489aee6cb..c61344074c11 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -490,6 +490,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  *
-  * Child caches will hold extra metadata needed for its operation. Fields are:
-  *
-+ * @cachep: cache which this struct is for
-  * @memcg: pointer to the memcg this cache belongs to
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-@@ -503,6 +504,7 @@ struct memcg_cache_params {
- 			struct kmem_cache *memcg_caches[0];
- 		};
- 		struct {
-+			struct kmem_cache *cachep;
- 			struct mem_cgroup *memcg;
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 16fcdbef1b7d..9cb311c199be 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2836,19 +2836,6 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
- 		memcg_kmem_is_active(memcg);
+diff --git a/fs/super.c b/fs/super.c
+index 4554ac257647..a2b735a42e74 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -75,7 +75,7 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 		return SHRINK_STOP;
+ 
+ 	if (sb->s_op->nr_cached_objects)
+-		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
++		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
+ 
+ 	inodes = list_lru_shrink_count(&sb->s_inode_lru, sc);
+ 	dentries = list_lru_shrink_count(&sb->s_dentry_lru, sc);
+@@ -97,9 +97,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 	sc->nr_to_scan = inodes;
+ 	freed += prune_icache_sb(sb, sc);
+ 
+-	if (fs_objects)
+-		freed += sb->s_op->free_cached_objects(sb, fs_objects,
+-						       sc->nid);
++	if (fs_objects) {
++		sc->nr_to_scan = fs_objects;
++		freed += sb->s_op->free_cached_objects(sb, sc);
++	}
+ 
+ 	drop_super(sb);
+ 	return freed;
+@@ -122,8 +123,7 @@ static unsigned long super_cache_count(struct shrinker *shrink,
+ 	 * s_op->nr_cached_objects().
+ 	 */
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+-		total_objects = sb->s_op->nr_cached_objects(sb,
+-						 sc->nid);
++		total_objects = sb->s_op->nr_cached_objects(sb, sc);
+ 
+ 	total_objects += list_lru_shrink_count(&sb->s_dentry_lru, sc);
+ 	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index b194652033cd..d7e5c93c1a28 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -1521,7 +1521,7 @@ xfs_fs_mount(
+ static long
+ xfs_fs_nr_cached_objects(
+ 	struct super_block	*sb,
+-	int			nid)
++	struct shrink_control	*sc)
+ {
+ 	return xfs_reclaim_inodes_count(XFS_M(sb));
+ }
+@@ -1529,10 +1529,9 @@ xfs_fs_nr_cached_objects(
+ static long
+ xfs_fs_free_cached_objects(
+ 	struct super_block	*sb,
+-	long			nr_to_scan,
+-	int			nid)
++	struct shrink_control	*sc)
+ {
+-	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
++	return xfs_reclaim_inodes_nr(XFS_M(sb), sc->nr_to_scan);
  }
  
--/*
-- * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-- * in the memcg_cache_params struct.
-- */
--static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
--{
--	struct kmem_cache *cachep;
--
--	VM_BUG_ON(p->is_root_cache);
--	cachep = p->root_cache;
--	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
--}
--
- #ifdef CONFIG_SLABINFO
- static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- {
-@@ -2862,7 +2849,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+ static const struct super_operations xfs_super_operations = {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index ddd10c70a01d..63fbf6f4bd36 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1573,8 +1573,10 @@ struct super_operations {
+ 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
+ #endif
+ 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
+-	long (*nr_cached_objects)(struct super_block *, int);
+-	long (*free_cached_objects)(struct super_block *, long, int);
++	long (*nr_cached_objects)(struct super_block *,
++				  struct shrink_control *);
++	long (*free_cached_objects)(struct super_block *,
++				    struct shrink_control *);
+ };
  
- 	mutex_lock(&memcg_slab_mutex);
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
--		cache_show(memcg_params_to_cache(params), m);
-+		cache_show(params->cachep, m);
- 	mutex_unlock(&memcg_slab_mutex);
- 
- 	return 0;
-@@ -3120,7 +3107,6 @@ int __memcg_cleanup_cache_params(struct kmem_cache *s)
- 
- static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- {
--	struct kmem_cache *cachep;
- 	struct memcg_cache_params *params, *tmp;
- 
- 	if (!memcg_kmem_is_active(memcg))
-@@ -3128,7 +3114,8 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- 
- 	mutex_lock(&memcg_slab_mutex);
- 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
--		cachep = memcg_params_to_cache(params);
-+		struct kmem_cache *cachep = params->cachep;
-+
- 		kmem_cache_shrink(cachep);
- 		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
- 			memcg_unregister_cache(cachep);
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 8b486f05c414..b5c9d90535af 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -107,6 +107,7 @@ static int memcg_alloc_cache_params(struct mem_cgroup *memcg,
- 		return -ENOMEM;
- 
- 	if (memcg) {
-+		s->memcg_params->cachep = s;
- 		s->memcg_params->memcg = memcg;
- 		s->memcg_params->root_cache = root_cache;
- 	} else
+ /*
 -- 
 1.7.10.4
 
