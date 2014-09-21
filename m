@@ -1,54 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaIUWaO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 18:30:14 -0400
-Received: from smtpcfe02.cfe.gob.mx ([159.16.1.160]:43627 "EHLO
-	smtpcfe02.cfe.gob.mx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455AbaIUWaN convert rfc822-to-8bit (ORCPT
+	id S1751617AbaIUWqv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 18:46:51 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:51947 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaIUWqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 18:30:13 -0400
-X-Disclaimed: 1
+	Sun, 21 Sep 2014 18:46:49 -0400
 MIME-Version: 1.0
-Importance: Normal
-X-Priority: 3 (Normal)
-In-Reply-To: 
-References: 
-Subject: INTERNATIONAL SUMMIT INVITATION!
-From: salvador.reyes@cfe.gob.mx
-Date: Sun, 21 Sep 2014 17:28:54 -0500
-Message-ID: <OF23ECA9CA.DC517BC7-ON86257D5A.007B7EF2-86257D5A.007B7F02@cfe.gob.mx>
-X-Mailer: Lotus Domino Web Server Release 8.5.2FP2 March 22, 2011
-X-MIMETrack: Serialize by HTTP Server on LDPIFX01/CORP/CFE(Release 8.5.2FP2|March 22, 2011) at
- 21/09/2014 05:28:54 p.m.,
-	Serialize complete at 21/09/2014 05:28:54 p.m.,
-	Itemize by HTTP Server on LDPIFX01/CORP/CFE(Release 8.5.2FP2|March 22, 2011) at
- 21/09/2014 05:28:54 p.m.,
-	Serialize by Router on LDGITH02/CORP/CFE(Release 8.5.2FP2|March 22, 2011) at
- 21/09/2014 05:23:31 p.m.,
-	Serialize complete at 21/09/2014 05:23:31 p.m.
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Notes-Item: linux-kernel@vger.kernel.org; name=AltBlindCopyTo
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <541EA149.5000408@zonque.org>
+References: <1411268469-21283-1-git-send-email-mranostay@gmail.com>
+	<1411268469-21283-2-git-send-email-mranostay@gmail.com>
+	<541EA149.5000408@zonque.org>
+Date: Sun, 21 Sep 2014 15:46:48 -0700
+Message-ID: <CAKzfze--CZ3EVMpRgNy393ddDE64pPm0sibkVBFxWjEm8wL=dA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cap1106: Add support for various cap11xx devices
+From: Matt Ranostay <mranostay@gmail.com>
+To: Daniel Mack <daniel@zonque.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For more information please contact the Conference Organizing Committee Directly via email  icceid@outlook.com 
+On Sun, Sep 21, 2014 at 2:58 AM, Daniel Mack <daniel@zonque.org> wrote:
+>
+> Hi,
+>
+> On 09/21/2014 05:01 AM, Matt Ranostay wrote:
+> > Several other variants of the cap11xx device exists with a varying
+> > number of capacitance detection channels. Add support for creating
+> > the channels dynamically.
+>
+> Thanks for the patches!
+>
+> >
+> > Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+> > ---
+> >  drivers/input/keyboard/cap1106.c | 54 +++++++++++++++++++---------------------
+>
+> Please also add a patch to rename the file to cap11xx.c, and make sure
+> to export the patch with 'git format-patch -M' to detect the rename.
+>
+> > diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+> > index d70b65a..b9c43b5 100644
+> > --- a/drivers/input/keyboard/cap1106.c
+> > +++ b/drivers/input/keyboard/cap1106.c
+> > @@ -55,8 +55,6 @@
+> >  #define CAP1106_REG_MANUFACTURER_ID  0xfe
+> >  #define CAP1106_REG_REVISION         0xff
+> >
+> > -#define CAP1106_NUM_CHN 6
+> > -#define CAP1106_PRODUCT_ID   0x55
+> >  #define CAP1106_MANUFACTURER_ID      0x5d
+> >
+> >  struct cap1106_priv {
+> > @@ -64,7 +62,8 @@ struct cap1106_priv {
+> >       struct input_dev *idev;
+> >
+> >       /* config */
+> > -     unsigned short keycodes[CAP1106_NUM_CHN];
+> > +     u32 *keycodes;
+>
+> unsigned short *, please. See below.
+>
+> > @@ -189,27 +188,23 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+> >       struct cap1106_priv *priv;
+> >       struct device_node *node;
+> >       int i, error, irq, gain = 0;
+> > -     unsigned int val, rev;
+> > -     u32 gain32, keycodes[CAP1106_NUM_CHN];
+> > +     unsigned int val, prod, rev;
+> > +     u32 gain32;
+> >
+> >       priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> >       if (!priv)
+> >               return -ENOMEM;
+> >
+> > +     priv->num_channels = (unsigned long) id->driver_data;
+>
+> priv->num_channels is unsigned int.
+>
+> Also, a BUG_ON(!priv->num_channels) wouldn't harm.
 
-Dear Colleagues,
+Oops. Will fix..
 
-It is a great pleasure to invite you to the International Conference on Combating Emerging Infectious Diseases (ICCEID) which will be held from 17th to 21st November 2014 in Washington and from Nov 24th to Dec 2nd 2014 in Barcelona Spain. This Conference will bring together practitioners, researchers and educators from around the world.
+>
+> > +     priv->keycodes = devm_kzalloc(dev,
+> > +             sizeof(u32) * priv->num_channels, GFP_KERNEL);
+>
+> Use devm_kcalloc() to allocate an array.
+>
+> > @@ -235,17 +234,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+> >                       dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+> >       }
+> >
+> > -     BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
+> > -
+> >       /* Provide some useful defaults */
+> > -     for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+> > -             keycodes[i] = KEY_A + i;
+> > +     for (i = 0; i < priv->num_channels; i++)
+> > +             priv->keycodes[i] = KEY_A + i;
+> >
+> >       of_property_read_u32_array(node, "linux,keycodes",
+> > -                                keycodes, ARRAY_SIZE(keycodes));
+> > -
+> > -     for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+> > -             priv->keycodes[i] = keycodes[i];
+> > +                               priv->keycodes, priv->num_channels);
+>
+> Hmm, no. Internally, you have to store the keycodes as unsigned short,
+> otherwise EVIOC{G|S}KEYCODE from usespace doesn't work.
+>
+> of_property_read_u16_array() should work here for unsigned short, I
+> guess. Otherwise, you'd have to open-code the routine.
+>
+Ok I'l test that.
 
-Note that all interested delegate that requires entry visa to attend this meeting in the United States and Spain will be assisted by the organization, in obtaining visa in their passport. 
+> > @@ -313,12 +307,16 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+> >
+> >  static const struct of_device_id cap1106_dt_ids[] = {
+> >       { .compatible = "microchip,cap1106", },
+> > +     { .compatible = "microchip,cap1126", },
+> > +     { .compatible = "microchip,cap1188", },
+>
+> Hmm, how can that work unless you set .data to the number of channels
+> here? Did you test that with a DT-enabled board?
+>
+Yes it was tested on a BBB.  The num_channels is set from cap1106_i2c_ids
 
-The conference welcomes paper presentation from any interested participants willing to present papers during the conference. There will also be Scientific Sessions. For more information, please contact Dr. Tom Cook via Email: icceid@outlook.com 
-
-Prizes and Awards will be available for individual or Group that distinguished themselves in their areas of discipline.
-
-Sincerely,
-
-Dr Rose Byrne
-Co-coordinator ICCEID 2014
-Email: Ros.Byrne@aol.com
+>
+> Thanks,
+> Daniel
