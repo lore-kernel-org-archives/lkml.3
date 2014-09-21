@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaIUQ1a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 12:27:30 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:35777 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaIUQ12 (ORCPT
+	id S1751558AbaIUQ1h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 12:27:37 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:65391 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaIUQ1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 12:27:28 -0400
+	Sun, 21 Sep 2014 12:27:31 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: Waldemar Brodkorb <mail@waldemar-brodkorb.de>,
         Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
         linux-cris-kernel@axis.com, Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 0/8] cris: Patches needed on top of v3.17-rc5
-Date: Sun, 21 Sep 2014 09:27:10 -0700
-Message-Id: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 1/8] cris: Add support for early console
+Date: Sun, 21 Sep 2014 09:27:11 -0700
+Message-Id: <1411316838-15135-2-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
+References: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series of patches is needed to boot a crisv32 image with qemu
-into a serial console.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/cris/arch-v32/kernel/debugport.c | 41 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-The resulting image was built with a toolchain built with gcc 4.7.4 (with a
-minor fix backported from mainline gcc) and uclibc 0.9.33 using a patched
-version of buildroot. Root file system is initramfs built from latest busybox
-sources.
+diff --git a/arch/cris/arch-v32/kernel/debugport.c b/arch/cris/arch-v32/kernel/debugport.c
+index 610909b..7e46d87 100644
+--- a/arch/cris/arch-v32/kernel/debugport.c
++++ b/arch/cris/arch-v32/kernel/debugport.c
+@@ -4,6 +4,7 @@
+ 
+ #include <linux/console.h>
+ #include <linux/init.h>
++
+ #include <hwregs/reg_rdwr.h>
+ #include <hwregs/reg_map.h>
+ #include <hwregs/ser_defs.h>
+@@ -190,12 +191,52 @@ putDebugChar(int val)
+ }
+ #endif /* CONFIG_ETRAX_KGDB */
+ 
++static void __init early_putch(int c)
++{
++	reg_ser_r_stat_din stat;
++	/* Wait until transmitter is ready and send. */
++	do
++		stat = REG_RD(ser, port->instance, r_stat_din);
++	while (!stat.tr_rdy);
++	REG_WR_INT(ser, port->instance, rw_dout, c);
++}
++
++static void __init
++early_console_write(struct console *con, const char *s, unsigned n)
++{
++	extern void reset_watchdog(void);
++	int i;
++
++	/* Send data. */
++	for (i = 0; i < n; i++) {
++		/*
++		 * TODO: the '\n' -> '\n\r' translation should be done at the
++		 * receiver. Remove it when the serial driver removes it.
++		 */
++		if (s[i] == '\n')
++			early_putch('\r');
++		early_putch(s[i]);
++		reset_watchdog();
++	}
++}
++
++static struct console early_console_dev __initdata = {
++	.name	= "early",
++	.write	= early_console_write,
++	.flags	= CON_PRINTBUFFER | CON_BOOT,
++	.index	= -1
++};
++
+ /* Register console for printk's, etc. */
+ int __init
+ init_etrax_debug(void)
+ {
+         start_port(port);
+ 
++	/* Register an early console if a debug port was chosen */
++	if (port)
++		register_console(&early_console_dev);
++
+ #ifdef CONFIG_ETRAX_KGDB
+ 	start_port(kgdb_port);
+ #endif /* CONFIG_ETRAX_KGDB */
+-- 
+1.9.1
 
-The qemu command used to start the image is as follows.
-
-qemu-system-cris -serial stdio -kernel vmlinux -monitor none \
-	-nographic -append "console=ttyS0,115200,N,8 rdinit=/sbin/init"
-
-This still causes the following (non-fatal) traceback, but at least it works.
-
-WARNING: CPU: 0 PID: 188 at kernel/softirq.c:146 0xc000ef4e()
-Modules linked in:
-CPU: 0 PID: 188 Comm: init Not tainted 3.17.0-rc5-00008-g5f5d649 #93
-
-Analysis shows that interupts are disabled when _local_bh_enable() is called.
-
-The patches in this series are not intended for immediate acceptance into the
-upstream kernel and should instead be seen as a report on the state of the
-architecture in general. Having said this, the following patches should
-nevertheless be in acceptable state for upstream integration.
-	cris: Add support for early console
-	cris: Add dummy free_initrd_mem
-	cris: time.c: Add missing include file to fix compile
-
-Patch 6/8 ("tty: crisv32: Coding style cleanup, delete dead code") isn't
-really worth much by itself and can be omitted when testing the series.
-
-Patch 7/8 of the series ("resource: Add NULL check in next_resource")
-was submitted separately as non-RFC patch.
-
-Patch 8/8 ('Revert "percpu: free percpu allocation info for uniprocessor
-system"') is presumably only needed for cris. I have no idea why the call to
-pcpu_free_alloc_info() fails; maybe memory is not initialized correctly
-by the cris architecture code.
-
-Patch 7/8 and 8/8 are only needed when applying the patch series to the latest
-upstream kernel (v3.17-rcX). For v3.16 kernels, Patches 1-6 (or 1-5, strictly
-speaking) are sufficient.
