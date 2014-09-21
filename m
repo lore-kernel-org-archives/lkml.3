@@ -1,145 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaIUQsM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 12:48:12 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39259 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaIUQsK (ORCPT
+	id S1751603AbaIUQuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 12:50:00 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:61099 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaIUQt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 12:48:10 -0400
-Message-ID: <541F013D.7050507@roeck-us.net>
-Date: Sun, 21 Sep 2014 09:47:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-CC: Jesper Nilsson <jespern@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
-Subject: Re: Status of 'cris' architecture support in Linux kernel
-References: <20140831175010.GA15408@roeck-us.net> <20140915145203.GK4659@axis.com> <20140917190753.GA13115@roeck-us.net> <20140918085249.GS4659@axis.com>
-In-Reply-To: <20140918085249.GS4659@axis.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.541F014A.0076,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 21 Sep 2014 12:49:58 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] rcu: Remove redundant CONFIG_PREEMPT_RCU option
+Date: Sun, 21 Sep 2014 12:49:54 -0400
+Message-Id: <1411318194-9433-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 01:52 AM, Jesper Nilsson wrote:
-> On Wed, Sep 17, 2014 at 09:07:53PM +0200, Guenter Roeck wrote:
->> Just to give you an update. I "kind of" got an image to run with qemu
->> after applying the following patches.
->>
->> 8119d33 cris: Add basic qemu_defconfig
->> 40d078b cris: time.c: Add missing include file to fix compile error
->> a4f2390 cris: Add dummy free_initrd_mem
->> 88585aa cris: Add serial driver for Cris v32
->> a38d868 cris: Add support for early console
->>
->> Let me know if you would like a copy of those patches. Out of those, 40d078b,
->> a4f2390, and a38d868 should be pretty much acceptable for upstream integration.
->> 88585aa would need a lot of work (and probably a rewrite).
->
-> Yes please, that would be helpful.
->
->> Compiler version is 4.7.4; 4.9.1 builds even after applying a number of upstream
->> patches, but the resulting image hangs. The weekly gcc snapshot fails to build.
->>
->> The configuration is (I believe) derived from the configuration used for the
->> image available from the qemu web site. The same is true for the crisv32
->> serial driver and early console support. time.c needed an additional include
->> file (<linux/mm.h>). free_initrd_mem is needed to be able to build an image
->> with initrd support; it currently does nothing.
->>
->> With this, I am able to get into a shell using a built-in initrd.
->>
->> / # uname -a
->> Linux (none) 3.16.2-00005-g8119d33 #40 Wed Sep 17 11:49:31 PDT 2014 crisv32 GNU/Linux
->>
->> However, I see the following traceback.
->>
->> ------------[ cut here ]------------
->> WARNING: CPU: 0 PID: 186 at kernel/softirq.c:146 0xc000fd72()
->> Modules linked in:
->> CPU: 0 PID: 186 Comm: init Not tainted 3.16.2-00005-g8119d33 #40
->>
->> Stack from c1cf9eb0:
->>         00000000 c02569d0 00000009 c0279f80 c1fda770 c1fa3680 c02574d6 c000cbb8
->>         00000092 c000fd72 00000200 c02d0d94 00000000 00000000 c000fd72 00000092
->>         c000cbea 00000000 c000fd72 c1f862d2 c1cdbc20 c01ff768 c1f862d2 c1f862d6
->> Call Trace: [<c02569d0>] [<c02574d6>] [<c000cbb8>] [<c000fd72>] [<c000fd72>] [<c000cbea>] [<c000fd72>]
->>         [<c01ff768>] [<c01ff908>] [<c016f83c>] [<c016fb10>] [<c006cfc0>] [<c025855a>] [<c006d0f4>] [<c001f212>]
->>         [<c0004b80>] [<c00054f0>]
->> ---[ end trace 5bb306335a1f3b62 ]---
->>
->> Manual symbol decode (this is from a 3.10 traceback, so the addresses
->> are a bit different):
->>
->> c0234d8a	printk
->> c0012b0e	local_bh_enable
->> c0236004	dump_stack
->> c000ca4a	warn_slowpath_common
->> c000ca78	warn_slowpath_null
->> c0012b0e	local_bh_enable
->> c01e3c16	unix_release_sock
->> c01e3dae	unix_release
->> c015fb9a	sock_release
->> c015fe68	sock_close
->> c0067fae	__fput
->> c0237a20	_cond_resched
->> c0068168	____fput
->> c0022062	task_work_run
->> c0004954	do_notify_resume
->> c0005324	_work_notifysig
->
->
-> I'm not sure if this has happened here, but please note that
-> some of the symbols in the stack backtrace might be false,
-> since the CRIS does not have true stack unwinding,
-> the backtrace code only checks the stack for any
-> pointers in the kernel address space and reports them too.
->
->> --> Further debugging shows that interrupts are disabled when this happens.
->>
->> This traceback is seen from 3.10 onwards. 3.4 did not show the traceback; I did
->> not test any releases in between.
->
-> Ok thanks, will try to reproduce here.
->
+PREEMPT_RCU and TREE_PREEMPT_RCU serve the same function after TINY_PREEMPT_RCU
+has been removed. This patch removes CONFIG_PREEMPT_RCU and uses
+CONFIG_TREE_PREEMPT_RCU in its place.
 
-I just sent the series. My suspicion is that you might have some
-relevant changes in architecture code which never made it upstream.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ arch/xtensa/configs/s6105_defconfig                      |  2 +-
+ include/linux/init_task.h                                |  2 +-
+ include/linux/rcupdate.h                                 | 16 ++++++++--------
+ include/linux/sched.h                                    | 10 +++++-----
+ init/Kconfig                                             |  6 ------
+ kernel/rcu/update.c                                      |  4 ++--
+ tools/testing/selftests/rcutorture/doc/TINY_RCU.txt      |  2 +-
+ .../selftests/rcutorture/doc/TREE_RCU-kconfig.txt        |  2 +-
+ 8 files changed, 19 insertions(+), 25 deletions(-)
 
-Guenter
+diff --git a/arch/xtensa/configs/s6105_defconfig b/arch/xtensa/configs/s6105_defconfig
+index 12a492a..dab1a99 100644
+--- a/arch/xtensa/configs/s6105_defconfig
++++ b/arch/xtensa/configs/s6105_defconfig
+@@ -35,7 +35,7 @@ CONFIG_SYSVIPC_SYSCTL=y
+ #
+ # CONFIG_CLASSIC_RCU is not set
+ # CONFIG_TREE_RCU is not set
+-CONFIG_PREEMPT_RCU=y
++CONFIG_TREE_PREEMPT_RCU=y
+ # CONFIG_RCU_TRACE is not set
+ # CONFIG_TREE_RCU_TRACE is not set
+ # CONFIG_PREEMPT_RCU_TRACE is not set
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 77fc43f..39600f4 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -108,7 +108,7 @@ extern struct group_info init_groups;
+ #else
+ #define INIT_TASK_RCU_TREE_PREEMPT(tsk)
+ #endif
+-#ifdef CONFIG_PREEMPT_RCU
++#ifdef CONFIG_TREE_PREEMPT_RCU
+ #define INIT_TASK_RCU_PREEMPT(tsk)					\
+ 	.rcu_read_lock_nesting = 0,					\
+ 	.rcu_read_unlock_special.s = 0,					\
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index a4a819f..17a15d5 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -103,7 +103,7 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
+ 
+ /* Exported common interfaces */
+ 
+-#ifdef CONFIG_PREEMPT_RCU
++#ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+ /**
+  * call_rcu() - Queue an RCU callback for invocation after a grace period.
+@@ -140,12 +140,12 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
+ void call_rcu(struct rcu_head *head,
+ 	      void (*func)(struct rcu_head *head));
+ 
+-#else /* #ifdef CONFIG_PREEMPT_RCU */
++#else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ /* In classic RCU, call_rcu() is just call_rcu_sched(). */
+ #define	call_rcu	call_rcu_sched
+ 
+-#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
++#endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ /**
+  * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
+@@ -217,7 +217,7 @@ void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
+ void synchronize_rcu_tasks(void);
+ void rcu_barrier_tasks(void);
+ 
+-#ifdef CONFIG_PREEMPT_RCU
++#ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+ void __rcu_read_lock(void);
+ void __rcu_read_unlock(void);
+@@ -227,12 +227,12 @@ void synchronize_rcu(void);
+ /*
+  * Defined as a macro as it is a very low level header included from
+  * areas that don't even know about current.  This gives the rcu_read_lock()
+- * nesting depth, but makes sense only if CONFIG_PREEMPT_RCU -- in other
++ * nesting depth, but makes sense only if CONFIG_TREE_PREEMPT_RCU -- in other
+  * types of kernel builds, the rcu_read_lock() nesting depth is unknowable.
+  */
+ #define rcu_preempt_depth() (current->rcu_read_lock_nesting)
+ 
+-#else /* #ifdef CONFIG_PREEMPT_RCU */
++#else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ static inline void __rcu_read_lock(void)
+ {
+@@ -254,7 +254,7 @@ static inline int rcu_preempt_depth(void)
+ 	return 0;
+ }
+ 
+-#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
++#endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ /* Internal to kernel */
+ void rcu_init(void);
+@@ -530,7 +530,7 @@ static inline int rcu_read_lock_sched_held(void)
+ 		}							\
+ 	} while (0)
+ 
+-#if defined(CONFIG_PROVE_RCU) && !defined(CONFIG_PREEMPT_RCU)
++#if defined(CONFIG_PROVE_RCU) && !defined(CONFIG_TREE_PREEMPT_RCU)
+ static inline void rcu_preempt_sleep_check(void)
+ {
+ 	rcu_lockdep_assert(!lock_is_held(&rcu_lock_map),
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 42888d7..6acaa30 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1269,11 +1269,11 @@ struct task_struct {
+ 	int nr_cpus_allowed;
+ 	cpumask_t cpus_allowed;
+ 
+-#ifdef CONFIG_PREEMPT_RCU
++#ifdef CONFIG_TREE_PREEMPT_RCU
+ 	int rcu_read_lock_nesting;
+ 	union rcu_special rcu_read_unlock_special;
+ 	struct list_head rcu_node_entry;
+-#endif /* #ifdef CONFIG_PREEMPT_RCU */
++#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 	struct rcu_node *rcu_blocked_node;
+ #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+@@ -2014,12 +2014,12 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
+ 
+ static inline void rcu_copy_process(struct task_struct *p)
+ {
+-#ifdef CONFIG_PREEMPT_RCU
++#ifdef CONFIG_TREE_PREEMPT_RCU
+ 	p->rcu_read_lock_nesting = 0;
+ 	p->rcu_read_unlock_special.s = 0;
+ 	p->rcu_blocked_node = NULL;
+ 	INIT_LIST_HEAD(&p->rcu_node_entry);
+-#endif /* #ifdef CONFIG_PREEMPT_RCU */
++#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ #ifdef CONFIG_TASKS_RCU
+ 	p->rcu_tasks_holdout = false;
+ 	INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
+@@ -2752,7 +2752,7 @@ extern int __cond_resched_softirq(void);
+ 
+ static inline void cond_resched_rcu(void)
+ {
+-#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
++#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_TREE_PREEMPT_RCU)
+ 	rcu_read_unlock();
+ 	cond_resched();
+ 	rcu_read_lock();
+diff --git a/init/Kconfig b/init/Kconfig
+index 8a2b97c..27ad03c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -501,12 +501,6 @@ config TINY_RCU
+ 
+ endchoice
+ 
+-config PREEMPT_RCU
+-	def_bool TREE_PREEMPT_RCU
+-	help
+-	  This option enables preemptible-RCU code that is common between
+-	  TREE_PREEMPT_RCU and, in the old days, TINY_PREEMPT_RCU.
+-
+ config TASKS_RCU
+ 	bool "Task_based RCU implementation using voluntary context switch"
+ 	default n
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index 3ef8ba5..8848a32 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -62,7 +62,7 @@ MODULE_ALIAS("rcupdate");
+ 
+ module_param(rcu_expedited, int, 0);
+ 
+-#ifdef CONFIG_PREEMPT_RCU
++#ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+ /*
+  * Preemptible RCU implementation for rcu_read_lock().
+@@ -108,7 +108,7 @@ void __rcu_read_unlock(void)
+ }
+ EXPORT_SYMBOL_GPL(__rcu_read_unlock);
+ 
+-#endif /* #ifdef CONFIG_PREEMPT_RCU */
++#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ static struct lock_class_key rcu_lock_key;
+diff --git a/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
+index 28db67b..4fea92d 100644
+--- a/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
++++ b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
+@@ -31,7 +31,7 @@ CONFIG_RCU_TORTURE_TEST
+ 
+ CONFIG_HOTPLUG_CPU
+ CONFIG_PREEMPT
+-CONFIG_PREEMPT_RCU
++CONFIG_TREE_PREEMPT_RCU
+ CONFIG_SMP
+ CONFIG_TINY_RCU
+ CONFIG_TREE_PREEMPT_RCU
+diff --git a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
+index f85c45e..081dece 100644
+--- a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
++++ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
+@@ -62,7 +62,7 @@ CONFIG_NO_HZ_FULL_SYSIDLE_SMALL
+ 	Defer until Frederic uses this.
+ 
+ CONFIG_PREEMPT_COUNT
+-CONFIG_PREEMPT_RCU
++CONFIG_TREE_PREEMPT_RCU
+ 
+ 	Redundant with CONFIG_PREEMPT, ignore.
+ 
+-- 
+2.1.0
 
