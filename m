@@ -1,270 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaIUTjY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 15:39:24 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:48838 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaIUTjW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 15:39:22 -0400
-From: Valentin Rothberg <valentinrothberg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, valentinrothberg@gmail.com,
-        stefan.hengelein@fau.de
-Subject: [PATCH v2] checkkconfigsymbols.sh: reimplementation in python
-Date: Sun, 21 Sep 2014 21:39:11 +0200
-Message-Id: <1411328351-14751-1-git-send-email-valentinrothberg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
-References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
+	id S1751655AbaIUTn7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 15:43:59 -0400
+Received: from mout.gmx.net ([212.227.15.18]:61020 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374AbaIUTn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 15:43:58 -0400
+Message-ID: <541F2A72.8030007@gmx.de>
+Date: Sun, 21 Sep 2014 21:43:46 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Guenter Roeck <linux@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: linux-next: Tree for Sep 19
+References: <20140919165817.225eb8b8@canb.auug.org.au> <20140919191514.GA5358@roeck-us.net> <541DD754.4040000@gmx.de> <541DEB33.2070508@roeck-us.net>
+In-Reply-To: <541DEB33.2070508@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:q2mYipIcZGsvv6swz8VVabEb7/KZXk5PczIDNJ5kE33+oDwM0H/
+ v2BkqDD1QZxY4kpHsnEDnkBJ9Ezai1gHqMxKvWvLj6bTvxx7qqUqvtbXaDR3UAA6aBISTM1
+ +19ZHOlq/9IEJZMUYipd8WXND5DaDxw3qJ5rw9kOSxI9ZxJGIgX+hB87zvSoC2C6nxyNC3M
+ DT2OAKlK3l7zQ38xts9/Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scripts/checkkconfigsymbols.sh script searches Kconfig features
-in the source code that are not defined in Kconfig. Such identifiers
-always evaluate to false and are the source of various kinds of bugs.
-However, the shell script is slow and it does not detect such broken
-references in Kbuild and Kconfig files (e.g., ``depends on UNDEFINED´´).
-Furthermore, it generates false positives (4 of 526 in v3.17-rc1).
-The script is also hard to read and understand, and is thereby difficult
-to maintain.
+Hi G�nter,
 
-This patch replaces the shell script with an implementation in Python,
-which:
-    (a) detects the same bugs, but does not report false positives
-    (b) additionally detects broken references in Kconfig and Kbuild files
-    (c) is up to 75 times faster than the shell script
+On 09/20/2014 11:01 PM, Guenter Roeck wrote:
+> On 09/20/2014 12:36 PM, Helge Deller wrote:
+>> Hi G�nter,
+>>
+>> On 09/19/2014 09:15 PM, Guenter Roeck wrote:
+>>> On Fri, Sep 19, 2014 at 04:58:17PM +1000, Stephen Rothwell wrote:
+>>>> Changes since 20140917:
+>>>>
+>>>> The fsl tree still had its build failure so I used the version from
+>>>> next-20140917.
+>>>>
+>>>> The v4l-dvb tree lost its build failure.
+>>>>
+>>>> The security tree gained a conflict against the file-locks tree.
+>>>>
+>>>> Non-merge commits (relative to Linus' tree): 6014
+>>>>   5488 files changed, 217522 insertions(+), 129375 deletions(-)
+>>>>
+>>>> ----------------------------------------------------------------------------
+>>>>
+>>>
+>>> parisc:defconfig, parisc:generic-32bit_defconfig:
+>>>
+>>> --------------
+>>> Error log:
+>>> arch/parisc/kernel/ptrace.c: In function 'do_syscall_trace_enter':
+>>> arch/parisc/kernel/ptrace.c:274:2: error: implicit declaration of function
+>>> 'secure_computing' [-Werror=implicit-function-declaration]
+>>> cc1: some warnings being treated as errors
+>>> make[1]: *** [arch/parisc/kernel/ptrace.o] Error 1
+>>>
+>>> Bisect points to commit 273299fb6380 ('Merge branch 'x86/seccomp') which
+>>> obviously doesn't help much. Suspected culprit is c90f06943e05 ('parisc: Wire up
+>>> seccomp, getrandom and memfd_create syscalls') which seems to be missing an
+>>> include file.
+>
+>> I've added this patch to my for-next tree:
+>> http://git.kernel.org/cgit/linux/kernel/git/deller/parisc-linux.git/commit/?h=for-next&id=0f18557b017b3469e1f8edf5cf34c1cba856fdbe
+>
+> That doesn't solve the problem for me, most likely because
+> HAVE_ARCH_SECCOMP_FILTER is not set for parisc in next-20140919.
+> This is what seccomp.h does with it:
+>
+> #ifdef CONFIG_HAVE_ARCH_SECCOMP_FILTER
+> static inline int secure_computing(void) { return 0; }
+> #else
+> static inline void secure_computing_strict(int this_syscall) { return; }
+> #endif
+>
+> You don't have this flag in your tree. It was introduced in -next with
+> commit 'seccomp,x86,arm,mips,s390: Remove nr parameter from secure_computing'.
 
-The new script reduces the runtime on my machine (i7-2620M, 8GB RAM, SSD)
-from 3m47s to 0m3s, and reports 570 broken references in Linux v3.17-rc1;
-49 additional reports of which 16 are located in Kconfig files.
+Thanks for the hint!
+Since parisc currently only supports the strict mode, I've changed the code
+to call secure_computing_strict() instead of secure_computing() with this commit in my for-next tree:
+http://git.kernel.org/cgit/linux/kernel/git/deller/parisc-linux.git/commit/?h=for-next&id=fe5c873459a973e59854bd235a7e6b3eaa8e5fe0
 
-Moreover, we intentionally include references in C comments, which have been
-ignored until now. Such comments may be leftovers of features that have
-been removed or renamed in Kconfig (e.g., ``#endif /* CONFIG_MPC52xx */´´).
-These references can be misleading and should be removed or replaced.
+It now builds cleanly with the next-20140919 tree.
 
-Changelog:
-v2: Fix of regural expressions
-
-Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
-Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
----
- scripts/checkkconfigsymbols.py | 134 +++++++++++++++++++++++++++++++++++++++++
- scripts/checkkconfigsymbols.sh |  59 ------------------
- 2 files changed, 134 insertions(+), 59 deletions(-)
- create mode 100644 scripts/checkkconfigsymbols.py
- delete mode 100755 scripts/checkkconfigsymbols.sh
-
-diff --git a/scripts/checkkconfigsymbols.py b/scripts/checkkconfigsymbols.py
-new file mode 100644
-index 0000000..0157426
---- /dev/null
-+++ b/scripts/checkkconfigsymbols.py
-@@ -0,0 +1,134 @@
-+#!/usr/bin/env python
-+
-+"""Find Kconfig identifieres that are referenced but not defined."""
-+
-+# Copyright (C) 2014 Valentin Rothberg <valentinrothberg@gmail.com>
-+# Copyright (C) 2014 Stefan Hengelein <stefan.hengelein@fau.de>
-+#
-+# This program is free software; you can redistribute it and/or modify it
-+# under the terms and conditions of the GNU General Public License,
-+# version 2, as published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope it will be useful, but WITHOUT
-+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-+# more details.
-+
-+
-+import os
-+import re
-+import sys
-+
-+# REGEX EXPRESSIONS
-+OPERATORS = r"[|\s|&|\(|\)|\||\!]"
-+FEATURE = r"[\w]*[A-Z]+[\w]*"
-+EXPR = OPERATORS + r"*([" + FEATURE + r"]*)*" + OPERATORS + r"*"
-+IF_STMT = r"^\s*if\s+" + EXPR + r""
-+SELECT_STMT = r"^\s*select\s+" + EXPR + r""
-+DEPENDS_STMT = r"^\s*depends\s+on\s+" + EXPR + r""
-+CONFIG_STMT = r"^\s*[menu]*config\s+(" + FEATURE + r")"
-+
-+# REGEX OBJECTS
-+REGEX_EXPR = re.compile(EXPR)
-+REGEX_KCONFIG = re.compile(r"Kconfig[\.\w+]*")
-+REGEX_SOURCE = re.compile(r"\.[cSh]$")
-+REGEX_MAKE = re.compile(r"Makefile|Kbuild[\.\w+]*")
-+REGEX_KCONFIG_HELP = re.compile(r"[\s|-]*help[\s|-]*")
-+REGEX_CONFIG_STMT = re.compile(CONFIG_STMT)
-+REGEX_DEPENDS_STMT = re.compile(DEPENDS_STMT)
-+REGEX_SELECT_STMT = re.compile(SELECT_STMT)
-+REGEX_IF_STMT = re.compile(IF_STMT)
-+REGEX_FEATURES = re.compile(r"[\W]+CONFIG_(" + FEATURE + r")[.]*")
-+
-+
-+def main():
-+    """Main function of this module."""
-+    output = []
-+    kconfig_files = []
-+    source_files = []
-+    defined_features = set()
-+    referenced_features = dict()
-+
-+    for root, _, files in os.walk("."):
-+        for fil in files:
-+            if REGEX_KCONFIG.match(fil):
-+                kconfig_files.append(os.path.join(root, fil))
-+            elif REGEX_SOURCE.search(fil) or REGEX_MAKE.match(fil):
-+                source_files.append(os.path.join(root, fil))
-+
-+    for kfile in kconfig_files:
-+        parse_kconfig_file(kfile, defined_features, referenced_features)
-+    for sfile in source_files:
-+        parse_source_file(sfile, referenced_features)
-+
-+    print "File list\tundefined symbol used"
-+    for feature in referenced_features.keys():
-+        if feature not in defined_features:
-+            files = referenced_features.get(feature)
-+            output.append("%s:\t%s" % (", ".join(files), feature))
-+    for out in sorted(output):
-+        print out
-+
-+
-+def parse_source_file(sfile, referenced_features):
-+    """Parse @sfile for referenced Kconfig features."""
-+    lines = []
-+    with open(sfile, "r") as stream:
-+        lines = stream.readlines()
-+
-+    for line in lines:
-+        if not "CONFIG_" in line:
-+            continue
-+        features = REGEX_FEATURES.findall(line)
-+        for feat in features:
-+            if feat.endswith("_MODULE"):
-+                feat = feat[:-len("_MODULE")]
-+            paths = referenced_features.get(feat, set())
-+            paths.add(sfile)
-+            referenced_features[feat] = paths
-+
-+
-+def get_items_in_line(line):
-+    """Return mentioned kconfig items in @line."""
-+    return REGEX_EXPR.findall(line)
-+
-+
-+def parse_kconfig_file(kfile, defined_features, referenced_features):
-+    """Parse @kfile and update feature definitions and references."""
-+    lines = []
-+    with open(kfile, "r") as stream:
-+        lines = stream.readlines()
-+
-+    skip = False
-+    for i in range(len(lines)):
-+        line = lines[i]
-+        line = line.strip('\n')
-+        line = line.split("#")[0]  # Ignore right side of comments
-+
-+        definition = REGEX_CONFIG_STMT.findall(line)
-+        if definition:
-+            defined_features.add(definition[0])
-+            skip = False
-+        elif REGEX_KCONFIG_HELP.match(line):
-+            skip = True
-+        elif skip:
-+            # Ignore content of help messages
-+            pass
-+        elif REGEX_DEPENDS_STMT.match(line) or \
-+                REGEX_SELECT_STMT.match(line) or \
-+                REGEX_IF_STMT.match(line):
-+            items = get_items_in_line(line)
-+            # Multi-line statements
-+            while line.endswith("\\"):
-+                i += 1
-+                line = lines[i]
-+                line = line.strip('\n')
-+                items.extend(get_items_in_line(line))
-+            for item in set(items):
-+                paths = referenced_features.get(kfile, set())
-+                paths.add(kfile)
-+                referenced_features[item] = paths
-+
-+
-+if __name__ == "__main__":
-+    main()
-diff --git a/scripts/checkkconfigsymbols.sh b/scripts/checkkconfigsymbols.sh
-deleted file mode 100755
-index ccb3391..0000000
---- a/scripts/checkkconfigsymbols.sh
-+++ /dev/null
-@@ -1,59 +0,0 @@
--#!/bin/sh
--# Find Kconfig variables used in source code but never defined in Kconfig
--# Copyright (C) 2007, Paolo 'Blaisorblade' Giarrusso <blaisorblade@yahoo.it>
--
--# Tested with dash.
--paths="$@"
--[ -z "$paths" ] && paths=.
--
--# Doing this once at the beginning saves a lot of time, on a cache-hot tree.
--Kconfigs="`find . -name 'Kconfig' -o -name 'Kconfig*[^~]'`"
--
--printf "File list \tundefined symbol used\n"
--find $paths -name '*.[chS]' -o -name 'Makefile' -o -name 'Makefile*[^~]'| while read i
--do
--	# Output the bare Kconfig variable and the filename; the _MODULE part at
--	# the end is not removed here (would need perl an not-hungry regexp for that).
--	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Za-z_]\+\).*!\2 '$i'!p' < $i
--done | \
--# Smart "sort|uniq" implemented in awk and tuned to collect the names of all
--# files which use a given symbol
--awk '{map[$1, count[$1]++] = $2; }
--END {
--	for (combIdx in map) {
--		split(combIdx, separate, SUBSEP);
--		# The value may have been removed.
--		if (! ( (separate[1], separate[2]) in map ) )
--			continue;
--		symb=separate[1];
--		printf "%s ", symb;
--		#Use gawk extension to delete the names vector
--		delete names;
--		#Portably delete the names vector
--		#split("", names);
--		for (i=0; i < count[symb]; i++) {
--			names[map[symb, i]] = 1;
--			# Unfortunately, we may still encounter symb, i in the
--			# outside iteration.
--			delete map[symb, i];
--		}
--		i=0;
--		for (name in names) {
--			if (i > 0)
--				printf ", %s", name;
--			else
--				printf "%s", name;
--			i++;
--		}
--		printf "\n";
--	}
--}' |
--while read symb files; do
--	# Remove the _MODULE suffix when checking the variable name. This should
--	# be done only on tristate symbols, actually, but Kconfig parsing is
--	# beyond the purpose of this script.
--	symb_bare=`echo $symb | sed -e 's/_MODULE//'`
--	if ! grep -q "\<$symb_bare\>" $Kconfigs; then
--		printf "$files: \t$symb\n"
--	fi
--done|sort
--- 
-1.9.1
-
+Thanks!
+Helge
