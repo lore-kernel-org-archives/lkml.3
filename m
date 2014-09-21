@@ -1,72 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaIUUds (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 16:33:48 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:33195 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaIUUdq (ORCPT
+	id S1751678AbaIUUlU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 16:41:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37094 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaIUUlR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 16:33:46 -0400
+	Sun, 21 Sep 2014 16:41:17 -0400
+Date: Sun, 21 Sep 2014 22:41:00 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Frans Klaver <frans.klaver@xsens.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140921204100.GA10111@linutronix.de>
+References: <54119AAA.9080907@linutronix.de>
+ <20140911151114.GD28458@ci00147.xsens-tech.local>
+ <5411C810.7070906@linutronix.de>
+ <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
+ <54129F6C.7040508@linutronix.de>
+ <20140912094010.GE28458@ci00147.xsens-tech.local>
+ <5412C21A.8020203@linutronix.de>
+ <20140912102816.GF28458@ci00147.xsens-tech.local>
+ <541716DC.9020904@linutronix.de>
+ <20140917102812.GA20438@ci00147.xsens-tech.local>
 MIME-Version: 1.0
-In-Reply-To: <541F2BCD.2040007@linux.intel.com>
-References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
-	<1411313216-2641-3-git-send-email-minipli@googlemail.com>
-	<541F2BCD.2040007@linux.intel.com>
-Date: Sun, 21 Sep 2014 22:33:45 +0200
-Message-ID: <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
-Subject: Re: [PATCHv2 2/3] x86, ptdump: Simplify page flag evaluation code
-From: Mathias Krause <minipli@googlemail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86-ml <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140917102812.GA20438@ci00147.xsens-tech.local>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 September 2014 21:49, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 9/21/2014 8:26 AM, Mathias Krause wrote:
->>
->> -               if (pr & _PAGE_PCD)
->> -                       pt_dump_cont_printf(m, dmsg, "PCD ");
->> -               else
->> -                       pt_dump_cont_printf(m, dmsg, "    ");
->> +               pt_dump_cont(m, dmsg, "%-4s", pr & _PAGE_USER ? "USR" :
->> "");
+* Frans Klaver | 2014-09-17 12:28:12 [+0200]:
+
+>- Bone Black: Yocto poky, core-image-minimal
+>  Login, "less file" locks up, doesn't show anything. I can exit using
+>  Ctrl-C.
+
+So I have the same with my and the serial-omap driver. No difference
+here. The trace looks like this:
+|           <idle>-0     [000] d.h.   444.393585: serial8250_handle_irq: iir cc lsr 61
+|           <idle>-0     [000] d.h.   444.393605: serial8250_rx_chars: get 0d
+received the enter key
+
+|           <idle>-0     [000] d.h.   444.393609: serial8250_rx_chars: insert d lsr 61
+|           <idle>-0     [000] d.h.   444.393614: uart_insert_char: 1
+|           <idle>-0     [000] d.h.   444.393617: uart_insert_char: 2
+|           <idle>-0     [000] dnh.   444.393636: serial8250_tx_chars: empty
+|      kworker/0:2-753   [000] d...   444.393686: serial8250_start_tx: empty?1
+|      kworker/0:2-753   [000] d.h.   444.393699: serial8250_handle_irq: iir c2 lsr 60
+|      kworker/0:2-753   [000] d.h.   444.393705: serial8250_tx_chars: empty
+|               sh-1042  [000] d...   444.393822: serial8250_start_tx: empty?1
+|               sh-1042  [000] d.h.   444.393836: serial8250_handle_irq: iir c2 lsr 60
+|               sh-1042  [000] d.h.   444.393842: serial8250_tx_chars: empty
+|               sh-1042  [000] d...   444.393855: serial8250_start_tx: empty?0
+|               sh-1042  [000] d.h.   444.393863: serial8250_handle_irq: iir c2 lsr 60
+|               sh-1042  [000] d.h.   444.393867: serial8250_tx_chars: put 0d
+|               sh-1042  [000] d.h.   444.393871: serial8250_tx_chars: put 0a
+
+shell responded with "\r\n" which I see and then
+
+|               sh-1042  [000] d.h.   444.394057: serial8250_handle_irq: iir c2 lsr 60
+|               sh-1042  [000] d.h.   444.394065: serial8250_tx_chars: empty
+
+nothing more. less isn't sending data for some reason. Exactly the same
+thing happens in a Debian environment except that it continues:
+…
+|             bash-2468  [000] d.h.    99.657899: serial8250_tx_chars: put 0a
+|             bash-2468  [000] d.h.    99.658089: serial8250_handle_irq: iir c2 lsr 60
+|             bash-2468  [000] d.h.    99.658095: serial8250_tx_chars: empty
+=>
+|             less-2474  [000] d...    99.696038: serial8250_start_tx: empty?0
+|             less-2474  [000] d.h.    99.696069: serial8250_handle_irq: iir c2 lsr 60
+|             less-2474  [000] d.h.    99.696078: serial8250_tx_chars: put 1b
+|             less-2474  [000] d.h.    99.696082: serial8250_tx_chars: put 5b
+|             less-2474  [000] d.h.    99.696085: serial8250_tx_chars: put 3f
+|             less-2474  [000] d.h.    99.696087: serial8250_tx_chars: put 31
+
+It has to be something about the environment. Booting Debian and chroot
+into this RFS and less works perfectly. But since it behaves like that
+with both drivers, I guess the problem is somewhere else…
+
+>  vi runs normally, only occupies part of the total screen estate in
+>  minicom. After quitting, a weird character shows up (typically I see
+>  ÿ there), but minicom can use the rest of the screen estate again.
+>  If we disregard the odd character, this is much like the behavior we
+>  have on the omap-serial driver.
+>- Custom board: Yocto poky, custom image
+>  Login, "less file" locks up, showing only "ÿ" in the top left corner
+>  of the screen. Can get out of there by having something dumped through
+>  /dev/kmsg.
+
+I managed to run into something like that with vi on dra7 and with
+little more patience on am335x as well by "vi *" and then ":n".
+
+This gets fixed indeed by writing. Hours of debugging and a lot of hair
+less later: the yocto RFS calls set_termios quite a lot. This includes
+changing the baudrate (not by yocto but the driver sets it to 0 and then
+to the requested one) and this seems to be responsible for the "bad
+bytes". I haven't figured out yet I don't see this with omap-serial.
+Even worse: If this (set_termios()) happens while the DMA is still
+active then it might stall it. A write into the FIFO seems to fix it and
+this is where your "echo >/dev/kmsg" fixes things.
+If I delay the restore_registers part of set_termios() until TX-DMA is
+complete then it seems that the TX-DMA stall does not tall anymore.
+
+>Having it summed up like this, I think we're back at ncurses and its
+>interaction with the serial driver.
 >
->
-> while you have some nice cleanups in your patch, I can't say I consider this
-> an improvement.
-> Yes the C standard allows ? to be used like this
-> but no, I don't think it improves readability in general.
+>Hope this helps. Thanks for your effort so far,
+>Frans
 
-Not in general, but in this case, it does, IMHO.
-
-> (I think for me the main exception is NULL pointer cases, but this is not
-> one of these)
-
-Apparently such a pattern (using the question mark operator combined
-with a bit test to choose string constants) is used quite often in the
-linux kernel as a simple grep tells me (probably catches a few false
-positives but still a representative number):
-
-$ git grep '[^&]&[^&].*? *"' | wc -l
-2668
-
-And, honestly, the bit test combined with the question mark operator
-makes the code way more readable for me. It not only makes the code
-more compact (1 instead of 4 lines). It also allows to have the common
-parts written only once and thereby removing the possibility of having
-them conflict with each other, e.g. make them generate strings of
-different lengths.
-
-Would you prefer the bit test to be surrounded by braces to make it
-more easy to understand? Even though, the operator precedence is
-clearly defined by the C standard for this case, so no braces are
-needed.
-
-
-Thanks,
-Mathias
+Sebastian
