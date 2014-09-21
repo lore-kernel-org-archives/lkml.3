@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaIUQ1w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 12:27:52 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37613 "EHLO
+	id S1752848AbaIUQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 12:29:34 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:44304 "EHLO
 	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaIUQ1g (ORCPT
+	with ESMTP id S1751204AbaIUQ1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 12:27:36 -0400
+	Sun, 21 Sep 2014 12:27:51 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: Waldemar Brodkorb <mail@waldemar-brodkorb.de>,
         Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
         linux-cris-kernel@axis.com, Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 3/8] cris: Add dummy free_initrd_mem
-Date: Sun, 21 Sep 2014 09:27:13 -0700
-Message-Id: <1411316838-15135-4-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 8/8] Revert "percpu: free percpu allocation info for uniprocessor system"
+Date: Sun, 21 Sep 2014 09:27:18 -0700
+Message-Id: <1411316838-15135-9-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
 References: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
@@ -22,31 +22,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-to enable builds with initrd embedded in the image
+This reverts commit 3189eddbcafcc4d827f7f19facbeddec4424eba8.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-(cherry picked from commit ee6355589ea0fcda0d19ec93015f4b61a39e8410)
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-(cherry picked from commit 7092cf61ed870897fea5c81b136a38d4a09ca09f)
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-(cherry picked from commit 8df94101f9bd48e4fa129966319f813d44d83692)
+The commit causes a hang with a crisv32 image. This may be an architecture
+problem, but at least for now the revert is necessary to be able to boot a
+crisv32 image.
+
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/cris/mm/init.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ mm/percpu.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/cris/mm/init.c b/arch/cris/mm/init.c
-index c81af5b..11d8eca 100644
---- a/arch/cris/mm/init.c
-+++ b/arch/cris/mm/init.c
-@@ -38,3 +38,7 @@ free_initmem(void)
- {
- 	free_initmem_default(-1);
+diff --git a/mm/percpu.c b/mm/percpu.c
+index da997f9..2139e30 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1932,8 +1932,6 @@ void __init setup_per_cpu_areas(void)
+ 
+ 	if (pcpu_setup_first_chunk(ai, fc) < 0)
+ 		panic("Failed to initialize percpu areas.");
+-
+-	pcpu_free_alloc_info(ai);
  }
-+
-+void free_initrd_mem(unsigned long start, unsigned long end)
-+{
-+}
+ 
+ #endif	/* CONFIG_SMP */
 -- 
 1.9.1
 
