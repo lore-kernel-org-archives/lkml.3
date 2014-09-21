@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaIURCZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 13:02:25 -0400
-Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:60662 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaIURCY (ORCPT
+	id S1751435AbaIURXg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 13:23:36 -0400
+Received: from bastet.se.axis.com ([195.60.68.11]:49108 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaIURXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 13:02:24 -0400
-X-ME-Helo: beldin
-X-ME-Date: Sun, 21 Sep 2014 19:02:20 +0200
-X-ME-IP: 90.16.208.226
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Joe Perches <joe@perches.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: Re: [PATCH 7/8] arm: mach-pxa: Convert pr_warning to pr_warn
-References: <cover.1410632834.git.joe@perches.com>
-	<70f104441791b08aadef9d7b72018161e9e773b0.1410632835.git.joe@perches.com>
-X-URL: http://belgarath.falguerolles.org/
-Date: Sun, 21 Sep 2014 19:02:07 +0200
-In-Reply-To: <70f104441791b08aadef9d7b72018161e9e773b0.1410632835.git.joe@perches.com>
-	(Joe Perches's message of "Sat, 13 Sep 2014 11:31:18 -0700")
-Message-ID: <871tr4nbzk.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	Sun, 21 Sep 2014 13:23:34 -0400
+From: Mikael Starvik <mikael.starvik@axis.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Waldemar Brodkorb <mail@waldemar-brodkorb.de>,
+        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Date: Sun, 21 Sep 2014 19:23:26 +0200
+Subject: Re: [RFC PATCH 8/8] Revert "percpu: free percpu allocation info for
+ uniprocessor system"
+Thread-Topic: [RFC PATCH 8/8] Revert "percpu: free percpu allocation info
+ for uniprocessor system"
+Thread-Index: Ac/VwMELjNOgNLYZTjmAN767OmufxQ==
+Message-ID: <1C04F98F-4DA4-4038-B1D1-930BBC592147@axis.com>
+References: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
+ <1411316838-15135-9-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1411316838-15135-9-git-send-email-linux@roeck-us.net>
+Accept-Language: sv-SE
+Content-Language: sv-SE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: sv-SE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+Thanks for all your work with CRIS! CRISv10 is alive but is currently used as small helper CPUs close to hardware blocks.
 
-> Use the more common pr_warn.
->
-> Other miscellanea:
->
-> o Coalesce formats
-> o Realign arguments
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+Jesper will review and ack.
 
-Applied to pxa/cleanup branch, thanks.
-
---
-Robert
+> 21 sep 2014 kl. 18:27 skrev "Guenter Roeck" <linux@roeck-us.net>:
+> 
+> This reverts commit 3189eddbcafcc4d827f7f19facbeddec4424eba8.
+> 
+> The commit causes a hang with a crisv32 image. This may be an architecture
+> problem, but at least for now the revert is necessary to be able to boot a
+> crisv32 image.
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> mm/percpu.c | 2 --
+> 1 file changed, 2 deletions(-)
+> 
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index da997f9..2139e30 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -1932,8 +1932,6 @@ void __init setup_per_cpu_areas(void)
+> 
+>    if (pcpu_setup_first_chunk(ai, fc) < 0)
+>        panic("Failed to initialize percpu areas.");
+> -
+> -    pcpu_free_alloc_info(ai);
+> }
+> 
+> #endif    /* CONFIG_SMP */
+> -- 
+> 1.9.1
+> 
