@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaIUPu4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 11:50:56 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:59172 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324AbaIUPuy (ORCPT
+	id S1751503AbaIUPv7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 11:51:59 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45904 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaIUPv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 11:50:54 -0400
-Date: Sun, 21 Sep 2014 19:50:43 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/3] mm: memcontrol: eliminate charge reparenting
-Message-ID: <20140921155043.GC32416@esperanza>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
-X-Originating-IP: [81.5.99.36]
+	Sun, 21 Sep 2014 11:51:57 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH] resource: Add NULL check in next_resource
+Date: Sun, 21 Sep 2014 08:51:44 -0700
+Message-Id: <1411314704-27072-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+Commit 8c86e70acead ("resource: provide new functions to walk through
+resources") adds a suble new requirement that iomem_resource.child must
+not be NULL when walk_system_ram_range is called. This can cause a crash
+if it turns out that there are no children. The crash ('Unable to handle
+kernel NULL pointer dereference') is seen when trying to test a crisv32
+image on kernels with this commit applied.
 
-On Sat, Sep 20, 2014 at 04:00:32PM -0400, Johannes Weiner wrote:
-> The decoupling of css from the user-visible cgroup, word-sized per-cpu
-> css reference counters, and css iterators that include offlined groups
-> means we can take per-charge css references, continue to reclaim from
-> offlined groups, and so get rid of the error-prone charge reparenting.
+Fix by adding a NULL check into next_resource().
 
-I haven't reviewed this set yet, but I agree that zapping user memory
-reparenting sounds like a sane idea, because reparenting won't let the
-css go in most cases anyway due to swap and kmem charges.
+Fixes: 8c86e70acead ("resource: provide new functions to walk through resources")
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+The NULL check could be added elsewhere instead. I am open to suggestions.
 
-However, I think we must reparent list_lru items, otherwise per-memcg
-arrays (kmem_caches, list_lrus) will grow uncontrollably due to dead
-css's, which is unacceptable. Note it isn't the same as the user memory
-reparenting, because we don't need to reparent kmem_cache objects or
-charges - they can stay where they are pinning the css till they are
-freed, because the memcg_cache_id, which I want to free on offline, is
-not used for kmem allocations/frees after css offline. Actually we only
-need to empty the list_lru corresponding to the dead memory cgroup,
-which is relatively easy to implement. This is what patch 13 of the "Per
-memcg slab shrinkers" patch set, which I sent recently, does (see
-https://lkml.org/lkml/2014/9/21/64).
+ kernel/resource.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-What do you think about it?
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 60c5a38..00c57ad 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -61,6 +61,9 @@ static DEFINE_SPINLOCK(bootmem_resource_lock);
+ 
+ static struct resource *next_resource(struct resource *p, bool sibling_only)
+ {
++	if (p == NULL)
++		return NULL;
++
+ 	/* Caller wants to traverse through siblings only */
+ 	if (sibling_only)
+ 		return p->sibling;
+-- 
+1.9.1
 
-Thanks,
-Vladimir
