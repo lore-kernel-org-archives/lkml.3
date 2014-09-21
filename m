@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaIUQ2D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 12:28:03 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:47834 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaIUQ1l (ORCPT
+	id S1751753AbaIUQ1w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 12:27:52 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:37613 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433AbaIUQ1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 12:27:41 -0400
+	Sun, 21 Sep 2014 12:27:36 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: Waldemar Brodkorb <mail@waldemar-brodkorb.de>,
         Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
         linux-cris-kernel@axis.com, Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 5/8] cris: Add basic qemu_defconfig
-Date: Sun, 21 Sep 2014 09:27:15 -0700
-Message-Id: <1411316838-15135-6-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 3/8] cris: Add dummy free_initrd_mem
+Date: Sun, 21 Sep 2014 09:27:13 -0700
+Message-Id: <1411316838-15135-4-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
 References: <1411316838-15135-1-git-send-email-linux@roeck-us.net>
@@ -22,194 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Known to boot with qemu. Command line:
-
-qemu-system-cris -serial stdio -kernel vmlinux -monitor none -nographic \
--append "console=ttyS0,115200,N,8 rdinit=/sbin/init"
-
-ext4 needs atomic64_t which is not provided by the cris architecture
-and was therefore dropped.
+to enable builds with initrd embedded in the image
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-(cherry picked from commit cd0ffab571f9c2097b272b1340097e0f9b833de9)
+(cherry picked from commit ee6355589ea0fcda0d19ec93015f4b61a39e8410)
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+(cherry picked from commit 7092cf61ed870897fea5c81b136a38d4a09ca09f)
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+(cherry picked from commit 8df94101f9bd48e4fa129966319f813d44d83692)
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/cris/configs/qemu_defconfig | 166 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 166 insertions(+)
- create mode 100644 arch/cris/configs/qemu_defconfig
+ arch/cris/mm/init.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/cris/configs/qemu_defconfig b/arch/cris/configs/qemu_defconfig
-new file mode 100644
-index 0000000..215e942
---- /dev/null
-+++ b/arch/cris/configs/qemu_defconfig
-@@ -0,0 +1,166 @@
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_SWAP is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_INITRAMFS_SOURCE="busybox-cris.cpio"
-+# CONFIG_KALLSYMS is not set
-+# CONFIG_EPOLL is not set
-+# CONFIG_SIGNALFD is not set
-+# CONFIG_TIMERFD is not set
-+# CONFIG_EVENTFD is not set
-+CONFIG_EMBEDDED=y
-+# CONFIG_COMPAT_BRK is not set
-+CONFIG_SLAB=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_IOSCHED_DEADLINE is not set
-+# CONFIG_IOSCHED_CFQ is not set
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+CONFIG_ETRAX_CMDLINE="root=/dev/mtdblock3 init=/linuxrc rootfstype=jffs2 mmc_core.use_spi_crc=0 mmc_spi.spi_mode=3 init=/bin/sh"
-+CONFIG_ETRAX_WATCHDOG=y
-+CONFIG_ETRAX_FAST_TIMER=y
-+CONFIG_ETRAX_KMALLOCED_MODULES=y
-+CONFIG_ETRAXFS=y
-+CONFIG_ETRAX_DRAM_SIZE=32
-+CONFIG_ETRAX_MEM_GRP1_CONFIG=0x40688
-+CONFIG_ETRAX_MEM_GRP2_CONFIG=0x0
-+CONFIG_ETRAX_MEM_GRP3_CONFIG=0x06000002
-+CONFIG_ETRAX_MEM_GRP4_CONFIG=0x0
-+CONFIG_ETRAX_SDRAM_GRP0_CONFIG=0x114b
-+CONFIG_ETRAX_SDRAM_GRP1_CONFIG=0x0
-+CONFIG_ETRAX_SDRAM_TIMING=0x424a
-+CONFIG_ETRAX_SDRAM_COMMAND=0x0
-+CONFIG_ETRAX_DEF_GIO_PA_OE=0x7c
-+CONFIG_ETRAX_DEF_GIO_PA_OUT=0x00
-+CONFIG_ETRAX_DEF_GIO_PB_OE=0x3f111
-+CONFIG_ETRAX_DEF_GIO_PB_OUT=0x03000
-+CONFIG_ETRAX_DEF_GIO_PC_OE=0x03330
-+CONFIG_ETRAX_DEF_GIO_PC_OUT=0x00000
-+CONFIG_ETRAX_DEF_GIO_PD_OE=0x0015a
-+CONFIG_ETRAX_DEF_GIO_PD_OUT=0x00100
-+CONFIG_ETRAX_DEF_GIO_PE_OE=0x00000
-+CONFIG_ETRAX_DEF_GIO_PE_OUT=0x00000
-+CONFIG_ETRAX_LED_G_NET0="PA2"
-+CONFIG_ETRAX_LED_R_NET0="PA2"
-+CONFIG_ETRAX_V32_LED2G="PA3"
-+CONFIG_ETRAX_V32_LED2R="PA3"
-+CONFIG_ETRAX_V32_LED3G="PA3"
-+CONFIG_ETRAX_V32_LED3R="PA3"
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_XFRM_USER=y
-+CONFIG_NET_KEY=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+CONFIG_IP_ADVANCED_ROUTER=y
-+CONFIG_IP_MULTIPLE_TABLES=y
-+CONFIG_INET_AH=y
-+CONFIG_INET_ESP=y
-+CONFIG_INET_IPCOMP=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_LRO is not set
-+CONFIG_IPV6=y
-+# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET6_XFRM_MODE_BEET is not set
-+CONFIG_NETFILTER=y
-+# CONFIG_NETFILTER_ADVANCED is not set
-+CONFIG_NETFILTER_NETLINK_LOG=y
-+# CONFIG_NF_CONNTRACK is not set
-+# CONFIG_NETFILTER_XT_TARGET_NFLOG is not set
-+# CONFIG_NETFILTER_XT_TARGET_TCPMSS is not set
-+# CONFIG_NETFILTER_XT_MATCH_POLICY is not set
-+CONFIG_IP_NF_IPTABLES=y
-+CONFIG_IP_NF_FILTER=y
-+CONFIG_IP_NF_TARGET_REJECT=y
-+CONFIG_IP_NF_TARGET_LOG=y
-+# CONFIG_IP_NF_TARGET_ULOG is not set
-+# CONFIG_IP_NF_MANGLE is not set
-+CONFIG_IP6_NF_IPTABLES=y
-+# CONFIG_IP6_NF_MATCH_IPV6HEADER is not set
-+CONFIG_IP6_NF_TARGET_LOG=y
-+CONFIG_IP6_NF_FILTER=y
-+CONFIG_IP6_NF_TARGET_REJECT=y
-+# CONFIG_IP6_NF_MANGLE is not set
-+CONFIG_NET_SCHED=y
-+CONFIG_NET_SCH_TBF=y
-+# CONFIG_WIRELESS is not set
-+CONFIG_ETRAX_ETHERNET=y
-+CONFIG_ETRAX_SERIAL_PORT0=y
-+CONFIG_ETRAX_SERIAL_PORT1=y
-+CONFIG_ETRAX_SERIAL_PORT2=y
-+CONFIG_ETRAX_SERIAL_PORT3=y
-+CONFIG_ETRAX_RS485=y
-+CONFIG_ETRAX_RS485_DISABLE_RECEIVER=y
-+CONFIG_ETRAX_PTABLE_SECTOR=262144
-+CONFIG_ETRAX_GPIO=y
-+CONFIG_ETRAX_PB_CHANGEABLE_BITS=0x3f000
-+CONFIG_ETRAX_ETHERNET_IFACE0=y
-+CONFIG_ETRAX_ETHERNET_IFACE1=y
-+CONFIG_ETRAXFS_SERIAL=y
-+CONFIG_ETRAX_SER0_DTR_BIT="pb0"
-+CONFIG_ETRAX_SER0_RI_BIT="pb1"
-+CONFIG_ETRAX_SER0_DSR_BIT="pb2"
-+CONFIG_ETRAX_SER0_CD_BIT="pb3"
-+CONFIG_ETRAX_SER1_DTR_BIT="pb4"
-+CONFIG_ETRAX_SER1_RI_BIT="pb5"
-+CONFIG_ETRAX_SER1_DSR_BIT="pb6"
-+CONFIG_ETRAX_SER1_CD_BIT="pb7"
-+CONFIG_ETRAX_SER2_DTR_BIT="pb8"
-+CONFIG_ETRAX_SER2_RI_BIT="pb9"
-+CONFIG_ETRAX_SER2_DSR_BIT="pb10"
-+CONFIG_ETRAX_SER2_CD_BIT="pb11"
-+CONFIG_ETRAX_SERIAL_PORT3_TYPE_485HD=y
-+CONFIG_ETRAX_AXISFLASHMAP=y
-+CONFIG_ETRAX_AXISFLASHMAP_MTD0WHOLE=y
-+CONFIG_ETRAX_NANDFLASH=y
-+CONFIG_ETRAX_NANDBOOT=y
-+CONFIG_ETRAX_PD_CHANGEABLE_DIR=0x00010
-+CONFIG_ETRAX_PD_CHANGEABLE_BITS=0x0011a
-+CONFIG_ETRAX_NETWORK_LED_ON_WHEN_LINK=y
-+CONFIG_ETRAX_SERIAL_PORT0_NO_DMA_OUT=y
-+CONFIG_ETRAX_SERIAL_PORT1_DMA5_IN=y
-+CONFIG_ETRAX_SERIAL_PORT1_DMA4_OUT=y
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+# CONFIG_FIRMWARE_IN_KERNEL is not set
-+CONFIG_MTD_RAM=y
-+CONFIG_MTD_MTDRAM=y
-+CONFIG_MTDRAM_TOTAL_SIZE=0
-+CONFIG_MTDRAM_ERASE_SIZE=64
-+CONFIG_MTDRAM_ABS_POS=0x0
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_NETDEVICES=y
-+CONFIG_PPP=y
-+CONFIG_PPP_ASYNC=y
-+# CONFIG_WLAN is not set
-+CONFIG_I2C=y
-+# CONFIG_I2C_HELPER_AUTO is not set
-+CONFIG_I2C_ALGOBIT=y
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_PCF8563=y
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_LEGACY_PTYS is not set
-+# CONFIG_DEVKMEM is not set
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_MSDOS_FS=y
-+CONFIG_VFAT_FS=y
-+CONFIG_PROC_KCORE=y
-+CONFIG_TMPFS=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3=y
-+CONFIG_PARTITION_ADVANCED=y
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_ISO8859_1=y
-+CONFIG_NLS_UTF8=y
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_SYSTEM_PROFILER=y
-+# CONFIG_CRYPTO_ANSI_CPRNG is not set
-+CONFIG_CRC16=y
+diff --git a/arch/cris/mm/init.c b/arch/cris/mm/init.c
+index c81af5b..11d8eca 100644
+--- a/arch/cris/mm/init.c
++++ b/arch/cris/mm/init.c
+@@ -38,3 +38,7 @@ free_initmem(void)
+ {
+ 	free_initmem_default(-1);
+ }
++
++void free_initrd_mem(unsigned long start, unsigned long end)
++{
++}
 -- 
 1.9.1
 
