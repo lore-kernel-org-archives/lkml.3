@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaITXqL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 19:46:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37353 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaITXqJ (ORCPT
+	id S1751506AbaITXtL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 19:49:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60617 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751067AbaITXtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 19:46:09 -0400
-Message-ID: <541E11BB.7070202@gmail.com>
-Date: Sun, 21 Sep 2014 01:46:03 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/5] ARM: mvebu: armada-xp: Correct misnumbered PCIe port
- nodes
-References: <1411236391-422-1-git-send-email-sebastian.hesselbarth@gmail.com> <1411236391-422-4-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1411236391-422-4-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 20 Sep 2014 19:49:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Amit Pundir <amit.pundir@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Todd Poynor <toddpoynor@google.com>,
+        Pavel Machek <pavel@ucw.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH v2] PM: Print pending wakeup IRQ preventing suspend
+Date: Sun, 21 Sep 2014 02:08:53 +0200
+Message-ID: <1869677.4PrY1mNKsC@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411082555-4425-1-git-send-email-amit.pundir@linaro.org>
+References: <1411082555-4425-1-git-send-email-amit.pundir@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2014 08:06 PM, Sebastian Hesselbarth wrote:
-> Currently, Armada XP PCIe nodes are numbered pcie@<N>,0 with N just
-> incrementing. To reflect port/lane relationship, rename the nodes
-> to pcie@<port>,<lane>. While at it, add node aliases to each of pcie
-> controller and port nodes and get rid of now redundant port/lane
-> comments.
+On Friday, September 19, 2014 04:52:35 AM Amit Pundir wrote:
+> From: Todd Poynor <toddpoynor@google.com>
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-
-After thinking a while about the current numbering scheme, I have to
-admit that it is correct. The @numbers represent assigned-address of
-the pcie port and this what it is right now.
-
-If there are no more comments, I'll resend the series without messing
-with the numbering scheme.
-
-Sebastian
-
-> ---
->  arch/arm/boot/dts/armada-xp-axpwifiap.dts        | 11 ++++-------
->  arch/arm/boot/dts/armada-xp-db.dts               | 20 +++++++-------------
->  arch/arm/boot/dts/armada-xp-gp.dts               | 11 ++++-------
->  arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts  |  8 +++-----
->  arch/arm/boot/dts/armada-xp-matrix.dts           |  5 ++---
->  arch/arm/boot/dts/armada-xp-mv78230.dtsi         | 12 ++++++------
->  arch/arm/boot/dts/armada-xp-mv78260.dtsi         | 20 ++++++++++----------
->  arch/arm/boot/dts/armada-xp-mv78460.dtsi         | 22 +++++++++++-----------
->  arch/arm/boot/dts/armada-xp-netgear-rn2120.dts   | 11 ++++-------
->  arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |  5 ++---
->  10 files changed, 53 insertions(+), 72 deletions(-)
+> Currently when a pending wakeup irq stops suspend, it can be difficult
+> to determine why suspend was prevented and which IRQ was actually
+> responsible. In order to help debug such situation, this patch prints the
+> IRQ number and action name of that pending wakeup irq.
 > 
-> diff --git a/arch/arm/boot/dts/armada-xp-axpwifiap.dts b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-> index 0e53fad111de..1b2dd3a4000b 100644
-> --- a/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-> +++ b/arch/arm/boot/dts/armada-xp-axpwifiap.dts
-> @@ -37,24 +37,21 @@
->  		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xf1000000 0x100000
->  			  MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Acked-by: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> [Amit Pundir: Reworded the commit message]
+> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+> ---
+> Resending this patch assuming that it might have got lost in between merge
+> window rush last time and now people might have some time to look at it.
 >  
-> -		pcie-controller {
-> +		pcie: pcie-controller {
->  			status = "okay";
->  
->  			/* First mini-PCIe port */
-> -			pcie@1,0 {
-> -				/* Port 0, Lane 0 */
-> +			pcie00: pcie@0,0 {
->  				status = "okay";
->  			};
->  
->  			/* Second mini-PCIe port */
-> -			pcie@2,0 {
-> -				/* Port 0, Lane 1 */
-> +			pcie01: pcie@0,1 {
->  				status = "okay";
->  			};
->  
->  			/* Renesas uPD720202 USB 3.0 controller */
-> -			pcie@3,0 {
-> -				/* Port 0, Lane 3 */
-> +			pcie03: pcie@0,3 {
->  				status = "okay";
->  			};
->  		};
-[...]
+>  kernel/irq/pm.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+> index abcd6ca..c2bc8d9 100644
+> --- a/kernel/irq/pm.c
+> +++ b/kernel/irq/pm.c
+> @@ -109,8 +109,13 @@ int check_wakeup_irqs(void)
 
+check_wakeup_irqs() is going away in 3.18, please see linux-next (or the
+pm-genirq branch of linux-pm.git) for details.
+
+>  		 * can abort suspend.
+>  		 */
+>  		if (irqd_is_wakeup_set(&desc->irq_data)) {
+> -			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
+> +			if (desc->depth == 1 && desc->istate & IRQS_PENDING) {
+> +				pr_info("Wakeup IRQ %d %s pending, suspend aborted\n",
+> +					irq,
+> +					desc->action && desc->action->name ?
+> +					desc->action->name : "");
+>  				return -EBUSY;
+> +			}
+>  			continue;
+>  		}
+>  		/*
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
