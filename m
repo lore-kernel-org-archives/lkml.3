@@ -1,154 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaIURYL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 13:24:11 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:49047 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaIURYI (ORCPT
+	id S1751455AbaIURb0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 13:31:26 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47920 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaIURbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 13:24:08 -0400
-Message-ID: <541F09B4.6050907@gmail.com>
-Date: Sun, 21 Sep 2014 19:24:04 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Sun, 21 Sep 2014 13:31:25 -0400
+Date: Sun, 21 Sep 2014 19:31:14 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: klamm@yandex-team.ru
+Cc: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        stfomichev@yandex-team.ru
+Subject: Re: [PATCH 06/19] smart: use CPU selection logic if smart is enabled
+Message-ID: <20140921173114.GA11414@xo-6d-61-c0.localdomain>
+References: <77161409833206@webcorp01h.yandex-team.ru>
+ <1409848265-17150-1-git-send-email-klamm@yandex-team.ru>
+ <1409848265-17150-6-git-send-email-klamm@yandex-team.ru>
 MIME-Version: 1.0
-To: Alim Akhtar <alim.akhtar@gmail.com>
-CC: Alim Akhtar <alim.akhtar@samsung.com>, gregkh@linuxfoundation.org,
-        Rob Herring <robh@kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas P Abraham <thomas.ab@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] tty/serial: samsung: Add earlycon support
-References: <1410867163-27962-1-git-send-email-alim.akhtar@samsung.com> <541D83AE.1050006@gmail.com> <CAGOxZ52HY0eEukbWdt0OnUzcfrLi3Y726om+GQAQ_Q0vmwk-=Q@mail.gmail.com>
-In-Reply-To: <CAGOxZ52HY0eEukbWdt0OnUzcfrLi3Y726om+GQAQ_Q0vmwk-=Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409848265-17150-6-git-send-email-klamm@yandex-team.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.09.2014 16:36, Alim Akhtar wrote:
-> Hi Tomasz,
-> Thanks for your valuable feedback on this patch.
-
-You're welcome.
-
->>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>> index 5ae8608..e01c0e5 100644
->>> --- a/Documentation/kernel-parameters.txt
->>> +++ b/Documentation/kernel-parameters.txt
->>> @@ -936,6 +936,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>                       must already be setup and configured. Options are not
->>>                       yet supported.
->>>
->>> +             samsung,<addr>
->>> +                     Start an early, polled-mode console on a samsung serial
->>> +                     port at the specified address. The samsung serial port
->>> +                     must already be setup and configured. Options are not
->>> +                     yet supported.
->>> +
->>
->> Couldn't you simply parse this from DT? I believe there is already code
->> parsing stdout property in chosen node for earlycon purposes present in
->> the kernel.
->>
->> Anyway, we already had a patch for this in our internal tree, but it
->> wasn't submitted because there was no support for early ioremap on ARM
->> at that time. I haven't been following it since then (and I'm no longer
->> at Samsung; Marek might be able to take this topic), is it already
->> available?
-> I am not sure what you have internally, any further suggestions on
-> this is most welcome.
-
-I believe Marek should be able to post our internal patch, so maybe you
-could reuse it and adapt for your needs.
-
-> As you said there is no support for ioremap on ARM, so this is not
-> tested on ARM.
-
-Don't forget that this driver is primarily targeted for ARM platforms
-(versus just one ARM64-based Exynos7), so either this feature should be
-clearly added as ARM64-specific (and compiled in conditionally) or made
-work for all supported platforms.
-
->>
->>>               smh     Use ARM semihosting calls for early console.
->>>
->>>       earlyprintk=    [X86,SH,BLACKFIN,ARM,M68k]
->>> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
->>> index 249e340..9d42ac8 100644
->>> --- a/drivers/tty/serial/Kconfig
->>> +++ b/drivers/tty/serial/Kconfig
->>> @@ -257,6 +257,7 @@ config SERIAL_SAMSUNG_CONSOLE
->>>       bool "Support for console on Samsung SoC serial port"
->>>       depends on SERIAL_SAMSUNG=y
->>>       select SERIAL_CORE_CONSOLE
->>> +     select SERIAL_EARLYCON
->>>       help
->>>         Allow selection of the S3C24XX on-board serial ports for use as
->>>         an virtual console.
->>> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
->>> index c78f43a..f32e9c8 100644
->>> --- a/drivers/tty/serial/samsung.c
->>> +++ b/drivers/tty/serial/samsung.c
->>> @@ -917,6 +917,7 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
->>>  #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
->>>
->>>  static struct console s3c24xx_serial_console;
->>> +static void s3c24xx_serial_console_putchar(struct uart_port *port, int ch);
->>>
->>>  static int __init s3c24xx_serial_console_init(void)
->>>  {
->>> @@ -926,6 +927,22 @@ static int __init s3c24xx_serial_console_init(void)
->>>  console_initcall(s3c24xx_serial_console_init);
->>>
->>>  #define S3C24XX_SERIAL_CONSOLE &s3c24xx_serial_console
->>> +static void samsung_early_write(struct console *con, const char *s, unsigned n)
->>> +{
->>> +     struct earlycon_device *dev = con->data;
->>> +
->>> +     uart_console_write(&dev->port, s, n, s3c24xx_serial_console_putchar);
->>
->> Hmm, I'm not sure how this is supposed to work before the driver is
->> fully initialized.
->>
->> s3c24xx_serial_console_putchar() will call
->> s3c24xx_serial_console_txrdy(), which in turn requires the port argument
->> to be a pointer to the member of a s3c24xx_uart_port struct, with filled
->> info pointer, which I believe is ready only after s3c24xx_serial_probe().
->>
-> I see your point here, but I did not hit any error or any  runtime
-> crash with this patch when test on ARM64. In order to keep my changes
-> minimal I tried to reused the code already there in this file and that
-> worked for me. The reason why this is working is, if you see
-> s3c24xx_serial_console_txdy(), _info_ pointer is used in a conditional
-> operator and not really involved in any manipulation.
-> I am not sure if compiler should have give some warnings or error here.
+On Thu 2014-09-04 20:30:52, klamm@yandex-team.ru wrote:
+> From: Roman Gushchin <klamm@yandex-team.ru>
 > 
+> This patch causes rt scheduler to use smart CPU selection logic,
+> if smart_enabled() returns true.
 
-The info pointer is always used whenever FIFO mode is enabled at
-boot-up, which is often the case on many boards (and depends on
-firmware). So the fact that it worked for you was purely a coincidence
-due to your bootloader not using this mode. (Btw. it should be mentioned
-in patch description on what hardware it was tested.)
+SMART is a technology to report HDD health, so while it is cool name, it might
+be better to use different name to avoid confusion.
 
-> But certainly this is not the way this is suppose to work probably.
-> Let me avoid a call to s3c24xx_serial_console_putchar() in my next respin.
-> As this is a very early call and earlycon expect that port are already
-> initialized (by bootloader), I will write a new function to be used
-> instead of s3c24xx_serial_console_putchar() that will directly write
-> to the serial port.
+									Pavel
+
+> @@ -1262,8 +1262,12 @@ int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
+>  	 *   not worry about this generic constraint ]
+>  	 */
+>  	if (unlikely(!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)) ||
+> -		     !cpu_online(cpu)))
+> +		     !cpu_online(cpu))) {
+> +		if (smart_enabled() && task_has_rt_policy(p) && cpu >= 0)
+> +			release_core(cpu);
+> +
+>  		cpu = select_fallback_rq(task_cpu(p), p);
+> +	}
+>  
+>  	return cpu;
+>  }
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index 805951b..1993c47 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -15,6 +15,14 @@ struct static_key __smart_enabled = STATIC_KEY_INIT_TRUE;
+>  DEFINE_MUTEX(smart_mutex);
+>  
+>  DEFINE_PER_CPU_SHARED_ALIGNED(struct smart_core_data, smart_core_data);
+> +
+> +static int smart_find_lowest_rq(struct task_struct *task, bool wakeup);
+> +
+> +#else /* CONFIG_SMART */
+> +static inline int smart_find_lowest_rq(struct task_struct *task, bool wakeup)
+> +{
+> +	return -1;
+> +}
+>  #endif /* CONFIG_SMART */
+>  
+>  int sched_rr_timeslice = RR_TIMESLICE;
+> @@ -1211,6 +1219,7 @@ enqueue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+>  		enqueue_pushable_task(rq, p);
+>  
+>  	inc_nr_running(rq);
+> +	release_core(cpu_of(rq));
+>  }
+>  
+>  static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+> @@ -1278,6 +1287,13 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
+>  	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+>  		goto out;
+>  
+> +	if (smart_enabled()) {
+> +		int target = smart_find_lowest_rq(p, true);
+> +		if (likely(target != -1))
+> +			cpu = target;
+> +		goto out;
+> +	}
+> +
+>  	rq = cpu_rq(cpu);
+>  
+>  	rcu_read_lock();
+> @@ -1580,10 +1596,17 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
+>  	int cpu;
+>  
+>  	for (tries = 0; tries < RT_MAX_TRIES; tries++) {
+> -		cpu = find_lowest_rq(task);
+> +		if (smart_enabled())
+> +			cpu = smart_find_lowest_rq(task, false);
+> +		else
+> +			cpu = find_lowest_rq(task);
+> +
+> +		if ((cpu == -1) || (cpu == rq->cpu)) {
+> +			if (cpu == rq->cpu)
+> +				release_core(cpu);
+>  
+> -		if ((cpu == -1) || (cpu == rq->cpu))
+>  			break;
+> +		}
+>  
+>  		lowest_rq = cpu_rq(cpu);
+>  
+> @@ -1602,6 +1625,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
+>  				     !task->on_rq)) {
+>  
+>  				double_unlock_balance(rq, lowest_rq);
+> +				release_core(cpu);
+>  				lowest_rq = NULL;
+>  				break;
+>  			}
+> @@ -1614,6 +1638,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
+>  		/* try again */
+>  		double_unlock_balance(rq, lowest_rq);
+>  		lowest_rq = NULL;
+> +		release_core(cpu);
+>  	}
+>  
+>  	return lowest_rq;
+> -- 
+> 1.9.3
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-The mentioned patch already has this implemented, including support for
-all hardware variants. I'd strongly suggest basing your work on top of that.
-
-Marek, could you post that patch as an RFC, so that Alim could continue
-his work?
-
-Best regards,
-Tomasz
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
