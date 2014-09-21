@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463AbaIUOub (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 10:50:31 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:36964 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147AbaIUOu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 10:50:29 -0400
-Date: Sun, 21 Sep 2014 11:50:23 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [GIT PULL for v3.17-rc6] media fixes
-Message-ID: <20140921115023.06f6dba4@recife.lan>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751586AbaIUO6f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 10:58:35 -0400
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:47412 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaIUO63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 10:58:29 -0400
+From: Chen-Yu Tsai <wens@csie.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, Shuge <shuge@allwinnertech.com>,
+        Meng Zhang <kevin@allwinnertech.com>, yhf@merrii.com, ctl@merrii.com
+Subject: [PATCH 0/6] ARM: sunxi: Add basic support for Allwinner A80 SoC
+Date: Sun, 21 Sep 2014 22:58:07 +0800
+Message-Id: <1411311493-24344-1-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi everyone,
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media-v3.17-rc6
+This patch series adds very basic support for Allwinner's A80 SoC,
+a big.LITTLE architecture with 4 Cortex-A7s and 4 Cortex-A15s.
 
-For some media bug fixes:
-	- a Kconfig dependency issue;
-	- Some fixes for af9033/it913x demod to be more reliable and address a
-	  performance regression;
-	- cx18: fix an oops on devices with tda8290 tuner;
-	- two new USB IDs for af9035;
-	- a couple fixes on smapp driver.
+Development is done on the A80 Optimus Board, the defacto development
+board for the A80, with the accompanying SDK as a reference. 
 
-Regards,
-Mauro
+So far I've been unable to get the board to boot from MMC, or
+using Android fastboot. I'm using Allwinner's FEL mode to load
+the bootloader and kernel+dtb image over USB. Notes on my attempts
+can be found here: http://linux-sunxi.org/User:Wens#A80_Optimus
 
-PS.: FYI, I'm now starting to use mchehab@osg.samsung.com e-mail address.
-The old one (m.chehab@samsung.com) is still valid, but we're using the
-OSG subdomain for the Samsung's Open Source Group.
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+Patch 1 introduces the compatible string for the A80.
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+Patch 2 adds options to use UART0 on the A80 as the debug port for
+earlyprintk.
 
-are available in the git repository at:
+Patch 3 adds a barebone dtsi with just the cpu, memory and uart nodes.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media-v3.17-rc6
+Patch 4 adds a barebone dts for the A80 Optimus Board.
 
-for you to fetch changes up to a04646c045cab08a9e62b9be8f01ecbb0632d24e:
+Patch 5 documents the vendor prefix for Merrii Technology Co., Ltd,
+the designer and vendor of the A80 Optimus Board.
 
-  [media] af9035: new IDs: add support for PCTV 78e and PCTV 79e (2014-09-04 12:24:19 -0300)
+Patch 6 documents all the Allwinner SoCs we currently support.
 
-----------------------------------------------------------------
-media fixes for v3.17-rc6
 
-----------------------------------------------------------------
-Antti Palosaari (2):
-      [media] Kconfig: do not select SPI bus on sub-driver auto-select
-      [media] af9033: feed clock to RF tuner
+Cheers
+ChenYu
 
-Bimow Chen (2):
-      [media] af9033: update IT9135 tuner inittabs
-      [media] it913x: init tuner on attach
+Chen-Yu Tsai (6):
+  ARM: sunxi: Introduce Allwinner A80 support
+  ARM: sunxi: Add debug uart used by sun9i (Allwinner A80)
+  ARM: dts: sunxi: Add Allwinner A80 dtsi
+  ARM: dts: sun9i: Add A80 Optimus Board support
+  devicetree: bindings: Add vendor prefix for Merrii Technology Co.,
+    Ltd.
+  devicetree: bindings: Document supported Allwinner sunxi SoCs
 
-Hans Verkuil (1):
-      [media] cx18: fix kernel oops with tda8290 tuner
+ Documentation/devicetree/bindings/arm/sunxi.txt    |  12 +
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ arch/arm/Kconfig.debug                             |  10 +
+ arch/arm/boot/dts/Makefile                         |   2 +
+ arch/arm/boot/dts/sun9i-a80-optimus.dts            |  66 +++++
+ arch/arm/boot/dts/sun9i-a80.dtsi                   | 280 +++++++++++++++++++++
+ arch/arm/mach-sunxi/Kconfig                        |   5 +
+ arch/arm/mach-sunxi/sunxi.c                        |   9 +
+ 8 files changed, 385 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/sunxi.txt
+ create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
+ create mode 100644 arch/arm/boot/dts/sun9i-a80.dtsi
 
-Malcolm Priestley (1):
-      [media] af9035: new IDs: add support for PCTV 78e and PCTV 79e
-
-Sakari Ailus (2):
-      [media] smiapp: Fix power count handling
-      [media] smiapp: Set sub-device owner
-
- drivers/media/Kconfig                     |  1 -
- drivers/media/dvb-core/dvb-usb-ids.h      |  2 ++
- drivers/media/dvb-frontends/af9033.c      | 13 +++++++++++++
- drivers/media/dvb-frontends/af9033_priv.h | 20 +++++++++-----------
- drivers/media/i2c/smiapp/smiapp-core.c    | 13 +++----------
- drivers/media/pci/cx18/cx18-driver.c      |  1 +
- drivers/media/tuners/tuner_it913x.c       |  6 ++++++
- drivers/media/usb/dvb-usb-v2/af9035.c     |  4 ++++
- 8 files changed, 38 insertions(+), 22 deletions(-)
+-- 
+2.1.0
 
