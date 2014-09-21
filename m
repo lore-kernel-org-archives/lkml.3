@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaIUPQR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 11:16:17 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56896 "EHLO
+	id S1752921AbaIUPQr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 11:16:47 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:56727 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520AbaIUPQO (ORCPT
+	with ESMTP id S1752575AbaIUPQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 11:16:14 -0400
+	Sun, 21 Sep 2014 11:16:03 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
@@ -16,9 +16,9 @@ CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-mm@kvack.org>, <cgroups@vger.kernel.org>
-Subject: [PATCH -mm 14/14] fs: make shrinker memcg aware
-Date: Sun, 21 Sep 2014 19:14:46 +0400
-Message-ID: <9569ab6091089fd8eee19744de0b6f4f278663b1.1411301245.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 12/14] list_lru: organize all list_lrus to list
+Date: Sun, 21 Sep 2014 19:14:44 +0400
+Message-ID: <9e53255f042f70c7bc076009d8ee8d16581c9011.1411301245.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1411301245.git.vdavydov@parallels.com>
 References: <cover.1411301245.git.vdavydov@parallels.com>
@@ -29,45 +29,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, to make any list_lru-based shrinker memcg aware we should only
-initialize its list_lru as memcg-enabled. Let's do it for the general FS
-shrinker (super_block::s_shrink) and mark it as memcg aware.
-
-There are other FS-specific shrinkers that use list_lru for storing
-objects, such as XFS and GFS2 dquot cache shrinkers, but since they
-reclaim objects that are shared among different cgroups, there is no
-point making them memcg aware.
+I need it for making list_lru memcg-aware.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- fs/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/list_lru.h |    3 +++
+ mm/list_lru.c            |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
-diff --git a/fs/super.c b/fs/super.c
-index a82e97b0b8b9..9c765d3a14f3 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -189,9 +189,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_HLIST_BL_HEAD(&s->s_anon);
- 	INIT_LIST_HEAD(&s->s_inodes);
+diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+index 53c1d6b78270..ee9486ac0621 100644
+--- a/include/linux/list_lru.h
++++ b/include/linux/list_lru.h
+@@ -31,6 +31,9 @@ struct list_lru_node {
  
--	if (list_lru_init(&s->s_dentry_lru, false))
-+	if (list_lru_init(&s->s_dentry_lru, true))
- 		goto fail;
--	if (list_lru_init(&s->s_inode_lru, false))
-+	if (list_lru_init(&s->s_inode_lru, true))
- 		goto fail;
+ struct list_lru {
+ 	struct list_lru_node	*node;
++#ifdef CONFIG_MEMCG_KMEM
++	struct list_head	list;
++#endif
+ };
  
- 	init_rwsem(&s->s_umount);
-@@ -227,7 +227,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	s->s_shrink.scan_objects = super_cache_scan;
- 	s->s_shrink.count_objects = super_cache_count;
- 	s->s_shrink.batch = 1024;
--	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
-+	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
- 	return s;
+ void list_lru_destroy(struct list_lru *lru);
+diff --git a/mm/list_lru.c b/mm/list_lru.c
+index 07e198c77888..53086eda7942 100644
+--- a/mm/list_lru.c
++++ b/mm/list_lru.c
+@@ -10,6 +10,33 @@
+ #include <linux/list_lru.h>
+ #include <linux/slab.h>
  
- fail:
++#ifdef CONFIG_MEMCG_KMEM
++static LIST_HEAD(list_lrus);
++static DEFINE_SPINLOCK(list_lrus_lock);
++
++static void list_lru_register(struct list_lru *lru)
++{
++	spin_lock(&list_lrus_lock);
++	list_add(&lru->list, &list_lrus);
++	spin_unlock(&list_lrus_lock);
++}
++
++static void list_lru_unregister(struct list_lru *lru)
++{
++	spin_lock(&list_lrus_lock);
++	list_del(&lru->list);
++	spin_unlock(&list_lrus_lock);
++}
++#else
++static void list_lru_register(struct list_lru *lru)
++{
++}
++
++static void list_lru_unregister(struct list_lru *lru)
++{
++}
++#endif /* CONFIG_MEMCG_KMEM */
++
+ bool list_lru_add(struct list_lru *lru, struct list_head *item)
+ {
+ 	int nid = page_to_nid(virt_to_page(item));
+@@ -137,12 +164,14 @@ int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key)
+ 		INIT_LIST_HEAD(&lru->node[i].list);
+ 		lru->node[i].nr_items = 0;
+ 	}
++	list_lru_register(lru);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(list_lru_init_key);
+ 
+ void list_lru_destroy(struct list_lru *lru)
+ {
++	list_lru_unregister(lru);
+ 	kfree(lru->node);
+ }
+ EXPORT_SYMBOL_GPL(list_lru_destroy);
 -- 
 1.7.10.4
 
