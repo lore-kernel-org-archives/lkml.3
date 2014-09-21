@@ -1,298 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaIUAuA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Sep 2014 20:50:00 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:52315 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274AbaIUAqt (ORCPT
+	id S1751937AbaIUAxY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Sep 2014 20:53:24 -0400
+Received: from imap.hinterhof.net ([80.69.43.37]:48671 "EHLO
+	imap.hinterhof.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaIUAxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Sep 2014 20:46:49 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Anish Bhatt <anish@chelsio.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 02/11] next: mips: Fix ip27_defconfig
-Date: Sat, 20 Sep 2014 17:46:17 -0700
-Message-Id: <1411260386-6800-3-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411260386-6800-1-git-send-email-linux@roeck-us.net>
-References: <1411260386-6800-1-git-send-email-linux@roeck-us.net>
+	Sat, 20 Sep 2014 20:53:22 -0400
+Date: Sun, 21 Sep 2014 02:44:33 +0200
+From: Max Vozeler <max@hinterhof.net>
+To: Maximilian Eschenbacher <maximilian@eschenbacher.email>
+Cc: linux-kernel@vger.kernel.org, valentina.manea.m@gmail.com,
+        shuah.kh@samsung.com, gregkh@linuxfoundation.org,
+        Dominik Paulus <dominik.paulus@fau.de>,
+        Fjodor Schelichow <fjodor.schelichow@hotmail.com>,
+        Johannes Stadlinger <johannes.stadlinger@fau.de>,
+        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>
+Subject: Re: [PATCH 03/18] usbip: Add kernel support for client ACLs
+Message-ID: <20140921004433.GA12922@x201t.vpn.hinterhof.net>
+References: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
+ <1410910735-27929-4-git-send-email-maximilian@eschenbacher.email>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410910735-27929-4-git-send-email-maximilian@eschenbacher.email>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5d6be6a5d486 ('scsi_netlink : Make SCSI_NETLINK dependent on NET instead
-of selecting NET') changes 'select NET' to 'depends NET'. As a result, many
-configurations which do not explicitly select CONFIG_NET are no longer valid
-and need to be updated.
+Hi,
 
-The command sequence to create the new configuration is as follows.
+On Tue, Sep 16, 2014 at 11:38:40PM +0000, Maximilian Eschenbacher wrote:
+> From: Dominik Paulus <dominik.paulus@fau.de>
+> 
+> This patch adds the possibility to stored ACLs for allowed clients for
+> each stub device in sysfs. It adds a new sysfs entry called "usbip_acl"
+> for each stub device, containing a list of CIDR masks of allowed
+> clients. This file will be used by usbip and usbipd to store the ACL.
 
-- Run "make ARCH=mips <configuration>" on upstream kernel
-- Copy resulting .config to next-20140919
-- Run "make ARCH=mips olddefconfig" in next-20140919
-- Run "make ARCH=mips savedefconfig"
-- Copy resulting defconfig file to arch/mips/configs/<configuration>
-- Build the image with the resulting configuration
+Is there a need to involve the kernel here, couldn't usbip and usbipd
+apply the ACLs during connection setup in userspace?
 
-Fixes: 5d6be6a5d486 ('scsi_netlink : Make SCSI_NETLINK dependent on NET instead of selecting NET')
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/mips/configs/ip27_defconfig | 112 +++++++++++++--------------------------
- 1 file changed, 37 insertions(+), 75 deletions(-)
+> Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
+> Signed-off-by: Fjodor Schelichow <fjodor.schelichow@hotmail.com>
+> Signed-off-by: Johannes Stadlinger <johannes.stadlinger@fau.de>
+> Signed-off-by: Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
+> Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
+> Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
+> ---
+>  drivers/usb/usbip/stub.h     |  5 ++++
+>  drivers/usb/usbip/stub_dev.c | 60 +++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 64 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/usbip/stub.h b/drivers/usb/usbip/stub.h
+> index 266e2b0..b2d3d55 100644
+> --- a/drivers/usb/usbip/stub.h
+> +++ b/drivers/usb/usbip/stub.h
+> @@ -60,6 +60,11 @@ struct stub_device {
+>  	struct list_head unlink_free;
+>  
+>  	wait_queue_head_t tx_waitq;
+> +
+> +	/* list of allowed IP addrs */
+> +	char *acls;
+> +	/* for locking list operations */
+> +	spinlock_t ip_lock;
 
-diff --git a/arch/mips/configs/ip27_defconfig b/arch/mips/configs/ip27_defconfig
-index cc07560..cb8cf5ba 100644
---- a/arch/mips/configs/ip27_defconfig
-+++ b/arch/mips/configs/ip27_defconfig
-@@ -2,32 +2,28 @@ CONFIG_SGI_IP27=y
- CONFIG_NUMA=y
- CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
- CONFIG_SMP=y
--CONFIG_NO_HZ=y
--CONFIG_HIGH_RES_TIMERS=y
- CONFIG_HZ_1000=y
--CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
- CONFIG_POSIX_MQUEUE=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
- CONFIG_LOG_BUF_SHIFT=15
- CONFIG_CGROUPS=y
- CONFIG_CPUSETS=y
- CONFIG_RELAY=y
--# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
- CONFIG_EXPERT=y
--# CONFIG_PCSPKR_PLATFORM is not set
- CONFIG_SLAB=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- CONFIG_MODULE_SRCVERSION_ALL=y
--# CONFIG_BLK_DEV_BSG is not set
-+CONFIG_PARTITION_ADVANCED=y
- CONFIG_PCI=y
--CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
- CONFIG_MIPS32_COMPAT=y
- CONFIG_MIPS32_O32=y
- CONFIG_MIPS32_N32=y
--CONFIG_PM=y
-+CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_XFRM_USER=m
-@@ -42,7 +38,6 @@ CONFIG_INET_XFRM_MODE_TUNNEL=m
- CONFIG_INET_XFRM_MODE_BEET=m
- CONFIG_TCP_MD5SIG=y
- CONFIG_IPV6=y
--CONFIG_IPV6_PRIVACY=y
- CONFIG_IPV6_ROUTER_PREF=y
- CONFIG_IPV6_ROUTE_INFO=y
- CONFIG_IPV6_OPTIMISTIC_DAD=y
-@@ -96,7 +91,6 @@ CONFIG_NET_ACT_PEDIT=m
- CONFIG_NET_ACT_SKBEDIT=m
- CONFIG_CFG80211=m
- CONFIG_MAC80211=m
--CONFIG_MAC80211_RC_PID=y
- CONFIG_RFKILL=m
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_BLK_DEV_LOOP=y
-@@ -104,7 +98,6 @@ CONFIG_BLK_DEV_CRYPTOLOOP=m
- CONFIG_BLK_DEV_OSD=m
- CONFIG_CDROM_PKTCDVD=m
- CONFIG_ATA_OVER_ETH=m
--# CONFIG_MISC_DEVICES is not set
- CONFIG_SCSI=y
- CONFIG_BLK_DEV_SD=y
- CONFIG_CHR_DEV_ST=y
-@@ -117,7 +110,6 @@ CONFIG_SCSI_LOGGING=y
- CONFIG_SCSI_SCAN_ASYNC=y
- CONFIG_SCSI_SPI_ATTRS=y
- CONFIG_SCSI_FC_ATTRS=y
--# CONFIG_SCSI_SAS_LIBSAS_DEBUG is not set
- CONFIG_SCSI_CXGB3_ISCSI=m
- CONFIG_SCSI_BNX2_ISCSI=m
- CONFIG_BE2ISCSI=m
-@@ -162,6 +154,37 @@ CONFIG_DM_UEVENT=y
- CONFIG_IFB=m
- CONFIG_MACVLAN=m
- CONFIG_VETH=m
-+CONFIG_ATL2=m
-+CONFIG_ATL1E=m
-+CONFIG_ATL1C=m
-+CONFIG_B44=m
-+CONFIG_BNX2X=m
-+CONFIG_ENIC=m
-+CONFIG_DNET=m
-+CONFIG_BE2NET=m
-+CONFIG_VXGE=m
-+CONFIG_E1000E=m
-+CONFIG_IGB=m
-+CONFIG_IGBVF=m
-+CONFIG_IXGBE=m
-+CONFIG_IP1000=m
-+CONFIG_JME=m
-+CONFIG_MLX4_EN=m
-+# CONFIG_MLX4_DEBUG is not set
-+CONFIG_KS8851_MLL=m
-+CONFIG_AX88796=m
-+CONFIG_AX88796_93CX6=y
-+CONFIG_ETHOC=m
-+CONFIG_QLA3XXX=m
-+CONFIG_QLGE=m
-+CONFIG_NETXEN_NIC=m
-+CONFIG_SFC=m
-+CONFIG_SGI_IOC3_ETH=y
-+CONFIG_SMC91X=m
-+CONFIG_SMSC911X=m
-+CONFIG_NIU=m
-+CONFIG_TEHUTI=m
-+CONFIG_VIA_VELOCITY=m
- CONFIG_PHYLIB=y
- CONFIG_MARVELL_PHY=m
- CONFIG_DAVICOM_PHY=m
-@@ -175,39 +198,6 @@ CONFIG_REALTEK_PHY=m
- CONFIG_NATIONAL_PHY=m
- CONFIG_STE10XP=m
- CONFIG_LSI_ET1011C_PHY=m
--CONFIG_MDIO_BITBANG=m
--CONFIG_NET_ETHERNET=y
--CONFIG_AX88796=m
--CONFIG_AX88796_93CX6=y
--CONFIG_SGI_IOC3_ETH=y
--CONFIG_SMC91X=m
--CONFIG_ETHOC=m
--CONFIG_SMSC911X=m
--CONFIG_DNET=m
--CONFIG_B44=m
--CONFIG_KS8851_MLL=m
--CONFIG_ATL2=m
--CONFIG_E1000E=m
--CONFIG_IP1000=m
--CONFIG_IGB=m
--CONFIG_IGBVF=m
--CONFIG_VIA_VELOCITY=m
--CONFIG_QLA3XXX=m
--CONFIG_ATL1E=m
--CONFIG_ATL1C=m
--CONFIG_JME=m
--CONFIG_ENIC=m
--CONFIG_IXGBE=m
--CONFIG_VXGE=m
--CONFIG_NETXEN_NIC=m
--CONFIG_NIU=m
--CONFIG_MLX4_EN=m
--# CONFIG_MLX4_DEBUG is not set
--CONFIG_TEHUTI=m
--CONFIG_BNX2X=m
--CONFIG_QLGE=m
--CONFIG_SFC=m
--CONFIG_BE2NET=m
- CONFIG_LIBERTAS_THINFIRM=m
- CONFIG_ATMEL=m
- CONFIG_PCI_ATMEL=m
-@@ -215,9 +205,6 @@ CONFIG_PRISM54=m
- CONFIG_RTL8180=m
- CONFIG_ADM8211=m
- CONFIG_MWL8K=m
--CONFIG_ATH_COMMON=m
--CONFIG_ATH5K=m
--CONFIG_ATH9K=m
- CONFIG_B43=m
- CONFIG_B43LEGACY=m
- # CONFIG_B43LEGACY_DEBUG is not set
-@@ -229,22 +216,10 @@ CONFIG_HOSTAP_PCI=m
- CONFIG_IPW2100=m
- CONFIG_IPW2100_MONITOR=y
- CONFIG_IPW2100_DEBUG=y
--CONFIG_IPW2200=m
--CONFIG_IPW2200_MONITOR=y
--CONFIG_IPW2200_PROMISCUOUS=y
--CONFIG_IPW2200_QOS=y
--CONFIG_IPW2200_DEBUG=y
- CONFIG_IWLWIFI=m
--CONFIG_IWLAGN=m
--CONFIG_IWL4965=y
--CONFIG_IWL5000=y
-+CONFIG_IWL4965=m
- CONFIG_IWL3945=m
- CONFIG_LIBERTAS=m
--CONFIG_HERMES=m
--# CONFIG_HERMES_CACHE_FW_ON_INIT is not set
--CONFIG_PLX_HERMES=m
--CONFIG_TMD_HERMES=m
--CONFIG_NORTEL_HERMES=m
- CONFIG_P54_COMMON=m
- CONFIG_P54_PCI=m
- CONFIG_RT2X00=m
-@@ -252,21 +227,19 @@ CONFIG_RT2400PCI=m
- CONFIG_RT2500PCI=m
- CONFIG_RT61PCI=m
- CONFIG_RT2800PCI=m
--CONFIG_WL12XX=m
--CONFIG_WL1251=m
- # CONFIG_INPUT is not set
- # CONFIG_SERIO_I8042 is not set
- CONFIG_SERIO_LIBPS2=m
- CONFIG_SERIO_RAW=m
- CONFIG_SERIO_ALTERA_PS2=m
- # CONFIG_VT is not set
-+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
- CONFIG_NOZOMI=m
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_8250_EXTENDED=y
- CONFIG_SERIAL_8250_MANY_PORTS=y
- CONFIG_SERIAL_8250_SHARE_IRQ=y
--CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
- CONFIG_HW_RANDOM_TIMERIOMEM=m
- CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_ALI1535=m
-@@ -289,7 +262,6 @@ CONFIG_I2C_SIMTEC=m
- CONFIG_I2C_PARPORT_LIGHT=m
- CONFIG_I2C_TAOS_EVM=m
- CONFIG_I2C_STUB=m
--CONFIG_PPS=m
- # CONFIG_HWMON is not set
- CONFIG_THERMAL=m
- CONFIG_MFD_PCF50633=m
-@@ -326,7 +298,6 @@ CONFIG_XFS_POSIX_ACL=y
- CONFIG_BTRFS_FS=m
- CONFIG_BTRFS_FS_POSIX_ACL=y
- CONFIG_QUOTA_NETLINK_INTERFACE=y
--CONFIG_AUTOFS_FS=m
- CONFIG_FUSE_FS=m
- CONFIG_CUSE=m
- CONFIG_FSCACHE=m
-@@ -339,18 +310,10 @@ CONFIG_SQUASHFS=m
- CONFIG_OMFS_FS=m
- CONFIG_EXOFS_FS=m
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
--CONFIG_RPCSEC_GSS_KRB5=y
--CONFIG_PARTITION_ADVANCED=y
--CONFIG_DLM=m
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
- CONFIG_KEYS=y
- CONFIG_KEYS_DEBUG_PROC_KEYS=y
- CONFIG_SECURITYFS=y
--CONFIG_CRYPTO_FIPS=y
--CONFIG_CRYPTO_NULL=m
- CONFIG_CRYPTO_CRYPTD=m
--CONFIG_CRYPTO_CCM=m
- CONFIG_CRYPTO_GCM=m
- CONFIG_CRYPTO_CTS=m
- CONFIG_CRYPTO_LRW=m
-@@ -382,5 +345,4 @@ CONFIG_CRYPTO_TEA=m
- CONFIG_CRYPTO_TWOFISH=m
- CONFIG_CRYPTO_ZLIB=m
- CONFIG_CRYPTO_LZO=m
--CONFIG_CRYPTO_DEV_HIFN_795X=m
- CONFIG_CRC_T10DIF=m
--- 
-1.9.1
+Perhaps name this 'acl_lock' to make more obvious what it covers?
 
+>  };
+>  
+>  /* private data into urb->priv */
+> diff --git a/drivers/usb/usbip/stub_dev.c b/drivers/usb/usbip/stub_dev.c
+> index fac20e0..e6624f1 100644
+> --- a/drivers/usb/usbip/stub_dev.c
+> +++ b/drivers/usb/usbip/stub_dev.c
+> @@ -119,6 +119,55 @@ err:
+>  }
+>  static DEVICE_ATTR(usbip_sockfd, S_IWUSR, NULL, store_sockfd);
+>  
+> +/*
+> + * This function replaces the current ACL list
+> + */
+> +static ssize_t store_acl(struct device *dev, struct device_attribute *attr,
+> +			const char *buf, size_t count)
+> +{
+> +	struct stub_device *sdev = dev_get_drvdata(dev);
+> +	int retval;
+> +
+> +	if (count >= PAGE_SIZE)
+> +		return -EINVAL;
+> +
+> +	spin_lock_irq(&sdev->ip_lock);
+> +	kfree(sdev->acls);
+> +	sdev->acls = kstrdup(buf, GFP_KERNEL);
+> +	if (!sdev->acls)
+> +		retval = -ENOMEM;
+> +	else
+> +		retval = strlen(sdev->acls);
+> +	spin_unlock_irq(&sdev->ip_lock);
+> +
+> +	return retval;
+> +}
+> +
+> +/*
+> + * This functions prints all allowed IP addrs for this dev
+> + */
+> +static ssize_t show_acl(struct device *dev, struct device_attribute *attr,
+> +		       char *buf)
+> +{
+> +	struct stub_device *sdev = dev_get_drvdata(dev);
+> +	int retval = 0;
+> +
+> +	if (!sdev)
+> +		return -ENODEV;
+> +
+> +	spin_lock_irq(&sdev->ip_lock);
+> +	if (sdev->acls == NULL) {
+> +		retval = 0;
+> +	} else {
+> +		strcpy(buf, sdev->acls);
+> +		retval = strlen(buf);
+> +	}
+> +	spin_unlock_irq(&sdev->ip_lock);
+> +
+> +	return retval;
+> +}
+> +static DEVICE_ATTR(usbip_acl, S_IWUSR | S_IRUGO, show_acl, store_acl);
+> +
+>  static int stub_add_files(struct device *dev)
+>  {
+>  	int err = 0;
+> @@ -134,9 +183,13 @@ static int stub_add_files(struct device *dev)
+>  	err = device_create_file(dev, &dev_attr_usbip_debug);
+>  	if (err)
+>  		goto err_debug;
+> +	err = device_create_file(dev, &dev_attr_usbip_acl);
+> +	if (err)
+> +		goto err_ip;
+>  
+>  	return 0;
+> -
+> +err_ip:
+> +	device_remove_file(dev, &dev_attr_usbip_debug);
+>  err_debug:
+>  	device_remove_file(dev, &dev_attr_usbip_sockfd);
+>  err_sockfd:
+> @@ -150,6 +203,7 @@ static void stub_remove_files(struct device *dev)
+>  	device_remove_file(dev, &dev_attr_usbip_status);
+>  	device_remove_file(dev, &dev_attr_usbip_sockfd);
+>  	device_remove_file(dev, &dev_attr_usbip_debug);
+> +	device_remove_file(dev, &dev_attr_usbip_acl);
+>  }
+>  
+>  static void stub_shutdown_connection(struct usbip_device *ud)
+> @@ -287,6 +341,7 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev)
+>  	INIT_LIST_HEAD(&sdev->priv_free);
+>  	INIT_LIST_HEAD(&sdev->unlink_free);
+>  	INIT_LIST_HEAD(&sdev->unlink_tx);
+> +	spin_lock_init(&sdev->ip_lock);
+>  	spin_lock_init(&sdev->priv_lock);
+>  
+>  	init_waitqueue_head(&sdev->tx_waitq);
+> @@ -453,6 +508,9 @@ static void stub_disconnect(struct usb_device *udev)
+>  
+>  	usb_put_dev(sdev->udev);
+>  
+> +	/* free ACL list */
+> +	kfree(sdev->acls);
+> +
+>  	/* free sdev */
+>  	busid_priv->sdev = NULL;
+>  	stub_device_free(sdev);
+
+Otherwise looks good to me.
+
+	Max
