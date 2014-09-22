@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaIVS0p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:26:45 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:35783 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753988AbaIVS0n (ORCPT
+	id S1754453AbaIVSao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:30:44 -0400
+Received: from clem.clem-digital.net ([68.16.168.10]:55114 "EHLO
+	clem.clem-digital.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119AbaIVSam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:26:43 -0400
-Date: Mon, 22 Sep 2014 14:26:42 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Markos Chandras <markos.chandras@imgtec.com>
-Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] MIPS: mcount: Fix selfpc address for static trace
-Message-ID: <20140922142642.7f70fb0f@gandalf.local.home>
-In-Reply-To: <1411392779-9554-3-git-send-email-markos.chandras@imgtec.com>
-References: <1411392779-9554-1-git-send-email-markos.chandras@imgtec.com>
-	<1411392779-9554-3-git-send-email-markos.chandras@imgtec.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Mon, 22 Sep 2014 14:30:42 -0400
+From: Pete Clements <clem@clem.clem-digital.net>
+Message-Id: <201409221830.s8MIUbWS002990@clem.clem-digital.net>
+Subject: Re: Corrupt Network Packets -- 3.17-rc5/rc6
+To: davem@davemloft.net (David Miller)
+Date: Mon, 22 Sep 2014 14:30:36 -0400 (EDT)
+Cc: clem@clem.clem-digital.net, xiyou.wangcong@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <20140922.133831.220769383344675250.davem@davemloft.net>
+X-Mailer: ELM [version 2.5 PL7]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014 14:32:59 +0100
-Markos Chandras <markos.chandras@imgtec.com> wrote:
 
-> According to Documentation/trace/ftrace-design.txt, the selfpc
-> should be the return address minus the mcount overhead (8 bytes).
-> This brings static trace in line with the dynamic trace regarding
-> the selfpc argument to the tracing function.
-> 
-> This also removes the magic number '8' with the proper
-> MCOUNT_INSN_SIZE.
+Thanks. Does not patch. Code looks not to be in the rc6 that Linus
+put out. Guess there is more to come.  (This is what I believe is
+the segment in rc6 -- at line 2179.)
 
-I could also update the generic code to handle delay slots.
+	vp->tx_ring[entry].frag[i+1].addr =
+		cpu_to_le32(skb_frag_dma_map(
+		&VORTEX_PCI(vp)->dev,
+		frag,
+		frag->page_offset, frag->size, DMA_TO_DEVICE));
+--
+Pete Clements 
 
--- Steve
-
-> 
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-> ---
->  arch/mips/kernel/mcount.S | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
-> index 2f7c734771f4..3af48b7c7a47 100644
-> --- a/arch/mips/kernel/mcount.S
-> +++ b/arch/mips/kernel/mcount.S
-> @@ -79,7 +79,7 @@ _mcount:
->  	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
->  #endif
->  
-> -	PTR_SUBU a0, ra, 8	/* arg1: self address */
-> +	PTR_SUBU a0, ra, MCOUNT_INSN_SIZE /* arg1: self address */
->  	PTR_LA   t1, _stext
->  	sltu     t2, a0, t1	/* t2 = (a0 < _stext) */
->  	PTR_LA   t1, _etext
-> @@ -138,7 +138,7 @@ NESTED(_mcount, PT_SIZE, ra)
->  static_trace:
->  	MCOUNT_SAVE_REGS
->  
-> -	move	a0, ra		/* arg1: self return address */
-> +	PTR_SUBU a0, ra, MCOUNT_INSN_SIZE	/* arg1: self address */
->  	jalr	t2		/* (1) call *ftrace_trace_function */
->  	 move	a1, AT		/* arg2: parent's return address */
->  
-
+Quoting David Miller
+  > From: Pete Clements <clem@clem.clem-digital.net>
+  > Date: Mon, 22 Sep 2014 13:24:59 -0400 (EDT)
+  > 
+  > > Quoting Cong Wang
+  > >   > <clem@clem.clem-digital.net> wrote:
+  > >   > > Heads up fyi: system is i386 UP.
+  > >   > >
+  > >   > > Started getting some pop3 reception errors from the above system.
+  > >   > > Investigating the problem discovered scp of the mailbox failed
+  > >   > > with "Corrupted MAC on input"
+  > >   > >
+  > >   > > Problem started with rc5, still in rc6. Running rc4 with no
+  > >   > > problem.
+  > >   > >
+  > >   > > Sorry for lack of better definition.
+  > >   > 
+  > >   > 
+  > >   > Which driver are you using?
+  > >   > 
+  > > Here's the output from boot log:
+  > > 
+  > >  PCI: setting IRQ 11 as level-triggered
+  > >  3c59x 0000:00:0d.0: found PCI INT A -> IRQ 11
+  > >  3c59x: Donald Becker and others.
+  > >  0000:00:0d.0: 3Com PCI 3c900 Cyclone 10Mbps TPC at d8812000.
+  > 
+  > Should be fixed by:
+  > 
+  > commit 8400dd029e764e30361a51a7ae35900ae0032b43
+  > Author: Neil Horman <nhorman@tuxdriver.com>
+  > Date:   Wed Sep 17 09:04:45 2014 -0400
+  > 
+  >     3c59x: Fix bad offset spec in skb_frag_dma_map
+  >     
+  >     Recently aded the use of skb_frag_dma_map to 3c59x, but didn't realize it
+  >     automatically included the frag_offset internally, as well as provided an option
+  >     to specify an extra offset in the parameter list.  We need to specify an offset
+  >     of 0 in the parameter list to avoid skb corruption that results in lost
+  >     connections.
+  >     
+  >     Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+  >     CC: Linux Kernel list <linux-kernel@vger.kernel.org>
+  >     CC: "David S. Miller" <davem@davemloft.net>
+  >     CC: Meelis Roos <mroos@linux.ee>
+  >     Tested-by: Meelis Roos <mroos@linux.ee>
+  > 
+  > diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+  > index 8ab87ff..8ca49f04 100644
+  > --- a/drivers/net/ethernet/3com/3c59x.c
+  > +++ b/drivers/net/ethernet/3com/3c59x.c
+  > @@ -2186,7 +2186,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
+  >  			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+  >  
+  >  			dma_addr = skb_frag_dma_map(&VORTEX_PCI(vp)->dev, frag,
+  > -						    frag->page_offset,
+  > +						    0,
+  >  						    frag->size,
+  >  						    DMA_TO_DEVICE);
+  >  			if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr)) {
+  > 
