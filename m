@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaIVEuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 00:50:00 -0400
-Received: from mail-db3on0124.outbound.protection.outlook.com ([157.55.234.124]:6693
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750810AbaIVEt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 00:49:59 -0400
-Message-ID: <541FAA60.8080506@toradex.com>
-Date: Mon, 22 Sep 2014 10:19:36 +0530
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: <shawn.guo@freescale.com>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] ARM: dts: vf610-colibri: Add backlight support
-References: <cover.1411130205.git.bhuvanchandra.dv@toradex.com> <bae435d33cac93fd5f0c763fbe7bb302b52a6f0f.1411130205.git.bhuvanchandra.dv@toradex.com> <6548345144e6eb9f252bfa35e9783079@agner.ch>
-In-Reply-To: <6548345144e6eb9f252bfa35e9783079@agner.ch>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [115.115.225.206]
-X-ClientProxiedBy: BY2PR06CA021.namprd06.prod.outlook.com (10.141.250.139) To
- DB4PR05MB272.eurprd05.prod.outlook.com (10.242.158.27)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB4PR05MB272;
-X-Forefront-PRVS: 034215E98F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(6049001)(199003)(377424004)(189002)(377454003)(24454002)(52604005)(51704005)(74662003)(76482002)(81542003)(106356001)(4396001)(66066001)(74502003)(46102003)(31966008)(105586002)(86362001)(77096002)(90102001)(47776003)(54356999)(50466002)(80022003)(81342003)(20776003)(64706001)(77982003)(79102003)(21056001)(33656002)(83322001)(19580405001)(107046002)(19580395003)(101416001)(80316001)(65956001)(110136001)(83072002)(36756003)(87266999)(97736003)(76176999)(23746002)(87976001)(85852003)(99396002)(50986999)(83506001)(92726001)(85306004)(95666004)(92566001)(42186005)(120916001)(7059019);DIR:OUT;SFP:1102;SCL:1;SRVR:DB4PR05MB272;H:[10.18.0.136];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: toradex.com
+	id S1752501AbaIVExZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 00:53:25 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:63520 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaIVExX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 00:53:23 -0400
+X-AuditID: cbfee690-f79ab6d0000046f7-52-541fab4122c9
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, s.nawrocki@samsung.com, mturquette@linaro.org,
+        "'Chander Kashyap'" <k.chander@samsung.com>,
+        "'Abhilash Kesavan'" <a.kesavan@samsung.com>
+References: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
+ <54122962.5020903@gmail.com>
+In-reply-to: 
+Subject: RE: [PATCH] clk: samsung: exynos5260: fix typo in clock name
+Date: Mon, 22 Sep 2014 10:25:28 +0530
+Message-id: <001b01cfd621$738ed8c0$5aac8a40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGjcMNdvmvoOe4ebVgYUdsP7pvQZwFqBtAdnEqku5CAD2rAsA==
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkStdxtXyIwbIpKhaP1yxmsli1YQmL
+	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLJ5OuMhmcfhNO6vFql1/GB04PXbOusvucefaHjaPzUvq
+	Pfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugStj+51HzAXtbBUz79xkbWB8xtLFyMkhIWAise7B
+	HjYIW0ziwr31YLaQwFJGiZ2302BqHlzZz9rFyAUUn84o8fP7eiYI5y+jxKM7/awgVWwCuhJP
+	3s9lBkmICExhlFi5uRXMYRZYzChx9ulOFoi56RKX9k8GszkFeCTW/elkBrGFBVwljrTcALNZ
+	BFQl1s3sZQKxeQUsJR5eO8kCYQtK/Jh8D8xmFtCSWL/zOBOELS+xec1bZohbFSR2nH3NCGKL
+	CDhJHH6yBKpGXGLSg4fsEDVf2SU2tuhD7BKQ+Db5ENBMDqC4rMSmA1BjJCUOrrjBMoFRYhaS
+	zbOQbJ6FZPMsJBsWMLKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/dxAiM6dP/nk3YwXjvgPUh
+	RgEORiUe3h8t8iFCrIllxZW5hxhNgS6ayCwlmpwPTBx5JfGGxmZGFqYmpsZG5pZmSuK8r6V+
+	BgPDMLEkNTs1tSC1KL6oNCe1+BAjEwenVANjhObrd8/tzMtfHKn+JODZ/l4x4EGy1GJN7t6N
+	OivtLP8LHa2d8Fvc6CF30aOkGfHGRg8/fW/6+aOfu7Fze9jKCEvjw2FNr/Zo6DlfN/v59eBZ
+	k+VPJb6vMrhWdWGNkINyD3uSZ3GXRdbGitBVvhGL+DhrVQ+0/su1vdGZFPjDK7b6UPZKX28l
+	luKMREMt5qLiRADOuUBb5AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQV3H1fIhBqcfyFg8XrOYyWLVhiUs
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsng64SKbxeE37awWq3b9YXTg9Ng56y67x51re9g8Ni+p
+	9+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGdvvPGIu
+	aGermHnnJmsD4zOWLkZODgkBE4kHV/azQthiEhfurWfrYuTiEBKYzijx8/t6JgjnL6PEozv9
+	YFVsAroST97PZQZJiAhMYZRYubkVzGEWWMwocfbpTrC5QgLpEpf2TwazOQV4JNb96WQGsYUF
+	XCWOtNwAs1kEVCXWzexlArF5BSwlHl47yQJhC0r8mHwPzGYW0JJYv/M4E4QtL7F5zVtmiFsV
+	JHacfc0IYosIOEkcfrIEqkZcYtKDh+wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqu
+	kV5xYm5xaV66XnJ+7iZGcNJ4Jr2DcVWDxSFGAQ5GJR7eHy3yIUKsiWXFlbmHGCU4mJVEeI/m
+	AIV4UxIrq1KL8uOLSnNSiw8xmgJ9OpFZSjQ5H5jQ8kriDY1NzE2NTS1NLEzMLJXEeQ+2WgcC
+	wyuxJDU7NbUgtQimj4mDU6qB0WtCfusGk40tWgfELhecf6jRElAZnSrcfavcamrLvFhniyiV
+	4LvSF6Z+Xm595u66V4JC8dV3Kj5LP9re6PWad/uzzwJztYsqk/p424Ul5ufGqqj+j75ns455
+	U3kE+9fVKy75lZ+73/qI/XxKnXD68Q+fGCSfyn70s32/wS74+Oyr+bLTb6ptUmIpzkg01GIu
+	Kk4EAMFZvL4wAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tomasz,
 
-On Friday 19 September 2014 09:33 PM, Stefan Agner wrote:
-> Am 2014-09-19 15:38, schrieb Bhuvanchandra DV:
->> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
->> ---
->>  arch/arm/boot/dts/vf610-colibri-eval-v3.dts |    6 ++++++
->>  arch/arm/boot/dts/vf610-colibri.dtsi        |    6 ++++++
->>  2 files changed, 12 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> index 00f63d9..711cf82 100644
->> --- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> +++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> @@ -19,6 +19,12 @@
->>  	};
->>  };
->>  
->> +&bl {
->> +	brightness-levels = <0 4 8 16 32 64 128 255>;
->> +	default-brightness-level = <6>;
->> +	status  = "okay";
->> +};
->> +
->>  &esdhc1 {
->>  	pinctrl-names = "default";
->>  	pinctrl-0 = <&pinctrl_esdhc1>;
->> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi
->> b/arch/arm/boot/dts/vf610-colibri.dtsi
->> index 560cd69..20b1c15 100644
->> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
->> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
->> @@ -13,6 +13,12 @@
->>  	model = "Toradex Colibri VF61 COM";
->>  	compatible = "toradex,vf610-colibri_vf61", "fsl,vf610";
->>  
->> +	bl: backlight {
->> +		compitable = "pwm-backlight";
->> +		pwms = <&pwm0 0 5000000 0>;
->> +		status = "disabled";
->> +	};
->> +
-> Typo, "compitable" is not a valid property...
->
-> When this is fixed,
-> Acked-By: Stefan Agner <stefan@agner.ch>
+Will you please take this patch and following three Exynos3250 clock fixes
+in your tree.
 
-Thanks for pointing it out. Will update accordingly. 
+1: clk: samsung: exynos3250: fix width field of mout_mmc0/1
+   https://lkml.org/lkml/2014/9/5/265
+2: clk: samsung: exynos3250: fix width and shift of div_spi0_isp clock
+   https://lkml.org/lkml/2014/9/9/364
+3: clk: samsung: exynos3250: fix mout_cam_blk parent list
+  https://lkml.org/lkml/2014/9/6/41
 
->>  	clocks {
->>  		enet_ext {
->>  			compatible = "fixed-clock";
+Thanks,
+Pankaj Dubey
+
+> 
+> Please add my sign-off as
+> 
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> 
+> >
+> > Missed your sign-off? You can reply with it inline and I will add it
+> > when applying this weekend.
+> >
+> > P.S. Please keep me on CC when sending patches for Samsung clock
+drivers.
+> >
+> > Best regards,
+> > Tomasz
 
