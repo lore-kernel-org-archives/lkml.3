@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaIVHnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 03:43:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13149 "EHLO mx1.redhat.com"
+	id S1753304AbaIVHoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 03:44:06 -0400
+Received: from svenfoo.org ([82.94.215.22]:40086 "EHLO mail.zonque.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888AbaIVHnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 03:43:46 -0400
-Date: Mon, 22 Sep 2014 09:43:15 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
-        a.p.zijlstra@chello.nl, mingo@kernel.org, hpa@linux.intel.com,
-        brice.goglin@gmail.com, bp@alien8.de
-Subject: Re: [PATCH] x86: new topology for multi-NUMA-node CPUs
-Message-ID: <20140922074315.GE5366@x2.net.home>
-References: <20140918193334.C065EBCE@viggo.jf.intel.com>
- <20140919114529.GD5366@x2.net.home>
- <541C72A9.9090509@sr71.net>
+	id S1751433AbaIVHoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 03:44:05 -0400
+Message-ID: <541FD342.6080508@zonque.org>
+Date: Mon, 22 Sep 2014 09:44:02 +0200
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <541C72A9.9090509@sr71.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Matt Ranostay <mranostay@gmail.com>, galak@codeaurora.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/3] cap1106: support for active-high interrupt option
+References: <1411268469-21283-1-git-send-email-mranostay@gmail.com> <1411268469-21283-3-git-send-email-mranostay@gmail.com> <541EA326.1070404@zonque.org> <20140922055656.GA4147@core.coreip.homeip.net>
+In-Reply-To: <20140922055656.GA4147@core.coreip.homeip.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:15:05AM -0700, Dave Hansen wrote:
-> On 09/19/2014 04:45 AM, Karel Zak wrote:
-> >  hmm... it would be also nice to test it with lscpu(1) from 
-> >  util-linux (but it uses maps rather than lists from cpu*/topology/).
+On 09/22/2014 07:56 AM, Dmitry Torokhov wrote:
+> On Sun, Sep 21, 2014 at 12:06:30PM +0200, Daniel Mack wrote:
+>> On 09/21/2014 05:01 AM, Matt Ranostay wrote:
+>>> Some applications need to use the active-high push-pull interrupt
+>>> option. This allows it be enabled in the device tree child node.
+>>>
+>>> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+>>> ---
+>>>  drivers/input/keyboard/cap1106.c | 6 ++++++
+>>>  1 file changed, 6 insertions(+)
+>>>
+>>> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+>>> index b9c43b5..33e2590 100644
+>>> --- a/drivers/input/keyboard/cap1106.c
+>>> +++ b/drivers/input/keyboard/cap1106.c
+>>> @@ -234,6 +234,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>>>  			dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+>>>  	}
+>>>  
+>>> +	if (of_property_read_bool(node, "microchip,active-high")) {
+>>
+>> I think the name of that property should make clear it's only changing
+>> the interrupt output driver configuration. What about
+>> "microchip,irq-active-high"?
 > 
-> Here's the output with and with out Cluster-on-Die enabled.
-> 
-> Everything looks OK to me.  The cache size changes are what the CPU
-> actually tells us through CPUID leaves.
+> Can we infer the setting from IRQ flags by chance?
 
- Thanks Dave!
+Hmm, I thought of that as well, but there could be electrical wiring
+setups that want the CPU's hardware pin in push/pull mode but the one on
+the sensor chip in open-drain. I'd rather not make the assuption the
+pins are directly connected and have both sides individually configurable.
 
-    Karel
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Thanks,
+Daniel
+
