@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaIVJLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:11:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46932 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753195AbaIVJLL (ORCPT
+	id S1753532AbaIVJLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:11:40 -0400
+Received: from dub004-omc1s1.hotmail.com ([157.55.0.200]:64197 "EHLO
+	DUB004-OMC1S1.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaIVJLV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:11:11 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v5 9/9] mfd: syscon: add Atmel GPBR DT bindings documention
-Date: Mon, 22 Sep 2014 11:10:58 +0200
-Message-Id: <1411377058-26155-10-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 22 Sep 2014 05:11:21 -0400
+X-TMN: [EGcK2M+jThWlv95Hj6aXazsO5pk+lhut]
+X-Originating-Email: [mariopirker@hotmail.com]
+Message-ID: <DUB123-W2663266CEA8296935E9450A0B30@phx.gbl>
+Reply-To: <mpirker@linux.com>
+From: Mario Pirker <mariopirker@hotmail.com>
+To: "mareklindner@neomailbox.ch" <mareklindner@neomailbox.ch>,
+        "sw@simonwunderlich.de" <sw@simonwunderlich.de>,
+        "antonio@meshcoding.com" <antonio@meshcoding.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] batman-adv: fix potential NULL pointer dereferencing
+Date: Mon, 22 Sep 2014 11:11:19 +0200
+Importance: Normal
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 22 Sep 2014 09:11:20.0329 (UTC) FILETIME=[2C6A5F90:01CFD645]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPBR block provides a set of battery-backed registers that can be used
-to save data which need to be kept when the system is powered down and
-VDD-core is maintained by an external battery.
+>From b451e7317148e18bf6c5c8fd747d79ab34260354 Mon Sep 17 00:00:00 2001
+From: Mario Pirker <mario.pirker@kellogg.ox.ac.uk>
+Date: Tue, 16 Sep 2014 17:55:13 +0200
+Subject: [PATCH] batman-adv: fix potential NULL pointer dereferencing
 
-A typical usage is the RTT block (when used as an RTC) which needs one of
-those registers to save the current time.
+The call batadv_gw_node_get may return NULL. The return value has to
+be sanity checked before the pointer is dereferenced.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Signed-off-by: Mario Pirker <mariopirker@hotmail.com>
 ---
- Documentation/devicetree/bindings/mfd/atmel,gpbr.txt | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+ net/batman-adv/gateway_client.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-new file mode 100644
-index 0000000..a285695
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
-@@ -0,0 +1,15 @@
-+* Device tree bindings for Atmel GPBR (General Purpose Backup Registers)
+diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
+index 90cff58..7ee0913 100644
+--- a/net/batman-adv/gateway_client.c
++++ b/net/batman-adv/gateway_client.c
+@@ -810,6 +810,11 @@ bool batadv_gw_out_of_range(struct batadv_priv *bat_priv,
+                goto out;
+ 
+        gw_node = batadv_gw_node_get(bat_priv, orig_dst_node);
 +
-+The GPBR are a set of battery-backed registers.
++       /* gw_node can be NULL. We need to check before dereferencing */
++       if (gw_node == NULL)
++               goto out;
 +
-+Required properties:
-+- compatible:		"atmel,at91sam9260-gpbr", "syscon"
-+- reg:			contains offset/length value of the GPBR memory
-+			region.
-+
-+Example:
-+
-+gpbr: gpbr@fffffd50 {
-+	compatible = "atmel,at91sam9260-gpbr", "syscon";
-+	reg = <0xfffffd50 0x10>;
-+};
--- 
-1.9.1
-
+        if (!gw_node->bandwidth_down == 0)
+                goto out;
+ 
+-- 
+1.8.1.4 		 	   		  
