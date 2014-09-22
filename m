@@ -1,93 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519AbaIVSIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:08:34 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37547 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753486AbaIVSIc (ORCPT
+	id S1754567AbaIVSKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:10:55 -0400
+Received: from smtprelay0016.hostedemail.com ([216.40.44.16]:48491 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753524AbaIVSKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:08:32 -0400
-Date: Mon, 22 Sep 2014 19:08:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v12 04/10] clk: use struct clk only for external API
-Message-ID: <20140922180807.GN5182@n2100.arm.linux.org.uk>
-References: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com> <1411395353-3189-1-git-send-email-tomeu.vizoso@collabora.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411395353-3189-1-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 22 Sep 2014 14:10:54 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3867:3871:4321:4605:5007:6119:7652:9592:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:13161:13229:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: skate91_41be6f9fc2d1b
+X-Filterd-Recvd-Size: 5437
+Message-ID: <1411409450.2952.55.camel@joe-AO725>
+Subject: [PATCH net-next] net: Change netdev_<level> logging functions to
+ return void
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Sep 2014 11:10:50 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 04:15:47PM +0200, Tomeu Vizoso wrote:
-> diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-> index d278572..3b3068b 100644
-> --- a/drivers/clk/clk.h
-> +++ b/drivers/clk/clk.h
-> @@ -9,9 +9,15 @@
->   * published by the Free Software Foundation.
->   */
->  
-> +#include <linux/clk-private.h>
-> +
->  #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
->  struct clk_core *of_clk_get_by_clkspec(struct of_phandle_args *clkspec);
->  struct clk_core *__of_clk_get_from_provider(struct of_phandle_args *clkspec);
->  void of_clk_lock(void);
->  void of_clk_unlock(void);
->  #endif
-> +
-> +#if defined(CONFIG_COMMON_CLK)
-> +struct clk *__clk_create_clk(struct clk_core *clk_core);
-> +#endif
+No caller or macro uses the return value so make all
+the functions return void.
 
-Why does any of the above need ifdefs?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+This change is associated to a desire to eventually
+change printk to return void.
 
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index c751d0c..060041b 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -18,6 +18,7 @@
->  #include <linux/string.h>
->  #include <linux/mutex.h>
->  #include <linux/clk.h>
-> +#include <linux/clk-private.h>
->  #include <linux/clk-provider.h>
->  #include <linux/clkdev.h>
->  #include <linux/of.h>
-> @@ -33,13 +34,13 @@ static DEFINE_MUTEX(clocks_mutex);
+ include/linux/netdevice.h | 19 +++++++++----------
+ net/core/dev.c            | 44 +++++++++++++++++---------------------------
+ 2 files changed, 26 insertions(+), 37 deletions(-)
 
-I'm not happy with any of these changes, because it introduces a huge
-number of ifdefs.
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 28d4378..3d7ea30 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -3612,22 +3612,22 @@ static inline const char *netdev_reg_state(const struct net_device *dev)
+ }
+ 
+ __printf(3, 4)
+-int netdev_printk(const char *level, const struct net_device *dev,
+-		  const char *format, ...);
++void netdev_printk(const char *level, const struct net_device *dev,
++		   const char *format, ...);
+ __printf(2, 3)
+-int netdev_emerg(const struct net_device *dev, const char *format, ...);
++void netdev_emerg(const struct net_device *dev, const char *format, ...);
+ __printf(2, 3)
+-int netdev_alert(const struct net_device *dev, const char *format, ...);
++void netdev_alert(const struct net_device *dev, const char *format, ...);
+ __printf(2, 3)
+-int netdev_crit(const struct net_device *dev, const char *format, ...);
++void netdev_crit(const struct net_device *dev, const char *format, ...);
+ __printf(2, 3)
+-int netdev_err(const struct net_device *dev, const char *format, ...);
++void netdev_err(const struct net_device *dev, const char *format, ...);
+ __printf(2, 3)
+-int netdev_warn(const struct net_device *dev, const char *format, ...);
++void netdev_warn(const struct net_device *dev, const char *format, ...);
+ __printf(2, 3)
+-int netdev_notice(const struct net_device *dev, const char *format, ...);
++void netdev_notice(const struct net_device *dev, const char *format, ...);
+ __printf(2, 3)
+-int netdev_info(const struct net_device *dev, const char *format, ...);
++void netdev_info(const struct net_device *dev, const char *format, ...);
+ 
+ #define MODULE_ALIAS_NETDEV(device) \
+ 	MODULE_ALIAS("netdev-" device)
+@@ -3645,7 +3645,6 @@ do {								\
+ ({								\
+ 	if (0)							\
+ 		netdev_printk(KERN_DEBUG, __dev, format, ##args); \
+-	0;							\
+ })
+ #endif
+ 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index ad2522d..fa47b81 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -7074,53 +7074,45 @@ const char *netdev_drivername(const struct net_device *dev)
+ 	return empty;
+ }
+ 
+-static int __netdev_printk(const char *level, const struct net_device *dev,
+-			   struct va_format *vaf)
++static void __netdev_printk(const char *level, const struct net_device *dev,
++			    struct va_format *vaf)
+ {
+-	int r;
+-
+ 	if (dev && dev->dev.parent) {
+-		r = dev_printk_emit(level[1] - '0',
+-				    dev->dev.parent,
+-				    "%s %s %s%s: %pV",
+-				    dev_driver_string(dev->dev.parent),
+-				    dev_name(dev->dev.parent),
+-				    netdev_name(dev), netdev_reg_state(dev),
+-				    vaf);
++		dev_printk_emit(level[1] - '0',
++				dev->dev.parent,
++				"%s %s %s%s: %pV",
++				dev_driver_string(dev->dev.parent),
++				dev_name(dev->dev.parent),
++				netdev_name(dev), netdev_reg_state(dev),
++				vaf);
+ 	} else if (dev) {
+-		r = printk("%s%s%s: %pV", level, netdev_name(dev),
+-			   netdev_reg_state(dev), vaf);
++		printk("%s%s%s: %pV",
++		       level, netdev_name(dev), netdev_reg_state(dev), vaf);
+ 	} else {
+-		r = printk("%s(NULL net_device): %pV", level, vaf);
++		printk("%s(NULL net_device): %pV", level, vaf);
+ 	}
+-
+-	return r;
+ }
+ 
+-int netdev_printk(const char *level, const struct net_device *dev,
+-		  const char *format, ...)
++void netdev_printk(const char *level, const struct net_device *dev,
++		   const char *format, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+-	int r;
+ 
+ 	va_start(args, format);
+ 
+ 	vaf.fmt = format;
+ 	vaf.va = &args;
+ 
+-	r = __netdev_printk(level, dev, &vaf);
++	__netdev_printk(level, dev, &vaf);
+ 
+ 	va_end(args);
+-
+-	return r;
+ }
+ EXPORT_SYMBOL(netdev_printk);
+ 
+ #define define_netdev_printk_level(func, level)			\
+-int func(const struct net_device *dev, const char *fmt, ...)	\
++void func(const struct net_device *dev, const char *fmt, ...)	\
+ {								\
+-	int r;							\
+ 	struct va_format vaf;					\
+ 	va_list args;						\
+ 								\
+@@ -7129,11 +7121,9 @@ int func(const struct net_device *dev, const char *fmt, ...)	\
+ 	vaf.fmt = fmt;						\
+ 	vaf.va = &args;						\
+ 								\
+-	r = __netdev_printk(level, dev, &vaf);			\
++	__netdev_printk(level, dev, &vaf);			\
+ 								\
+ 	va_end(args);						\
+-								\
+-	return r;						\
+ }								\
+ EXPORT_SYMBOL(func);
+ 
 
-Instead of doing this, please introduce a local typedef in this .c file
-which is conditional on whether we're using your new struct clk_core
-or not, eg, clkdev_ret_t.
 
-Then, rename all the functions here to be _provider based, and arrange
-for these to return clkdev_ret_t.
-
-Then provide the original functions, with your __clk_create_clk() call
-to allocate your struct clk.  A dummy version which merely returns its
-argument can be provided when we're not using clk_core.
-
-This should result in substantially fewer ifdefs - probably just one
-ifdef.
-
-Another concern here is what happens when __clk_create_clk() fails.
-Your __clk_create_clk() function does nothing in that regard, so any
-references which the parent function took are never released.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
