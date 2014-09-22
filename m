@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405AbaIVPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:42:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49800 "EHLO
+	id S1754300AbaIVPnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:43:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49818 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753625AbaIVPmy (ORCPT
+	with ESMTP id S1754340AbaIVPm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:42:54 -0400
+	Mon, 22 Sep 2014 11:42:56 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,9 +21,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v6 7/9] rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
-Date: Mon, 22 Sep 2014 17:42:41 +0200
-Message-Id: <1411400563-570-8-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v6 9/9] mfd: syscon: add Atmel GPBR DT bindings documention
+Date: Mon, 22 Sep 2014 17:42:43 +0200
+Message-Id: <1411400563-570-10-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411400563-570-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1411400563-570-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -31,96 +31,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTT block is using the slow clock which is accessible through the clk
-API.
-Use the clk API to retrieve, enable and get the slow clk rate instead of
-the AT91_SLOW_CLOCK macro (which hardcodes the slow clk rate).
-Doing this allows us to reference the clk thus preventing the CCF from
-disabling it during the "disable unused" phase.
+The GPBR block provides a set of battery-backed registers that can be used
+to save data which need to be kept when the system is powered down and
+VDD-core is maintained by an external battery.
+
+A typical usage is the RTT block (when used as an RTC) which needs one of
+those registers to save the current time.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- drivers/rtc/rtc-at91sam9.c | 28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+ Documentation/devicetree/bindings/mfd/atmel,gpbr.txt | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 902cd01..d20e118 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -23,6 +23,7 @@
- #include <linux/io.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
-+#include <linux/clk.h>
- 
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -61,8 +62,6 @@
- #define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
- #define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
- 
--#define AT91_SLOW_CLOCK		32768
--
- /*
-  * We store ALARM_DISABLED in ALMV to record that no alarm is set.
-  * It's also the reset value for that field.
-@@ -77,6 +76,7 @@ struct sam9_rtc {
- 	struct regmap		*gpbr;
- 	unsigned int		gpbr_offset;
- 	int 			irq;
-+	struct clk		*sclk;
- };
- 
- #define rtt_readl(rtc, field) \
-@@ -328,6 +328,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	struct sam9_rtc	*rtc;
- 	int		ret, irq;
- 	u32		mr;
-+	unsigned int	sclk_rate;
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
-@@ -385,11 +386,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(rtc->sclk))
-+		return PTR_ERR(rtc->sclk);
+diff --git a/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+new file mode 100644
+index 0000000..a285695
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+@@ -0,0 +1,15 @@
++* Device tree bindings for Atmel GPBR (General Purpose Backup Registers)
 +
-+	sclk_rate = clk_get_rate(rtc->sclk);
-+	if (!sclk_rate || sclk_rate > AT91_RTT_RTTRST) {
-+		dev_err(&pdev->dev, "Invalid slow clock rate");
-+		return -EINVAL;
-+	}
++The GPBR are a set of battery-backed registers.
 +
-+	ret = clk_prepare_enable(rtc->sclk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Could not enable slow clock");
-+		return ret;
-+	}
++Required properties:
++- compatible:		"atmel,at91sam9260-gpbr", "syscon"
++- reg:			contains offset/length value of the GPBR memory
++			region.
 +
- 	mr = rtt_readl(rtc, MR);
- 
- 	/* unless RTT is counting at 1 Hz, re-initialize it */
--	if ((mr & AT91_RTT_RTPRES) != AT91_SLOW_CLOCK) {
--		mr = AT91_RTT_RTTRST | (AT91_SLOW_CLOCK & AT91_RTT_RTPRES);
-+	if ((mr & AT91_RTT_RTPRES) != sclk_rate) {
-+		mr = AT91_RTT_RTTRST | (sclk_rate & AT91_RTT_RTPRES);
- 		gpbr_writel(rtc, 0);
- 	}
- 
-@@ -434,6 +451,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
- 	/* disable all interrupts */
- 	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
- 
-+	if (!IS_ERR(rtc->sclk))
-+		clk_disable_unprepare(rtc->sclk);
++Example:
 +
- 	return 0;
- }
- 
++gpbr: gpbr@fffffd50 {
++	compatible = "atmel,at91sam9260-gpbr", "syscon";
++	reg = <0xfffffd50 0x10>;
++};
 -- 
 1.9.1
 
