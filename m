@@ -1,317 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaIVIwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:52:00 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46781 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752300AbaIVIv6 (ORCPT
+	id S1753407AbaIVIy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:54:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43219 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723AbaIVIy4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:51:58 -0400
-Date: Mon, 22 Sep 2014 10:51:55 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/7] clk: at91: add a driver for the h32mx clock
-Message-ID: <20140922105155.4ac44a44@bbrezillon>
-In-Reply-To: <1410797759-18675-2-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1410797759-18675-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 22 Sep 2014 04:54:56 -0400
+Message-ID: <541FE3F6.4070806@arm.com>
+Date: Mon, 22 Sep 2014 09:55:18 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Stephen Boyd <sboyd@codeaurora.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH v4 04/11] drivers: base: support cpu cache information
+ interface to userspace via sysfs
+References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-5-git-send-email-sudeep.holla@arm.com> <541CAD16.6030309@codeaurora.org>
+In-Reply-To: <541CAD16.6030309@codeaurora.org>
+X-OriginalArrivalTime: 22 Sep 2014 08:54:52.0478 (UTC) FILETIME=[DF9C45E0:01CFD642]
+X-MC-Unique: 114092209545303501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+Hi Stephen,
 
-Sorry for the late reply.
+On 19/09/14 23:24, Stephen Boyd wrote:
+> On 09/03/14 10:00, Sudeep Holla wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch adds initial support for providing processor cache information
+>> to userspace through sysfs interface. This is based on already existing
+>> implementations(x86, ia64, s390 and powerpc) and hence the interface is
+>> intended to be fully compatible.
+>>
+>> The main purpose of this generic support is to avoid further code
+>> duplication to support new architectures and also to unify all the existing
+>> different implementations.
+>>
+>> This implementation maintains the hierarchy of cache objects which reflects
+>> the system's cache topology. Cache devices are instantiated as needed as
+>> CPUs come online. The cache information is replicated per-cpu even if they are
+>> shared. A per-cpu array of cache information maintained is used mainly for
+>> sysfs-related book keeping.
+>>
+>> It also implements the shared_cpu_map attribute, which is essential for
+>> enabling both kernel and user-space to discover the system's overall cache
+>> topology.
+>>
+>> This patch also add the missing ABI documentation for the cacheinfo sysfs
+>> interface already, which is well defined and widely used.
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Stephen Boyd <sboyd@codeaurora.org>
+>> Cc: linux-api@vger.kernel.org
+>> Cc: linux390@de.ibm.com
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-ia64@vger.kernel.org
+>> Cc: linuxppc-dev@lists.ozlabs.org
+>> Cc: linux-s390@vger.kernel.org
+>> Cc: x86@kernel.org
+>>
+>
+> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+> Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+>
 
-On Mon, 15 Sep 2014 18:15:53 +0200
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+Thanks for all the reviews and testings of the series.
 
-> Newer SoCs have two different AHB interconnect. The AHB 32 bits Matrix
-> interconnect (h32mx) has a clock that can be setup at the half of the h64mx
-> clock (which is mck). The h32mx clock can not exceed 90 MHz.
+Regards,
+Sudeep
 
-You'll find some comments below, but none of them should really impact
-the SoC (AFAIU we never set the h32mx clk rate within the kernel and
-rely on the bootstrap configuration), hence here is my
-
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
-> Cc:Mike Turquette <mturquette@linaro.org>
-> 
->  .../devicetree/bindings/clock/at91-clock.txt       |  15 +++
->  arch/arm/mach-at91/Kconfig                         |   3 +
->  drivers/clk/at91/Makefile                          |   1 +
->  drivers/clk/at91/clk-h32mx.c                       | 123 +++++++++++++++++++++
->  drivers/clk/at91/pmc.c                             |   6 +
->  drivers/clk/at91/pmc.h                             |   5 +
->  include/linux/clk/at91_pmc.h                       |   1 +
->  7 files changed, 154 insertions(+)
->  create mode 100644 drivers/clk/at91/clk-h32mx.c
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> index b3d544ca522a..40dc2405de7c 100644
-> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> @@ -74,6 +74,9 @@ Required properties:
->  	"atmel,at91sam9x5-clk-utmi":
->  		at91 utmi clock
->  
-> +	"atmel,sama5d4-clk-h32mx":
-> +		at91 h32mx clock
-> +
->  Required properties for SCKC node:
->  - reg : defines the IO memory reserved for the SCKC.
->  - #size-cells : shall be 0 (reg is used to encode clk id).
-> @@ -447,3 +450,15 @@ For example:
->  		#clock-cells = <0>;
->  		clocks = <&main>;
->  	};
-> +
-> +Required properties for 32 bits bus Matrix clock (h32mx clock):
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall be the master clock source phandle.
-> +
-> +For example:
-> +	h32ck: h32mxck {
-> +		#clock-cells = <0>;
-> +		compatible = "atmel,sama5d4-clk-h32mx";
-> +		clocks = <&mck>;
-> +	};
-> +
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 6eb3c658761d..fd177956dd56 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -39,6 +39,9 @@ config AT91_SAM9_TIME
->  config HAVE_AT91_SMD
->  	bool
->  
-> +config HAVE_AT91_H32MX
-> +	bool
-> +
->  config SOC_AT91SAM9
->  	bool
->  	select AT91_SAM9_TIME
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> index 4998aee59267..89a48a7bd5df 100644
-> --- a/drivers/clk/at91/Makefile
-> +++ b/drivers/clk/at91/Makefile
-> @@ -9,3 +9,4 @@ obj-y += clk-system.o clk-peripheral.o clk-programmable.o
->  obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
->  obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
->  obj-$(CONFIG_HAVE_AT91_SMD)		+= clk-smd.o
-> +obj-$(CONFIG_HAVE_AT91_H32MX)		+= clk-h32mx.o
-> diff --git a/drivers/clk/at91/clk-h32mx.c b/drivers/clk/at91/clk-h32mx.c
-> new file mode 100644
-> index 000000000000..152dcb3f7b5f
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-h32mx.c
-> @@ -0,0 +1,123 @@
-> +/*
-> + * clk-h32mx.c
-> + *
-> + *  Copyright (C) 2014 Atmel
-> + *
-> + * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91_pmc.h>
-> +#include <linux/delay.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/sched.h>
-> +#include <linux/wait.h>
-> +
-> +#include "pmc.h"
-> +
-> +#define H32MX_MAX_FREQ	90000000
-> +
-> +struct clk_sama5d4_h32mx {
-> +	struct clk_hw hw;
-> +	struct at91_pmc *pmc;
-> +};
-> +
-> +#define to_clk_sama5d4_h32mx(hw) container_of(hw, struct clk_sama5d4_h32mx, hw)
-> +
-> +static unsigned long clk_sama5d4_h32mx_recalc_rate(struct clk_hw *hw,
-> +						 unsigned long parent_rate)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
-> +
-> +	if (pmc_read(h32mxclk->pmc, AT91_PMC_MCKR) & AT91_PMC_H32MXDIV)
-> +		return parent_rate / 2;
-> +
-> +	if (parent_rate > H32MX_MAX_FREQ)
-> +		pr_warn("H32MX clock is too fast\n");
-
-I would check for this even if we apply a divider to the clk:
-
-	unsigned long rate;
-
-	if (pmc_read(h32mxclk->pmc, AT91_PMC_MCKR) & AT91_PMC_H32MXDIV)
-		rate = parent_rate / 2;
-	else
-		rate = parent_rate;
-
-	if (rate > H32MX_MAX_FREQ)
-		pr_warn("H32MX clock is too fast\n");
-
-	return rate;
-
-> +	return parent_rate;
-> +}
-> +
-> +static long clk_sama5d4_h32mx_round_rate(struct clk_hw *hw, unsigned long rate,
-> +				       unsigned long *parent_rate)
-> +{
-> +	unsigned long div;
-> +
-
-How about checking if the requested rate is below the maximum rate
-(H32MX_MAX_FREQ), and returning -EINVAL if this is not the case ?
-
-> +	if (rate > *parent_rate)
-> +		return *parent_rate;
-> +	div = *parent_rate / 2;
-> +	if (rate < div)
-> +		return div;
-> +
-> +	if (rate - div < *parent_rate - rate)
-> +		return div;
-
-Do we really want to find the closest rate for this clk ? Isn't a floor
-rate more appropriate in this case ?
-
-I'll let Nicolas decide :-).
-
-> +
-> +	return *parent_rate;
-> +}
-> +
-> +static int clk_sama5d4_h32mx_set_rate(struct clk_hw *hw, unsigned long rate,
-> +				    unsigned long parent_rate)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
-> +	struct at91_pmc *pmc = h32mxclk->pmc;
-> +	u32 tmp;
-> +
-> +	if (parent_rate != rate && (parent_rate / 2) != rate)
-> +		return -EINVAL;
-> +
-> +	pmc_lock(pmc);
-> +	tmp = pmc_read(pmc, AT91_PMC_MCKR) & ~AT91_PMC_H32MXDIV;
-> +	if ((parent_rate / 2) == rate)
-> +		tmp |= AT91_PMC_H32MXDIV;
-> +	pmc_write(pmc, AT91_PMC_MCKR, tmp);
-> +	pmc_unlock(pmc);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct clk_ops h32mx_ops = {
-> +	.recalc_rate = clk_sama5d4_h32mx_recalc_rate,
-> +	.round_rate = clk_sama5d4_h32mx_round_rate,
-> +	.set_rate = clk_sama5d4_h32mx_set_rate,
-> +};
-> +
-> +void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
-> +				     struct at91_pmc *pmc)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk;
-> +	struct clk_init_data init;
-> +	const char *parent_name;
-> +	struct clk *clk;
-> +
-> +	h32mxclk = kzalloc(sizeof(*h32mxclk), GFP_KERNEL);
-> +	if (!h32mxclk)
-> +		return;
-> +
-> +	parent_name = of_clk_get_parent_name(np, 0);
-> +
-> +	init.name = np->name;
-> +	init.ops = &h32mx_ops;
-> +	init.parent_names = parent_name ? &parent_name : NULL;
-> +	init.num_parents = parent_name ? 1 : 0;
-> +	init.flags = CLK_SET_RATE_GATE;
-> +
-> +	h32mxclk->hw.init = &init;
-> +	h32mxclk->pmc = pmc;
-> +
-> +	clk = clk_register(NULL, &h32mxclk->hw);
-> +	if (!clk)
-> +		return;
-> +
-> +	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> index 524196bb35a5..386999b4f8eb 100644
-> --- a/drivers/clk/at91/pmc.c
-> +++ b/drivers/clk/at91/pmc.c
-> @@ -337,6 +337,12 @@ static const struct of_device_id pmc_clk_ids[] __initconst = {
->  		.data = of_at91sam9x5_clk_smd_setup,
->  	},
->  #endif
-> +#if defined(CONFIG_HAVE_AT91_H32MX)
-> +	{
-> +		.compatible = "atmel,sama5d4-clk-h32mx",
-> +		.data = of_sama5d4_clk_h32mx_setup,
-> +	},
-> +#endif
->  	{ /*sentinel*/ }
->  };
->  
-> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-> index 6c7625976113..52d2041fa3f6 100644
-> --- a/drivers/clk/at91/pmc.h
-> +++ b/drivers/clk/at91/pmc.h
-> @@ -120,4 +120,9 @@ extern void __init of_at91sam9x5_clk_smd_setup(struct device_node *np,
->  					       struct at91_pmc *pmc);
->  #endif
->  
-> +#if defined(CONFIG_HAVE_AT91_SMD)
-> +extern void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
-> +					      struct at91_pmc *pmc);
-> +#endif
-> +
->  #endif /* __PMC_H_ */
-> diff --git a/include/linux/clk/at91_pmc.h b/include/linux/clk/at91_pmc.h
-> index de4268d4987a..c8e3b3d1eded 100644
-> --- a/include/linux/clk/at91_pmc.h
-> +++ b/include/linux/clk/at91_pmc.h
-> @@ -125,6 +125,7 @@ extern void __iomem *at91_pmc_base;
->  #define		AT91_PMC_PLLADIV2	(1 << 12)		/* PLLA divisor by 2 [some SAM9 only] */
->  #define			AT91_PMC_PLLADIV2_OFF		(0 << 12)
->  #define			AT91_PMC_PLLADIV2_ON		(1 << 12)
-> +#define		AT91_PMC_H32MXDIV	BIT(24)
->  
->  #define	AT91_PMC_USB		0x38			/* USB Clock Register [some SAM9 only] */
->  #define		AT91_PMC_USBS		(0x1 <<  0)		/* USB OHCI Input clock selection */
-
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
