@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197AbaIVPHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:07:18 -0400
-Received: from resqmta-po-06v.sys.comcast.net ([96.114.154.165]:38444 "EHLO
-	resqmta-po-06v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754143AbaIVPHO (ORCPT
+	id S1754322AbaIVPIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:08:13 -0400
+Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:43075 "EHLO
+	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754157AbaIVPHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:07:14 -0400
+	Mon, 22 Sep 2014 11:07:16 -0400
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: m.chehab@samsung.com, akpm@linux-foundation.org,
         gregkh@linuxfoundation.org, crope@iki.fi, olebowle@gmx.com,
@@ -14,9 +14,9 @@ To: m.chehab@samsung.com, akpm@linux-foundation.org,
         sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org
-Subject: [PATCH 3/5] media: au0828-video changes to use media tuner token api
-Date: Mon, 22 Sep 2014 09:00:47 -0600
-Message-Id: <e1ed3e8cd42001e7d1e2b61b90815170c9b49b67.1411397045.git.shuahkh@osg.samsung.com>
+Subject: [PATCH 5/5] media: au0828-core changes to create and destroy media token res
+Date: Mon, 22 Sep 2014 09:00:49 -0600
+Message-Id: <80d31dd3dbe205c9a462aa6dcae2c25de332259a.1411397045.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1411397045.git.shuahkh@osg.samsung.com>
 References: <cover.1411397045.git.shuahkh@osg.samsung.com>
@@ -26,149 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-au0828-video driver uses vb1 api and needs changes to vb1
-v4l2 interfaces that change the tuner status. In addition
-to that this driver initializes the tuner from a some ioctls
-that are query (read) tuner status. These ioctls are changed
-to hold the tuner token to avoid disrupting digital stream
-if active. Further more, release v4l2_file_operations powers
-down the tuner. The following changes are made:
-
-read, poll v4l2_file_operations:
-- hold tuner in shared analog mode
-- return leaving tuner in shared mode
-
-vb1 streamon:
-- hold tuner in shared analog mode
-- return leaving tuner in shared mode
-
-release v4l2_file_operations:
-- hold tuner in exclusive analog mode to power down.
-  Don't call s_power when tuner is busy.
-
-Initialize dev_parent field struct video_device to enable
-media tuner token lookup from v4l2-core.
+Changed au0828-core to create media token resource in its
+usb_probe() and destroy it from usb_disconnect() interfaces.
+It creates the resource on the main struct device which is
+the parent device for the interface usb device. This is the
+main struct device that is common for all the drivers that
+control the media device, including the non-media sound
+drivers.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- drivers/media/usb/au0828/au0828-video.c |   43 ++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ drivers/media/usb/au0828/au0828-core.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
-index 5f337b1..52a3644 100644
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/device.h>
-+#include <linux/media_tknres.h>
+diff --git a/drivers/media/usb/au0828/au0828-core.c b/drivers/media/usb/au0828/au0828-core.c
+index bc06480..189e435 100644
+--- a/drivers/media/usb/au0828/au0828-core.c
++++ b/drivers/media/usb/au0828/au0828-core.c
+@@ -26,6 +26,7 @@
+ #include <linux/videodev2.h>
  #include <media/v4l2-common.h>
- #include <media/v4l2-ioctl.h>
- #include <media/v4l2-event.h>
-@@ -1085,10 +1086,21 @@ static int au0828_v4l2_close(struct file *filp)
+ #include <linux/mutex.h>
++#include <linux/media_tknres.h>
  
- 		au0828_uninit_isoc(dev);
- 
-+		ret = media_get_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
-+		if (ret) {
-+			dev_info(&dev->usbdev->dev,
-+					"%s: Tuner is busy\n", __func__);
-+			/* don't touch tuner and usb device interface */
-+			goto skip_s_power;
-+		}
-+		dev_info(&dev->usbdev->dev, "%s: Putting tuner to sleep\n",
-+					__func__);
- 		/* Save some power by putting tuner to sleep */
- 		v4l2_device_call_all(&dev->v4l2_dev, 0, core, s_power, 0);
--		dev->std_set_in_tuner_core = 0;
-+		media_put_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
- 
-+skip_s_power:
-+		dev->std_set_in_tuner_core = 0;
- 		/* When close the device, set the usb intf0 into alt0 to free
- 		   USB bandwidth */
- 		ret = usb_set_interface(dev->usbdev, 0, 0);
-@@ -1136,6 +1148,12 @@ static ssize_t au0828_v4l2_read(struct file *filp, char __user *buf,
- 	if (rc < 0)
- 		return rc;
- 
-+	/* don't put the tuner token - this case is same as STREAMON */
-+	rc = media_get_shared_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
-+	if (rc) {
-+		dev_info(&dev->usbdev->dev, "%s: Tuner is busy\n", __func__);
-+		return -EBUSY;
-+	}
- 	if (mutex_lock_interruptible(&dev->lock))
- 		return -ERESTARTSYS;
- 	au0828_init_tuner(dev);
-@@ -1177,6 +1195,12 @@ static unsigned int au0828_v4l2_poll(struct file *filp, poll_table *wait)
- 	if (check_dev(dev) < 0)
- 		return POLLERR;
- 
-+	/* don't put the tuner token - this case is same as STREAMON */
-+	res = media_get_shared_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
-+	if (res) {
-+		dev_info(&dev->usbdev->dev, "%s: Tuner is busy\n", __func__);
-+		return -EBUSY;
-+	}
- 	res = v4l2_ctrl_poll(filp, wait);
- 	if (!(req_events & (POLLIN | POLLRDNORM)))
- 		return res;
-@@ -1548,16 +1572,24 @@ static int vidioc_g_tuner(struct file *file, void *priv, struct v4l2_tuner *t)
- {
- 	struct au0828_fh *fh = priv;
- 	struct au0828_dev *dev = fh->dev;
-+	int ret;
- 
- 	if (t->index != 0)
- 		return -EINVAL;
- 
-+	ret = media_get_shared_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
-+	if (ret) {
-+		dev_info(&dev->usbdev->dev, "%s: Tuner is busy\n", __func__);
-+		return -EBUSY;
-+	}
-+
- 	strcpy(t->name, "Auvitek tuner");
- 
- 	au0828_init_tuner(dev);
- 	i2c_gate_ctrl(dev, 1);
- 	v4l2_device_call_all(&dev->v4l2_dev, 0, tuner, g_tuner, t);
- 	i2c_gate_ctrl(dev, 0);
-+	media_put_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
- 	return 0;
+ /*
+  * 1 = General debug messages
+@@ -127,6 +128,17 @@ static int recv_control_msg(struct au0828_dev *dev, u16 request, u32 value,
+ 	return status;
  }
  
-@@ -1682,6 +1714,12 @@ static int vidioc_streamon(struct file *file, void *priv,
- 	dprintk(1, "vidioc_streamon fh=%p t=%d fh->res=%d dev->res=%d\n",
- 		fh, type, fh->resources, dev->resources);
++/* interfaces to create and destroy media tknres */
++static int au0828_create_media_tknres(struct au0828_dev *dev)
++{
++	return media_tknres_create(&dev->usbdev->dev);
++}
++
++static int au0828_destroy_media_tknres(struct au0828_dev *dev)
++{
++	return media_tknres_destroy(&dev->usbdev->dev);
++}
++
+ static void au0828_usb_release(struct au0828_dev *dev)
+ {
+ 	/* I2C */
+@@ -157,6 +169,8 @@ static void au0828_usb_disconnect(struct usb_interface *interface)
+ 	/* Digital TV */
+ 	au0828_dvb_unregister(dev);
  
-+	rc = media_get_shared_tuner_tkn(&dev->usbdev->dev, MEDIA_MODE_ANALOG);
-+	if (rc) {
-+		dev_info(&dev->usbdev->dev, "%s: Tuner is busy\n", __func__);
-+		return -EBUSY;
++	au0828_destroy_media_tknres(dev);
++
+ 	usb_set_intfdata(interface, NULL);
+ 	mutex_lock(&dev->mutex);
+ 	dev->usbdev = NULL;
+@@ -215,6 +229,13 @@ static int au0828_usb_probe(struct usb_interface *interface,
+ 	dev->usbdev = usbdev;
+ 	dev->boardnr = id->driver_info;
+ 
++	/* create media token resource */
++	if (au0828_create_media_tknres(dev)) {
++		mutex_unlock(&dev->lock);
++		kfree(dev);
++		return -ENOMEM;
 +	}
 +
- 	if (unlikely(!res_get(fh, get_ressource(fh))))
- 		return -EBUSY;
+ #ifdef CONFIG_VIDEO_AU0828_V4L2
+ 	dev->v4l2_dev.release = au0828_usb_v4l2_release;
  
-@@ -2083,12 +2121,15 @@ int au0828_analog_register(struct au0828_dev *dev,
- 	dev->vdev->v4l2_dev = &dev->v4l2_dev;
- 	dev->vdev->lock = &dev->lock;
- 	strcpy(dev->vdev->name, "au0828a video");
-+	/* there is no way to deduce parent from v4l2_dev */
-+	dev->vdev->dev_parent = &dev->usbdev->dev;
- 
- 	/* Setup the VBI device */
- 	*dev->vbi_dev = au0828_video_template;
- 	dev->vbi_dev->v4l2_dev = &dev->v4l2_dev;
- 	dev->vbi_dev->lock = &dev->lock;
- 	strcpy(dev->vbi_dev->name, "au0828a vbi");
-+	dev->vbi_dev->dev_parent = &dev->usbdev->dev;
- 
- 	/* Register the v4l2 device */
- 	video_set_drvdata(dev->vdev, dev);
+@@ -223,6 +244,7 @@ static int au0828_usb_probe(struct usb_interface *interface,
+ 	if (retval) {
+ 		pr_err("%s() v4l2_device_register failed\n",
+ 		       __func__);
++		au0828_destroy_media_tknres(dev);
+ 		mutex_unlock(&dev->lock);
+ 		kfree(dev);
+ 		return retval;
+@@ -232,6 +254,7 @@ static int au0828_usb_probe(struct usb_interface *interface,
+ 	if (retval) {
+ 		pr_err("%s() v4l2_ctrl_handler_init failed\n",
+ 		       __func__);
++		au0828_destroy_media_tknres(dev);
+ 		mutex_unlock(&dev->lock);
+ 		kfree(dev);
+ 		return retval;
 -- 
 1.7.10.4
 
