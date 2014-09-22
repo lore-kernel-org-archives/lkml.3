@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299AbaIVPt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:49:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50252 "EHLO mx1.redhat.com"
+	id S1754319AbaIVPvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:51:00 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48247 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070AbaIVPtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:49:23 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>,
-        Andreas Dilger <adilger@dilger.ca>, Milosz Tanski <milosz@adfin.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio\@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-References: <cover.1410810247.git.milosz@adfin.com>
-	<8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
-	<94D0CD8314A33A4D9D801C0FE68B402958C81D56@G9W0745.americas.hpqcorp.net>
-	<20140919112147.GA4639@infradead.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 22 Sep 2014 11:48:35 -0400
-In-Reply-To: <20140919112147.GA4639@infradead.org> (Christoph Hellwig's
-	message of "Fri, 19 Sep 2014 04:21:47 -0700")
-Message-ID: <x49tx3zpsfg.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753538AbaIVPu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 11:50:59 -0400
+Date: Mon, 22 Sep 2014 11:50:49 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
+        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140922155049.GA6630@cmpxchg.org>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+ <20140922144436.GG336@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922144436.GG336@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+On Mon, Sep 22, 2014 at 04:44:36PM +0200, Michal Hocko wrote:
+> On Fri 19-09-14 09:22:08, Johannes Weiner wrote:
+> > Memory is internally accounted in bytes, using spinlock-protected
+> > 64-bit counters, even though the smallest accounting delta is a page.
+> > The counter interface is also convoluted and does too many things.
+> > 
+> > Introduce a new lockless word-sized page counter API, then change all
+> > memory accounting over to it and remove the old one.  The translation
+> > from and to bytes then only happens when interfacing with userspace.
+> 
+> Dunno why but I thought other controllers use res_counter as well. But
+> this doesn't seem to be the case so this is perfectly reasonable way
+> forward.
 
-> Without the atomic WRITE SCATTERED use case adding the syscalls seems
-> rather pointless, and I'd really avoid blocking nice software only
-> features like the per-I/O nonblock flag (and the similarly trivial
-> per-I/O sync option I have a prototype for) on it.
+You were fooled by its generic name!  It really is a lot less generic
+than what it was designed for, and there are no new users in sight.
 
-Andreas and Zach pointed out that the scatter/gather system calls also
-help network file systems.  I'm not yet sure how much work it would be,
-but it certainly seems worth considering readx/writex (or whatever we
-want to call them) to avoid needlessly adding a ton of system calls.
+> I have only glanced through the patch and it mostly seems good to me 
+> (I have to look more closely on the atomicity of hierarchical operations).
+> 
+> Nevertheless I think that the counter should live outside of memcg (it
+> is ugly and bad in general to make HUGETLB controller depend on MEMCG
+> just to have a counter). If you made kernel/page_counter.c and led both
+> containers select CONFIG_PAGE_COUNTER then you do not need a dependency
+> on MEMCG and I would find it cleaner in general.
 
-Cheers,
-Jeff
+The reason I did it this way is because the hugetlb controller simply
+accounts and limits a certain type of memory and in the future I would
+like to make it a memcg extension, just like kmem and swap.
+
+Once that is done, page counters can become fully private, but until
+then I think it's a good idea to make them part of memcg to express
+this relationship and to ensure we are moving in the same direction.
+
+> > Aside from the locking costs, this gets rid of the icky unsigned long
+> > long types in the very heart of memcg, which is great for 32 bit and
+> > also makes the code a lot more readable.
+> 
+> Definitely. Nice work!
+
+Thanks!
