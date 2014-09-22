@@ -1,260 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaIVCNJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 22:13:09 -0400
-Received: from mga14.intel.com ([192.55.52.115]:34276 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617AbaIVCNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 22:13:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,568,1406617200"; 
-   d="scan'208";a="594737298"
-Message-ID: <1411351981.26108.5.camel@yhuang-dev>
-Subject: Re: [PATCH 3/3] f2fs: fix roll-forward missing scenarios
-From: Huang Ying <ying.huang@intel.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Date: Mon, 22 Sep 2014 10:13:01 +0800
-In-Reply-To: <20140921033639.GA19487@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1411019468-2201-1-git-send-email-jaegeuk@kernel.org>
-	 <1411019468-2201-3-git-send-email-jaegeuk@kernel.org>
-	 <CAC=cRTPotgNXbuPwG95HHuWiicS2OiD5R3HsOqdMG+2b=8ZyEg@mail.gmail.com>
-	 <20140920162358.GA18133@jaegeuk-mac02.hsd1.ca.comcast.net>
-	 <1411255352.10688.7.camel@yhuang-mobile.sh.intel.com>
-	 <20140921033639.GA19487@jaegeuk-mac02.hsd1.ca.comcast.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
+	id S1752856AbaIVCQA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 22:16:00 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56061 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaIVCP6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 22:15:58 -0400
+Message-ID: <541F8656.2030409@huawei.com>
+Date: Mon, 22 Sep 2014 10:15:50 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: <tj@kernel.org>, <miaox@cn.fujitsu.com>, <peterz@infradead.org>,
+        <mingo@redhat.com>, <akpm@linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <fernando_b1@lab.ntt.co.jp>
+Subject: Re: Racy manipulation of task_struct->flags in cgroups code causes
+ hard to reproduce kernel panics
+References: <201409192053.IHJ35462.JLOMOSOFFVtQFH@I-love.SAKURA.ne.jp> <541D16EA.70407@huawei.com> <20140920172819.GD3681@htj.dyndns.org> <201409211415.GJG26578.MFQOHtSFVJLOOF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201409211415.GJG26578.MFQOHtSFVJLOOF@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A02020A.541F865C.0012,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: f6858d4d5a31bcf4f0500124000c849d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-09-20 at 20:36 -0700, Jaegeuk Kim wrote:
-> On Sun, Sep 21, 2014 at 07:22:32AM +0800, Huang Ying wrote:
-> > On Sat, 2014-09-20 at 09:23 -0700, Jaegeuk Kim wrote:
-> > > On Thu, Sep 18, 2014 at 09:04:11PM +0800, huang ying wrote:
-> > > > On Thu, Sep 18, 2014 at 1:51 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> > > > 
-> > > > > We can summarize the roll forward recovery scenarios as follows.
-> > > > >
-> > > > > [Term] F: fsync_mark, D: dentry_mark
-> > > > >
-> > > > > 1. inode(x) | CP | inode(x) | dnode(F)
-> > > > > -> Update the latest inode(x).
-> > > > >
-> > > > > 2. inode(x) | CP | inode(F) | dnode(F)
-> > > > > -> No problem.
-> > > > >
-> > > > > 3. inode(x) | CP | dnode(F) | inode(x)
-> > > > > -> Recover to the latest dnode(F), and drop the last inode(x)
-> > > > >
-> > > > > 4. inode(x) | CP | dnode(F) | inode(F)
-> > > > > -> No problem.
-> > > > >
-> > > > > 5. CP | inode(x) | dnode(F)
-> > > > > -> The inode(DF) was missing. Should drop this dnode(F).
-> > > > >
-> > > > > 6. CP | inode(DF) | dnode(F)
-> > > > > -> No problem.
-> > > > >
-> > > > > 7. CP | dnode(F) | inode(DF)
-> > > > > -> If f2fs_iget fails, then goto next to find inode(DF).
-> > > > >
-> > > > > 8. CP | dnode(F) | inode(x)
-> > > > > -> If f2fs_iget fails, then goto next to find inode(DF).
-> > > > >    But it will fail due to no inode(DF).
-> > > > >
-> > > > > So, this patch adds some missing points such as #1, #5, #7, and #8.
-> > > > >
-> > > > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > > > ---
-> > > > >  fs/f2fs/recovery.c | 71
-> > > > > +++++++++++++++++++++++++++++++++++++++++++++---------
-> > > > >  1 file changed, 60 insertions(+), 11 deletions(-)
-> > > > >
-> > > > > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> > > > > index 36d4f73..a4eb978 100644
-> > > > > --- a/fs/f2fs/recovery.c
-> > > > > +++ b/fs/f2fs/recovery.c
-> > > > > @@ -14,6 +14,37 @@
-> > > > >  #include "node.h"
-> > > > >  #include "segment.h"
-> > > > >
-> > > > > +/*
-> > > > > + * Roll forward recovery scenarios.
-> > > > > + *
-> > > > > + * [Term] F: fsync_mark, D: dentry_mark
-> > > > > + *
-> > > > > + * 1. inode(x) | CP | inode(x) | dnode(F)
-> > > > > + * -> Update the latest inode(x).
-> > > > > + *
-> > > > > + * 2. inode(x) | CP | inode(F) | dnode(F)
-> > > > > + * -> No problem.
-> > > > > + *
-> > > > > + * 3. inode(x) | CP | dnode(F) | inode(x)
-> > > > > + * -> Recover to the latest dnode(F), and drop the last inode(x)
-> > > > > + *
-> > > > > + * 4. inode(x) | CP | dnode(F) | inode(F)
-> > > > > + * -> No problem.
-> > > > > + *
-> > > > > + * 5. CP | inode(x) | dnode(F)
-> > > > > + * -> The inode(DF) was missing. Should drop this dnode(F).
-> > > > > + *
-> > > > > + * 6. CP | inode(DF) | dnode(F)
-> > > > > + * -> No problem.
-> > > > > + *
-> > > > > + * 7. CP | dnode(F) | inode(DF)
-> > > > > + * -> If f2fs_iget fails, then goto next to find inode(DF).
-> > > > > + *
-> > > > > + * 8. CP | dnode(F) | inode(x)
-> > > > > + * -> If f2fs_iget fails, then goto next to find inode(DF).
-> > > > > + *    But it will fail due to no inode(DF).
-> > > > > + */
-> > > > > +
-> > > > >  static struct kmem_cache *fsync_entry_slab;
-> > > > >
-> > > > >  bool space_for_roll_forward(struct f2fs_sb_info *sbi)
-> > > > > @@ -110,27 +141,32 @@ out:
-> > > > >         return err;
-> > > > >  }
-> > > > >
-> > > > > -static int recover_inode(struct inode *inode, struct page *node_page)
-> > > > > +static void __recover_inode(struct inode *inode, struct page *page)
-> > > > >  {
-> > > > > -       struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
-> > > > > +       struct f2fs_inode *raw = F2FS_INODE(page);
-> > > > > +
-> > > > > +       inode->i_mode = le16_to_cpu(raw->i_mode);
-> > > > > +       i_size_write(inode, le64_to_cpu(raw->i_size));
-> > > > > +       inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
-> > > > > +       inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
-> > > > > +       inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
-> > > > > +       inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-> > > > > +       inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
-> > > > > +       inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-> > > > > +}
-> > > > >
-> > > > > +static int recover_inode(struct inode *inode, struct page *node_page)
-> > > > > +{
-> > > > >         if (!IS_INODE(node_page))
-> > > > >                 return 0;
-> > > > >
-> > > > > -       inode->i_mode = le16_to_cpu(raw_inode->i_mode);
-> > > > > -       i_size_write(inode, le64_to_cpu(raw_inode->i_size));
-> > > > > -       inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-> > > > > -       inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
-> > > > > -       inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-> > > > > -       inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-> > > > > -       inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
-> > > > > -       inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-> > > > > +       __recover_inode(inode, node_page);
-> > > > >
-> > > > >         if (is_dent_dnode(node_page))
-> > > > >                 return recover_dentry(node_page, inode);
-> > > > >
-> > > > >         f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name
-> > > > > = %s",
-> > > > > -                       ino_of_node(node_page), raw_inode->i_name);
-> > > > > +                       ino_of_node(node_page),
-> > > > > F2FS_INODE(node_page)->i_name);
-> > > > >         return 0;
-> > > > >  }
-> > > > >
-> > > > > @@ -183,10 +219,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info
-> > > > > *sbi, struct list_head *head)
-> > > > >                                 break;
-> > > > >                         }
-> > > > >
-> > > > > +                       /*
-> > > > > +                        * CP | dnode(F) | inode(DF)
-> > > > > +                        * For this case, we should not give up now.
-> > > > > +                        */
-> > > > >                         entry->inode = f2fs_iget(sbi->sb,
-> > > > > ino_of_node(page));
-> > > > >                         if (IS_ERR(entry->inode)) {
-> > > > >                                 err = PTR_ERR(entry->inode);
-> > > > >                                 kmem_cache_free(fsync_entry_slab, entry);
-> > > > > +                               if (err == -ENOENT)
-> > > > > +                                       goto next;
-> > > > >                                 break;
-> > > > >                         }
-> > > > >                         list_add_tail(&entry->list, head);
-> > > > > @@ -423,6 +465,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
-> > > > >                 entry = get_fsync_inode(head, ino_of_node(page));
-> > > > >                 if (!entry)
-> > > > >                         goto next;
-> > > > > +               /*
-> > > > > +                * inode(x) | CP | inode(x) | dnode(F)
-> > > > > +                * In this case, we can lose the latest inode(x).
-> > > > > +                * So, call __recover_inode for the inode update.
-> > > > > +                */
-> > > > >
-> > > > 
-> > > > With 2/3, because both IS_CHECKPOINTED and HAS_FSYNCED_INODE flag are unset
-> > > > for inode, we will append a inode(F).
-> > > 
-> > > No, inode(F) is not appended.
-> > > Please check the fsync rule #1.
-> > 
-> > >From implementation of need_inode_block_update, we do not append an
-> > inode(F) or inode(DF), only if:
-> > 
-> >   get_nat_flag(e, HAS_LAST_FSYNC) &&
-> >           (get_nat_flag(e, IS_CHECKPOINTED) ||
-> >            get_nat_flag(e, HAS_FSYNCED_INODE)))
-> > 
-> > e is nat entry for the inode.
-> > 
-> > For inode(x) | CP | inode(x) | dnode(F)
-> > 
-> > We have:
-> > 
-> > HAS_LAST_FSYNC:    true
-> > IS_CHECKPOINTED:   false
+>> On Sat, Sep 20, 2014 at 01:55:54PM +0800, Zefan Li wrote:
+>>>> Then, what made current->flags to unexpectedly preserve PF_USED_MATH flag?
+>>>> The user is running cgrulesengd process in order to utilize cpuset cgroup.
+>>>> Thus, cpuset_update_task_spread_flag() is called when cgrulesengd process
+>>>> writes someone's pid to /cgroup/cpuset/$group/tasks interface.
+>>>>
+>>>> cpuset_update_task_spread_flag() is updating other thread's
+>>>> "struct task_struct"->flags without exclusion control or atomic
+>>>> operations!
+>>>>
+>>>> ---------- linux-2.6.32-358.23.2.el6/kernel/cpuset.c ----------
+>>>> 300:/*
+>>>> 301: * update task's spread flag if cpuset's page/slab spread flag is set
+>>>> 302: *
+>>>> 303: * Called with callback_mutex/cgroup_mutex held
+>>>> 304: */
+>>>> 305:static void cpuset_update_task_spread_flag(struct cpuset *cs,
+>>>> 306:                                    struct task_struct *tsk)
+>>>> 307:{
+>>>> 308:    if (is_spread_page(cs))
+>>>> 309:            tsk->flags |= PF_SPREAD_PAGE;
+>>>> 310:    else
+>>>> 311:            tsk->flags &= ~PF_SPREAD_PAGE;
+>>>> 312:    if (is_spread_slab(cs))
+>>>> 313:            tsk->flags |= PF_SPREAD_SLAB;
+>>>> 314:    else
+>>>> 315:            tsk->flags &= ~PF_SPREAD_SLAB;
+>>>> 316:}
+>>>
+>>> We should make the updating of this flag atomic.
+>>
+>> Ugh, why do we even implement that in cpuset.  This should be handled
+>> by MPOL_INTERLEAVE.  It feels like people have been using cpuset as
+>> the dumpsite that people used w/o thinking much.  Going forward, let's
+>> please confine cpuset to collective cpu and memory affinity
+>> configuration.  It really shouldn't be implementing novel features for
+>> scheduler or mm.
+>>
+>> Anyways, yeah, the patch looks correct to me.  Can you please send a
+>> version w/ proper description and sob?
+>>
 > 
-> IS_CHECKPOINTED: true
+> This race condition exists since commit 950592f7b991 ("cpusets: update
+> tasks' page/slab spread flags in time") (i.e. Linux 2.6.31 and later)
+> but "struct task_struct"->atomic_flags was added in Linux 3.17.
 > 
-> I changed the rule for CHECKPOINTED too.
+> If use of ->atomic_flags for cpuset is acceptable, how should we fix
+> older kernels? Backport ->atomic_flags?
+> 
 
-Sorry for the noise.  I did not notice that.
-
-Best Regards,
-Huang, Ying
-
-> > HAS_FSYNCED_INODE: false
-> > 
-> > So we will append a inode(DF) here.
-> > 
-> > > > So we do not need to call
-> > > > __recover_inode here?
-> > 
-> > Thought again, __recover_inode here may be helpful here for the
-> > following situation:
-> > 
-> > inode(x) | CP | inode(x) | dnode(F) | inode(DF)
-> >                                     |
-> >                                     v
-> >                                Sudden power off
-> > 
-> > That is, sudden power off before writing inode(DF).
-> > 
-> > So I think we should keep the code, but maybe change the comments?
-> > 
-> > Best Regards,
-> > Huang, Ying
-> > 
-> > > > 
-> > > > 
-> > > > > +               if (IS_INODE(page))
-> > > > > +                       __recover_inode(entry->inode, page);
-> > > > >
-> > > > >                 err = do_recover_data(sbi, entry->inode, page, blkaddr);
-> > > > >                 if (err) {
-> > > > > --
-> > > > >
-
+Yeah, we'll just add tsk->atomic_flags to struct task_struct when
+backporting this patch for stable trees.
 
