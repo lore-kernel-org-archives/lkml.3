@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaIVJOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:14:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46884 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753075AbaIVJLE (ORCPT
+	id S1753861AbaIVJO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:14:27 -0400
+Received: from s3.neomailbox.net ([178.209.62.157]:47904 "EHLO
+	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaIVJOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:11:04 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v5 1/9] rtc: at91sam9: remove references to mach specific headers
-Date: Mon, 22 Sep 2014 11:10:50 +0200
-Message-Id: <1411377058-26155-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 22 Sep 2014 05:14:24 -0400
+Message-ID: <541FE80B.7090108@meshcoding.com>
+Date: Mon, 22 Sep 2014 11:12:43 +0200
+From: Antonio Quartulli <antonio@meshcoding.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+MIME-Version: 1.0
+To: mpirker@linux.com,
+        "mareklindner@neomailbox.ch" <mareklindner@neomailbox.ch>,
+        "sw@simonwunderlich.de" <sw@simonwunderlich.de>,
+        "davem@davemloft.net" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] batman-adv: fix potential NULL pointer dereferencing
+References: <DUB123-W2663266CEA8296935E9450A0B30@phx.gbl>
+In-Reply-To: <DUB123-W2663266CEA8296935E9450A0B30@phx.gbl>
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="QIEvtgX74iXQCQ94BGgt2I8Q24IHaWgVC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support multi platform kernel drivers should not include
-machine specific headers.
-Copy RTT macros in the driver code and remove any machine specific
-headers.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--QIEvtgX74iXQCQ94BGgt2I8Q24IHaWgVC
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/rtc/rtc-at91sam9.c | 22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 5963743..51f0038 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -22,10 +22,6 @@
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
- 
--#include <mach/at91_rtt.h>
--#include <mach/cpu.h>
--#include <mach/hardware.h>
--
- /*
-  * This driver uses two configurable hardware resources that live in the
-  * AT91SAM9 backup power domain (intended to be powered at all times)
-@@ -47,6 +43,24 @@
-  * registers available, likewise usable for more than "RTC" support.
-  */
- 
-+#define AT91_RTT_MR		0x00			/* Real-time Mode Register */
-+#define AT91_RTT_RTPRES		(0xffff << 0)		/* Real-time Timer Prescaler Value */
-+#define AT91_RTT_ALMIEN		(1 << 16)		/* Alarm Interrupt Enable */
-+#define AT91_RTT_RTTINCIEN	(1 << 17)		/* Real Time Timer Increment Interrupt Enable */
-+#define AT91_RTT_RTTRST		(1 << 18)		/* Real Time Timer Restart */
-+
-+#define AT91_RTT_AR		0x04			/* Real-time Alarm Register */
-+#define AT91_RTT_ALMV		(0xffffffff)		/* Alarm Value */
-+
-+#define AT91_RTT_VR		0x08			/* Real-time Value Register */
-+#define AT91_RTT_CRTV		(0xffffffff)		/* Current Real-time Value */
-+
-+#define AT91_RTT_SR		0x0c			/* Real-time Status Register */
-+#define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
-+#define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
-+
-+#define AT91_SLOW_CLOCK		32768
-+
- /*
-  * We store ALARM_DISABLED in ALMV to record that no alarm is set.
-  * It's also the reset value for that field.
--- 
-1.9.1
 
+On 22/09/14 11:11, Mario Pirker wrote:
+> From b451e7317148e18bf6c5c8fd747d79ab34260354 Mon Sep 17 00:00:00 2001
+> From: Mario Pirker <mario.pirker@kellogg.ox.ac.uk>
+> Date: Tue, 16 Sep 2014 17:55:13 +0200
+> Subject: [PATCH] batman-adv: fix potential NULL pointer dereferencing
+>=20
+> The call batadv_gw_node_get may return NULL. The return value has to
+> be sanity checked before the pointer is dereferenced.
+>=20
+> Signed-off-by: Mario Pirker <mariopirker@hotmail.com>
+> ---
+
+We already have a patch queued to fix this issue
+(http://permalink.gmane.org/gmane.org.freifunk.batman/12357).
+
+Actually it is not about a missing check but it is more about a typo in
+the check right below the one you added.
+
+Cheers,
+
+>  net/batman-adv/gateway_client.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+>=20
+> diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_c=
+lient.c
+> index 90cff58..7ee0913 100644
+> --- a/net/batman-adv/gateway_client.c
+> +++ b/net/batman-adv/gateway_client.c
+> @@ -810,6 +810,11 @@ bool batadv_gw_out_of_range(struct batadv_priv *ba=
+t_priv,
+>                 goto out;
+> =20
+>         gw_node =3D batadv_gw_node_get(bat_priv, orig_dst_node);
+> +
+> +       /* gw_node can be NULL. We need to check before dereferencing *=
+/
+> +       if (gw_node =3D=3D NULL)
+> +               goto out;
+> +
+>         if (!gw_node->bandwidth_down =3D=3D 0)
+>                 goto out;
+> =20
+> --=20
+> 1.8.1.4 		 	   		 =20
+>=20
+
+--=20
+Antonio Quartulli
+
+
+--QIEvtgX74iXQCQ94BGgt2I8Q24IHaWgVC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUH+gSAAoJEJgn97Bh2u9eUmQP/1Hwwemeea9m0S3/mo5591Uj
+jPSO5o111irsOZvI0vDV06YbJxfPfZRkc4HDfTceo8EvA9Q9I4MMjp0epRx6g2tu
+4F+ODVMKTrRhyHBre2MnExQw0xHV8fkIoPHMUqK/UT3Op3VVvnX2ct7/+7WXdzSP
+7kRqQ8RrE/IdfhrHBCE38kzeqWRXiqQCSrkctrOF55du5aeeuBWVdVFkraUcvlII
+XFhiLgnsnYVj5l7DjlUjnQSd8TDuVVoBpFYycDpSV+44+ARMo6QIvyLqieDpDStf
+lNSdMgh3fLg3BwdN7YUngdVcjjy9qhj7vlOEl3fHx9zxyXQve0DLKeRkyCA5iVbT
+oBJEgIuTpK/F+b3VAbdY5u1tNHC3d9IghxzsqEaKST1CTjfCP7RTWBp+PBm5JKWY
+jGMN49RCstR4F58KR9Q47ABGQoB+3WUfLnXqvyRaV8GxpR49t/eAn7HHN/iaxOq9
+H60tZc6GpFGSl2H3istaZu2E3rJey1LhJ1XQoJdAKrRZL48fzqUL7f+4EggQrqzQ
+c+mPgRTy5J9E3VhqUwYDt0H5/GXV8YjHV3AJnIZr8VKEsruZ/je7bTS7c3zFdUah
+PWl3hFnk3vVwVnGArba3GOeEQxzt+EQeqQHayJH1u4Ag9RosSv2EByKJR4KKHb4l
+gSalG0OODuKvJeRawjLN
+=xgGV
+-----END PGP SIGNATURE-----
+
+--QIEvtgX74iXQCQ94BGgt2I8Q24IHaWgVC--
