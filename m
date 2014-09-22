@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966AbaIVUr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:47:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37752 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaIVUr0 (ORCPT
+	id S1754792AbaIVUtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:49:42 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:45802 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000AbaIVUtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 16:47:26 -0400
-From: Chris J Arges <chris.j.arges@canonical.com>
-To: hch@infradead.org
-Cc: bruce.lucas@mongodb.com, Chris J Arges <chris.j.arges@canonical.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mptfusion: enable no_write_same for vmware scsi disks
-Date: Mon, 22 Sep 2014 15:44:52 -0500
-Message-Id: <1411418701-25025-1-git-send-email-chris.j.arges@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20140922181929.GA11319@infradead.org>
-References: <20140922181929.GA11319@infradead.org>
+	Mon, 22 Sep 2014 16:49:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <541BC848.6080001@redhat.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+	<1410976308-7683-1-git-send-email-andreslc@google.com>
+	<20140918002917.GA3921@kernel>
+	<20140918061326.GC30733@minantech.com>
+	<20140919003207.GA4296@kernel>
+	<CAJu=L5_SPcqca0sBYcCLjt4hv6RQwa+QV8Fhi6t3mxz0+X=KSA@mail.gmail.com>
+	<541BC848.6080001@redhat.com>
+Date: Mon, 22 Sep 2014 13:49:39 -0700
+Message-ID: <CAJu=L5-B+2POA1h0P5cO2-SBDpQpHi35bvcAxWw4G+GMaQeHCw@mail.gmail.com>
+Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Gleb Natapov <gleb@kernel.org>,
+        Radim Krcmar <rkrcmar@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
-data can be improperly zeroed out using the mptfusion driver. This patch
-disables write_same for this driver and the vmware subsystem_vendor which
-ensures that manual zeroing out is used instead.
+On Thu, Sep 18, 2014 at 11:08 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>
+> Il 19/09/2014 05:58, Andres Lagar-Cavilla ha scritto:
+> > Paolo, should I recut including the recent Reviewed-by's?
+>
+> No, I'll add them myself.
 
-BugLink: http://bugs.launchpad.net/bugs/1371591
-Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
----
- drivers/message/fusion/mptspi.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Paolo, is this patch waiting for something? Is Gleb's Reviewed-by enough?
 
-diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-index 787933d..fca1594 100644
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -1409,6 +1409,12 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		return 0;
- 	}
- 
-+	/* Fix for vmware guests that do not implement write_same
-+         */
-+	if (pdev->subsystem_vendor == 0x15AD) {
-+		mptspi_driver_template.no_write_same = 1;
-+	}
-+
- 	sh = scsi_host_alloc(&mptspi_driver_template, sizeof(MPT_SCSI_HOST));
- 
- 	if (!sh) {
--- 
-1.9.1
+Thanks much
+Andres
 
+>
+>
+> Paolo
