@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaIVSkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:40:37 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:40679 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaIVSke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:40:34 -0400
+	id S1754819AbaIVSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:40:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45032 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754257AbaIVSky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 14:40:54 -0400
+Date: Mon, 22 Sep 2014 20:40:49 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Rustad, Mark D" <mark.d.rustad@intel.com>
+Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Message-ID: <20140922184049.GB4709@pd.tnic>
+References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <20140922153355.GB4510@pd.tnic>
+ <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140919232348.1a2856c1.akpm@linux-foundation.org>
-References: <20140830163834.29066.98205.stgit@zurg>
-	<20140830164120.29066.8857.stgit@zurg>
-	<20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
-	<CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
-	<20140912224221.9ee5888a.akpm@linux-foundation.org>
-	<CALYGNiNg5yLbAvqwG3nPqWZHkqXc1-3p4yqdP2Eo2rNJbRo0rg@mail.gmail.com>
-	<20140919143520.94f4a17f752398a6c7c927d8@linux-foundation.org>
-	<CALYGNiOwrM+LiadZGh+jeFgXCuCA0z_1Vd_kdMxLjqnP9Fnmhw@mail.gmail.com>
-	<20140919232348.1a2856c1.akpm@linux-foundation.org>
-Date: Mon, 22 Sep 2014 22:40:34 +0400
-Message-ID: <CALYGNiN0OEtWJVy6sTE_sOydMKbyHfRY3HQ3GjYTT-u05XHTfg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned memory
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Rafael Aquini <aquini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 10:23 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 20 Sep 2014 09:25:01 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
->
->> >
->> > So I'm going to send "fix for
->> > mm-balloon_compaction-use-common-page-ballooning-v2" to Linus
->> > separately, but it has no changelog at all.
->>
->> Probably it would be better if you drop everything except actually
->> fixes and stresstest. This is gone too far, now balloon won't compile
->> in the middle of patchset. Just tell me and I'll redo the rest.
->
-> I think it's best if I drop everything:
->
-> mm-balloon_compaction-ignore-anonymous-pages.patch
-> mm-balloon_compaction-keep-ballooned-pages-away-from-normal-migration-path.patch
-> mm-balloon_compaction-isolate-balloon-pages-without-lru_lock.patch
-> selftests-vm-transhuge-stress-stress-test-for-memory-compaction.patch
-> mm-introduce-common-page-state-for-ballooned-memory.patch
-> mm-balloon_compaction-use-common-page-ballooning.patch
-> mm-balloon_compaction-general-cleanup.patch
-> mm-balloon_compaction-use-common-page-ballooning-v2-fix-1.patch
->
-> Please go through it and send out a new version?
->
->
+On Mon, Sep 22, 2014 at 05:06:27PM +0000, Rustad, Mark D wrote:
+> The problem is that the kernel include files throw so many warnings
+> that it really discourages anyone from ever going through them, even
+> for a single driver. The warnings are far more valuable and usable
+> when known acceptable usages are silenced.
 
-I've found yet another bug in this code. It seems here is a nest.
-balloon_page_dequeue can race with  balloon_page_isolate:
-balloon_page_isolate can remove page from list between
-llist_for_each_entry_safe and trylock_page in balloon_page_dequeue.
-balloon_page_dequeue runs under mutex_lock(&vb->balloon_lock);
-both of them lock page using trylock_page so race is tight but it is
-not impossible.
-Probably it's really easier to rewrite it than to fix bugs one by one =/
+You can always do one file only, for example:
+
+make W=2 arch/x86/kernel/msr.o > w.log 2>&1
+
+> Well, the whole series of patches that I made definitely went too far
+> - only the first 5 out of about 30 have been posted, but if we can
+> make some progress on generating fewer warnings out of the include
+> files, I think it would be helpful.
+
+Helpful for what? Those are W=2 warnings which are disabled in the
+default build.
+
+> Already the patches that use them have triggered some activity that
+> has resulted in resolving warnings without use of the macros, and I
+> see that as much better than simply using the macros.
+>
+> The macros can serve a useful purpose, but they should not be widely
+> used. When to use them is definitely a judgement call. If the macros
+> are accepted, it may be worth adding a checkpatch.pl warning for
+> adding a DIAG_*IGNORE macro.
+
+Right, so add the macros and tell people *not* to use them. That won't
+fly.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
