@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaIVJza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:55:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaIVJz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:55:29 -0400
-Message-ID: <541FF20B.4080201@redhat.com>
-Date: Mon, 22 Sep 2014 17:55:23 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753847AbaIVJ4t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:56:49 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:22164 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaIVJ4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 05:56:47 -0400
+X-IronPort-AV: E=Sophos;i="5.04,571,1406617200"; 
+   d="scan'208";a="46247094"
+Message-ID: <541FF25B.9000404@broadcom.com>
+Date: Mon, 22 Sep 2014 11:56:43 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC 2/2] vhost: support urgent descriptors
-References: <1404203661-7521-1-git-send-email-mst@redhat.com> <1404203661-7521-2-git-send-email-mst@redhat.com> <541BD6E9.2010707@redhat.com> <541D503B.3070507@redhat.com> <541F97CF.7000305@redhat.com> <20140922065539.GA12057@redhat.com>
-In-Reply-To: <20140922065539.GA12057@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+To: Emil Goode <emilgoode@gmail.com>
+CC: Brett Rudley <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>, <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: Fix off by one bug in brcmf_count_20mhz_channels()
+References: <1411253932-27973-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1411253932-27973-1-git-send-email-emilgoode@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 02:55 PM, Michael S. Tsirkin wrote:
-> On Mon, Sep 22, 2014 at 11:30:23AM +0800, Jason Wang wrote:
->> On 09/20/2014 06:00 PM, Paolo Bonzini wrote:
->>> Il 19/09/2014 09:10, Jason Wang ha scritto:
->>>>>>  
->>>>>> -	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
->>>>>> +	if (vq->urgent || !vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
->>>> So the urgent descriptor only work when event index was not enabled?
->>>> This seems suboptimal, we may still want to benefit from event index
->>>> even if urgent descriptor is used. Looks like we need return true here
->>>> when vq->urgent is true?
->>> Its ||, not &&.
->>>
->>> Without event index, all descriptors are treated as urgent.
->>>
->>> Paolo
->>>
->> The problem is if vq->urgent is true, the patch checks
->> VRING_AVAIL_F_NO_INTERRUPT bit. This bit were set unconditionally in
->> virtqueue_enable_cb() regardless of event index feature and cleared
->> unconditionally in virtqueue_disable_cb().
-> The reverse actually, right?
+On 09/21/14 00:58, Emil Goode wrote:
+> In the brcmf_count_20mhz_channels function we are looping through a list
+> of channels received from firmware. Since the index of the first channel
+> is 0 the condition leads to an off by one bug. This is causing us to hit
+> the WARN_ON_ONCE(1) calls in the brcmu_d11n_decchspec function, which is
+> how I discovered the bug.
 
-Ah, right.
+The fix is fine. Would like to know what exactly is going wrong. Can you 
+provide a kernel log with brcmfmac debugging enabled, ie. insmod 
+brcmfmac.ko debug=0x1416
+
+Regards,
+Arend
+
+> Introduced by:
+> commit b48d891676f756d48b4d0ee131e4a7a5d43ca417
+> ("brcmfmac: rework wiphy structure setup")
 >
->> So virtqueue_enable_cb() was
->> used to not only publish a new event index but also enable the urgent
->> descriptor. And virtqueue_disable_cb() disabled all interrupts including
->> the urgent descriptor. Guest won't get urgent interrupts by just adding
->> virtqueue_add_outbuf_urgent() since what it needs is to enable and
->> disable interrupt for !urgent descriptor.
-> Right, we want a new API that advances event index but does not
-> set VRING_AVAIL_F_NO_INTERRUPT.
-> IMO still want to set VRING_AVAIL_F_NO_INTERRUPT when handling tx
-> interrupts, to avoid interrupt storms.
-
-I see, so urgent descriptor needs to be disabled in this case. But vhost
-parts need a little big changes, we could not just check
-VRING_AVAIL_F_NO_INTERRUPT when vq->urgent is true. If event index is
-enabled, we still need to check used event to make sure the current tx
-delayed interrupt works.
-
-But just re-using VRING_AVAIL_F_NO_INTERRUPT for urgent descriptor may
-not work in some case. I see codes of virtqueue_get_buf() that may
-breaks this:
-
-        /* If we expect an interrupt for the next entry, tell
-host                                                                                                       
-
-         * by writing event index and flush out the write
-before                                                                                                         
-
-         * the read in the next get_buf call. */
-        if (!(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
-                vring_used_event(&vq->vring) = vq->last_used_idx;
-                virtio_mb(vq->weak_barriers);
-        }
-
-Consider if only urgent descriptor is enabled, this will publish used
-event which in fact enable lots of unnecessary interrupt. In fact I
-don't quite understand how the above lines is used. Virtio-net stop the
-queue before enable the tx interrupt in start_xmit(), so the above lines
-will not run at all.
-
->> Btw, not sure "urgent" is a suitable name, since interrupt is often slow
->> in kvm guest. And in fact virtio-net will probably use "urgent"
->> descriptor for those packets (e.g stream packets who can be delayed a
->> little bit to batch more bytes from userspace) who was not urgent
->> compared to other packets.
->>
-> Yes but we are asking for an interrupt before event index is reached
-> because something is waiting for the packet to be transmitted.
-> I couldn't come up with a better name.
+> Signed-off-by: Emil Goode<emilgoode@gmail.com>
+> ---
+>   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-
-Ok.
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> index 02fe706..93b5dd9 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> @@ -4918,7 +4918,7 @@ static void brcmf_count_20mhz_channels(struct brcmf_cfg80211_info *cfg,
+>   	struct brcmu_chan ch;
+>   	int i;
+>
+> -	for (i = 0; i<= total; i++) {
+> +	for (i = 0; i<  total; i++) {
+>   		ch.chspec = (u16)le32_to_cpu(chlist->element[i]);
+>   		cfg->d11inf.decchspec(&ch);
+>
 
