@@ -1,140 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaIVRhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:37:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64136 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753486AbaIVRhh (ORCPT
+	id S1754498AbaIVRig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:38:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52418 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525AbaIVRif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:37:37 -0400
-Date: Mon, 22 Sep 2014 18:37:34 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [V8 2/2] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
-Message-ID: <20140922173734.GO3290@leverpostej>
-References: <1411230698-8081-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1411230698-8081-3-git-send-email-suravee.suthikulpanit@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411230698-8081-3-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Sep 2014 13:38:35 -0400
+Date: Mon, 22 Sep 2014 13:38:31 -0400 (EDT)
+Message-Id: <20140922.133831.220769383344675250.davem@davemloft.net>
+To: clem@clem.clem-digital.net
+Cc: xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Corrupt Network Packets -- 3.17-rc5/rc6
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201409221724.s8MHOxe5002845@clem.clem-digital.net>
+References: <CAM_iQpXQcM2E2oez+nNbbecd25fXqOKNqAfoOgCfQ72-VfBOUA@mail.gmail.com>
+	<201409221724.s8MHOxe5002845@clem.clem-digital.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Sep 2014 10:38:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suravee,
+From: Pete Clements <clem@clem.clem-digital.net>
+Date: Mon, 22 Sep 2014 13:24:59 -0400 (EDT)
 
-This looks good, I just have a few fixups that would be nice to apply
-below.
-
-On Sat, Sep 20, 2014 at 05:31:38PM +0100, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> Quoting Cong Wang
+>   > <clem@clem.clem-digital.net> wrote:
+>   > > Heads up fyi: system is i386 UP.
+>   > >
+>   > > Started getting some pop3 reception errors from the above system.
+>   > > Investigating the problem discovered scp of the mailbox failed
+>   > > with "Corrupted MAC on input"
+>   > >
+>   > > Problem started with rc5, still in rc6. Running rc4 with no
+>   > > problem.
+>   > >
+>   > > Sorry for lack of better definition.
+>   > 
+>   > 
+>   > Which driver are you using?
+>   > 
+> Here's the output from boot log:
 > 
-> ARM GICv2m specification extends GICv2 to support MSI(-X) with
-> a new set of register frame. This patch introduces support for
-> the non-secure GICv2m register frame. Currently, GICV2m is available
-> in certain version of GIC-400.
-> 
-> The patch introduces a new property in ARM gic binding, the v2m subnode.
-> It is optional.
-> 
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> Acked-by: Marc Zyngier <Marc.Zyngier@arm.com>
-> Cc: Mark Rutland <Mark.Rutland@arm.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-> Cc: Will Deacon <Will.Deacon@arm.com>
-> ---
->  Documentation/devicetree/bindings/arm/gic.txt |  55 ++++
->  arch/arm64/Kconfig                            |   1 +
->  drivers/irqchip/Kconfig                       |   5 +
->  drivers/irqchip/Makefile                      |   1 +
->  drivers/irqchip/irq-gic-common.c              |  12 +
->  drivers/irqchip/irq-gic-common.h              |   4 +
->  drivers/irqchip/irq-gic-v2m.c                 | 356 ++++++++++++++++++++++++++
->  drivers/irqchip/irq-gic.c                     |  82 +++---
->  drivers/irqchip/irq-gic.h                     |  54 ++++
->  9 files changed, 540 insertions(+), 30 deletions(-)
->  create mode 100644 drivers/irqchip/irq-gic-v2m.c
->  create mode 100644 drivers/irqchip/irq-gic.h
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> index c7d2fa1..38b2156 100644
-> --- a/Documentation/devicetree/bindings/arm/gic.txt
-> +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> @@ -96,3 +96,58 @@ Example:
->                       <0x2c006000 0x2000>;
->                 interrupts = <1 9 0xf04>;
->         };
-> +
-> +
-> +* GICv2m extension for MSI/MSI-x support (Optional)
-> +
-> +Certain revision of GIC-400 supports MSI/MSI-x via V2M register frame.
-> +This is enabled by specifying v2m sub-node.
+>  PCI: setting IRQ 11 as level-triggered
+>  3c59x 0000:00:0d.0: found PCI INT A -> IRQ 11
+>  3c59x: Donald Becker and others.
+>  0000:00:0d.0: 3Com PCI 3c900 Cyclone 10Mbps TPC at d8812000.
 
-It looks like this was missed when the binding was updated for multiple
-frames, so:
+Should be fixed by:
 
-s/revision/revisions/
-s/frame/frame(s)/
-s/sub-node/sub-node(s)/
+commit 8400dd029e764e30361a51a7ae35900ae0032b43
+Author: Neil Horman <nhorman@tuxdriver.com>
+Date:   Wed Sep 17 09:04:45 2014 -0400
 
-> +
-> +Required properties:
-> +
-> +- compatible        : The value here should be "arm,gic-v2m-frame".
+    3c59x: Fix bad offset spec in skb_frag_dma_map
+    
+    Recently aded the use of skb_frag_dma_map to 3c59x, but didn't realize it
+    automatically included the frag_offset internally, as well as provided an option
+    to specify an extra offset in the parameter list.  We need to specify an offset
+    of 0 in the parameter list to avoid skb corruption that results in lost
+    connections.
+    
+    Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+    CC: Linux Kernel list <linux-kernel@vger.kernel.org>
+    CC: "David S. Miller" <davem@davemloft.net>
+    CC: Meelis Roos <mroos@linux.ee>
+    Tested-by: Meelis Roos <mroos@linux.ee>
 
-- compatible: should contain "arm,gic-v2m-frame".
-
-> +
-> +- msi-controller    : Identifies the node as an MSI controller.
-> +
-> +- reg               : GICv2m MSI interface register base and size
-> +
-> +Optional properties:
-> +
-> +- arm,msi-base-spi  : Specify base SPI the MSI frame.
-> +                      The SPI base value can be from 32 to 1019.
-> +
-> +- arm,msi-num-spi   : Returns the number of contiguous SPIs assigned
-> +                     to the frame.
-> +
-> +Note: "arm,msi-base-spi" and "arm,msi-num-spi" are used mainly for
-> +       providing HW workaround in the case where the MSI_TYPER register
-> +       is corrupted.
-
-s/num-spi/num-spis/ please
-
-Can we get rid of the note and reword this like:
-
-- arm,msi-base-spi: When the MSI_TYPER register contains an incorrect
-                    value, this property should contain the SPI base of
-		    the MSI frame, overriding the HW value.
-
-- arm,msi-num-spis: When the MSI_TYPER register contains an incorrect
-                    value, this property should contain the number of
-                    SPIs assigned to the frame, overriding the HW value.
-
-I realise it's a little redundant, but it's very easy to miss usage
-constraints in notes.
-
-With that, for the binding:
-
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-
-Mark.
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index 8ab87ff..8ca49f04 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -2186,7 +2186,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
+ 			dma_addr = skb_frag_dma_map(&VORTEX_PCI(vp)->dev, frag,
+-						    frag->page_offset,
++						    0,
+ 						    frag->size,
+ 						    DMA_TO_DEVICE);
+ 			if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr)) {
