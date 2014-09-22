@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978AbaIVSgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:36:48 -0400
-Received: from forward6l.mail.yandex.net ([84.201.143.139]:41039 "EHLO
-	forward6l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959AbaIVSgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:36:46 -0400
-X-Yandex-Uniq: fa9e68de-da3b-455e-9202-c41a19dd6146
-Authentication-Results: smtp3h.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v3 6/6] sched/rt: Use resched_curr() in task_tick_rt()
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Tkhai <ktkhai@parallels.com>
-Date: Mon, 22 Sep 2014 22:36:43 +0400
-Message-ID: <20140922183642.11015.66039.stgit@localhost>
-In-Reply-To: <20140922183612.11015.64200.stgit@localhost>
-References: <20140922183612.11015.64200.stgit@localhost>
-User-Agent: StGit/0.17.1-dirty
+	id S1754672AbaIVSke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:40:34 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:55596 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394AbaIVSkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 14:40:33 -0400
+Message-ID: <54206D0F.1010506@interlog.com>
+Date: Mon, 22 Sep 2014 14:40:15 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "Elliott, Robert (Server Storage)" <elliott@hp.com>
+Subject: Re: two more fixes for block/for-linus
+References: <1411394371-16254-1-git-send-email-hch@lst.de> <54202CF9.7050303@kernel.dk>
+In-Reply-To: <54202CF9.7050303@kernel.dk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill Tkhai <ktkhai@parallels.com>
+On 14-09-22 10:06 AM, Jens Axboe wrote:
+> On 2014-09-22 07:59, Christoph Hellwig wrote:
+>> Fix two regressions with the timer/blk_mq_start_request changes found
+>> when using scsi-mq on an ATA device.
+>>
+>> Note that given how late we are in the cycle I wonder if we really should
+>> push the changes in block/for-linus to Linus in this cycle.  The race
+>> part of the timer fixes is extremly narrow, and the reserved request
+>> part of it requires an out of tree driver update to trigger it, so it
+>> doesn't sound super criticial.
+>
+> I was planning on pushing it out today, I've run a lot of testing on it
+> internally last week. Ho hum, let me think about it...
 
-Some time ago PREEMPT_NEED_RESCHED was implemented,
-so reschedule technics is a little more difficult now.
+With these patches applied (actually a resync an hour
+ago with the for-linus tree which includes them), the
+freeze-during-boot-up problem that I have been seeing
+with an old SATA boot disk (perhaps 1.5 Gbps) for
+the last two weeks, has gone away.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
----
- kernel/sched/rt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That SATA disk is connected to the motherboard (Gigabyte
+Z97M-D3H/Z97M-D3H, BIOS F5 05/30/2014) and has a standard
+AHCI interface as far as I can tell. dmesg confirms that.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index de356b0..c322071 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -2077,7 +2077,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- 	for_each_sched_rt_entity(rt_se) {
- 		if (rt_se->run_list.prev != rt_se->run_list.next) {
- 			requeue_task_rt(rq, p, 0);
--			set_tsk_need_resched(p);
-+			resched_curr(rq);
- 			return;
- 		}
- 	}
+
+Please add "Tested-by: Douglas Gilbert <dgilbert@interlog.com>"
+to Christoph's "two more fixes for block/for-linus" series.
+
+Doug Gilbert
+
+
 
