@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaIVQ0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:26:08 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:13917 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaIVQ0E convert rfc822-to-8bit (ORCPT
+	id S1754274AbaIVQ2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:28:14 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:39348 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318AbaIVQ2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:26:04 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: Andreas Dilger <adilger@dilger.ca>, Milosz Tanski <milosz@adfin.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: RE: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-Thread-Topic: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache
- only)
-Thread-Index: AQHP0SKGxsA+DTFen0Wh6Y6YnaKzXpwCtzGAgAANsvCABZCkgIADsElw
-Date: Mon, 22 Sep 2014 16:25:24 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C9102B@G9W0745.americas.hpqcorp.net>
-References: <cover.1410810247.git.milosz@adfin.com>
- <8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
- <94D0CD8314A33A4D9D801C0FE68B402958C81D56@G9W0745.americas.hpqcorp.net>
- <20140919112147.GA4639@infradead.org>
-In-Reply-To: <20140919112147.GA4639@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Sep 2014 12:28:12 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
+	<1409938218-9026-11-git-send-email-abrestic@chromium.org>
+	<CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com>
+Date: Mon, 22 Sep 2014 09:28:11 -0700
+X-Google-Sender-Auth: OTzuV_84x7IuDp-qUMHQdqXP6Zg
+Message-ID: <CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com>
+Subject: Re: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 22, 2014 at 7:23 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On Fri, Sep 5, 2014 at 12:30 PM, Andrew Bresticker
+> <abrestic@chromium.org> wrote:
+>> Add the vendor prefix "mti" for MIPS Technologies, Inc.
+>>
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> ---
+>> New for v2.
+>> ---
+>>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> index ac7269f..efa5a5b 100644
+>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> @@ -86,6 +86,7 @@ microchip     Microchip Technology Inc.
+>>  mosaixtech     Mosaix Technologies, Inc.
+>>  moxa   Moxa
+>>  mpl    MPL AG
+>> +mti    MIPS Technologies, Inc.
+>
+> Why not mips as that is more common and the stock ticker.
 
-
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Friday, 19 September, 2014 6:22 AM
-> To: Elliott, Robert (Server Storage)
-> Cc: Andreas Dilger; Milosz Tanski; linux-kernel@vger.kernel.org; Christoph
-> Hellwig; linux-fsdevel@vger.kernel.org; linux-aio@kvack.org; Mel Gorman;
-> Volker Lendecke; Tejun Heo; Jeff Moyer
-> Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-> 
-> On Mon, Sep 15, 2014 at 10:36:46PM +0000, Elliott, Robert (Server Storage)
-> wrote:
-> > That sounds like the proposed WRITE SCATTERED/READ GATHERED
-> > commands for SCSI (where are related to, but not necessarily
-> > tied to, atomic writes).  We discussed them a bit at
-> > LSF-MM 2013 - see http://lwn.net/Articles/548116/.
-> 
-> In the same way a preadx/pwritex could use but would not require an
-> O_ATOMIC.  What's the status of those in t10?  Last I heard
-> READ GATHERED was out and they were only looking into WRITE SCATTERED?
-
-Both of these essentially require more CDB bytes to convey the
-LBA range list.  Under the current SCSI architecture model, the 
-choices are:
-* include in a longer CDB
-* include in the data-out buffer
-
-For longer CDBs:
-* CDBs >16 bytes are not widely supported
-* 260 byte max CDB size limits the number of LBA ranges
-* in most SCSI protocols, commands are unsolicited (push rather
-than pull), so the target must have buffer space for (max queue
-depth)*(max CDB size). In SCSI Express, although CDBs are pulled
-with PCIe memory reads rather than pushed, longer CDBs complicate
-circular queue handling.
-
-For the data-out buffer:
-* not delivering all the CDB info upfront complicates drive 
-hardware designs. They want to get the data transfer started
-from the medium, but have to wait for a whole extra DMA 
-transfer first. This is not so bad for low-latency PCIe,
-but is not a good fit for protocols behind HBAs like
-SAS, iSCSI, etc.
-* READ GATHERED requires bidirectional command support, which 
-is not widely or efficiently supported
-
-Protocols could add direct support for delivering more CDB bytes
-(like how the ATA PACKET command delivers a SCSI CDB over
-an ATA transport), but that requires a lot of changes.
-
----
-Rob Elliott    HP Server Storage
-
-
+"mti" is already in use, see
+Documentation/devicetree/bindings/mips/cpu_irq.txt,
+arch/mips/mti-sead3/sead3.dts, and arch/mips/ralink/dts/*.dtsi.
