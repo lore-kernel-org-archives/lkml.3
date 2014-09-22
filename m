@@ -1,104 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223AbaIVOZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:25:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49052 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753934AbaIVOZQ (ORCPT
+	id S1754402AbaIVO01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:26:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47808 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199AbaIVOZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:25:16 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Yassin Jaffer <yassinjaffer@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 1/2] mtd: nand: support ONFI timing mode retrieval for non-ONFI NANDs
-Date: Mon, 22 Sep 2014 16:25:10 +0200
-Message-Id: <1411395911-30365-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411395911-30365-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411395911-30365-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 22 Sep 2014 10:25:22 -0400
+Date: Mon, 22 Sep 2014 07:25:19 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Milosz Tanski <milosz@adfin.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC v2 0/5] Non-blockling buffered fs read (page cache only)
+Message-ID: <20140922142519.GA27920@infradead.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+ <cover.1410983998.git.milosz@adfin.com>
+ <20140919104204.3b0bb762@lwn.net>
+ <CANP1eJEhHyA93kDUCz_=0vDjdPXz7g0x1SmW+q060fntQAbrYA@mail.gmail.com>
+ <20140922101221.4bf46809@lwn.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922101221.4bf46809@lwn.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an onfi_timing_mode_default field to nand_chip and nand_flash_dev in
-order to support NAND timings definition for non-ONFI NAND.
+On Mon, Sep 22, 2014 at 10:12:21AM -0400, Jonathan Corbet wrote:
+> So I'm not contesting this, but I am genuinely curious: do you think
+> there are applications out there requesting non-blocking behavior on
+> regular files that will then break if they actually get non-blocking
+> behavior?  I don't suppose you have an example?
 
-NAND that support better timings mode than the default one have to define
-a new entry in the nand_ids table.
+You only have to look as far as Samba, but Jeff quoted an old lkml
+post earlier that had other examples.
 
-The default timing mode should be deduced from timings description from
-the datasheet and the ONFI specification
-(www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf, chapter 4.15
-"Timing Parameters").
-You should choose the closest mode that fit the timings requirements of
-your NAND chip.
+source3/smbd/open.c:
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/mtd/nand/nand_base.c |  2 ++
- include/linux/mtd/nand.h     | 11 +++++++++++
- 2 files changed, 13 insertions(+)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index ae6e7c4..c37fa2a 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3594,6 +3594,8 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
- 		chip->options |= type->options;
- 		chip->ecc_strength_ds = NAND_ECC_STRENGTH(type);
- 		chip->ecc_step_ds = NAND_ECC_STEP(type);
-+		chip->onfi_timing_mode_default =
-+					type->onfi_timing_mode_default;
- 
- 		*busw = type->options & NAND_BUSWIDTH_16;
- 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index b7c1199..e795fbf 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -587,6 +587,11 @@ struct nand_buffers {
-  * @ecc_step_ds:	[INTERN] ECC step required by the @ecc_strength_ds,
-  *                      also from the datasheet. It is the recommended ECC step
-  *			size, if known; if unknown, set to zero.
-+ * @onfi_timing_mode_default: [INTERN] default ONFI timing mode. This field is
-+ * 			      either deduced from the datasheet if the NAND
-+ * 			      chip is not ONFI compliant or set to 0 if it is
-+ * 			      (an ONFI chip is always configured in mode 0
-+ * 			      after a NAND reset)
-  * @numchips:		[INTERN] number of physical chips
-  * @chipsize:		[INTERN] the size of one chip for multichip arrays
-  * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
-@@ -671,6 +676,7 @@ struct nand_chip {
- 	uint8_t bits_per_cell;
- 	uint16_t ecc_strength_ds;
- 	uint16_t ecc_step_ds;
-+	int onfi_timing_mode_default;
- 	int badblockpos;
- 	int badblockbits;
- 
-@@ -773,6 +779,10 @@ struct nand_chip {
-  *               @ecc_step_ds in nand_chip{}, also from the datasheet.
-  *               For example, the "4bit ECC for each 512Byte" can be set with
-  *               NAND_ECC_INFO(4, 512).
-+ * @onfi_timing_mode_default: the default ONFI timing mode entered after a NAND
-+ *			      reset. Should be deduced from timings described
-+ *			      in the datasheet.
-+ *
-  */
- struct nand_flash_dev {
- 	char *name;
-@@ -793,6 +803,7 @@ struct nand_flash_dev {
- 		uint16_t strength_ds;
- 		uint16_t step_ds;
- 	} ecc;
-+	int onfi_timing_mode_default;
- };
- 
- /**
--- 
-1.9.1
-
+	if (first_open_attempt && lp_kernel_oplocks(SNUM(conn))) {
+		/*
+		 * With kernel oplocks the open breaking an oplock
+		 * blocks until the oplock holder has given up the
+		 * oplock or closed the file. We prevent this by first
+		 * trying to open the file with O_NONBLOCK (see "man
+		 * fcntl" on Linux). For the second try, triggered by
+		 * an oplock break response, we do not need this
+		 * anymore.
+		 *
+		 * This is true under the assumption that only Samba
+		 * requests kernel oplocks. Once someone else like
+		 * NFSv4 starts to use that API, we will have to
+		 * modify this by communicating with the NFSv4 server.
+		 */
+		flags2 |= O_NONBLOCK;
+	}
