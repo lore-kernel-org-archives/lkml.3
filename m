@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaIVPYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:24:37 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:33051 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaIVPYf (ORCPT
+	id S1754378AbaIVPYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:24:50 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:50499 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340AbaIVPYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:24:35 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 22 Sep 2014 17:22:03 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 8/9] rtc: at91sam9: add DT bindings documentation
-Message-ID: <20140922152203.GJ5237@localhost>
-References: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
- <1411377058-26155-9-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 22 Sep 2014 11:24:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411377058-26155-9-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
+References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk>
+	<CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
+Date: Mon, 22 Sep 2014 08:24:47 -0700
+X-Google-Sender-Auth: jtdkiGrCUwfzeeAgi1MBq6ib2zc
+Message-ID: <CA+55aFyXgMO4ADNMSQ81rwSRMkOSFvvig9LA+SJXYuov58HZJw@mail.gmail.com>
+Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 11:10:57AM +0200, Boris BREZILLON wrote:
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 23 ++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> new file mode 100644
-> index 0000000..5b2bb73
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> @@ -0,0 +1,23 @@
-> +Atmel AT91SAM9260 Real Time Timer
-> +
-> +Required properties:
-> +- compatible: should be: "atmel,at91sam9260-rtt"
-> +- reg: should encode the memory region of the RTT controller
-> +- interrupts: rtc alarm/event interrupt
+On Mon, Sep 22, 2014 at 8:18 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Ugh. Does the simpler patch to just pass in "block" work as well?
 
-rtt alarm
+Ugh, never mind, no it does not. It doesn't truncate the sectors to
+the beginning of a page boundary.
 
-> +- clocks: should contain one clock pointing the the slow clk
-> +- atmel,rtt-rtc-time-reg: should encode the GPBR register used to store
-> +	the RTC time. The first cell should point to the GPBR node and
+Will take the patch as-is (will edit the commit message that seems a
+bit inaccurate).
 
-"used to store the time base when the RTT is used as an RTC"?
-
-Johan
+             Linus
