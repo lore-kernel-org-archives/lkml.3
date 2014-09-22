@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaIVSRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:17:47 -0400
-Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:60948 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754033AbaIVSRp (ORCPT
+	id S1754684AbaIVSSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:18:21 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:33700 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470AbaIVSSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:17:45 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3871:4321:4605:5007:6119:7652:9592:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12555:13069:13161:13229:13311:13357:14096:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bean94_7d8ba53bbd343
-X-Filterd-Recvd-Size: 2687
-Message-ID: <1411409861.2952.57.camel@joe-AO725>
-Subject: [PATCH net-next] bluetooth: Convert bt_<level> logging functions to
- return void
-From: Joe Perches <joe@perches.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	Mon, 22 Sep 2014 14:18:20 -0400
+From: Johannes Pointner <johannes.pointner@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        AnilKumar Ch <anilkumar@ti.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 22 Sep 2014 11:17:41 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] mfd: tps65217: add compatible string for subdevices
+Date: Mon, 22 Sep 2014 20:18:15 +0200
+Message-ID: <5439652.jHp5aCCfrZ@lenovobook>
+User-Agent: KMail/4.14 (Linux/3.16.3-1-ARCH; KDE/4.14.0; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No caller or macro uses the return value so make all
-the functions return void.
+The TPS65217 is missing of_compatible string in the mfd_cell for its
+subdevices. This compatible string is necessary to use functions like
+of_find_backlight_by_node in backlight.c.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
 ---
-This change is associated to a desire to eventually
-change printk to return void.
+ Documentation/devicetree/bindings/regulator/tps65217.txt            | 5 ++++-
+ .../devicetree/bindings/video/backlight/tps65217-backlight.txt      | 6 +++---
+ drivers/mfd/tps65217.c                                              | 2 ++
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
- include/net/bluetooth/bluetooth.h |  4 ++--
- net/bluetooth/lib.c               | 14 ++++----------
- 2 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 7e666d0..58695ff 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -120,9 +120,9 @@ struct bt_voice {
- #define BT_RCVMTU		13
+diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
+index 4f05d20..ba835e2 100644
+--- a/Documentation/devicetree/bindings/regulator/tps65217.txt
++++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
+@@ -5,6 +5,7 @@ Required properties:
+ - reg: I2C slave address
+ - regulators: list of regulators provided by this controller, must be named
+   after their hardware counterparts: dcdc[1-3] and ldo[1-4]
++- compatible: "ti,tps65217-pmic"
+ - regulators: This is the list of child nodes that specify the regulator
+   initialization data for defined regulators. Not all regulators for the given
+   device need to be present. The definition for each of these nodes is defined
+@@ -23,9 +24,11 @@ Example:
  
- __printf(1, 2)
--int bt_info(const char *fmt, ...);
-+void bt_info(const char *fmt, ...);
- __printf(1, 2)
--int bt_err(const char *fmt, ...);
-+void bt_err(const char *fmt, ...);
+ 	tps: tps@24 {
+ 		compatible = "ti,tps65217";
++		reg = <0x24>;
+ 		ti,pmic-shutdown-controller;
  
- #define BT_INFO(fmt, ...)	bt_info(fmt "\n", ##__VA_ARGS__)
- #define BT_ERR(fmt, ...)	bt_err(fmt "\n", ##__VA_ARGS__)
-diff --git a/net/bluetooth/lib.c b/net/bluetooth/lib.c
-index 941ad75..b36bc04 100644
---- a/net/bluetooth/lib.c
-+++ b/net/bluetooth/lib.c
-@@ -135,40 +135,34 @@ int bt_to_errno(__u16 code)
- }
- EXPORT_SYMBOL(bt_to_errno);
+-		regulators {
++		tps_pmic: regulators {
++			compatible = "ti,tps65217-pmic";
+ 			dcdc1_reg: dcdc1 {
+ 				regulator-min-microvolt = <900000>;
+ 				regulator-max-microvolt = <1800000>;
+diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+index 5fb9279..c3fb649 100644
+--- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+@@ -7,18 +7,18 @@ Required properties:
+ - compatible: "ti,tps65217"
+ - reg: I2C slave address
+ - backlight: node for specifying WLED1 and WLED2 lines in TPS65217
++- compatible: "ti,tps65217-bl"
+ - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+ - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+ - default-brightness: valid values: 0-100
  
--int bt_info(const char *format, ...)
-+void bt_info(const char *format, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	int r;
- 
- 	va_start(args, format);
- 
- 	vaf.fmt = format;
- 	vaf.va = &args;
- 
--	r = pr_info("%pV", &vaf);
-+	pr_info("%pV", &vaf);
- 
- 	va_end(args);
+-Each regulator is defined using the standard binding for regulators.
 -
--	return r;
- }
- EXPORT_SYMBOL(bt_info);
+ Example:
  
--int bt_err(const char *format, ...)
-+void bt_err(const char *format, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	int r;
+ 	tps: tps@24 {
+ 		reg = <0x24>;
+ 		compatible = "ti,tps65217";
+-		backlight {
++		tps_bl: backlight {
++			compatible = "ti,tps65217-bl";
+ 			isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+ 			fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+ 			default-brightness = <50>;
+diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+index 3cc4c70..77708f9 100644
+--- a/drivers/mfd/tps65217.c
++++ b/drivers/mfd/tps65217.c
+@@ -33,9 +33,11 @@
+ static const struct mfd_cell tps65217s[] = {
+ 	{
+ 		.name = "tps65217-pmic",
++		.of_compatible = "ti,tps65217-pmic",
+ 	},
+ 	{
+ 		.name = "tps65217-bl",
++		.of_compatible = "ti,tps65217-bl",
+ 	},
+ };
  
- 	va_start(args, format);
- 
- 	vaf.fmt = format;
- 	vaf.va = &args;
- 
--	r = pr_err("%pV", &vaf);
-+	pr_err("%pV", &vaf);
- 
- 	va_end(args);
--
--	return r;
- }
- EXPORT_SYMBOL(bt_err);
+-- 
+2.1.0
 
 
