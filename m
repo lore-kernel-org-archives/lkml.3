@@ -1,40 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaIVPYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:24:50 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:50499 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaIVPYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:24:48 -0400
+	id S1754412AbaIVPZa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:25:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754235AbaIVPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 11:25:28 -0400
+Date: Mon, 22 Sep 2014 17:22:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>, Martin Milata <mmilata@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] coredump: add %T in core_pattern to report the tid
+Message-ID: <20140922152248.GA24805@redhat.com>
+References: <20140921175349.GA21585@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
-References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk>
-	<CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
-Date: Mon, 22 Sep 2014 08:24:47 -0700
-X-Google-Sender-Auth: jtdkiGrCUwfzeeAgi1MBq6ib2zc
-Message-ID: <CA+55aFyXgMO4ADNMSQ81rwSRMkOSFvvig9LA+SJXYuov58HZJw@mail.gmail.com>
-Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140921175349.GA21585@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 8:18 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Self-nack after discussion on debug-list, I'll send v2.
+
+If we teach format_corename() to report task_pid_vnr() we should also
+allow to report the global tid from the root namespace, at least to
+make this consistent with %p/%P.
+
+This means that %T was a bad choice, Martin suggests %i/%I.
+
+On 09/21, Oleg Nesterov wrote:
 >
-> Ugh. Does the simpler patch to just pass in "block" work as well?
+> format_corename() can only pass the leader's pid to the core handler, but
+> there is no simple way to figure out which thread originated the coredump.
+>
+> As Jan explains, this also means that there is no simple way to create the
+> backtrace of the crashed process:
+>
+> As programs are mostly compiled with implicit gcc -fomit-frame-pointer one
+> needs program's .eh_frame section (equivalently PT_GNU_EH_FRAME segment) or
+> .debug_frame section. .debug_frame usually is present only in separate debug
+> info files usually not even installed on the system.  While .eh_frame is a
+> part of the executable/library (and it is even always mapped for C++
+> exceptions unwinding) it no longer has to be present anywhere on the disk
+> as the program could be upgraded in the meantime and the running instance
+> has its executable file already unlinked from disk.
+>
+> One possibility is to echo 0x3f >/proc/*/coredump_filter and dump all the
+> file-backed memory including the executable's .eh_frame section. But that
+> can create huge core files, for example even due to mmapped data files.
+>
+> Other possibility would be to read .eh_frame from /proc/PID/mem at the
+> core_pattern handler time of the core dump.  For the backtrace one needs to
+> read the register state first which can be done from core_pattern handler:
+>
+> 	ptrace(PTRACE_SEIZE, tid, 0, PTRACE_O_TRACEEXIT)
+> 	close(0);    // close pipe fd to resume the sleeping dumper
+> 	waitpid();   // should report EXIT
+> 	PTRACE_GETREGS or other requests
+>
+> The remaining problem is how to get the 'tid' value of the crashed thread.
+> It could be read from the first NT_PRSTATUS note of the core file but that
+> makes the core_pattern handler complicated.
+>
+> Signed-off-by: Jan Kratochvil <jan.kratochvil@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  Documentation/sysctl/kernel.txt |    1 +
+>  fs/coredump.c                   |    4 ++++
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+> index f79eb96..d2aa7f1 100644
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -189,6 +189,7 @@ core_pattern is used to specify a core dumpfile pattern name.
+>  	%<NUL>	'%' is dropped
+>  	%%	output one '%'
+>  	%p	pid
+> +	%T	tid
+>  	%P	global pid (init PID namespace)
+>  	%u	uid
+>  	%g	gid
+> diff --git a/fs/coredump.c b/fs/coredump.c
+> index a93f7e6..1dc6106 100644
+> --- a/fs/coredump.c
+> +++ b/fs/coredump.c
+> @@ -194,6 +194,10 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+>  				err = cn_printf(cn, "%d",
+>  					      task_tgid_vnr(current));
+>  				break;
+> +			case 'T':
+> +				err = cn_printf(cn, "%d",
+> +					      task_pid_vnr(current));
+> +				break;
+>  			/* global pid */
+>  			case 'P':
+>  				err = cn_printf(cn, "%d",
+> --
+> 1.5.5.1
+>
 
-Ugh, never mind, no it does not. It doesn't truncate the sectors to
-the beginning of a page boundary.
-
-Will take the patch as-is (will edit the commit message that seems a
-bit inaccurate).
-
-             Linus
