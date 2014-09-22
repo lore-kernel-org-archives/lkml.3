@@ -1,206 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999AbaIVBXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 21:23:55 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:53959 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaIVBXw (ORCPT
+	id S1752806AbaIVB1s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 21:27:48 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:36604 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaIVB1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 21:23:52 -0400
+	Sun, 21 Sep 2014 21:27:45 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: dh.herrmann@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <81615825368088ece1c0cbf4b43a65e3>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <541F7B05.2000605@rock-chips.com>
+Date: Mon, 22 Sep 2014 09:27:33 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CACoXjc=eA0nnK2_dRxktFeSKsfV6fQr=mDfN09sbe34H4GADrA@mail.gmail.com>
-References: <1410906824-9321-1-git-send-email-tinamdar@apm.com>
-	<CACVXFVNEFSMjA=h_pyNF1AyYX4C336iM9nkYY=ocGQxjGpDCJA@mail.gmail.com>
-	<CACoXjc=eA0nnK2_dRxktFeSKsfV6fQr=mDfN09sbe34H4GADrA@mail.gmail.com>
-Date: Mon, 22 Sep 2014 09:23:51 +0800
-Message-ID: <CACVXFVMWTeOnVMp2SCzjhPEc1M=zTLg4O8yFhv_jDPYn_6DfeQ@mail.gmail.com>
-Subject: Re: [PATCH v9 0/4] APM X-Gene PCIe host controller
-From: Ming Lei <tom.leiming@gmail.com>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
+        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v3 1/5] drm/rockchip: Add basic drm driver
+References: <1411105668-32722-1-git-send-email-mark.yao@rock-chips.com>	<1411105668-32722-2-git-send-email-mark.yao@rock-chips.com> <CANq1E4Ti0yOQ+jCiXy7=NtFQ9cbWLOSLf6q-HWVdDFtMB1n29Q@mail.gmail.com>
+In-Reply-To: <CANq1E4Ti0yOQ+jCiXy7=NtFQ9cbWLOSLf6q-HWVdDFtMB1n29Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tanmay,
-
-On Sat, Sep 20, 2014 at 1:15 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
-> Hi Ming Lei,
+On 2014年09月19日 21:04, David Herrmann wrote:
+> Hi
 >
-> On Thu, Sep 18, 2014 at 8:08 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->> Hi Tanmay,
->>
->> On Wed, Sep 17, 2014 at 6:33 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
->>> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
->>> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
->>> cards.
->>>
->>> X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
->>> Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
->>> support for creating generic pcie bridge from device tree. Liviu's patches
->>> are available here
->>> https://lkml.org/lkml/2014/9/8/333
->>>
->>> If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
->>> patches from Liviu must be applied before the patches in this patch set. Also
->>> please use latest xgene u-boot firmware.
->>>
->>> changes since V8:
->>> 1. Add 'dma-coherent' attribute in device node.
->>
->>
->> I just tested your V9 patches plus Liviu's V10 PCI/ARM64 patches
->> against 3.17-rc5 on Mustang, and the following failure is triggered:
->>
->> [    1.190131] bnx2x: Broadcom NetXtreme II 5771x/578xx 10/20-Gigabit
->> Ethernet Driver bnx2x 1.78.19-0 (2014/02/10)
->> [    1.200249] tg3.c:v3.137 (May 11, 2014)
->> [    1.204087] ------------[ cut here ]------------
->> [    1.208682] WARNING: CPU: 1 PID: 1 at drivers/pci/pci.c:131
->> pci_ioremap_bar+0x70/0x78()
->> [    1.216646] Modules linked in:
->> [    1.219696] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5+ #1
->> [    1.226018] Call trace:
->> [    1.228453] [<ffffffc0000884f0>] dump_backtrace+0x0/0x16c
->> [    1.233826] [<ffffffc00008866c>] show_stack+0x10/0x1c
->> [    1.238851] [<ffffffc0006e3210>] dump_stack+0x74/0x94
->> [    1.243878] [<ffffffc0000a934c>] warn_slowpath_common+0x88/0xb0
->> [    1.249767] [<ffffffc0000a9438>] warn_slowpath_null+0x14/0x20
->> [    1.255485] [<ffffffc0003994c4>] pci_ioremap_bar+0x6c/0x78
->> [    1.260942] [<ffffffc0005598cc>] tg3_init_one+0x148/0x16f4
->> [    1.266401] [<ffffffc00039ccf0>] pci_device_probe+0x78/0xd4
->> [    1.271946] [<ffffffc00042785c>] driver_probe_device+0x94/0x390
->> [    1.277834] [<ffffffc000427c44>] __driver_attach+0x98/0xa0
->> [    1.283293] [<ffffffc000425a54>] bus_for_each_dev+0x54/0x98
->> [    1.288835] [<ffffffc00042730c>] driver_attach+0x1c/0x28
->> [    1.294121] [<ffffffc000426f04>] bus_add_driver+0x164/0x240
->> [    1.299663] [<ffffffc000428430>] driver_register+0x64/0x130
->> [    1.305207] [<ffffffc00039c97c>] __pci_register_driver+0x3c/0x48
->> [    1.311181] [<ffffffc000aa8a5c>] tg3_driver_init+0x1c/0x28
->> [    1.316640] [<ffffffc0000814e0>] do_one_initcall+0xc4/0x1b4
->> [    1.322186] [<ffffffc000a74b64>] kernel_init_freeable+0x1b8/0x25c
->> [    1.328246] [<ffffffc0006de318>] kernel_init+0xc/0xd4
->> [    1.333278] ---[ end trace f4dca5ab5b436080 ]---
->> [    1.337871] tg3 0000:01:00.0: Cannot map device registers, aborting
->> [    1.344122] tg3: probe of 0000:01:00.0 failed with error -12
->>
->>
+> On Fri, Sep 19, 2014 at 7:47 AM, Mark yao <mark.yao@rock-chips.com> wrote:
+> [snip]
+>> +static int rockchip_drm_bind(struct device *dev)
+>> +{
+>> +       return drm_platform_init(&rockchip_drm_driver, to_platform_device(dev));
+> Please avoid drm_platform_*() usage. We're about to drop all the
+> drm_bus midlayers. See the tegra driver how to do it, but basically
+> just this:
+OK, I will do it.
+> struct drm_device *ddev;
 >
-> Thanks for trying out the patches. Which firmware version are you
-> using? We may have release new firmware version for PCI to work if not
-> released yet.
-
-U-Boot 2013.04-mustang_sw_1.13.28-beta (Aug 25 2014 - 14:16:10)
-
-I will check if there is newer fw available.
-
-> Also can you please send out the entire boot log?
-
-Please see below link:
-
-      http://pastebin.com/fLqaDn6t
-
-Thanks,
---
-Ming Lei
-
+> ddev = drm_dev_alloc(&rockchip_drm_driver, &to_platform_device(dev)->dev);
+> if (!ddev)
+>          return -ENOMEM;
 >
-> Thanks,
-> Tanmay
+> r = drm_dev_set_unique(ddev, dev_name(&ddev->dev));
+> if (r < 0) {
+>          drm_dev_unref(ddev);
+>          return r;
+> }
 >
->>
->> Thanks,
->>
->>>
->>> changes since V7:
->>> 1. Fix outbound region mapping for IO region. Thanks Liviu for the catch.
->>>
->>> changes since V6:
->>> 1. Port driver to changed interface as per Liviu's v10 series.
->>>
->>> changes since V5:
->>> 1. Port driver to changed interface of 'of_create_pci_host_bridge'
->>> 2. Fix the prefetch bit setting
->>> 3. Removed bunch of register programming which is already done by firmware
->>>
->>> changes since V4:
->>> 1. fix section mismatch warnings
->>> 2. fix the patch description
->>> 3. fix indentation
->>> 4. update read/write cfg functions by passing both addr and offset.
->>> 5. use 'time_before' for timeout.
->>> 6. remove unnecessary 'IS_ERR_OR_NULL'. Keep 'IS_ERR' for 'clk_get'
->>> 7. remove BUG_ON for pci_ioremap_io.
->>>
->>> changes since V3:
->>> 1. remove 'struct hw_pci' and supporting ops in hw_pci
->>> 2. add code to create the host bridge from dts
->>> 3. add code to scan the the host bridge
->>> 4. modify outbound windows setup function to get resource information from
->>>    'bridge->windows'
->>> 5. add compatible string in pcie dts node with current X-Gene SOC name.
->>>
->>> changes since V2:
->>> 1. redefined each PCI port in different PCI domain correctly.
->>> 2. removed setup_lane and setup_link functions from driver.
->>> 3. removed scan_bus wrapper and set_primary_bus hack.
->>> 4. added pci_ioremap_io for io resources.
->>>
->>> changes since V1:
->>> 1. added PCI domain support
->>> 2. reading cpu and pci addresses from device tree to configure regions.
->>> 3. got rid of unnecessary wrappers for readl and writel.
->>> 4. got rid of endpoint configuration code.
->>> 5. added 'dma-ranges' property support to read inbound region configuration.
->>> 6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
->>> 7. dropped 'clock-names' property from bindings
->>> 8. added comments whereever requested.
->>>
->>>
->>> Tanmay Inamdar (4):
->>>   pci:host: APM X-Gene PCIe host controller driver
->>>   arm64: dts: APM X-Gene PCIe device tree nodes
->>>   dt-bindings: pci: xgene pcie device tree bindings
->>>   MAINTAINERS: entry for APM X-Gene PCIe host driver
->>>
->>>  .../devicetree/bindings/pci/xgene-pci.txt          |  57 ++
->>>  MAINTAINERS                                        |   8 +
->>>  arch/arm64/boot/dts/apm-mustang.dts                |   8 +
->>>  arch/arm64/boot/dts/apm-storm.dtsi                 | 165 ++++++
->>>  drivers/pci/host/Kconfig                           |  10 +
->>>  drivers/pci/host/Makefile                          |   1 +
->>>  drivers/pci/host/pci-xgene.c                       | 646 +++++++++++++++++++++
->>>  7 files changed, 895 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
->>>  create mode 100644 drivers/pci/host/pci-xgene.c
->>>
->>> --
->>> 1.9.1
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->>
->> --
->> Ming Lei
+> r = drm_dev_register(ddev);
+> if (r < 0) {
+>          drm_dev_unref(ddev);
+>          return r;
+> }
+>
+>> +}
+>> +
+>> +static void rockchip_drm_unbind(struct device *dev)
+>> +{
+>> +       drm_put_dev(dev_get_drvdata(dev));
+> Please use:
+>
+> struct drm_device *ddev = dev_get_drvdata(dev);
+>
+> drm_dev_unregister(ddev);
+> drm_dev_unref(ddev);
+>
+>
+> Thanks
+> David
+>
+>
+>
 
 
-
--- 
-Ming Lei
