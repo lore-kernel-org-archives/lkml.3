@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaIVTjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:39:35 -0400
+	id S1754744AbaIVTjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:39:39 -0400
 Received: from mga09.intel.com ([134.134.136.24]:47090 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752856AbaIVTjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:39:33 -0400
+	id S1752856AbaIVTjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:39:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,573,1406617200"; 
-   d="scan'208";a="577112530"
+   d="scan'208";a="577112548"
 From: Octavian Purdila <octavian.purdila@intel.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, johan@kernel.org,
         Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v2 1/2] mfd: viperboard: allocate I/O buffer separately
-Date: Mon, 22 Sep 2014 22:39:18 +0300
-Message-Id: <1411414759-7056-2-git-send-email-octavian.purdila@intel.com>
+Subject: [PATCH v2 2/2] mfd: viperboard: remove redundant OOM message and NULL pointer check
+Date: Mon, 22 Sep 2014 22:39:19 +0300
+Message-Id: <1411414759-7056-3-git-send-email-octavian.purdila@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
 References: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
@@ -23,67 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the I/O buffer is allocated part of the device status
-structure, potentially sharing the same cache line with other members
-in this structure.
-
-Allocate the buffer separately, to avoid the I/O operations corrupting
-the device status structure due to cache line sharing.
-
-Compiled tested only as I don't have access to hardware.
-
 Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
 ---
- drivers/mfd/viperboard.c       | 8 ++++++++
- include/linux/mfd/viperboard.h | 2 +-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/mfd/viperboard.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
-index e00f534..5f62f4e 100644
+index 5f62f4e..d27c131 100644
 --- a/drivers/mfd/viperboard.c
 +++ b/drivers/mfd/viperboard.c
-@@ -64,6 +64,12 @@ static int vprbrd_probe(struct usb_interface *interface,
+@@ -59,10 +59,8 @@ static int vprbrd_probe(struct usb_interface *interface,
+ 
+ 	/* allocate memory for our device state and initialize it */
+ 	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
+-	if (vb == NULL) {
+-		dev_err(&interface->dev, "Out of memory\n");
++	if (vb == NULL)
  		return -ENOMEM;
- 	}
+-	}
  
-+	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
-+	if (vb->buf == NULL) {
-+		ret = -ENOMEM;
-+		goto error;
-+	}
-+
- 	mutex_init(&vb->lock);
+ 	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
+ 	if (vb->buf == NULL) {
+@@ -109,11 +107,9 @@ static int vprbrd_probe(struct usb_interface *interface,
+ 	return 0;
  
- 	vb->usb_dev = usb_get_dev(interface_to_usbdev(interface));
-@@ -105,6 +111,7 @@ static int vprbrd_probe(struct usb_interface *interface,
  error:
- 	if (vb) {
- 		usb_put_dev(vb->usb_dev);
-+		kfree(vb->buf);
- 		kfree(vb);
- 	}
- 
-@@ -118,6 +125,7 @@ static void vprbrd_disconnect(struct usb_interface *interface)
- 	mfd_remove_devices(&interface->dev);
- 	usb_set_intfdata(interface, NULL);
- 	usb_put_dev(vb->usb_dev);
+-	if (vb) {
+-		usb_put_dev(vb->usb_dev);
+-		kfree(vb->buf);
+-		kfree(vb);
+-	}
++	usb_put_dev(vb->usb_dev);
 +	kfree(vb->buf);
- 	kfree(vb);
++	kfree(vb);
  
- 	dev_dbg(&interface->dev, "disconnected\n");
-diff --git a/include/linux/mfd/viperboard.h b/include/linux/mfd/viperboard.h
-index 1934528..af928d0 100644
---- a/include/linux/mfd/viperboard.h
-+++ b/include/linux/mfd/viperboard.h
-@@ -103,7 +103,7 @@ struct vprbrd_i2c_addr_msg {
- struct vprbrd {
- 	struct usb_device *usb_dev; /* the usb device for this device */
- 	struct mutex lock;
--	u8 buf[sizeof(struct vprbrd_i2c_write_msg)];
-+	u8 *buf;
- 	struct platform_device pdev;
- };
- 
+ 	return ret;
+ }
 -- 
 1.9.1
 
