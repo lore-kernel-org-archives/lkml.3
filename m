@@ -1,127 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaIVASU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 20:18:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26679 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594AbaIVAST convert rfc822-to-8bit (ORCPT
+	id S1752192AbaIVA2J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 20:28:09 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:47652 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaIVA2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 20:18:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,568,1406617200"; 
-   d="scan'208";a="479054306"
-From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-To: "'Mika Westerberg'" <mika.westerberg@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
-Thread-Topic: [PATCH 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
-Thread-Index: AQHP0zLfqb6ksj0GvUC28p3wBeVGTpwMTk8Q
-Date: Mon, 22 Sep 2014 00:16:48 +0000
-Message-ID: <50B33AC5ED75F74F991980326F1C438D0FBDAFC3@PGSMSX108.gar.corp.intel.com>
-References: <1410943745-9354-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1410943745-9354-3-git-send-email-rebecca.swee.fun.chang@intel.com>
- <20140918112247.GN10854@lahna.fi.intel.com>
-In-Reply-To: <20140918112247.GN10854@lahna.fi.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 21 Sep 2014 20:28:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <541EA149.5000408@zonque.org>
+References: <1411268469-21283-1-git-send-email-mranostay@gmail.com>
+	<1411268469-21283-2-git-send-email-mranostay@gmail.com>
+	<541EA149.5000408@zonque.org>
+Date: Sun, 21 Sep 2014 17:28:05 -0700
+Message-ID: <CAKzfze-3gmQX6oPKZvXPAqC1WxvPKS9QW1omXNA9+CSPW50BXw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cap1106: Add support for various cap11xx devices
+From: Matt Ranostay <mranostay@gmail.com>
+To: Daniel Mack <daniel@zonque.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 21, 2014 at 2:58 AM, Daniel Mack <daniel@zonque.org> wrote:
+> Hi,
+>
+> On 09/21/2014 05:01 AM, Matt Ranostay wrote:
+>> Several other variants of the cap11xx device exists with a varying
+>> number of capacitance detection channels. Add support for creating
+>> the channels dynamically.
+>
+> Thanks for the patches!
+>
+>>
+>> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+>> ---
+>>  drivers/input/keyboard/cap1106.c | 54 +++++++++++++++++++---------------------
+>
+> Please also add a patch to rename the file to cap11xx.c, and make sure
+> to export the patch with 'git format-patch -M' to detect the rename.
+>
+>> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+>> index d70b65a..b9c43b5 100644
+>> --- a/drivers/input/keyboard/cap1106.c
+>> +++ b/drivers/input/keyboard/cap1106.c
+>> @@ -55,8 +55,6 @@
+>>  #define CAP1106_REG_MANUFACTURER_ID  0xfe
+>>  #define CAP1106_REG_REVISION         0xff
+>>
+>> -#define CAP1106_NUM_CHN 6
+>> -#define CAP1106_PRODUCT_ID   0x55
+>>  #define CAP1106_MANUFACTURER_ID      0x5d
+>>
+>>  struct cap1106_priv {
+>> @@ -64,7 +62,8 @@ struct cap1106_priv {
+>>       struct input_dev *idev;
+>>
+>>       /* config */
+>> -     unsigned short keycodes[CAP1106_NUM_CHN];
+>> +     u32 *keycodes;
+>
+> unsigned short *, please. See below.
+>
+>> @@ -189,27 +188,23 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>>       struct cap1106_priv *priv;
+>>       struct device_node *node;
+>>       int i, error, irq, gain = 0;
+>> -     unsigned int val, rev;
+>> -     u32 gain32, keycodes[CAP1106_NUM_CHN];
+>> +     unsigned int val, prod, rev;
+>> +     u32 gain32;
+>>
+>>       priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+>>       if (!priv)
+>>               return -ENOMEM;
+>>
+>> +     priv->num_channels = (unsigned long) id->driver_data;
+>
+> priv->num_channels is unsigned int.
+>
+> Also, a BUG_ON(!priv->num_channels) wouldn't harm.
+>
+>> +     priv->keycodes = devm_kzalloc(dev,
+>> +             sizeof(u32) * priv->num_channels, GFP_KERNEL);
+>
+> Use devm_kcalloc() to allocate an array.
+>
+>> @@ -235,17 +234,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>>                       dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+>>       }
+>>
+>> -     BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
+>> -
+>>       /* Provide some useful defaults */
+>> -     for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+>> -             keycodes[i] = KEY_A + i;
+>> +     for (i = 0; i < priv->num_channels; i++)
+>> +             priv->keycodes[i] = KEY_A + i;
+>>
+>>       of_property_read_u32_array(node, "linux,keycodes",
+>> -                                keycodes, ARRAY_SIZE(keycodes));
+>> -
+>> -     for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+>> -             priv->keycodes[i] = keycodes[i];
+>> +                               priv->keycodes, priv->num_channels);
+>
+> Hmm, no. Internally, you have to store the keycodes as unsigned short,
+> otherwise EVIOC{G|S}KEYCODE from usespace doesn't work.
+>
+> of_property_read_u16_array() should work here for unsigned short, I
+> guess. Otherwise, you'd have to open-code the routine.
+>
+Problem with u16 is you'll to mark it */bits/ 16* in the device tree
+entry.. I doubt that is acceptable
 
 
-> -----Original Message-----
-> From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> Sent: 18 September, 2014 7:23 PM
-> To: Chang, Rebecca Swee Fun
-> Cc: Linus Walleij; linux-gpio@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
-> 
-> On Wed, Sep 17, 2014 at 04:49:04PM +0800, Chang Rebecca Swee Fun wrote:
-> > Intel Quark X1000 provides a total of 16 GPIOs. The GPIOs are split
-> > between the legacy I/O bridge and the GPIO controller.
-> >
-> > GPIO-SCH is the GPIO pins on legacy bridge for Intel Quark SoC.
-> > Intel Quark X1000 has 2 GPIOs powered by the core power well and 6
-> > from the suspend power well.
-> >
-> > This piece of work is derived from Dan O'Donovan's initial work for
-> > Quark
-> > X1000 enabling.
-> >
-> > Signed-off-by: Chang Rebecca Swee Fun
-> > <rebecca.swee.fun.chang@intel.com>
-> 
-> One question, see below. But in general looks good, so
-> 
-> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> > ---
-> >  drivers/gpio/Kconfig    |   11 +++++++++--
-> >  drivers/gpio/gpio-sch.c |    6 ++++++
-> >  2 files changed, 15 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig index
-> > 690904a..64683a9 100644
-> > --- a/drivers/gpio/Kconfig
-> > +++ b/drivers/gpio/Kconfig
-> > @@ -356,25 +356,32 @@ config GPIO_VR41XX
-> >  	  Say yes here to support the NEC VR4100 series General-purpose I/O
-> > Uint
-> >
-> >  config GPIO_SCH
-> > -	tristate "Intel SCH/TunnelCreek/Centerton GPIO"
-> > +	tristate "Intel SCH/TunnelCreek/Centerton/Quark X1000 GPIO"
-> >  	depends on PCI && X86
-> >  	select MFD_CORE
-> >  	select LPC_SCH
-> >  	help
-> >  	  Say yes here to support GPIO interface on Intel Poulsbo SCH,
-> > -	  Intel Tunnel Creek processor or Intel Centerton processor.
-> > +	  Intel Tunnel Creek processor, Intel Centerton processor or
-> > +	  Intel Quark X1000 SoC.
-> > +
-> >  	  The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
-> >  	  powered by the core power rail and are turned off during sleep
-> >  	  modes (S3 and higher). The remaining four GPIOs are powered by
-> >  	  the Intel SCH suspend power supply. These GPIOs remain
-> >  	  active during S3. The suspend powered GPIOs can be used to wake the
-> >  	  system from the Suspend-to-RAM state.
-> > +
-> >  	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
-> >  	  core power rail and 9 from suspend power supply.
-> > +
-> >  	  The Intel Centerton processor has a total of 30 GPIO pins.
-> >  	  Twenty-one are powered by the core power rail and 9 from the
-> >  	  suspend power supply.
-> >
-> > +	  The Intel Quark X1000 SoC has 2 GPIOs powered by the core
-> > +	  power well and 6 from the suspend power well.
-> > +
-> >  config GPIO_ICH
-> >  	tristate "Intel ICH GPIO"
-> >  	depends on PCI && X86
-> > diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c index
-> > 2189c22..38d6e74 100644
-> > --- a/drivers/gpio/gpio-sch.c
-> > +++ b/drivers/gpio/gpio-sch.c
-> > @@ -241,6 +241,12 @@ static int sch_gpio_probe(struct platform_device
-> *pdev)
-> >  		sch->chip.ngpio = 30;
-> >  		break;
-> >
-> > +	case PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB:
-> 
-> Is this PCI ID provided by some other patch series?
-
-Yes, this PCI ID has been submitted to upstream through MFD subsystem tree.
-
-Rebecca
+>> @@ -313,12 +307,16 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>>
+>>  static const struct of_device_id cap1106_dt_ids[] = {
+>>       { .compatible = "microchip,cap1106", },
+>> +     { .compatible = "microchip,cap1126", },
+>> +     { .compatible = "microchip,cap1188", },
+>
+> Hmm, how can that work unless you set .data to the number of channels
+> here? Did you test that with a DT-enabled board?
+>
+>
+> Thanks,
+> Daniel
