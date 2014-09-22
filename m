@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430AbaIVQNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:13:45 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:56482 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501AbaIVQNo (ORCPT
+	id S1754064AbaIVQP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:15:56 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:58771 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344AbaIVQPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:13:44 -0400
-X-Originating-IP: 75.92.167.159
-Date: Mon, 22 Sep 2014 09:13:31 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] bloat-o-meter: Ignore syscall aliases SyS_ and compat_SyS_
-Message-ID: <20140922161327.GA25256@thin>
+	Mon, 22 Sep 2014 12:15:55 -0400
+Message-ID: <54204B32.5000905@mentor.com>
+Date: Mon, 22 Sep 2014 11:15:46 -0500
+From: Nathan Lynch <Nathan_Lynch@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Will Deacon <will.deacon@arm.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code consolidation
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com>
+In-Reply-To: <20140922153919.GQ25809@arm.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids double-counting size changes in syscall implementations.
+On 09/22/2014 10:39 AM, Will Deacon wrote:
+> On Thu, Sep 18, 2014 at 03:59:32PM +0100, Nathan Lynch wrote:
+>> This series contains the necessary changes to allow architected timer
+>> access from user-space on 32-bit ARM.  This allows the VDSO to support
+>> high resolution timestamps for clock_gettime and gettimeofday.  This
+>> also merges substantially similar code from arm and arm64 into the
+>> core arm_arch_timer driver.
+>>
+>> The functional changes are:
+>> - When available, CNTVCT is made readable by user space on arm, as it
+>>   is on arm64.
+>> - The clocksource name becomes "arch_mem_counter" if CP15 access to
+>>   the counter is not available.
+>>
+>> These changes have been carried as part of the ARM VDSO patch set over
+>> the last several months, but I am splitting them out here as I assume
+>> they should go through the clocksource maintainers.
+> 
+> For the series:
+> 
+>   Acked-by: Will Deacon <will.deacon@arm.com>
+> 
+> I'm not sure which tree the arch-timer stuff usually goes through, but
+> the arm/arm64 bits look fine so I'm happy for them to merged together.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
+Thanks Will.
 
-Posting for review.  I can upstream this through my new tiny tree.
+MAINTAINERS does not have a specific entry for
+drivers/clocksource/arm_arch_timer.c, so I am working under the
+assumption that the series would go through Daniel or Thomas.
 
- scripts/bloat-o-meter | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/scripts/bloat-o-meter b/scripts/bloat-o-meter
-index 549d0ab..23e78dc 100755
---- a/scripts/bloat-o-meter
-+++ b/scripts/bloat-o-meter
-@@ -20,6 +20,8 @@ def getsizes(file):
-         if type in "tTdDbBrR":
-             # strip generated symbols
-             if name.startswith("__mod_"): continue
-+            if name.startswith("SyS_"): continue
-+            if name.startswith("compat_SyS_"): continue
-             if name == "linux_banner": continue
-             # statics and some other optimizations adds random .NUMBER
-             name = re.sub(r'\.[0-9]+', '', name)
--- 
-2.1.0
+Daniel and/or Thomas, can you take this series please?
 
