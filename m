@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbaIVOZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:25:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49047 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754161AbaIVOZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:25:15 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Yassin Jaffer <yassinjaffer@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 0/2] mtd: nand: support ONFI timings mode retrieval for non-ONFI NANDs
-Date: Mon, 22 Sep 2014 16:25:09 +0200
-Message-Id: <1411395911-30365-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1754282AbaIVOZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:25:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753773AbaIVOZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 10:25:27 -0400
+Date: Mon, 22 Sep 2014 16:25:10 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>, Milian Wolff <mail@milianw.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] perf tools: Introduce perf_callchain_config()
+Message-ID: <20140922142510.GE18187@krava.brq.redhat.com>
+References: <1411229886-24390-1-git-send-email-namhyung@kernel.org>
+ <1411229886-24390-5-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411229886-24390-5-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Sep 21, 2014 at 01:18:05AM +0900, Namhyung Kim wrote:
+> This patch adds support for following config options to ~/.perfconfig file.
+> 
+>   [call-graph]
+>     record-mode = dwarf
+>     dump-size = 8192
+>     print-type = fractal
+>     order = callee
+>     threshold = 0.5
+>     print-limit = 128
+>     sort-key = function
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/callchain.c | 33 +++++++++++++++++++++++++++++++++
+>  tools/perf/util/callchain.h |  1 +
+>  tools/perf/util/config.c    |  3 +++
+>  3 files changed, 37 insertions(+)
+> 
+> diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+> index ba7297230143..ee489a1e3f4c 100644
+> --- a/tools/perf/util/callchain.c
+> +++ b/tools/perf/util/callchain.c
+> @@ -168,6 +168,39 @@ parse_callchain_report_opt(const char *arg)
+>  	return 0;
+>  }
+>  
+> +int perf_callchain_config(const char *var, const char *value)
+> +{
+> +	if (prefixcmp(var, "call-graph."))
+> +		return 0;
+> +	var += 11; /* strlen("call-graph.") == 11 */
 
-Following the series adding ONFI timing mode support, here is a series
-adding support for timing mode retrieval on non-ONFI NANDs.
+should we use sizeof("call-graph.") - 1 instead ?
 
-It just adds a new field to the nand_chip and nand_flash_dev struct so
-that anyone can define its chip requirements in the nand_ids table.
-
-The 2nd patch serves as an example and adds an entry for the Hynix
-H27UCG8T2ATR-BC NAND chip used on the Cubietruck board.
-
-Best Regards,
-
-Boris
-
-Changes since v1:
-- fix H27UCG8T2ATR-BC definition
-- rename onfi_timing_mode_ds field into onfi_timing_mode_default
-
-Boris BREZILLON (2):
-  mtd: nand: support ONFI timing mode retrieval for non-ONFI NANDs
-  mtd: nand: add Hynix's H27UCG8T2ATR-BC to nand_ids table
-
- drivers/mtd/nand/nand_base.c |  2 ++
- drivers/mtd/nand/nand_ids.c  |  4 ++++
- include/linux/mtd/nand.h     | 11 +++++++++++
- 3 files changed, 17 insertions(+)
-
--- 
-1.9.1
-
+jirka
