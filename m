@@ -1,78 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaIVCbf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 22:31:35 -0400
-Received: from smtprelay0186.hostedemail.com ([216.40.44.186]:39800 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751820AbaIVCbe (ORCPT
+	id S1752893AbaIVCdq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 22:33:46 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33409 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaIVCdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 22:31:34 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3868:3871:4321:5007:7514:7652:10004:10400:10848:11232:11658:11914:12043:12517:12519:12555:12740:13019:13069:13161:13229:13311:13357:14093:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ball50_d798d142ed5b
-X-Filterd-Recvd-Size: 2464
-Message-ID: <1411353090.2952.19.camel@joe-AO725>
-Subject: Re: [PATCH] scripts: checkpatch.pl: Fix existing typedef false
- positive warning
-From: Joe Perches <joe@perches.com>
-To: Greg Donald <gdonald@gmail.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Sun, 21 Sep 2014 19:31:30 -0700
-In-Reply-To: <1411349544-7479-1-git-send-email-gdonald@gmail.com>
-References: <1411349544-7479-1-git-send-email-gdonald@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 21 Sep 2014 22:33:44 -0400
+Message-ID: <541F8A84.6070408@gmail.com>
+Date: Sun, 21 Sep 2014 22:33:40 -0400
+From: nick <yocto6@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Peter Chen <Peter.Chen@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>,
+        "oneukum@suse.de" <oneukum@suse.de>,
+        "himangi774@gmail.com" <himangi774@gmail.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: FIX ME in  oxu210p-hcd.c
+References: <541DB6BF.7090909@gmail.com> <541DB8C1.2000101@gmail.com> <2d062bb368d94327b89cba3d547bff9d@BN1PR0301MB0772.namprd03.prod.outlook.com> <541F8370.4040705@gmail.com> <684d0564efd840b7a45164546425f849@BN1PR0301MB0772.namprd03.prod.outlook.com>
+In-Reply-To: <684d0564efd840b7a45164546425f849@BN1PR0301MB0772.namprd03.prod.outlook.com>
+Content-Type: multipart/mixed;
+ boundary="------------040803070503090402010005"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-09-21 at 20:32 -0500, Greg Donald wrote:
-> Fixing an "open brace '{' following struct go on the same line" error causes a
-> false positive warning "do not add new typedefs". Fix existing typedef false
-> positive warning.
+This is a multi-part message in MIME format.
+--------------040803070503090402010005
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 
-This doesn't work.
-The matching deleted line can be any number of lines above.
 
-> Signed-off-by: Greg Donald <gdonald@gmail.com>
-> ---
->  scripts/checkpatch.pl | 16 +++++++++++++---
->  1 file changed, 13 insertions(+), 3 deletions(-)
+
+On 14-09-21 10:11 PM, Peter Chen wrote:
 > 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 4d08b39..eafe5e7 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3081,14 +3081,24 @@ sub process {
->  		}
 >  
->  # check for new typedefs, only function parameters and sparse annotations
-> -# make sense.
-> +# and existing typedefs make sense.
->  		if ($line =~ /\btypedef\s/ &&
->  		    $line !~ /\btypedef\s+$Type\s*\(\s*\*?$Ident\s*\)\s*\(/ &&
->  		    $line !~ /\btypedef\s+$Type\s+$Ident\s*\(/ &&
->  		    $line !~ /\b$typeTypedefs\b/ &&
->  		    $line !~ /\b__bitwise(?:__|)\b/) {
-> -			WARN("NEW_TYPEDEFS",
-> -			     "do not add new typedefs\n" . $herecurr);
-> +			# check if $line is diff-like
-> +			if (substr($rawlines[$linenr - 3], 0, 1) eq '-') {
-> +				my $oldline3 = substr($rawlines[$linenr - 3], 1);
-> +				# check if typedef already existed
-> +				if ($line !~ /$oldline3/) {
-> +					WARN("NEW_TYPEDEFS",
-> +					     "do not add new typedefs\n" . $herecurr);
-> +				}
-> +			} else {
-> +				WARN("NEW_TYPEDEFS",
-> +				     "do not add new typedefs\n" . $herecurr);
-> +			}
->  		}
+>>>> Subject: Re: FIX ME in oxu210p-hcd.c
+>>>>
+>>>>
+>>>> I found a unfixed FIX ME in the file stated in my above message. I am
+>>>> wondering what to set hcd->self.comtroller->dma_mask to as it's now
+>>>> been defined to NULL and clearly even as a newbie this seem incorrect.
+>>>> Regards Nick
+>>>
+>>> Usually, it is set at its controller driver or pass through through
+>>> device tree or platform data.
+>>>
+>>> Peter
+>>>
+>> Sorry Peter,
+>> I apologize for asking for more help here but I will paste the function below and
+>> with my changes.
+>> Please let me known if I am wrong and how to fix it as I new here.
+>> Sorry for Wasting Your Time,
+> 
+> You are welcome
+> 
+>> Nick
+>> static int oxu_reset(struct usb_hcd *hcd) {
+>>  	struct oxu_hcd *oxu = hcd_to_oxu(hcd);
+>>  	int ret;
+>>
+>>  	spin_lock_init(&oxu->mem_lock);
+>>  	INIT_LIST_HEAD(&oxu->urb_list);
+>> 	oxu->urb_len = 0;
+>>
+>> -	/* FIMXE */
+>> + 	hcd->self.controller->dma_mask = hcd->regs;
+>>
+> 
+> It is the dma mask, not the register.
+> 
+> Try below patch to see if it works for you:
+> 
+> diff --git a/drivers/usb/host/oxu210hp-hcd.c b/drivers/usb/host/oxu210hp-hcd.c
+> index da5fb0e..5549851 100644
+> --- a/drivers/usb/host/oxu210hp-hcd.c
+> +++ b/drivers/usb/host/oxu210hp-hcd.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/moduleparam.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/io.h>
+> +#include <linux/dma-mapping.h>
 >  
->  # * goes on variable not on type
+>  #include <asm/irq.h>
+>  #include <asm/unaligned.h>
+> @@ -3841,6 +3842,12 @@ static int oxu_drv_probe(struct platform_device *pdev)
+>                 goto error;
+>         }
+>  
+> +       ret = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "set dma mask error\n");
+> +               goto error;
+> +       }
+> +
+>         /* Allocate a driver data struct to hold useful info for both
+>          * SPH & OTG devices
+>          */
+> 
+> Peter
+> 
+> 
+>>  	if (oxu->is_otg) {
+>> 		oxu->caps = hcd->regs + OXU_OTG_CAP_OFFSET;
+>> 		oxu->regs = hcd->regs + OXU_OTG_CAP_OFFSET + \
+>> 			HC_LENGTH(readl(&oxu->caps->hc_capbase));
+>>
+>> 		oxu->mem = hcd->regs + OXU_SPH_MEM;
+>> 	} else {
+>> 		oxu->caps = hcd->regs + OXU_SPH_CAP_OFFSET;
+>>  		oxu->regs = hcd->regs + OXU_SPH_CAP_OFFSET + \
+>>  			HC_LENGTH(readl(&oxu->caps->hc_capbase));
+>>
+>>  		oxu->mem = hcd->regs + OXU_OTG_MEM;
+>> 	}
+>>
+>>  	oxu->hcs_params = readl(&oxu->caps->hcs_params);
+>>  	oxu->sbrn = 0x20;
+>>
+>> 	ret = oxu_hcd_init(hcd);
+>> 	if (ret)
+>>  		return ret;
+>>
+>>  	return 0;
+>> }
+Unfortunately I can't get it to apply with git apply and get the following message,
+ Checking patch drivers/usb/host/oxu210hp-hcd.c...
+error: while searching for:
+               goto error;
+       }
 
+       /* Allocate a driver data struct to hold useful info for both
+        * SPH & OTG devices
+        */
 
+error: patch failed: drivers/usb/host/oxu210hp-hcd.c:3841
+error: drivers/usb/host/oxu210hp-hcd.c: patch does not apply
+I will paste the version of my patch file for your troubles.
+Regards Nick 
 
+--------------040803070503090402010005
+Content-Type: text/x-patch;
+ name="oxu210hp-hcd.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="oxu210hp-hcd.patch"
+
+diff --git a/drivers/usb/host/oxu210hp-hcd.c b/drivers/usb/host/oxu210hp-hcd.c
+index da5fb0e..5549851 100644
+--- a/drivers/usb/host/oxu210hp-hcd.c
++++ b/drivers/usb/host/oxu210hp-hcd.c
+@@ -37,6 +37,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/io.h>
++#include <linux/dma-mapping.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/unaligned.h>
+@@ -3841,6 +3842,12 @@ static int oxu_drv_probe(struct platform_device *pdev)
+                goto error;
+        }
+ 
++       ret = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
++       if (ret) {
++               dev_err(&pdev->dev, "set dma mask error\n");
++               goto error;
++       }
++
+        /* Allocate a driver data struct to hold useful info for both
+         * SPH & OTG devices
+         */
+
+--------------040803070503090402010005--
