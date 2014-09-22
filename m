@@ -1,135 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaIVFBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 01:01:54 -0400
-Received: from ozlabs.org ([103.22.144.67]:35065 "EHLO ozlabs.org"
+	id S1751649AbaIVFBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 01:01:35 -0400
+Received: from ozlabs.org ([103.22.144.67]:40608 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746AbaIVFBg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 01:01:36 -0400
-Message-ID: <1411362094.984.15.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH 07/15] powerpc/powerpc: Add new PCIe functions for
- allocating cxl interrupts
-From: Michael Neuling <mikey@neuling.org>
-To: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org, cbe-oss-dev@lists.ozlabs.org,
-        imunsie@au1.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, anton@samba.org
-Date: Mon, 22 Sep 2014 15:01:34 +1000
-In-Reply-To: <20140919070939.GB27190@shangw>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
-	 <1411028820-29933-8-git-send-email-mikey@neuling.org>
-	 <20140919070939.GB27190@shangw>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1750810AbaIVFBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 01:01:34 -0400
+Date: Mon, 22 Sep 2014 15:01:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: linux-next: manual merge of the staging tree with Linus' tree
+Message-ID: <20140922150124.4f24bb6f@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/xHH3Y1/9EiunJAbu.sfa57V"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<snip>
-> >+struct device_node *pnv_pci_to_phb_node(struct pci_dev *dev)
-> >+{
-> >+	struct device_node *np;
-> >+	struct property *prop = NULL;
-> >+
-> >+	np = of_node_get(pci_device_to_OF_node(dev));
-> >+
-> >+	/* Scan up the tree looking for the PHB node */
-> >+	while (np) {
-> >+		if ((prop = of_find_property(np, "ibm,opal-phbid", NULL)))
-> >+			break;
-> >+		np = of_get_next_parent(np);
-> >+	}
-> >+
-> >+	if (!prop) {
-> >+		of_node_put(np);
-> >+		return NULL;
-> >+	}
-> >+
-> >+	return np;
-> >+}
-> >+EXPORT_SYMBOL(pnv_pci_to_phb_node);
-> 
-> Nitpick: I'm not sure it's better way. "struct pci_controller::dn" should
-> always have valid "ibm,opal-phbid", so I guess the code could be like this
-> way:
-> 
-> 	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> 
-> 	return hose->dn;
+--Sig_/xHH3Y1/9EiunJAbu.sfa57V
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Nice.. that makes it much simpler.  I'll update.
+Hi Greg,
 
-<snip>
-> >+
-> >+#ifdef CONFIG_CXL_BASE
-> >+int pnv_phb_to_cxl(struct pci_dev *dev)
-> >+{
-> >+	struct device_node *np;
-> >+	struct pnv_ioda_pe *pe;
-> >+	const u64 *prop64;
-> >+	u64 phb_id;
-> >+	int rc;
-> >+
-> >+	dev_info(&dev->dev, "switch PHB to CXL\n");
-> >+
-> >+	if (!(np = pnv_pci_to_phb_node(dev)))
-> >+		return -ENODEV;
-> >+
-> >+	prop64 = of_get_property(np, "ibm,opal-phbid", NULL);
-> >+
-> >+	phb_id = be64_to_cpup(prop64);
-> >+	dev_info(&dev->dev, "PHB-ID  : 0x%016llx\n", phb_id);
-> >+
-> 
-> The PHB ID would have been there: struct pnv_phb::opal_id. So
-> I guess we needn't grab it from device-tree again :)
+Today's linux-next merge of the staging tree got a conflict in
+drivers/iio/accel/bma180.c between commit 0668a4e4d297 ("iio: accel:
+bma180: Fix indio_dev->trig assignment") from Linus' tree and commit
+16ed8692fa48 ("iio:bma180: Enable use of device without IRQ") from the
+staging tree.
 
-Nice, I'll update.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> >+	if (!(pe = pnv_ioda_get_pe(dev))) {
-> >+		rc = -ENODEV;
-> >+		goto out;
-> >+	}
-> >+	dev_info(&dev->dev, "     pe : %i\n", pe->pe_number);
-> 
-> Perhaps you can reuse pe_info() here.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Yep, will do.
+diff --cc drivers/iio/accel/bma180.c
+index 19100fddd2ed,6ef19641457c..000000000000
+--- a/drivers/iio/accel/bma180.c
++++ b/drivers/iio/accel/bma180.c
+@@@ -553,29 -729,31 +729,31 @@@ static int bma180_probe(struct i2c_clie
+  	indio_dev->modes =3D INDIO_DIRECT_MODE;
+  	indio_dev->info =3D &bma180_info;
+ =20
+- 	trig =3D iio_trigger_alloc("%s-dev%d", indio_dev->name, indio_dev->id);
+- 	if (!trig) {
+- 		ret =3D -ENOMEM;
+- 		goto err_chip_disable;
+- 	}
++ 	if (client->irq > 0) {
++ 		data->trig =3D iio_trigger_alloc("%s-dev%d", indio_dev->name,
++ 			indio_dev->id);
++ 		if (!data->trig) {
++ 			ret =3D -ENOMEM;
++ 			goto err_chip_disable;
++ 		}
+ =20
+- 	ret =3D devm_request_irq(&client->dev, client->irq,
+- 			iio_trigger_generic_data_rdy_poll,
+- 			IRQF_TRIGGER_RISING, BMA180_IRQ_NAME, trig);
+- 	if (ret) {
+- 		dev_err(&client->dev, "unable to request IRQ\n");
+- 		goto err_trigger_free;
+- 	}
++ 		ret =3D devm_request_irq(&client->dev, client->irq,
++ 			iio_trigger_generic_data_rdy_poll, IRQF_TRIGGER_RISING,
++ 			"bma180_event", data->trig);
++ 		if (ret) {
++ 			dev_err(&client->dev, "unable to request IRQ\n");
++ 			goto err_trigger_free;
++ 		}
+ =20
+- 	trig->dev.parent =3D &client->dev;
+- 	trig->ops =3D &bma180_trigger_ops;
+- 	iio_trigger_set_drvdata(trig, indio_dev);
+- 	data->trig =3D trig;
+- 	indio_dev->trig =3D iio_trigger_get(trig);
++ 		data->trig->dev.parent =3D &client->dev;
++ 		data->trig->ops =3D &bma180_trigger_ops;
++ 		iio_trigger_set_drvdata(data->trig, indio_dev);
+ -		indio_dev->trig =3D data->trig;
+++		indio_dev->trig =3D iio_trigger_get(data->trig);
+ =20
+- 	ret =3D iio_trigger_register(trig);
+- 	if (ret)
+- 		goto err_trigger_free;
++ 		ret =3D iio_trigger_register(data->trig);
++ 		if (ret)
++ 			goto err_trigger_free;
++ 	}
+ =20
+  	ret =3D iio_triggered_buffer_setup(indio_dev, NULL,
+  			bma180_trigger_handler, NULL);
 
-<snip>
-> >+#ifdef CONFIG_CXL_BASE
-> >+int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
-> >+			   unsigned int virq)
-> >+{
-> >+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> >+	struct pnv_phb *phb = hose->private_data;
-> >+	unsigned int xive_num = hwirq - phb->msi_base;
-> >+	struct pnv_ioda_pe *pe;
-> >+	int rc;
-> >+
-> >+	if (!(pe = pnv_ioda_get_pe(dev)))
-> >+		return -ENODEV;
-> >+
-> >+	/* Assign XIVE to PE */
-> >+	rc = opal_pci_set_xive_pe(phb->opal_id, pe->pe_number, xive_num);
-> >+	if (rc) {
-> >+		pr_warn("%s: OPAL error %d setting msi_base 0x%x hwirq 0x%x XIVE 0x%x PE\n",
-> >+			pci_name(dev), rc, phb->msi_base, hwirq, xive_num);
-> >+		return -EIO;
-> >+	}
-> 
-> It seems current firmware doesn't support the OPAL API for PHB3.
+--Sig_/xHH3Y1/9EiunJAbu.sfa57V
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-The current public version of skiboot seems to be doing something here
-in hw/phb3.c in phb3_set_ive_pe():
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-https://github.com/open-power/skiboot/blob/c34c4ef8c660e3e439365c8f5c06143ff00bc6bc/hw/phb3.c#L1096
+iQIcBAEBCAAGBQJUH60pAAoJEMDTa8Ir7ZwVLWEP/0p27ELO0Ss4wGBw9Fx/8wc2
+3PPwjpOWuN4NYWzw6u4kChS595SVkNl+dsrsogQIqQJNkPyqbfdDy4peA7TOoOtx
++m+cJIFYF8y0NUUUG8pgAXBi6ap5kps4JjGU2Yutfd+hIEUiuLiPTHEd+X4UfJUr
+LDp7ft5QOiN8Zt6CBJflDSlEWEVGspnNbWUHwy1C8GyKDVJUGsoEUCXy98le65cL
+U+S/qZanUUcyDAaHj2OY2g3+owMqwfIR38x898PYBSzUTyvu8z/nn4o/HOBCVGR5
++7NeT1ZptNbsMnQUAuZIhC83MIVbp5uxLtjec2oXsxl+NJ1fp2FU0oZpFtFiqCey
+waiRjQtwSQLAUlqdHDyONHJF6c5+d8dKXWsdWPtp1lwFltAmAhmcDPBaIxc+EVY/
+FoMEqRQXWL04cWP+G43ilJn823lKRj3M51HYHzTdyJQzv7YQp1/6uMblVW67CTvL
+AFcmsHJoO3HKhJxJ6nHQK3I4xwuGjh4FxgGCQStI1nOQNiSs1qa0LZe18J0LS0Sr
+Q9liu3rfFZ9cneS3hdmJj2MHjij1VsbF6nEtLMjaw9d7QAamdxUxtKXRBwe1LbNC
+FGR89khEx8GravD5lGpHY1JsUxvFlKHpG6aKkt6o2IN4mUh//Ko1D8c6y2SmHBUP
+J01DHN4uL9MSTZgutwSx
+=y6y4
+-----END PGP SIGNATURE-----
 
-I think we still need this.
-
-Thanks again!
-Mikey
+--Sig_/xHH3Y1/9EiunJAbu.sfa57V--
