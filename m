@@ -1,67 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaIVICY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:02:24 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:56876 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752536AbaIVICV (ORCPT
+	id S1752856AbaIVIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:04:29 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42524 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaIVIE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:02:21 -0400
-X-IronPort-AV: E=Sophos;i="5.04,570,1406563200"; 
-   d="scan'208";a="36266776"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] workqueue: show the pool ID of the default pwq's pool in the pool_ids file
-Date: Mon, 22 Sep 2014 16:04:37 +0800
-Message-ID: <1411373079-11828-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+	Mon, 22 Sep 2014 04:04:26 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: [PATCH v4] perf tools: Fix build-id matching on vmlinux
+Date: Mon, 22 Sep 2014 17:04:13 +0900
+Message-Id: <1411373053-24250-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems incomplete if the pool_ids file doesn't include the default
-pwq's pool.  Add it and the result:
+There's a problem on finding correct kernel symbols when perf report
+runs on a different kernel.  Although a part of the problem was solved
+by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+version when finding vmlinux"), there's a remaining problem still.
 
-# cat pool_ids 
-0:9 1:10
-default:8
+When perf records samples, it synthesizes the kernel map using
+machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+You can easily see it using 'perf report -D' command.
 
-rcu_read_lock_sched() is also changed to mutex_lock(&wq->mutex)
-for accessing the default pwq.
+After finishing record, it goes through the recorded events to find
+maps/dsos actually used.  And then record build-id info of them.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+During this process, it needs to load symbols in a dso and it'd call
+dso__load_vmlinux() since the default value of the symbol_conf.try_
+vmlinux_path is true.  However it changes dso->long_name to a real
+path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+if one is running on a custom kernel.
+
+It resulted in that perf report reads the build-id of the vmlinux, but
+cannot use it since it only knows about the [kernel.kallsyms] map.  It
+then falls back to possible vmlinux paths by using the recorded kernel
+version (in case of a recent version) or a running kernel silently.
+
+Even with the recent tools, this still has a possibility of breaking
+the result.  As the build directory is a symbolic link, if one built a
+new kernel in the same directory with different source/config, the old
+link to vmlinux will point the new file.  So it's absolutely needed to
+use build-id when finding a kernel image.
+
+In this patch, it's now changed to try to search a kernel dso in the
+existing dso list which was constructed during build-id table parsing
+so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
+
+Before:
+
+  $ perf report
+  # Children      Self  Command  Shared Object      Symbol
+  # ........  ........  .......  .................  ...............................
+  #
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+   ...
+
+After (for the same perf.data):
+
+      72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
+      72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
+      72.15%     0.00%  swapper  vmlinux  [k] default_idle
+      71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
+   ...
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/workqueue.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/util/machine.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5dbe22a..6af95210 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3004,7 +3004,7 @@ static ssize_t wq_pool_ids_show(struct device *dev,
- 	const char *delim = "";
- 	int node, written = 0;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index b2ec38bf211e..5661195a8cf6 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -12,6 +12,7 @@
+ #include <stdbool.h>
+ #include <symbol/kallsyms.h>
+ #include "unwind.h"
++#include "asm/bug.h"
  
--	rcu_read_lock_sched();
-+	mutex_lock(&wq->mutex);
- 	for_each_node(node) {
- 		written += scnprintf(buf + written, PAGE_SIZE - written,
- 				     "%s%d:%d", delim, node,
-@@ -3012,7 +3012,9 @@ static ssize_t wq_pool_ids_show(struct device *dev,
- 		delim = " ";
- 	}
- 	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
--	rcu_read_unlock_sched();
-+	written += scnprintf(buf + written, PAGE_SIZE - written,
-+			     "default:%d\n", wq->dfl_pwq->pool->id);
-+	mutex_unlock(&wq->mutex);
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ {
+@@ -1062,8 +1063,26 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 		 * Should be there already, from the build-id table in
+ 		 * the header.
+ 		 */
+-		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+-						     kmmap_prefix);
++		struct dso *kernel = NULL;
++		struct dso *dso;
++
++		list_for_each_entry(dso, &machine->kernel_dsos, node) {
++			const char *suffix;
++			size_t len = strlen(dso->long_name);
++
++			if (WARN_ONCE(len <= 3, "Too short dso name"))
++				continue;
++
++			suffix = dso->long_name + len - 3;
++			if (strcmp(suffix, ".ko")) {
++				kernel = dso;
++				break;
++			}
++		}
++
++		if (kernel == NULL)
++			kernel = __dsos__findnew(&machine->kernel_dsos,
++						 kmmap_prefix);
+ 		if (kernel == NULL)
+ 			goto out_problem;
  
- 	return written;
- }
 -- 
-1.7.4.4
+2.1.0
 
