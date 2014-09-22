@@ -1,41 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaIVNEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:04:04 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37269 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753644AbaIVNEC (ORCPT
+	id S1753961AbaIVNKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:10:05 -0400
+Received: from relay05.mycloudmailbox.com ([199.244.76.202]:38291 "EHLO
+	relay05.mycloudmailbox.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753675AbaIVNKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:04:02 -0400
-Date: Mon, 22 Sep 2014 14:03:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Anders Berg <anders.berg@avagotech.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c: axxia: Add I2C driver for AXM55xx
-Message-ID: <20140922130351.GL5182@n2100.arm.linux.org.uk>
-References: <1408967482-17723-1-git-send-email-anders.berg@avagotech.com> <20140920121242.GA3833@katana> <CAE0=X_0VQ8rWrUgbsgKm1MwCP8bwWm3UJPq9p=xNDfjP4CC7Bg@mail.gmail.com> <20140922095939.GB1406@katana>
+	Mon, 22 Sep 2014 09:10:03 -0400
+Message-ID: <54201FA7.20802@uplogix.com>
+Date: Mon, 22 Sep 2014 08:09:59 -0500
+From: David Barksdale <dbarksdale@uplogix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922095939.GB1406@katana>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Hartmut Knaack <knaack.h@gmx.de>
+CC: Jonathan Cameron <jic23@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH v2] IIO: add si7020 driver
+References: <1411070470-24348-1-git-send-email-dbarksdale@uplogix.com> <541EC41D.9050305@gmx.de>
+In-Reply-To: <541EC41D.9050305@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: S05-CAS001.S05.local (10.30.32.22) To
+ S05-MLT01-07.S05.local (10.30.32.218)
+X-RoutingAgent: Treated
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 11:59:39AM +0200, Wolfram Sang wrote:
-> IRQ_NONE is "this interrupt wasn't by me" so for shared IRQs, the next
-> handler can check.
 
-Err, no it isn't.  IRQ_NONE has no such effect.  All handlers on a
-shared interrupt are always run irrespective of the return value from
-any particular interrupt handler.  See kernel/irq/handle.c.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+On 09/21/2014 07:27 AM, Hartmut Knaack wrote:
+> David Barksdale schrieb, Am 18.09.2014 22:01:
+>> This patch adds support to the Industrial IO subsystem
+>> for the Silicon Labs Si7013/20/21 Relative Humidity and
+>> Temperature Sensors.
+>>
+>> Website: http://www.silabs.com/products/sensors/humidity-sensors/Pages/si7013-20-21.aspx
+>>
+>> These are i2c devices which measure relative humidity
+>> and temperature and all use the same protocol. The
+>> Si7013 has an additional input with programmable
+>> linearization which is not supported because that's
+>> complicated and I didn't need it.
+>>
+>> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
+>>
+> Hi,
+> I'm not really convinced of the concept of treating all measurements as 16 bit data, since the datasheet states a maximum resolution of 14 bits for temperature and 12 bits for humidity. It also states, that the 2 LSBs contain an identifier rather than measured data. So, the least to do would be to mask out everything, which is not measured data (which should also include the 2 MSBs of humidity channel). Even better would be to also apply a shift and treat the data with the real resolution (especially for scale, as it would represent the sensitivity of the sensor a bit better).
+> Besides that, I think it would be a good idea to initialize the sensor during probe (for example set resolution to maximum), since you can never be sure, in which state the sensor has been before.
+
+Good idea, Thanks.
+
+> Also, find some small style issues inline.
+>> --
+>> Changes since v1:
+>> * Renamed to si7020 and replaced Si701x/2x with Si7013/20/21.
+>> * Removed unneeded mutex.
+>> * Pre-computed floating-point constant expressions.
+>> * Removed address_list and I2C_CLASS_HWMON.
+>>
+>> ---
+>>   drivers/iio/humidity/Kconfig  |  10 +++
+>>   drivers/iio/humidity/Makefile |   1 +
+>>   drivers/iio/humidity/si7020.c | 142 ++++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 153 insertions(+)
+>>
+>> diff --git a/drivers/iio/humidity/Kconfig b/drivers/iio/humidity/Kconfig
+>> index e116bd8..4813b79 100644
+>> --- a/drivers/iio/humidity/Kconfig
+>> +++ b/drivers/iio/humidity/Kconfig
+>> @@ -22,4 +22,14 @@ config SI7005
+>>   	  To compile this driver as a module, choose M here: the module
+>>   	  will be called si7005.
+>>
+>> +config SI7020
+>> +	tristate "Si7013/20/21 Relative Humidity and Temperature Sensors"
+>> +	depends on I2C
+>> +	help
+>> +	  Say yes here to build support for the Silicon Labs Si7013/20/21
+>> +	  Relative Humidity and Temperature Sensors.
+>> +
+>> +	  To compile this driver as a module, choose M here: the module
+>> +	  will be called si7020.
+>> +
+>>   endmenu
+>> diff --git a/drivers/iio/humidity/Makefile b/drivers/iio/humidity/Makefile
+>> index e3f3d94..86e2d26 100644
+>> --- a/drivers/iio/humidity/Makefile
+>> +++ b/drivers/iio/humidity/Makefile
+>> @@ -4,3 +4,4 @@
+>>
+>>   obj-$(CONFIG_DHT11) += dht11.o
+>>   obj-$(CONFIG_SI7005) += si7005.o
+>> +obj-$(CONFIG_SI7020) += si7020.o
+>> diff --git a/drivers/iio/humidity/si7020.c b/drivers/iio/humidity/si7020.c
+>> new file mode 100644
+>> index 0000000..cabdb7d
+>> --- /dev/null
+>> +++ b/drivers/iio/humidity/si7020.c
+>> @@ -0,0 +1,142 @@
+>> +/*
+>> + * si7020.c - Silicon Labs Si7013/20/21 Relative Humidity and Temp Sensors
+>> + * Copyright (c) 2013,2014  Uplogix, Inc.
+>> + * David Barksdale <dbarksdale@uplogix.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +/*
+>> + * The Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors
+>> + * are i2c devices which have an identical programming interface for
+>> + * measuring relative humidity and temperature. The Si7013 has an additional
+>> + * temperature input which this driver does not support.
+>> + *
+>> + * Data Sheets:
+>> + *   Si7013: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7013.pdf
+>> + *   Si7020: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7020.pdf
+>> + *   Si7021: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7021.pdf
+>> + */
+>> +
+>> +#include <linux/i2c.h>
+>> +#include <linux/module.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/sysfs.h>
+>> +
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +enum {
+>> +	/* Measure Relative Humidity, Hold Master Mode */
+>> +	SI7020CMD_RH_HOLD	= 0xE5,
+>> +	/* Measure Temperature, Hold Master Mode */
+>> +	SI7020CMD_TEMP_HOLD	= 0xE3,
+>> +};
+>> +
+>> +static int si7020_read_raw(struct iio_dev *indio_dev,
+>> +			   struct iio_chan_spec const *chan, int *val,
+>> +			   int *val2, long mask)
+>> +{
+>> +	struct i2c_client **client = iio_priv(indio_dev);
+>> +	int ret;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_RAW:
+>> +		ret = i2c_smbus_read_word_data(*client,
+>> +					       chan->type == IIO_TEMP ?
+>> +					       SI7020CMD_TEMP_HOLD :
+>> +					       SI7020CMD_RH_HOLD);
+>> +		if (ret < 0)
+>> +			return ret;
+>> +		*val = ret;
+>> +		return IIO_VAL_INT;
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		if (chan->type == IIO_TEMP)
+>> +			*val = 175720; /* = 175.72 * 1000 */
+>> +		else
+>> +			*val = 125 * 1000;
+>> +		*val2 = 65536;
+>> +		return IIO_VAL_FRACTIONAL;
+>> +	case IIO_CHAN_INFO_OFFSET:
+>> +		if (chan->type == IIO_TEMP)
+>> +			*val = -17473; /* = -46.85 * 65536 / 175.72 */
+>> +		else
+>> +			*val = -3146; /* = -6 * 65536 / 125 */
+>> +		return IIO_VAL_INT;
+>> +	default:
+>> +		break;
+>> +	}
+>> +
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static const struct iio_chan_spec si7020_channels[] = {
+>> +	{
+>> +		.type = IIO_HUMIDITYRELATIVE,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+>> +	},
+>> +	{
+>> +		.type = IIO_TEMP,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+>> +	}
+>> +};
+>> +
+>> +static const struct iio_info si7020_info = {
+>> +	.read_raw = si7020_read_raw,
+>> +	.driver_module = THIS_MODULE,
+>> +};
+>> +
+>> +static int si7020_probe(struct i2c_client *client,
+>> +			const struct i2c_device_id *id)
+>> +{
+>> +	struct iio_dev *dev;
+> Better name it indio_dev.
+
+Seems to be the popular choice.
+
+>> +	struct i2c_client **data;
+>> +
+>> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA))
+>> +		return -ENODEV;
+>> +
+>> +	dev = devm_iio_device_alloc(&client->dev, sizeof(*client));
+>> +	if (!dev)
+>> +		return -ENOMEM;
+>> +
+>> +	data = iio_priv(dev);
+>> +	*data = client;
+>> +	i2c_set_clientdata(client, dev);
+>> +
+>> +	dev->dev.parent = &client->dev;
+>> +	dev->name = dev_name(&client->dev);
+>> +	dev->modes = INDIO_DIRECT_MODE;
+>> +	dev->info = &si7020_info;
+>> +	dev->channels = si7020_channels;
+>> +	dev->num_channels = ARRAY_SIZE(si7020_channels);
+>> +
+>> +	return devm_iio_device_register(&client->dev, dev);
+>> +}
+>> +
+>> +static const struct i2c_device_id si7020_id[] = {
+>> +	{ "si7020", 0 },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, si7020_id);
+>> +
+>> +static struct i2c_driver si7020_driver = {
+>> +	.driver.name	= "si7020",
+>> +	.probe		= si7020_probe,
+>> +	.id_table	= si7020_id,
+>> +};
+>> +
+>> +module_i2c_driver(si7020_driver);
+>> +MODULE_DESCRIPTION("Silicon Labs Si7013/20/21 "
+> Trailing whitespace in string.
+
+The end of the string is on the line below.
+
+>> +		   "Relative Humidity and Temperature Sensors");
+>> +MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
+>> +MODULE_LICENSE("GPL");
+>> +
+>>
+>
