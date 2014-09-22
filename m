@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaIVECt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 00:02:49 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:65079 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaIVECs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 00:02:48 -0400
-Date: Mon, 22 Sep 2014 00:02:45 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Honggang Li <enjoymindful@gmail.com>
-Subject: Re: [PATCH] Revert "percpu: free percpu allocation info for
- uniprocessor system"
-Message-ID: <20140922040245.GF23583@htj.dyndns.org>
-References: <1411337093-683-1-git-send-email-linux@roeck-us.net>
+	id S1751474AbaIVEGy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 00:06:54 -0400
+Received: from ozlabs.org ([103.22.144.67]:46154 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750723AbaIVEGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 00:06:53 -0400
+Date: Mon, 22 Sep 2014 14:06:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoffer Dall <cdall@cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Auger <eric.auger@linaro.org>
+Subject: linux-next: build failure after merge of the kvm-arm tree
+Message-ID: <20140922140645.7c2ad9c8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411337093-683-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/rPnD0DCrgG_QuSZzGsCY1/y"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 21, 2014 at 03:04:53PM -0700, Guenter Roeck wrote:
-> This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
-> uniprocessor system").
-> 
-> The commit causes a hang with a crisv32 image. This may be an architecture
-> problem, but at least for now the revert is necessary to be able to boot a
-> crisv32 image.
-> 
-> Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Honggang Li <enjoymindful@gmail.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+--Sig_/rPnD0DCrgG_QuSZzGsCY1/y
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Applied to percpu/for-3.18.
+Hi all,
 
-Thanks.
+After merging the kvm-arm tree, today's linux-next build (x86_64 allmodconf=
+ig)
+failed like this:
 
--- 
-tejun
+arch/x86/kvm/../../../virt/kvm/eventfd.c: In function 'kvm_register_irq_ack=
+_notifier':
+arch/x86/kvm/../../../virt/kvm/eventfd.c:493:2: error: implicit declaration=
+ of function 'kvm_vcpu_request_scan_ioapic' [-Werror=3Dimplicit-function-de=
+claration]
+  kvm_vcpu_request_scan_ioapic(kvm);
+  ^
+
+Probably caused by commit 0ba09511ddc3 ("KVM: EVENTFD: remove inclusion
+of irq.h").
+
+I have used the kvm-arm tree from next-20140919 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/rPnD0DCrgG_QuSZzGsCY1/y
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUH6BaAAoJEMDTa8Ir7ZwVYrcP/it/1+Tm2sEyL4pChioepPUo
+Nh4NFHpsgyT5s3H/S6qHl4Dnquk97Yco+MVNULVhSA92U6g6t7xllNXI4Vrp5Q0f
+bUeeMtnW8JqGGZHR52Rq99D+t0s/AfwU8NGUBNI7ScP60XnkXksCk2aUjK9f6JuB
+QkLRLIOe8KgOzyqxz7nuoydwje53yIuqPFbbWoV112Kb/V5L0bnTMtxpscn7AusH
+TGhLtMLOq655J+1HthxPqNqYQc4DmW7+K3cPiBOkM9vkDuLEzHHs38zpR3YyKIip
+XpDVM3YlVnxYeJKATvG0TUvAv2P95j5/AC9KdqFjSd0zLRnNPf3Yh/RTO/e0wIwo
+iQmtjjz2sdk6uWMGnpLA4XTszAS08Y+yRRPBXBDLib1o8wFo/NKXm5RndKWvYnkh
+FX4gHsIPHo8GQnuJxq/oxis6qGnBGdP17OcB7OFVzGiaBARB/XCLoXsOjNfeG5Uo
+vLRC1r4mpCqetyp1LVSicfjev1sccJF3kQ3gBgaI/4O0vVIHmK/e73OQWYD1RyWu
+54E9gBF3BpZ31lz9hEBXebPkKnWCUUOHVKNHdRRt/AdMc+1Us2fB3ptrIrq32Ig2
+I+vseW1uK87JUJYN2HaR3/UAxlQlBo2Rk32zfF1lAnSQBs/kyAeF5YXG1X6kzrkc
+3wdCtcokDdjUYhErA6y4
+=Aapl
+-----END PGP SIGNATURE-----
+
+--Sig_/rPnD0DCrgG_QuSZzGsCY1/y--
