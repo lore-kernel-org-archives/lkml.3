@@ -1,51 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaIVSRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:17:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37043 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462AbaIVSRE (ORCPT
+	id S1754630AbaIVSRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:17:47 -0400
+Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:60948 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754033AbaIVSRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:17:04 -0400
-Message-ID: <5420679D.3070406@canonical.com>
-Date: Mon, 22 Sep 2014 13:17:01 -0500
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-scsi@vget.kernel.org, bruce.lucas@mongodb.com,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+	Mon, 22 Sep 2014 14:17:45 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3871:4321:4605:5007:6119:7652:9592:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12555:13069:13161:13229:13311:13357:14096:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bean94_7d8ba53bbd343
+X-Filterd-Recvd-Size: 2687
+Message-ID: <1411409861.2952.57.camel@joe-AO725>
+Subject: [PATCH net-next] bluetooth: Convert bt_<level> logging functions to
+ return void
+From: Joe Perches <joe@perches.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mptfusion: enable no_write_same in scsi_host_template
-References: <1411408690-4766-1-git-send-email-chris.j.arges@canonical.com> <20140922180220.GA10166@infradead.org>
-In-Reply-To: <20140922180220.GA10166@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Date: Mon, 22 Sep 2014 11:17:41 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+No caller or macro uses the return value so make all
+the functions return void.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+This change is associated to a desire to eventually
+change printk to return void.
+
+ include/net/bluetooth/bluetooth.h |  4 ++--
+ net/bluetooth/lib.c               | 14 ++++----------
+ 2 files changed, 6 insertions(+), 12 deletions(-)
+
+diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
+index 7e666d0..58695ff 100644
+--- a/include/net/bluetooth/bluetooth.h
++++ b/include/net/bluetooth/bluetooth.h
+@@ -120,9 +120,9 @@ struct bt_voice {
+ #define BT_RCVMTU		13
+ 
+ __printf(1, 2)
+-int bt_info(const char *fmt, ...);
++void bt_info(const char *fmt, ...);
+ __printf(1, 2)
+-int bt_err(const char *fmt, ...);
++void bt_err(const char *fmt, ...);
+ 
+ #define BT_INFO(fmt, ...)	bt_info(fmt "\n", ##__VA_ARGS__)
+ #define BT_ERR(fmt, ...)	bt_err(fmt "\n", ##__VA_ARGS__)
+diff --git a/net/bluetooth/lib.c b/net/bluetooth/lib.c
+index 941ad75..b36bc04 100644
+--- a/net/bluetooth/lib.c
++++ b/net/bluetooth/lib.c
+@@ -135,40 +135,34 @@ int bt_to_errno(__u16 code)
+ }
+ EXPORT_SYMBOL(bt_to_errno);
+ 
+-int bt_info(const char *format, ...)
++void bt_info(const char *format, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+-	int r;
+ 
+ 	va_start(args, format);
+ 
+ 	vaf.fmt = format;
+ 	vaf.va = &args;
+ 
+-	r = pr_info("%pV", &vaf);
++	pr_info("%pV", &vaf);
+ 
+ 	va_end(args);
+-
+-	return r;
+ }
+ EXPORT_SYMBOL(bt_info);
+ 
+-int bt_err(const char *format, ...)
++void bt_err(const char *format, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+-	int r;
+ 
+ 	va_start(args, format);
+ 
+ 	vaf.fmt = format;
+ 	vaf.va = &args;
+ 
+-	r = pr_err("%pV", &vaf);
++	pr_err("%pV", &vaf);
+ 
+ 	va_end(args);
+-
+-	return r;
+ }
+ EXPORT_SYMBOL(bt_err);
 
 
-On 09/22/2014 01:02 PM, Christoph Hellwig wrote:
-> On Mon, Sep 22, 2014 at 12:56:59PM -0500, Chris J Arges wrote:
->> When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
->> data can be improperly zeroed out using the mptfusion driver. This patch
->> disables write_same for this driver which ensures that manual zeroing out
->> is used instead.
-> 
-> Does this affet real hardware or is it a VMware bug?  If it's just the
-> latter we should simply blacklist VMware.
-> 
-I've only been able to reproduce this on VMWare. There is a pretty
-straightforward reproducer in the BugLink if there is any interest in
-verifying on hardware.
-
-How would you recommending blacklisting only VMWare guests in this case?
-
-Thanks,
---chris j arges
