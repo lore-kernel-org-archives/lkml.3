@@ -1,109 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaIVTo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:44:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36827 "EHLO mga02.intel.com"
+	id S1754813AbaIVTph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:45:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65033 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914AbaIVToz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:44:55 -0400
+	id S1750914AbaIVTpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:45:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,573,1406617200"; 
-   d="asc'?scan'208";a="577114388"
-Message-ID: <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
-Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Rustad, Mark D" <mark.d.rustad@intel.com>,
-        "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Sep 2014 12:44:17 -0700
-In-Reply-To: <20140922192152.GD4709@pd.tnic>
-References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <20140922153355.GB4510@pd.tnic>
-	 <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
-	 <20140922184049.GB4709@pd.tnic>
-	 <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
-	 <20140922192152.GD4709@pd.tnic>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-V77hLcet7amYoKTqNwO1"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+   d="scan'208";a="603612217"
+Message-ID: <54207C23.7010107@intel.com>
+Date: Mon, 22 Sep 2014 22:44:35 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mmc: don't request CD IRQ until mmc_start_host()
+References: <1411401462-1509-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1411401462-1509-1-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22/09/2014 6:57 p.m., Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>
+> As soon as the CD IRQ is requested, it can trigger, since it's an
+> externally controlled event. If it does, delayed_work host->detect will
+> be scheduled.
+>
+> Many host controller probe()s are roughly structured as:
+>
+> *_probe() {
+>      host = sdhci_pltfm_init();
+>      mmc_of_parse(host->mmc);
+>      rc = sdhci_add_host(host);
+>      if (rc) {
+>          sdhci_pltfm_free();
+>          return rc;
+>      }
+>
+> In 3.17, CD IRQs can are enabled quite early via *_probe() ->
+> mmc_of_parse() -> mmc_gpio_request_cd() -> mmc_gpiod_request_cd_irq().
+>
+> Note that in linux-next, mmc_of_parse() calls mmc_gpio*d*_request_cd()
+> rather than mmc_gpio_request_cd(), and mmc_gpio*d*_request_cd() doesn't
+> call mmc_gpiod_request_cd_irq(). However, this issue still exists if
+> mmc_gpio_request_cd() is called directly before mmc_start_host().
+>
+> sdhci_add_host() may fail part way through (e.g. due to deferred
+> probe for a vmmc regulator), and sdhci_pltfm_free() does nothing to
+> unrequest the CD IRQ nor cancel the delayed_work. sdhci_pltfm_free() is
+> coded to assume that if sdhci_add_host() failed, then the delayed_work
+> cannot (or should not) have been triggered.
+>
+> This can lead to the following with CONFIG_DEBUG_OBJECTS_* enabled, when
+> kfree(host) is eventually called inside sdhci_pltfm_free():
+>
+> WARNING: CPU: 2 PID: 6 at lib/debugobjects.c:263 debug_print_object+0x8c/0xb4()
+> ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x18
+>
+> The object being complained about is host->detect.
+>
+> There's no need to request the CD IRQ so early; mmc_start_host() already
+> requests it. For most SDHCI hosts at least, the typical call path that
+> does this is: *_probe() -> sdhci_add_host() -> mmc_add_host() ->
+> mmc_start_host(). Therefore, remove the call to mmc_gpiod_request_cd_irq()
+> from mmc_gpio_request_cd(). This also matches mmc_gpio*d*_request_cd(),
+> which already doesn't call mmc_gpiod_request_cd_irq().
+>
+> However, some host controller drivers call mmc_gpio_request_cd() after
+> mmc_start_host() has already been called, and assume that this will also
+> call mmc_gpiod_request_cd_irq(). Update those drivers to explicitly call
+> mmc_gpiod_request_cd_irq() themselves. Ideally, these drivers should be
+> modified to move their call to mmc_gpio_request_cd() before their call
+> to mmc_add_host(). However that's too large a change for stable.
+>
+> This solves the problem (eliminates the kernel error message above),
+> since it guarantees that the IRQ can't trigger before mmc_start_host()
+> is called.
+>
+> The critical point here is that once sdhci_add_host() calls
+> mmc_add_host() -> mmc_start_host(), sdhci_add_host() is coded not to
+> fail. In other words, if there's a chance that mmc_start_host() may have
+> been called, and CD IRQs triggered, and the delayed_work scheduled,
+> sdhci_add_host() won't fail, and so cleanup is no longer via
+> sdhci_pltfm_free() (which doesn't free the IRQ or cancel the work queue)
+> but instead must be via sdhci_remove_host(), which calls mmc_remove_host()
+> -> mmc_stop_host(), which does free the IRQ and cancel the work queue.
+>
+> CC: Russell King <linux@arm.linux.org.uk>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: Alexandre Courbot <acourbot@nvidia.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
---=-V77hLcet7amYoKTqNwO1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
 
-On Mon, 2014-09-22 at 21:21 +0200, Borislav Petkov wrote:
-> On Mon, Sep 22, 2014 at 06:59:23PM +0000, Rustad, Mark D wrote:
-> > It is helpful for using the warnings to look for problems or even
-> just risks.
->=20
-> That's what W=3D builds are for.
->=20
-> > Right now the number of warnings generated when using W=3D2 simply
-> tells
-> > people to never use W=3D2.
->=20
-> I showed you how to use W=3D2 and 3 for that matter - pipe the output
-> into
-> a file and grep away.
->=20
-
-Not sure you showed us, since that is how everyone has had to do to
-actual find W=3D builds useful.  Just because that is how we HAVE to do it
-now, does not make it the best way.  Here is a thought, we don't we fix
-the potential issues, so that W=3D builds do not generate over 100,000
-errors/warnings.
-
-Mark did this approach because it would either spur the conversation
-that this is a good idea OR let's fix the root problem.  Instead it
-sounds like your response is "life sucks, get over it" and put your head
-back in the sand to ignore the problem.
-
-> > That severely limits the value of a useful tool. A checkpatch
-> warning
-> > doesn't mean to never do that, just that it needs a critical look
-> and
-> > justification. That is certainly true of every patch I made that
-> uses
-> > those macros.
->=20
-> Sorry, if you need to shut up the compiler by adding code with the
-> sole
-> purpose to not issue a warning for otherwise perfectly fine code, then
-> something's wrong with the whole endeavor in the first place.
->=20
-> There's a reason W=3D warnings are disabled in the default build.
-
-
-
---=-V77hLcet7amYoKTqNwO1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUIHwRAAoJEOVv75VaS+3ORowP/i/4vQMARJxZikvYuDka9ZuO
-EdhJTQ8KBV8X0sw6Duse4Kpx8Kgp034tct7pVIYrliZ96J76m3QwRTGs2TX9kbuW
-mhYjtQRAhFzPe+eKRGxooWnazv6x5vmikGUN0z5Ypzn5CYNeAXYdAfwx+zIDhgiB
-mGitN0NTKqnrF9BVKZ59d0FciR8Rj0jYjprGZ7e+kEO0BsQceAAIWs7Jzg1mg4Gs
-siphna3tBzOmXdxWuFCvUzjpPdFaax82tr5Hev3WdGIEa4fNiNxi4T8ZBJpzrLmd
-8SRgW6QWyyyfq3TrPrM2B7ml8HeXKctjj6+mAea2MxnbtBp9IKM6xP9HU6Lh7UTq
-hhPRMUyxvDua8PCPQF2BsYfglxjis2/2wuGce+GzRIwc9k1WqlFVrXbkOf6as8ZZ
-7FnunUltpID3SDr1J+vPvOIJn5FSzYx2LrDPSlAza+XCKBkvQjqoCBaBp9kQINaw
-3Tq6OIP8WJMk3fRHIzMgsLHn77CucC/UPxNDGoTcOK7eH8Eb1zgPFTFDHZKxM732
-R03iDc2m4Cr3IHKmlt/+ijZHM4YffKzqkeRXtbGA/MBRfsdg+Ye1gVFclBnYoq4+
-EZ945Ag8itlaSlj4Rj1yGIDtHZQmU/YqkrIItEZrU5cCnTw/9RtucWCs5C/zlvsZ
-6/UvIxlGWV9hGwCFuScE
-=LTvi
------END PGP SIGNATURE-----
-
---=-V77hLcet7amYoKTqNwO1--
-
+> ---
+> Note: This is a patch for v3.17 (and perhaps earlier); linux-next doesn't
+> have this problem due to other code re-structing. However, I think those
+> patches are too large to backport.
+>
+> v3: Explicitly call mmc_gpiod_request_cd_irq() from drivers that call
+> mmc_gpio_request_cd() after calling mmc_add_host(), rather than modifying
+> the function signature of mmc_gpio_request_cd().
+>
+> v2: Rather than completely removing mmc_gpio_request_cd()'s call to
+> mmc_gpiod_request_cd_irq(), make the call conditional.
+> ---
+>   drivers/mmc/core/slot-gpio.c    | 2 --
+>   drivers/mmc/host/mmc_spi.c      | 1 +
+>   drivers/mmc/host/sdhci-sirf.c   | 1 +
+>   drivers/mmc/host/tmio_mmc_pio.c | 1 +
+>   4 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+> index 5f89cb83d5f0..187f48a5795a 100644
+> --- a/drivers/mmc/core/slot-gpio.c
+> +++ b/drivers/mmc/core/slot-gpio.c
+> @@ -221,8 +221,6 @@ int mmc_gpio_request_cd(struct mmc_host *host, unsigned int gpio,
+>   	ctx->override_cd_active_level = true;
+>   	ctx->cd_gpio = gpio_to_desc(gpio);
+>
+> -	mmc_gpiod_request_cd_irq(host);
+> -
+>   	return 0;
+>   }
+>   EXPORT_SYMBOL(mmc_gpio_request_cd);
+> diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+> index cc8d4a6099cd..e4a07546f8b6 100644
+> --- a/drivers/mmc/host/mmc_spi.c
+> +++ b/drivers/mmc/host/mmc_spi.c
+> @@ -1436,6 +1436,7 @@ static int mmc_spi_probe(struct spi_device *spi)
+>   					     host->pdata->cd_debounce);
+>   		if (status != 0)
+>   			goto fail_add_host;
+> +		mmc_gpiod_request_cd_irq(mmc);
+>   	}
+>
+>   	if (host->pdata && host->pdata->flags & MMC_SPI_USE_RO_GPIO) {
+> diff --git a/drivers/mmc/host/sdhci-sirf.c b/drivers/mmc/host/sdhci-sirf.c
+> index 17004531d089..b6db259aea9e 100644
+> --- a/drivers/mmc/host/sdhci-sirf.c
+> +++ b/drivers/mmc/host/sdhci-sirf.c
+> @@ -94,6 +94,7 @@ static int sdhci_sirf_probe(struct platform_device *pdev)
+>   				ret);
+>   			goto err_request_cd;
+>   		}
+> +		mmc_gpiod_request_cd_irq(host->mmc);
+>   	}
+>
+>   	return 0;
+> diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
+> index faf0924e71cb..59d9a7249b2e 100644
+> --- a/drivers/mmc/host/tmio_mmc_pio.c
+> +++ b/drivers/mmc/host/tmio_mmc_pio.c
+> @@ -1103,6 +1103,7 @@ int tmio_mmc_host_probe(struct tmio_mmc_host **host,
+>   			tmio_mmc_host_remove(_host);
+>   			return ret;
+>   		}
+> +		mmc_gpiod_request_cd_irq(mmc);
+>   	}
+>
+>   	*host = _host;
+>
