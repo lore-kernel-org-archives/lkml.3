@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaIVJKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:10:37 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:43774 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaIVJKg (ORCPT
+	id S1753388AbaIVJLG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:11:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46865 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753046AbaIVJLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:10:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411376728-15807-1-git-send-email-geert@linux-m68k.org>
-References: <1411376728-15807-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 22 Sep 2014 11:10:35 +0200
-X-Google-Sender-Auth: LjJkIat39_-fqOjRR6zyiyytQVo
-Message-ID: <CAMuHMdVwOYB0HzYY_Uu+kKapC3eHSoV-=t1QHLFzgcGX2UOYoQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.17-rc5
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Sep 2014 05:11:03 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v5 0/9] rtc: at91sam9: add DT support
+Date: Mon, 22 Sep 2014 11:10:49 +0200
+Message-Id: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 11:05 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.17-rc5[1]  to v3.17-rc4[3], the summaries are:
->   - build errors: +13/-3
+Hello,
 
-  + /scratch/kisskb/src/arch/powerpc/kernel/iommu.c: error:
-'fail_iommu_bus_notifier' defined but not used
-[-Werror=unused-variable]:  => 149:30
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error:
-'PAGES_PER_SECTION' undeclared (first use in this function):  =>
-1918:46, 1810:46, 1152:18
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error:
-'PAGE_SECTION_MASK' undeclared (first use in this function):  =>
-1151:20
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error:
-'PFN_SECTION_SHIFT' undeclared (first use in this function):  =>
-1379:31
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
-declaration of function '__nr_to_section'
-[-Werror=implicit-function-declaration]:  => 1815:3
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'find_memory_block_hinted'
-[-Werror=implicit-function-declaration]:  => 1822:3
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'pfn_to_section_nr'
-[-Werror=implicit-function-declaration]:  => 1811:3
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'present_section_nr'
-[-Werror=implicit-function-declaration]:  => 1812:3
-  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'section_nr_to_pfn'
-[-Werror=implicit-function-declaration]:  => 1847:3
+This patch series adds DT support to the atmel at91sam9 RTC driver.
 
-powerpc-randconfig
+It also removes any machine specific inclusions to prepare the migration
+to multi platform kernel support, and retain the slow clock to prevent
+the CCF from disabling it at the end of boot.
+  
+Best Regards,
 
-+ a few new R_PPC64_REL24.
+Boris
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7872/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7854/ (all 119 configs)
+Changes since v4:
+ - add a TODO comment to remember removing non DT board support code
 
-Gr{oetje,eeting}s,
+Changes since v3:
+ - add GPBR DT bindings doc
+ - fix a coding style issues
+ - add Alexandre's Acked-by
+ - change RTT DT bindings
 
-                        Geert
+Changes since v2:
+ - make use of syscon/regmap to avoid directly requesting/mapping a GPBR
+   memory region in the RTT driver
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Changes since v1:
+ - remove non CCF specific case by adding the appropriate clk_lookup
+   entries in arch/arm/mach-at91/<soc-name>.c files
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Boris BREZILLON (9):
+  rtc: at91sam9: remove references to mach specific headers
+  rtc: at91sam9: use standard readl/writel functions instead of raw
+    versions
+  rtc: at91sam9: replace devm_ioremap by devm_ioremap_resource
+  rtc: at91sam9: add DT support
+  rtc: at91sam9: make use of syscon/regmap to access GPBR registers
+  ARM: at91: add clk_lookup entry for RTT devices
+  rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
+  rtc: at91sam9: add DT bindings documentation
+  mfd: syscon: add Atmel GPBR DT bindings documention
+
+ .../devicetree/bindings/mfd/atmel,gpbr.txt         |  15 +++
+ .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt |  23 ++++
+ arch/arm/mach-at91/at91sam9260.c                   |   2 +
+ arch/arm/mach-at91/at91sam9261.c                   |   2 +
+ arch/arm/mach-at91/at91sam9263.c                   |   4 +
+ arch/arm/mach-at91/at91sam9g45.c                   |   2 +
+ arch/arm/mach-at91/at91sam9rl.c                    |   2 +
+ arch/arm/mach-at91/clock.c                         |   2 +-
+ arch/arm/mach-at91/clock.h                         |   1 +
+ drivers/rtc/Kconfig                                |   1 +
+ drivers/rtc/rtc-at91sam9.c                         | 138 ++++++++++++++++-----
+ 11 files changed, 162 insertions(+), 30 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+ create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+
+-- 
+1.9.1
+
