@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaIVIPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:15:52 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:50210 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaIVIPs (ORCPT
+	id S1753316AbaIVITb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:19:31 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:43961 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984AbaIVIT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:15:48 -0400
-Date: Mon, 22 Sep 2014 13:45:41 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] sound: pci: ctxfi: added reference of snd_card
-Message-ID: <20140922081541.GC4870@sudip-PC>
-References: <1411315421-24138-1-git-send-email-sudipm.mukherjee@gmail.com>
- <s5h61gg6sq2.wl-tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h61gg6sq2.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Sep 2014 04:19:29 -0400
+Subject: Re: [PATCH 0/8] GenWQE: Add return code checking and cleanup (v3)
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
+        bhelgaas@google.com, mijung@gmx.net, esa@linux.vnet.ibm.com,
+        klebers@linux.vnet.ibm.com
+In-Reply-To: <1410503962.10041.3.camel@oc7383187364.ibm.com>
+References: <1410359873-28389-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <1410503962.10041.3.camel@oc7383187364.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 22 Sep 2014 10:19:22 +0200
+Message-ID: <1411373962.19641.0.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092208-0542-0000-0000-000000DC1BAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 09:04:53AM +0200, Takashi Iwai wrote:
-> At Sun, 21 Sep 2014 21:33:37 +0530,
-> Sudip Mukherjee wrote:
-> > 
-> > added and initialized a pointer of snd_card in the struct hw to get a reference of
-> > the card in other functions
-> 
-> You need to explain why this change is needed.  The above text shows
-> what it'd do, but it doesn't give any explanation to convince why this
-> patch must be merged in.  In this case, it's a preliminary patch for
-> the changes to convert to dev_*() later.  It's the most important bit,
-> so don't forget it.
->
-then do i mention in the commit that it is the preliminary patch for the later changes to dev_* ?
-i was thinking that we can get a reference of the card from other functions which are using struct hw
-is a reason by itself.
+Hi Greg,
 
-thanks
-sudip
+Am Freitag, den 12.09.2014, 08:39 +0200 schrieb Frank Haverkamp:
+> Hi Greg,
 > 
-> thanks,
+> Am Mittwoch, den 10.09.2014, 16:37 +0200 schrieb Frank Haverkamp:
+> > We tested "misc/GenWQE: fix pci_enable_msi usage" from Sebastian Ott
+> > successfully on our machine. The modification of the return code is
+> > now fixed too. The driver version as sysfs entry was removed. The
+> > driver version itself we kept and made it the same like other drivers
+> > do it. The information can be retrieved by using modinfo genwqe_card.
+> > Furthermore we added checking for return codes, where we found it
+> > missing. Finally I fixed the checkpatch.pl complaints and replaced an
+> > invalid email address of a co-author by a working one.
+> > The last patch reduces the load if the queue is full.
+> > 
+> > Eberhard S. Amann (1):
+> >   GenWQE: Fix problem when reading HSI and Retc
+> > 
+> > Frank Haverkamp (7):
+> >   GenWQE: Check pci_get_totalvfs return code
+> >   GenWQE: Remove sysfs entry for driver version
+> >   GenWQE: Update author information
+> >   GenWQE: Do not modify return code of genwqe_set_interrupt_capability
+> >   GenWQE: Check return code of pci_sriov_enable
+> >   GenWQE: Fix checkpatch complaints
+> >   GenWQE: Support blocking when DDCB queue is busy
 > 
-> Takashi
+> I hope you are not too busy these days and will find the time to review
+> and hopefully integrate our patches if they are fine. Can you give me an
+> outlook when you might find the time to have a look at them?
 > 
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> >  sound/pci/ctxfi/ctatc.c      | 1 +
-> >  sound/pci/ctxfi/cthardware.h | 2 ++
-> >  2 files changed, 3 insertions(+)
-> > 
-> > diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
-> > index d92a08c..b21eda4 100644
-> > --- a/sound/pci/ctxfi/ctatc.c
-> > +++ b/sound/pci/ctxfi/ctatc.c
-> > @@ -1333,6 +1333,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
-> >  		pr_err("Failed to create hw obj!!!\n");
-> >  		return err;
-> >  	}
-> > +	hw->card = atc->card;
-> >  	atc->hw = hw;
-> >  
-> >  	/* Initialize card hardware. */
-> > diff --git a/sound/pci/ctxfi/cthardware.h b/sound/pci/ctxfi/cthardware.h
-> > index 5977e9a..940bbd0 100644
-> > --- a/sound/pci/ctxfi/cthardware.h
-> > +++ b/sound/pci/ctxfi/cthardware.h
-> > @@ -20,6 +20,7 @@
-> >  
-> >  #include <linux/types.h>
-> >  #include <linux/pci.h>
-> > +#include <sound/core.h>
-> >  
-> >  enum CHIPTYP {
-> >  	ATC20K1,
-> > @@ -184,6 +185,7 @@ struct hw {
-> >  	void *irq_callback_data;
-> >  
-> >  	struct pci_dev *pci;	/* the pci kernel structure of this card */
-> > +	struct snd_card *card; /* pointer to this card */
-> >  	int irq;
-> >  	unsigned long io_base;
-> >  	unsigned long mem_base;
-> > -- 
-> > 1.8.1.2
-> > 
+> Thanks
+> 
+> Frank
+
+ping
+
+Regards
+
+Frank
+
+
