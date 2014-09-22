@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069AbaIVP1V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:27:21 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:48787 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaIVP1U (ORCPT
+	id S1754091AbaIVP35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:29:57 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:61865 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbaIVP3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:27:20 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 22 Sep 2014 17:17:54 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/9] rtc: at91sam9: add DT support
-Message-ID: <20140922151754.GH5237@localhost>
-References: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
- <1411377058-26155-5-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 22 Sep 2014 11:29:53 -0400
+Date: Mon, 22 Sep 2014 17:29:48 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v11 10/10] PCI: Introduce pci_remap_iospace() for
+ remapping PCI I/O bus resources into CPU space
+Message-ID: <20140922152948.GB20256@rric.localhost>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411003825-21521-11-git-send-email-Liviu.Dudau@arm.com>
+ <20140919215400.GA30239@google.com>
+ <201409200420.31433.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1411377058-26155-5-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201409200420.31433.arnd@arndb.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Please don't drop people from CC. ]
+On 20.09.14 04:20:31, Arnd Bergmann wrote:
+> On Friday 19 September 2014, Bjorn Helgaas wrote:
+> > On Thu, Sep 18, 2014 at 02:30:25AM +0100, Liviu Dudau wrote:
+> 
+> > PCI_IOBASE is a virtual address.  So PCI_IOBASE + res->start is also a
+> > virtual address (only for IORESOURCE_IO).
+> > 
+> > Since res->start is normally a *physical* address, I think it would be less
+> > confusing to do something like this:
+> > 
+> >     vaddr = PCI_IOBASE + res->start;
+> >     ioremap_page_range(vaddr, vaddr + resource_size(res), ...);
+> > 
+> > so we have a hint that the first two ioremap_page_range() parameters are
+> > virtual addresses.  It's also confusing that it uses "unsigned long" for
+> > the virtual addresses, when we usually use "void *".  But that's out of
+> > scope for this patch.
+> 
+> Good idea. I think it will have to be (unsigned long)PCI_IOBASE above then,
+> since ioremap_page_range takes a 'unsigned long' virtual address and PCI_IOBASE
+> should really remain an __iomem pointer.
 
-On Mon, Sep 22, 2014 at 11:10:53AM +0200, Boris BREZILLON wrote:
-> Add of_match_table to the existing driver so that rtc nodes defined in at91
-> DTs can be attached to this driver.
+Right, I see this warning here:
 
-That should be rtt nodes.
+drivers/pci/pci.c: In function ‘pci_remap_iospace’:
+drivers/pci/pci.c:2728:8: warning: assignment makes integer from pointer without a cast [enabled by default]
 
-Johan
+-Robert
