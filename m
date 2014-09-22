@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaIVTAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:00:04 -0400
-Received: from mout.gmx.net ([212.227.15.18]:49960 "EHLO mout.gmx.net"
+	id S1754768AbaIVTAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:00:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56085 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270AbaIVTAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:00:02 -0400
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: [RFC PATCH v8] tpm_tis: verify interrupt during init
-Date: Mon, 22 Sep 2014 21:01:18 +0200
-User-Agent: KMail/1.13.7 (Linux/3.16.2-dirty; KDE/4.12.5; x86_64; ; )
-Cc: Scot Doyle <lkml14@scotdoyle.com>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain> <20140922171338.GB28082@obsidianresearch.com>
-In-Reply-To: <20140922171338.GB28082@obsidianresearch.com>
+	id S1754327AbaIVTAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:00:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,573,1406617200"; 
+   d="asc'?scan'208";a="595140960"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Thread-Topic: [PATCH 0/7] Silence even more W=2 warnings
+Thread-Index: AQHP1B6ZqT8VjyQkzkipcFe03W/rTpwNwlkAgAAZ2ACAABpfgIAABS8A
+Date: Mon, 22 Sep 2014 18:59:23 +0000
+Message-ID: <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <20140922153355.GB4510@pd.tnic>
+ <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
+ <20140922184049.GB4709@pd.tnic>
+In-Reply-To: <20140922184049.GB4709@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.176.145]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_EC97A2A1-4862-4B55-887E-4553185B9FD3";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409222101.19297.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:E8NrVaNw6E00X6UTmc++APbFh4d554h50KoV3FFlc+prRPx38fO
- AF1DXn8gOqolkgopk6hTgUiUNSrjo8xwZsEwP2En2RYLWX/2zPRqMFPxoFemkhCZ0Hpy15T
- Fywt4NVP06STZQ1q0rb1iK3naUICSNAv6g1NduCD62K+AMX4Zkoa+X5uWfbuz4vy5+L1FsN
- onbImKVwoNL7+KrC9FLhg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 22. September 2014, 19:13:38 schrieb Jason Gunthorpe:
+--Apple-Mail=_EC97A2A1-4862-4B55-887E-4553185B9FD3
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-> 
-> This does look much nicer, lets use this version.
-> 
-> I think Peter were prefer a new clean patch that superceeds the
-> original.
-> 
-> > +	if (!priv->irq_tested) {
-> 
-> I think the sleep and check is still needed here, the IRQ delivery
-> could race relative to the MMIO read of completion, a sleep is the
-> only way we could attempt to synchronize them..
-> 
+On Sep 22, 2014, at 11:40 AM, Borislav Petkov <bp@alien8.de> wrote:
 
-So will there be a v9?
+> On Mon, Sep 22, 2014 at 05:06:27PM +0000, Rustad, Mark D wrote:
+>> Well, the whole series of patches that I made definitely went too far
+>> - only the first 5 out of about 30 have been posted, but if we can
+>> make some progress on generating fewer warnings out of the include
+>> files, I think it would be helpful.
+>=20
+> Helpful for what? Those are W=3D2 warnings which are disabled in the
+> default build.
 
-Merge Window is coming up shortly, so I would like to have this sorted out 
-soon ;)
+It is helpful for using the warnings to look for problems or even just =
+risks.
 
-Thanks,
-Peter
+>> The macros can serve a useful purpose, but they should not be widely
+>> used. When to use them is definitely a judgement call. If the macros
+>> are accepted, it may be worth adding a checkpatch.pl warning for
+>> adding a DIAG_*IGNORE macro.
+>=20
+> Right, so add the macros and tell people *not* to use them. That won't
+> fly.
+
+Right now the number of warnings generated when using W=3D2 simply tells =
+people to never use W=3D2. That severely limits the value of a useful =
+tool. A checkpatch warning doesn't mean to never do that, just that it =
+needs a critical look and justification. That is certainly true of every =
+patch I made that uses those macros.
+
+--=20
+Mark Rustad, Networking Division, Intel Corporation
+
+
+--Apple-Mail=_EC97A2A1-4862-4B55-887E-4553185B9FD3
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJUIHGKAAoJEDwO/+eO4+5uQaIP/jK2YZ0dFaFP5FabWOHLwZ7H
+/HMvdLh/Hze6meVUJmzYIPaf1aj0fBEevR+xI9zPjCMxpPiq1y23FU6kHB3yK3ZU
+dK5sXjPpFKHGqCcb6YWDtaYCfstHAmdWzL8P+bEwRBCqwMqPYVKSzR2UPAspBD2h
+4gUq2lGTnyT+8qYNFbGKO6ppb+tTZvHs+IaX5Hdzajjh2s1YULT7NBx5jmFscSlg
+YHq+xtpMMZPxQW4Io0g8YtagfE8blCpwRs2CqZOICKEILYTbjyUaMDP/ctvmriI4
+7V3THtqEZevi0bottb93hpNbRGVO2hnLY1tQ2nTHDv7svP8yxJz2FM5Mz/ubMsGe
+jeD2rAy8h0XreiVBW6YvLPzTq9Q/PUhNSPa3LDZ94oeejhVqBACIwKytC/NNtqY1
+lg0vzxyyYSXtW5tE/6+g5pDntTK9q1B1/UEclZsBf1CQp/VuwX5nG6d/QrpyuZ7m
+HAZaJ7NJayd+N6pb61hHctnSrVXNZk30AQdM86U/OfQ8NujVNh9GecC200jgzlgo
+LG7vJf4QfSek+Gsbc4hDUIUOexPtkpfg/y2SEmhP4RkqDCsJE2hdhnIzhkTd+eAi
+/O15gY9EWkBNa2Nf3BZQkjWQb6nYCJ8oQQtiptQ2lk97SvssfldMuNpu7sElvV/D
+MwE+qZNuXfkH7tblbXGS
+=frbS
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_EC97A2A1-4862-4B55-887E-4553185B9FD3--
