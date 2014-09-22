@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911AbaIVSgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:36:31 -0400
-Received: from forward10l.mail.yandex.net ([84.201.143.143]:36883 "EHLO
-	forward10l.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754889AbaIVSg2 (ORCPT
+	id S1754933AbaIVSgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:36:35 -0400
+Received: from forward6l.mail.yandex.net ([84.201.143.139]:41022 "EHLO
+	forward6l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365AbaIVSgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:36:28 -0400
+	Mon, 22 Sep 2014 14:36:33 -0400
 X-Yandex-Uniq: 4cc172b6-ea1d-4d77-8e06-f145209579b6
 Authentication-Results: smtp1h.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v3 3/6] sched: Use dl_bw_of() under RCU read lock
+Subject: [PATCH v3 4/6] sched: cleanup: Rename out_unlock to
+ out_free_new_mask
 From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Kirill Tkhai <ktkhai@parallels.com>
-Date: Mon, 22 Sep 2014 22:36:24 +0400
-Message-ID: <20140922183624.11015.71558.stgit@localhost>
+Date: Mon, 22 Sep 2014 22:36:30 +0400
+Message-ID: <20140922183630.11015.59500.stgit@localhost>
 In-Reply-To: <20140922183612.11015.64200.stgit@localhost>
 References: <20140922183612.11015.64200.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -28,71 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <ktkhai@parallels.com>
 
-dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
-Probability of use-after-free isn't zero here.
-
-Also add lockdep assert into dl_bw_cpus().
+Nothing is locked there, so label's name only confuses a reader.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <stable@vger.kernel.org> # v3.14+
 ---
- kernel/sched/core.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ kernel/sched/core.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5b864e9..a300fce 100644
+index a300fce..3b07710 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1989,6 +1989,8 @@ unsigned long to_ratio(u64 period, u64 runtime)
- #ifdef CONFIG_SMP
- inline struct dl_bw *dl_bw_of(int i)
- {
-+	rcu_lockdep_assert(rcu_read_lock_sched_held(),
-+			   "sched RCU must be held");
- 	return &cpu_rq(i)->rd->dl_bw;
- }
- 
-@@ -1997,6 +1999,8 @@ static inline int dl_bw_cpus(int i)
- 	struct root_domain *rd = cpu_rq(i)->rd;
- 	int cpus = 0;
- 
-+	rcu_lockdep_assert(rcu_read_lock_sched_held(),
-+			   "sched RCU must be held");
- 	for_each_cpu_and(i, rd->span, cpu_active_mask)
- 		cpus++;
- 
-@@ -7623,6 +7627,8 @@ static int sched_dl_global_constraints(void)
- 	int cpu, ret = 0;
- 	unsigned long flags;
- 
-+	rcu_read_lock();
-+
- 	/*
- 	 * Here we want to check the bandwidth not being set to some
- 	 * value smaller than the currently allocated bandwidth in
-@@ -7644,6 +7650,8 @@ static int sched_dl_global_constraints(void)
- 			break;
+@@ -4003,14 +4003,14 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 		rcu_read_lock();
+ 		if (!ns_capable(__task_cred(p)->user_ns, CAP_SYS_NICE)) {
+ 			rcu_read_unlock();
+-			goto out_unlock;
++			goto out_free_new_mask;
+ 		}
+ 		rcu_read_unlock();
  	}
  
-+	rcu_read_unlock();
-+
- 	return ret;
- }
+ 	retval = security_task_setscheduler(p);
+ 	if (retval)
+-		goto out_unlock;
++		goto out_free_new_mask;
  
-@@ -7659,6 +7667,7 @@ static void sched_dl_do_global(void)
- 	if (global_rt_runtime() != RUNTIME_INF)
- 		new_bw = to_ratio(global_rt_period(), global_rt_runtime());
  
-+	rcu_read_lock();
- 	/*
- 	 * FIXME: As above...
- 	 */
-@@ -7669,6 +7678,7 @@ static void sched_dl_do_global(void)
- 		dl_b->bw = new_bw;
- 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+ 	cpuset_cpus_allowed(p, cpus_allowed);
+@@ -4028,7 +4028,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 
+ 		if (dl_bandwidth_enabled() && !cpumask_subset(span, new_mask)) {
+ 			retval = -EBUSY;
+-			goto out_unlock;
++			goto out_free_new_mask;
+ 		}
  	}
-+	rcu_read_unlock();
- }
- 
- static int sched_rt_global_validate(void)
+ #endif
+@@ -4047,7 +4047,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 			goto again;
+ 		}
+ 	}
+-out_unlock:
++out_free_new_mask:
+ 	free_cpumask_var(new_mask);
+ out_free_cpus_allowed:
+ 	free_cpumask_var(cpus_allowed);
 
