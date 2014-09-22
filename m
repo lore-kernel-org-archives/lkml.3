@@ -1,53 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaIVUGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:06:02 -0400
-Received: from coloquinte.cristau.org ([91.121.16.100]:37965 "EHLO
-	coloquinte.cristau.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaIVUGA (ORCPT
+	id S1754767AbaIVUGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:06:14 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:46439 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354AbaIVUGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 16:06:00 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Sep 2014 16:06:00 EDT
-Date: Mon, 22 Sep 2014 21:58:17 +0200
-From: Julien Cristau <jcristau@debian.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Thomas Hellstrom <thellstrom@vmware.com>, David Airlie <airlied@linux.ie>,
-        dmarlin@redhat.com, Brian Paul <brianp@vmware.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] drm/vmwgfx: Fix drm.h include
-Message-ID: <20140922195817.GV10640@betterave.cristau.org>
-References: <20140905171959.GO5216@hansolo.jdub.homelinux.org>
- <CA+5PVA5t5Q3gRPaHebM7npfKLpET7xm70DXDWMbV0L0nsviBvQ@mail.gmail.com>
+	Mon, 22 Sep 2014 16:06:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA5t5Q3gRPaHebM7npfKLpET7xm70DXDWMbV0L0nsviBvQ@mail.gmail.com>
-X-Operating-System: Linux 3.14-2-amd64 x86_64
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140922192213.GB9708@t510.redhat.com>
+References: <20140830163834.29066.98205.stgit@zurg>
+	<20140830164120.29066.8857.stgit@zurg>
+	<20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
+	<CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
+	<20140912224221.9ee5888a.akpm@linux-foundation.org>
+	<CALYGNiNg5yLbAvqwG3nPqWZHkqXc1-3p4yqdP2Eo2rNJbRo0rg@mail.gmail.com>
+	<20140919143520.94f4a17f752398a6c7c927d8@linux-foundation.org>
+	<CALYGNiOwrM+LiadZGh+jeFgXCuCA0z_1Vd_kdMxLjqnP9Fnmhw@mail.gmail.com>
+	<20140919232348.1a2856c1.akpm@linux-foundation.org>
+	<CALYGNiN0OEtWJVy6sTE_sOydMKbyHfRY3HQ3GjYTT-u05XHTfg@mail.gmail.com>
+	<20140922192213.GB9708@t510.redhat.com>
+Date: Tue, 23 Sep 2014 00:06:11 +0400
+Message-ID: <CALYGNiOVuZ0XQtJTXSbKD5C7xsFVGea15QgdX87Nue_nf9mt6g@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned memory
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 09:43:50 -0400, Josh Boyer wrote:
+On Mon, Sep 22, 2014 at 11:22 PM, Rafael Aquini <aquini@redhat.com> wrote:
+> On Mon, Sep 22, 2014 at 10:40:34PM +0400, Konstantin Khlebnikov wrote:
+>> On Sat, Sep 20, 2014 at 10:23 AM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Sat, 20 Sep 2014 09:25:01 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>> >
+>> >> >
+>> >> > So I'm going to send "fix for
+>> >> > mm-balloon_compaction-use-common-page-ballooning-v2" to Linus
+>> >> > separately, but it has no changelog at all.
+>> >>
+>> >> Probably it would be better if you drop everything except actually
+>> >> fixes and stresstest. This is gone too far, now balloon won't compile
+>> >> in the middle of patchset. Just tell me and I'll redo the rest.
+>> >
+>> > I think it's best if I drop everything:
+>> >
+>> > mm-balloon_compaction-ignore-anonymous-pages.patch
+>> > mm-balloon_compaction-keep-ballooned-pages-away-from-normal-migration-path.patch
+>> > mm-balloon_compaction-isolate-balloon-pages-without-lru_lock.patch
+>> > selftests-vm-transhuge-stress-stress-test-for-memory-compaction.patch
+>> > mm-introduce-common-page-state-for-ballooned-memory.patch
+>> > mm-balloon_compaction-use-common-page-ballooning.patch
+>> > mm-balloon_compaction-general-cleanup.patch
+>> > mm-balloon_compaction-use-common-page-ballooning-v2-fix-1.patch
+>> >
+>> > Please go through it and send out a new version?
+>> >
+>> >
+>>
+>> I've found yet another bug in this code. It seems here is a nest.
+>> balloon_page_dequeue can race with  balloon_page_isolate:
+>> balloon_page_isolate can remove page from list between
+>> llist_for_each_entry_safe and trylock_page in balloon_page_dequeue.
+>> balloon_page_dequeue runs under mutex_lock(&vb->balloon_lock);
+>> both of them lock page using trylock_page so race is tight but it is
+>> not impossible.
+> Plausible to happen if stress testing compaction simultaneously with
+> freezing/unloading the balloon driver. As you noted, it's quite tight
+> despite not impossible. Nice catch.
+>
+>
+>> Probably it's really easier to rewrite it than to fix bugs one by one =/
+> I'm not against a rewrite, but I don't think that rewriting the code to get rid
+> of such bugs changes the fact we still have to address them in the actual placed
+> code as we go on finding them. That's why I thought your inital changeset fine,
+> with patches for stable going first and code overhaul for next following them up.
+>
+> For this race you spotted, I think a simple change like the following
+> might be enough (not-tested)
 
-> On Fri, Sep 5, 2014 at 1:19 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> > The userspace drm.h include doesn't prefix the drm directory.  This can lead
-> > to compile failures as /usr/include/drm/ isn't in the standard gcc include
-> > paths.  Fix it to be <drm/drm.h>, which matches the rest of the driver drm
-> > header files that get installed into /usr/include/drm.
-> >
-> > Red Hat Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1138759
-> >
-> > Fixes: 1d7a5cbf8f74e
-> > Reported-by: Jeffrey Bastian <jbastian@redhat.com>
-> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> 
-> Ping?  Did this get queued anywhere?
-> 
-Any reason this doesn't just #include "drm.h"?  That should work whether
-the drm headers are installed in /usr/include/drm/ or
-/usr/include/libdrm/...
+This locking scheme is too fragile and uncommon.
 
-Cheers,
-Julien, who doesn't have a /usr/include/drm/ either
+What about this:
+
+* special page->_mapcount marks ballooned pages
+* page->private points to balloon (directly, without intermediate mapping)
+* flag PagePrivate means page currently in balloon page list (i.e. not
+isolated, like PageLRU for normal pages)
+* lock_page protects all of them
+
+balloon_page_dequeue() will delete page from balloon list only if it's
+not isolated, also it always clears page->private and balloon mark.
+put-back rechecks mark after locking the page and releases it as
+normal page if mark is gone.
+
+>
+> diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
+> index 6e45a50..fd3a497 100644
+> --- a/mm/balloon_compaction.c
+> +++ b/mm/balloon_compaction.c
+> @@ -93,6 +93,16 @@ struct page *balloon_page_dequeue(struct
+> balloon_dev_info *b_dev_info)
+>                  * to be released by the balloon driver.
+>                  */
+>                 if (trylock_page(page)) {
+> +                       /*
+> +                        * Skip dequeue attempt for this page to a later round
+> +                        * if balloon_page_isolate() has sucessfully isolated
+> +                        * it just before we got the page lock here.
+> +                        */
+> +                       if (page_count(page) != 1) {
+> +                               unlock_page(page);
+> +                               continue
+> +                       }
+> +
+>                         spin_lock_irqsave(&b_dev_info->pages_lock, flags);
+>                         /*
+>                          * Raise the page refcount here to prevent any
+>                          * wrong
+>
