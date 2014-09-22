@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326AbaIVWlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 18:41:51 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49429 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754899AbaIVWlu (ORCPT
+	id S1755062AbaIVWuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 18:50:11 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49679 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119AbaIVWuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 18:41:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH RESEND] PM / sleep: Fix racing timers
-Date: Tue, 23 Sep 2014 01:01:35 +0200
-Message-ID: <1860362.OyoLA3GxVJ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411405623-7869-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1411405623-7869-1-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 22 Sep 2014 18:50:09 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>, Brett Rudley <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH v2] brcmfmac: Fix off by one bug in brcmf_count_20mhz_channels()
+Date: Tue, 23 Sep 2014 00:49:55 +0200
+Message-Id: <1411426195-13467-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 22, 2014 10:07:03 AM Soren Brinkmann wrote:
-> On platforms that do not power off during suspend, successfully entering
-> suspend races with timers.
-> 
-> The race happening in a couple of location is:
-> 
->   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
->      ...
->   2. syscore_suspend()
->       -> timekeeping_suspend()
->        -> clockevents_notify(SUSPEND)
->         -> tick_suspend()   	(timers are turned off here)
->      ...
->   3. wfi            		(wait for wake-IRQ here)
-> 
-> Between steps 1 and 2 the timers can still generate interrupts that are
-> not handled and stay pending until step 3. That pending IRQ causes an
-> immediate - spurious - wake.
-> 
-> The solution is to move the clockevents suspend/resume notification
-> out of the syscore_suspend step and explictly call them at the appropriate
-> time in the suspend/hibernation paths. I.e. timers are suspend _before_
-> IRQs get disabled. And accordingly in the resume path.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> Hi,
-> 
-> there was not a lot of discussion on the last submission. Just one comment from
-> Rafael (https://lkml.org/lkml/2014/8/26/780), which - as I outlined in my
-> response, does not apply, IMHO, since the platform does not re-enable
-> interrupts.
+In the brcmf_count_20mhz_channels function we are looping through a list
+of channels received from firmware. Since the index of the first channel
+is 0 the condition leads to an off by one bug. This is causing us to hit
+the WARN_ON_ONCE(1) calls in the brcmu_d11n_decchspec function, which is
+how I discovered the bug.
 
-Well, you just don't agree with it.
+Introduced by:
+commit b48d891676f756d48b4d0ee131e4a7a5d43ca417
+("brcmfmac: rework wiphy structure setup")
 
-The problem with your approach is that timer interrupts aren't actually as
-special as you think and any other IRQF_NO_SUSPEND interrupts would have caused
-similar issues to appear under specific conditions.
+Acked-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+v2: Added Arends "Acked-by" tag.
 
-The solution I would suggest and that actually covers all IRQF_NO_SUSPEND
-interrupts would be to use a wait_event() loop like the one in freeze_enter()
-(on top of the current linux-next or the pm-genirq branch of linux-pm.git),
-but wait for pm_abort_suspend to become true, to implement system suspend.
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Rafael
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+index 12a60ca..0517687 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -4924,7 +4924,7 @@ static void brcmf_count_20mhz_channels(struct brcmf_cfg80211_info *cfg,
+ 	struct brcmu_chan ch;
+ 	int i;
+ 
+-	for (i = 0; i <= total; i++) {
++	for (i = 0; i < total; i++) {
+ 		ch.chspec = (u16)le32_to_cpu(chlist->element[i]);
+ 		cfg->d11inf.decchspec(&ch);
+ 
+-- 
+2.1.0
 
