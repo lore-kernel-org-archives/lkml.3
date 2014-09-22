@@ -1,108 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaIVUPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:15:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60025 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658AbaIVUPv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 16:15:51 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: [GIT PULL] qcom DT changes for v3.18-2
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <13536005-9FFF-4362-8B87-5F0DC9930D29@codeaurora.org>
-Date: Mon, 22 Sep 2014 15:15:47 -0500
-Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C891343A-AC78-4CF0-8A6A-9BF741CDA58A@codeaurora.org>
-References: <13536005-9FFF-4362-8B87-5F0DC9930D29@codeaurora.org>
-To: arm@kernel.org
-X-Mailer: Apple Mail (2.1878.6)
+	id S1754910AbaIVUQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:16:10 -0400
+Received: from mout.gmx.net ([212.227.17.21]:58645 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851AbaIVUQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 16:16:08 -0400
+Message-ID: <54208382.4040902@gmx.de>
+Date: Mon, 22 Sep 2014 22:16:02 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
+MIME-Version: 1.0
+To: David Barksdale <dbarksdale@uplogix.com>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH v2] IIO: add si7020 driver
+References: <1411070470-24348-1-git-send-email-dbarksdale@uplogix.com> <541EC41D.9050305@gmx.de> <542042D9.2030504@uplogix.com>
+In-Reply-To: <542042D9.2030504@uplogix.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:MPXGirCgtgNW9Du1/FQZdytsS5ftRXwKVcfJTRZFCOo9rB3p9Jk
+ Pu8H+akW9aTBjSQ7r60d7FF70rURqWzmlNQQwY9ejEApDgoU1nsto4rrdxw65ifxx90psnu
+ xLhsRHSPVTXx0Bo3m+XKT3FEw02bu+rJTyhWInAixTyeF6ED9kz356tgnWW6gBzHG8TC+30
+ zO7A/+9JeCp0SMo7xa/kQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+David Barksdale schrieb, Am 22.09.2014 17:40:
+> 
+> On 09/21/2014 07:27 AM, Hartmut Knaack wrote:
+>> David Barksdale schrieb, Am 18.09.2014 22:01:
+>>> This patch adds support to the Industrial IO subsystem
+>>> for the Silicon Labs Si7013/20/21 Relative Humidity and
+>>> Temperature Sensors.
+>>>
+>>> Website: http://www.silabs.com/products/sensors/humidity-sensors/Pages/si7013-20-21.aspx
+>>>
+>>> These are i2c devices which measure relative humidity
+>>> and temperature and all use the same protocol. The
+>>> Si7013 has an additional input with programmable
+>>> linearization which is not supported because that's
+>>> complicated and I didn't need it.
+>>>
+>>> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
+>>>
+>> Hi,
+>> I'm not really convinced of the concept of treating all measurements as 16 bit data, since the datasheet states a maximum resolution of 14 bits for temperature and 12 bits for humidity. It also states, that the 2 LSBs contain an identifier rather than measured data. So, the least to do would be to mask out everything, which is not measured data (which should also include the 2 MSBs of humidity channel). Even better would be to also apply a shift and treat the data with the real resolution (especially for scale, as it would represent the sensitivity of the sensor a bit better).
+>> Besides that, I think it would be a good idea to initialize the sensor during probe (for example set resolution to maximum), since you can never be sure, in which state the sensor has been before.
+>> Also, find some small style issues inline.
+> 
+> The math done by iio_convert_raw_to_processed_unlocked loses accuracy in 
+> my case because I need the offset to be fractional. It assumes offset is 
+> an integer so I have to round the true offset to the nearest integer.
+> If I provide IIO_CHAN_INFO_PROCESSED then I can do the math correctly.
+> Would it be kosher to provide only IIO_CHAN_INFO_RAW and 
+> IIO_CHAN_INFO_PROCESSED?
+It would be a bit more accurate using a fractional offset, but this error is just in the range of 10 m°C or 4 m%RH. Compared to the tolerances of the sensor for temperature (at least 500 m°C) or humidity (at least 3000 m%RH), this doesn't seem relevant.
+> 
+>>> --
+>>> Changes since v1:
+>>> * Renamed to si7020 and replaced Si701x/2x with Si7013/20/21.
+>>> * Removed unneeded mutex.
+>>> * Pre-computed floating-point constant expressions.
+>>> * Removed address_list and I2C_CLASS_HWMON.
+>>>
+>>> ---
+>>>   drivers/iio/humidity/Kconfig  |  10 +++
+>>>   drivers/iio/humidity/Makefile |   1 +
+>>>   drivers/iio/humidity/si7020.c | 142 ++++++++++++++++++++++++++++++++++++++++++
+>>>   3 files changed, 153 insertions(+)
+>>>
+>>> diff --git a/drivers/iio/humidity/Kconfig b/drivers/iio/humidity/Kconfig
+>>> index e116bd8..4813b79 100644
+>>> --- a/drivers/iio/humidity/Kconfig
+>>> +++ b/drivers/iio/humidity/Kconfig
+>>> @@ -22,4 +22,14 @@ config SI7005
+>>>   	  To compile this driver as a module, choose M here: the module
+>>>   	  will be called si7005.
+>>>
+>>> +config SI7020
+>>> +	tristate "Si7013/20/21 Relative Humidity and Temperature Sensors"
+>>> +	depends on I2C
+>>> +	help
+>>> +	  Say yes here to build support for the Silicon Labs Si7013/20/21
+>>> +	  Relative Humidity and Temperature Sensors.
+>>> +
+>>> +	  To compile this driver as a module, choose M here: the module
+>>> +	  will be called si7020.
+>>> +
+>>>   endmenu
+>>> diff --git a/drivers/iio/humidity/Makefile b/drivers/iio/humidity/Makefile
+>>> index e3f3d94..86e2d26 100644
+>>> --- a/drivers/iio/humidity/Makefile
+>>> +++ b/drivers/iio/humidity/Makefile
+>>> @@ -4,3 +4,4 @@
+>>>
+>>>   obj-$(CONFIG_DHT11) += dht11.o
+>>>   obj-$(CONFIG_SI7005) += si7005.o
+>>> +obj-$(CONFIG_SI7020) += si7020.o
+>>> diff --git a/drivers/iio/humidity/si7020.c b/drivers/iio/humidity/si7020.c
+>>> new file mode 100644
+>>> index 0000000..cabdb7d
+>>> --- /dev/null
+>>> +++ b/drivers/iio/humidity/si7020.c
+>>> @@ -0,0 +1,142 @@
+>>> +/*
+>>> + * si7020.c - Silicon Labs Si7013/20/21 Relative Humidity and Temp Sensors
+>>> + * Copyright (c) 2013,2014  Uplogix, Inc.
+>>> + * David Barksdale <dbarksdale@uplogix.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify it
+>>> + * under the terms and conditions of the GNU General Public License,
+>>> + * version 2, as published by the Free Software Foundation.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +/*
+>>> + * The Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors
+>>> + * are i2c devices which have an identical programming interface for
+>>> + * measuring relative humidity and temperature. The Si7013 has an additional
+>>> + * temperature input which this driver does not support.
+>>> + *
+>>> + * Data Sheets:
+>>> + *   Si7013: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7013.pdf
+>>> + *   Si7020: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7020.pdf
+>>> + *   Si7021: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7021.pdf
+>>> + */
+>>> +
+>>> +#include <linux/i2c.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/slab.h>
+>>> +#include <linux/sysfs.h>
+>>> +
+>>> +#include <linux/iio/iio.h>
+>>> +#include <linux/iio/sysfs.h>
+>>> +
+>>> +enum {
+>>> +	/* Measure Relative Humidity, Hold Master Mode */
+>>> +	SI7020CMD_RH_HOLD	= 0xE5,
+>>> +	/* Measure Temperature, Hold Master Mode */
+>>> +	SI7020CMD_TEMP_HOLD	= 0xE3,
+>>> +};
+>>> +
+>>> +static int si7020_read_raw(struct iio_dev *indio_dev,
+>>> +			   struct iio_chan_spec const *chan, int *val,
+>>> +			   int *val2, long mask)
+>>> +{
+>>> +	struct i2c_client **client = iio_priv(indio_dev);
+>>> +	int ret;
+>>> +
+>>> +	switch (mask) {
+>>> +	case IIO_CHAN_INFO_RAW:
+>>> +		ret = i2c_smbus_read_word_data(*client,
+>>> +					       chan->type == IIO_TEMP ?
+>>> +					       SI7020CMD_TEMP_HOLD :
+>>> +					       SI7020CMD_RH_HOLD);
+>>> +		if (ret < 0)
+>>> +			return ret;
+>>> +		*val = ret;
+>>> +		return IIO_VAL_INT;
+>>> +	case IIO_CHAN_INFO_SCALE:
+>>> +		if (chan->type == IIO_TEMP)
+>>> +			*val = 175720; /* = 175.72 * 1000 */
+>>> +		else
+>>> +			*val = 125 * 1000;
+>>> +		*val2 = 65536;
+>>> +		return IIO_VAL_FRACTIONAL;
+>>> +	case IIO_CHAN_INFO_OFFSET:
+>>> +		if (chan->type == IIO_TEMP)
+>>> +			*val = -17473; /* = -46.85 * 65536 / 175.72 */
+>>> +		else
+>>> +			*val = -3146; /* = -6 * 65536 / 125 */
+>>> +		return IIO_VAL_INT;
+>>> +	default:
+>>> +		break;
+>>> +	}
+>>> +
+>>> +	return -EINVAL;
+>>> +}
+>>> +
+>>> +static const struct iio_chan_spec si7020_channels[] = {
+>>> +	{
+>>> +		.type = IIO_HUMIDITYRELATIVE,
+>>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>>> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+>>> +	},
+>>> +	{
+>>> +		.type = IIO_TEMP,
+>>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>>> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+>>> +	}
+>>> +};
+>>> +
+>>> +static const struct iio_info si7020_info = {
+>>> +	.read_raw = si7020_read_raw,
+>>> +	.driver_module = THIS_MODULE,
+>>> +};
+>>> +
+>>> +static int si7020_probe(struct i2c_client *client,
+>>> +			const struct i2c_device_id *id)
+>>> +{
+>>> +	struct iio_dev *dev;
+>> Better name it indio_dev.
+>>> +	struct i2c_client **data;
+>>> +
+>>> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WORD_DATA))
+>>> +		return -ENODEV;
+>>> +
+>>> +	dev = devm_iio_device_alloc(&client->dev, sizeof(*client));
+>>> +	if (!dev)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	data = iio_priv(dev);
+>>> +	*data = client;
+>>> +	i2c_set_clientdata(client, dev);
+>>> +
+>>> +	dev->dev.parent = &client->dev;
+>>> +	dev->name = dev_name(&client->dev);
+>>> +	dev->modes = INDIO_DIRECT_MODE;
+>>> +	dev->info = &si7020_info;
+>>> +	dev->channels = si7020_channels;
+>>> +	dev->num_channels = ARRAY_SIZE(si7020_channels);
+>>> +
+>>> +	return devm_iio_device_register(&client->dev, dev);
+>>> +}
+>>> +
+>>> +static const struct i2c_device_id si7020_id[] = {
+>>> +	{ "si7020", 0 },
+>>> +	{ }
+>>> +};
+>>> +MODULE_DEVICE_TABLE(i2c, si7020_id);
+>>> +
+>>> +static struct i2c_driver si7020_driver = {
+>>> +	.driver.name	= "si7020",
+>>> +	.probe		= si7020_probe,
+>>> +	.id_table	= si7020_id,
+>>> +};
+>>> +
+>>> +module_i2c_driver(si7020_driver);
+>>> +MODULE_DESCRIPTION("Silicon Labs Si7013/20/21 "
+>> Trailing whitespace in string.
+>>> +		   "Relative Humidity and Temperature Sensors");
+>>> +MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
+>>> +MODULE_LICENSE("GPL");
+>>> +
+>>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.18-2
-
-for you to fetch changes up to aabff7bfe55afd01d71a5f11d4a84bd873c20f5e:
-
-  ARM: DT: msm8960: Add sdcc nodes (2014-09-22 13:49:43 -0500)
-
-----------------------------------------------------------------
-Qualcomm ARM Based Device Tree Updates for v3.18-2
-
-* Added SDCC nodes on MSM8960/CDP and MSM8660/SURF
-* Added I2C and SDCC4/WLAN on APQ8064/IFC6410
-* Added I2C on MSM8984/DB8074
-
-----------------------------------------------------------------
-Georgi Djakov (4):
-      ARM: dts: qcom: Add APQ8084 Global Clock Controller DT node
-      ARM: dts: qcom: Add APQ8084 serial port DT node
-      ARM: dts: qcom: Add initial IFC6540 board device tree
-      ARM: dts: qcom: Add TLMM DT node for APQ8084
-
-Kumar Gala (1):
-      ARM: qcom: Add initial IPQ8064 SoC and AP148 device trees
-
-Pramod Gurav (2):
-      ARM: DT: APQ8064: Add pinctrl support
-      ARM: DT: APQ8064: Add node for ps_hold function in pinctrl
-
-Srinivas Kandagatla (3):
-      ARM: DT: apq8064: Add sdcc support via mcci driver.
-      ARM: DT: QCOM: apq8064: Add dma support for sdcc node
-      ARM: DT: apq8064: add support to sdcc4 for wlan.
-
-Stephen Boyd (5):
-      ARM: dts: msm: Add 8921 PMIC to ssbi bus
-      ARM: dts: msm: Add 8058 PMIC to ssbi bus
-      ARM: dts: qcom: Add 8064 multimedia clock controller node
-      ARM: DT: msm8660: Add sdcc nodes
-      ARM: DT: msm8960: Add sdcc nodes
-
-kiran.padwal@smartplayin.com (2):
-      ARM: dts: qcom: Add I2C dt node for MSM8974 and DB8074 board
-      ARM: DT: apq8064: Add i2c device nodes
-
- arch/arm/boot/dts/Makefile                     |   2 +
- arch/arm/boot/dts/qcom-apq8064-ifc6410.dts     |  43 +++++
- arch/arm/boot/dts/qcom-apq8064.dtsi            | 183 ++++++++++++++++++
- arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  21 +++
- arch/arm/boot/dts/qcom-apq8084-ifc6540.dts     |  23 +++
- arch/arm/boot/dts/qcom-apq8084-mtp.dts         |   6 +
- arch/arm/boot/dts/qcom-apq8084.dtsi            |  51 +++++
- arch/arm/boot/dts/qcom-ipq8064-ap148.dts       |  85 +++++++++
- arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi       |   1 +
- arch/arm/boot/dts/qcom-ipq8064.dtsi            | 250 +++++++++++++++++++++++++
- arch/arm/boot/dts/qcom-msm8660-surf.dts        |  42 +++++
- arch/arm/boot/dts/qcom-msm8660.dtsi            |  93 +++++++++
- arch/arm/boot/dts/qcom-msm8960-cdp.dts         |  27 +++
- arch/arm/boot/dts/qcom-msm8960.dtsi            |  87 +++++++++
- arch/arm/boot/dts/qcom-msm8974.dtsi            |  15 +-
- arch/arm/mach-qcom/board.c                     |   2 +
- 16 files changed, 929 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
- create mode 100644 arch/arm/boot/dts/qcom-ipq8064-ap148.dts
- create mode 100644 arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi
- create mode 100644 arch/arm/boot/dts/qcom-ipq8064.dtsi
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
