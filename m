@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaIVMDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 08:03:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:58401 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaIVMDd (ORCPT
+	id S1753877AbaIVMJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 08:09:20 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:26033 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507AbaIVMJS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 08:03:33 -0400
-X-AuditID: cbfee690-f79ab6d0000046f7-28-542010131382
+	Mon, 22 Sep 2014 08:09:18 -0400
+X-AuditID: cbfee68d-f79296d000004278-41-5420116c9d99
 From: Kukjin Kim <kgene@kernel.org>
-To: "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Olof Johansson'" <olof@lixom.net>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
-References: <1411387317-4837-1-git-send-email-tomasz.figa@gmail.com>
-In-reply-to: <1411387317-4837-1-git-send-email-tomasz.figa@gmail.com>
-Subject: RE: [PATCH] ARM: dts: s3c64xx: Enable PWM node by default
-Date: Mon, 22 Sep 2014 21:03:28 +0900
-Message-id: <019301cfd65d$39bc5460$ad34fd20$@kernel.org>
+To: "=?UTF-8?Q?'Andreas_F=C3=A4rber'?=" <afaerber@suse.de>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        "'Daniel Drake'" <drake@endlessm.com>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk>
+ <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com>
+ <5419ADF9.3010509@suse.de>
+In-reply-to: <5419ADF9.3010509@suse.de>
+Subject: RE: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on
+ exynos5250-snow
+Date: Mon, 22 Sep 2014 21:09:15 +0900
+Message-id: <01d001cfd65e$0790be30$16b23a90$@kernel.org>
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFuTwGcLqmvDoLQgCsc9oF7otn3Q5zQHEnw
+Thread-index: AQLbS3wcopW0Zexicw3nUqbcbogB6QLhhACVAbb1ttEBy1EbVJnDBZWA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zQ11hAYUQg48nmC3+TjrGbrHp8TVW
-	i8u75rBZzDi/j8li7ZG77Banrn9ms1i16w+jA7vH71+TGD12zrrL7rF5Sb3HlRNNrB59W1Yx
-	enzeJBfAFsVlk5Kak1mWWqRvl8CV0bu1kangH1fFybVLmBoYn3F0MXJwSAiYSGz7pNHFyAlk
-	iklcuLeeDcQWEljGKHH4kDBE3ERi/8EzTF2MXEDxRYwS3/t2skI4fxkl7l9sYwMZxCagLNHY
-	pA/SICygJbFwSxMLiC0i4COxe94UNpB6ZoG9jBJrzr2H2uAi8a29jxnE5hRwlfj86icrRLOT
-	xML5fSwgM1kEVCUO3DEACfMKWEj8nH2SBcIWlPgx+R6YzQy0a/3O40wQtrzE5jVvmSGOVpDY
-	cfY1I8QNRhJvO3rZIWpEJPa9eMcIco+EwF92ic6Z38EGsQgISHybfIgFEiiyEpsOQM2RlDi4
-	4gbLBEbJWUhWz0KyehaS1bOQrFjAyLKKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIyS2J+xg
-	vHfA+hCjAAejEg/vjxb5ECHWxLLiytxDjKZAF01klhJNzgcmkLySeENjMyMLUxNTYyNzSzMl
-	cd7XUj+DhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTA6zUhucfO2/cRprMITUft7m+PDBsGm
-	xFV5dRwb0h+e+/jds0naetrUIvZZpz7GWv5Z13no9OapzOdNLp5Ic9vMW7S69OyJFJ1TSf8m
-	L5hmN81L7cX+67WHK93+ZCzdsaq0463w4sOHwrmztXk2O7SyTgpRfJhsurJ51qrntt87v/x0
-	2NnSu+CdEktxRqKhFnNRcSIAYFswB+gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIKsWRmVeSWpSXmKPExsVy+t9jAV0hAYUQg+mHbCz+TjrGbrHp8TVW
-	i8u75rBZzDi/j8li7ZG77Banrn9ms1i16w+jA7vH71+TGD12zrrL7rF5Sb3HlRNNrB59W1Yx
-	enzeJBfAFtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMaN3ayNTwT+uipNr
-	lzA1MD7j6GLk5JAQMJHYf/AME4QtJnHh3nq2LkYuDiGBRYwS3/t2skI4fxkl7l9sA8pwcLAJ
-	KEs0NumDNAgLaEks3NLEAmKLCPhI7J43BayZWWAvo8Sac+/ZQBJCAi4S39r7mEFsTgFXic+v
-	frJCNDtJLJzfxwIyk0VAVeLAHQOQMK+AhcTP2SdZIGxBiR+T74HZzEC71u88zgRhy0tsXvOW
-	GeJoBYkdZ18zQtxgJPG2o5cdokZEYt+Ld4wTGIVnIRk1C8moWUhGzULSsoCRZRWjaGpBckFx
-	UnqukV5xYm5xaV66XnJ+7iZGcPJ4Jr2DcVWDxSFGAQ5GJR7eHy3yIUKsiWXFlbmHGCU4mJVE
-	eH15FEKEeFMSK6tSi/Lji0pzUosPMZoCPTqRWUo0OR+Y2PJK4g2NTcyMLI3MLIxMzM2VxHkP
-	tloHCgmkJ5akZqemFqQWwfQxcXBKNTAyXjOdIqn+Mv6T1gfxzJiu5/Hl2drf+mOZdlUmluZa
-	cB9Yt7BO4ld/UrTadzu5Ozm//xqkzbm6+OzPM3t3qd678ST2317lcgU3xrn/2dY0/LhUXGUV
-	ksLi7Sw0c6Ehi7+hFXPU9V0N3/Qsi5Vfc/xzjlS6eaudecvVtFv8W54KOZge3SeuyKLEUpyR
-	aKjFXFScCACvwECrNAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t8zQ90cQYUQg0dbxS2aNxVbXP/ynNXi
+	7LKDbBaP5j9mtjj6u8Bi0+NrrBaXd81hs5hxfh+TA4fH7IaLLB5/n19n8Vj0Pctj85J6j74t
+	qxg9Np+u9vi8SS6APYrLJiU1J7MstUjfLoEr49TaO+wFM8UrHt6aydTA+Eawi5GTQ0LARGLD
+	zNlsELaYxIV764FsLg4hgWWMEos+PmSDKdq6spkVIrGIUeLQ/U6oqr+MEtNnz2XqYuTgYBNQ
+	lmhs0gdpEBbQkli4pYkFxBYRSJaYN+MyC0g9s8AEJomtq/YxgiSEBH4ySmz/VwVicwqoS0zb
+	epYdojlYYtXKg8wgNouAqsSD57vAruAVsJB42nybFcIWlPgx+R7YAmag3knzFjFD2NoST95d
+	YIW4WkFix9nXjBBHuElM7nzHDlEjIrHvxTtGkIMkBDo5JPad3wW1TEDi2+RDLCDPSAjISmw6
+	wAwxR1Li4IobLBMYJWchWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS95Pzc
+	TYyQaO/dwXj7gPUhRgEORiUe3gVN8iFCrIllxZW5hxhNgS6ayCwlmpwPTCl5JfGGxmZGFqYm
+	psZG5pZmSuK8ilI/g4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwmu9IdtY+r3OvaVv8jkV7
+	nWYvebdCdQmnkYrBttL+s96SntOkBP4otS86EJMW7OYjonrxW16KeuF7maTmjP0RUuevdx4K
+	VH1xOvTD5UNn00T6FRgzc9RnaCWxlLfUnN99uov1ZtjXgKWiGu5KAo0Pf5T/Oq03dUJQv/jE
+	M71GQTMcA7MPrbZXYinOSDTUYi4qTgQAvClz2fECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd0cQYUQg9VXhCyaNxVbXP/ynNXi
+	7LKDbBaP5j9mtjj6u8Bi0+NrrBaXd81hs5hxfh+TA4fH7IaLLB5/n19n8Vj0Pctj85J6j74t
+	qxg9Np+u9vi8SS6APaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfV
+	VsnFJ0DXLTMH6CIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aptXfY
+	C2aKVzy8NZOpgfGNYBcjJ4eEgInE1pXNrBC2mMSFe+vZuhi5OIQEFjFKHLrfCeX8ZZSYPnsu
+	UxcjBwebgLJEY5M+SIOwgJbEwi1NLCC2iECyxLwZl1lA6pkFJjBJbF21jxEkISTwk1Fi+78q
+	EJtTQF1i2taz7BDNwRKrVh5kBrFZBFQlHjzfxQZi8wpYSDxtvs0KYQtK/Jh8D2wBM1DvpHmL
+	mCFsbYkn7y5AXa0gsePsa0aII9wkJne+Y4eoEZHY9+Id4wRG4VlIRs1CMmoWklGzkLQsYGRZ
+	xSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGcSp5J72Bc1WBxiFGAg1GJh/dHi3yIEGtiWXFl
+	7iFGCQ5mJRFeXx6FECHelMTKqtSi/Pii0pzU4kOMpkCfTmSWEk3OB6a5vJJ4Q2MTMyNLIzML
+	IxNzcyVx3oOt1oFCAumJJanZqakFqUUwfUwcnFINjKwX1uRNDu0qZ1yxabfAau6ITd6f8xtq
+	/B7dPyPcdjLvNEvArZIzclr7gquecTybd+rYYen+eaaMpysCrOs7di48Mnnex8DTYSWz3pRK
+	zz4efrP4eXZX2pWm6YdOT749QZXr7OKnx7598v/nIme/k1fsTNm36NAzk413fBXVeerVsSft
+	35VZdTOVWIozEg21mIuKEwERlYRwOwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,51 +65,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz Figa wrote:
+Andreas Färber wrote:
 > 
-> The PWM block is required for system clock source so it must be always
-> enabled. This patch fixes boot issues on SMDK6410 which did not have the
-> node enabled explicitly for other purposes.
+> Am 17.09.2014 um 17:47 schrieb Doug Anderson:
+> > Hi,
+> >
+> > On Wed, Sep 17, 2014 at 4:50 AM, Javier Martinez Canillas
+> > <javier.martinez@collabora.co.uk> wrote:
+> >> commit 546b117fdf17 ("rtc: s3c: add support for RTC of Exynos3250 SoC")
+> >> added an "rtc_src" DT property for the Samsung's S3C Real Time Clock
+> >> controller that specifies the 32.768 kHz clock that uses the RTC as its
+> >> source clock. In the case of the Exynos5250 based Snow board, the Maxim
+> >> 77686 32kHz AP clock is used as the source clock.
+> >>
+> >> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> >> ---
+> >>  arch/arm/boot/dts/exynos5250-snow.dts | 5 ++++-
+> >>  1 file changed, 4 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+> >> index e51fcef..56eec56 100644
+> >> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> >> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> >> @@ -10,6 +10,7 @@
+> >>
+> >>  /dts-v1/;
+> >>  #include <dt-bindings/gpio/gpio.h>
+> >> +#include <dt-bindings/clock/maxim,max77686.h>
+> >>  #include "exynos5250.dtsi"
+> >>
+> >>  / {
+> >> @@ -29,6 +30,8 @@
+> >>
+> >>         rtc@101E0000 {
+> >>                 status = "okay";
+> >> +               clocks = <&clock CLK_RTC>, <&max77686 MAX77686_CLK_AP>;
+> >> +               clock-names = "rtc", "rtc_src";
+> >
+> > Wait, seriously?  Snow is still using the "rtc@101E0000" syntax?
+> > Whatever happened to the series that Andreas worked so hard on,
+> > including <https://patchwork.kernel.org/patch/4664801/>?
+> >
+> > Kukjin: Andreas's patch series was Reviewed long ago I think and by
+> > now I'd imagine it's got some conflicts due to it not having been
+> > applied in a timely fashion.  Perhaps you could fix it up for Andreas
+> > (since he's already rebased it several times) and land it?
+> >
+> > If I had to guess, outstanding from Andreas's series (patchwork IDs listed):
+> >
+> > 4751131 New          [v7] ARM: dts: Prepare node labels for exynos5250
+> > 4664801 New          [v6,04/10] ARM: dts: Clean up exynos5250-snow
+> > 4664771 New          [v6,05/10] ARM: dts: Fill in bootargs for exynos5250-snow
+> > 4664731 New          [v6,06/10] ARM: dts: Clean up exynos5250-smdk5250
+> > 4664751 New          [v6,07/10] ARM: dts: Clean up exynos5250-arndale
+> > 4664711 New          [v6,08/10] ARM: dts: Fix apparent GPIO typo in
+> > exynos5250-arndale
+> > 4664681 New          [v6,09/10] ARM: dts: Simplify USB3503 on exynos5250-arndale
+> > 4664691 New          [v6,10/10] ARM: dts: Add exynos5250-spring device tree
 > 
-> Fixes: eeb93d02c5d8 ("clocksource: of: Respect device tree node status")
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-> ---
->  arch/arm/boot/dts/s3c6410-mini6410.dts | 4 ----
->  arch/arm/boot/dts/s3c64xx.dtsi         | 1 -
->  2 files changed, 5 deletions(-)
+> Yes, Kukjin told me not to resend anything, and I haven't heard back
+> from him since his Kernel Summit trip.
 > 
-> diff --git a/arch/arm/boot/dts/s3c6410-mini6410.dts b/arch/arm/boot/dts/s3c6410-mini6410.dts
-> index a171cdd26b7f..42c2bcdf2626 100644
-> --- a/arch/arm/boot/dts/s3c6410-mini6410.dts
-> +++ b/arch/arm/boot/dts/s3c6410-mini6410.dts
-> @@ -252,10 +252,6 @@
->  	status = "okay";
->  };
-> 
-> -&pwm {
-> -	status = "okay";
-> -};
-> -
->  &pinctrl0 {
->  	gpio_leds: gpio-leds {
->  		samsung,pins = "gpk-4", "gpk-5", "gpk-6", "gpk-7";
-> diff --git a/arch/arm/boot/dts/s3c64xx.dtsi b/arch/arm/boot/dts/s3c64xx.dtsi
-> index 05c717ad1edd..196fe6ea205d 100644
-> --- a/arch/arm/boot/dts/s3c64xx.dtsi
-> +++ b/arch/arm/boot/dts/s3c64xx.dtsi
-> @@ -239,7 +239,6 @@
->  			clocks = <&clocks PCLK_PWM>;
->  			samsung,pwm-outputs = <0>, <1>;
->  			#pwm-cells = <3>;
-> -			status = "disabled";
->  		};
-> 
->  		pinctrl0: pinctrl@7f008000 {
-> --
-> 2.1.0
+Sorry about that and I thought I took them :( I'll sort them out tonight
+including this series together.
 
-Looks good, will apply.
-
-Thanks,
-Kukjin
+- Kukjin
 
