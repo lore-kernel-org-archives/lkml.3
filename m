@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaIVIcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:32:13 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:38091 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaIVIcL (ORCPT
+	id S1753466AbaIVIfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:35:06 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:51990 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaIVIfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:32:11 -0400
-Date: Mon, 22 Sep 2014 12:32:04 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 3/3] mm: memcontrol: continue cache reclaim from offlined
- groups
-Message-ID: <20140922083204.GC18526@esperanza>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
- <1411243235-24680-4-git-send-email-hannes@cmpxchg.org>
+	Mon, 22 Sep 2014 04:35:04 -0400
+Message-ID: <541FDF35.6010401@gmail.com>
+Date: Mon, 22 Sep 2014 10:35:01 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1411243235-24680-4-git-send-email-hannes@cmpxchg.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: kgene.kim@samsung.com, s.nawrocki@samsung.com, mturquette@linaro.org,
+        naushad@samsung.com
+Subject: Re: [PATCH] clk: samsung: exynos3250: fix width field of mout_mmc0/1
+References: <1409918081-2464-1-git-send-email-pankaj.dubey@samsung.com> <540EEF0B.3040202@samsung.com>
+In-Reply-To: <540EEF0B.3040202@samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 04:00:35PM -0400, Johannes Weiner wrote:
-> On cgroup deletion, outstanding page cache charges are moved to the
-> parent group so that they're not lost and can be reclaimed during
-> pressure on/inside said parent.  But this reparenting is fairly tricky
-> and its synchroneous nature has led to several lock-ups in the past.
+On 09.09.2014 14:14, Krzysztof Kozlowski wrote:
+> On 05.09.2014 13:54, Pankaj Dubey wrote:
+>> As per Exynos3250 user manual mmc0/1 mux selection has 4 bit wide.
+>>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>   drivers/clk/samsung/clk-exynos3250.c |    4 ++--
+>>   1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Since css iterators now also include offlined css, memcg iterators can
-> be changed to include offlined children during reclaim of a group, and
-> leftover cache can just stay put.
-> 
-> There is a slight change of behavior in that charges of deleted groups
-> no longer show up as local charges in the parent.  But they are still
-> included in the parent's hierarchical statistics.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/memcontrol.c | 260 ++------------------------------------------------------
->  1 file changed, 5 insertions(+), 255 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 019a44ac25d6..48531433a2fc 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -736,8 +736,6 @@ static void disarm_static_keys(struct mem_cgroup *memcg)
->  	disarm_kmem_keys(memcg);
->  }
->  
-> -static void drain_all_stock_async(struct mem_cgroup *memcg);
-> -
->  static struct mem_cgroup_per_zone *
->  mem_cgroup_zone_zoneinfo(struct mem_cgroup *memcg, struct zone *zone)
->  {
-> @@ -1208,7 +1206,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  				goto out_unlock;
->  			continue;
->  		}
-> -		if (css == &root->css || css_tryget_online(css)) {
-> +		if (css == &root->css || css_tryget(css)) {
->  			memcg = mem_cgroup_from_css(css);
->  			break;
->  		}
-> @@ -2349,10 +2347,12 @@ static void refill_stock(struct mem_cgroup *memcg, unsigned int nr_pages)
->   * of the hierarchy under it. sync flag says whether we should block
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Please update the comment.
+Applied for next.
 
->   * until the work is done.
->   */
-> -static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
-> +static void drain_all_stock(struct mem_cgroup *root_memcg)
->  {
->  	int cpu, curcpu;
->  
-> +	if (!mutex_trylock(&percpu_charge_mutex))
-> +		return;
-
-It's not obvious why we need it here. The old code has an explanatory
-comment. Could you please add one?
-
-Thanks,
-Vladimir
+Best regards,
+Tomasz
