@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790AbaIVTzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:55:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9452 "EHLO mx1.redhat.com"
+	id S1754684AbaIVT5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:57:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46805 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563AbaIVTzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:55:14 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, sgrubb@redhat.com
-Subject: Re: [PATCH] selinux: hooks: cleanup orphan keywords in audit log text
-Date: Mon, 22 Sep 2014 15:55:08 -0400
-Message-ID: <1456449.0ADpScPp6d@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14 (Linux/3.16.1-gentoo; KDE/4.14.0; x86_64; ; )
-In-Reply-To: <8bedc57ef45bf628ac344bc3d8513b9a93e274ca.1411087339.git.rgb@redhat.com>
-References: <8bedc57ef45bf628ac344bc3d8513b9a93e274ca.1411087339.git.rgb@redhat.com>
+	id S1750914AbaIVT5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:57:43 -0400
+Date: Mon, 22 Sep 2014 21:57:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: "Rustad, Mark D" <mark.d.rustad@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Message-ID: <20140922195737.GE4709@pd.tnic>
+References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
+ <20140922153355.GB4510@pd.tnic>
+ <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
+ <20140922184049.GB4709@pd.tnic>
+ <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+ <20140922192152.GD4709@pd.tnic>
+ <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 18, 2014 08:50:17 PM Richard Guy Briggs wrote:
-> Convert audit_log() call to WARN_ONCE().
->
-> Rename "type=" to nlmsg_type=" to avoid confusion with the audit record
-> type.
+On Mon, Sep 22, 2014 at 12:44:17PM -0700, Jeff Kirsher wrote:
+> Not sure you showed us, since that is how everyone has had to do to
+> actual find W= builds useful.  Just because that is how we HAVE to do it
+> now, does not make it the best way.  Here is a thought, we don't we fix
+> the potential issues, so that W= builds do not generate over 100,000
+> errors/warnings.
 > 
-> Added "protocol=" to help track down which protocol (NETLINK_AUDIT?) was
-> used within the netlink protocol family.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  security/selinux/hooks.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
+> Mark did this approach because it would either spur the conversation
+> that this is a good idea OR let's fix the root problem.  Instead it
+> sounds like your response is "life sucks, get over it" and put your head
+> back in the sand to ignore the problem.
 
-I rewrote the patch subject line as it doesn't really make much sense given 
-the changes made by the patch, but other than that it looks fine to me.
+Hey hey, relax a little - no need to get offensive all of a sudden.
 
-Applied.
- 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 83d06db..28ec61c 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -4681,10 +4681,9 @@ static int selinux_nlmsg_perm(struct sock *sk, struct
-> sk_buff *skb) err = selinux_nlmsg_lookup(sksec->sclass, nlh->nlmsg_type,
-> &perm); if (err) {
->  		if (err == -EINVAL) {
-> -			audit_log(current->audit_context, GFP_KERNEL, 
-AUDIT_SELINUX_ERR,
-> -				  "SELinux:  unrecognized netlink message"
-> -				  " type=%hu for sclass=%hu\n",
-> -				  nlh->nlmsg_type, sksec->sclass);
-> +			WARN_ONCE(1, "selinux_nlmsg_perm: unrecognized netlink 
-message:"
-> +				  " protocol=%hu nlmsg_type=%hu sclass=%hu\n",
-> +				  sk->sk_protocol, nlh->nlmsg_type, sksec->sclass);
->  			if (!selinux_enforcing || security_get_allow_unknown())
->  				err = 0;
->  		}
+Having to grep through a log file full of gcc warnings is a much better
+thing to do IMNSVHO than adding code to the kernel just to shut up the
+compiler. We had huge discussions even about something as silly as
+uninitialized_var() which was supposed to shut up the compiler but ended
+up actively causing bugs.
+
+Now, you're arguing for adding obscure macros to shut up warnings which
+are disabled in the first place because you don't want to grep through
+log files.
+
+If you can't see the absurdity of your proposal then maybe we should
+agree to disagree and declare this back-and-forth for having run its
+course. In any case, you get my NAK for it.
 
 -- 
-paul moore
-security and virtualization @ redhat
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
