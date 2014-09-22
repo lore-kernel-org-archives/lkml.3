@@ -1,282 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaIVRB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:01:57 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51888 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaIVRB4 (ORCPT
+	id S1754572AbaIVRCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:02:10 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:60155 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521AbaIVRCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:01:56 -0400
-Date: Mon, 22 Sep 2014 10:01:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: Remove redundant CONFIG_PREEMPT_RCU option
-Message-ID: <20140922170149.GP4723@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1411318194-9433-1-git-send-email-bobby.prani@gmail.com>
- <20140922162534.GA25352@thin>
- <CAJhHMCCpkVqdbMirw2ON=4+pPQgWKczgq_Y9BCv3_fj6yGp_MQ@mail.gmail.com>
+	Mon, 22 Sep 2014 13:02:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCCpkVqdbMirw2ON=4+pPQgWKczgq_Y9BCv3_fj6yGp_MQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092217-1344-0000-0000-000004656572
+In-Reply-To: <20140922164237.GA30229@infradead.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+	<8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
+	<94D0CD8314A33A4D9D801C0FE68B402958C81D56@G9W0745.americas.hpqcorp.net>
+	<20140919112147.GA4639@infradead.org>
+	<x49tx3zpsfg.fsf@segfault.boston.devel.redhat.com>
+	<CANP1eJH0XYgcjzExLmqmViqpCiowquOj1yuWX1wFsbceteLYpw@mail.gmail.com>
+	<20140922164237.GA30229@infradead.org>
+Date: Mon, 22 Sep 2014 13:02:03 -0400
+Message-ID: <CANP1eJG0CDtAA-7q3MvQE7Fz0=awYu0V4p43w-1vw2oV=gg-qQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+From: Milosz Tanski <milosz@adfin.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Andreas Dilger <adilger@dilger.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 12:49:24PM -0400, Pranith Kumar wrote:
-> On Mon, Sep 22, 2014 at 12:25 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > On Sun, Sep 21, 2014 at 12:49:54PM -0400, Pranith Kumar wrote:
-> >> PREEMPT_RCU and TREE_PREEMPT_RCU serve the same function after TINY_PREEMPT_RCU
-> >> has been removed. This patch removes CONFIG_PREEMPT_RCU and uses
-> >> CONFIG_TREE_PREEMPT_RCU in its place.
-> >>
-> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> >
-> > I think it would actually make more sense to do this the other way
-> > around, if at all: drop TREE_PREEMPT_RCU in favor of PREEMPT_RCU.  The
-> > instances shown here don't care about *which* preemptible RCU
-> > implementation the kernel uses, they just need to behave differently
-> > when preemptible.  Let's also not assume that no new RCU implementation
-> > will ever arise superceding TREE_PREEMPT_RCU.
-> 
-> That is exactly what I did first and got the following changelog:
-> 
->  51 files changed, 77 insertions(+), 83 deletions(-)
-> 
-> compared to
-> 
->  8 files changed, 19 insertions(+), 25 deletions(-)
+I'll send out the next RFC with 2 syscalls and magic position values.
+I'm waiting for Jeff to chime in on the v2 patchset before I send out
+the next one.
 
-Were the bulk of the files defconfig files?  These need not be changed,
-the architecture maintainers handle them.
+On Mon, Sep 22, 2014 at 12:42 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Mon, Sep 22, 2014 at 12:32:02PM -0400, Milosz Tanski wrote:
+>> I spent some time thinking about multi-position scatter/gather in
+>> context of this over the weekend. The non-blocking case seams easy,
+>> the implementation I purposed needs an extra loop. Where this gets
+>> hairy is making the non-trivial blocking case work well (as in have
+>> concurrent requests for each of the ranges) in the filesystem code. If
+>> that's the road we're going to go down I have a gut feeling we're
+>> going to get stuck in the same spot(s) as the other non-blocking
+>> buffered r/w attempts from the past.
+>
+> The other thing sis that we have a basically ready, easy to use
+> implementation of flagged I/O (my name for the new syscalls), while
+> S/G I/O will take forever to discuss and is the natual vehicle for
+> other extensions like T10 DIX.
+>
+> I'd like to suggest you consolidate your syscalls down from 4 to 2
+> as suggestes by overloading the negative offset argument, giving
+> us two more syscalls slows for S/G once it's ready.  Note that
+> a sync S/G syscalls should of course also support these flags, although
+> I suspect the primary use cases for S/G I/O would be through the aio
+> machinery.
 
-							Thanx, Paul
 
-> for the current one. Hence my patch opting for the latter. I will go
-> ahead and send the other patch.
-> 
-> >>  8 files changed, 19 insertions(+), 25 deletions(-)
-> >>
-> >> diff --git a/arch/xtensa/configs/s6105_defconfig b/arch/xtensa/configs/s6105_defconfig
-> >> index 12a492a..dab1a99 100644
-> >> --- a/arch/xtensa/configs/s6105_defconfig
-> >> +++ b/arch/xtensa/configs/s6105_defconfig
-> >> @@ -35,7 +35,7 @@ CONFIG_SYSVIPC_SYSCTL=y
-> >>  #
-> >>  # CONFIG_CLASSIC_RCU is not set
-> >>  # CONFIG_TREE_RCU is not set
-> >> -CONFIG_PREEMPT_RCU=y
-> >> +CONFIG_TREE_PREEMPT_RCU=y
-> >>  # CONFIG_RCU_TRACE is not set
-> >>  # CONFIG_TREE_RCU_TRACE is not set
-> >>  # CONFIG_PREEMPT_RCU_TRACE is not set
-> >> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> >> index 77fc43f..39600f4 100644
-> >> --- a/include/linux/init_task.h
-> >> +++ b/include/linux/init_task.h
-> >> @@ -108,7 +108,7 @@ extern struct group_info init_groups;
-> >>  #else
-> >>  #define INIT_TASK_RCU_TREE_PREEMPT(tsk)
-> >>  #endif
-> >> -#ifdef CONFIG_PREEMPT_RCU
-> >> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> >>  #define INIT_TASK_RCU_PREEMPT(tsk)                                   \
-> >>       .rcu_read_lock_nesting = 0,                                     \
-> >>       .rcu_read_unlock_special.s = 0,                                 \
-> >> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> >> index a4a819f..17a15d5 100644
-> >> --- a/include/linux/rcupdate.h
-> >> +++ b/include/linux/rcupdate.h
-> >> @@ -103,7 +103,7 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
-> >>
-> >>  /* Exported common interfaces */
-> >>
-> >> -#ifdef CONFIG_PREEMPT_RCU
-> >> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> >>
-> >>  /**
-> >>   * call_rcu() - Queue an RCU callback for invocation after a grace period.
-> >> @@ -140,12 +140,12 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
-> >>  void call_rcu(struct rcu_head *head,
-> >>             void (*func)(struct rcu_head *head));
-> >>
-> >> -#else /* #ifdef CONFIG_PREEMPT_RCU */
-> >> +#else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>
-> >>  /* In classic RCU, call_rcu() is just call_rcu_sched(). */
-> >>  #define      call_rcu        call_rcu_sched
-> >>
-> >> -#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
-> >> +#endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>
-> >>  /**
-> >>   * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
-> >> @@ -217,7 +217,7 @@ void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-> >>  void synchronize_rcu_tasks(void);
-> >>  void rcu_barrier_tasks(void);
-> >>
-> >> -#ifdef CONFIG_PREEMPT_RCU
-> >> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> >>
-> >>  void __rcu_read_lock(void);
-> >>  void __rcu_read_unlock(void);
-> >> @@ -227,12 +227,12 @@ void synchronize_rcu(void);
-> >>  /*
-> >>   * Defined as a macro as it is a very low level header included from
-> >>   * areas that don't even know about current.  This gives the rcu_read_lock()
-> >> - * nesting depth, but makes sense only if CONFIG_PREEMPT_RCU -- in other
-> >> + * nesting depth, but makes sense only if CONFIG_TREE_PREEMPT_RCU -- in other
-> >>   * types of kernel builds, the rcu_read_lock() nesting depth is unknowable.
-> >>   */
-> >>  #define rcu_preempt_depth() (current->rcu_read_lock_nesting)
-> >>
-> >> -#else /* #ifdef CONFIG_PREEMPT_RCU */
-> >> +#else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>
-> >>  static inline void __rcu_read_lock(void)
-> >>  {
-> >> @@ -254,7 +254,7 @@ static inline int rcu_preempt_depth(void)
-> >>       return 0;
-> >>  }
-> >>
-> >> -#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
-> >> +#endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>
-> >>  /* Internal to kernel */
-> >>  void rcu_init(void);
-> >> @@ -530,7 +530,7 @@ static inline int rcu_read_lock_sched_held(void)
-> >>               }                                                       \
-> >>       } while (0)
-> >>
-> >> -#if defined(CONFIG_PROVE_RCU) && !defined(CONFIG_PREEMPT_RCU)
-> >> +#if defined(CONFIG_PROVE_RCU) && !defined(CONFIG_TREE_PREEMPT_RCU)
-> >>  static inline void rcu_preempt_sleep_check(void)
-> >>  {
-> >>       rcu_lockdep_assert(!lock_is_held(&rcu_lock_map),
-> >> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> >> index 42888d7..6acaa30 100644
-> >> --- a/include/linux/sched.h
-> >> +++ b/include/linux/sched.h
-> >> @@ -1269,11 +1269,11 @@ struct task_struct {
-> >>       int nr_cpus_allowed;
-> >>       cpumask_t cpus_allowed;
-> >>
-> >> -#ifdef CONFIG_PREEMPT_RCU
-> >> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> >>       int rcu_read_lock_nesting;
-> >>       union rcu_special rcu_read_unlock_special;
-> >>       struct list_head rcu_node_entry;
-> >> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> >> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>  #ifdef CONFIG_TREE_PREEMPT_RCU
-> >>       struct rcu_node *rcu_blocked_node;
-> >>  #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >> @@ -2014,12 +2014,12 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
-> >>
-> >>  static inline void rcu_copy_process(struct task_struct *p)
-> >>  {
-> >> -#ifdef CONFIG_PREEMPT_RCU
-> >> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> >>       p->rcu_read_lock_nesting = 0;
-> >>       p->rcu_read_unlock_special.s = 0;
-> >>       p->rcu_blocked_node = NULL;
-> >>       INIT_LIST_HEAD(&p->rcu_node_entry);
-> >> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> >> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>  #ifdef CONFIG_TASKS_RCU
-> >>       p->rcu_tasks_holdout = false;
-> >>       INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
-> >> @@ -2752,7 +2752,7 @@ extern int __cond_resched_softirq(void);
-> >>
-> >>  static inline void cond_resched_rcu(void)
-> >>  {
-> >> -#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
-> >> +#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_TREE_PREEMPT_RCU)
-> >>       rcu_read_unlock();
-> >>       cond_resched();
-> >>       rcu_read_lock();
-> >> diff --git a/init/Kconfig b/init/Kconfig
-> >> index 8a2b97c..27ad03c 100644
-> >> --- a/init/Kconfig
-> >> +++ b/init/Kconfig
-> >> @@ -501,12 +501,6 @@ config TINY_RCU
-> >>
-> >>  endchoice
-> >>
-> >> -config PREEMPT_RCU
-> >> -     def_bool TREE_PREEMPT_RCU
-> >> -     help
-> >> -       This option enables preemptible-RCU code that is common between
-> >> -       TREE_PREEMPT_RCU and, in the old days, TINY_PREEMPT_RCU.
-> >> -
-> >>  config TASKS_RCU
-> >>       bool "Task_based RCU implementation using voluntary context switch"
-> >>       default n
-> >> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> >> index 3ef8ba5..8848a32 100644
-> >> --- a/kernel/rcu/update.c
-> >> +++ b/kernel/rcu/update.c
-> >> @@ -62,7 +62,7 @@ MODULE_ALIAS("rcupdate");
-> >>
-> >>  module_param(rcu_expedited, int, 0);
-> >>
-> >> -#ifdef CONFIG_PREEMPT_RCU
-> >> +#ifdef CONFIG_TREE_PREEMPT_RCU
-> >>
-> >>  /*
-> >>   * Preemptible RCU implementation for rcu_read_lock().
-> >> @@ -108,7 +108,7 @@ void __rcu_read_unlock(void)
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-> >>
-> >> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> >> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> >>
-> >>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >>  static struct lock_class_key rcu_lock_key;
-> >> diff --git a/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
-> >> index 28db67b..4fea92d 100644
-> >> --- a/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
-> >> +++ b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
-> >> @@ -31,7 +31,7 @@ CONFIG_RCU_TORTURE_TEST
-> >>
-> >>  CONFIG_HOTPLUG_CPU
-> >>  CONFIG_PREEMPT
-> >> -CONFIG_PREEMPT_RCU
-> >> +CONFIG_TREE_PREEMPT_RCU
-> >>  CONFIG_SMP
-> >>  CONFIG_TINY_RCU
-> >>  CONFIG_TREE_PREEMPT_RCU
-> >> diff --git a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
-> >> index f85c45e..081dece 100644
-> >> --- a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
-> >> +++ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
-> >> @@ -62,7 +62,7 @@ CONFIG_NO_HZ_FULL_SYSIDLE_SMALL
-> >>       Defer until Frederic uses this.
-> >>
-> >>  CONFIG_PREEMPT_COUNT
-> >> -CONFIG_PREEMPT_RCU
-> >> +CONFIG_TREE_PREEMPT_RCU
-> >>
-> >>       Redundant with CONFIG_PREEMPT, ignore.
-> >>
-> >> --
-> >> 2.1.0
-> >>
-> 
-> 
-> 
-> -- 
-> Pranith
-> 
 
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
