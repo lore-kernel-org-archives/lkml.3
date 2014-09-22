@@ -1,109 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaIVJaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:30:04 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34041 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961AbaIVJaC (ORCPT
+	id S1753560AbaIVJac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:30:32 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:38879 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaIVJa3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:30:02 -0400
-Message-ID: <541FEC14.8030303@redhat.com>
-Date: Mon, 22 Sep 2014 11:29:56 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 7/9] kvm, mem-hotplug: Reload L1's apic access page
- on migration when L2 is running.
-References: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com> <1411210071-14727-8-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1411210071-14727-8-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 05:30:29 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <alpine.LSU.2.11.1409212122180.1182@eggly.anvils>
+Date: Mon, 22 Sep 2014 10:30:25 +0100
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B2F9905E-8D29-45A0-8A15-B4EDA2B9B6AF@cam.ac.uk>
+References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk> <alpine.LSU.2.11.1409212122180.1182@eggly.anvils>
+To: Hugh Dickins <hughd@google.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/09/2014 12:47, Tang Chen ha scritto:
-> We are handling "L1 and L2 share one apic access page" situation when migrating
-> apic access page. We should do some handling when migration happens in the
-> following situations:
-> 
->    1) when L0 is running: Update L1's vmcs in the next L0->L1 entry and L2's
->       vmcs in the next L1->L2 entry.
-> 
->    2) when L1 is running: Force a L1->L0 exit, update L1's vmcs in the next
->       L0->L1 entry and L2's vmcs in the next L1->L2 entry.
-> 
->    3) when L2 is running: Force a L2->L0 exit, update L2's vmcs in the next
->       L0->L2 entry and L1's vmcs in the next L2->L1 exit.
-> 
-> This patch handles 3).
-> 
-> In L0->L2 entry, L2's vmcs will be updated in prepare_vmcs02() called by
-> nested_vm_run(). So we need to do nothing.
-> 
-> In L2->L1 exit, this patch requests apic access page reload in L2->L1 vmexit.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h | 1 +
->  arch/x86/kvm/vmx.c              | 6 ++++++
->  arch/x86/kvm/x86.c              | 3 ++-
->  3 files changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 56156eb..1a8317e 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -1047,6 +1047,7 @@ int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu);
->  int kvm_arch_interrupt_allowed(struct kvm_vcpu *vcpu);
->  int kvm_cpu_get_interrupt(struct kvm_vcpu *v);
->  void kvm_vcpu_reset(struct kvm_vcpu *vcpu);
-> +void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu);
->  
->  void kvm_define_shared_msr(unsigned index, u32 msr);
->  void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index c8e90ec..baac78a 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -8803,6 +8803,12 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
->  	}
->  
->  	/*
-> +	 * We are now running in L2, mmu_notifier will force to reload the
-> +	 * page's hpa for L2 vmcs. Need to reload it for L1 before entering L1.
-> +	 */
-> +	kvm_vcpu_reload_apic_access_page(vcpu);
-> +
-> +	/*
->  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
->  	 * finished a VMLAUNCH or VMRESUME instruction, so we need to set the
->  	 * success or failure flag accordingly.
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index fc54fa6..2ae2dc7 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5989,7 +5989,7 @@ static void vcpu_scan_ioapic(struct kvm_vcpu *vcpu)
->  	kvm_apic_update_tmr(vcpu, tmr);
->  }
->  
-> -static void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
-> +void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->  {
->  	/*
->  	 * Only APIC access page shared by L1 and L2 vm is handled. The APIC
-> @@ -6009,6 +6009,7 @@ static void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->  				page_to_phys(vcpu->kvm->arch.apic_access_page));
->  	}
->  }
-> +EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
->  
->  /*
->   * Returns 1 to let __vcpu_run() continue the guest execution loop without
-> 
+Hi Hugh,
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+On 22 Sep 2014, at 05:43, Hugh Dickins <hughd@google.com> wrote:
+> On Mon, 22 Sep 2014, Anton Altaparmakov wrote:
+>> Any code that uses __getblk() and thus bread(), breadahead(), sb_bread(), 
+>> sb_breadahead(), sb_getblk(), and calls it using a 64-bit block on a 
+>> 32-bit arch (where "long" is 32-bit) causes an inifinite loop in 
+>> __getblk_slow() with an infinite stream of errors logged to dmesg like 
+>> this:
+>> 
+>> __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
+>> b_state=0x00000020, b_size=512
+>> device sda1 blocksize: 512
+>> 
+>> Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the 
+>> top 32-bits are missing (in this case the 0x1 at the top).
+>> 
+>> This is because grow_dev_page() was broken in commit 676ce6d5ca30: "block: 
+>> replace __getblk_slow misfix by grow_dev_page fix" by Hugh Dickins so that 
+>> it now has a 32-bit overflow due to shifting the block value to the right 
+>> so it fits in 32-bits and storing the result in pgoff_t variable which is 
+>> 32-bit and then passing the pgoff_t variable left-shifted as the block 
+>> number which causes the top bits to get lost as the pgoff_t is not type 
+>> cast to sector_t / 64-bit before the shift.
+>> 
+>> This patch fixes this issue by type casting "index" to sector_t before 
+>> doing the left shift.
+>> 
+>> Note this is not a theoretical bug but has been seen in the field on a 
+>> 4TiB hard drive with logical sector size 512 bytes.
+>> 
+>> This patch has been verified to fix the infinite loop problem on 3.17-rc5 
+>> kernel using a 4TB disk image mounted using "-o loop".  Without this patch 
+>> doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop 
+>> 100% reproducibly whilst with the patch it works fine as expected.
+>> 
+>> Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
+>> Cc: stable@vger.kernel.org # 3.6 3.8 3.10 3.12 3.14 3.16
+> 
+> Acked-by: Hugh Dickins <hughd@google.com>
+> 
+> Yes indeed, that's bad, and entirely my fault (though it took me a while
+> to see how the "block = index << sizebits" which was there before was okay,
+
+Ouch.  I failed to see that (I admit I did not pay too much attention to the original code - I just used "git blame" to find out which commit put that code in place - my bad).  It was never ok!  I went back to 2.6.12-rc2 (original commit to git Linus' kernel repository) and that is also affected.  That implies this is the first time anyone has used a 4TiB disk with 512 byte sectors with NTFS where Windows had previously created a file/directory with an attribute list attribute in it.  -  That is the only metadata type we use sb_bread() for and the disk image from the customer does contain it and I verified that is where the inifinite loop comes from.
+
+So it appears sb_bread() and friends have always been broken on 32-bit architectures when accessing blocks outside the range 2^32 - 1 and it appears google finds lots of occurrences of such infinite loops being reported but the fixes have always been to not make the calls in the first place.  No-one seems to have recognized that there is a genuine problem here before.
+
+Still my patch stands correct and should be applied to all kernel versions that have your patch and older kernels should have an equivalent patch applied to fix them, too for people who run very old kernels.
+
+> but my passing "index << sizebits" as arg to function very much not okay).
+> Thank you, Anton.
+
+You are welcome.
+
+> But I see my commit was marked for stable 3.0 3.2 3.4 3.5: so your fix
+> is needed in 3.2 and 3.4 longterm also (the others now beyond life).
+
+You are quite right.  It needs to go back to all those kernels, too.  Thank you!
+
+Best regards,
+
+	Anton
+
+> Hugh
+> 
+>> ---
+>> 
+>> Linus, can you please apply this?  Alternatively, Andrew, can you please 
+>> pick this up and send it to Linus?
+>> 
+>> It would be good it it can be applied for 3.17 as well as to all stable 
+>> kernels >= 3.6 as they are all broken!
+>> 
+>> Thanks a lot in advance!
+>> 
+>> Best regards,
+>> 
+>> 	Anton
+>> -- 
+>> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+>> Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+>> Linux NTFS maintainer, http://www.linux-ntfs.org/
+>> 
+>> diff --git a/fs/buffer.c b/fs/buffer.c
+>> index 8f05111..3588a80 100644
+>> --- a/fs/buffer.c
+>> +++ b/fs/buffer.c
+>> @@ -1022,7 +1022,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+>> 		bh = page_buffers(page);
+>> 		if (bh->b_size == size) {
+>> 			end_block = init_page_buffers(page, bdev,
+>> -						index << sizebits, size);
+>> +						(sector_t)index << sizebits,
+>> +						size);
+>> 			goto done;
+>> 		}
+>> 		if (!try_to_free_buffers(page))
+>> @@ -1043,7 +1044,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+>> 	 */
+>> 	spin_lock(&inode->i_mapping->private_lock);
+>> 	link_dev_buffers(page, bh);
+>> -	end_block = init_page_buffers(page, bdev, index << sizebits, size);
+>> +	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
+>> +			size);
+>> 	spin_unlock(&inode->i_mapping->private_lock);
+>> done:
+>> 	ret = (block < end_block) ? 1 : -ENXIO;
+
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+
