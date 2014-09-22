@@ -1,166 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaIVNgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:36:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070AbaIVNgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:36:17 -0400
-Date: Mon, 22 Sep 2014 15:35:26 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf pollfd v3
-Message-ID: <20140922133526.GB18187@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <20140911113336.GB13634@krava.brq.redhat.com>
- <20140911114825.GC13634@krava.brq.redhat.com>
- <20140911133029.GC10158@kernel.org>
- <20140911213638.GC1801@kernel.org>
- <20140918160455.GI2770@kernel.org>
+	id S1754172AbaIVNhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:37:03 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49568 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565AbaIVNhA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 09:37:00 -0400
+Date: Mon, 22 Sep 2014 14:36:55 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 06/12] ARM: integrator: Correct usage of
+ of_pci_range_to_resource()
+Message-ID: <20140922133655.GR1994@e106497-lin.cambridge.arm.com>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+ <1407860725-25202-7-git-send-email-Liviu.Dudau@arm.com>
+ <CACRpkdanh8vb2-jxVvhmYLXEcvaEKv+BCiom8sPkT3uX_dhG6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CACRpkdanh8vb2-jxVvhmYLXEcvaEKv+BCiom8sPkT3uX_dhG6g@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 22 Sep 2014 13:36:56.0885 (UTC) FILETIME=[4757D650:01CFD66A]
+X-MC-Unique: 114092214365703001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20140918160455.GI2770@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Thu, Sep 11, 2014 at 10:30:29AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Thu, Sep 11, 2014 at 01:48:25PM +0200, Jiri Olsa escreveu:
-> > > > so the reason was that my fd lib stuff did not get rebuilt..
-> > > 
-> > > Thanks a lot! I missed that one, will fold it into the patch that
-> > > introduces fdarray and add a v2: comment attributing credit to you, so
-> > > that bisection works.
-> >  
-> > > > you probably want to add attached change, before there's the
-> > > > fix for the apik library
-> > 
-> > Done, need just to move that fcntl O_NONBLOCK from fdarray__add() to
-> > perf_evlist__add_pollfd(), what I have now is at:
-> > 
-> > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v3
-> > 
-> > In case you want to see if itaddresses your concerns.
-> > 
-> > The last cset should address what you pointed out about unmapping only
-> > when the events gets completely drained from the ring buffer.
-> > 
-> > I'll do the fcntl() fix, test your drain-last-events scenario and
-> > repost.
+On Mon, Sep 22, 2014 at 01:47:16PM +0100, Linus Walleij wrote:
+> On Tue, Aug 12, 2014 at 6:25 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
 > 
-> Done, updated it there:
+> > Previously, of_pci_range_to_resource() would return a resource
+> > that contained physical addresses of the IO space even if the
+> > IORESOURCE_IO flags mandate a logical port set of values. Now
+> > that the function has been fixed we need to update the drivers
+> > that were taking advantage of the old behaviour.
+> >
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 > 
-> https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
+> I guess you know what you're doing so:
+
+I hope so :)
+
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Thanks!
+
 > 
-> Its on top of my last perf/core branch, i.e. with builtin-record.c using
-> perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
-> mmap_read loop to consume what is left after all fds for a mmap are
-> closed.
+> I expect this patch to go through the PCI tree or so? Or do you
+> expect me to funnel it?
+
+It will go through PCI tree together with the patch that "fixes"
+the existing functionality.
+
+Best regards,
+Liviu 
+
 > 
-> I'll wait a bit before reposting, probably Jiri will not be able to
-> comment this week, but I would like to at least post the URL for this
-> latest v4 kit.
+> Yours,
+> Linus Walleij
 > 
-> Adrian, if you could take a look at it, would be really great :-)
 
-I checked the branch.. the last patch brakes the functionality
-of perf record for me
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-I tried attached change instead.. but then I realized we dont
-actually need the final unmap for record command, because
-we always open 1 mmap for each CPU and then do the output ioctl
-for any other process we monitor for each CPU.. so all the mmaps
-stay until last process is dead or we exit
-
-maybe we could have this code just to be complete,
-or I missed something ;-)
-
-jirka
-
-
----
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index aac8660..96a4cf0 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -244,11 +244,15 @@ static int record__mmap_read_all(struct record *rec)
- 	int rc = 0;
- 
- 	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
--		if (rec->evlist->mmap[i].base) {
--			if (record__mmap_read(rec, &rec->evlist->mmap[i]) != 0) {
-+		struct perf_mmap *md = &rec->evlist->mmap[i];
-+
-+		if (md->base) {
-+			if (record__mmap_read(rec, md) != 0) {
- 				rc = -1;
- 				goto out;
- 			}
-+			if (md->refcnt == 1 && perf_mmap__empty(md))
-+				perf_evlist__mmap_put(rec->evlist, i);
- 		}
- 	}
- 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 3cebc9a..82bab81 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -25,7 +25,6 @@
- #include <linux/bitops.h>
- #include <linux/hash.h>
- 
--static void perf_evlist__mmap_put(struct perf_evlist *evlist, int idx);
- static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx);
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-@@ -676,17 +675,12 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- 	return event;
- }
- 
--static bool perf_mmap__empty(struct perf_mmap *md)
--{
--	return perf_mmap__read_head(md) != md->prev;
--}
--
- static void perf_evlist__mmap_get(struct perf_evlist *evlist, int idx)
- {
- 	++evlist->mmap[idx].refcnt;
- }
- 
--static void perf_evlist__mmap_put(struct perf_evlist *evlist, int idx)
-+void perf_evlist__mmap_put(struct perf_evlist *evlist, int idx)
- {
- 	BUG_ON(evlist->mmap[idx].refcnt == 0);
- 
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index bd312b0..fdd395a 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -204,6 +204,13 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
- 	pc->data_tail = tail;
- }
- 
-+static inline bool perf_mmap__empty(struct perf_mmap *md)
-+{
-+	return perf_mmap__read_head(md) != md->prev;
-+}
-+
-+void perf_evlist__mmap_put(struct perf_evlist *evlist, int idx);
-+
- bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str);
- void perf_evlist__to_front(struct perf_evlist *evlist,
- 			   struct perf_evsel *move_evsel);
