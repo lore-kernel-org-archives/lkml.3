@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaIVDXS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 23:23:18 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:50800 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaIVDXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 23:23:16 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <m.chehab@samsung.com>, <dheitmueller@kernellabs.com>,
-        <shuah.kh@samsung.com>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] driver/drx39xyj: fix some compiling warnings
-Date: Mon, 22 Sep 2014 11:22:43 +0800
-Message-Id: <1411356163-6018-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 2.0.0-rc0
+	id S1752986AbaIVDaa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 23:30:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaIVDa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 23:30:28 -0400
+Message-ID: <541F97CF.7000305@redhat.com>
+Date: Mon, 22 Sep 2014 11:30:23 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC 2/2] vhost: support urgent descriptors
+References: <1404203661-7521-1-git-send-email-mst@redhat.com>	<1404203661-7521-2-git-send-email-mst@redhat.com> <541BD6E9.2010707@redhat.com> <541D503B.3070507@redhat.com>
+In-Reply-To: <541D503B.3070507@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling kernel, in module drx39xyj, there are some warnings
-showing some variables may be used uninitialized, though they have
- been initialized in fact.
+On 09/20/2014 06:00 PM, Paolo Bonzini wrote:
+> Il 19/09/2014 09:10, Jason Wang ha scritto:
+>>>>  
+>>>> -	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+>>>> +	if (vq->urgent || !vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+>> So the urgent descriptor only work when event index was not enabled?
+>> This seems suboptimal, we may still want to benefit from event index
+>> even if urgent descriptor is used. Looks like we need return true here
+>> when vq->urgent is true?
+> Its ||, not &&.
+>
+> Without event index, all descriptors are treated as urgent.
+>
+> Paolo
+>
 
-drivers/media/dvb-frontends/drx39xyj/drxj.c: In function
- ‘drxj_dap_atomic_read_reg32.isra.17’:
-drivers/media/dvb-frontends/drx39xyj/drxj.c:2190:7: warning:
- ‘*((void *)&buf+3)’ may be used uninitialized in this function
-[-Wmaybe-uninitialized]
-  word = (u32) buf[3];
-       ^
-drivers/media/dvb-frontends/drx39xyj/drxj.c:2192:10: warning:
- ‘*((void *)&buf+2)’ may be used uninitialized in this function
- [-Wmaybe-uninitialized]
-  word |= (u32) buf[2];
-          ^
-drivers/media/dvb-frontends/drx39xyj/drxj.c:2194:10: warning:
- ‘*((void *)&buf+1)’ may be used uninitialized in this function
- [-Wmaybe-uninitialized]
-  word |= (u32) buf[1];
-          ^
-drivers/media/dvb-frontends/drx39xyj/drxj.c:2196:10: warning:
- ‘buf’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  word |= (u32) buf[0];
-          ^
-drivers/media/dvb-frontends/drx39xyj/drxj.c: In function
- ‘drx39xxj_read_status’:
-drivers/media/dvb-frontends/drx39xyj/drxj.c:10671:11: warning:
- ‘strength’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  u16 mer, strength;
-           ^
-drivers/media/dvb-frontends/drx39xyj/drxj.c: In function
- ‘drxj_dap_scu_atomic_read_reg16’:
-drivers/media/dvb-frontends/drx39xyj/drxj.c:4208:9: warning:
- ‘*((void *)&buf+1)’ may be used uninitialized in this function
- [-Wmaybe-uninitialized]
-  word = (u16) (buf[0] + (buf[1] << 8));
-         ^
-drivers/media/dvb-frontends/drx39xyj/drxj.c:4208:9: warning:
- ‘buf’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+The problem is if vq->urgent is true, the patch checks
+VRING_AVAIL_F_NO_INTERRUPT bit. This bit were set unconditionally in
+virtqueue_enable_cb() regardless of event index feature and cleared
+unconditionally in virtqueue_disable_cb(). So virtqueue_enable_cb() was
+used to not only publish a new event index but also enable the urgent
+descriptor. And virtqueue_disable_cb() disabled all interrupts including
+the urgent descriptor. Guest won't get urgent interrupts by just adding
+virtqueue_add_outbuf_urgent() since what it needs is to enable and
+disable interrupt for !urgent descriptor.
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/media/dvb-frontends/drx39xyj/drxj.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Btw, not sure "urgent" is a suitable name, since interrupt is often slow
+in kvm guest. And in fact virtio-net will probably use "urgent"
+descriptor for those packets (e.g stream packets who can be delayed a
+little bit to batch more bytes from userspace) who was not urgent
+compared to other packets.
 
-diff --git a/drivers/media/dvb-frontends/drx39xyj/drxj.c b/drivers/media/dvb-frontends/drx39xyj/drxj.c
-index 7ca7a21..afb14c70 100644
---- a/drivers/media/dvb-frontends/drx39xyj/drxj.c
-+++ b/drivers/media/dvb-frontends/drx39xyj/drxj.c
-@@ -2181,6 +2181,7 @@ int drxj_dap_atomic_read_reg32(struct i2c_device_addr *dev_addr,
- 	if (!data)
- 		return -EINVAL;
- 
-+	memset(buf, 0, sizeof(*data));
- 	rc = drxj_dap_atomic_read_write_block(dev_addr, addr,
- 					      sizeof(*data), buf, true);
- 
-@@ -4200,6 +4201,7 @@ int drxj_dap_scu_atomic_read_reg16(struct i2c_device_addr *dev_addr,
- 	if (!data)
- 		return -EINVAL;
- 
-+	memset(buf, 0, 2);
- 	rc = drxj_dap_scu_atomic_read_write_block(dev_addr, addr, 2, buf, true);
- 	if (rc < 0)
- 		return rc;
-@@ -10667,7 +10669,7 @@ ctrl_sig_quality(struct drx_demod_instance *demod,
- 	enum drx_standard standard = ext_attr->standard;
- 	int rc;
- 	u32 ber, cnt, err, pkt;
--	u16 mer, strength;
-+	u16 mer, strength = 0;
- 
- 	rc = get_sig_strength(demod, &strength);
- 	if (rc < 0) {
--- 
-2.0.0-rc0
 
