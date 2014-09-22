@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842AbaIVTBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:01:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:42027 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752760AbaIVTBA (ORCPT
+	id S1754866AbaIVTBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:01:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55192 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaIVTBJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:01:00 -0400
-Date: Mon, 22 Sep 2014 15:00:58 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] signal: document the RCU protection of ->sighand
-Message-ID: <20140922150058.452cbe1e@gandalf.local.home>
-In-Reply-To: <20140922164440.GA28942@redhat.com>
-References: <20140922164404.GA28910@redhat.com>
-	<20140922164440.GA28942@redhat.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Mon, 22 Sep 2014 15:01:09 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com>
+Date: Mon, 22 Sep 2014 14:01:03 -0500
+Cc: Rob Herring <robherring2@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1E0E7540-B04F-4E89-91F7-B6FAC3C5D889@codeaurora.org>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-11-git-send-email-abrestic@chromium.org> <CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com> <CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014 18:44:40 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
 
-> __cleanup_sighand() frees sighand without RCU grace period. This is
-> correct but this looks "obviously buggy" and constantly confuses the
-> readers, add the comments to explain how this works.
+On Sep 22, 2014, at 11:28 AM, Andrew Bresticker <abrestic@chromium.org> wrote:
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
+> On Mon, Sep 22, 2014 at 7:23 AM, Rob Herring <robherring2@gmail.com> wrote:
+>> On Fri, Sep 5, 2014 at 12:30 PM, Andrew Bresticker
+>> <abrestic@chromium.org> wrote:
+>>> Add the vendor prefix "mti" for MIPS Technologies, Inc.
+>>> 
+>>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>>> ---
+>>> New for v2.
+>>> ---
+>>> Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>>> 1 file changed, 1 insertion(+)
+>>> 
+>>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> index ac7269f..efa5a5b 100644
+>>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> @@ -86,6 +86,7 @@ microchip     Microchip Technology Inc.
+>>> mosaixtech     Mosaix Technologies, Inc.
+>>> moxa   Moxa
+>>> mpl    MPL AG
+>>> +mti    MIPS Technologies, Inc.
+>> 
+>> Why not mips as that is more common and the stock ticker.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/fork.c   |    5 ++++-
->  kernel/signal.c |   12 +++++++++++-
->  2 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 1380d8a..2dd9f1d 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1017,11 +1017,14 @@ void __cleanup_sighand(struct sighand_struct *sighand)
->  {
->  	if (atomic_dec_and_test(&sighand->count)) {
->  		signalfd_cleanup(sighand);
-> +		/*
-> +		 * sighand_cachep is SLAB_DESTROY_BY_RCU so we can free it
-> +		 * without an RCU grace period, see __lock_task_sighand().
-> +		 */
->  		kmem_cache_free(sighand_cachep, sighand);
->  	}
->  }
->  
-> -
->  /*
->   * Initialize POSIX timer handling for a thread group.
->   */
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 61a1f55..9562a4f 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -1272,7 +1272,17 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
->  		sighand = rcu_dereference(tsk->sighand);
->  		if (unlikely(sighand == NULL))
->  			break;
-> -
-> +		/*
-> +		 * This sighand can be already freed and even reused, but
-> +		 * we rely on SLAB_DESTROY_BY_RCU and sighand_ctor() which
-> +		 * initializes ->siglock: this slab can't go away, it has
-> +		 * the same object type, ->siglock can't be reinitialized.
-> +		 *
-> +		 * We need to ensure that tsk->sighand is still the same
-> +		 * after we take the lock, we can race with de_thread() or
-> +		 * __exit_signal(). In the latter case the next iteration
-> +		 * must see ->sighand == NULL.
-> +		 */
->  		spin_lock_irqsave(&sighand->siglock, *flags);
->  		if (likely(sighand == tsk->sighand))
->  			break;
+> "mti" is already in use, see
+> Documentation/devicetree/bindings/mips/cpu_irq.txt,
+> arch/mips/mti-sead3/sead3.dts, and arch/mips/ralink/dts/*.dtsi.
+
+Isn’t mips already used as well:
+
+arch/mips/lantiq/dts/danube.dtsi:			compatible = "mips,mips24Kc";
+arch/mips/ralink/dts/mt7620a.dtsi:			compatible = "mips,mips24KEc";
+arch/mips/ralink/dts/rt2880.dtsi:			compatible = "mips,mips4KEc";
+arch/mips/ralink/dts/rt3050.dtsi:			compatible = "mips,mips24KEc";
+arch/mips/ralink/dts/rt3883.dtsi:
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
