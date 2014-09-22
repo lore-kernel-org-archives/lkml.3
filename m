@@ -1,172 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937AbaIVMPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 08:15:55 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:54757 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491AbaIVMPx (ORCPT
+	id S1753960AbaIVMSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 08:18:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28728 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753691AbaIVMSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 08:15:53 -0400
-Date: Mon, 22 Sep 2014 14:15:47 +0200
-From: Robert Richter <rric@kernel.org>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sunil Goutham <sunil.goutham@caviumnetworks.com>
-Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
- bridge resources from DT
-Message-ID: <20140922121547.GD20170@rric.localhost>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
- <20140922093228.GA20256@rric.localhost>
- <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
+	Mon, 22 Sep 2014 08:18:17 -0400
+Date: Mon, 22 Sep 2014 08:18:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: duzhiping <duzhiping.du@huawei.com>
+Cc: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>, <wangnan0@huawei.com>
+Subject: Re: itrace: An interrupts tracing tool
+Message-ID: <20140922081814.71cf11ea@gandalf.local.home>
+In-Reply-To: <541F990F.7030806@huawei.com>
+References: <541F990F.7030806@huawei.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.09.14 12:43:17, Liviu Dudau wrote:
-> On Mon, Sep 22, 2014 at 10:32:28AM +0100, Robert Richter wrote:
-> > On 18.09.14 02:30:23, Liviu Dudau wrote:
-> > > +int of_pci_get_host_bridge_resources(struct device_node *dev,
-> > > +			unsigned char busno, unsigned char bus_max,
-> > > +			struct list_head *resources, resource_size_t *io_base)
-> > > +{
-> > > +	struct resource *res;
-> > > +	struct resource *bus_range;
-> > > +	struct of_pci_range range;
-> > > +	struct of_pci_range_parser parser;
-> > > +	char range_type[4];
-> > > +	int err;
-> > > +
-> > > +	if (!io_base)
-> > > +		return -EINVAL;
-> > > +	*io_base = OF_BAD_ADDR;
-> > 
-> 
-> Hi Robert,
-> 
-> > This breaks for mem-mapped pci host controllers. The patch below fixes
-> > this.
-> 
-> I think you mean PCI host controller that have only memory mapped ranges,
-> am I right? Initially I've read your reply as to mean that the host
-> controller is accessed through some memory mapped area, which I believe is
-> the case for all host controllers.
+On Mon, 22 Sep 2014 11:35:43 +0800
+duzhiping <duzhiping.du@huawei.com> wrote:
 
-Right, that's meant here. Sorry for the misleading comment.
+>   Many functions depends on interrupts in Linux system, when the interrupts occur an error, it may cause fatal problem.
+> 
+>   Then, we should record their trace when interrupts in and out. The recorded information could help us analyze interrupts errors.
+> 
+>   Itrace is such an interrupts trace tool we have developed, it provides config interface and trace information through "procfs".
+> 
+>   Do you think it has the value to upstream?
+> 
 
-> 
-> > 
-> > This series was tested with the fix on top for Cavium Thunder.
-> > 
-> > Tested-by: Robert Richter <rrichter@cavium.com>
-> 
-> Thanks for that!
-> 
-> > 
-> > -Robert
-> > 
-> > 
-> > 
-> > From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
-> > From: Robert Richter <rrichter@cavium.com>
-> > Date: Mon, 22 Sep 2014 10:46:01 +0200
-> > Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
-> > 
-> > The pci host bridge was not created if io_base was not set when
-> > calling of_pci_get_host_bridge_resources(). This is esp. the case for
-> > mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
-> > parameter io_base is optional now.
-> 
-> I think the message is misleading. What you want to do is make io_base
-> optional for the case where the PCI host bridge only expects to have only
-> IORESOURCE_MEM ranges and doesn't care about IORESOURCE_IO ones.
-> 
-> As I'm going to touch this area again to address a comment from Bjorn,
-> do you mind if I roll this patch into mine with your Signed-off-by and
-> the mention that you have made io_base optional?
+You mean like:
 
-Sure, fine with me.
-
-Thanks,
-
--Robert
+# trace-cmd record -p function_graph -l do_IRQ -e irq_handler_entry sleep 10
+# trace-cmd report
+       trace-cmd-3165  [002]    53.201912: funcgraph_entry:                   |  do_IRQ() {
+       trace-cmd-3165  [002]    53.201920: irq_handler_entry:    irq=21 name=uhci_hcd:usb4
+       trace-cmd-3165  [002]    53.201924: irq_handler_entry:    irq=21 name=eth0
+       trace-cmd-3165  [002]    53.201927: funcgraph_exit:       + 12.738 us  |  }
+          <idle>-0     [003]    53.202140: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [003]    53.202146: irq_handler_entry:    irq=21 name=uhci_hcd:usb4
+          <idle>-0     [003]    53.202148: irq_handler_entry:    irq=21 name=eth0
+          <idle>-0     [003]    53.202151: funcgraph_exit:       + 10.172 us  |  }
+          <idle>-0     [000]    58.679619: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [000]    58.679625: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [000]    58.679630: funcgraph_exit:         8.040 us   |  }
+          <idle>-0     [001]    58.680176: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [001]    58.680178: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [001]    58.680181: funcgraph_exit:         4.160 us   |  }
+          <idle>-0     [002]    58.680633: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [002]    58.680635: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [002]    58.680637: funcgraph_exit:         3.489 us   |  }
+          <idle>-0     [003]    58.680913: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [003]    58.680915: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [003]    58.680917: funcgraph_exit:         3.368 us   |  }
+    kworker/u8:1-40    [000]    58.681191: funcgraph_entry:                   |  do_IRQ() {
+    kworker/u8:1-40    [000]    58.681192: irq_handler_entry:    irq=14 name=ata_piix
+    kworker/u8:1-40    [000]    58.681196: funcgraph_exit:         4.551 us   |  }
+          <idle>-0     [001]    58.681415: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [001]    58.681417: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [001]    58.681420: funcgraph_exit:         3.991 us   |  }
+          <idle>-0     [002]    58.681632: funcgraph_entry:                   |  do_IRQ() {
+          <idle>-0     [002]    58.681633: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [002]    58.681635: funcgraph_exit:         2.183 us   |  }
 
 
-> 
-> Best regards,
-> Liviu
-> 
-> > 
-> > Signed-off-by: Robert Richter <rrichter@cavium.com>
-> > ---
-> >  drivers/of/of_pci.c | 7 +++----
-> >  1 file changed, 3 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> > index ffdb45ed8682..1f0e7c2505ee 100644
-> > --- a/drivers/of/of_pci.c
-> > +++ b/drivers/of/of_pci.c
-> > @@ -182,9 +182,8 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
-> >  	char range_type[4];
-> >  	int err;
-> >  
-> > -	if (!io_base)
-> > -		return -EINVAL;
-> > -	*io_base = OF_BAD_ADDR;
-> > +	if (io_base)
-> > +		*io_base = OF_BAD_ADDR;
-> >  
-> >  	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-> >  	if (!bus_range)
-> > @@ -242,7 +241,7 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
-> >  			goto parse_failed;
-> >  		}
-> >  
-> > -		if (resource_type(res) == IORESOURCE_IO) {
-> > +		if (io_base && resource_type(res) == IORESOURCE_IO) {
-> >  			if (*io_base != OF_BAD_ADDR)
-> >  				pr_warn("More than one I/O resource converted. CPU offset for old range lost!\n");
-> >  			*io_base = range.cpu_addr;
-> > -- 
-> > 2.1.0
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> -- 
-> ====================
-> | I would like to |
-> | fix the world,  |
-> | but they're not |
-> | giving me the   |
->  \ source code!  /
->   ---------------
->     ¯\_(ツ)_/¯
-> 
+Or just use the irq events only?
+
+# trace-cmd record -e irq_handler_entry -e irq_handler_exit sleep 10
+# trace-cmd report
+          <idle>-0     [003]   198.853342: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [003]   198.853344: irq_handler_exit:     irq=14 ret=handled
+          <idle>-0     [000]   198.862038: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [000]   198.862040: irq_handler_exit:     irq=14 ret=handled
+          <idle>-0     [001]   198.862227: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [001]   198.862228: irq_handler_exit:     irq=14 ret=handled
+          <idle>-0     [002]   198.870423: irq_handler_entry:    irq=14 name=ata_piix
+          <idle>-0     [002]   198.870424: irq_handler_exit:     irq=14 ret=handled
+
+
+It's a bit cleaner, but the function_graph gives the times nicely. But
+I do plan on updating trace-cmd to give times between different events.
+
+-- Steve
