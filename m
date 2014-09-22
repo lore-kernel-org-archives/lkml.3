@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaIVJBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:01:53 -0400
-Received: from mout.gmx.net ([212.227.15.18]:61491 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaIVJBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:01:51 -0400
+	id S1752856AbaIVJE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:04:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46841 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750914AbaIVJE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 05:04:28 -0400
+Date: Mon, 22 Sep 2014 11:04:25 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 1/7] clk: at91: add a driver for the h32mx clock
+Message-ID: <20140922110425.2ec8a0af@bbrezillon>
+In-Reply-To: <541C228F.70207@atmel.com>
+References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1410797759-18675-2-git-send-email-alexandre.belloni@free-electrons.com>
+	<541C228F.70207@atmel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Message-ID: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
-From: "Peter Huewe" <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: ksummit-discuss@lists.linuxfoundation.org, linux-kernel@vger.kernel.org,
-        james.l.morris@oracle.com, jarkko.sakkinnen@linux.intel.com,
-        linux-security-module@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net, keyrings@linux-nfs.org,
-        trousers-tech@lists.sourceforge.net
-Subject: TPM MiniSummit @ LinuxCon Europe
-Content-Type: text/plain; charset=UTF-8
-Date: Mon, 22 Sep 2014 11:01:31 +0200
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:K33lVuyrZYwwPFzUg6Bfbuz2qFtRsvFc2usT2PH04tg
- T99T/entN9bWRRxVar9HG1gQtlUmopwhEQleer4tZOZfY+sCZv
- jdAI19lFzn2jGo2ZANjtBF+89Ab6kT5zCeCDxvhPh94Xz0fJav
- zdn1VDQmRWMY0JOxkHHaXJ5jURh3+28DSh22bd/SNsllLWUAWx
- y7oQGbgybSm69kR/gO39GgAfpNKRkxIC/1hkf20VC5WDXDOBTC
- dIJxuJt1oToPNGLOCupa7kWO7Y1VAaIm1DNF2JTmR5X69kw/vW pbTypM=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 19 Sep 2014 14:33:19 +0200
+Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 
-I would like to 'invite' all interested parties in a short TPM minisummit where we can discuss the following hot topics of the TPM subsystem over a beer or two:
- - State of the TPM Subsystem
- - De-/Initialization Mess
- - Devm'ification
- - Testing
- - TPM 2.0 Support
- - Dependencies / interaction with other subsystems (e.g. keyring / IMA)
- - Status of old 1.1b TPM drivers, deprecation plans
- - ...
+> On 15/09/2014 18:15, Alexandre Belloni :
+> > Newer SoCs have two different AHB interconnect. The AHB 32 bits Matrix
+> > interconnect (h32mx) has a clock that can be setup at the half of the h64mx
+> > clock (which is mck). The h32mx clock can not exceed 90 MHz.
+> > 
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> 
+> Okay on my side:
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> 
+> > ---
+> > Cc:Mike Turquette <mturquette@linaro.org>
+> 
+> Mike,
+> 
+> I guess that you didn't get this v3. Can you "Ack" this one of should we
+> re-sent to you?
+> 
+> I would like to take this patch with the rest of the SAMA5D4 series: is
+> it okay for you?
 
 
-Please register your interest by filling out this doodle
- http://doodle.com/q9ezcrivhqrktw6u
+Hi Mike,
 
-I'm not sure if I can get any funding for the summit... but maybe I can arrange something.
+I gave my ack to this patch, so, if you don't mind letting Nicolas
+take it through his tree, I think it will ease integration of the
+sama5d4 support (no external dependencies on the clk tree).
 
+Best Regards,
 
-Also I'm trying to bring along some TPM samples from my employer if possible.
+Boris
 
-
-Thanks
-Peter
-
-p.s.: experienced kernel developers welcome :)
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
