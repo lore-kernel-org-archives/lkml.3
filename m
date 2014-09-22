@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaIVOa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:30:56 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:43500 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128AbaIVOay (ORCPT
+	id S1754296AbaIVObv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:31:51 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:58576 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbaIVObu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:30:54 -0400
+	Mon, 22 Sep 2014 10:31:50 -0400
+Message-ID: <542032D4.305@redhat.com>
+Date: Mon, 22 Sep 2014 16:31:48 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140922101221.4bf46809@lwn.net>
-References: <cover.1410810247.git.milosz@adfin.com>
-	<cover.1410983998.git.milosz@adfin.com>
-	<20140919104204.3b0bb762@lwn.net>
-	<CANP1eJEhHyA93kDUCz_=0vDjdPXz7g0x1SmW+q060fntQAbrYA@mail.gmail.com>
-	<20140922101221.4bf46809@lwn.net>
-Date: Mon, 22 Sep 2014 10:30:52 -0400
-Message-ID: <CANP1eJF6dt59eEtyGu5YzLj4zt876cqy=a32wFNSh13Rho7Gag@mail.gmail.com>
-Subject: Re: [RFC v2 0/5] Non-blockling buffered fs read (page cache only)
-From: Milosz Tanski <milosz@adfin.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Matlack <dmatlack@google.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: don't take vcpu mutex for obviously invalid vcpu
+ ioctls
+References: <1411167805-2458-1-git-send-email-dmatlack@google.com> <541FFEDE.9030800@redhat.com> <542027F6.4050205@de.ibm.com>
+In-Reply-To: <542027F6.4050205@de.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:12 AM, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Fri, 19 Sep 2014 13:33:14 -0400
-> Milosz Tanski <milosz@adfin.com> wrote:
->
->> >  - Non-blocking I/O has long been supported with a well-understood set
->> >    of operations - O_NONBLOCK and fcntl().  Why do we need a different
->> >    mechanism here - one that's only understood in the context of
->> >    buffered file I/O?  I assume you didn't want to implement support
->> >    for poll() and all that, but is that a good enough reason to add a
->> >    new Linux-specific non-blocking I/O technique?
->>
->> I realized that I didn't answer this question well in my other long
->> email. O_NONBLOCK doesn't work on files under any commonly used OS,
->> and people have gotten use to this behavior so I doubt we could change
->> that without breaking a lot of folks applications.
->
-> So I'm not contesting this, but I am genuinely curious: do you think
-> there are applications out there requesting non-blocking behavior on
-> regular files that will then break if they actually get non-blocking
-> behavior?  I don't suppose you have an example?
->
-> Thanks,
->
-> jon
+Il 22/09/2014 15:45, Christian Borntraeger ha scritto:
+> We now have an extra condition check for every valid ioctl, to make an error case go faster.
+> I know, the extra check is just a 1 or 2 cycles if branch prediction is right, but still.
 
-Earlier in this thread Jeff pointed (
-https://lkml.org/lkml/2014/9/15/942 ) to a bug in RH bugzilla (
-https://bugzilla.redhat.com/show_bug.cgi?id=136057 ) when an
-application (squid) reads regular disk files started returning EAGAIN
-when read from (provided that they were open with O_NONBLOCK) and
-since that doesn't cause readhead it spins on it forever. As far as I
-know O_NONBLOCK for regular files in Linux is undefined behavior as
-non of the man pages I looked at (esp. fnctl, 2 open, 3 open) specify
-what happens in the case of non-network, non-fifo case (some of them
-refer to file descriptors that support non-blocking operation, which
-is pretty vague).
+I applied the patch because the delay could be substantial, depending on
+what the other VCPU is doing.  Perhaps something like this would be
+better?
 
-So even if squid is wrong in it's behavior (since it's undefined), a
-quick google search reveals lots of mailing lists / forum posts of
-people essentially describing the behavior to date. Eg. O_NONBLOCK on
-regular files blocks, with select/poll/epoll always returning a ready
-behavior. Based on that anecdotical evidence, I assume a decent chunk
-of user apps would beak.
+(Untested, but Tested-by/Reviewed-bys are welcome).
 
-- Milosz
+Paolo
 
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 84e24b210273..ed31760d79fe 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -117,12 +117,10 @@ bool kvm_is_mmio_pfn(pfn_t pfn)
+ /*
+  * Switches to specified vcpu, until a matching vcpu_put()
+  */
+-int vcpu_load(struct kvm_vcpu *vcpu)
++static void __vcpu_load(struct kvm_vcpu *vcpu)
+ {
+ 	int cpu;
+ 
+-	if (mutex_lock_killable(&vcpu->mutex))
+-		return -EINTR;
+ 	if (unlikely(vcpu->pid != current->pids[PIDTYPE_PID].pid)) {
+ 		/* The thread running this VCPU changed. */
+ 		struct pid *oldpid = vcpu->pid;
+@@ -136,6 +134,14 @@ int vcpu_load(struct kvm_vcpu *vcpu)
+ 	preempt_notifier_register(&vcpu->preempt_notifier);
+ 	kvm_arch_vcpu_load(vcpu, cpu);
+ 	put_cpu();
++}
++
++int vcpu_load(struct kvm_vcpu *vcpu)
++{
++	if (mutex_lock_killable(&vcpu->mutex))
++		return -EINTR;
++
++	__vcpu_load(vcpu);
+ 	return 0;
+ }
+ 
+@@ -1989,9 +1995,6 @@ static long kvm_vcpu_ioctl(struct file *filp,
+ 	if (vcpu->kvm->mm != current->mm)
+ 		return -EIO;
+ 
+-	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
+-		return -EINVAL;
+-
+ #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
+ 	/*
+ 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
+@@ -2001,8 +2004,21 @@ static long kvm_vcpu_ioctl(struct file *filp,
+ 		return kvm_arch_vcpu_ioctl(filp, ioctl, arg);
+ #endif
+ 
++	if (!mutex_trylock(&vcpu->mutex))) {
++		/*
++		 * Before a potentially long sleep, check if we'd exit anyway.
++		 * The common case is for the mutex not to be contended, when
++		 * this does not add overhead.
++		 */
++		if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
++			return -EINVAL;
++
++		if (mutex_lock_killable(&vcpu->mutex))
++			return -EINTR;
++	}
++
+ 
+-	r = vcpu_load(vcpu);
++	r = __vcpu_load(vcpu);
+ 	if (r)
+ 		return r;
+ 	switch (ioctl) {
 
-p: 646-253-9055
-e: milosz@adfin.com
