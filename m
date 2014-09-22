@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaIVTWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:22:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30713 "EHLO mx1.redhat.com"
+	id S1754605AbaIVTY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:24:28 -0400
+Received: from cethen.legt.fr ([92.243.2.98]:50636 "EHLO cethen.legt.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128AbaIVTWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:22:36 -0400
-Date: Mon, 22 Sep 2014 15:22:14 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned
- memory
-Message-ID: <20140922192213.GB9708@t510.redhat.com>
-References: <20140830163834.29066.98205.stgit@zurg>
- <20140830164120.29066.8857.stgit@zurg>
- <20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
- <CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
- <20140912224221.9ee5888a.akpm@linux-foundation.org>
- <CALYGNiNg5yLbAvqwG3nPqWZHkqXc1-3p4yqdP2Eo2rNJbRo0rg@mail.gmail.com>
- <20140919143520.94f4a17f752398a6c7c927d8@linux-foundation.org>
- <CALYGNiOwrM+LiadZGh+jeFgXCuCA0z_1Vd_kdMxLjqnP9Fnmhw@mail.gmail.com>
- <20140919232348.1a2856c1.akpm@linux-foundation.org>
- <CALYGNiN0OEtWJVy6sTE_sOydMKbyHfRY3HQ3GjYTT-u05XHTfg@mail.gmail.com>
+	id S1753879AbaIVTY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:24:27 -0400
+From: Vincent Legout <vincent@legout.info>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: peterz@infradead.org, mingo@redhat.com, juri.lelli@gmail.com,
+        raistlin@linux.it, michael@amarulasolutions.com, fchecconi@gmail.com,
+        daniel.wagner@bmw-carit.de, luca.abeni@unitn.it,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 2/3] sched/deadline: fix bandwidth check/update when migrating tasks between exclusive cpusets
+References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com>
+	<1411118561-26323-3-git-send-email-juri.lelli@arm.com>
+Date: Mon, 22 Sep 2014 15:24:24 -0400
+In-Reply-To: <1411118561-26323-3-git-send-email-juri.lelli@arm.com> (Juri
+	Lelli's message of "Fri, 19 Sep 2014 10:22:40 +0100")
+Message-ID: <87k34vo3vb.fsf@cecht.legt.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiN0OEtWJVy6sTE_sOydMKbyHfRY3HQ3GjYTT-u05XHTfg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:40:34PM +0400, Konstantin Khlebnikov wrote:
-> On Sat, Sep 20, 2014 at 10:23 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Sat, 20 Sep 2014 09:25:01 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> >
-> >> >
-> >> > So I'm going to send "fix for
-> >> > mm-balloon_compaction-use-common-page-ballooning-v2" to Linus
-> >> > separately, but it has no changelog at all.
-> >>
-> >> Probably it would be better if you drop everything except actually
-> >> fixes and stresstest. This is gone too far, now balloon won't compile
-> >> in the middle of patchset. Just tell me and I'll redo the rest.
-> >
-> > I think it's best if I drop everything:
-> >
-> > mm-balloon_compaction-ignore-anonymous-pages.patch
-> > mm-balloon_compaction-keep-ballooned-pages-away-from-normal-migration-path.patch
-> > mm-balloon_compaction-isolate-balloon-pages-without-lru_lock.patch
-> > selftests-vm-transhuge-stress-stress-test-for-memory-compaction.patch
-> > mm-introduce-common-page-state-for-ballooned-memory.patch
-> > mm-balloon_compaction-use-common-page-ballooning.patch
-> > mm-balloon_compaction-general-cleanup.patch
-> > mm-balloon_compaction-use-common-page-ballooning-v2-fix-1.patch
-> >
-> > Please go through it and send out a new version?
-> >
-> >
-> 
-> I've found yet another bug in this code. It seems here is a nest.
-> balloon_page_dequeue can race with  balloon_page_isolate:
-> balloon_page_isolate can remove page from list between
-> llist_for_each_entry_safe and trylock_page in balloon_page_dequeue.
-> balloon_page_dequeue runs under mutex_lock(&vb->balloon_lock);
-> both of them lock page using trylock_page so race is tight but it is
-> not impossible.
-Plausible to happen if stress testing compaction simultaneously with
-freezing/unloading the balloon driver. As you noted, it's quite tight
-despite not impossible. Nice catch.
+Hello,
 
+Juri Lelli <juri.lelli@arm.com> writes:
 
-> Probably it's really easier to rewrite it than to fix bugs one by one =/
-I'm not against a rewrite, but I don't think that rewriting the code to get rid 
-of such bugs changes the fact we still have to address them in the actual placed
-code as we go on finding them. That's why I thought your inital changeset fine,
-with patches for stable going first and code overhaul for next following them up.
+> Exclusive cpusets are the only way users can restrict SCHED_DEADLINE tasks
+> affinity (performing what is commonly called clustered scheduling).
+> Unfortunately, such thing is currently broken for two reasons:
+>
+>  - No check is performed when the user tries to attach a task to
+>    an exlusive cpuset (recall that exclusive cpusets have an
+>    associated maximum allowed bandwidth).
+>
+>  - Bandwidths of source and destination cpusets are not correctly
+>    updated after a task is migrated between them.
+>
+> This patch fixes both things at once, as they are opposite faces
+> of the same coin.
+>
+> The check is performed in cpuset_can_attach(), as there aren't any
+> points of failure after that function. The updated is split in two
+> halves. We first reserve bandwidth in the destination cpuset, after
+> we pass the check in cpuset_can_attach(). And we then release
+> bandwidth from the source cpuset when the task's affinity is
+> actually changed. Even if there can be time windows when sched_setattr()
+> may erroneously fail in the source cpuset, we are fine with it, as
+> we can't perfom an atomic update of both cpusets at once.
 
-For this race you spotted, I think a simple change like the following
-might be enough (not-tested)
+Thanks, this seems to fix the other problem I had. However, this bug,
+which I never had before, now happens randomly (with or without patch
+3/3):
 
-diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
-index 6e45a50..fd3a497 100644
---- a/mm/balloon_compaction.c
-+++ b/mm/balloon_compaction.c
-@@ -93,6 +93,16 @@ struct page *balloon_page_dequeue(struct
-balloon_dev_info *b_dev_info)
-                 * to be released by the balloon driver.
-                 */
-                if (trylock_page(page)) {
-+                       /*
-+                        * Skip dequeue attempt for this page to a later round
-+                        * if balloon_page_isolate() has sucessfully isolated
-+                        * it just before we got the page lock here.
-+                        */
-+                       if (page_count(page) != 1) {
-+                               unlock_page(page);
-+                               continue
-+                       }
-+
-                        spin_lock_irqsave(&b_dev_info->pages_lock, flags);
-                        /*
-                         * Raise the page refcount here to prevent any
-                         * wrong
+Sep 19 09:54:37 starbuck kernel: [ 1309.728678] ------------[ cut here ]------------
+Sep 19 09:54:37 starbuck kernel: [ 1309.728699] kernel BUG at kernel/sched/deadline.c:819!
+Sep 19 09:54:37 starbuck kernel: [ 1309.728719] invalid opcode: 0000 [#1] PREEMPT SMP 
+Sep 19 09:54:37 starbuck kernel: [ 1309.728744] Modules linked in: nfsv3 rpcsec_gss_krb5 nfsv4 dm_crypt nfsd auth_rpcgss oid_registry exportfs nfs_acl nfs lockd sunrpc bridge stp llc lp coretemp kvm_intel kvm ppdev ioatdma microcode ipmi_si parport_pc lpc_ich dca mfd_core parport ipmi_msghandler joydev serio_raw hid_generic usbhid hid crc32c_intel psmouse e1000e ptp pps_core
+Sep 19 09:54:37 starbuck kernel: [ 1309.728928] CPU: 5 PID: 0 Comm: swapper/5 Not tainted 3.16.0+ #20
+Sep 19 09:54:37 starbuck kernel: [ 1309.728950] Hardware name: empty empty/S7002, BIOS 'V1.10.B10   ' 05/03/2011
+Sep 19 09:54:37 starbuck kernel: [ 1309.728977] task: ffff88023691c920 ti: ffff88023692c000 task.ti: ffff88023692c000
+Sep 19 09:54:37 starbuck kernel: [ 1309.729003] RIP: 0010:[<ffffffff810a543e>]  [<ffffffff810a543e>] enqueue_task_dl+0x44e/0x450
+Sep 19 09:54:37 starbuck kernel: [ 1309.729041] RSP: 0018:ffff88043fc23e68  EFLAGS: 00010082
+Sep 19 09:54:37 starbuck kernel: [ 1309.729060] RAX: 0000000000000000 RBX: ffff880434edb0c0 RCX: ffff880434edb2f8
+Sep 19 09:54:37 starbuck kernel: [ 1309.729086] RDX: 0000000000000008 RSI: ffff880434edb0c0 RDI: 0000000000000000
+Sep 19 09:54:37 starbuck kernel: [ 1309.729140] RBP: ffff88043fc23ea8 R08: 0000000000000001 R09: 000002cb4aebb39d
+Sep 19 09:54:37 starbuck kernel: [ 1309.729193] R10: 13955a8129438cf2 R11: 0000000000000202 R12: 0000000000000008
+Sep 19 09:54:37 starbuck kernel: [ 1309.729247] R13: ffff88043fc33f00 R14: ffff88043fc2e0e0 R15: ffff880434edb2f8
+Sep 19 09:54:37 starbuck kernel: [ 1309.729301] FS:  0000000000000000(0000) GS:ffff88043fc20000(0000) knlGS:0000000000000000
+Sep 19 09:54:37 starbuck kernel: [ 1309.729383] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Sep 19 09:54:37 starbuck kernel: [ 1309.729436] CR2: 0000000000000000 CR3: 0000000435a07000 CR4: 00000000000027e0
 
+My script launches 6 processes and schedules them on 2 cpusets where
+each cpuset contains only one cpu. It moves processes from one cpuset to
+another and also updates their runtime. I can investigate more and try
+to provide a short script to reproduce if needed.
+
+Thanks,
+Vincent
