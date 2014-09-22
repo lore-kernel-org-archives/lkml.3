@@ -1,100 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaIVPdT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:33:19 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44788 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaIVPdR convert rfc822-to-8bit (ORCPT
+	id S1754273AbaIVPd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:33:57 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:47477 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998AbaIVPdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:33:17 -0400
-Date: Mon, 22 Sep 2014 16:33:12 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v11 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-Message-ID: <20140922153311.GB1994@e106497-lin.cambridge.arm.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-8-git-send-email-Liviu.Dudau@arm.com>
- <20140919210313.GH19374@google.com>
- <20140922110522.GK1994@e106497-lin.cambridge.arm.com>
- <CAErSpo7bnOFo4-uZmVsMqNpVQS+dQaMNedjmJ=sH_d9Kp2fGPg@mail.gmail.com>
+	Mon, 22 Sep 2014 11:33:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7bnOFo4-uZmVsMqNpVQS+dQaMNedjmJ=sH_d9Kp2fGPg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 22 Sep 2014 15:33:13.0294 (UTC) FILETIME=[859B5EE0:01CFD67A]
-X-MC-Unique: 114092216331502901
+In-Reply-To: <55E81CB2-AB4B-41E2-88D5-B33F7D8B1DB8@cam.ac.uk>
+References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk>
+	<CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
+	<55E81CB2-AB4B-41E2-88D5-B33F7D8B1DB8@cam.ac.uk>
+Date: Mon, 22 Sep 2014 08:33:54 -0700
+X-Google-Sender-Auth: m0CECRao61gAYe-1QVGVW7Tokcs
+Message-ID: <CA+55aFwAdsJ9EWTx3QvMxs2ReTX19Xvd_s7wc+KQ8qnJjg0WDA@mail.gmail.com>
+Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 04:25:13PM +0100, Bjorn Helgaas wrote:
-> On Mon, Sep 22, 2014 at 5:05 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Fri, Sep 19, 2014 at 10:03:13PM +0100, Bjorn Helgaas wrote:
-> >> On Thu, Sep 18, 2014 at 02:30:22AM +0100, Liviu Dudau wrote:
-> >> > Add of_pci_get_domain_nr() to retrieve the PCI domain number
-> >> > of a given device from DT. If the information is not present,
-> >> > the function can be requested to allocate a new domain number.
-> >>
-> >> Is of_pci_get_domain_nr() used somewhere?  If the use is in some future
-> >> series, please mention it explicitly.  I'm just trying to avoid merging
-> >> unused code.
-> >
-> > It is used in the arm64 specific patch that I have dropped out of my
-> > pull request. After discussions with Catalin I will add the patch back
-> > into the tree that you've pulled from as he is OK with your tree carrying
-> > the whole package.
-> >
-> > I need to ask for some guidance here: for addressing some of your comments
-> > and Rob's I can add more patches in my v11 branch and you can pull them
-> > when you think they are ready. But one of your comments was requesting
-> > splitting a patch into two blocks - one that moves of_pci_range_to_resource()
-> > into drivers/of/address.c and one that fixes it's behaviour - and I don't
-> > know how you would like that handled. Should I revert the original patch
-> > and add the new ones, or should I rebase the whole series into a different
-> > branch that you can pull from?
-> 
-> I guess the easiest thing is probably just to send a v12 series.  I
-> was hoping we were close enough for me to just hand-integrate minor
-> tweaks into my branch, but I think that will just create more
-> confusion.
+On Mon, Sep 22, 2014 at 8:29 AM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+>
+> You could do "block & ~(sector_t)(size - 1)" instead of "(sector_t)index << sizebits" if you prefer but not sure that is an improvement!
 
-OK, I will send v12 then with all the acquired ACKs and fixes.
+No, it would be even worse. Something like
 
-Best regards,
-Liviu
+  block & ~(sector_t)((size >> 9) - 1)
 
-> 
-> Bjorn
-> 
+because block is the sector number (ie 512-byte) and size is in bytes.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+           Linus
