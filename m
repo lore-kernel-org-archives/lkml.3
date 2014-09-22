@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaIVP35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:29:57 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:61865 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaIVP3x (ORCPT
+	id S1754190AbaIVPaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:30:01 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:52235 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbaIVP37 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:29:53 -0400
-Date: Mon, 22 Sep 2014 17:29:48 +0200
-From: Robert Richter <rric@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v11 10/10] PCI: Introduce pci_remap_iospace() for
- remapping PCI I/O bus resources into CPU space
-Message-ID: <20140922152948.GB20256@rric.localhost>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-11-git-send-email-Liviu.Dudau@arm.com>
- <20140919215400.GA30239@google.com>
- <201409200420.31433.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201409200420.31433.arnd@arndb.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 22 Sep 2014 11:29:59 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
+Date: Mon, 22 Sep 2014 16:29:56 +0100
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, stable <stable@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <55E81CB2-AB4B-41E2-88D5-B33F7D8B1DB8@cam.ac.uk>
+References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk> <CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.09.14 04:20:31, Arnd Bergmann wrote:
-> On Friday 19 September 2014, Bjorn Helgaas wrote:
-> > On Thu, Sep 18, 2014 at 02:30:25AM +0100, Liviu Dudau wrote:
+Hi Linus,
+
+On 22 Sep 2014, at 16:18, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Sun, Sep 21, 2014 at 5:53 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+>> 
+>> This patch fixes this issue by type casting "index" to sector_t before
+>> doing the left shift.
 > 
-> > PCI_IOBASE is a virtual address.  So PCI_IOBASE + res->start is also a
-> > virtual address (only for IORESOURCE_IO).
-> > 
-> > Since res->start is normally a *physical* address, I think it would be less
-> > confusing to do something like this:
-> > 
-> >     vaddr = PCI_IOBASE + res->start;
-> >     ioremap_page_range(vaddr, vaddr + resource_size(res), ...);
-> > 
-> > so we have a hint that the first two ioremap_page_range() parameters are
-> > virtual addresses.  It's also confusing that it uses "unsigned long" for
-> > the virtual addresses, when we usually use "void *".  But that's out of
-> > scope for this patch.
-> 
-> Good idea. I think it will have to be (unsigned long)PCI_IOBASE above then,
-> since ioremap_page_range takes a 'unsigned long' virtual address and PCI_IOBASE
-> should really remain an __iomem pointer.
+> Ugh. Does the simpler patch to just pass in "block" work as well?
 
-Right, I see this warning here:
+That doesn't work because nothing rounds down "block" to the first block in the page and init_page_buffers() requires "block" to be the first block in the page.
 
-drivers/pci/pci.c: In function ‘pci_remap_iospace’:
-drivers/pci/pci.c:2728:8: warning: assignment makes integer from pointer without a cast [enabled by default]
+The shift right followed by shift left achieves the "rounding down" required.
 
--Robert
+You could do "block & ~(sector_t)(size - 1)" instead of "(sector_t)index << sizebits" if you prefer but not sure that is an improvement!
+
+Best regards,
+
+	Anton
+
+>                    Linus
+> <patch.diff>
+
+
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+
