@@ -1,59 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaIUXxI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 19:53:08 -0400
-Received: from mail-bl2on0146.outbound.protection.outlook.com ([65.55.169.146]:30055
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751194AbaIUXxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 19:53:06 -0400
-From: Peter Chen <Peter.Chen@freescale.com>
-To: nick <yocto6@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>,
-        "oneukum@suse.de" <oneukum@suse.de>,
-        "himangi774@gmail.com" <himangi774@gmail.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: FIX ME in  oxu210p-hcd.c
-Thread-Topic: FIX ME in  oxu210p-hcd.c
-Thread-Index: AQHP1PgEnm/39G8KQ0aBJF+T0X3g1pwMRAsA
-Date: Sun, 21 Sep 2014 23:53:01 +0000
-Message-ID: <2d062bb368d94327b89cba3d547bff9d@BN1PR0301MB0772.namprd03.prod.outlook.com>
-References: <541DB6BF.7090909@gmail.com> <541DB8C1.2000101@gmail.com>
-In-Reply-To: <541DB8C1.2000101@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 034119E4F6
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(189002)(199003)(51704005)(74662003)(74502003)(79102003)(2501002)(76482002)(107046002)(21056001)(77096002)(90102001)(81542003)(66066001)(108616004)(95666004)(74316001)(77982003)(85306004)(81342003)(46102003)(106116001)(99286002)(33646002)(80022003)(76576001)(97736003)(92566001)(2656002)(99396002)(50986999)(54356999)(20776003)(83072002)(83322001)(31966008)(4396001)(86362001)(76176999)(85852003)(64706001)(105586002)(101416001)(106356001)(120916001)(87936001)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0772;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1752501AbaIVACo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 20:02:44 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:42491 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588AbaIVACl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 20:02:41 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v1 3/5] mm: VM can be aware of zram fullness
+Date: Mon, 22 Sep 2014 09:03:09 +0900
+Message-Id: <1411344191-2842-4-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8LNrX7h025214
 
+VM uses nr_swap_pages to throttle amount of swap when it reclaims
+anonymous pages because the nr_swap_pages means freeable space
+of swap disk.
 
+However, it's a problem for zram because zram can limit memory
+usage by knob(ie, mem_limit) so that swap out can fail although
+VM can see lots of free space from zram disk but no more free
+space in zram by the limit. If it happens, VM should notice it
+and stop reclaimaing until zram can obtain more free space but
+we don't have a way to communicate between VM and zram.
+
+This patch adds new hint SWAP_FULL so that zram can say to VM
+"I'm full" from now on. Then VM cannot reclaim annoymous page
+any more. If VM notice swap is full, it can remove swap_info_struct
+from swap_avail_head and substract remained freeable space from
+nr_swap_pages so that VM can think swap is full until VM frees a
+swap and increase nr_swap_pages again.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ include/linux/blkdev.h |  1 +
+ mm/swapfile.c          | 44 ++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 39 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index c7220409456c..39f074e0acd7 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1611,6 +1611,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
  
-> Subject: Re: FIX ME in oxu210p-hcd.c
-> 
-> 
-> I found a unfixed FIX ME in the file stated in my above message. I am
-> wondering what to set hcd->self.comtroller->dma_mask to as it's now been
-> defined to NULL and clearly even as a newbie this seem incorrect.
-> Regards Nick
+ enum swap_blk_hint {
+ 	SWAP_FREE,
++	SWAP_FULL,
+ };
+ 
+ struct block_device_operations {
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 209112cf8b83..71e3df0431b6 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -493,6 +493,29 @@ static unsigned long scan_swap_map(struct swap_info_struct *si,
+ 	int latency_ration = LATENCY_LIMIT;
+ 
+ 	/*
++	 * If zram is full, we don't need to scan and want to stop swap.
++	 * For it, we removes si from swap_avail_head and decreases
++	 * nr_swap_pages to prevent further anonymous reclaim so that
++	 * VM can restart swap out if zram has a free space.
++	 * Look at swap_entry_free.
++	 */
++	if (si->flags & SWP_BLKDEV) {
++		struct gendisk *disk = si->bdev->bd_disk;
++
++		if (disk->fops->swap_hint && disk->fops->swap_hint(
++				si->bdev, SWAP_FULL, NULL)) {
++			spin_lock(&swap_avail_lock);
++			WARN_ON(plist_node_empty(&si->avail_list));
++			plist_del(&si->avail_list, &swap_avail_head);
++			spin_unlock(&swap_avail_lock);
++			atomic_long_sub(si->pages - si->inuse_pages,
++						&nr_swap_pages);
++			si->full = true;
++			return 0;
++		}
++	}
++
++	/*
+ 	 * We try to cluster swap pages by allocating them sequentially
+ 	 * in swap.  Once we've allocated SWAPFILE_CLUSTER pages this
+ 	 * way, however, we resort to first-free allocation, starting
+@@ -798,6 +821,14 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+ 	/* free if no reference */
+ 	if (!usage) {
+ 		bool was_full;
++		struct gendisk *virt_swap = NULL;
++
++		/* Check virtual swap */
++		if (p->flags & SWP_BLKDEV) {
++			virt_swap = p->bdev->bd_disk;
++			if (!virt_swap->fops->swap_hint)
++				virt_swap = NULL;
++		}
+ 
+ 		dec_cluster_info_page(p, p->cluster_info, offset);
+ 		if (offset < p->lowest_bit)
+@@ -814,17 +845,18 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+ 					  &swap_avail_head);
+ 			spin_unlock(&swap_avail_lock);
+ 			p->full = false;
++			if (virt_swap)
++				atomic_long_add(p->pages -
++						p->inuse_pages,
++						&nr_swap_pages);
+ 		}
+ 
+ 		atomic_long_inc(&nr_swap_pages);
+ 		p->inuse_pages--;
+ 		frontswap_invalidate_page(p->type, offset);
+-		if (p->flags & SWP_BLKDEV) {
+-			struct gendisk *disk = p->bdev->bd_disk;
+-			if (disk->fops->swap_hint)
+-				disk->fops->swap_hint(p->bdev,
+-						SWAP_FREE, (void *)offset);
+-		}
++		if (virt_swap)
++			virt_swap->fops->swap_hint(p->bdev,
++					SWAP_FREE, (void *)offset);
+ 	}
+ 
+ 	return usage;
+-- 
+2.0.0
 
-Usually, it is set at its controller driver or pass through through device tree or
-platform data.
-
-Peter
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
