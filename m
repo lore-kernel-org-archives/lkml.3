@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaIVQGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:06:18 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:49771 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318AbaIVQGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:06:16 -0400
-From: Max Schwarz <max.schwarz@online.de>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: dianders@chromium.org, linux-rockchip@lists.infradead.org,
-        Heiko Stuebner <heiko@sntech.de>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-rk3x: move setup to the earlier subsys initcall
-Date: Mon, 22 Sep 2014 18:05:43 +0200
-Message-ID: <7192455.FveG5nGWsJ@xq-nb>
-User-Agent: KMail/4.13.3 (Linux/3.17.0-031700rc4-generic; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1411370675-27866-1-git-send-email-zyw@rock-chips.com>
-References: <1411370675-27866-1-git-send-email-zyw@rock-chips.com>
+	id S1754145AbaIVQIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:08:23 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:63714 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753001AbaIVQIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 12:08:22 -0400
+X-IronPort-AV: E=Sophos;i="5.04,572,1406592000"; 
+   d="scan'208";a="173911511"
+Message-ID: <542047EA.6090202@citrix.com>
+Date: Mon, 22 Sep 2014 17:01:46 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:bt83T/m9e1ccGshWiBxR3uGxvmFjuRGl2EluFokEwLM
- XLTR52pwlwHVidcSPnlPKgMH1LlJVLHltHUMkWAP0I9dat68WT
- UwpPZy6Rl0CDfLe+fJMcPXjNuCAzVVn/jXy+RKUwGXcihDfLGI
- Zplax9mLYuVbAzET3eSLMAXAyr7SvUWQkFtZf1cwhYM/rxPysT
- GrAXFsRdcLTE52++zKbCa20gTxjOUtobXV4RjCXscYTUgQg2V0
- b18pvPwNcLXeka3mBhedfB7FqUbt4c0lNkCr3IeWeK+taxPo90
- zLhW6Xjqxc3Cqw+8NKdyABnT1At+sf6Qulg5C0PMyj8ASYsMUb
- m8lLvvkhpdTJuuBbyENM=
-X-UI-Out-Filterresults: notjunk:1;
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>,
+        <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3 v2] xen/xenbus: Improve failure processing
+ code for __xenbus_switch_state()
+References: <541AE4E9.2040904@gmail.com> <541AE5C4.2070409@gmail.com> <54203A73.8030103@citrix.com> <5420456C.4010103@gmail.com>
+In-Reply-To: <5420456C.4010103@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-
-Am Montag, 22. September 2014, 15:24:35 schrieb Chris Zhong:
-> Some device using this bus, such as regulators, they should register
-> as early as possible, so the I2C bus master needs to be loaded early.
-> Therefore initialize via subsys_initcall() is better.
-
-You could also use probe deferral in the regulator driver to wait until the 
-bus is ready. I don't know if you're already doing it, just wanted to point 
-that out.
-
-That said, this change will make the boot faster in any case by avoiding 
-unnecessary deferrals, so I'm for it if you fix the minor issue below.
-
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+On 22/09/14 16:51, Chen Gang wrote:
+> On 09/22/2014 11:04 PM, David Vrabel wrote:
+>> On 18/09/14 15:01, Chen Gang wrote:
+>>> When failure occurs, need return failure code instead of 0, or some of
+>>> indirect upper callers may misunderstand.
+>>>
+>>> e.g. in "block/xen-blkback/xenbus.c":
+>>>
+>>>     connect() -> xenbus_switch_state() -> __xenbus_switch_state().
+>>
+>> Can you make xenbus_switch_state() void?  The callers don't need to do
+>> any error handling.
+>>
 > 
-> ---
+> After "grep rn xenbus_switch_state *" under "drivers/", it is not one
+> place to check the return value of xenbus_switch_state(), and also it
+> is export to outside for individual modules.
 > 
->  drivers/i2c/busses/i2c-rk3x.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> index e637c32..5b91901 100644
-> --- a/drivers/i2c/busses/i2c-rk3x.c
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -760,7 +760,18 @@ static struct platform_driver rk3x_i2c_driver = {
->  	},
->  };
-> 
-> -module_platform_driver(rk3x_i2c_driver);
-> +static int __init rk3x_i2c_init_driver(void)
-> +{
-> +	return platform_driver_register(&rk3x_i2c_driver);
-> +}
-> +
-> +static void __exit rk3x_i2c_exit_driver(void)
-> +{
-> +	platform_driver_unregister(&rk3x_i2c_driver);
-> +}
-> +
-> +subsys_initcall(rk3x_i2c_init_driver);
-> +module_exit(rk3x_i2c_exit_driver);
+> So we need change many subsystems for it, and also need face the rick
+> for incompatible with the old individual modules which source code are
+> not in upstream.
 
-This means that the driver cannot be used as a loadable module any more, 
-right?
+Having to update 9 callers doesn't seem like much work.
 
-In that case, you should probably turn the tristate option in Kconfig into a 
-bool.
+> And are you sure the caller need not notice about it, when it really
+> fails? (for me, I guess they need notice about it)
 
-Cheers,
-  Max
+Yes.  xenbus_switch_state() already signals the fatal error to the
+toolstack with xenbus_dev_fatal().
 
+David
