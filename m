@@ -1,88 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaIVIy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:54:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43219 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaIVIy4 convert rfc822-to-8bit (ORCPT
+	id S1753443AbaIVIza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:55:30 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:35436 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaIVIz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:54:56 -0400
-Message-ID: <541FE3F6.4070806@arm.com>
-Date: Mon, 22 Sep 2014 09:55:18 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Mon, 22 Sep 2014 04:55:28 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 22 Sep 2014 10:52:56 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Andreas Bomholtz <andreas@seluxit.com>
+Cc: johan@kernel.org, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Added support for Seluxit USB dongle to cp210x
+ driver.
+Message-ID: <20140922085256.GB5237@localhost>
+References: <1411372243-23933-1-git-send-email-andreas@seluxit.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, LKML <linux-kernel@vger.kernel.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v4 04/11] drivers: base: support cpu cache information
- interface to userspace via sysfs
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-5-git-send-email-sudeep.holla@arm.com> <541CAD16.6030309@codeaurora.org>
-In-Reply-To: <541CAD16.6030309@codeaurora.org>
-X-OriginalArrivalTime: 22 Sep 2014 08:54:52.0478 (UTC) FILETIME=[DF9C45E0:01CFD642]
-X-MC-Unique: 114092209545303501
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411372243-23933-1-git-send-email-andreas@seluxit.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, Sep 22, 2014 at 09:50:43AM +0200, Andreas Bomholtz wrote:
+> Added the Seluxit ApS USB Serial Dongle to cp210x driver.
+> 
+> Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
+> ---
 
-On 19/09/14 23:24, Stephen Boyd wrote:
-> On 09/03/14 10:00, Sudeep Holla wrote:
->> From: Sudeep Holla <sudeep.holla@arm.com>
->>
->> This patch adds initial support for providing processor cache information
->> to userspace through sysfs interface. This is based on already existing
->> implementations(x86, ia64, s390 and powerpc) and hence the interface is
->> intended to be fully compatible.
->>
->> The main purpose of this generic support is to avoid further code
->> duplication to support new architectures and also to unify all the existing
->> different implementations.
->>
->> This implementation maintains the hierarchy of cache objects which reflects
->> the system's cache topology. Cache devices are instantiated as needed as
->> CPUs come online. The cache information is replicated per-cpu even if they are
->> shared. A per-cpu array of cache information maintained is used mainly for
->> sysfs-related book keeping.
->>
->> It also implements the shared_cpu_map attribute, which is essential for
->> enabling both kernel and user-space to discover the system's overall cache
->> topology.
->>
->> This patch also add the missing ABI documentation for the cacheinfo sysfs
->> interface already, which is well defined and widely used.
->>
->> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Stephen Boyd <sboyd@codeaurora.org>
->> Cc: linux-api@vger.kernel.org
->> Cc: linux390@de.ibm.com
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-ia64@vger.kernel.org
->> Cc: linuxppc-dev@lists.ozlabs.org
->> Cc: linux-s390@vger.kernel.org
->> Cc: x86@kernel.org
->>
->
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-> Tested-by: Stephen Boyd <sboyd@codeaurora.org>
->
+Thanks for resending. Applied just fine now.
 
-Thanks for all the reviews and testings of the series.
-
-Regards,
-Sudeep
-
+Johan
