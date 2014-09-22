@@ -1,208 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaIVLpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 07:45:34 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:47753 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505AbaIVLpd (ORCPT
+	id S1753925AbaIVLpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 07:45:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43558 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861AbaIVLpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 07:45:33 -0400
-Message-ID: <54200BD2.3040204@de.ibm.com>
-Date: Mon, 22 Sep 2014 13:45:22 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	Mon, 22 Sep 2014 07:45:44 -0400
+Date: Mon, 22 Sep 2014 13:45:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Zefan Li <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        keescook@chromium.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: Re: [PATCH 2/3] sched: add a macro to define bitops for task atomic
+ flags
+Message-ID: <20140922114539.GC2832@worktop.localdomain>
+References: <541F9C96.10705@huawei.com>
+ <541F9CD4.5040407@huawei.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-CC: Cornelia Huck <cornelia.huck@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>, linux-s390@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio: unify config_changed handling
-References: <1411370391-12291-1-git-send-email-mst@redhat.com>
-In-Reply-To: <1411370391-12291-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092211-0542-0000-0000-000000DD3CC6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <541F9CD4.5040407@huawei.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 09:20 AM, Michael S. Tsirkin wrote:
-> Replace duplicated code in all transports with a single wrapper in
-> virtio.c.
+On Mon, Sep 22, 2014 at 11:51:48AM +0800, Zefan Li wrote:
+> This will simplify code when we add new flags.
 > 
-> The only functional change is in virtio_mmio.c: if a buggy device sends
-> us an interrupt before driver is set, we previously returned IRQ_NONE,
-> now we return IRQ_HANDLED.
-> 
-> As this must not happen in practice, this does not look like a big deal.
-> 
-> See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
-> 	virtio-pci: do not oops on config change if driver not loaded.
-> for the original motivation behind the driver check.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-please fold in the whitespace fix, 
-
-Reviewed-by: Christian Borntraeger <borntraeger@d.ibm.com> # s390 parts
-
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
 > ---
->  include/linux/virtio.h             |  2 ++
->  drivers/misc/mic/card/mic_virtio.c |  6 +-----
->  drivers/s390/kvm/kvm_virtio.c      |  9 +--------
->  drivers/s390/kvm/virtio_ccw.c      |  6 +-----
->  drivers/virtio/virtio.c            | 10 ++++++++++
->  drivers/virtio/virtio_mmio.c       |  7 ++-----
->  drivers/virtio/virtio_pci.c        |  6 +-----
->  7 files changed, 18 insertions(+), 28 deletions(-)
+>  include/linux/sched.h | 20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
 > 
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index b46671e..3c19bd3 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -108,6 +108,8 @@ void unregister_virtio_device(struct virtio_device *dev);
-> 
->  void virtio_break_device(struct virtio_device *dev);
-> 
-> +void virtio_config_changed(struct virtio_device *dev);
-> +
->  /**
->   * virtio_driver - operations for a virtio I/O driver
->   * @driver: underlying device driver (populate name and owner).
-> diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-> index f14b600..e647947 100644
-> --- a/drivers/misc/mic/card/mic_virtio.c
-> +++ b/drivers/misc/mic/card/mic_virtio.c
-> @@ -462,16 +462,12 @@ static void mic_handle_config_change(struct mic_device_desc __iomem *d,
->  	struct mic_device_ctrl __iomem *dc
->  		= (void __iomem *)d + mic_aligned_desc_size(d);
->  	struct mic_vdev *mvdev = (struct mic_vdev *)ioread64(&dc->vdev);
-> -	struct virtio_driver *drv;
-> 
->  	if (ioread8(&dc->config_change) != MIC_VIRTIO_PARAM_CONFIG_CHANGED)
->  		return;
-> 
->  	dev_dbg(mdrv->dev, "%s %d\n", __func__, __LINE__);
-> -	drv = container_of(mvdev->vdev.dev.driver,
-> -				struct virtio_driver, driver);
-> -	if (drv->config_changed)
-> -		drv->config_changed(&mvdev->vdev);
-> +	virtio_config_changed(&mvdev->vdev);
->  	iowrite8(1, &dc->guest_ack);
->  }
-> 
-> diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-> index a134965..6431290 100644
-> --- a/drivers/s390/kvm/kvm_virtio.c
-> +++ b/drivers/s390/kvm/kvm_virtio.c
-> @@ -406,15 +406,8 @@ static void kvm_extint_handler(struct ext_code ext_code,
-> 
->  	switch (param) {
->  	case VIRTIO_PARAM_CONFIG_CHANGED:
-> -	{
-> -		struct virtio_driver *drv;
-> -		drv = container_of(vq->vdev->dev.driver,
-> -				   struct virtio_driver, driver);
-> -		if (drv->config_changed)
-> -			drv->config_changed(vq->vdev);
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 4557765..04a2ae2 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1959,15 +1959,17 @@ static inline void memalloc_noio_restore(unsigned int flags)
+>  /* Per-process atomic flags. */
+>  #define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+>  
+> -static inline bool task_no_new_privs(struct task_struct *p)
+> -{
+> -	return test_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
+> -}
 > -
-> +		virtio_config_changed(vq->vdev);
->  		break;
-> -	}
->  	case VIRTIO_PARAM_DEV_ADD:
->  		schedule_work(&hotplug_work);
->  		break;
-> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-> index d2c0b44..6cbe6ef 100644
-> --- a/drivers/s390/kvm/virtio_ccw.c
-> +++ b/drivers/s390/kvm/virtio_ccw.c
-> @@ -940,11 +940,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
->  		vring_interrupt(0, vq);
->  	}
->  	if (test_bit(0, &vcdev->indicators2)) {
-> -		drv = container_of(vcdev->vdev.dev.driver,
-> -				   struct virtio_driver, driver);
-> -
-> -		if (drv && drv->config_changed)
-> -			drv->config_changed(&vcdev->vdev);
-> +		virtio_config_changed(&vcdev->vdev);
->  		clear_bit(0, &vcdev->indicators2);
->  	}
->  }
-> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> index fed0ce1..470b74f 100644
-> --- a/drivers/virtio/virtio.c
-> +++ b/drivers/virtio/virtio.c
-> @@ -239,6 +239,16 @@ void unregister_virtio_device(struct virtio_device *dev)
->  }
->  EXPORT_SYMBOL_GPL(unregister_virtio_device);
-> 
-> +void virtio_config_changed(struct virtio_device *dev)
-> +{
-> +        struct virtio_driver *drv = container_of(dev->dev.driver,
-> +						 struct virtio_driver, driver);
+> -static inline void task_set_no_new_privs(struct task_struct *p)
+> -{
+> -	set_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
+> -}
+> +#define TASK_PFA_BITOPS(name, func)				\
+> +static inline bool task_##func(struct task_struct *p)		\
+> +{ return test_bit(PFA_##name, &p->atomic_flags); }		\
+> +								\
+> +static inline void task_set_##func(struct task_struct *p)	\
+> +{ set_bit(PFA_##name, &p->atomic_flags); }			\
+> +								\
+> +static inline void task_clear_##func(struct task_struct *p)	\
+> +{ clear_bit(PFA_##name, &p->atomic_flags); }
 > +
-> +	if (drv && drv->config_changed)
-> +		drv->config_changed(dev);
-> +}
-> +EXPORT_SYMBOL_GPL(virtio_config_changed);
-> +
->  static int virtio_init(void)
->  {
->  	if (bus_register(&virtio_bus) != 0)
-> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> index c600ccf..ef9a165 100644
-> --- a/drivers/virtio/virtio_mmio.c
-> +++ b/drivers/virtio/virtio_mmio.c
-> @@ -234,8 +234,6 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
->  {
->  	struct virtio_mmio_device *vm_dev = opaque;
->  	struct virtio_mmio_vq_info *info;
-> -	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
-> -			struct virtio_driver, driver);
->  	unsigned long status;
->  	unsigned long flags;
->  	irqreturn_t ret = IRQ_NONE;
-> @@ -244,9 +242,8 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
->  	status = readl(vm_dev->base + VIRTIO_MMIO_INTERRUPT_STATUS);
->  	writel(status, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
-> 
-> -	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)
-> -			&& vdrv && vdrv->config_changed) {
-> -		vdrv->config_changed(&vm_dev->vdev);
-> +	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
-> +		virtio_config_changed(&vm_dev->vdev);
->  		ret = IRQ_HANDLED;
->  	}
-> 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index 3d1463c..58f7e45 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -211,12 +211,8 @@ static bool vp_notify(struct virtqueue *vq)
->  static irqreturn_t vp_config_changed(int irq, void *opaque)
->  {
->  	struct virtio_pci_device *vp_dev = opaque;
-> -	struct virtio_driver *drv;
-> -	drv = container_of(vp_dev->vdev.dev.driver,
-> -			   struct virtio_driver, driver);
-> 
-> -	if (drv && drv->config_changed)
-> -		drv->config_changed(&vp_dev->vdev);
-> +	virtio_config_changed(&vp_dev->vdev);
->  	return IRQ_HANDLED;
->  }
-> 
+> +TASK_PFA_BITOPS(NO_NEW_PRIVS, no_new_privs)
 
+This could really do with a corresponding script/tags.sh update.
+
+	--regex-c++='TASK_PFA_BITOPS\([^,]*,([^)]*)\)/task_\1/'
+	--regex-c++='TASK_PFA_BITOPS\([^,]*,([^)]*)\)/task_set_\1/'
+	--regex-c++='TASK_PFA_BITOPS\([^,]*,([^)]*)\)/task_clear_\1/'
+
+For exhuberant and matching bits for emacs.
