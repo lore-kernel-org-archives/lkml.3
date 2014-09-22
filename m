@@ -1,63 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519AbaIVORe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:17:34 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:49557 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487AbaIVORb (ORCPT
+	id S1754300AbaIVOQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:16:22 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:52525 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887AbaIVOQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:17:31 -0400
-Message-ID: <54202F75.8080401@kernel.dk>
-Date: Mon, 22 Sep 2014 08:17:25 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>, tom.leiming@gmail.com
-CC: David Hildenbrand <dahi@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        stable@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, mst@redhat.com,
-        linux-kernel@vger.kernel.org, ppinatti@linux.vnet.ibm.com
-Subject: Re: [PATCH] blk-mq: Avoid race condition with uninitialized requests
-References: <1411031071-40390-1-git-send-email-dahi@linux.vnet.ibm.com> <1411031071-40390-2-git-send-email-dahi@linux.vnet.ibm.com> <54202EF8.4080909@de.ibm.com>
-In-Reply-To: <54202EF8.4080909@de.ibm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 10:16:19 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, tomasz.figa@gmail.com,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [PATCH v12 05/10] clk: per-user clock accounting for debug
+Date: Mon, 22 Sep 2014 16:15:48 +0200
+Message-Id: <1411395353-3189-2-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1411395353-3189-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1411395353-3189-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-22 08:15, Christian Borntraeger wrote:
-> On 09/18/2014 11:04 AM, David Hildenbrand wrote:
->> This patch should fix the bug reported in https://lkml.org/lkml/2014/9/11/249.
->>
->> We have to initialize at least the atomic_flags and the cmd_flags when
->> allocating storage for the requests.
->>
->> Otherwise blk_mq_timeout_check() might dereference uninitialized pointers when
->> racing with the creation of a request.
->>
->> Also move the reset of cmd_flags for the initializing code to the point where a
->> request is freed. So we will never end up with pending flush request indicators
->> that might trigger dereferences of invalid pointers in blk_mq_timeout_check().
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
->
-> Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
->
-> Can you please add
-> Reported-by: Paulo De Rezende Pinatti <ppinatti@linux.vnet.ibm.com>
-> Tested-by: Paulo De Rezende Pinatti <ppinatti@linux.vnet.ibm.com>
->
-> as Paulo did the testing work?
->
-> We thing this patch is fine and should go upstream.
+When a clock has multiple users, the WARNING on imbalance of
+enable/disable may not show the guilty party since although they may
+have commited the error earlier, the warning is emitted later when some
+other user, presumably innocent, disables the clock.
 
-I might have to pick'n rebase the series, in which case I'll add it. But 
-I already queued it up last week, so if I don't, then I can't easily add 
-it. I wish the git notes wasn't such a horrible and unusable hack, so we 
-had a chance to annotate commits without having to rewrite history...
+Provide per-user clock enable/disable accounting and disabler tracking
+in order to help debug these problems.
 
+Based on previous work by Rabin Vincent <rabin@rab.in>.
+
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Tested-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/clk/clk.c           | 38 ++++++++++++++++++++++++++++++++++----
+ drivers/clk/clk.h           |  3 ++-
+ drivers/clk/clkdev.c        | 14 ++++++++++----
+ include/linux/clk-private.h |  5 +++++
+ 4 files changed, 51 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4fe67b8..5658bf4 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -543,7 +543,8 @@ static int clk_disable_unused(void)
+ }
+ late_initcall_sync(clk_disable_unused);
+ 
+-struct clk *__clk_create_clk(struct clk_core *clk_core)
++struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
++			     const char *con)
+ {
+ 	struct clk *clk;
+ 
+@@ -556,6 +557,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core)
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	clk->core = clk_core;
++	clk->dev_id = dev;
++	clk->con_id = con;
+ 
+ 	return clk;
+ }
+@@ -936,10 +939,25 @@ EXPORT_SYMBOL_GPL(clk_provider_disable);
+  */
+ void clk_disable(struct clk *clk_user)
+ {
++	struct clk_core *clk;
++	unsigned long flags;
++
+ 	if (IS_ERR_OR_NULL(clk_user))
+ 		return;
+ 
+-	clk_provider_disable(clk_to_clk_core(clk_user));
++	clk = clk_to_clk_core(clk_user);
++
++	flags = clk_enable_lock();
++	if (!WARN(clk_user->enable_count == 0,
++		  "incorrect disable clk dev %s con %s last disabler %pF\n",
++		  clk_user->dev_id, clk_user->con_id, clk_user->last_disable)) {
++
++		clk_user->last_disable = __builtin_return_address(0);
++		clk_user->enable_count--;
++
++		__clk_disable(clk);
++	}
++	clk_enable_unlock(flags);
+ }
+ EXPORT_SYMBOL_GPL(clk_disable);
+ 
+@@ -1000,10 +1018,22 @@ EXPORT_SYMBOL_GPL(clk_provider_enable);
+  */
+ int clk_enable(struct clk *clk_user)
+ {
++	struct clk_core *clk;
++	unsigned long flags;
++	int ret;
++
+ 	if (!clk_user)
+ 		return 0;
+ 
+-	return clk_provider_enable(clk_to_clk_core(clk_user));
++	clk = clk_to_clk_core(clk_user);
++
++	flags = clk_enable_lock();
++	ret = __clk_enable(clk);
++	if (!ret)
++		clk_user->enable_count++;
++	clk_enable_unlock(flags);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(clk_enable);
+ 
+@@ -1698,7 +1728,7 @@ struct clk *clk_get_parent(struct clk *clk_user)
+ 	clk = clk_to_clk_core(clk_user);
+ 	parent = clk_provider_get_parent(clk);
+ 
+-	return __clk_create_clk(parent);
++	return __clk_create_clk(parent, clk_user->dev_id, clk_user->con_id);
+ }
+ EXPORT_SYMBOL_GPL(clk_get_parent);
+ 
+diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
+index 3b3068b..49eff38 100644
+--- a/drivers/clk/clk.h
++++ b/drivers/clk/clk.h
+@@ -19,5 +19,6 @@ void of_clk_unlock(void);
+ #endif
+ 
+ #if defined(CONFIG_COMMON_CLK)
+-struct clk *__clk_create_clk(struct clk_core *clk_core);
++struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
++			     const char *con);
+ #endif
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index 060041b..99ea87f 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -77,7 +77,9 @@ EXPORT_SYMBOL(of_clk_provider_get);
+ 
+ struct clk *of_clk_get(struct device_node *np, int index)
+ {
+-	return __clk_create_clk(of_clk_provider_get(np, index));
++	struct clk_core *clk = of_clk_provider_get(np, index);
++
++	return __clk_create_clk(clk, np->full_name, NULL);
+ }
+ EXPORT_SYMBOL(of_clk_get);
+ 
+@@ -130,7 +132,9 @@ struct clk_core *of_clk_provider_get_by_name(struct device_node *np, const char
+  */
+ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+ {
+-	return __clk_create_clk(of_clk_provider_get_by_name(np, name));
++	struct clk_core *clk = of_clk_provider_get_by_name(np, name);
++
++	return __clk_create_clk(clk, np->full_name, NULL);
+ }
+ EXPORT_SYMBOL(of_clk_get_by_name);
+ #endif
+@@ -202,7 +206,7 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id)
+ #if defined(CONFIG_COMMON_CLK)
+ 	struct clk_core *clk = clk_provider_get_sys(dev_id, con_id);
+ 
+-	return __clk_create_clk(clk);
++	return __clk_create_clk(clk, dev_id, con_id);
+ #else
+ 	struct clk_lookup *cl;
+ 
+@@ -242,7 +246,9 @@ EXPORT_SYMBOL(clk_provider_get);
+ struct clk *clk_get(struct device *dev, const char *con_id)
+ {
+ #if defined(CONFIG_COMMON_CLK)
+-	return __clk_create_clk(clk_provider_get(dev, con_id));
++        const char *dev_id = dev ? dev_name(dev) : NULL;
++
++	return __clk_create_clk(clk_provider_get(dev, con_id), dev_id, con_id);
+ #else
+ 	const char *dev_id = dev ? dev_name(dev) : NULL;
+ 	struct clk *clk;
+diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+index 2c1ece9..ce6a528 100644
+--- a/include/linux/clk-private.h
++++ b/include/linux/clk-private.h
+@@ -57,6 +57,11 @@ struct clk_core {
+ 
+ struct clk {
+ 	struct clk_core	*core;
++	const char	*dev_id;
++	const char	*con_id;
++
++	unsigned int	enable_count;
++	void		*last_disable;
+ };
+ 
+ /*
 -- 
-Jens Axboe
+1.9.3
 
