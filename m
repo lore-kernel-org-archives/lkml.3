@@ -1,658 +1,461 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbaIVUAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:00:24 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53190 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaIVUAT (ORCPT
+	id S1754908AbaIVUAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:00:51 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:43280 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740AbaIVUAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Sep 2014 16:00:19 -0400
-Date: Mon, 22 Sep 2014 15:45:13 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-next 2014-09-22
-Message-ID: <20140922194512.GD23806@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andres Lagar-Cavilla <andreslc@google.com>,
+        Andres Lagar-Cavilla <andreslc@gooogle.com>
+Subject: [PATCH v2] kvm: Fix page ageing bugs
+Date: Mon, 22 Sep 2014 13:00:15 -0700
+Message-Id: <1411416015-30685-1-git-send-email-andreslc@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1411410865-3603-1-git-send-email-andreslc@google.com>
+References: <1411410865-3603-1-git-send-email-andreslc@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+1. We were calling clear_flush_young_notify in unmap_one, but we are
+within an mmu notifier invalidate range scope. The spte exists no more
+(due to range_start) and the accessed bit info has already been
+propagated (due to kvm_pfn_set_accessed). Simply call
+clear_flush_young.
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2. We clear_flush_young on a primary MMU PMD, but this may be mapped
+as a collection of PTEs by the secondary MMU (e.g. during log-dirty).
+This required expanding the interface of the clear_flush_young mmu
+notifier, so a lot of code has been trivially touched.
 
-Dave,
-
-Please pull this batch of updates intended for the 3.18 stream...
-
-For the mac80211 bits, Johannes says:
-
-"This time, I have some rate minstrel improvements, support for a very
-small feature from CCX that Steinar reverse-engineered, dynamic ACK
-timeout support, a number of changes for TDLS, early support for radio
-resource measurement and many fixes. Also, I'm changing a number of
-places to clear key memory when it's freed and Intel claims copyright
-for code they developed."
-
-For the bluetooth bits, Johan says:
-
-"Here are some more patches intended for 3.18. Most of them are cleanups
-or fixes for SMP. The only exception is a fix for BR/EDR L2CAP fixed
-channels which should now work better together with the L2CAP
-information request procedure."
-
-For the iwlwifi bits, Emmanuel says:
-
-"I fix here dvm which was broken by my last pull request. Arik
-continues to work on TDLS and Luca solved a few issues in CT-Kill. Eyal
-keeps digging into rate scaling code, more to come soon. Besides this,
-nothing really special here."
-
-Beyond that, there are the usual big batches of updates to ath9k, b43,
-mwifiex, and wil6210 as well as a handful of other bits here and there.
-Also, rtlwifi gets some btcoexist attention from Larry.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
+3. In the absence of shadow_accessed_mask (e.g. EPT A bit), we emulate
+the access bit by blowing the spte. This requires proper synchronizing
+with MMU notifier consumers, like every other removal of spte's does.
 
 ---
+v1 -> v2: * Small cosmetic changes
+          * Remove unnecessary handling of mmu_notifier_seq in
+            mmu_lock protected region
+          * Func prototypes fixed
+---
+Signed-off-by: Andres Lagar-Cavilla <andreslc@gooogle.com>
+---
+ arch/arm/include/asm/kvm_host.h     |  3 ++-
+ arch/arm64/include/asm/kvm_host.h   |  3 ++-
+ arch/powerpc/include/asm/kvm_host.h |  2 +-
+ arch/powerpc/kvm/book3s.c           |  4 ++--
+ arch/powerpc/kvm/book3s.h           |  3 ++-
+ arch/powerpc/kvm/book3s_64_mmu_hv.c |  4 ++--
+ arch/powerpc/kvm/book3s_pr.c        |  3 ++-
+ arch/powerpc/kvm/e500_mmu_host.c    |  2 +-
+ arch/x86/include/asm/kvm_host.h     |  2 +-
+ arch/x86/kvm/mmu.c                  | 46 +++++++++++++++++++++++--------------
+ drivers/iommu/amd_iommu_v2.c        |  6 +++--
+ include/linux/mmu_notifier.h        | 24 +++++++++++++------
+ include/trace/events/kvm.h          | 10 ++++----
+ mm/mmu_notifier.c                   |  5 ++--
+ mm/rmap.c                           |  6 ++++-
+ virt/kvm/kvm_main.c                 |  5 ++--
+ 16 files changed, 81 insertions(+), 47 deletions(-)
 
-The following changes since commit 61a3d4f9d52c00b2016bc27fc66b10a194043f76:
+diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+index 032a853..8c3f7eb 100644
+--- a/arch/arm/include/asm/kvm_host.h
++++ b/arch/arm/include/asm/kvm_host.h
+@@ -170,7 +170,8 @@ unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
+ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
+ 
+ /* We do not have shadow page tables, hence the empty hooks */
+-static inline int kvm_age_hva(struct kvm *kvm, unsigned long hva)
++static inline int kvm_age_hva(struct kvm *kvm, unsigned long start,
++			      unsigned long end)
+ {
+ 	return 0;
+ }
+diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+index be9970a..a3c671b 100644
+--- a/arch/arm64/include/asm/kvm_host.h
++++ b/arch/arm64/include/asm/kvm_host.h
+@@ -180,7 +180,8 @@ int kvm_unmap_hva_range(struct kvm *kvm,
+ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ 
+ /* We do not have shadow page tables, hence the empty hooks */
+-static inline int kvm_age_hva(struct kvm *kvm, unsigned long hva)
++static inline int kvm_age_hva(struct kvm *kvm, unsigned long start,
++			      unsigned long end)
+ {
+ 	return 0;
+ }
+diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+index 6040008..d329bc5 100644
+--- a/arch/powerpc/include/asm/kvm_host.h
++++ b/arch/powerpc/include/asm/kvm_host.h
+@@ -56,7 +56,7 @@
+ extern int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+ extern int kvm_unmap_hva_range(struct kvm *kvm,
+ 			       unsigned long start, unsigned long end);
+-extern int kvm_age_hva(struct kvm *kvm, unsigned long hva);
++extern int kvm_age_hva(struct kvm *kvm, unsigned long start, unsigned long end);
+ extern int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+ extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ 
+diff --git a/arch/powerpc/kvm/book3s.c b/arch/powerpc/kvm/book3s.c
+index dd03f6b..c16cfbf 100644
+--- a/arch/powerpc/kvm/book3s.c
++++ b/arch/powerpc/kvm/book3s.c
+@@ -851,9 +851,9 @@ int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
+ 	return kvm->arch.kvm_ops->unmap_hva_range(kvm, start, end);
+ }
+ 
+-int kvm_age_hva(struct kvm *kvm, unsigned long hva)
++int kvm_age_hva(struct kvm *kvm, unsigned long start, unsigned long end)
+ {
+-	return kvm->arch.kvm_ops->age_hva(kvm, hva);
++	return kvm->arch.kvm_ops->age_hva(kvm, start, end);
+ }
+ 
+ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
+diff --git a/arch/powerpc/kvm/book3s.h b/arch/powerpc/kvm/book3s.h
+index 4bf956c..d2b3ec0 100644
+--- a/arch/powerpc/kvm/book3s.h
++++ b/arch/powerpc/kvm/book3s.h
+@@ -17,7 +17,8 @@ extern void kvmppc_core_flush_memslot_hv(struct kvm *kvm,
+ extern int kvm_unmap_hva_hv(struct kvm *kvm, unsigned long hva);
+ extern int kvm_unmap_hva_range_hv(struct kvm *kvm, unsigned long start,
+ 				  unsigned long end);
+-extern int kvm_age_hva_hv(struct kvm *kvm, unsigned long hva);
++extern int kvm_age_hva_hv(struct kvm *kvm, unsigned long start,
++			  unsigned long end);
+ extern int kvm_test_age_hva_hv(struct kvm *kvm, unsigned long hva);
+ extern void kvm_set_spte_hva_hv(struct kvm *kvm, unsigned long hva, pte_t pte);
+ 
+diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+index 72c20bb..81460c5 100644
+--- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
++++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+@@ -1002,11 +1002,11 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 	return ret;
+ }
+ 
+-int kvm_age_hva_hv(struct kvm *kvm, unsigned long hva)
++int kvm_age_hva_hv(struct kvm *kvm, unsigned long start, unsigned long end)
+ {
+ 	if (!kvm->arch.using_mmu_notifiers)
+ 		return 0;
+-	return kvm_handle_hva(kvm, hva, kvm_age_rmapp);
++	return kvm_handle_hva_range(kvm, start, end, kvm_age_rmapp);
+ }
+ 
+ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
+index faffb27..852fcd8 100644
+--- a/arch/powerpc/kvm/book3s_pr.c
++++ b/arch/powerpc/kvm/book3s_pr.c
+@@ -295,7 +295,8 @@ static int kvm_unmap_hva_range_pr(struct kvm *kvm, unsigned long start,
+ 	return 0;
+ }
+ 
+-static int kvm_age_hva_pr(struct kvm *kvm, unsigned long hva)
++static int kvm_age_hva_pr(struct kvm *kvm, unsigned long start,
++			  unsigned long end)
+ {
+ 	/* XXX could be more clever ;) */
+ 	return 0;
+diff --git a/arch/powerpc/kvm/e500_mmu_host.c b/arch/powerpc/kvm/e500_mmu_host.c
+index 08f14bb..b1f3f63 100644
+--- a/arch/powerpc/kvm/e500_mmu_host.c
++++ b/arch/powerpc/kvm/e500_mmu_host.c
+@@ -732,7 +732,7 @@ int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
+ 	return 0;
+ }
+ 
+-int kvm_age_hva(struct kvm *kvm, unsigned long hva)
++int kvm_age_hva(struct kvm *kvm, unsigned long start, unsigned long end)
+ {
+ 	/* XXX could be more clever ;) */
+ 	return 0;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 028df8d..a96c61b 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -1036,7 +1036,7 @@ asmlinkage void kvm_spurious_fault(void);
+ #define KVM_ARCH_WANT_MMU_NOTIFIER
+ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+ int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end);
+-int kvm_age_hva(struct kvm *kvm, unsigned long hva);
++int kvm_age_hva(struct kvm *kvm, unsigned long start, unsigned long end);
+ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ int cpuid_maxphyaddr(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 76398fe..f33d5e4 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1406,32 +1406,24 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 	struct rmap_iterator uninitialized_var(iter);
+ 	int young = 0;
+ 
+-	/*
+-	 * In case of absence of EPT Access and Dirty Bits supports,
+-	 * emulate the accessed bit for EPT, by checking if this page has
+-	 * an EPT mapping, and clearing it if it does. On the next access,
+-	 * a new EPT mapping will be established.
+-	 * This has some overhead, but not as much as the cost of swapping
+-	 * out actively used pages or breaking up actively used hugepages.
+-	 */
+-	if (!shadow_accessed_mask) {
+-		young = kvm_unmap_rmapp(kvm, rmapp, slot, data);
+-		goto out;
+-	}
++	BUG_ON(!shadow_accessed_mask);
+ 
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+ 	     sptep = rmap_get_next(&iter)) {
++		struct kvm_mmu_page *sp;
++		gfn_t gfn;
+ 		BUG_ON(!is_shadow_present_pte(*sptep));
++		/* From spte to gfn. */
++		sp = page_header(__pa(sptep));
++		gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
+ 
+ 		if (*sptep & shadow_accessed_mask) {
+ 			young = 1;
+ 			clear_bit((ffs(shadow_accessed_mask) - 1),
+ 				 (unsigned long *)sptep);
+ 		}
++		trace_kvm_age_page(gfn, slot, young);
+ 	}
+-out:
+-	/* @data has hva passed to kvm_age_hva(). */
+-	trace_kvm_age_page(data, slot, young);
+ 	return young;
+ }
+ 
+@@ -1478,9 +1470,29 @@ static void rmap_recycle(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ 	kvm_flush_remote_tlbs(vcpu->kvm);
+ }
+ 
+-int kvm_age_hva(struct kvm *kvm, unsigned long hva)
++int kvm_age_hva(struct kvm *kvm, unsigned long start, unsigned long end)
+ {
+-	return kvm_handle_hva(kvm, hva, hva, kvm_age_rmapp);
++	/*
++	 * In case of absence of EPT Access and Dirty Bits supports,
++	 * emulate the accessed bit for EPT, by checking if this page has
++	 * an EPT mapping, and clearing it if it does. On the next access,
++	 * a new EPT mapping will be established.
++	 * This has some overhead, but not as much as the cost of swapping
++	 * out actively used pages or breaking up actively used hugepages.
++	 */
++	if (!shadow_accessed_mask) {
++		/*
++		 * We are holding the kvm->mmu_lock, and we are blowing up
++		 * shadow PTEs. MMU notifier consumers need to be kept at bay.
++		 * This is correct as long as we don't decouple the mmu_lock
++		 * protected regions (like invalidate_range_start|end does).
++		 */
++		kvm->mmu_notifier_seq++;
++		return kvm_handle_hva_range(kvm, start, end, 0,
++					    kvm_unmap_rmapp);
++	}
++
++	return kvm_handle_hva_range(kvm, start, end, 0, kvm_age_rmapp);
+ }
+ 
+ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 5f578e8..90d734b 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -402,9 +402,11 @@ static void __mn_flush_page(struct mmu_notifier *mn,
+ 
+ static int mn_clear_flush_young(struct mmu_notifier *mn,
+ 				struct mm_struct *mm,
+-				unsigned long address)
++				unsigned long start,
++				unsigned long end)
+ {
+-	__mn_flush_page(mn, address);
++	for (; start < end; start += PAGE_SIZE)
++		__mn_flush_page(mn, start);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+index 2728869..4269f2c 100644
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -57,10 +57,13 @@ struct mmu_notifier_ops {
+ 	 * pte. This way the VM will provide proper aging to the
+ 	 * accesses to the page through the secondary MMUs and not
+ 	 * only to the ones through the Linux pte.
++	 * Start-end is necessary in case the secondary MMU is mapping the page
++	 * at a smaller granularity than the primary MMU.
+ 	 */
+ 	int (*clear_flush_young)(struct mmu_notifier *mn,
+ 				 struct mm_struct *mm,
+-				 unsigned long address);
++				 unsigned long start,
++				 unsigned long end);
+ 
+ 	/*
+ 	 * test_young is called to check the young/accessed bitflag in
+@@ -175,7 +178,8 @@ extern void mmu_notifier_unregister_no_release(struct mmu_notifier *mn,
+ extern void __mmu_notifier_mm_destroy(struct mm_struct *mm);
+ extern void __mmu_notifier_release(struct mm_struct *mm);
+ extern int __mmu_notifier_clear_flush_young(struct mm_struct *mm,
+-					  unsigned long address);
++					  unsigned long start,
++					  unsigned long end);
+ extern int __mmu_notifier_test_young(struct mm_struct *mm,
+ 				     unsigned long address);
+ extern void __mmu_notifier_change_pte(struct mm_struct *mm,
+@@ -194,10 +198,11 @@ static inline void mmu_notifier_release(struct mm_struct *mm)
+ }
+ 
+ static inline int mmu_notifier_clear_flush_young(struct mm_struct *mm,
+-					  unsigned long address)
++					  unsigned long start,
++					  unsigned long end)
+ {
+ 	if (mm_has_notifiers(mm))
+-		return __mmu_notifier_clear_flush_young(mm, address);
++		return __mmu_notifier_clear_flush_young(mm, start, end);
+ 	return 0;
+ }
+ 
+@@ -255,7 +260,9 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
+ 	unsigned long ___address = __address;				\
+ 	__young = ptep_clear_flush_young(___vma, ___address, __ptep);	\
+ 	__young |= mmu_notifier_clear_flush_young(___vma->vm_mm,	\
+-						  ___address);		\
++						  ___address,		\
++						  ___address +		\
++							PAGE_SIZE);	\
+ 	__young;							\
+ })
+ 
+@@ -266,7 +273,9 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
+ 	unsigned long ___address = __address;				\
+ 	__young = pmdp_clear_flush_young(___vma, ___address, __pmdp);	\
+ 	__young |= mmu_notifier_clear_flush_young(___vma->vm_mm,	\
+-						  ___address);		\
++						  ___address,		\
++						  ___address +		\
++							PMD_PAGE_SIZE);	\
+ 	__young;							\
+ })
+ 
+@@ -301,7 +310,8 @@ static inline void mmu_notifier_release(struct mm_struct *mm)
+ }
+ 
+ static inline int mmu_notifier_clear_flush_young(struct mm_struct *mm,
+-					  unsigned long address)
++					  unsigned long start,
++					  unsigned long end)
+ {
+ 	return 0;
+ }
+diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+index ab679c3..f58ef59 100644
+--- a/include/trace/events/kvm.h
++++ b/include/trace/events/kvm.h
+@@ -225,8 +225,8 @@ TRACE_EVENT(kvm_fpu,
+ );
+ 
+ TRACE_EVENT(kvm_age_page,
+-	TP_PROTO(ulong hva, struct kvm_memory_slot *slot, int ref),
+-	TP_ARGS(hva, slot, ref),
++	TP_PROTO(ulong gfn, struct kvm_memory_slot *slot, int ref),
++	TP_ARGS(gfn, slot, ref),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	u64,	hva		)
+@@ -235,9 +235,9 @@ TRACE_EVENT(kvm_age_page,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->hva		= hva;
+-		__entry->gfn		=
+-		  slot->base_gfn + ((hva - slot->userspace_addr) >> PAGE_SHIFT);
++		__entry->gfn		= gfn;
++		__entry->hva		= ((gfn - slot->base_gfn) >>
++					    PAGE_SHIFT) + slot->userspace_addr;
+ 		__entry->referenced	= ref;
+ 	),
+ 
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 950813b..2c8da98 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -107,7 +107,8 @@ void __mmu_notifier_release(struct mm_struct *mm)
+  * existed or not.
+  */
+ int __mmu_notifier_clear_flush_young(struct mm_struct *mm,
+-					unsigned long address)
++					unsigned long start,
++					unsigned long end)
+ {
+ 	struct mmu_notifier *mn;
+ 	int young = 0, id;
+@@ -115,7 +116,7 @@ int __mmu_notifier_clear_flush_young(struct mm_struct *mm,
+ 	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->clear_flush_young)
+-			young |= mn->ops->clear_flush_young(mn, mm, address);
++			young |= mn->ops->clear_flush_young(mn, mm, start, end);
+ 	}
+ 	srcu_read_unlock(&srcu, id);
+ 
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 3e8491c..66b075f 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1355,7 +1355,11 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 			continue;	/* don't unmap */
+ 		}
+ 
+-		if (ptep_clear_flush_young_notify(vma, address, pte))
++		/*
++		 * No need for _notify because we're called within an
++		 * mmu_notifier_invalidate_range_ {start|end} scope.
++		 */
++		if (ptep_clear_flush_young(vma, address, pte))
+ 			continue;
+ 
+ 		/* Nuke the page table entry. */
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index db57363..ea327f4 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -367,7 +367,8 @@ static void kvm_mmu_notifier_invalidate_range_end(struct mmu_notifier *mn,
+ 
+ static int kvm_mmu_notifier_clear_flush_young(struct mmu_notifier *mn,
+ 					      struct mm_struct *mm,
+-					      unsigned long address)
++					      unsigned long start,
++					      unsigned long end)
+ {
+ 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
+ 	int young, idx;
+@@ -375,7 +376,7 @@ static int kvm_mmu_notifier_clear_flush_young(struct mmu_notifier *mn,
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	spin_lock(&kvm->mmu_lock);
+ 
+-	young = kvm_age_hva(kvm, address);
++	young = kvm_age_hva(kvm, start, end);
+ 	if (young)
+ 		kvm_flush_remote_tlbs(kvm);
+ 
+-- 
+2.1.0.rc2.206.gedb03e5
 
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
-nville/wireless (2014-09-08 11:14:56 -0400)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next.git =
-tags/master-2014-09-16
-
-for you to fetch changes up to 7a0a260a0f6ff0226c33cf28a5cc26711ab0ae5f:
-
-  ath9k: enable ext channel pulse detection (2014-09-16 16:18:42 -0400)
-
-----------------------------------------------------------------
-Amitkumar Karwar (4):
-      mwifiex: fix a bug in Tx multiport aggregation
-      mwifiex: minor cleanup in multiport aggregation
-      mwifiex: remove redundant variable report_scan_result
-      mwifiex: remove low priority scan handling
-
-Andy Shevchenko (1):
-      hostap: proc: substitute loops by %*phN
-
-Arik Nemtsov (3):
-      mac80211: set network header in TDLS frames
-      iwlwifi: mvm: move TDLS code to separate file
-      iwlwifi: mvm: fix PSM disable during TDLS
-
-Assaf Krauss (3):
-      nl80211: Allow declaring RRM-related features
-      nl80211: Add flag attribute for RRM connections
-      mac80211: Add RRM support to assoc request
-
-Avinash Patil (11):
-      mwifiex: set fw api info for backword compatibility
-      mwifiex: fix probable memory corruption while processing TDLS frame
-      mwifiex: avoid processing RX packets with invalid length
-      mwifiex: rework internal scan for association
-      mwifiex: support for event done interrupt
-      mwifiex: set passive scan type for scan requests with no ssid
-      mwifiex: bring in scan channel gap feature
-      mwifiex: remove restriction of single channel scan when connected
-      mwifiex: process TX even when scan is ongoing
-      mwifiex: add rx workqueue support
-      mwifiex: modify TX/RX window sizes for AP interface
-
-Avri Altman (2):
-      iwlwifi: mvm: remove unused static inline function
-      iwlwifi: mvm: Fix skip over dtim configuration in d0i3
-
-Behan Webster (1):
-      Bluetooth: LLVMLinux: Remove VLAIS from bluetooth/amp.c
-
-Champion Chen (1):
-      Bluetooth: Fix issue with USB suspend in btusb driver
-
-David Spinadel (1):
-      iwlwifi: mvm: reduce active dwell time
-
-Dedy Lansky (6):
-      wil6210: fix for memory corruption while insmod
-      wil6210: fix for memory corruption upon rmmod
-      wil6210: fix race condition of disconnect while BACK event
-      wil6210: modify confusing printout
-      wil6210: fix race condition between BACK event and Rx data
-      wil6210: introduce separate completion for WMI
-
-Eliad Peller (9):
-      cfg80211: avoid duplicate entries on regdomain intersection
-      mac80211: adjust roc duration when combining ROCs
-      mac80211: combine roc with the "next roc" if possible
-      iwlwifi: increase DEFAULT_MAX_TX_POWER
-      cfg80211/mac80211: add wmm info to assoc event
-      cfg80211: allow requesting SMPS mode on ap start
-      mac80211: set smps_mode according to ap params
-      mac80211: replace SMPS hw flags with wiphy feature bits
-      iwlwifi: mvm: move IWL_MVM_UAPSD_QUEUES to constants.h
-
-Emmanuel Grumbach (8):
-      iwlwifi: mvm: enable scheduled scan on newest firmware
-      iwlwifi: mvm: fix endianity issues with Smart Fifo commands
-      iwlwiwi: mvm: use bss_conf->dtim_period instead of conf.ps_dtim_period
-      iwlwifi: dvm: disable power save by default
-      Merge remote-tracking branch 'iwlwifi-fixes/master' into NEXT
-      iwlwifi: trans: don't configure the set_active in SCD for dvm
-      iwlwifi: define the non shared antenna per hardware
-      iwlwifi: mvm: allow to collect debug data when restart is disabled
-
-Eran Harary (1):
-      iwlwifi: mvm: allow preventing dummy notifications
-
-Eyal Shapira (7):
-      mac80211: fix broken use of VHT/20Mhz with some APs
-      iwlwifi: mvm: treat EAPOLs like mgmt frames wrt rate
-      iwlwifi: mvm: fix an overflow in iwl_mvm_get_signal_strength
-      iwlwifi: mvm: add LDPC support
-      iwlwifi: enable LDPC in 8000 chip family
-      iwlwifi: mvm: rs: remove max_rate_idx
-      iwlwifi: mvm: rs: don't zero tx stats after idle
-
-Fabian Frederick (2):
-      brcm80211: use container_of to resolve brcms_phy from brcms_phy_pub
-      brcm80211: use container_of to resolve dma_info from dma_pub
-
-Hans Wennborg (2):
-      iwl4965: fix %d confusingly prefixed with 0x in format string
-      rtlwifi: fix %d confusingly prefixed with 0x in format strings
-
-Hauke Mehrtens (7):
-      bcma: store more alternative addresses
-      bcma: add support for chipcommon B core
-      b43: tell the ucode the mac capabilities
-      b43: tell ucode the phy type and version
-      b43: add missing rate
-      b43: update some transmit header constants
-      b43: add support for setting the beacon listen interval
-
-Johan Hedberg (41):
-      Bluetooth: Fix incorrect LE CoC PDU length restriction based on HCI M=
-TU
-      Bluetooth: Remove unnecessary l2cap_chan_unlock before l2cap_chan_add
-      Bluetooth: Fix hci_conn reference counting for fixed channels
-      Bluetooth: Set addr_type only when it's needed
-      Bluetooth: Optimize connection parameter lookup for LE connections
-      Bluetooth: Improve *_get() functions to return the object type
-      Bluetooth: Fix using hci_conn_get() for hci_conn pointers
-      Bluetooth: Refactor connection parameter freeing into its own function
-      Bluetooth: Use zero timeout for immediate scheduling
-      Bluetooth: Fix hci_conn reference counting with hci_chan
-      Bluetooth: Set disc_timeout to 0 when calling hci_chan_del
-      Bluetooth: Ignore incoming data after initiating disconnection
-      Bluetooth: Remove hci_conn_hold/drop from hci_chan
-      Bluetooth: Set discon_timeout to 0 in l2cap_conn_del
-      Bluetooth: Use hci_disconnect for immediate disconnection from SMP
-      Bluetooth: Remove unused l2cap_conn_shutdown API
-      Bluetooth: Fix SMP error and response to be mutually exclusive
-      Bluetooth: Update hci_disconnect() to return an error value
-      Bluetooth: Use hci_disconnect() for mgmt_disconnect_device()
-      Bluetooth: Move clock offset reading into hci_disconnect()
-      Bluetooth: Add clarifying comment for LE CoC result value
-      Bluetooth: Remove unnecessary checks after canceling SMP security tim=
-er
-      Bluetooth: Don't take any action in smp_resume_cb if not encrypted
-      Bluetooth: Move identity address update behind a workqueue
-      Bluetooth: Remove unnecessary deferred work for SMP key distribution
-      Bluetooth: Fix locking of the SMP context
-      Bluetooth: Add define for key distribution mask
-      Bluetooth: Fix calling smp_distribute_keys() when still waiting for k=
-eys
-      Bluetooth: Add strict checks for allowed SMP PDUs
-      Bluetooth: Fix dereferencing conn variable before NULL check
-      Bluetooth: Fix mgmt pairing failure when authentication fails
-      Bluetooth: Fix allowing SMP Signing info PDU
-      Bluetooth: Remove unnecessary early initialization of variable
-      Bluetooth: Fix ignoring unknown SMP authentication requirement bits
-      Bluetooth: Centralize disallowing SMP commands to a single place
-      Bluetooth: Fix SMP security level when we have no IO capabilities
-      Bluetooth: Add smp_ltk_sec_level() helper function
-      Bluetooth: Fix L2CAP information request handling for fixed channels
-      Bluetooth: Avoid hard-coded IO capability values in SMP
-      Bluetooth: Expire RPA if encryption fails
-      Bluetooth: Fix re-setting RPA as expired when deferring update
-
-Johannes Berg (19):
-      mac80211: clean up ieee80211_i.h
-      mac80211: add Intel Mobile Communications copyright
-      cfg80211: add Intel Mobile Communications copyright
-      iwlwifi: mvm: BT Coex - remove shadowing variable
-      iwlwifi: mvm: correctly handle PM/QoS changes from mac80211
-      iwlwifi: mvm: BT Coex - always initialize smps_mode
-      mac80211: annotate MMIC head/tailroom warning
-      cfg80211: clear connect keys when freeing them
-      mac80211: clear key material when freeing keys
-      cfg80211: clear wext keys when freeing and removing them
-      cfg80211: don't put kek/kck/replay counter on the stack
-      cfg80211: clear nl80211 messages carrying keys after processing
-      cfg80211: add WMM traffic stream API
-      iwlwifi: mvm: disable aggregation queues in station DB in FW
-      iwlwifi: pcie: clear command data on freeing
-      iwlwifi: mvm: don't update quota in firmware too often
-      iwlwifi: mvm: update d0i3 debugfs
-      iwlwifi: mvm: fix quota update avoidance
-      iwlwifi: mvm: update QoS parameters when they change
-
-John W. Linville (3):
-      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-n=
-ext
-      Merge tag 'mac80211-next-for-john-2014-09-12' of git://git.kernel.org=
-/.../jberg/mac80211-next
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/blu=
-etooth-next
-
-Jukka Rissanen (3):
-      Bluetooth: 6lowpan: Increase the connection timeout value
-      Bluetooth: 6lowpan: Set the peer IPv6 address correctly
-      Bluetooth: 6lowpan: Route packets that are not meant to peer via corr=
-ect device
-
-Larry Finger (10):
-      rtlwifi: btcoexist: Modify btcoexist for changes in the V062814 Realt=
-ek version
-      rtlwifi: btcoexist: Modify rtl_btc for changes in latest Realtek code
-      rtlwifi: btcoexist: Modify driver for V062814 Realtek driver
-      rtlwifi: btcoexist: Modify driver to support BT coexistence in rtl872=
-3be
-      rtlwifi: btcoexist: Add BT coexistence routines for driver rtl8821ae
-      rtlwifi: btcoexist: Add second part of BT coexistence routines for rt=
-l8821ae
-      rtlwifi: btcoexist: Update remaining old parts of the driver
-      rtlwifi: btcoexist: Fix "always true" warning from commit ed364abffd6e
-      rtlwifi: btcoexist: avoid format string in printk
-      rtlwifi: btcoexist: Change local debugging macros CL_*** into the sta=
-ndard varieties
-
-Liad Kaufman (3):
-      mac80211: fix description comment of ieee80211_subif_start_xmit
-      mac80211: add TDLS connection timeout
-      iwlwifi: make hw rev checking more readable
-
-Lorenzo Bianconi (14):
-      cfg80211: enable dynack through nl80211
-      mac80211: extend set_coverage_class signature
-      ath9k: fix radar parameters initialization
-      ath9k: export methods related to ACK timeout estimation
-      ath9k: add duration field to ath_tx_status
-      ath9k: add dynamic ACK timeout estimation
-      ath9k: add config for (en|dis)abling ACK timeout estimation
-      ath9k: do not overwrite ACK timeout estimation
-      ath9k: add sampling methods for (tx|rx) timestamp
-      ath9k: enable control frame reception
-      ath9k: add debugfs support for dynack
-      ath9k: enable dynack using set_coverage_class codepath
-      ath9k: initialize ath_node linked list
-      ath9k: enable ext channel pulse detection
-
-Luciano Coelho (5):
-      iwlwifi: mvm: set MAC_FILTER_IN_BEACON correctly for STA/P2P client
-      iwlwifi: mvm: reset ucode_loaded flag when mac80211 stop is called
-      iwlwifi: mvm: fail temp test enabling if the ucode is not loaded
-      iwlwifi: mvm: use the firmware to get the temperature during CT kill
-      iwlwifi: mvm: align CSA GO NOA time event naming with the firmware
-
-Max Stepanov (1):
-      iwlwifi: mvm: add MVM_FW_MCAST_FILTER_PASS_ALL option
-
-Michal Kazior (1):
-      mac80211: fix offloaded BA session traffic after hw restart
-
-Oren Givon (2):
-      iwlwifi: add PCI IDs and add then new 3165 series
-      iwlwifi: add and edit 8000 series PCI IDs
-
-Rafa=C5=82 Mi=C5=82ecki (12):
-      bcma: move bus struct setup into early part of host specific code
-      bcma: use separated function to initialize bus on SoC
-      bcma: move code for core registration into separate function
-      bcma: register NAND and QSPI cores early
-      b43: HT-PHY: Move radio preparation into init function
-      b43: HT-PHY: Move radio calibration to separated functions
-      b43: HT-PHY: Define some regs for 0x2059 radio
-      b43: HT-PHY: Complete radio init (add missing entries)
-      b43: HT-PHY: Set MAC frequency to correct values
-      b43: HT-PHY: Implement band switching
-      b43: HT-PHY: Update values for frequency calibration
-      b43: Implement PHY PLL reset
-
-Steinar H. Gunderson (2):
-      mac80211: split 802.11h parsing from transmit power policy
-      mac80211: support DTPC IE (from Cisco Client eXtensions)
-
-Sujith Manoharan (26):
-      ath9k: Fix beacon configuration for channel contexts
-      ath9k: Fix beacons for managed mode
-      ath9k: Fix panic when adding an AP interface
-      ath9k: Fix NoA start time calculation
-      ath9k: Fix offchannel duration calculation
-      ath9k: Add CTWindow support
-      ath9k: Fix RX filter calculation
-      ath9k: Fix ath_startrecv()
-      ath9k: Fix COMP_BAR filter
-      ath9k: Fix RX filters in channel contexts
-      ath9k: Fix interface accounting
-      ath9k: Use a subroutine to assign HW queues
-      ath9k: Fix offchannel operation
-      ath9k: Fix MCC scanning
-      ath9k: Assign offchannel duration properly
-      ath9k: Fix Notice of Absence issues
-      ath9k: Clear offchannel duration properly
-      ath9k: Fix channel switch time duration
-      ath9k: Fix beacon miss handling
-      ath9k: Fix beacon processing in offchannel
-      ath9k: Remove unnecessary tbtt assignment
-      ath9k: Check beaconing mode properly
-      ath9k: Set offchannel state properly
-      ath9k: Remove useless opmode check
-      ath9k: Fix primary station configuration
-      ath9k: Fix build error
-
-Thomas Huehn (2):
-      mac80211: Unify rate statistic variables between Minstrel & Minstrel_=
-HT
-      mac80211: improve minstrel_ht rate sorting by throughput & probability
-
-Toralf F=C3=B6rster (1):
-      iwlwifi/iwl-drv.c: fix typo defualt -> default
-
-Vladimir Kondratiev (17):
-      wil6210: firmware download
-      wil6210: debug prints for vring de-allocation
-      wil6210: print more information when connecting
-      wil6210: some more debug for the WMI mechanism
-      wil6210: coding style fixes
-      wil6210: platform specific module
-      wil6210: add more debug printouts
-      wil6210: fix usage of print_hex_dump_debug
-      wil6210: send connect request IEs to FW also for non-secure connection
-      wil6210: add change_beacon() driver callback
-      wil6210: enlarge TX/RX buffer length
-      wil6210: specify max. IE length
-      wil6210: fix typo in comment
-      wil6210: rename [en|dis]able irq to [un]mask
-      wil6210: fix for oops while stopping interface
-      wil6210: fix PTR_ERR() usage after initialization to constant
-      fixup! wil6210: fix usage of print_hex_dump_debug
-
-Xinming Hu (1):
-      mwifiex: fix 5G association failure after leaving 2.4G IBSS
-
- arch/mips/bcm47xx/setup.c                          |    4 +
- drivers/bcma/Makefile                              |    1 +
- drivers/bcma/bcma_private.h                        |    4 +
- drivers/bcma/driver_chipcommon_b.c                 |   61 +
- drivers/bcma/host_pci.c                            |    3 +
- drivers/bcma/host_soc.c                            |   14 +-
- drivers/bcma/main.c                                |  100 +-
- drivers/bcma/scan.c                                |   17 +-
- drivers/bluetooth/btusb.c                          |    9 +
- drivers/net/wireless/ath/ath.h                     |    2 +
- drivers/net/wireless/ath/ath10k/mac.c              |    5 +-
- drivers/net/wireless/ath/ath5k/mac80211-ops.c      |    2 +-
- drivers/net/wireless/ath/ath9k/Kconfig             |    9 +
- drivers/net/wireless/ath/ath9k/Makefile            |    3 +
- drivers/net/wireless/ath/ath9k/ar9002_mac.c        |    7 +
- drivers/net/wireless/ath/ath9k/ar9003_mac.c        |    9 +
- drivers/net/wireless/ath/ath9k/ath9k.h             |   25 +-
- drivers/net/wireless/ath/ath9k/beacon.c            |   14 +-
- drivers/net/wireless/ath/ath9k/channel.c           |  192 +-
- drivers/net/wireless/ath/ath9k/debug.c             |   30 +-
- drivers/net/wireless/ath/ath9k/dynack.c            |  351 ++
- drivers/net/wireless/ath/ath9k/dynack.h            |  103 +
- drivers/net/wireless/ath/ath9k/htc_drv_main.c      |    2 +-
- drivers/net/wireless/ath/ath9k/hw.c                |   22 +-
- drivers/net/wireless/ath/ath9k/hw.h                |    7 +
- drivers/net/wireless/ath/ath9k/init.c              |    7 +-
- drivers/net/wireless/ath/ath9k/mac.h               |    1 +
- drivers/net/wireless/ath/ath9k/main.c              |  173 +-
- drivers/net/wireless/ath/ath9k/recv.c              |   51 +-
- drivers/net/wireless/ath/ath9k/tx99.c              |    2 +-
- drivers/net/wireless/ath/ath9k/wow.c               |    2 +-
- drivers/net/wireless/ath/ath9k/xmit.c              |    5 +
- drivers/net/wireless/ath/wil6210/Kconfig           |    9 +
- drivers/net/wireless/ath/wil6210/Makefile          |    3 +
- drivers/net/wireless/ath/wil6210/cfg80211.c        |  126 +-
- drivers/net/wireless/ath/wil6210/debugfs.c         |   60 +-
- drivers/net/wireless/ath/wil6210/fw.c              |   45 +
- drivers/net/wireless/ath/wil6210/fw.h              |  149 +
- drivers/net/wireless/ath/wil6210/fw_inc.c          |  495 +++
- drivers/net/wireless/ath/wil6210/interrupt.c       |   31 +-
- drivers/net/wireless/ath/wil6210/main.c            |  185 +-
- drivers/net/wireless/ath/wil6210/netdev.c          |   17 +-
- drivers/net/wireless/ath/wil6210/pcie_bus.c        |   39 +-
- drivers/net/wireless/ath/wil6210/rx_reorder.c      |   13 +-
- drivers/net/wireless/ath/wil6210/txrx.c            |   66 +-
- drivers/net/wireless/ath/wil6210/txrx.h            |    9 +-
- drivers/net/wireless/ath/wil6210/wil6210.h         |   50 +-
- drivers/net/wireless/ath/wil6210/wil_platform.c    |   49 +
- drivers/net/wireless/ath/wil6210/wil_platform.h    |   34 +
- .../net/wireless/ath/wil6210/wil_platform_msm.c    |  257 ++
- .../net/wireless/ath/wil6210/wil_platform_msm.h    |   24 +
- drivers/net/wireless/ath/wil6210/wmi.c             |   40 +-
- drivers/net/wireless/ath/wil6210/wmi.h             |   18 +-
- drivers/net/wireless/b43/b43.h                     |    9 +
- drivers/net/wireless/b43/main.c                    |   71 +-
- drivers/net/wireless/b43/main.h                    |    2 +
- drivers/net/wireless/b43/phy_ht.c                  |  205 +-
- drivers/net/wireless/b43/phy_ht.h                  |    7 +-
- drivers/net/wireless/b43/phy_n.c                   |    2 +-
- drivers/net/wireless/b43/radio_2059.c              |  341 +-
- drivers/net/wireless/b43/radio_2059.h              |   14 +
- drivers/net/wireless/b43/xmit.h                    |   22 +-
- drivers/net/wireless/brcm80211/brcmsmac/dma.c      |   38 +-
- .../net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c  |  122 +-
- .../net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c  |    6 +-
- .../net/wireless/brcm80211/brcmsmac/phy/phy_n.c    |    8 +-
- drivers/net/wireless/hostap/hostap_proc.c          |    6 +-
- drivers/net/wireless/iwlegacy/4965-mac.c           |    7 +-
- drivers/net/wireless/iwlwifi/dvm/mac80211.c        |    4 +-
- drivers/net/wireless/iwlwifi/dvm/power.c           |    2 +-
- drivers/net/wireless/iwlwifi/iwl-7000.c            |   31 +-
- drivers/net/wireless/iwlwifi/iwl-8000.c            |   14 +-
- drivers/net/wireless/iwlwifi/iwl-config.h          |    9 +
- drivers/net/wireless/iwlwifi/iwl-csr.h             |   10 +
- drivers/net/wireless/iwlwifi/iwl-drv.c             |    2 +-
- drivers/net/wireless/iwlwifi/iwl-eeprom-parse.c    |    3 +
- drivers/net/wireless/iwlwifi/iwl-fw.h              |    2 +
- drivers/net/wireless/iwlwifi/iwl-io.c              |    2 +-
- drivers/net/wireless/iwlwifi/iwl-nvm-parse.c       |    7 +-
- drivers/net/wireless/iwlwifi/iwl-trans.h           |    8 +-
- drivers/net/wireless/iwlwifi/mvm/Makefile          |    2 +-
- drivers/net/wireless/iwlwifi/mvm/coex.c            |   13 +-
- drivers/net/wireless/iwlwifi/mvm/constants.h       |    8 +
- drivers/net/wireless/iwlwifi/mvm/debugfs-vif.c     |    3 +-
- drivers/net/wireless/iwlwifi/mvm/debugfs.c         |   15 +
- drivers/net/wireless/iwlwifi/mvm/fw-api.h          |   40 +-
- drivers/net/wireless/iwlwifi/mvm/fw.c              |    3 +
- drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c        |   20 +-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c        |  183 +-
- drivers/net/wireless/iwlwifi/mvm/mvm.h             |   30 +-
- drivers/net/wireless/iwlwifi/mvm/nvm.c             |    3 +-
- drivers/net/wireless/iwlwifi/mvm/ops.c             |   18 +
- drivers/net/wireless/iwlwifi/mvm/power.c           |   67 +-
- drivers/net/wireless/iwlwifi/mvm/quota.c           |   32 +-
- drivers/net/wireless/iwlwifi/mvm/rs.c              |   68 +-
- drivers/net/wireless/iwlwifi/mvm/rs.h              |   10 +-
- drivers/net/wireless/iwlwifi/mvm/rx.c              |    6 +-
- drivers/net/wireless/iwlwifi/mvm/scan.c            |    4 +-
- drivers/net/wireless/iwlwifi/mvm/sf.c              |    6 +-
- drivers/net/wireless/iwlwifi/mvm/sta.c             |   12 +-
- drivers/net/wireless/iwlwifi/mvm/tdls.c            |  149 +
- drivers/net/wireless/iwlwifi/mvm/time-event.c      |   10 +-
- drivers/net/wireless/iwlwifi/mvm/time-event.h      |    8 +-
- drivers/net/wireless/iwlwifi/mvm/tt.c              |  326 +-
- drivers/net/wireless/iwlwifi/mvm/tx.c              |   10 +-
- drivers/net/wireless/iwlwifi/pcie/drv.c            |    8 +
- drivers/net/wireless/iwlwifi/pcie/internal.h       |    2 +
- drivers/net/wireless/iwlwifi/pcie/rx.c             |    2 +-
- drivers/net/wireless/iwlwifi/pcie/trans.c          |    3 +-
- drivers/net/wireless/iwlwifi/pcie/tx.c             |   12 +-
- drivers/net/wireless/mac80211_hwsim.c              |    8 +-
- drivers/net/wireless/mwifiex/11n_rxreorder.c       |   14 +
- drivers/net/wireless/mwifiex/cfg80211.c            |   15 +-
- drivers/net/wireless/mwifiex/cmdevt.c              |    4 +
- drivers/net/wireless/mwifiex/decl.h                |    4 +-
- drivers/net/wireless/mwifiex/fw.h                  |   10 +-
- drivers/net/wireless/mwifiex/init.c                |   21 +-
- drivers/net/wireless/mwifiex/main.c                |  191 +-
- drivers/net/wireless/mwifiex/main.h                |   48 +-
- drivers/net/wireless/mwifiex/pcie.c                |   37 +-
- drivers/net/wireless/mwifiex/pcie.h                |    5 +-
- drivers/net/wireless/mwifiex/scan.c                |  112 +-
- drivers/net/wireless/mwifiex/sdio.c                |   28 +-
- drivers/net/wireless/mwifiex/sta_cmdresp.c         |    2 -
- drivers/net/wireless/mwifiex/sta_ioctl.c           |    9 +-
- drivers/net/wireless/mwifiex/tdls.c                |    4 +-
- drivers/net/wireless/p54/main.c                    |    3 +-
- .../net/wireless/rtlwifi/btcoexist/halbt_precomp.h |    6 +
- .../wireless/rtlwifi/btcoexist/halbtc8192e2ant.c   | 3849 ++++++++++++++++=
-+++
- .../wireless/rtlwifi/btcoexist/halbtc8192e2ant.h   |  185 +
- .../wireless/rtlwifi/btcoexist/halbtc8723b1ant.c   | 3170 ++++++++++++++++
- .../wireless/rtlwifi/btcoexist/halbtc8723b1ant.h   |  184 +
- .../wireless/rtlwifi/btcoexist/halbtc8723b2ant.c   |  550 +--
- .../wireless/rtlwifi/btcoexist/halbtc8723b2ant.h   |   31 +-
- .../wireless/rtlwifi/btcoexist/halbtc8821a1ant.c   | 2970 +++++++++++++++
- .../wireless/rtlwifi/btcoexist/halbtc8821a1ant.h   |  188 +
- .../wireless/rtlwifi/btcoexist/halbtc8821a2ant.c   | 3879 ++++++++++++++++=
-++++
- .../wireless/rtlwifi/btcoexist/halbtc8821a2ant.h   |  205 ++
- .../net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c  |   52 +-
- .../net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h  |  122 +-
- drivers/net/wireless/rtlwifi/btcoexist/rtl_btc.c   |   27 +-
- drivers/net/wireless/rtlwifi/btcoexist/rtl_btc.h   |    6 +-
- drivers/net/wireless/rtlwifi/pci.c                 |    6 +-
- drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |    8 +-
- drivers/net/wireless/rtlwifi/rtl8723ae/hal_btc.c   |    4 +-
- drivers/net/wireless/rtlwifi/wifi.h                |   15 +-
- drivers/usb/host/bcma-hcd.c                        |    2 +-
- include/linux/bcma/bcma.h                          |    4 +-
- include/linux/bcma/bcma_driver_chipcommon.h        |    8 +
- include/linux/bcma/bcma_soc.h                      |    1 +
- include/linux/ieee80211.h                          |    8 +-
- include/net/bluetooth/hci_core.h                   |   14 +-
- include/net/bluetooth/l2cap.h                      |   10 +-
- include/net/cfg80211.h                             |   44 +-
- include/net/mac80211.h                             |   20 +-
- include/uapi/linux/nl80211.h                       |  100 +
- net/bluetooth/6lowpan.c                            |   80 +-
- net/bluetooth/amp.c                                |   13 +-
- net/bluetooth/hci_conn.c                           |   49 +-
- net/bluetooth/hci_core.c                           |   30 +-
- net/bluetooth/hci_event.c                          |   33 +-
- net/bluetooth/hidp/core.c                          |   10 +-
- net/bluetooth/l2cap_core.c                         |  120 +-
- net/bluetooth/l2cap_sock.c                         |    8 +
- net/bluetooth/mgmt.c                               |   37 +-
- net/bluetooth/smp.c                                |  272 +-
- net/bluetooth/smp.h                                |   10 +
- net/mac80211/agg-rx.c                              |    5 +-
- net/mac80211/cfg.c                                 |  101 +-
- net/mac80211/debugfs.c                             |    6 +-
- net/mac80211/debugfs_netdev.c                      |    4 +-
- net/mac80211/debugfs_sta.c                         |    1 +
- net/mac80211/driver-ops.h                          |    2 +-
- net/mac80211/ibss.c                                |    1 +
- net/mac80211/ieee80211_i.h                         |    8 +-
- net/mac80211/iface.c                               |   15 +-
- net/mac80211/key.c                                 |    3 +-
- net/mac80211/main.c                                |    1 +
- net/mac80211/mlme.c                                |  131 +-
- net/mac80211/rc80211_minstrel.c                    |   98 +-
- net/mac80211/rc80211_minstrel.h                    |   43 +-
- net/mac80211/rc80211_minstrel_debugfs.c            |   19 +-
- net/mac80211/rc80211_minstrel_ht.c                 |  303 +-
- net/mac80211/rc80211_minstrel_ht.h                 |   41 +-
- net/mac80211/rc80211_minstrel_ht_debugfs.c         |   10 +-
- net/mac80211/rx.c                                  |   11 +
- net/mac80211/scan.c                                |    1 +
- net/mac80211/sta_info.c                            |    1 +
- net/mac80211/sta_info.h                            |    7 +
- net/mac80211/status.c                              |   22 +-
- net/mac80211/tdls.c                                |    4 +
- net/mac80211/trace.h                               |    4 +-
- net/mac80211/tx.c                                  |    6 +-
- net/mac80211/util.c                                |   26 +
- net/mac80211/wme.c                                 |    1 +
- net/mac80211/wpa.c                                 |    7 +-
- net/wireless/chan.c                                |    1 +
- net/wireless/core.c                                |    3 +-
- net/wireless/ibss.c                                |    4 +-
- net/wireless/mlme.c                                |    4 +-
- net/wireless/nl80211.c                             |  233 +-
- net/wireless/nl80211.h                             |    3 +-
- net/wireless/rdev-ops.h                            |   31 +
- net/wireless/reg.c                                 |   82 +-
- net/wireless/scan.c                                |    1 +
- net/wireless/sme.c                                 |    6 +-
- net/wireless/trace.h                               |   45 +
- net/wireless/util.c                                |    3 +-
- net/wireless/wext-compat.c                         |    2 +
- net/wireless/wext-sme.c                            |    2 +-
- 210 files changed, 20726 insertions(+), 2404 deletions(-)
- create mode 100644 drivers/bcma/driver_chipcommon_b.c
- create mode 100644 drivers/net/wireless/ath/ath9k/dynack.c
- create mode 100644 drivers/net/wireless/ath/ath9k/dynack.h
- create mode 100644 drivers/net/wireless/ath/wil6210/fw.c
- create mode 100644 drivers/net/wireless/ath/wil6210/fw.h
- create mode 100644 drivers/net/wireless/ath/wil6210/fw_inc.c
- create mode 100644 drivers/net/wireless/ath/wil6210/wil_platform.c
- create mode 100644 drivers/net/wireless/ath/wil6210/wil_platform.h
- create mode 100644 drivers/net/wireless/ath/wil6210/wil_platform_msm.c
- create mode 100644 drivers/net/wireless/ath/wil6210/wil_platform_msm.h
- create mode 100644 drivers/net/wireless/iwlwifi/mvm/tdls.c
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8192e2ant.c
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8192e2ant.h
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8723b1ant.c
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8723b1ant.h
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a1ant.c
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a1ant.h
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.c
- create mode 100644 drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.h
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIHxIAAoJEJctW/TcYTgG8vQP/AqvTlAW7fdL0EK5EaTh/dl5
-IFXOgMaKe+e99iheZZECza122ko3eT+iiVX6oWK6XQm6auC0iblRdNuc/kMOZYM1
-dzIqUI2F3EnqcCjOjci9g8EbQPPImKdjJKHqgwkjdOE+yhj86jk+10AcZHpScueH
-pgwERjFQSRhO5eJYV3ejkw2AAhPCiG0G/mpujA7E0hYlMjrURxTTsTfBmFJld+lu
-2xBV9cMf2k/gv42C5Q3H7TIdNtb5FYV9KGy88wcZ4kZXF3dZcnSUUC40hBXEjqXv
-+ofMz9lV68if8z57yONyUz2jpO7tGZQywkL6SgiBHRGAY9LeFPedrQKRpWtuJ8Jf
-em2ttc5kTHjZ7pXvADkvBtrvDyzI3i8GkQjcNucQKyCAj25vlQo5tO31jgMX35cY
-iO7jLwDbwlKoGa+8nZbGMPNrh2HCT9VLK+M3XwZck/Udh95itP+PhomPm5Elk3MJ
-7gXdKBry7jHlUOG+pOgM9aZMjt+um/s8wiLBHF6VwgJo7G6FjgIANvX2R5BjDAkZ
-Ldc/15rsLg0W+2XcidR4n0ddDNW+5RqZwM6QYys3ny0jIHVlMGhThra/h8N4QyEH
-27HlZRmAdXTVx++rCiQhrS8o2Ig6XNnu3DSLvmi2HLPk0YTwba50TuBBe6BaLzo3
-QpSG8a06Z0cV/U4rohfl
-=z7jr
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
