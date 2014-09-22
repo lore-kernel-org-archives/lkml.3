@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbaIVST0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:19:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52665 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525AbaIVSTZ (ORCPT
+	id S1754716AbaIVSTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:19:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60809 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524AbaIVSTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:19:25 -0400
-Date: Mon, 22 Sep 2014 14:19:21 -0400 (EDT)
-Message-Id: <20140922.141921.577008114679288180.davem@davemloft.net>
-To: hock.leong.kweh@intel.com
-Cc: peppe.cavallaro@st.com, rayagond@vayavyalabs.com, vbridgers2013@gmail.com,
-        wens@csie.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        boon.leong.ong@intel.com, tobias.johannes.klausmann@mni.thm.de
-Subject: Re: [PATCH] net: stmmac: fix stmmac_pci_probe failed when
- CONFIG_HAVE_CLK is selected
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
-References: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Sep 2014 11:19:24 -0700 (PDT)
+	Mon, 22 Sep 2014 14:19:32 -0400
+Date: Mon, 22 Sep 2014 11:19:29 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Chris J Arges <chris.j.arges@canonical.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-scsi@vget.kernel.org,
+        bruce.lucas@mongodb.com,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mptfusion: enable no_write_same in scsi_host_template
+Message-ID: <20140922181929.GA11319@infradead.org>
+References: <1411408690-4766-1-git-send-email-chris.j.arges@canonical.com>
+ <20140922180220.GA10166@infradead.org>
+ <5420679D.3070406@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5420679D.3070406@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kweh Hock Leong <hock.leong.kweh@intel.com>
-Date: Thu, 18 Sep 2014 20:34:10 +0800
+On Mon, Sep 22, 2014 at 01:17:01PM -0500, Chris J Arges wrote:
+> > 
+> I've only been able to reproduce this on VMWare. There is a pretty
+> straightforward reproducer in the BugLink if there is any interest in
+> verifying on hardware.
+> 
+> How would you recommending blacklisting only VMWare guests in this case?
 
-> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-> 
-> When the CONFIG_HAVE_CLK is selected for the system, the stmmac_pci_probe
-> will fail with dmesg:
-> [    2.167225] stmmaceth 0000:00:14.6: enabling device (0000 -> 0002)
-> [    2.178267] stmmaceth 0000:00:14.6: enabling bus mastering
-> [    2.178436] stmmaceth 0000:00:14.6: irq 24 for MSI/MSI-X
-> [    2.178703] stmmaceth 0000:00:14.6: stmmac_dvr_probe: warning: cannot
-> get CSR clock
-> [    2.186503] stmmac_pci_probe: main driver probe failed
-> [    2.194003] stmmaceth 0000:00:14.6: disabling bus mastering
-> [    2.196473] stmmaceth: probe of 0000:00:14.6 failed with error -2
-> 
-> This patch fix the issue by breaking the dependency to devm_clk_get()
-> as the CSR clock can be obtained at priv->plat->clk_csr from pci driver.
-> 
-> Reported-by: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
+Can you check what PCI subdevice and subvendor IDs the device you can
+reproduce it with have?  If the subvendor is Vmware that would be easy,
+if not the Avago people might be able to help with a device specific
+VMware identification.  If that fails we have kernel helpers to
+identify the hypervisor, but I'd rather avoid that as it would also
+trigger for PCI pass through devices.
 
-Giuseppe, Kweh, where are we with this patch?
