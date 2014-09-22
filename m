@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaIVDyx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 23:54:53 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45637 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaIVDyv (ORCPT
+	id S1753009AbaIVD74 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 23:59:56 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:39035 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192AbaIVD7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 23:54:51 -0400
-Message-ID: <541F9D86.4000506@roeck-us.net>
-Date: Sun, 21 Sep 2014 20:54:46 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 21 Sep 2014 23:59:55 -0400
+Date: Sun, 21 Sep 2014 23:59:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] workqueue fixes for v3.17-rc6
+Message-ID: <20140922035952.GC23583@htj.dyndns.org>
 MIME-Version: 1.0
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-CC: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] openrisc: Support both old (or32) and new (or1k) toolchain
-References: <1410210049-30800-1-git-send-email-linux@roeck-us.net> <541BB786.1070700@roeck-us.net> <20140922025334.GA19719@chokladfabriken.org>
-In-Reply-To: <20140922025334.GA19719@chokladfabriken.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.541F9D8B.0020,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2014 07:53 PM, Stefan Kristiansson wrote:
-> On Thu, Sep 18, 2014 at 09:56:38PM -0700, Guenter Roeck wrote:
->> ping ... comments / feedback anyone ?
->>
->> Guenter
->>
->
-> FWIW, I've tested this and it works fine.
->
-Hi Stefan,
+Hello, Linus.
 
-Great, thanks a lot for testing. Any idea if Jonas is available to send it upstream,
-or should I try to send it to Linus directly ?
+create_singlethread_workqueue() is the old interface which is kept
+around for backward compatibility - each should be reviewed to
+determine whether singlethread usage was to save worker threads or for
+ordering guarantee and whether it's depended upon by memory reclaim
+path.
 
-Thanks,
-Guenter
+While adding NUMA support for unbound workqueues during v3.10, I
+forgot to update it breaking the singlethread and ordering properties
+on NUMA setups.  The breakage was unfortunately rather subtle and went
+without being reported until now.
 
-> Stefan
->
->> On 09/08/2014 02:00 PM, Guenter Roeck wrote:
->>> The output file format for openrisc has changed from "elf32-or32"
->>> to "elf32-or1k" when using the or1k instead of the older or32 toochain.
->>> Select the correct output format automatically to be able to compile
->>> the kernel with both toolchain variants.
->>>
->>> Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
->>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> ---
->>> Candidate for -stable ?
->>>
->>>   arch/openrisc/kernel/vmlinux.lds.S | 8 +++++++-
->>>   1 file changed, 7 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/arch/openrisc/kernel/vmlinux.lds.S b/arch/openrisc/kernel/vmlinux.lds.S
->>> index 2d69a85..1c5d21a 100644
->>> --- a/arch/openrisc/kernel/vmlinux.lds.S
->>> +++ b/arch/openrisc/kernel/vmlinux.lds.S
->>> @@ -30,7 +30,13 @@
->>>   #include <asm/cache.h>
->>>   #include <asm-generic/vmlinux.lds.h>
->>>
->>> -OUTPUT_FORMAT("elf32-or32", "elf32-or32", "elf32-or32")
->>> +#ifdef __OR1K__
->>> +#define __OUTPUT_FORMAT	"elf32-or1k"
->>> +#else
->>> +#define __OUTPUT_FORMAT	"elf32-or32"
->>> +#endif
->>> +
->>> +OUTPUT_FORMAT(__OUTPUT_FORMAT, __OUTPUT_FORMAT, __OUTPUT_FORMAT)
->>>   jiffies = jiffies_64 + 4;
->>>
->>>   SECTIONS
->>>
->>
->
+The only missing piece is __WQ_ORDERED flag which makes the unbounded
+workqueue use a single backend queue across different NUMA nodes.
+It's fixed by making create_singlethread_workqueue() wrap
+alloc_ordered_workqueue() so that possible future updates are
+inherited automatically.
 
+Thanks.
+
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.17-fixes
+
+for you to fetch changes up to e09c2c295468476a239d13324ce9042ec4de05eb:
+
+  workqueue: apply __WQ_ORDERED to create_singlethread_workqueue() (2014-09-13 05:13:08 +0900)
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      workqueue: apply __WQ_ORDERED to create_singlethread_workqueue()
+
+ include/linux/workqueue.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index a0cc2e9..b996e6cd 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -419,7 +419,7 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
+ 	alloc_workqueue("%s", WQ_FREEZABLE | WQ_UNBOUND | WQ_MEM_RECLAIM, \
+ 			1, (name))
+ #define create_singlethread_workqueue(name)				\
+-	alloc_workqueue("%s", WQ_UNBOUND | WQ_MEM_RECLAIM, 1, (name))
++	alloc_ordered_workqueue("%s", WQ_MEM_RECLAIM, name)
+ 
+ extern void destroy_workqueue(struct workqueue_struct *wq);
+ 
+-- 
+tejun
