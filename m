@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285AbaIVRNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:13:08 -0400
-Received: from sauhun.de ([89.238.76.85]:51482 "EHLO pokefinder.org"
+	id S1754402AbaIVRNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:13:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647AbaIVRNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:13:06 -0400
-Date: Mon, 22 Sep 2014 19:13:27 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Max Schwarz <max.schwarz@online.de>, Chris Zhong <zyw@rock-chips.com>,
-        linux-rockchip@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-rk3x: move setup to the earlier subsys initcall
-Message-ID: <20140922171325.GB1404@katana>
-References: <1411370675-27866-1-git-send-email-zyw@rock-chips.com>
- <7192455.FveG5nGWsJ@xq-nb>
- <CAD=FV=VUoK8SDng6O4-VVq8UZf88b3bSe-hQMht3R2nmYXqMFQ@mail.gmail.com>
+	id S1754333AbaIVRNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 13:13:19 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC v2 4/5] O_NONBLOCK flag for readv2/preadv2
+References: <cover.1410810247.git.milosz@adfin.com>
+	<cover.1410983998.git.milosz@adfin.com>
+	<cover.1410983998.git.milosz@adfin.com>
+	<e190ba39a6244ec19344f7fe161d6e4e89962a3d.1410983999.git.milosz@adfin.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 22 Sep 2014 13:12:35 -0400
+In-Reply-To: <e190ba39a6244ec19344f7fe161d6e4e89962a3d.1410983999.git.milosz@adfin.com>
+	(Milosz Tanski's message of "Wed, 17 Sep 2014 22:20:49 +0000")
+Message-ID: <x49mw9ro9z0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=VUoK8SDng6O4-VVq8UZf88b3bSe-hQMht3R2nmYXqMFQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Milosz Tanski <milosz@adfin.com> writes:
 
---GID0FwUMdk1T2AWN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> diff --git a/fs/read_write.c b/fs/read_write.c
+> index 3db2e87..29b5823 100644
+> --- a/fs/read_write.c
+> +++ b/fs/read_write.c
+> @@ -864,8 +864,10 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+>  		return -EBADF;
+>  	if (!(file->f_mode & FMODE_CAN_READ))
+>  		return -EINVAL;
+> -	if (flags & ~0)
+> +	if (flags & ~RWF_NONBLOCK)
+>  		return -EINVAL;
+> +	if ((file->f_flags & O_DIRECT) && (flags & RWF_NONBLOCK))
+> +		return -EAGAIN;
 
-Hi,
+Just to close out our discussion on EINVAL for O_DIRECT with
+RWF_NONBLOCK:
 
-> In general you are correct.  You can get by with lots of probe
-> deferrals.  I don't personally know of any case where things are
-> broken with the current code, but it's really nice to avoid the
-> deferrals if possible.
+After discussing this with Zach, I agree that EAGAIN would be better.
+There may be libraries that lack context and may benefit from the EAGAIN
+return value.
 
-Yes, we all want proper dependencies and ordering, yet deferred probing
-is the best we have.
+> +/* These flags are used for the readv/writev syscalls with flags. */
+> +#define RWF_NONBLOCK O_NONBLOCK
 
-> Given that this is a core SoC i2c bus and is used for _a lot_ of
-> external connectivity (including for connecting to the primary
-> regulator on most boards), bumping up the priority in the init order
-> makes a lot of sense to me.
->=20
-> This also matches the i2c busses of most other major SoCs.  A selected
-> few examples:
->=20
-> i2c-gpio.c:subsys_initcall(i2c_gpio_init);
-> i2c-omap.c:subsys_initcall(omap_i2c_init_driver);
-> i2c-s3c2410.c:subsys_initcall(i2c_adap_s3c_init);
-> i2c-tegra.c:subsys_initcall(tegra_i2c_init_driver);
+I'm not sure this make sense.  As I mentioned earlier, the epoll variant
+made sense because the flag was shared (passed unmodified to other vfs
+calls that understand it).  Here we can just define an entirely new flag
+space.  Unless, of course, someone can come up with a reason why this
+/would/ make sense?
 
-They were "lucky" to be around before deferred probing and using
-subsys_initcall was always considered a hack. I am not accepting new
-users of this hack unless there is really no other solution.
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index e0919ba..6b7aba8 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1483,7 +1483,10 @@ static ssize_t do_generic_file_read(struct file *filp, loff_t *ppos,
+>  		cond_resched();
+>  find_page:
+>  		page = find_get_page(mapping, index);
+> +
 
-So, NACK, since it doesn't solve a problem.
+Please resist the urge to add whitespace.
 
-Regards,
-
-   Wolfram
-
-
---GID0FwUMdk1T2AWN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIFi1AAoJEBQN5MwUoCm2qO8P/30WwuZ8atHElTOyMQEp+st1
-CjKiEFQGvM9FL9Ms5iEcwvghyRp2r2tMNXoM/aScVpH+jjrwvIAbroZZSRbLO3u2
-YhEC4qSUpoZL85lfqn1/1CDJErWuA/5vZQFzTxGVZNujv4jR101eQ9RkTuQ/SWF/
-5Cpsi7G/UxFhXIKqx6Dg8zqEZrtyA9dMCoq3P+vLIoyv39tT0AhGqy52ika3RmUI
-NT9YsFlfaljRuSC/GBP0CVUCg1RkC9QMUFO9psD1kiE2FLcay9mR+g8nIOfFvC4t
-Yjqtsmc+sJoCIrbXcGem6FJ33pbmc2Teivne0tZfpjUJb56IKqxKpCla0TNMTj1h
-HVw6Lq9HiN+c0+kiFVIL8CVnggdWmWKUST0qlfJSRnNuTAusZqx2KcIXpvP4/As/
-1V5OtP5cn1t4QvZVHOiec0AMu325ZFUSUuVo3JDo5un+40Oruf88sTcCEk3SNK/Y
-Baj2rs051yAXPNj9zu+o8NfIJPev+wl5B1SHoFW/klSpD3OtKFTBC32bSjP0DwYN
-dcejTo4ylF8Kf+aNdqMCKkhwx4i8ovwH/pdwP76nmxuC97AfEa58M59UvMfeouKt
-+NNv278g863auc72GIdLx9F/4JMXXDtYwnFjF5AN7rzivk5wBsjJ8NpO8VF7KbAN
-JKjjgmk4NsCIZtD79u+S
-=kkDh
------END PGP SIGNATURE-----
-
---GID0FwUMdk1T2AWN--
+Cheers,
+Jeff
