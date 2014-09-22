@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134AbaIVPLf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:11:35 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:40694 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321AbaIVPLd (ORCPT
+	id S1754147AbaIVPNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:13:16 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:63109 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001AbaIVPNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:11:33 -0400
-Subject: Re: [PATCH] modified error code when perf_session__new() fail
+	Mon, 22 Sep 2014 11:13:15 -0400
+Subject: Re: [PATCH 4/5] perf tools: Introduce perf_callchain_config()
 From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: taeung <treeze.taeung@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, acme@kernel.org
-In-Reply-To: <20140922134616.GC18187@krava.brq.redhat.com>
-References: <541946D8.1080209@gmail.com> <1411227895.1690.23.camel@leonhard>
-	 <20140922134616.GC18187@krava.brq.redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>, Milian Wolff <mail@milianw.de>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140922145109.GF32694@kernel.org>
+References: <1411229886-24390-1-git-send-email-namhyung@kernel.org>
+	 <1411229886-24390-5-git-send-email-namhyung@kernel.org>
+	 <20140922142510.GE18187@krava.brq.redhat.com>
+	 <20140922145109.GF32694@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Sep 2014 00:11:27 +0900
-Message-ID: <1411398687.1665.2.camel@leonhard>
+Date: Tue, 23 Sep 2014 00:12:51 +0900
+Message-ID: <1411398771.1665.3.camel@leonhard>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
@@ -25,24 +29,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-2014-09-22 (월), 15:46 +0200, Jiri Olsa:
-> On Sun, Sep 21, 2014 at 12:44:55AM +0900, Namhyung Kim wrote:
-> > That being said I'm okay with the patch itself.  Jiri, this is what you
-> > wanted to do, right?
+2014-09-22 (월), 11:51 -0300, Arnaldo Carvalho de Melo:
+> Em Mon, Sep 22, 2014 at 04:25:10PM +0200, Jiri Olsa escreveu:
+> > On Sun, Sep 21, 2014 at 01:18:05AM +0900, Namhyung Kim wrote:
+> > > +int perf_callchain_config(const char *var, const char *value)
+> > > +{
+> > > +	if (prefixcmp(var, "call-graph."))
+> > > +		return 0;
+> > > +	var += 11; /* strlen("call-graph.") == 11 */
+>  
+> > should we use sizeof("call-graph.") - 1 instead ?
 > 
-> I have some vague memories about this.. any link to refresh my memory? ;-)
+> Agreed, it should produce the same code and is more compact :-)
 
-This is it: https://lkml.org/lkml/2014/8/13/331
+Will change.
 
 Thanks,
 Namhyung
-
-
-> but right, the change seems ok
-> 
-> jirka
 
 
 
