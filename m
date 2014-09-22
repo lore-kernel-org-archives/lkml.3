@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693AbaIVScS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:32:18 -0400
-Received: from forward9l.mail.yandex.net ([84.201.143.142]:45448 "EHLO
-	forward9l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654AbaIVScN (ORCPT
+	id S1754725AbaIVScY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:32:24 -0400
+Received: from forward1l.mail.yandex.net ([84.201.143.144]:44656 "EHLO
+	forward1l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754654AbaIVScU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:32:13 -0400
-X-Yandex-Uniq: 0f996e7e-9769-468a-8f8f-4f79b4f7070a
-Authentication-Results: smtp4h.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v2 2/6] sched: Do not pick a task which is switching on
- other cpu
+	Mon, 22 Sep 2014 14:32:20 -0400
+X-Yandex-Uniq: 6d46388b-46ee-47f9-b35f-e148f85e49ed
+Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v2 3/6] sched: Use dl_bw_of() under RCU read lock
 From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Kirill Tkhai <ktkhai@parallels.com>
-Date: Mon, 22 Sep 2014 22:32:10 +0400
-Message-ID: <20140922183209.10761.35666.stgit@localhost>
+Date: Mon, 22 Sep 2014 22:32:16 +0400
+Message-ID: <20140922183216.10761.27458.stgit@localhost>
 In-Reply-To: <20140922183202.10761.6682.stgit@localhost>
 References: <20140922183202.10761.6682.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -29,153 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <ktkhai@parallels.com>
 
-Architectures, which define __ARCH_WANT_UNLOCKED_CTXSW,
-may pull a task when it's in the middle of schedule().
+dl_bw_of() dereferences rq->rd which has to have RCU read lock held.
+Probability of use-after-free isn't zero here.
 
-CPU1(task1 calls schedule)            CPU2
-...                                   schedule()
-...                                      idle_balance()
-...                                         load_balance()
-...                                            ...
-schedule()                                     ...
-   prepare_lock_switch()                       ...
-      raw_spin_unlock(&rq1->lock)              ...
-      ...                                      raw_spin_lock(&rq1->lock)
-      ...                                         detach_tasks();
-      ...                                            can_migrate_task(task1)
-      ...                                         attach_tasks(); <--- move task1 to rq2
-      ...                                      raw_spin_unlock(&rq1->lock)
-      ...                                context_switch() <--- switch to task1's stack
-      ...                                ...
-   (using task1's stack)                 (using task1's stack)
-   ...                                   ...
-   context_switch()                      ...
-
-
-Parallel use of a single stack is not a good idea.
+Also add lockdep assert into dl_bw_cpus().
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <stable@vger.kernel.org> # Should this go to stable?
+Cc: <stable@vger.kernel.org> # v3.14+
 ---
- kernel/sched/core.c     |   11 +++--------
- kernel/sched/deadline.c |    7 ++++++-
- kernel/sched/fair.c     |    3 +++
- kernel/sched/rt.c       |    7 ++++++-
- kernel/sched/sched.h    |   16 ++++++++++++++++
- 5 files changed, 34 insertions(+), 10 deletions(-)
+ kernel/sched/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2a93b87..5b864e9 100644
+index 5b864e9..a300fce 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1700,15 +1700,10 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 
+@@ -1989,6 +1989,8 @@ unsigned long to_ratio(u64 period, u64 runtime)
  #ifdef CONFIG_SMP
- 	/*
--	 * If the owning (remote) cpu is still in the middle of schedule() with
--	 * this task as prev, wait until its done referencing the task.
-+	 * Note, that p is dequeued at the moment. But it still
-+	 * may be "prev" in the middle of schedule() on other cpu.
- 	 */
--	while (p->on_cpu)
--		cpu_relax();
--	/*
--	 * Pairs with the smp_wmb() in finish_lock_switch().
--	 */
--	smp_rmb();
-+	cpu_relax__while_on_cpu(p);
+ inline struct dl_bw *dl_bw_of(int i)
+ {
++	rcu_lockdep_assert(rcu_read_lock_sched_held(),
++			   "sched RCU must be held");
+ 	return &cpu_rq(i)->rd->dl_bw;
+ }
  
- 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
- 	p->state = TASK_WAKING;
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index aaa5abb..ea0ba33 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1364,7 +1364,9 @@ static int push_dl_task(struct rq *rq)
- 		next_task = task;
- 		goto retry;
- 	}
--
-+#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-+	cpu_relax__while_on_cpu(next_task);
-+#endif
- 	deactivate_task(rq, next_task, 0);
- 	set_task_cpu(next_task, later_rq->cpu);
- 	activate_task(later_rq, next_task, 0);
-@@ -1451,6 +1453,9 @@ static int pull_dl_task(struct rq *this_rq)
+@@ -1997,6 +1999,8 @@ static inline int dl_bw_cpus(int i)
+ 	struct root_domain *rd = cpu_rq(i)->rd;
+ 	int cpus = 0;
  
- 			ret = 1;
++	rcu_lockdep_assert(rcu_read_lock_sched_held(),
++			   "sched RCU must be held");
+ 	for_each_cpu_and(i, rd->span, cpu_active_mask)
+ 		cpus++;
  
-+#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-+			cpu_relax__while_on_cpu(p);
-+#endif
- 			deactivate_task(src_rq, p, 0);
- 			set_task_cpu(p, this_cpu);
- 			activate_task(this_rq, p, 0);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 420bc98..80c5064 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5298,6 +5298,9 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
- 			schedstat_inc(p, se.statistics.nr_forced_migrations);
- 		}
-+#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-+		cpu_relax__while_on_cpu(p);
-+#endif
- 		return 1;
- 	}
+@@ -7623,6 +7627,8 @@ static int sched_dl_global_constraints(void)
+ 	int cpu, ret = 0;
+ 	unsigned long flags;
  
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 2e6a774..de356b0 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1734,7 +1734,9 @@ static int push_rt_task(struct rq *rq)
- 		next_task = task;
- 		goto retry;
- 	}
--
-+#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-+	cpu_relax__while_on_cpu(next_task);
-+#endif
- 	deactivate_task(rq, next_task, 0);
- 	set_task_cpu(next_task, lowest_rq->cpu);
- 	activate_task(lowest_rq, next_task, 0);
-@@ -1823,6 +1825,9 @@ static int pull_rt_task(struct rq *this_rq)
- 
- 			ret = 1;
- 
-+#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-+			cpu_relax__while_on_cpu(p);
-+#endif
- 			deactivate_task(src_rq, p, 0);
- 			set_task_cpu(p, this_cpu);
- 			activate_task(this_rq, p, 0);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1bc6aad..9c07d72 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1034,6 +1034,22 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
- 
- /*
-+ * If the owning (remote) cpu is still in the middle of schedule() with
-+ * this task as prev, wait until its done referencing the task.
-+ */
-+static inline void cpu_relax__while_on_cpu(struct task_struct *p)
-+{
-+#ifdef CONFIG_SMP
-+	while (p->on_cpu)
-+		cpu_relax();
-+	/*
-+	 * Pairs with the smp_wmb() in finish_lock_switch().
-+	 */
-+	smp_rmb();
-+#endif
-+}
++	rcu_read_lock();
 +
-+/*
-  * wake flags
-  */
- #define WF_SYNC		0x01		/* waker goes to sleep after wakeup */
+ 	/*
+ 	 * Here we want to check the bandwidth not being set to some
+ 	 * value smaller than the currently allocated bandwidth in
+@@ -7644,6 +7650,8 @@ static int sched_dl_global_constraints(void)
+ 			break;
+ 	}
+ 
++	rcu_read_unlock();
++
+ 	return ret;
+ }
+ 
+@@ -7659,6 +7667,7 @@ static void sched_dl_do_global(void)
+ 	if (global_rt_runtime() != RUNTIME_INF)
+ 		new_bw = to_ratio(global_rt_period(), global_rt_runtime());
+ 
++	rcu_read_lock();
+ 	/*
+ 	 * FIXME: As above...
+ 	 */
+@@ -7669,6 +7678,7 @@ static void sched_dl_do_global(void)
+ 		dl_b->bw = new_bw;
+ 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+ 	}
++	rcu_read_unlock();
+ }
+ 
+ static int sched_rt_global_validate(void)
 
