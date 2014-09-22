@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaIVHj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 03:39:27 -0400
-Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:50064 "EHLO
-	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752536AbaIVHjY (ORCPT
+	id S1753183AbaIVHnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 03:43:00 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:34208 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaIVHm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 03:39:24 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v2] power: reset: use restart_notifier mechanism for msm-poweroff
-Date: Mon, 22 Sep 2014 13:12:54 +0530
-Message-Id: <1411371774-6834-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 22 Sep 2014 03:42:58 -0400
+Message-ID: <541FD2FE.3090102@gmail.com>
+Date: Mon, 22 Sep 2014 10:42:54 +0300
+From: Kari Suvanto <kari.tj.suvanto@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+CC: Hugh Dickins <hughd@google.com>, Sabrina Dubroca <sd@queasysnail.net>,
+        Valdis.Kletnieks@vt.edu, Bryan Wu <cooloney@gmail.com>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: 3.17-rc1: leds blink workqueue causes sleeping BUGs
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change replaces use of arm_pm_restart with recently introduced
-reset mechanism in Linux kernel called restart_notifier.
+>Ew. I'll have a look.
 
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Josh Cartwright <joshc@codeaurora.org>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-pm@vger.kernel.org
+sorry, sending again, first one had html in it..
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
-Tested on Dragonboard APQ8074
+Any update on this one?
 
-Changes since v1:
-- Initialized restart_nb with its declaration
-- Removed return check for register_restart_handler as it always
-  returns 0 as per Guenter's suggestion to Josh's similar patch.
-  This takes care of Guenter's comments on error logs and NULL
-  initialization of restart_nb.notifier_call.
-
- drivers/power/reset/msm-poweroff.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
-index 774f9a3..db73238 100644
---- a/drivers/power/reset/msm-poweroff.c
-+++ b/drivers/power/reset/msm-poweroff.c
-@@ -24,17 +24,24 @@
- #include <asm/system_misc.h>
- 
- static void __iomem *msm_ps_hold;
--
--static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static int do_msm_restart(struct notifier_block *nb, unsigned long action,
-+			   void *data)
- {
- 	writel(0, msm_ps_hold);
- 	mdelay(10000);
+I'm seeing this in every boot. I patched this by changing led_trigger_register and led_trigger_register_simple as macros which creates a static lock_class_key like this:
+-extern int led_trigger_register(struct led_trigger *trigger);
 +
-+	return NOTIFY_DONE;
- }
- 
-+static struct notifier_block restart_nb = {
-+	.notifier_call = do_msm_restart,
-+	.priority = 128,
-+};
++extern int __led_trigger_register_key(struct led_trigger *trigger,
++                                     struct lock_class_key *key);
++#ifdef CONFIG_LOCKDEP
++#define led_trigger_register(trigger)                                  \
++({                                                                     \
++       static struct lock_class_key __key;                             \
++                                                                       \
++       __led_trigger_register_key(trigger, &__key);                    \
++})
++#else
++#define led_trigger_register(trigger)                                  \
++       __led_trigger_register_key(trigger, NULL)
++#endif
 +
- static void do_msm_poweroff(void)
- {
- 	/* TODO: Add poweroff capability */
--	do_msm_restart(REBOOT_HARD, NULL);
-+	do_msm_restart(&restart_nb, 0, NULL);
- }
- 
- static int msm_restart_probe(struct platform_device *pdev)
-@@ -47,8 +54,10 @@ static int msm_restart_probe(struct platform_device *pdev)
- 	if (IS_ERR(msm_ps_hold))
- 		return PTR_ERR(msm_ps_hold);
- 
-+	register_restart_handler(&restart_nb);
-+
- 	pm_power_off = do_msm_poweroff;
--	arm_pm_restart = do_msm_restart;
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
 
+
+But should every trigger has own key? With my patch all the triggers from vt/keyboard.c are using the same key. Is that a problem? I have not seen any problems with that patch and after that I can see this https://lkml.org/lkml/2014/9/5/462.
+
+-Kari 
