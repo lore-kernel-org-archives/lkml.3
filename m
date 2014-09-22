@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaIVRig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:38:36 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52418 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525AbaIVRif (ORCPT
+	id S1754471AbaIVRk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:40:27 -0400
+Received: from smtprelay0199.hostedemail.com ([216.40.44.199]:57380 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754033AbaIVRkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:38:35 -0400
-Date: Mon, 22 Sep 2014 13:38:31 -0400 (EDT)
-Message-Id: <20140922.133831.220769383344675250.davem@davemloft.net>
-To: clem@clem.clem-digital.net
-Cc: xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Corrupt Network Packets -- 3.17-rc5/rc6
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201409221724.s8MHOxe5002845@clem.clem-digital.net>
-References: <CAM_iQpXQcM2E2oez+nNbbecd25fXqOKNqAfoOgCfQ72-VfBOUA@mail.gmail.com>
-	<201409221724.s8MHOxe5002845@clem.clem-digital.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 22 Sep 2014 13:40:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3871:3872:4321:4605:5007:6119:7652:9592:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:13972:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: farm48_5ac0eae56aa29
+X-Filterd-Recvd-Size: 2920
+Message-ID: <1411407622.2952.49.camel@joe-AO725>
+Subject: [PATCH net-next] mellanox: Change en_print to return void
+From: Joe Perches <joe@perches.com>
+To: Amir Vadai <amirv@mellanox.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Sep 2014 10:40:22 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Sep 2014 10:38:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pete Clements <clem@clem.clem-digital.net>
-Date: Mon, 22 Sep 2014 13:24:59 -0400 (EDT)
+No caller or macro uses the return value so make it void.
 
-> Quoting Cong Wang
->   > <clem@clem.clem-digital.net> wrote:
->   > > Heads up fyi: system is i386 UP.
->   > >
->   > > Started getting some pop3 reception errors from the above system.
->   > > Investigating the problem discovered scp of the mailbox failed
->   > > with "Corrupted MAC on input"
->   > >
->   > > Problem started with rc5, still in rc6. Running rc4 with no
->   > > problem.
->   > >
->   > > Sorry for lack of better definition.
->   > 
->   > 
->   > Which driver are you using?
->   > 
-> Here's the output from boot log:
-> 
->  PCI: setting IRQ 11 as level-triggered
->  3c59x 0000:00:0d.0: found PCI INT A -> IRQ 11
->  3c59x: Donald Becker and others.
->  0000:00:0d.0: 3Com PCI 3c900 Cyclone 10Mbps TPC at d8812000.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+This change is associated to a desire to eventually
+change printk to return void.
 
-Should be fixed by:
+ drivers/net/ethernet/mellanox/mlx4/en_main.c | 17 +++++++----------
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h |  4 ++--
+ 2 files changed, 9 insertions(+), 12 deletions(-)
 
-commit 8400dd029e764e30361a51a7ae35900ae0032b43
-Author: Neil Horman <nhorman@tuxdriver.com>
-Date:   Wed Sep 17 09:04:45 2014 -0400
-
-    3c59x: Fix bad offset spec in skb_frag_dma_map
-    
-    Recently aded the use of skb_frag_dma_map to 3c59x, but didn't realize it
-    automatically included the frag_offset internally, as well as provided an option
-    to specify an extra offset in the parameter list.  We need to specify an offset
-    of 0 in the parameter list to avoid skb corruption that results in lost
-    connections.
-    
-    Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-    CC: Linux Kernel list <linux-kernel@vger.kernel.org>
-    CC: "David S. Miller" <davem@davemloft.net>
-    CC: Meelis Roos <mroos@linux.ee>
-    Tested-by: Meelis Roos <mroos@linux.ee>
-
-diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-index 8ab87ff..8ca49f04 100644
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -2186,7 +2186,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_main.c b/drivers/net/ethernet/mellanox/mlx4/en_main.c
+index 3626fdf..2091ae88 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_main.c
+@@ -78,27 +78,24 @@ MLX4_EN_PARM_INT(inline_thold, MAX_INLINE,
+ #define MAX_PFC_TX     0xff
+ #define MAX_PFC_RX     0xff
  
- 			dma_addr = skb_frag_dma_map(&VORTEX_PCI(vp)->dev, frag,
--						    frag->page_offset,
-+						    0,
- 						    frag->size,
- 						    DMA_TO_DEVICE);
- 			if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr)) {
+-int en_print(const char *level, const struct mlx4_en_priv *priv,
+-	     const char *format, ...)
++void en_print(const char *level, const struct mlx4_en_priv *priv,
++	      const char *format, ...)
+ {
+ 	va_list args;
+ 	struct va_format vaf;
+-	int i;
+ 
+ 	va_start(args, format);
+ 
+ 	vaf.fmt = format;
+ 	vaf.va = &args;
+ 	if (priv->registered)
+-		i = printk("%s%s: %s: %pV",
+-			   level, DRV_NAME, priv->dev->name, &vaf);
++		printk("%s%s: %s: %pV",
++		       level, DRV_NAME, priv->dev->name, &vaf);
+ 	else
+-		i = printk("%s%s: %s: Port %d: %pV",
+-			   level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
+-			   priv->port, &vaf);
++		printk("%s%s: %s: Port %d: %pV",
++		       level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
++		       priv->port, &vaf);
+ 	va_end(args);
+-
+-	return i;
+ }
+ 
+ void mlx4_en_update_loopback_state(struct net_device *dev,
+diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+index 3de41be..03e95f7 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -836,8 +836,8 @@ extern const struct ethtool_ops mlx4_en_ethtool_ops;
+  */
+ 
+ __printf(3, 4)
+-int en_print(const char *level, const struct mlx4_en_priv *priv,
+-	     const char *format, ...);
++void en_print(const char *level, const struct mlx4_en_priv *priv,
++	      const char *format, ...);
+ 
+ #define en_dbg(mlevel, priv, format, ...)				\
+ do {									\
+
+
