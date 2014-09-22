@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaIVJLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:11:40 -0400
-Received: from dub004-omc1s1.hotmail.com ([157.55.0.200]:64197 "EHLO
-	DUB004-OMC1S1.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaIVJLV convert rfc822-to-8bit (ORCPT
+	id S1753554AbaIVJL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:11:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46974 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753466AbaIVJLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:11:21 -0400
-X-TMN: [EGcK2M+jThWlv95Hj6aXazsO5pk+lhut]
-X-Originating-Email: [mariopirker@hotmail.com]
-Message-ID: <DUB123-W2663266CEA8296935E9450A0B30@phx.gbl>
-Reply-To: <mpirker@linux.com>
-From: Mario Pirker <mariopirker@hotmail.com>
-To: "mareklindner@neomailbox.ch" <mareklindner@neomailbox.ch>,
-        "sw@simonwunderlich.de" <sw@simonwunderlich.de>,
-        "antonio@meshcoding.com" <antonio@meshcoding.com>,
-        "davem@davemloft.net" <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] batman-adv: fix potential NULL pointer dereferencing
-Date: Mon, 22 Sep 2014 11:11:19 +0200
-Importance: Normal
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 22 Sep 2014 09:11:20.0329 (UTC) FILETIME=[2C6A5F90:01CFD645]
+	Mon, 22 Sep 2014 05:11:10 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v5 8/9] rtc: at91sam9: add DT bindings documentation
+Date: Mon, 22 Sep 2014 11:10:57 +0200
+Message-Id: <1411377058-26155-9-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b451e7317148e18bf6c5c8fd747d79ab34260354 Mon Sep 17 00:00:00 2001
-From: Mario Pirker <mario.pirker@kellogg.ox.ac.uk>
-Date: Tue, 16 Sep 2014 17:55:13 +0200
-Subject: [PATCH] batman-adv: fix potential NULL pointer dereferencing
-
-The call batadv_gw_node_get may return NULL. The return value has to
-be sanity checked before the pointer is dereferenced.
-
-Signed-off-by: Mario Pirker <mariopirker@hotmail.com>
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- net/batman-adv/gateway_client.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
 
-diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
-index 90cff58..7ee0913 100644
---- a/net/batman-adv/gateway_client.c
-+++ b/net/batman-adv/gateway_client.c
-@@ -810,6 +810,11 @@ bool batadv_gw_out_of_range(struct batadv_priv *bat_priv,
-                goto out;
- 
-        gw_node = batadv_gw_node_get(bat_priv, orig_dst_node);
+diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+new file mode 100644
+index 0000000..5b2bb73
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+@@ -0,0 +1,23 @@
++Atmel AT91SAM9260 Real Time Timer
 +
-+       /* gw_node can be NULL. We need to check before dereferencing */
-+       if (gw_node == NULL)
-+               goto out;
++Required properties:
++- compatible: should be: "atmel,at91sam9260-rtt"
++- reg: should encode the memory region of the RTT controller
++- interrupts: rtc alarm/event interrupt
++- clocks: should contain one clock pointing the the slow clk
++- atmel,rtt-rtc-time-reg: should encode the GPBR register used to store
++	the RTC time. The first cell should point to the GPBR node and
++	the second one encode the offset within the GPBR block (or in
++	other words, the GPBR register used to store the current time
++	value).
 +
-        if (!gw_node->bandwidth_down == 0)
-                goto out;
- 
--- 
-1.8.1.4 		 	   		  
++
++Example:
++
++rtt@fffffe00 {
++	compatible = "atmel,at91sam9260-rtt";
++	reg = <0xfffffd20 0x10>;
++	interrupts = <1 4 7>;
++	clocks = <&clk32k>;
++	atmel,rtt-rtc-time-reg = <&gpbr 0x0>;
++};
+-- 
+1.9.1
+
