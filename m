@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaIVTY2 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754659AbaIVTYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:24:33 -0400
+Received: from mail-ie0-f194.google.com ([209.85.223.194]:58264 "EHLO
+	mail-ie0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593AbaIVTY2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Sep 2014 15:24:28 -0400
-Received: from cethen.legt.fr ([92.243.2.98]:50636 "EHLO cethen.legt.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753879AbaIVTY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:24:27 -0400
-From: Vincent Legout <vincent@legout.info>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: peterz@infradead.org, mingo@redhat.com, juri.lelli@gmail.com,
-        raistlin@linux.it, michael@amarulasolutions.com, fchecconi@gmail.com,
-        daniel.wagner@bmw-carit.de, luca.abeni@unitn.it,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 2/3] sched/deadline: fix bandwidth check/update when migrating tasks between exclusive cpusets
-References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com>
-	<1411118561-26323-3-git-send-email-juri.lelli@arm.com>
-Date: Mon, 22 Sep 2014 15:24:24 -0400
-In-Reply-To: <1411118561-26323-3-git-send-email-juri.lelli@arm.com> (Juri
-	Lelli's message of "Fri, 19 Sep 2014 10:22:40 +0100")
-Message-ID: <87k34vo3vb.fsf@cecht.legt.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Message-ID: <54207769.2020105@gmail.com>
+Date: Mon, 22 Sep 2014 15:24:25 -0400
+From: nick <yocto6@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: jejb@parisc-linux.org
+CC: deller@gmx.de, akpm@linux-foundation.org, himangi774@gmail.com,
+        julia.lawall@lip6.fr, mgorman@suse.de, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: FIX MES in init.c
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Juri Lelli <juri.lelli@arm.com> writes:
-
-> Exclusive cpusets are the only way users can restrict SCHED_DEADLINE tasks
-> affinity (performing what is commonly called clustered scheduling).
-> Unfortunately, such thing is currently broken for two reasons:
->
->  - No check is performed when the user tries to attach a task to
->    an exlusive cpuset (recall that exclusive cpusets have an
->    associated maximum allowed bandwidth).
->
->  - Bandwidths of source and destination cpusets are not correctly
->    updated after a task is migrated between them.
->
-> This patch fixes both things at once, as they are opposite faces
-> of the same coin.
->
-> The check is performed in cpuset_can_attach(), as there aren't any
-> points of failure after that function. The updated is split in two
-> halves. We first reserve bandwidth in the destination cpuset, after
-> we pass the check in cpuset_can_attach(). And we then release
-> bandwidth from the source cpuset when the task's affinity is
-> actually changed. Even if there can be time windows when sched_setattr()
-> may erroneously fail in the source cpuset, we are fine with it, as
-> we can't perfom an atomic update of both cpusets at once.
-
-Thanks, this seems to fix the other problem I had. However, this bug,
-which I never had before, now happens randomly (with or without patch
-3/3):
-
-Sep 19 09:54:37 starbuck kernel: [ 1309.728678] ------------[ cut here ]------------
-Sep 19 09:54:37 starbuck kernel: [ 1309.728699] kernel BUG at kernel/sched/deadline.c:819!
-Sep 19 09:54:37 starbuck kernel: [ 1309.728719] invalid opcode: 0000 [#1] PREEMPT SMP 
-Sep 19 09:54:37 starbuck kernel: [ 1309.728744] Modules linked in: nfsv3 rpcsec_gss_krb5 nfsv4 dm_crypt nfsd auth_rpcgss oid_registry exportfs nfs_acl nfs lockd sunrpc bridge stp llc lp coretemp kvm_intel kvm ppdev ioatdma microcode ipmi_si parport_pc lpc_ich dca mfd_core parport ipmi_msghandler joydev serio_raw hid_generic usbhid hid crc32c_intel psmouse e1000e ptp pps_core
-Sep 19 09:54:37 starbuck kernel: [ 1309.728928] CPU: 5 PID: 0 Comm: swapper/5 Not tainted 3.16.0+ #20
-Sep 19 09:54:37 starbuck kernel: [ 1309.728950] Hardware name: empty empty/S7002, BIOS 'V1.10.B10   ' 05/03/2011
-Sep 19 09:54:37 starbuck kernel: [ 1309.728977] task: ffff88023691c920 ti: ffff88023692c000 task.ti: ffff88023692c000
-Sep 19 09:54:37 starbuck kernel: [ 1309.729003] RIP: 0010:[<ffffffff810a543e>]  [<ffffffff810a543e>] enqueue_task_dl+0x44e/0x450
-Sep 19 09:54:37 starbuck kernel: [ 1309.729041] RSP: 0018:ffff88043fc23e68  EFLAGS: 00010082
-Sep 19 09:54:37 starbuck kernel: [ 1309.729060] RAX: 0000000000000000 RBX: ffff880434edb0c0 RCX: ffff880434edb2f8
-Sep 19 09:54:37 starbuck kernel: [ 1309.729086] RDX: 0000000000000008 RSI: ffff880434edb0c0 RDI: 0000000000000000
-Sep 19 09:54:37 starbuck kernel: [ 1309.729140] RBP: ffff88043fc23ea8 R08: 0000000000000001 R09: 000002cb4aebb39d
-Sep 19 09:54:37 starbuck kernel: [ 1309.729193] R10: 13955a8129438cf2 R11: 0000000000000202 R12: 0000000000000008
-Sep 19 09:54:37 starbuck kernel: [ 1309.729247] R13: ffff88043fc33f00 R14: ffff88043fc2e0e0 R15: ffff880434edb2f8
-Sep 19 09:54:37 starbuck kernel: [ 1309.729301] FS:  0000000000000000(0000) GS:ffff88043fc20000(0000) knlGS:0000000000000000
-Sep 19 09:54:37 starbuck kernel: [ 1309.729383] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-Sep 19 09:54:37 starbuck kernel: [ 1309.729436] CR2: 0000000000000000 CR3: 0000000435a07000 CR4: 00000000000027e0
-
-My script launches 6 processes and schedules them on 2 cpusets where
-each cpuset contains only one cpu. It moves processes from one cpuset to
-another and also updates their runtime. I can investigate more and try
-to provide a short script to reproduce if needed.
-
+Greetings James and Other Maintainers of the Parisc Architecture,
+I am wondering about two fix mes in init.c and how to fix them
+for being const declared into actual variables. I will paste the
+parts of the file for your convenience below.
 Thanks,
-Vincent
+Nick 
+---------------------------------------------------------------------------------
+static void __init gateway_init(void)
+{
+	unsigned long linux_gateway_page_addr;
+	/* FIXME: This is 'const' in order to trick the compiler
+	   into not treating it as DP-relative data. */
+	extern void * const linux_gateway_page;
+
+	linux_gateway_page_addr = LINUX_GATEWAY_ADDR & PAGE_MASK;
+
+	/*
+	 * Setup Linux Gateway page.
+	 *
+	 * The Linux gateway page will reside in kernel space (on virtual
+	 * page 0), so it doesn't need to be aliased into user space.
+	 */
+
+	map_pages(linux_gateway_page_addr, __pa(&linux_gateway_page),
+		  PAGE_SIZE, PAGE_GATEWAY, 1);
+}
+
+#ifdef CONFIG_HPUX
+void
+map_hpux_gateway_page(struct task_struct *tsk, struct mm_struct *mm)
+{
+	pgd_t *pg_dir;
+	pmd_t *pmd;
+	pte_t *pg_table;
+	unsigned long start_pmd;
+	unsigned long start_pte;
+	unsigned long address;
+	unsigned long hpux_gw_page_addr;
+	/* FIXME: This is 'const' in order to trick the compiler
+	   into not treating it as DP-relative data. */
+	extern void * const hpux_gateway_page;
+
+	hpux_gw_page_addr = HPUX_GATEWAY_ADDR & PAGE_MASK;
+
+	/*
+	 * Setup HP-UX Gateway page.
+	 *
+	 * The HP-UX gateway page resides in the user address space,
+	 * so it needs to be aliased into each process.
+	 */
+
+	pg_dir = pgd_offset(mm,hpux_gw_page_addr);
+
+#if PTRS_PER_PMD == 1
+	start_pmd = 0;
+#else
+	start_pmd = ((hpux_gw_page_addr >> PMD_SHIFT) & (PTRS_PER_PMD - 1));
+#endif
+	start_pte = ((hpux_gw_page_addr >> PAGE_SHIFT) & (PTRS_PER_PTE - 1));
+---------------------------------------------------------------------------------------
