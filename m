@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaIVBiO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 21:38:14 -0400
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:46259 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaIVBiN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 21:38:13 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] scripts: checkpatch.pl: Fix existing typedef false positive warning
-Date: Sun, 21 Sep 2014 20:32:24 -0500
-Message-Id: <1411349544-7479-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752885AbaIVBww (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 21:52:52 -0400
+Received: from ozlabs.org ([103.22.144.67]:56017 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325AbaIVBwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 21:52:50 -0400
+Date: Mon, 22 Sep 2014 11:52:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Jander <david@protonic.nl>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, Stefan Agner <stefan@agner.ch>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-ID: <20140922115240.51c9a6fd@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Jk5dDN7Z2zuV9vOMi2iwbmw"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing an "open brace '{' following struct go on the same line" error causes a
-false positive warning "do not add new typedefs". Fix existing typedef false
-positive warning.
+--Sig_/Jk5dDN7Z2zuV9vOMi2iwbmw
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- scripts/checkpatch.pl | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+Hi all,
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 4d08b39..eafe5e7 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3081,14 +3081,24 @@ sub process {
- 		}
- 
- # check for new typedefs, only function parameters and sparse annotations
--# make sense.
-+# and existing typedefs make sense.
- 		if ($line =~ /\btypedef\s/ &&
- 		    $line !~ /\btypedef\s+$Type\s*\(\s*\*?$Ident\s*\)\s*\(/ &&
- 		    $line !~ /\btypedef\s+$Type\s+$Ident\s*\(/ &&
- 		    $line !~ /\b$typeTypedefs\b/ &&
- 		    $line !~ /\b__bitwise(?:__|)\b/) {
--			WARN("NEW_TYPEDEFS",
--			     "do not add new typedefs\n" . $herecurr);
-+			# check if $line is diff-like
-+			if (substr($rawlines[$linenr - 3], 0, 1) eq '-') {
-+				my $oldline3 = substr($rawlines[$linenr - 3], 1);
-+				# check if typedef already existed
-+				if ($line !~ /$oldline3/) {
-+					WARN("NEW_TYPEDEFS",
-+					     "do not add new typedefs\n" . $herecurr);
-+				}
-+			} else {
-+				WARN("NEW_TYPEDEFS",
-+				     "do not add new typedefs\n" . $herecurr);
-+			}
- 		}
- 
- # * goes on variable not on type
--- 
-1.9.1
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/can/flexcan.c between commit fc05b884a31d ("can: flexcan:
+correctly initialize mailboxes") from the net tree and commit
+cdce844865be ("can: flexcan: add vf610 support for FlexCAN") from the
+net-next tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/can/flexcan.c
+index 6586309329e6,2700865efcad..000000000000
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@@ -824,8 -859,7 +883,8 @@@ static int flexcan_chip_start(struct ne
+  	struct flexcan_priv *priv =3D netdev_priv(dev);
+  	struct flexcan_regs __iomem *regs =3D priv->base;
+  	int err;
+- 	u32 reg_mcr, reg_ctrl;
++ 	u32 reg_mcr, reg_ctrl, reg_crl2, reg_mecr;
+ +	int i;
+ =20
+  	/* enable module */
+  	err =3D flexcan_chip_enable(priv);
+
+--Sig_/Jk5dDN7Z2zuV9vOMi2iwbmw
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUH4DvAAoJEMDTa8Ir7ZwV1YsP/jFx2tjNgR/WURmwaW2Lpiss
+p9Cw8vJckzLu80lgcYZmXhp8+ROv2Qe6GFUkU3pHsNBM1YOqM6gYsL+ib71OIdcg
+b07EWyRuJ8RROtSUvE3iiRxEJCJQ1Gl6XjIzndKJL69z0v6zeYtZ75ORuHgzwlo1
+LhIPkmBx8/YG2rBLmN+PXFSvypYooa4Ze0DmpGezMTxoG+Y+YIjdQ2Bh6GOX8FVv
+4efComZTz2kssa1rKEy1PZ/G9Cce/PWfsu8pRmeyQmr1m9OflvCvg6Pc/63ys3FQ
+7ULqFKd5XlzQSFm1R2n+RqGnFko712gqJVMxqr35K0l7+iJ2lsTpFYt5tJtl69El
+XWxbeoM3Q6q0pO/13c6cWfMziqEkabTeEBgBzt+UHyDxXqXEOjnDJdRe1p8e8gqf
+n5RJZYiQIuBU7+gE1yC+8qcno6ZARzqHI9h4T0KcysYN6JfCyEiFxZwc9zm1/OpV
+y+MyVrzWJP8WwxiPUwu3EpsODSO6A81Y1WaphUiIYkxYLJxLbcR/pybkrZ8cs6vc
+V6707yqgZyI4gM8HwNfXUaw7beDDBp8WYlkMSJdEPePE3GpoecuajCh4rDWMiVK8
+AjUQP9Csv1x7XLwE8rlaCYkjpjUTN8f6KjN5Jh86Odzn2PR3rVBRfFVZOp+1BO0M
+wkDIEkosNOTC1qWL6s6O
+=xjoc
+-----END PGP SIGNATURE-----
+
+--Sig_/Jk5dDN7Z2zuV9vOMi2iwbmw--
