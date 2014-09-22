@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaIVOnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:43:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49199 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754199AbaIVOm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:42:57 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, Yassin Jaffer <yassinjaffer@gmail.com>,
-        "Dmitriy B." <rzk333@gmail.com>, Jonas Meyer <quitte@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v5 2/2] mtd: nand: add sunxi NFC dt bindings doc
-Date: Mon, 22 Sep 2014 16:42:51 +0200
-Message-Id: <1411396971-30801-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411396971-30801-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411396971-30801-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1754563AbaIVOnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:43:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754050AbaIVOnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 10:43:32 -0400
+Message-ID: <54203572.8020406@redhat.com>
+Date: Mon, 22 Sep 2014 10:42:58 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/numa: kill the wrong/dead TASK_DEAD check in task_numa_fault()
+References: <20140921194743.GA30114@redhat.com>
+In-Reply-To: <20140921194743.GA30114@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the sunxi NAND Flash Controller dt bindings documentation.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/mtd/sunxi-nand.txt         | 45 ++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+On 09/21/2014 03:47 PM, Oleg Nesterov wrote:
+> current->state == TASK_DEAD means that the task is doing its last 
+> schedule(), page fault is obviously impossible at this stage.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-diff --git a/Documentation/devicetree/bindings/mtd/sunxi-nand.txt b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
-new file mode 100644
-index 0000000..0273adb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
-@@ -0,0 +1,45 @@
-+Allwinner NAND Flash Controller (NFC)
-+
-+Required properties:
-+- compatible : "allwinner,sun4i-a10-nand".
-+- reg : shall contain registers location and length for data and reg.
-+- interrupts : shall define the nand controller interrupt.
-+- #address-cells: shall be set to 1. Encode the nand CS.
-+- #size-cells : shall be set to 0.
-+- clocks : shall reference nand controller clocks.
-+- clock-names : nand controller internal clock names. Shall contain :
-+    * "ahb" : AHB gating clock
-+    * "mod" : nand controller clock
-+
-+Optional children nodes:
-+Children nodes represent the available nand chips.
-+
-+Optional properties:
-+- allwinner,rb : shall contain the native Ready/Busy ids.
-+ or
-+- rb-gpios : shall contain the gpios used as R/B pins.
-+- nand-ecc-mode : one of the supported ECC modes ("hw", "hw_syndrome", "soft",
-+  "soft_bch" or "none")
-+
-+see Documentation/devicetree/mtd/nand.txt for generic bindings.
-+
-+
-+Examples:
-+nfc: nand@01c03000 {
-+	compatible = "allwinner,sun4i-a10-nand";
-+	reg = <0x01c03000 0x1000>;
-+	interrupts = <0 37 1>;
-+	clocks = <&ahb_gates 13>, <&nand_clk>;
-+	clock-names = "ahb", "mod";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&nand_pins_a &nand_cs0_pins_a &nand_rb0_pins_a>;
-+	status = "okay";
-+
-+	nand@0 {
-+		reg = <0>;
-+		allwinner,rb = <0>;
-+		nand-ecc-mode = "soft_bch";
-+	};
-+};
--- 
-1.9.1
+Acked-by: Rik van Riel <riel@redhat.com>
 
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUIDVyAAoJEM553pKExN6D50oH/A5RpFUhx5zsDYgFjyq071+n
+NYgwgy6Nr6DDkmfEGtRePxQY7CmysKCTWdPzAFxmvhaFfOg2zP+P7uh85/lbIYXM
+7ATj4yO8u3Loa8zdz+VjwrOR0lJr/Y/nsjQC0q+50oNM0pwFC+HPuSPTrpz4o+HB
+ReeZ6BKNtFoiC5RfR0XpNHk4ozwT5qW2oCDEIT6bsMQiV0413CXksHFg6Flz7Acb
+2EFCzwY2BgfKRawGR6e4Q09UZ0aG1gW9RkLkUuIWlmbOHiMzduLCIKQNCZaXTgVn
+xVJcsgdANnQk1BGSU5rozqtlDUmRoKq3teXlE00CcJEEfzUrUHMw0HYZ62xbQ+s=
+=fg3H
+-----END PGP SIGNATURE-----
