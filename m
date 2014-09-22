@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaIVOOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:14:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36704 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871AbaIVOOd (ORCPT
+	id S1754233AbaIVOOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:14:42 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:35373 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213AbaIVOOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:14:33 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: dann frazier <dannf@hp.com>, Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH] rtc-efi: Add missing module alias
-Date: Mon, 22 Sep 2014 16:13:45 +0200
-Message-Id: <1411395225-11159-1-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 22 Sep 2014 10:14:38 -0400
+Date: Mon, 22 Sep 2014 18:14:20 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 1/2] memcg: move memcg_{alloc,free}_cache_params to
+ slab_common.c
+Message-ID: <20140922141420.GD18526@esperanza>
+References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
+ <20140922135245.GE336@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140922135245.GE336@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without proper alias kernel module is not loaded for rtc-efi driver
+On Mon, Sep 22, 2014 at 03:52:45PM +0200, Michal Hocko wrote:
+> On Thu 18-09-14 19:50:19, Vladimir Davydov wrote:
+> > The only reason why they live in memcontrol.c is that we get/put css
+> > reference to the owner memory cgroup in them. However, we can do that in
+> > memcg_{un,}register_cache.
+> > 
+> > So let's move them to slab_common.c and make them static.
+> 
+> Why is it better?
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- drivers/rtc/rtc-efi.c |    1 +
- 1 file changed, 1 insertion(+)
+First, I think that the less public interface functions we have in
+memcontrol.h the better. Since the functions I move don't depend on
+memcontrol, I think it's worth making them private to slab, especially
+taking into account that the arrays are defined on the slab's side too.
 
-diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
-index 8225b89..c384fec 100644
---- a/drivers/rtc/rtc-efi.c
-+++ b/drivers/rtc/rtc-efi.c
-@@ -232,6 +232,7 @@ static struct platform_driver efi_rtc_driver = {
- 
- module_platform_driver_probe(efi_rtc_driver, efi_rtc_probe);
- 
-+MODULE_ALIAS("platform:rtc-efi");
- MODULE_AUTHOR("dann frazier <dannf@hp.com>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("EFI RTC driver");
--- 
-1.7.9.5
+Second, the way how per-memcg arrays are updated looks rather awkward:
+it proceeds from memcontrol.c (__memcg_activate_kmem) to slab_common.c
+(memcg_update_all_caches) and back to memcontrol.c again
+(memcg_update_array_size). In the next patch I move the function
+relocating the arrays (memcg_update_array_size) to slab_common.c and
+therefore get rid this circular call path. I think we should have the
+cache allocation stuff in the same place where we have relocation,
+because it's easier to follow the code then. So I move arrays alloc/free
+functions to slab_common.c too.
 
+The third point isn't obvious. In the "Per memcg slab shrinkers" patch
+set, which I sent recently, I have to update per-memcg list_lrus arrays
+too. And it's much easier and cleaner to do it in list_lru.c rather than
+in memcontrol.c. The current patchset makes cache arrays allocation path
+conform that of the upcoming list_lru.
+
+Thanks,
+Vladimir
