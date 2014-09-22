@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbaIVLFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 07:05:33 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48925 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887AbaIVLF3 convert rfc822-to-8bit (ORCPT
+	id S1753488AbaIVLQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 07:16:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58985 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856AbaIVLQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 07:05:29 -0400
-Date: Mon, 22 Sep 2014 12:05:22 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v11 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-Message-ID: <20140922110522.GK1994@e106497-lin.cambridge.arm.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-8-git-send-email-Liviu.Dudau@arm.com>
- <20140919210313.GH19374@google.com>
+	Mon, 22 Sep 2014 07:16:37 -0400
+Date: Mon, 22 Sep 2014 04:16:33 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: jejb@kernel.org, hch@infradead.org, martin.petersen@oracle.com,
+        linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
+        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH][SCSI] mpt2sas: fix undefined reference to `__udivdi3'
+ compilation errors
+Message-ID: <20140922111633.GA31327@infradead.org>
+References: <1411109247-18184-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 MIME-Version: 1.0
-In-Reply-To: <20140919210313.GH19374@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 22 Sep 2014 11:05:24.0131 (UTC) FILETIME=[1BA3AF30:01CFD655]
-X-MC-Unique: 114092212052503601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1411109247-18184-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 10:03:13PM +0100, Bjorn Helgaas wrote:
-> On Thu, Sep 18, 2014 at 02:30:22AM +0100, Liviu Dudau wrote:
-> > Add of_pci_get_domain_nr() to retrieve the PCI domain number
-> > of a given device from DT. If the information is not present,
-> > the function can be requested to allocate a new domain number.
+Looks good to me.  Can I get a quick second review?
+
+On Fri, Sep 19, 2014 at 12:17:27PM +0530, Sreekanth Reddy wrote:
+> This patch will fix the below compilation errors on i386 ARCH
 > 
-> Is of_pci_get_domain_nr() used somewhere?  If the use is in some future
-> series, please mention it explicitly.  I'm just trying to avoid merging
-> unused code.
-
-It is used in the arm64 specific patch that I have dropped out of my
-pull request. After discussions with Catalin I will add the patch back
-into the tree that you've pulled from as he is OK with your tree carrying
-the whole package.
-
-I need to ask for some guidance here: for addressing some of your comments
-and Rob's I can add more patches in my v11 branch and you can pull them
-when you think they are ready. But one of your comments was requesting
-splitting a patch into two blocks - one that moves of_pci_range_to_resource()
-into drivers/of/address.c and one that fixes it's behaviour - and I don't
-know how you would like that handled. Should I revert the original patch
-and add the new ones, or should I rebase the whole series into a different
-branch that you can pull from?
-
-Best regards,
-Liviu
-
+> drivers/built-in.o: In function `_scsih_qcmd':
+> mpt2sas_scsih.c:(.text+0x1e7b56): undefined reference to `__udivdi3'
+> mpt2sas_scsih.c:(.text+0x1e7b8a): undefined reference to `__umoddi3'
 > 
-> Bjorn
+> Used sector_div() API to fix above compilation errors.
 > 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+> Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+> ---
+>  drivers/scsi/mpt2sas/mpt2sas_scsih.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> index 992a224..c80ed04 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> @@ -3860,7 +3860,7 @@ _scsih_setup_direct_io(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+>  	struct _raid_device *raid_device, Mpi2SCSIIORequest_t *mpi_request,
+>  	u16 smid)
+>  {
+> -	sector_t v_lba, p_lba, stripe_off, stripe_unit, column, io_size;
+> +	sector_t v_lba, p_lba, stripe_off, column, io_size;
+>  	u32 stripe_sz, stripe_exp;
+>  	u8 num_pds, cmd = scmd->cmnd[0];
+>  
+> @@ -3888,9 +3888,9 @@ _scsih_setup_direct_io(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+>  
+>  	num_pds = raid_device->num_pds;
+>  	p_lba = v_lba >> stripe_exp;
+> -	stripe_unit = p_lba / num_pds;
+> -	column = p_lba % num_pds;
+> -	p_lba = (stripe_unit << stripe_exp) + stripe_off;
+> +	column = sector_div(p_lba, num_pds);
+> +	p_lba = (p_lba << stripe_exp) + stripe_off;
+> +
+>  	mpi_request->DevHandle = cpu_to_le16(raid_device->pd_handle[column]);
+>  
+>  	if (cmd == READ_10 || cmd == WRITE_10)
+> -- 
+> 2.0.2
+> 
+---end quoted text---
