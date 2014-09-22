@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaIVULm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:11:42 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48288 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754275AbaIVULl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 16:11:41 -0400
-Date: Mon, 22 Sep 2014 16:11:37 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/2] memcg: move memcg_update_cache_size to slab_common.c
-Message-ID: <20140922201137.GB5373@cmpxchg.org>
-References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
- <0689062e28e13375241dcc64df2a398c9d606c64.1411054735.git.vdavydov@parallels.com>
-MIME-Version: 1.0
+	id S1754684AbaIVUOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:14:40 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59911 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaIVUOi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 16:14:38 -0400
+From: Kumar Gala <galak@codeaurora.org>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0689062e28e13375241dcc64df2a398c9d606c64.1411054735.git.vdavydov@parallels.com>
+Content-Transfer-Encoding: 8BIT
+Subject: [GIT PULL] qcom defconfig changes for v3.18
+Date: Mon, 22 Sep 2014 15:14:34 -0500
+Message-Id: <676B1050-4098-4E8C-A60D-07D86C3BF289@codeaurora.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+To: arm@kernel.org
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 07:50:20PM +0400, Vladimir Davydov wrote:
-> The only reason why this function lives in memcontrol.c is that it
-> depends on memcg_caches_array_size. However, we can pass the new array
-> size immediately to it instead of new_id+1 so that it will be free of
-> any memcontrol.c dependencies.
-> 
-> So let's move this function to slab_common.c and make it static.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Christoph Lameter <cl@linux.com>
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-Looks good.  One nit below, but not a show stopper.
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+are available in the git repository at:
 
-> @@ -646,11 +646,13 @@ int memcg_limited_groups_array_size;
->  struct static_key memcg_kmem_enabled_key;
->  EXPORT_SYMBOL(memcg_kmem_enabled_key);
->  
-> +static void memcg_free_cache_id(int id);
+  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-defconfig-for-3.18
 
-Any chance you could re-order this code to avoid the forward decl?
-memcg_alloc_cache_id() and memcg_free_cache_id() are new functions
-anyway, might as well put the definition above the callsites.
+for you to fetch changes up to 3b6357a79b7b0a2c3b31c5c92d5dd0c51cda0391:
 
-Thanks!
+  ARM: qcom: Update defconfig (2014-09-22 13:59:08 -0500)
+
+----------------------------------------------------------------
+Qualcomm ARM Based defconfig Updates for v3.18
+
+* General defconfig update to match upstream changes
+* Enable IPQ806x & APQ8084 clk support
+* Enable pinctrl on MSM8960 & APQ8084
+* Enable CPU_IDLE to get basic wfi support
+* Enable SPI NOR and MTD M25P80 support (used on AP148 board)
+* Enable SATA PHY support on IPQ806x and APQ8064
+* Enable Fixed regulator and ARM MMCI support (mmc support on APQ8064)
+
+----------------------------------------------------------------
+Kumar Gala (2):
+      ARM: qcom: Update defconfig
+      ARM: qcom: Update defconfig
+
+ arch/arm/configs/qcom_defconfig | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
