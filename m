@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaIVRk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:40:27 -0400
-Received: from smtprelay0199.hostedemail.com ([216.40.44.199]:57380 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754033AbaIVRkZ (ORCPT
+	id S1754300AbaIVRna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:43:30 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:44786 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486AbaIVRn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:40:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3871:3872:4321:4605:5007:6119:7652:9592:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:13972:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: farm48_5ac0eae56aa29
-X-Filterd-Recvd-Size: 2920
-Message-ID: <1411407622.2952.49.camel@joe-AO725>
-Subject: [PATCH net-next] mellanox: Change en_print to return void
-From: Joe Perches <joe@perches.com>
-To: Amir Vadai <amirv@mellanox.com>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Sep 2014 10:40:22 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 13:43:29 -0400
+From: Ashley Lai <ashley@ashleylai.com>
+X-Google-Original-From: Ashley Lai <alai@ant>
+Date: Mon, 22 Sep 2014 12:43:27 -0500 (CDT)
+To: Anton Blanchard <anton@samba.org>
+cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tpm/tpm_ibmvtpm: Fail in ibmvtpm_get_data if
+ driver_data is bad
+In-Reply-To: <20140920072942.27c28768@kryten>
+Message-ID: <alpine.DEB.2.10.1409221219150.4510@ant>
+References: <20140920072942.27c28768@kryten>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No caller or macro uses the return value so make it void.
+Hi Anton,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-This change is associated to a desire to eventually
-change printk to return void.
+Thanks for the patch.  Is this oops easy to recreate?  If so could 
+you give us the steps to reproduce?
 
- drivers/net/ethernet/mellanox/mlx4/en_main.c | 17 +++++++----------
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h |  4 ++--
- 2 files changed, 9 insertions(+), 12 deletions(-)
+Thanks,
+--Ashley Lai
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_main.c b/drivers/net/ethernet/mellanox/mlx4/en_main.c
-index 3626fdf..2091ae88 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_main.c
-@@ -78,27 +78,24 @@ MLX4_EN_PARM_INT(inline_thold, MAX_INLINE,
- #define MAX_PFC_TX     0xff
- #define MAX_PFC_RX     0xff
- 
--int en_print(const char *level, const struct mlx4_en_priv *priv,
--	     const char *format, ...)
-+void en_print(const char *level, const struct mlx4_en_priv *priv,
-+	      const char *format, ...)
- {
- 	va_list args;
- 	struct va_format vaf;
--	int i;
- 
- 	va_start(args, format);
- 
- 	vaf.fmt = format;
- 	vaf.va = &args;
- 	if (priv->registered)
--		i = printk("%s%s: %s: %pV",
--			   level, DRV_NAME, priv->dev->name, &vaf);
-+		printk("%s%s: %s: %pV",
-+		       level, DRV_NAME, priv->dev->name, &vaf);
- 	else
--		i = printk("%s%s: %s: Port %d: %pV",
--			   level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
--			   priv->port, &vaf);
-+		printk("%s%s: %s: Port %d: %pV",
-+		       level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
-+		       priv->port, &vaf);
- 	va_end(args);
--
--	return i;
- }
- 
- void mlx4_en_update_loopback_state(struct net_device *dev,
-diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-index 3de41be..03e95f7 100644
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-@@ -836,8 +836,8 @@ extern const struct ethtool_ops mlx4_en_ethtool_ops;
-  */
- 
- __printf(3, 4)
--int en_print(const char *level, const struct mlx4_en_priv *priv,
--	     const char *format, ...);
-+void en_print(const char *level, const struct mlx4_en_priv *priv,
-+	      const char *format, ...);
- 
- #define en_dbg(mlevel, priv, format, ...)				\
- do {									\
+On Sat, 20 Sep 2014, Anton Blanchard wrote:
 
-
+> I'm looking at an oops in tpm_ibmvtpm_get_desired_dma:
+>
+>  28:	00 00 20 39 	li      r9,0
+>  2c:	10 00 01 e8 	ld      r0,16(r1)
+>  30:	28 00 69 80 	lwz     r3,40(r9)
+>
+> We set r9 to 0 then load r9+40. The problem is actually in
+> ibmvtpm_get_data, it can return NULL but the rest of the driver
+> never expects it.
+>
+> Add a BUG_ON in ibmvtpm_get_data. We still need to identify the root
+> cause but at least this makes it obvious what went wrong.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> ---
+>
+> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+> index af74c57..0d1eeba 100644
+> --- a/drivers/char/tpm/tpm_ibmvtpm.c
+> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
+> @@ -63,9 +63,9 @@ static int ibmvtpm_send_crq(struct vio_dev *vdev, u64 w1, u64 w2)
+> static struct ibmvtpm_dev *ibmvtpm_get_data(const struct device *dev)
+> {
+> 	struct tpm_chip *chip = dev_get_drvdata(dev);
+> -	if (chip)
+> -		return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
+> -	return NULL;
+> +
+> +	BUG_ON(!chip);
+> +	return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
+> }
+>
+> /**
+>
