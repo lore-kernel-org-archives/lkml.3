@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402AbaIVO01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:26:27 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47808 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199AbaIVOZW (ORCPT
+	id S1754193AbaIVOZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:25:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49059 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754164AbaIVOZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:25:22 -0400
-Date: Mon, 22 Sep 2014 07:25:19 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Milosz Tanski <milosz@adfin.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC v2 0/5] Non-blockling buffered fs read (page cache only)
-Message-ID: <20140922142519.GA27920@infradead.org>
-References: <cover.1410810247.git.milosz@adfin.com>
- <cover.1410983998.git.milosz@adfin.com>
- <20140919104204.3b0bb762@lwn.net>
- <CANP1eJEhHyA93kDUCz_=0vDjdPXz7g0x1SmW+q060fntQAbrYA@mail.gmail.com>
- <20140922101221.4bf46809@lwn.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922101221.4bf46809@lwn.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 22 Sep 2014 10:25:16 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Yassin Jaffer <yassinjaffer@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 2/2] mtd: nand: add Hynix's H27UCG8T2ATR-BC to nand_ids table
+Date: Mon, 22 Sep 2014 16:25:11 +0200
+Message-Id: <1411395911-30365-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411395911-30365-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411395911-30365-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:12:21AM -0400, Jonathan Corbet wrote:
-> So I'm not contesting this, but I am genuinely curious: do you think
-> there are applications out there requesting non-blocking behavior on
-> regular files that will then break if they actually get non-blocking
-> behavior?  I don't suppose you have an example?
+Add the full description of the Hynix H27UCG8T2ATR-BC NAND chip in the
+nand_ids table so that we can later use the NAND ECC infos and ONFI timings
+mode in controller drivers.
 
-You only have to look as far as Samba, but Jeff quoted an old lkml
-post earlier that had other examples.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/mtd/nand/nand_ids.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-source3/smbd/open.c:
+diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
+index 3d7c89f..fbde8910 100644
+--- a/drivers/mtd/nand/nand_ids.c
++++ b/drivers/mtd/nand/nand_ids.c
+@@ -46,6 +46,10 @@ struct nand_flash_dev nand_flash_ids[] = {
+ 	{"SDTNRGAMA 64G 3.3V 8-bit",
+ 		{ .id = {0x45, 0xde, 0x94, 0x93, 0x76, 0x50} },
+ 		  SZ_16K, SZ_8K, SZ_4M, 0, 6, 1280, NAND_ECC_INFO(40, SZ_1K) },
++	{"H27UCG8T2ATR-BC 64G 3.3V 8-bit",
++		{ .id = {0xad, 0xde, 0x94, 0xda, 0x74, 0xc4} },
++		  SZ_8K, SZ_8K, SZ_2M, 0, 6, 640, NAND_ECC_INFO(40, SZ_1K),
++		  4 },
+ 
+ 	LEGACY_ID_NAND("NAND 4MiB 5V 8-bit",   0x6B, 4, SZ_8K, SP_OPTIONS),
+ 	LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE3, 4, SZ_8K, SP_OPTIONS),
+-- 
+1.9.1
 
-
-	if (first_open_attempt && lp_kernel_oplocks(SNUM(conn))) {
-		/*
-		 * With kernel oplocks the open breaking an oplock
-		 * blocks until the oplock holder has given up the
-		 * oplock or closed the file. We prevent this by first
-		 * trying to open the file with O_NONBLOCK (see "man
-		 * fcntl" on Linux). For the second try, triggered by
-		 * an oplock break response, we do not need this
-		 * anymore.
-		 *
-		 * This is true under the assumption that only Samba
-		 * requests kernel oplocks. Once someone else like
-		 * NFSv4 starts to use that API, we will have to
-		 * modify this by communicating with the NFSv4 server.
-		 */
-		flags2 |= O_NONBLOCK;
-	}
