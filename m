@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119AbaIVFtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 01:49:09 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:53167 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaIVFtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 01:49:07 -0400
-Date: Mon, 22 Sep 2014 08:48:56 +0300
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2014-09-22
-Message-ID: <20140922054856.GA15688@t440s.P-661HNU-F1>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752931AbaIVFwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 01:52:30 -0400
+Received: from mail-bn1on0130.outbound.protection.outlook.com ([157.56.110.130]:64955
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751380AbaIVFw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 01:52:29 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] clk: use uninitialized_var instead setting 'flags' to 0 directly.
+Date: Mon, 22 Sep 2014 13:52:11 +0800
+Message-ID: <1411365131-22094-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(69596002)(105606002)(81156004)(50466002)(229853001)(50986999)(76482002)(107046002)(2351001)(97736003)(106466001)(47776003)(95666004)(92726001)(68736004)(99396002)(26826002)(92566001)(104166001)(83072002)(31966008)(81542003)(83322001)(86362001)(36756003)(85852003)(77156001)(89996001)(20776003)(110136001)(6806004)(88136002)(77982003)(80022003)(19580405001)(62966002)(44976005)(85306004)(79102003)(64706001)(21056001)(46102003)(19580395003)(104016003)(4396001)(84676001)(93916002)(87936001)(50226001)(81342003)(48376002)(87286001)(74502003)(120916001)(102836001)(74662003)(90102001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0615;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0615;
+X-Forefront-PRVS: 034215E98F
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0647;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Setting 'flags' to zero will be certainly a misleading way to avoid
+warning of 'flags' may be used uninitialized. uninitialized_var is
+a correct way because the warning is a false possitive.
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi John,
-
-Here are some more patches for 3.18. They include various fixes to the
-btusb HCI driver, a fix for LE SMP, as well as adding Jukka to the
-MAINTAINERS file for generic 6LoWPAN (as requested by Alexander Aring).
-
-I've held on to this pull request a bit since we were waiting for a SCO
-related fix to get sorted out first. However, since the merge window is
-getting closer I decided not to wait for it. If we do get the fix sorted
-out there'll probably be a second small pull request later this week.
-
-Let me know if there are any issues pulling. Thanks.
-
-Johan
-
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
-The following changes since commit 9a783a139c32a905825ee0aa9597f485ea461f76:
+ drivers/clk/clk-gate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  Bluetooth: Fix re-setting RPA as expired when deferring update (2014-09-12 18:34:25 +0200)
+diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+index 4a58c55..51fd87f 100644
+--- a/drivers/clk/clk-gate.c
++++ b/drivers/clk/clk-gate.c
+@@ -45,7 +45,7 @@ static void clk_gate_endisable(struct clk_hw *hw, int enable)
+ {
+ 	struct clk_gate *gate = to_clk_gate(hw);
+ 	int set = gate->flags & CLK_GATE_SET_TO_DISABLE ? 1 : 0;
+-	unsigned long flags = 0;
++	unsigned long uninitialized_var(flags);
+ 	u32 reg;
+ 
+ 	set ^= enable;
+-- 
+2.1.0.27.g96db324
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-
-for you to fetch changes up to 5eb596f55cacc2389554a8d7572d90d5e9d4269d:
-
-  Bluetooth: Fix setting correct security level when initiating SMP (2014-09-18 17:39:37 +0200)
-
-----------------------------------------------------------------
-Johan Hedberg (2):
-      Bluetooth: btusb: Use GFP_KERNEL in btusb_send_frame()
-      Bluetooth: Fix setting correct security level when initiating SMP
-
-Jukka Rissanen (1):
-      MAINTAINERS: add maintainer for generic 6LoWPAN
-
-Marcel Holtmann (7):
-      Bluetooth: btusb: Separate TX URB allocation and submission
-      Bluetooth: Add BUILD_BUG_ON check for SKB control buffer size
-      Bluetooth: Provide HCI command opcode information to driver
-      Bluetooth: btusb: Fix old coding style issues
-      Bluetooth: btusb: Split fragement receiption into separate functions
-      Bluetooth: btusb: Implement driver internal packet reassembly
-      Bluetooth: Remove exported hci_recv_fragment function
-
- MAINTAINERS                       |   1 +
- drivers/bluetooth/btusb.c         | 511 +++++++++++++++++++++++++---------
- include/net/bluetooth/bluetooth.h |   1 +
- include/net/bluetooth/hci_core.h  |   1 -
- net/bluetooth/af_bluetooth.c      |   3 +
- net/bluetooth/hci_core.c          |  21 +-
- net/bluetooth/smp.c               |   5 +-
- 7 files changed, 385 insertions(+), 158 deletions(-)
-
-
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUH7hIAAoJECQj9vv5qNQSA0AP/0XdUG9WvH2n9arYXopMOIY3
-3xD0xwP7EpH6j2f9QigDZvTBrxlE1wehKn8lhKYWbRosQFNodQK8N0LX3vcYR8mb
-TTM4vb8pAYvkOv6oyvJNCsi9gpaZMz9M1OfGIinH4yy2iSoEQi3G4mzvqtnWPtbA
-dB2rirb3XcZkgkQxiCfDQz/mjdyig1U6npaVwcKbZIdRTPuRVbJzcK4ghjztHgWg
-j2FHvMZCdyrTzqMn9NwAOb4r/E9qABuu3CbiUZTv6Gxv8SrHFh/6EUVP2RcG14rq
-Yqlr8EtqI1PNL4JpNq8IgVNLGQWm3cUilZnkoZOnfp0t/W16NMCZiXZN1UWbw6gR
-5nImAxu57wYLXwxrjA5y3W2of5l5XsI2TaZkeCbzMncA5bKcTW1lFQlfXpu15H8R
-yKmn9FU8kHMqlD1B5H7Sn+BiqmxJwh0HuSyftMVl8AHsDnMwSYVN1UX4y/cJ2XL2
-2haqBoTWFArT2D5ussl3n+UQmJOB1Vw71E97tEYbuBNEWnHANuhQRuGrxg3Q8a1i
-3ki1WHvWtFwucHDJwC8JSfPNtvgmvQos6AdNarEP7Gkt2vkV3N0XaFsWC50MQXF0
-+l9aB30mORONtZeN681RsyCCnueNOWDqdki2g7YFoyxNMunVkWtCAAJJ4cdF9Fnl
-hK9KwaUsc5rjVBOK4fjS
-=L3A7
------END PGP SIGNATURE-----
-
---WIyZ46R2i8wDzkSu--
