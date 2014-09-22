@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545AbaIVJrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:47:05 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:34911 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbaIVJq5 (ORCPT
+	id S1753510AbaIVJrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:47:03 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:53805 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaIVJq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:46:57 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-24-541ff00f03c2
+	Mon, 22 Sep 2014 05:46:56 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-92-541ff00e7b13
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Dan Williams <dan.j.williams@intel.com>,
@@ -25,115 +25,81 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v6 3/4] amba: Don't unprepare the clocks if device driver wants
- IRQ safe runtime PM
-Date: Mon, 22 Sep 2014 11:46:28 +0200
-Message-id: <1411379189-3017-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v6 1/4] PM / Runtime: Add getter for quering the IRQ safe option
+Date: Mon, 22 Sep 2014 11:46:26 +0200
+Message-id: <1411379189-3017-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1411379189-3017-1-git-send-email-k.kozlowski@samsung.com>
 References: <1411379189-3017-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xq7r8H+RDDF42mFtsnLGe1WL61AuM
-	Fqun/mW1OPBnB6PF6xeGFmeb3rBbLJk8n9Vi1pS9TBYL25awWFzeNYfN4nPvEUaL25d5LdYe
-	uctu8e5lhMXdU0fZLN7emc5iceb0JVaLCb8vsFkcXxtu8bJvP4uDiEdLcw+bx+YVWh6L97xk
-	8rhzbQ+bx5I3h1g9tlxtZ/GYffcHo0ffllWMHitWf2f3+LxJzmPv598sAdxRXDYpqTmZZalF
-	+nYJXBmH5/xiL1ghWnFoykHWBsaZgl2MnBwSAiYSfXu/skDYYhIX7q1n62Lk4hASWMooMX/H
-	GUYIp49J4v6TRcwgVWwCxhKbly8BqxIROMIi8ezeEzCHWeAoo8T03rdMIFXCAqkSt15vA+rg
-	4GARUJVoWJ4MEuYVcJP4smo+O8Q6OYmTxyazgticAu4S+5+1gMWFgGqOHJrNNIGRdwEjwypG
-	0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkGj4soNx8TGrQ4wCHIxKPLwLmuRDhFgTy4orcw8x
-	SnAwK4nwPn0OFOJNSaysSi3Kjy8qzUktPsTIxMEp1cDo1ddzUPZN/YTVM8wYX4WvjLz4RFky
-	7eMlCx6+nZHhMef6F2nqaYbd/2eoneO92UJb4snNldsbgj+mP1St0xA4cs/mwYrfG9+HbXu6
-	lXv9z++5672Wf1Ls/jXrSOG3J0nZyb9nmW7YdFs65/XqP08mlR+/MLPs5K/Kddkubpvvqce2
-	f1m4Y+sSVSWW4oxEQy3mouJEAFJIypVkAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xq7p8H+RDDPatY7fYOGM9q8X0qRcY
+	LVZP/ctqceDPDkaL1y8MLc42vWG3WDJ5PqvFrCl7mSwWti1hsbi8aw6bxefeI4wWty/zWqw9
+	cpfd4t3LCIu7p46yWby9M53F4szpS6wWE35fYLM4vjbc4mXffhYHEY+W5h42j80rtDwW73nJ
+	5HHn2h42jyVvDrF6bLnazuIx++4PRo++LasYPVas/s7u8XmTnMfez79ZArijuGxSUnMyy1KL
+	9O0SuDKe3rrAVtAiVDHjlmkDYw9/FyMHh4SAicST86xdjJxAppjEhXvr2boYuTiEBJYySkw8
+	f5oJwuljknj2uIkdpIpNwFhi8/IlYFUiAkdYJJ7dewLmMAscZZSY3vuWCaRKWCBAYmfzVzaQ
+	FSwCqhJPd0mAmLwCbhJHf4lBbJOTOHlsMthmTgF3if3PWsDmCwGVHDk0m2kCI+8CRoZVjKKp
+	pckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFx8HUH49JjVocYBTgYlXh4f7TIhwixJpYVV+YeYpTg
+	YFYS4X36HCjEm5JYWZValB9fVJqTWnyIkYmDU6qBcWXM97PdRonzOWriepLiPx4yjo+WUtvK
+	kV0UYb6CLa1bt5dj3unmsvorbhOzAjkrv5rms7GynbthsebbzQodo/ZU2WkJGj+EnaZF/rFf
+	+IS1Vsc29oOKUkKAwa41UjnHnxczcv87MNnkGsfF4+IJB2aFNq9P/e614Xj21hph4yu7Fgix
+	OSUrsRRnJBpqMRcVJwIAIYlLO2ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AMBA bus driver defines runtime Power Management functions which
-disable and unprepare AMBA bus clock. This is problematic for runtime PM
-because unpreparing a clock might sleep so it is not interrupt safe.
+Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
+PM IRQ safe was set or not.
 
-However some drivers may want to implement runtime PM functions in
-interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-bus driver should only disable/enable the clock in runtime suspend and
-resume callbacks.
-
-Detect the device driver behavior after calling its probe function and
-store it. During runtime suspend/resume deal with clocks according to
-stored value.
+Various bus drivers implementing runtime PM may use choose to suspend
+differently based on IRQ safeness status of child driver (e.g. do not
+unprepare the clock if IRQ safe is not set).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
- drivers/amba/bus.c       | 29 +++++++++++++++++++++++++----
- include/linux/amba/bus.h |  1 +
- 2 files changed, 26 insertions(+), 4 deletions(-)
+ Documentation/power/runtime_pm.txt | 4 ++++
+ include/linux/pm_runtime.h         | 6 ++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 3cf61a127ee5..e8fd5706954f 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -94,8 +94,18 @@ static int amba_pm_runtime_suspend(struct device *dev)
- 	struct amba_device *pcdev = to_amba_device(dev);
- 	int ret = pm_generic_runtime_suspend(dev);
+diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
+index f32ce5419573..397b81593142 100644
+--- a/Documentation/power/runtime_pm.txt
++++ b/Documentation/power/runtime_pm.txt
+@@ -468,6 +468,10 @@ drivers/base/power/runtime.c and include/linux/pm_runtime.h:
+     - set the power.irq_safe flag for the device, causing the runtime-PM
+       callbacks to be invoked with interrupts off
  
--	if (ret == 0 && dev->driver)
--		clk_disable_unprepare(pcdev->pclk);
-+	if (ret == 0 && dev->driver) {
-+		/*
-+		 * Drivers should not change pm_runtime_irq_safe()
-+		 * after probe.
-+		 */
-+		WARN_ON(pcdev->irq_safe != pm_runtime_is_irq_safe(dev));
++  bool pm_runtime_is_irq_safe(struct device *dev);
++    - return true if power.irq_safe flag was set for the device, causing
++      the runtime-PM callbacks to be invoked with interrupts off
 +
-+		if (pcdev->irq_safe)
-+			clk_disable(pcdev->pclk);
-+		else
-+			clk_disable_unprepare(pcdev->pclk);
-+	}
+   void pm_runtime_mark_last_busy(struct device *dev);
+     - set the power.last_busy field to the current time
  
- 	return ret;
+diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+index 367f49b9a1c9..44d74f0f182e 100644
+--- a/include/linux/pm_runtime.h
++++ b/include/linux/pm_runtime.h
+@@ -128,6 +128,11 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
+ 	ACCESS_ONCE(dev->power.last_busy) = jiffies;
  }
-@@ -106,7 +116,16 @@ static int amba_pm_runtime_resume(struct device *dev)
- 	int ret;
  
- 	if (dev->driver) {
--		ret = clk_prepare_enable(pcdev->pclk);
-+		/*
-+		 * Drivers should not change pm_runtime_irq_safe()
-+		 * after probe.
-+		 */
-+		WARN_ON(pcdev->irq_safe != pm_runtime_is_irq_safe(dev));
++static inline bool pm_runtime_is_irq_safe(struct device *dev)
++{
++	return dev->power.irq_safe;
++}
 +
-+		if (pcdev->irq_safe)
-+			ret = clk_enable(pcdev->pclk);
-+		else
-+			ret = clk_prepare_enable(pcdev->pclk);
- 		/* Failure is probably fatal to the system, but... */
- 		if (ret)
- 			return ret;
-@@ -191,8 +210,10 @@ static int amba_probe(struct device *dev)
- 		pm_runtime_enable(dev);
+ #else /* !CONFIG_PM_RUNTIME */
  
- 		ret = pcdrv->probe(pcdev, id);
--		if (ret == 0)
-+		if (ret == 0) {
-+			pcdev->irq_safe = pm_runtime_is_irq_safe(dev);
- 			break;
-+		}
+ static inline int __pm_runtime_idle(struct device *dev, int rpmflags)
+@@ -167,6 +172,7 @@ static inline bool pm_runtime_enabled(struct device *dev) { return false; }
  
- 		pm_runtime_disable(dev);
- 		pm_runtime_set_suspended(dev);
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index ad52027a9cbf..ce101e4497d6 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -32,6 +32,7 @@ struct amba_device {
- 	struct clk		*pclk;
- 	unsigned int		periphid;
- 	unsigned int		irq[AMBA_NR_IRQS];
-+	unsigned int		irq_safe:1;
- };
+ static inline void pm_runtime_no_callbacks(struct device *dev) {}
+ static inline void pm_runtime_irq_safe(struct device *dev) {}
++static inline bool pm_runtime_is_irq_safe(struct device *dev) { return false; }
  
- struct amba_driver {
+ static inline bool pm_runtime_callbacks_present(struct device *dev) { return false; }
+ static inline void pm_runtime_mark_last_busy(struct device *dev) {}
 -- 
 1.9.1
 
