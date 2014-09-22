@@ -1,77 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820AbaIVKIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:08:54 -0400
-Received: from mail-db3on0146.outbound.protection.outlook.com ([157.55.234.146]:65440
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753770AbaIVKIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:08:52 -0400
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-To: <shawn.guo@freescale.com>
-CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Subject: [PATCH v3 2/2] ARM: dts: vf610-colibri: Add backlight support
-Date: Mon, 22 Sep 2014 15:38:12 +0530
-Message-ID: <a4346c3f08566b61dc829116e50f34c94e3268e5.1411378369.git.bhuvanchandra.dv@toradex.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1411378369.git.bhuvanchandra.dv@toradex.com>
-References: <cover.1411378369.git.bhuvanchandra.dv@toradex.com>
+	id S1753869AbaIVKKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:10:06 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:34880 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaIVKKE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 06:10:04 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8MA9W1H008220, This message is accepted by code: ctloc85258
+From: Roger Tseng <rogerable@realtek.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Wei_wang <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
+Thread-Topic: [PATCH] mmc: rtsx: add card power off during probe
+Thread-Index: AQHP04WDQdGgh34FlUGGFNVQtE8cSpwMbesA
+Date: Mon, 22 Sep 2014 10:09:32 +0000
+Message-ID: <1411380672.24091.18.camel@debian-rtk5880>
+References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
+	 <CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
+	 <54195036.2010409@realsil.com.cn>
+	 <CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
+	 <1411024883.27455.11.camel@debian-rtk5880>
+	 <CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
+In-Reply-To: <CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
+Accept-Language: en-US, zh-TW
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.81.121]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A949DEFED3A09848AE1D9E669F51FE8D@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [115.115.225.206]
-X-ClientProxiedBy: DM2PR10CA0060.namprd10.prod.outlook.com (10.141.241.28) To
- AMSPR05MB262.eurprd05.prod.outlook.com (10.242.95.19)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:AMSPR05MB262;
-X-Forefront-PRVS: 034215E98F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(102836001)(229853001)(118296001)(2351001)(89996001)(95666004)(42186005)(90102001)(33646002)(101416001)(20776003)(92726001)(92566001)(107046002)(105586002)(76176999)(21056001)(81156004)(97736003)(104166001)(62966002)(120916001)(76482002)(50226001)(4396001)(106356001)(53416004)(36756003)(64706001)(88136002)(80022003)(79102003)(77096002)(74502003)(74662003)(46102003)(99396002)(50986999)(83072002)(50466002)(81542003)(81342003)(110136001)(77982003)(77156001)(19580405001)(48376002)(66066001)(86362001)(2371004)(87976001)(85852003)(31966008)(47776003)(93916002)(19580395003)(87286001)(85306004)(83322001)(69596002)(7059019);DIR:OUT;SFP:1102;SCL:1;SRVR:AMSPR05MB262;H:trdx.toradex.int;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: toradex.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8MAABK0027524
 
+On Thu, 2014-09-18 at 23:14 +0200, Ulf Hansson wrote:
+> [...]
+> 
+> >>
+> >> In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
+> >>
+> >> >
+> >> > if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
+> >> > then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
+> >> > return.
+> >>
+> >> Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
+> >> that path at all.
+> >>
+> >> Hmm, I think we should change the behavior in mmc_start_host(), like below:
+> >> 1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
+> >> should be assigned to at allocation.
+> >> 2 ) From mmc_start_host(), invoke mmc_power_off() when
+> >> MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
+> >>
+> >> Would that work?
+> > Yes. I have confirmed this by following changes. The MMC_POWER_UNDEFINED
+> > designation in mmc_start_host() will eventually cause a power-off
+> > operation.
+> >
+> > But I wonder if we need to additionally check MMC_CAP2_FULL_PWR_CYCLE
+> > before calling mmc_power_off()?
+> 
+> The intent from my side was to keep the current behaviour for those
+> that already used MMC_CAP2_NO_PRESCAN_POWERUP, but it's s not a big
+> deal.
+> 
 
-Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
----
- arch/arm/boot/dts/vf610-colibri-eval-v3.dts |    6 ++++++
- arch/arm/boot/dts/vf610-colibri.dtsi        |    5 +++++
- 2 files changed, 11 insertions(+)
+I checked the log and found the commit that invokes mmc_power_off():
+a08b17be8b984a7c51cd5a480cd977363df353f9
+0d3e3350d5871c53464be4c92d57198744247005
+(https://www.mail-archive.com/linux-mmc@vger.kernel.org/msg19638.html )
 
-diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-index 00f63d9..711cf82 100644
---- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-+++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-@@ -19,6 +19,12 @@
- 	};
- };
- 
-+&bl {
-+	brightness-levels = <0 4 8 16 32 64 128 255>;
-+	default-brightness-level = <6>;
-+	status  = "okay";
-+};
-+
- &esdhc1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_esdhc1>;
-diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
-index 1f73c1c..807953b 100644
---- a/arch/arm/boot/dts/vf610-colibri.dtsi
-+++ b/arch/arm/boot/dts/vf610-colibri.dtsi
-@@ -25,6 +25,11 @@
- 		};
- 	};
- 
-+	bl: backlight {
-+		compatible = "pwm-backlight";
-+		pwms = <&pwm0 0 5000000 0>;
-+		status = "disabled";
-+	};
- };
- 
- &esdhc1 {
+The proposed change might bring back some delay since invoking
+mmc_power_off() in mmc_start_host() is more than NOP now and triggers
+real power-off and re-init in sdhci.
+
+Will this be OK?
+
+> So, let's try your proposal, thus don't check MMC_CAP2_FULL_PWR_CYCLE.
+> 
+> Can you repost new version of your patches and please split them up on
+> core and host separately.
+> 
+> Kind regards
+> Uffe
+> 
+> ------Please consider the environment before printing this e-mail.
+
 -- 
-1.7.9.5
-
+Best regards,
+Roger Tseng
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
