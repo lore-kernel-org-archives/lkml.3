@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaIVRna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:43:30 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:44786 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486AbaIVRn3 (ORCPT
+	id S1754413AbaIVRok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:44:40 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:40447 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525AbaIVRoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:43:29 -0400
-From: Ashley Lai <ashley@ashleylai.com>
-X-Google-Original-From: Ashley Lai <alai@ant>
-Date: Mon, 22 Sep 2014 12:43:27 -0500 (CDT)
-To: Anton Blanchard <anton@samba.org>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tpm/tpm_ibmvtpm: Fail in ibmvtpm_get_data if
- driver_data is bad
-In-Reply-To: <20140920072942.27c28768@kryten>
-Message-ID: <alpine.DEB.2.10.1409221219150.4510@ant>
-References: <20140920072942.27c28768@kryten>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 22 Sep 2014 13:44:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20140922170149.GP4723@linux.vnet.ibm.com>
+References: <1411318194-9433-1-git-send-email-bobby.prani@gmail.com>
+ <20140922162534.GA25352@thin> <CAJhHMCCpkVqdbMirw2ON=4+pPQgWKczgq_Y9BCv3_fj6yGp_MQ@mail.gmail.com>
+ <20140922170149.GP4723@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Mon, 22 Sep 2014 13:44:08 -0400
+Message-ID: <CAJhHMCBeqLN4dTS5uswUjwfcajT2LQ63NgbJm-FXRAB-XScsdw@mail.gmail.com>
+Subject: Re: [PATCH] rcu: Remove redundant CONFIG_PREEMPT_RCU option
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+On Mon, Sep 22, 2014 at 1:01 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Mon, Sep 22, 2014 at 12:49:24PM -0400, Pranith Kumar wrote:
+>> On Mon, Sep 22, 2014 at 12:25 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+>> >
+>> > I think it would actually make more sense to do this the other way
+>> > around, if at all: drop TREE_PREEMPT_RCU in favor of PREEMPT_RCU.  The
+>> > instances shown here don't care about *which* preemptible RCU
+>> > implementation the kernel uses, they just need to behave differently
+>> > when preemptible.  Let's also not assume that no new RCU implementation
+>> > will ever arise superceding TREE_PREEMPT_RCU.
+>>
+>> That is exactly what I did first and got the following changelog:
+>>
+>>  51 files changed, 77 insertions(+), 83 deletions(-)
+>>
+>> compared to
+>>
+>>  8 files changed, 19 insertions(+), 25 deletions(-)
+>
+> Were the bulk of the files defconfig files?  These need not be changed,
+> the architecture maintainers handle them.
+>
 
-Thanks for the patch.  Is this oops easy to recreate?  If so could 
-you give us the steps to reproduce?
+There are only two defconfig files in there. I removed them now. Most
+of them are rcutorture config files. I guess that should be fine. I am
+sending the patch now.
 
-Thanks,
---Ashley Lai
-
-On Sat, 20 Sep 2014, Anton Blanchard wrote:
-
-> I'm looking at an oops in tpm_ibmvtpm_get_desired_dma:
->
->  28:	00 00 20 39 	li      r9,0
->  2c:	10 00 01 e8 	ld      r0,16(r1)
->  30:	28 00 69 80 	lwz     r3,40(r9)
->
-> We set r9 to 0 then load r9+40. The problem is actually in
-> ibmvtpm_get_data, it can return NULL but the rest of the driver
-> never expects it.
->
-> Add a BUG_ON in ibmvtpm_get_data. We still need to identify the root
-> cause but at least this makes it obvious what went wrong.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> ---
->
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-> index af74c57..0d1eeba 100644
-> --- a/drivers/char/tpm/tpm_ibmvtpm.c
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> @@ -63,9 +63,9 @@ static int ibmvtpm_send_crq(struct vio_dev *vdev, u64 w1, u64 w2)
-> static struct ibmvtpm_dev *ibmvtpm_get_data(const struct device *dev)
-> {
-> 	struct tpm_chip *chip = dev_get_drvdata(dev);
-> -	if (chip)
-> -		return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> -	return NULL;
-> +
-> +	BUG_ON(!chip);
-> +	return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> }
->
-> /**
->
+-- 
+Pranith
