@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaIVKLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:11:34 -0400
-Received: from mail-bl2on0107.outbound.protection.outlook.com ([65.55.169.107]:7110
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751270AbaIVKLd convert rfc822-to-8bit (ORCPT
+	id S1753896AbaIVKNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:13:04 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:59150 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaIVKND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:11:33 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "vikas.sajjan@samsung.com" <vikas.sajjan@samsung.com>,
-        "joshi@samsung.com" <joshi@samsung.com>,
-        "naushad@samsung.com" <naushad@samsung.com>,
-        "thomas.ab@samsung.com" <thomas.ab@samsung.com>,
-        "chow.kim@samsung.com" <chow.kim@samsung.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "Aisheng.Dong@freescale.com" <Aisheng.Dong@freescale.com>
-Subject: RE: [PATCH v5] mfd: syscon: Decouple syscon interface from platform
- devices
-Thread-Topic: [PATCH v5] mfd: syscon: Decouple syscon interface from platform
- devices
-Thread-Index: AQHP1h/7kun2+wSlOUaNMEdBanKlXpwM6dUA
-Date: Mon, 22 Sep 2014 09:55:36 +0000
-Message-ID: <d986e3e3ea4d410ea3dab7483c89d640@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 034215E98F
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(164054003)(189002)(199003)(79102003)(76482002)(46102003)(77982003)(101416001)(31966008)(81342003)(81542003)(80022003)(74662003)(74502003)(120916001)(20776003)(97736003)(66066001)(64706001)(106356001)(107046002)(106116001)(108616004)(83322001)(85306004)(77096002)(95666004)(74316001)(76576001)(105586002)(86362001)(4396001)(99286002)(21056001)(85852003)(2656002)(83072002)(50986999)(92566001)(54356999)(76176999)(90102001)(33646002)(87936001)(99396002)(2201001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB324;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Sep 2014 06:13:03 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140922083929.GG1470@ulmo>
+References: <1409626606-15225-1-git-send-email-djkurtz@chromium.org> <20140922083929.GG1470@ulmo>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Mon, 22 Sep 2014 18:12:41 +0800
+X-Google-Sender-Auth: zNLq-bCFnzJuae0c2hyUWq_8_XA
+Message-ID: <CAGS+omBFQi2BokDCV8DpRYwKs7DsGWKfxtDu8+7zJfKatL0SeA@mail.gmail.com>
+Subject: Re: [PATCH] drm/panel: update innolux n116bge timings
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        David Airlie <airlied@linux.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 22, 2014 at 4:39 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+>
+> On Tue, Sep 02, 2014 at 10:56:46AM +0800, Daniel Kurtz wrote:
+> > There are several different models of N116BGE.  According to the commit
+> > that added innolux_n116bge_mode [0], this N116BGE is for the eDP variety.
+> >
+> > [0] commit 0a2288c06aab73c966e82045c8f20b0e713baf2a
+> >  Author: Thierry Reding <treding@nvidia.com>
+> >  Date:   Thu Jul 3 14:02:59 2014 +0200
+> >
+> >    drm/panel: simple: Add Innolux N116BGE panel support
+> >
+> > The clock and htotal values from add by that patch are out of spec according to
+> > the datasheets I have seen for the eDP N116BGE (-EA2 and -EB2).
+>
+> Does out of spec imply that these timings aren't working for you?
 
-[...]
-> +static struct regmap_config syscon_regmap_config = {
-> +	.reg_bits = 32,
-> +	.val_bits = 32,
-> +	.reg_stride = 4,
->  };
-> 
-> -static int syscon_match_node(struct device *dev, void *data)
-> +static struct syscon *of_syscon_register(struct device_node *np)
->  {
-> -	struct device_node *dn = data;
-> +	struct platform_device *pdev = NULL;
+No, I didn't even try with your values, actually.
+Out of spec just means that the numbers do not fall between Min and
+Max on the datasheet:
 
-struct platform_device *pdev; ?
+72.6 <= DCLK <= 80.24 vs. 71
+1506 <= htotal <= 1716 vs. 1500
 
-Thanks,
+> > This patch changes the values to the "Typ" values on the datasheet.
+>
+> The original patch was based on -E42 of the datasheet. But I can run
+> some tests to see if the timings in this patch work on the panel that I
+> have. If so I guess the easiest would be to apply this.
 
-BRs
-Xiubo
+Thanks!
 
+>
+> It shouldn't matter all that much since the panel has EDID if I remember
+> correctly. The modes parsed from EDID should take precedence over the
+> fixed mode. If they don't then that's a bug.
+
+The driver I am testing this with does not yet support reading the
+EDID over eDP, so I am using the fixed values for now.
+
+> Thierry
+>
