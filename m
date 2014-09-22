@@ -1,133 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaIVMJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 08:09:20 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:26033 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507AbaIVMJS convert rfc822-to-8bit (ORCPT
+	id S1753937AbaIVMPz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 08:15:55 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:54757 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491AbaIVMPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 08:09:18 -0400
-X-AuditID: cbfee68d-f79296d000004278-41-5420116c9d99
-From: Kukjin Kim <kgene@kernel.org>
-To: "=?UTF-8?Q?'Andreas_F=C3=A4rber'?=" <afaerber@suse.de>,
-        "'Doug Anderson'" <dianders@chromium.org>
-Cc: "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Daniel Drake'" <drake@endlessm.com>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk>
- <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk>
- <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com>
- <5419ADF9.3010509@suse.de>
-In-reply-to: <5419ADF9.3010509@suse.de>
-Subject: RE: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on
- exynos5250-snow
-Date: Mon, 22 Sep 2014 21:09:15 +0900
-Message-id: <01d001cfd65e$0790be30$16b23a90$@kernel.org>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQLbS3wcopW0Zexicw3nUqbcbogB6QLhhACVAbb1ttEBy1EbVJnDBZWA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t8zQ90cQYUQg0dbxS2aNxVbXP/ynNXi
-	7LKDbBaP5j9mtjj6u8Bi0+NrrBaXd81hs5hxfh+TA4fH7IaLLB5/n19n8Vj0Pctj85J6j74t
-	qxg9Np+u9vi8SS6APYrLJiU1J7MstUjfLoEr49TaO+wFM8UrHt6aydTA+Eawi5GTQ0LARGLD
-	zNlsELaYxIV764FsLg4hgWWMEos+PmSDKdq6spkVIrGIUeLQ/U6oqr+MEtNnz2XqYuTgYBNQ
-	lmhs0gdpEBbQkli4pYkFxBYRSJaYN+MyC0g9s8AEJomtq/YxgiSEBH4ySmz/VwVicwqoS0zb
-	epYdojlYYtXKg8wgNouAqsSD57vAruAVsJB42nybFcIWlPgx+R7YAmag3knzFjFD2NoST95d
-	YIW4WkFix9nXjBBHuElM7nzHDlEjIrHvxTtGkIMkBDo5JPad3wW1TEDi2+RDLCDPSAjISmw6
-	wAwxR1Li4IobLBMYJWchWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS95Pzc
-	TYyQaO/dwXj7gPUhRgEORiUe3gVN8iFCrIllxZW5hxhNgS6ayCwlmpwPTCl5JfGGxmZGFqYm
-	psZG5pZmSuK8ilI/g4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwmu9IdtY+r3OvaVv8jkV7
-	nWYvebdCdQmnkYrBttL+s96SntOkBP4otS86EJMW7OYjonrxW16KeuF7maTmjP0RUuevdx4K
-	VH1xOvTD5UNn00T6FRgzc9RnaCWxlLfUnN99uov1ZtjXgKWiGu5KAo0Pf5T/Oq03dUJQv/jE
-	M71GQTMcA7MPrbZXYinOSDTUYi4qTgQAvClz2fECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd0cQYUQg9VXhCyaNxVbXP/ynNXi
-	7LKDbBaP5j9mtjj6u8Bi0+NrrBaXd81hs5hxfh+TA4fH7IaLLB5/n19n8Vj0Pctj85J6j74t
-	qxg9Np+u9vi8SS6APaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfV
-	VsnFJ0DXLTMH6CIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aptXfY
-	C2aKVzy8NZOpgfGNYBcjJ4eEgInE1pXNrBC2mMSFe+vZuhi5OIQEFjFKHLrfCeX8ZZSYPnsu
-	UxcjBwebgLJEY5M+SIOwgJbEwi1NLCC2iECyxLwZl1lA6pkFJjBJbF21jxEkISTwk1Fi+78q
-	EJtTQF1i2taz7BDNwRKrVh5kBrFZBFQlHjzfxQZi8wpYSDxtvs0KYQtK/Jh8D2wBM1DvpHmL
-	mCFsbYkn7y5AXa0gsePsa0aII9wkJne+Y4eoEZHY9+Id4wRG4VlIRs1CMmoWklGzkLQsYGRZ
-	xSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGcSp5J72Bc1WBxiFGAg1GJh/dHi3yIEGtiWXFl
-	7iFGCQ5mJRFeXx6FECHelMTKqtSi/Pii0pzU4kOMpkCfTmSWEk3OB6a5vJJ4Q2MTMyNLIzML
-	IxNzcyVx3oOt1oFCAumJJanZqakFqUUwfUwcnFINjKwX1uRNDu0qZ1yxabfAau6ITd6f8xtq
-	/B7dPyPcdjLvNEvArZIzclr7gquecTybd+rYYen+eaaMpysCrOs7di48Mnnex8DTYSWz3pRK
-	zz4efrP4eXZX2pWm6YdOT749QZXr7OKnx7598v/nIme/k1fsTNm36NAzk413fBXVeerVsSft
-	35VZdTOVWIozEg21mIuKEwERlYRwOwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 22 Sep 2014 08:15:53 -0400
+Date: Mon, 22 Sep 2014 14:15:47 +0200
+From: Robert Richter <rric@kernel.org>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sunil Goutham <sunil.goutham@caviumnetworks.com>
+Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+Message-ID: <20140922121547.GD20170@rric.localhost>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
+ <20140922093228.GA20256@rric.localhost>
+ <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Färber wrote:
+On 22.09.14 12:43:17, Liviu Dudau wrote:
+> On Mon, Sep 22, 2014 at 10:32:28AM +0100, Robert Richter wrote:
+> > On 18.09.14 02:30:23, Liviu Dudau wrote:
+> > > +int of_pci_get_host_bridge_resources(struct device_node *dev,
+> > > +			unsigned char busno, unsigned char bus_max,
+> > > +			struct list_head *resources, resource_size_t *io_base)
+> > > +{
+> > > +	struct resource *res;
+> > > +	struct resource *bus_range;
+> > > +	struct of_pci_range range;
+> > > +	struct of_pci_range_parser parser;
+> > > +	char range_type[4];
+> > > +	int err;
+> > > +
+> > > +	if (!io_base)
+> > > +		return -EINVAL;
+> > > +	*io_base = OF_BAD_ADDR;
+> > 
 > 
-> Am 17.09.2014 um 17:47 schrieb Doug Anderson:
-> > Hi,
-> >
-> > On Wed, Sep 17, 2014 at 4:50 AM, Javier Martinez Canillas
-> > <javier.martinez@collabora.co.uk> wrote:
-> >> commit 546b117fdf17 ("rtc: s3c: add support for RTC of Exynos3250 SoC")
-> >> added an "rtc_src" DT property for the Samsung's S3C Real Time Clock
-> >> controller that specifies the 32.768 kHz clock that uses the RTC as its
-> >> source clock. In the case of the Exynos5250 based Snow board, the Maxim
-> >> 77686 32kHz AP clock is used as the source clock.
-> >>
-> >> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> >> ---
-> >>  arch/arm/boot/dts/exynos5250-snow.dts | 5 ++++-
-> >>  1 file changed, 4 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> >> index e51fcef..56eec56 100644
-> >> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> >> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> >> @@ -10,6 +10,7 @@
-> >>
-> >>  /dts-v1/;
-> >>  #include <dt-bindings/gpio/gpio.h>
-> >> +#include <dt-bindings/clock/maxim,max77686.h>
-> >>  #include "exynos5250.dtsi"
-> >>
-> >>  / {
-> >> @@ -29,6 +30,8 @@
-> >>
-> >>         rtc@101E0000 {
-> >>                 status = "okay";
-> >> +               clocks = <&clock CLK_RTC>, <&max77686 MAX77686_CLK_AP>;
-> >> +               clock-names = "rtc", "rtc_src";
-> >
-> > Wait, seriously?  Snow is still using the "rtc@101E0000" syntax?
-> > Whatever happened to the series that Andreas worked so hard on,
-> > including <https://patchwork.kernel.org/patch/4664801/>?
-> >
-> > Kukjin: Andreas's patch series was Reviewed long ago I think and by
-> > now I'd imagine it's got some conflicts due to it not having been
-> > applied in a timely fashion.  Perhaps you could fix it up for Andreas
-> > (since he's already rebased it several times) and land it?
-> >
-> > If I had to guess, outstanding from Andreas's series (patchwork IDs listed):
-> >
-> > 4751131 New          [v7] ARM: dts: Prepare node labels for exynos5250
-> > 4664801 New          [v6,04/10] ARM: dts: Clean up exynos5250-snow
-> > 4664771 New          [v6,05/10] ARM: dts: Fill in bootargs for exynos5250-snow
-> > 4664731 New          [v6,06/10] ARM: dts: Clean up exynos5250-smdk5250
-> > 4664751 New          [v6,07/10] ARM: dts: Clean up exynos5250-arndale
-> > 4664711 New          [v6,08/10] ARM: dts: Fix apparent GPIO typo in
-> > exynos5250-arndale
-> > 4664681 New          [v6,09/10] ARM: dts: Simplify USB3503 on exynos5250-arndale
-> > 4664691 New          [v6,10/10] ARM: dts: Add exynos5250-spring device tree
+> Hi Robert,
 > 
-> Yes, Kukjin told me not to resend anything, and I haven't heard back
-> from him since his Kernel Summit trip.
+> > This breaks for mem-mapped pci host controllers. The patch below fixes
+> > this.
 > 
-Sorry about that and I thought I took them :( I'll sort them out tonight
-including this series together.
+> I think you mean PCI host controller that have only memory mapped ranges,
+> am I right? Initially I've read your reply as to mean that the host
+> controller is accessed through some memory mapped area, which I believe is
+> the case for all host controllers.
 
-- Kukjin
+Right, that's meant here. Sorry for the misleading comment.
 
+> 
+> > 
+> > This series was tested with the fix on top for Cavium Thunder.
+> > 
+> > Tested-by: Robert Richter <rrichter@cavium.com>
+> 
+> Thanks for that!
+> 
+> > 
+> > -Robert
+> > 
+> > 
+> > 
+> > From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
+> > From: Robert Richter <rrichter@cavium.com>
+> > Date: Mon, 22 Sep 2014 10:46:01 +0200
+> > Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
+> > 
+> > The pci host bridge was not created if io_base was not set when
+> > calling of_pci_get_host_bridge_resources(). This is esp. the case for
+> > mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
+> > parameter io_base is optional now.
+> 
+> I think the message is misleading. What you want to do is make io_base
+> optional for the case where the PCI host bridge only expects to have only
+> IORESOURCE_MEM ranges and doesn't care about IORESOURCE_IO ones.
+> 
+> As I'm going to touch this area again to address a comment from Bjorn,
+> do you mind if I roll this patch into mine with your Signed-off-by and
+> the mention that you have made io_base optional?
+
+Sure, fine with me.
+
+Thanks,
+
+-Robert
+
+
+> 
+> Best regards,
+> Liviu
+> 
+> > 
+> > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > ---
+> >  drivers/of/of_pci.c | 7 +++----
+> >  1 file changed, 3 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> > index ffdb45ed8682..1f0e7c2505ee 100644
+> > --- a/drivers/of/of_pci.c
+> > +++ b/drivers/of/of_pci.c
+> > @@ -182,9 +182,8 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
+> >  	char range_type[4];
+> >  	int err;
+> >  
+> > -	if (!io_base)
+> > -		return -EINVAL;
+> > -	*io_base = OF_BAD_ADDR;
+> > +	if (io_base)
+> > +		*io_base = OF_BAD_ADDR;
+> >  
+> >  	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
+> >  	if (!bus_range)
+> > @@ -242,7 +241,7 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
+> >  			goto parse_failed;
+> >  		}
+> >  
+> > -		if (resource_type(res) == IORESOURCE_IO) {
+> > +		if (io_base && resource_type(res) == IORESOURCE_IO) {
+> >  			if (*io_base != OF_BAD_ADDR)
+> >  				pr_warn("More than one I/O resource converted. CPU offset for old range lost!\n");
+> >  			*io_base = range.cpu_addr;
+> > -- 
+> > 2.1.0
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> 
+> -- 
+> ====================
+> | I would like to |
+> | fix the world,  |
+> | but they're not |
+> | giving me the   |
+>  \ source code!  /
+>   ---------------
+>     ¯\_(ツ)_/¯
+> 
