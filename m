@@ -1,142 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaIVSBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:01:23 -0400
-Received: from verein.lst.de ([213.95.11.211]:48231 "EHLO newverein.lst.de"
+	id S1754687AbaIVSBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:01:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128AbaIVSBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754333AbaIVSBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Sep 2014 14:01:21 -0400
-Date: Mon, 22 Sep 2014 20:01:18 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Mel Gorman <mgorman@suse.de>, Jens Axboe <axboe@kernel.dk>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+Date: Mon, 22 Sep 2014 13:01:13 -0500
+From: Seth Jennings <sjenning@redhat.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Aristeu Rozanski <aris@redhat.com>, linux-edac@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: cleanup REQ_KERNEL leftovers
-Message-ID: <20140922180118.GA374@lst.de>
+Subject: Re: [PATCH] sb_edac: avoid INTERNAL ERROR message in EDAC with
+ unspecified channel
+Message-ID: <20140922180113.GA20511@cerebellum.variantweb.net>
+References: <1409945327-17989-1-git-send-email-sjenning@redhat.com>
+ <20140908141851.GL22290@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140908141851.GL22290@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No more need for any of this now that we have ->write_iter.  The read
-path for swap over nfs which directly readpages into non-owned pages
-still looks scary as hell to me and might benefit from a rewrite over
-an updated ->read_iter..
+On Mon, Sep 08, 2014 at 10:18:51AM -0400, Aristeu Rozanski wrote:
+> On Fri, Sep 05, 2014 at 02:28:47PM -0500, Seth Jennings wrote:
+> > Intel IA32 SDM Table 15-14 defines channel 0xf as 'not specified', but
+> > EDAC doesn't know about this and returns and INTERNAL ERROR when the
+> > channel is greater than NUM_CHANNELS:
+> > 
+> > kernel: [ 1538.886456] CPU 0: Machine Check Exception: 0 Bank 1: 940000000000009f
+> > kernel: [ 1538.886669] TSC 2bc68b22e7e812 ADDR 46dae7000 MISC 0 PROCESSOR 0:306e4 TIME 1390414572 SOCKET 0 APIC 0
+> > kernel: [ 1538.971948] EDAC MC1: INTERNAL ERROR: channel value is out of range (15 >= 4)
+> > kernel: [ 1538.972203] EDAC MC1: 0 CE memory read error on unknown memory (slot:0 page:0x46dae7 offset:0x0 grain:0 syndrome:0x0 -  area:DRAM err_code:0000:009f socket:1 channel_mask:1 rank:0)
+> > 
+> > This commit changes sb_edac to forward a channel of -1 to EDAC if the
+> > channel is not specified.  edac_mc_handle_error() sets the channel to -1
+> > internally after the error message anyway, so this commit should have no
+> > effect other than avoiding the INTERNAL ERROR message when the channel
+> > is not specified.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Hey Mauro,
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 65ef6e0..9e5bc7f 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -221,12 +221,11 @@ ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter, loff_t
- 	return -EINVAL;
- #else
- 	VM_BUG_ON(iocb->ki_nbytes != PAGE_SIZE);
-+	VM_BUG_ON(!(rw & ITER_BVEC));
- 
--	if (rw == READ || rw == KERNEL_READ)
--		return nfs_file_direct_read(iocb, iter, pos,
--				rw == READ ? true : false);
--	return nfs_file_direct_write(iocb, iter, pos,
--				rw == WRITE ? true : false);
-+	if (rw == READ)
-+		return nfs_file_direct_read(iocb, iter, pos, true);
-+	return nfs_file_direct_write(iocb, iter, pos, true);
- #endif /* CONFIG_NFS_SWAP */
- }
- 
-@@ -512,7 +511,7 @@ static ssize_t nfs_direct_read_schedule_iovec(struct nfs_direct_req *dreq,
-  * cache.
-  */
- ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
--				loff_t pos, bool uio)
-+				loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct address_space *mapping = file->f_mapping;
-@@ -893,7 +892,7 @@ static ssize_t nfs_direct_write_schedule_iovec(struct nfs_direct_req *dreq,
-  * is no atomic O_APPEND write facility in the NFS protocol.
-  */
- ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
--				loff_t pos, bool uio)
-+				loff_t pos)
- {
- 	ssize_t result = -EINVAL;
- 	struct file *file = iocb->ki_filp;
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 524dd80..3b42cb8 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -171,7 +171,7 @@ nfs_file_read(struct kiocb *iocb, struct iov_iter *to)
- 	ssize_t result;
- 
- 	if (iocb->ki_filp->f_flags & O_DIRECT)
--		return nfs_file_direct_read(iocb, to, iocb->ki_pos, true);
-+		return nfs_file_direct_read(iocb, to, iocb->ki_pos);
- 
- 	dprintk("NFS: read(%pD2, %zu@%lu)\n",
- 		iocb->ki_filp,
-@@ -648,7 +648,7 @@ ssize_t nfs_file_write(struct kiocb *iocb, struct iov_iter *from)
- 		return result;
- 
- 	if (file->f_flags & O_DIRECT)
--		return nfs_file_direct_write(iocb, from, pos, true);
-+		return nfs_file_direct_write(iocb, from, pos);
- 
- 	dprintk("NFS: write(%pD2, %zu@%Ld)\n",
- 		file, count, (long long) pos);
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 66c2167..fbb1ef6 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -186,7 +186,6 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
--	__REQ_KERNEL, 		/* direct IO to kernel pages */
- 	__REQ_PM,		/* runtime pm request */
- 	__REQ_END,		/* last of chain of requests */
- 	__REQ_HASHED,		/* on IO scheduler merge hash */
-@@ -240,7 +239,6 @@ enum rq_flag_bits {
- #define REQ_IO_STAT		(1ULL << __REQ_IO_STAT)
- #define REQ_MIXED_MERGE		(1ULL << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1ULL << __REQ_SECURE)
--#define REQ_KERNEL		(1ULL << __REQ_KERNEL)
- #define REQ_PM			(1ULL << __REQ_PM)
- #define REQ_END			(1ULL << __REQ_END)
- #define REQ_HASHED		(1ULL << __REQ_HASHED)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9418772..9b5bc1c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -192,8 +192,6 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
- #define READ			0
- #define WRITE			RW_MASK
- #define READA			RWA_MASK
--#define KERNEL_READ		(READ|REQ_KERNEL)
--#define KERNEL_WRITE		(WRITE|REQ_KERNEL)
- 
- #define READ_SYNC		(READ | REQ_SYNC)
- #define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index 5180a7e..1d67b55 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -463,11 +463,9 @@ extern int nfs3_removexattr (struct dentry *, const char *name);
-  */
- extern ssize_t nfs_direct_IO(int, struct kiocb *, struct iov_iter *, loff_t);
- extern ssize_t nfs_file_direct_read(struct kiocb *iocb,
--			struct iov_iter *iter,
--			loff_t pos, bool uio);
-+			struct iov_iter *iter, loff_t pos);
- extern ssize_t nfs_file_direct_write(struct kiocb *iocb,
--			struct iov_iter *iter,
--			loff_t pos, bool uio);
-+			struct iov_iter *iter, loff_t pos);
- 
- /*
-  * linux/fs/nfs/dir.c
+I was wanting to make sure this was on your radar.  I don't see it in
+-next and haven't gotten any feedback or confirmation that the patch has
+been accepted/rejected/needs work.
+
+Seth
+
+> > 
+> > Signed-off-by: Seth Jennings <sjenning@redhat.com>
+> > Cc: Aristeu Rozanski <aris@redhat.com>
+> > Cc: linux-edac@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  drivers/edac/sb_edac.c | 8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> > index 0034c48..07efed4 100644
+> > --- a/drivers/edac/sb_edac.c
+> > +++ b/drivers/edac/sb_edac.c
+> > @@ -283,8 +283,9 @@ static const u32 correrrthrsld[] = {
+> >   * sbridge structs
+> >   */
+> >  
+> > -#define NUM_CHANNELS	4
+> > -#define MAX_DIMMS	3		/* Max DIMMS per channel */
+> > +#define NUM_CHANNELS		4
+> > +#define MAX_DIMMS		3	/* Max DIMMS per channel */
+> > +#define CHANNEL_UNSPECIFIED	0xf	/* Intel IA32 SDM 15-14 */
+> >  
+> >  enum type {
+> >  	SANDY_BRIDGE,
+> > @@ -1991,6 +1992,9 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
+> >  
+> >  	/* FIXME: need support for channel mask */
+> >  
+> > +	if (channel == CHANNEL_UNSPECIFIED)
+> > +		channel = -1;
+> > +
+> >  	/* Call the helper to output message */
+> >  	edac_mc_handle_error(tp_event, mci, core_err_cnt,
+> >  			     m->addr >> PAGE_SHIFT, m->addr & ~PAGE_MASK, 0,
+> 
+> Acked-by: Aristeu Rozanski <aris@redhat.com>
+> 
+> -- 
+> Aristeu
+> 
