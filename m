@@ -1,85 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaIVTYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:24:33 -0400
-Received: from mail-ie0-f194.google.com ([209.85.223.194]:58264 "EHLO
-	mail-ie0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593AbaIVTY2 (ORCPT
+	id S1754741AbaIVT0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:26:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57170 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015AbaIVT0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:24:28 -0400
-Message-ID: <54207769.2020105@gmail.com>
-Date: Mon, 22 Sep 2014 15:24:25 -0400
-From: nick <yocto6@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: jejb@parisc-linux.org
-CC: deller@gmx.de, akpm@linux-foundation.org, himangi774@gmail.com,
-        julia.lawall@lip6.fr, mgorman@suse.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: FIX MES in init.c
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 15:26:16 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        Chris Ball <chris@printf.net>, Georgi Djakov <gdjakov@mm-sol.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>
+Subject: [PATCH 2/2] mmc: Consolidate emmc tuning blocks
+Date: Mon, 22 Sep 2014 12:26:10 -0700
+Message-Id: <1411413970-17480-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
+In-Reply-To: <1411413970-17480-1-git-send-email-sboyd@codeaurora.org>
+References: <1411413970-17480-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings James and Other Maintainers of the Parisc Architecture,
-I am wondering about two fix mes in init.c and how to fix them
-for being const declared into actual variables. I will paste the
-parts of the file for your convenience below.
-Thanks,
-Nick 
----------------------------------------------------------------------------------
-static void __init gateway_init(void)
-{
-	unsigned long linux_gateway_page_addr;
-	/* FIXME: This is 'const' in order to trick the compiler
-	   into not treating it as DP-relative data. */
-	extern void * const linux_gateway_page;
+The same tuning block exists in the dw_mmc h.c and sdhci-msm.c
+files. Move these into mmc.c so that they can be shared across
+drivers.
 
-	linux_gateway_page_addr = LINUX_GATEWAY_ADDR & PAGE_MASK;
+Reported-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/mmc/core/mmc.c       | 32 ++++++++++++++++++++++++++++++++
+ drivers/mmc/host/dw_mmc.c    | 30 ------------------------------
+ drivers/mmc/host/sdhci-msm.c | 38 ++++----------------------------------
+ include/linux/mmc/mmc.h      |  5 +++++
+ 4 files changed, 41 insertions(+), 64 deletions(-)
 
-	/*
-	 * Setup Linux Gateway page.
-	 *
-	 * The Linux gateway page will reside in kernel space (on virtual
-	 * page 0), so it doesn't need to be aliased into user space.
-	 */
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 793c6f7ddb04..9608cc8a1f65 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -1135,6 +1135,38 @@ bus_speed:
+ 	return err;
+ }
+ 
++const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE] = {
++	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
++	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
++	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
++	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
++	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
++	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
++	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
++	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
++};
++EXPORT_SYMBOL(tuning_blk_pattern_4bit);
++
++const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE] = {
++	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
++	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
++	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
++	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
++	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
++	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
++	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
++	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
++	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
++	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
++	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
++	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
++	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
++	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
++	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
++	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
++};
++EXPORT_SYMBOL(tuning_blk_pattern_8bit);
++
+ /*
+  * Execute tuning sequence to seek the proper bus operating
+  * conditions for HS200 and HS400, which sends CMD21 to the device.
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 1ac227c603b7..f1cefdf5e2d0 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -81,36 +81,6 @@ struct idmac_desc {
+ };
+ #endif /* CONFIG_MMC_DW_IDMAC */
+ 
+-static const u8 tuning_blk_pattern_4bit[] = {
+-	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+-	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+-	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+-	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+-	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+-	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+-	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+-	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+-};
+-
+-static const u8 tuning_blk_pattern_8bit[] = {
+-	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+-	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+-	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+-	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+-	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+-	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+-	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+-	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+-	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+-	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+-	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+-	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+-	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+-	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+-	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+-	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+-};
+-
+ static inline bool dw_mci_fifo_reset(struct dw_mci *host);
+ static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host);
+ 
+diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+index 5aabffc15ae8..da74c77f34cc 100644
+--- a/drivers/mmc/host/sdhci-msm.c
++++ b/drivers/mmc/host/sdhci-msm.c
+@@ -47,36 +47,6 @@
+ #define CMUX_SHIFT_PHASE_SHIFT	24
+ #define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
+ 
+-static const u8 tuning_block_64[] = {
+-	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+-	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+-	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+-	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+-	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+-	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+-	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+-	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+-};
+-
+-static const u8 tuning_block_128[] = {
+-	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+-	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+-	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+-	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+-	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+-	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+-	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+-	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+-	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+-	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+-	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+-	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+-	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+-	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+-	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+-	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+-};
+-
+ struct sdhci_msm_host {
+ 	struct platform_device *pdev;
+ 	void __iomem *core_mem;	/* MSM SDCC mapped address */
+@@ -371,8 +341,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+ {
+ 	int tuning_seq_cnt = 3;
+ 	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
+-	const u8 *tuning_block_pattern = tuning_block_64;
+-	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
++	const u8 *tuning_block_pattern = tuning_blk_pattern_4bit;
++	int size = sizeof(tuning_blk_pattern_4bit);
+ 	int rc;
+ 	struct mmc_host *mmc = host->mmc;
+ 	struct mmc_ios ios = host->mmc->ios;
+@@ -388,8 +358,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+ 
+ 	if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) &&
+ 	    (mmc->ios.bus_width == MMC_BUS_WIDTH_8)) {
+-		tuning_block_pattern = tuning_block_128;
+-		size = sizeof(tuning_block_128);
++		tuning_block_pattern = tuning_blk_pattern_8bit;
++		size = sizeof(tuning_blk_pattern_8bit);
+ 	}
+ 
+ 	data_buf = kmalloc(size, GFP_KERNEL);
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index 64ec963ed347..cff1f2622061 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -53,6 +53,11 @@
+ #define MMC_SEND_TUNING_BLOCK    19   /* adtc                    R1  */
+ #define MMC_SEND_TUNING_BLOCK_HS200	21	/* adtc R1  */
+ 
++#define MMC_TUNING_BLK_PATTERN_4BIT_SIZE	 64
++#define MMC_TUNING_BLK_PATTERN_8BIT_SIZE	128
++extern const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE];
++extern const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE];
++
+   /* class 3 */
+ #define MMC_WRITE_DAT_UNTIL_STOP 20   /* adtc [31:0] data addr   R1  */
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-	map_pages(linux_gateway_page_addr, __pa(&linux_gateway_page),
-		  PAGE_SIZE, PAGE_GATEWAY, 1);
-}
-
-#ifdef CONFIG_HPUX
-void
-map_hpux_gateway_page(struct task_struct *tsk, struct mm_struct *mm)
-{
-	pgd_t *pg_dir;
-	pmd_t *pmd;
-	pte_t *pg_table;
-	unsigned long start_pmd;
-	unsigned long start_pte;
-	unsigned long address;
-	unsigned long hpux_gw_page_addr;
-	/* FIXME: This is 'const' in order to trick the compiler
-	   into not treating it as DP-relative data. */
-	extern void * const hpux_gateway_page;
-
-	hpux_gw_page_addr = HPUX_GATEWAY_ADDR & PAGE_MASK;
-
-	/*
-	 * Setup HP-UX Gateway page.
-	 *
-	 * The HP-UX gateway page resides in the user address space,
-	 * so it needs to be aliased into each process.
-	 */
-
-	pg_dir = pgd_offset(mm,hpux_gw_page_addr);
-
-#if PTRS_PER_PMD == 1
-	start_pmd = 0;
-#else
-	start_pmd = ((hpux_gw_page_addr >> PMD_SHIFT) & (PTRS_PER_PMD - 1));
-#endif
-	start_pte = ((hpux_gw_page_addr >> PAGE_SHIFT) & (PTRS_PER_PTE - 1));
----------------------------------------------------------------------------------------
