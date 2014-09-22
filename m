@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaIVPqM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:46:12 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:36515 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394AbaIVPqE convert rfc822-to-8bit (ORCPT
+	id S1754643AbaIVPqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:46:22 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33212 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490AbaIVPqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:46:04 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <CA+55aFwAdsJ9EWTx3QvMxs2ReTX19Xvd_s7wc+KQ8qnJjg0WDA@mail.gmail.com>
-Date: Mon, 22 Sep 2014 16:46:01 +0100
+	Mon, 22 Sep 2014 11:46:20 -0400
+Date: Mon, 22 Sep 2014 08:46:15 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Vivek Goyal <vgoyal@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, stable <stable@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1844C797-F3C7-4EA7-BBE8-520A7609C743@cam.ac.uk>
-References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk> <CA+55aFyYpe=oyF9yVqF3E6t4ZCpHAdnLj1g36FWUDZydW9mdgQ@mail.gmail.com> <55E81CB2-AB4B-41E2-88D5-B33F7D8B1DB8@cam.ac.uk> <CA+55aFwAdsJ9EWTx3QvMxs2ReTX19Xvd_s7wc+KQ8qnJjg0WDA@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1878.6)
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] resource: Add NULL check in next_resource
+Message-ID: <20140922154615.GB5054@roeck-us.net>
+References: <1411314704-27072-1-git-send-email-linux@roeck-us.net>
+ <20140922145812.GD4250@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922145812.GD4250@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On 22 Sep 2014, at 16:33, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Mon, Sep 22, 2014 at 8:29 AM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
->> 
->> You could do "block & ~(sector_t)(size - 1)" instead of "(sector_t)index << sizebits" if you prefer but not sure that is an improvement!
+On Mon, Sep 22, 2014 at 10:58:12AM -0400, Vivek Goyal wrote:
+> On Sun, Sep 21, 2014 at 08:51:44AM -0700, Guenter Roeck wrote:
+> > Commit 8c86e70acead ("resource: provide new functions to walk through
+> > resources") adds a suble new requirement that iomem_resource.child must
+> > not be NULL when walk_system_ram_range is called. This can cause a crash
+> > if it turns out that there are no children. The crash ('Unable to handle
+> > kernel NULL pointer dereference') is seen when trying to test a crisv32
+> > image on kernels with this commit applied.
+> > 
+> > Fix by adding a NULL check into next_resource().
+> > 
+> > Fixes: 8c86e70acead ("resource: provide new functions to walk through resources")
 > 
-> No, it would be even worse. Something like
+> One such problem was solved with following commit.
 > 
->  block & ~(sector_t)((size >> 9) - 1)
+> commit 800df627e2eabaf4a921d342a1d5162c843b7fc2
+> Author: Vivek Goyal <vgoyal@redhat.com>
+> Date:   Fri Aug 29 15:18:29 2014 -0700
 > 
-> because block is the sector number (ie 512-byte) and size is in bytes.
+>     resource: fix the case of null pointer access
+> 
+> Do you have this patch applied in your tree?
+> 
+Bisect suggests that I did.
 
-Oops, sorry.  But I think you got it wrong, too as you are ignoring the PAGE_SIZE - as was I but it is what we need to align to in addition to the problem of "size" being in bytes.  So I think the correct mask is actually based on sizebits which reflects the number of blocks per page thus:
+I know what happened: There was another problem that affected crisv32 in
+v3.17-rc5, which I tried to bisect. Bisect result pointed to your commit,
+but it wasn't the cause of the other problem. As a result, bisect did not
+catch the real problem but the NULL pointer problem instead.
 
-	block & ~(sector_t)((1 << sizebits) - 1)
+Please ignore my patch; I confirmed that commit 800df627e2ea already fixes
+the problem I tried to fix.
 
-In any case the shift is the lesser evil I think as it is at least obviously correct whilst getting the right mask has taken us a few iterations of correcting each other! (-:
-
-PS. Thank you for taking my patch and correcting the misleading description!
-
-Best regards,
-
-	Anton
-
->           Linus
-
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-University of Cambridge Information Services, Roger Needham Building
-7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
-
+Thanks,
+Guenter
