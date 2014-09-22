@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaIVPU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:20:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40696 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaIVPUz convert rfc822-to-8bit (ORCPT
+	id S1754176AbaIVPV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:21:28 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:56292 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111AbaIVPVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:20:55 -0400
-Date: Mon, 22 Sep 2014 16:20:48 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v11 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-Message-ID: <20140922152048.GZ1994@e106497-lin.cambridge.arm.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-8-git-send-email-Liviu.Dudau@arm.com>
- <201409200424.20538.arnd@arndb.de>
+	Mon, 22 Sep 2014 11:21:25 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 22 Sep 2014 17:18:54 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 5/9] rtc: at91sam9: make use of syscon/regmap to
+ access GPBR registers
+Message-ID: <20140922151854.GI5237@localhost>
+References: <1411377058-26155-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1411377058-26155-6-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <201409200424.20538.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 22 Sep 2014 15:20:49.0705 (UTC) FILETIME=[CA64B190:01CFD678]
-X-MC-Unique: 114092216205205301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1411377058-26155-6-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 03:24:20AM +0100, Arnd Bergmann wrote:
-> On Thursday 18 September 2014, Liviu Dudau wrote:
-> > 
-> > Add of_pci_get_domain_nr() to retrieve the PCI domain number
-> > of a given device from DT. If the information is not present,
-> > the function can be requested to allocate a new domain number.
-> > 
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+On Mon, Sep 22, 2014 at 11:10:54AM +0200, Boris BREZILLON wrote:
+> The GPBR registers are not part of the RTT block and thus should not be
+> defined in the reg property of the rtt node.
 > 
-> This is more elaborate than I remember it, and while the simpler
-> version (which potentially resulted in a conflict for inconsistent
-> DTs) was fine, this one also seems ok.
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Use syscon to provide a proper DT representation and reference the GPBR
+> syscon device in a new "atmel,time-reg" property which store both the
 
-Thanks Arnd!
+You forgot to update the commit message with the new property name.
 
-Best regards,
-Liviu
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Johan
