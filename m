@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaIVVEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 17:04:39 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:10087 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935AbaIVVEh convert rfc822-to-8bit (ORCPT
+	id S1755092AbaIVVFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 17:05:52 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:62634 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835AbaIVVFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 17:04:37 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        x86 <x86@kernel.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: RE: [patch 22/26] x86: Add proper vector accounting for HyperV
-Thread-Topic: [patch 22/26] x86: Add proper vector accounting for HyperV
-Thread-Index: AQHP1qe4bKciWkPPsk6mOx38tYrEmZwNosVg
-Date: Mon, 22 Sep 2014 21:03:57 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C91F27@G9W0745.americas.hpqcorp.net>
-References: <20140223212703.511977310@linutronix.de>
- <20140223212738.681855582@linutronix.de>
-In-Reply-To: <20140223212738.681855582@linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Sep 2014 17:05:50 -0400
+Date: Mon, 22 Sep 2014 15:05:47 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robert Stonehouse <rstonehouse@solarflare.com>
+Subject: Re: [PATCH] pci: quirks: Add ACS quirk for Solarflare SFC9120 &
+ SFC9140
+Message-ID: <20140922210547.GK1880@google.com>
+References: <20140917145838.19243.14630.stgit@gimli.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140917145838.19243.14630.stgit@gimli.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Thomas Gleixner
-> Sent: Sunday, 23 February, 2014 3:40 PM
-> To: LKML
-> Cc: Ingo Molnar; Peter Zijlstra; x86; Konrad Rzeszutek Wilk; K. Y. Srinivasan
-> Subject: [patch 22/26] x86: Add proper vector accounting for HyperV
+On Wed, Sep 17, 2014 at 08:59:36AM -0600, Alex Williamson wrote:
+> Solarflare confirms that these devices do not allow peer-to-peer
+> between functions.  Quirk them to allow IOMMU grouping to expose this
+> isolation.
 > 
-> HyperV abuses a device interrupt to account for the
-> HYPERVISOR_CALLBACK_VECTOR.
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Robert Stonehouse <rstonehouse@solarflare.com>
+
+Applied with Robert's ack to pci/virtualization for v3.18, thanks!
+
+> ---
 > 
-> Provide proper accounting as we have for the other vectors as well.
-...
-> Index: tip/arch/x86/kernel/irq.c
-> ===================================================================
-> --- tip.orig/arch/x86/kernel/irq.c
-> +++ tip/arch/x86/kernel/irq.c
-> @@ -125,6 +125,12 @@ int arch_show_interrupts(struct seq_file
->  		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
->  	seq_printf(p, "  Machine check polls\n");
->  #endif
-> +#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
-> +	seq_printf(p, "%*s: ", prec, "THR");
-> +	for_each_online_cpu(j)
-> +		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
-> +	seq_printf(p, "  Hypervisor callback interrupts\n");
-> +#endif
-...
-
-Should this have used a different short string than "THR",
-which is already used for "Threshold APIC interrupts"?
-
----
-Rob Elliott    HP Server Storage
-
-
-
+>  drivers/pci/quirks.c |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 80c2d01..78cc83f 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3664,6 +3664,21 @@ static int pci_quirk_intel_pch_acs(struct pci_dev *dev, u16 acs_flags)
+>  	return acs_flags & ~flags ? 0 : 1;
+>  }
+>  
+> +static int pci_quirk_solarflare_acs(struct pci_dev *dev, u16 acs_flags)
+> +{
+> +	/*
+> +	 * SV, TB, and UF are not relevant to multifunction endpoints.
+> +	 *
+> +	 * Solarflare indicates that peer-to-peer between functions is not
+> +	 * possible, therefore RR, CR, and DT are not implemented.  Mask
+> +	 * these out as if they were clear in the ACS capabilities register.
+> +	 */
+> +	acs_flags &= ~(PCI_ACS_SV | PCI_ACS_TB | PCI_ACS_RR |
+> +		       PCI_ACS_CR | PCI_ACS_UF | PCI_ACS_DT);
+> +
+> +	return acs_flags ? 0 : 1;
+> +}
+> +
+>  static const struct pci_dev_acs_enabled {
+>  	u16 vendor;
+>  	u16 device;
+> @@ -3675,6 +3690,8 @@ static const struct pci_dev_acs_enabled {
+>  	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
+> +	{ PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_solarflare_acs },
+> +	{ PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_solarflare_acs },
+>  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
+>  	{ 0 }
+>  };
+> 
