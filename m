@@ -1,144 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaIVJac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:30:32 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:38879 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245AbaIVJa3 convert rfc822-to-8bit (ORCPT
+	id S1753591AbaIVJbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:31:11 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33822 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaIVJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:30:29 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <alpine.LSU.2.11.1409212122180.1182@eggly.anvils>
-Date: Mon, 22 Sep 2014 10:30:25 +0100
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B2F9905E-8D29-45A0-8A15-B4EDA2B9B6AF@cam.ac.uk>
-References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk> <alpine.LSU.2.11.1409212122180.1182@eggly.anvils>
-To: Hugh Dickins <hughd@google.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 22 Sep 2014 05:31:08 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-66-541fec5915a1
+From: Andrzej Hajda <a.hajda@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        dri-devel@lists.freedesktop.org (open list:DRM DRIVERS FOR E...),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
+        linux-kernel@vger.kernel.org (open list), m.szyprowski@samsung.com
+Subject: [PATCH] drm/exynos: remove explicit encoder/connector de-initialization
+Date: Mon, 22 Sep 2014 11:30:48 +0200
+Message-id: <1411378248-17479-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDJMWRmVeSWpSXmKPExsVy+t/xy7qRb+RDDFrfGVvcWneO1aL33Ekm
+	iytf37NZTLo/gcXixb2LLBa9C66yWZxtesNucXnXHDaLGef3MVmsPXKX3WLG5JdsDtwe2789
+	YPW4332cyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgylqybzFxwR7ai4b13A+N5yS5GTg4J
+	AROJG0feskHYYhIX7q0Hsrk4hASWMkq0XXjGDOH0MUmsWz2PBaSKTUBT4u/mm2AdIgLKEqv2
+	tbOD2MwCx5gl7jaVg9jCAgES05uuMoHYLAKqEpf2rQfr5RVwlvi75xE7xDY5iZPHJrNOYORe
+	wMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMkhL7sYFx8zOoQowAHoxIP74Im+RAh1sSy
+	4srcQ4wSHMxKIrxPnwOFeFMSK6tSi/Lji0pzUosPMTJxcEo1MPKqh54WPxvHJqG74B1TIoe5
+	GP8npodW06TWX+ucydFWOvncOj4fKa8HybsfzSxTz7kQIJT2o8o55EyTqPOei95ft0++tFP+
+	7sQrImFnRQosP26/m5qd1D7v5fmC9Wzxu9x2lUY6bd2aeE2F+zcrw75VJYt3Hl18op0zvlFn
+	UdLPmxsV1+5ynKDEUpyRaKjFXFScCAAJN1yB/wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+All KMS objects are destroyed by drm_mode_config_cleanup in proper order
+so component drivers should not care about it.
 
-On 22 Sep 2014, at 05:43, Hugh Dickins <hughd@google.com> wrote:
-> On Mon, 22 Sep 2014, Anton Altaparmakov wrote:
->> Any code that uses __getblk() and thus bread(), breadahead(), sb_bread(), 
->> sb_breadahead(), sb_getblk(), and calls it using a 64-bit block on a 
->> 32-bit arch (where "long" is 32-bit) causes an inifinite loop in 
->> __getblk_slow() with an infinite stream of errors logged to dmesg like 
->> this:
->> 
->> __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
->> b_state=0x00000020, b_size=512
->> device sda1 blocksize: 512
->> 
->> Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the 
->> top 32-bits are missing (in this case the 0x1 at the top).
->> 
->> This is because grow_dev_page() was broken in commit 676ce6d5ca30: "block: 
->> replace __getblk_slow misfix by grow_dev_page fix" by Hugh Dickins so that 
->> it now has a 32-bit overflow due to shifting the block value to the right 
->> so it fits in 32-bits and storing the result in pgoff_t variable which is 
->> 32-bit and then passing the pgoff_t variable left-shifted as the block 
->> number which causes the top bits to get lost as the pgoff_t is not type 
->> cast to sector_t / 64-bit before the shift.
->> 
->> This patch fixes this issue by type casting "index" to sector_t before 
->> doing the left shift.
->> 
->> Note this is not a theoretical bug but has been seen in the field on a 
->> 4TiB hard drive with logical sector size 512 bytes.
->> 
->> This patch has been verified to fix the infinite loop problem on 3.17-rc5 
->> kernel using a 4TB disk image mounted using "-o loop".  Without this patch 
->> doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop 
->> 100% reproducibly whilst with the patch it works fine as expected.
->> 
->> Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
->> Cc: stable@vger.kernel.org # 3.6 3.8 3.10 3.12 3.14 3.16
-> 
-> Acked-by: Hugh Dickins <hughd@google.com>
-> 
-> Yes indeed, that's bad, and entirely my fault (though it took me a while
-> to see how the "block = index << sizebits" which was there before was okay,
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+---
+Hi Inki,
 
-Ouch.  I failed to see that (I admit I did not pay too much attention to the original code - I just used "git blame" to find out which commit put that code in place - my bad).  It was never ok!  I went back to 2.6.12-rc2 (original commit to git Linus' kernel repository) and that is also affected.  That implies this is the first time anyone has used a 4TiB disk with 512 byte sectors with NTFS where Windows had previously created a file/directory with an attribute list attribute in it.  -  That is the only metadata type we use sb_bread() for and the disk image from the customer does contain it and I verified that is where the inifinite loop comes from.
+This is another spin-off of exynos_drm tests regarding your
+component support update.
+The patch is based as usual on the latest exynos-drm-next branch.
 
-So it appears sb_bread() and friends have always been broken on 32-bit architectures when accessing blocks outside the range 2^32 - 1 and it appears google finds lots of occurrences of such infinite loops being reported but the fixes have always been to not make the calls in the first place.  No-one seems to have recognized that there is a genuine problem here before.
+Regards
+Andrzej
+---
+ drivers/gpu/drm/exynos/exynos_dp_core.c  | 5 -----
+ drivers/gpu/drm/exynos/exynos_drm_dpi.c  | 4 ----
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c  | 4 ----
+ drivers/gpu/drm/exynos/exynos_drm_vidi.c | 3 ---
+ drivers/gpu/drm/exynos/exynos_hdmi.c     | 6 ------
+ 5 files changed, 22 deletions(-)
 
-Still my patch stands correct and should be applied to all kernel versions that have your patch and older kernels should have an equivalent patch applied to fix them, too for people who run very old kernels.
-
-> but my passing "index << sizebits" as arg to function very much not okay).
-> Thank you, Anton.
-
-You are welcome.
-
-> But I see my commit was marked for stable 3.0 3.2 3.4 3.5: so your fix
-> is needed in 3.2 and 3.4 longterm also (the others now beyond life).
-
-You are quite right.  It needs to go back to all those kernels, too.  Thank you!
-
-Best regards,
-
-	Anton
-
-> Hugh
-> 
->> ---
->> 
->> Linus, can you please apply this?  Alternatively, Andrew, can you please 
->> pick this up and send it to Linus?
->> 
->> It would be good it it can be applied for 3.17 as well as to all stable 
->> kernels >= 3.6 as they are all broken!
->> 
->> Thanks a lot in advance!
->> 
->> Best regards,
->> 
->> 	Anton
->> -- 
->> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
->> Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
->> Linux NTFS maintainer, http://www.linux-ntfs.org/
->> 
->> diff --git a/fs/buffer.c b/fs/buffer.c
->> index 8f05111..3588a80 100644
->> --- a/fs/buffer.c
->> +++ b/fs/buffer.c
->> @@ -1022,7 +1022,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->> 		bh = page_buffers(page);
->> 		if (bh->b_size == size) {
->> 			end_block = init_page_buffers(page, bdev,
->> -						index << sizebits, size);
->> +						(sector_t)index << sizebits,
->> +						size);
->> 			goto done;
->> 		}
->> 		if (!try_to_free_buffers(page))
->> @@ -1043,7 +1044,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->> 	 */
->> 	spin_lock(&inode->i_mapping->private_lock);
->> 	link_dev_buffers(page, bh);
->> -	end_block = init_page_buffers(page, bdev, index << sizebits, size);
->> +	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
->> +			size);
->> 	spin_unlock(&inode->i_mapping->private_lock);
->> done:
->> 	ret = (block < end_block) ? 1 : -ENXIO;
-
+diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
+index cd50ece..6adb1e5 100644
+--- a/drivers/gpu/drm/exynos/exynos_dp_core.c
++++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
+@@ -1355,13 +1355,8 @@ static void exynos_dp_unbind(struct device *dev, struct device *master,
+ 				void *data)
+ {
+ 	struct exynos_drm_display *display = dev_get_drvdata(dev);
+-	struct exynos_dp_device *dp = display->ctx;
+-	struct drm_encoder *encoder = dp->encoder;
+ 
+ 	exynos_dp_dpms(display, DRM_MODE_DPMS_OFF);
+-
+-	exynos_dp_connector_destroy(&dp->connector);
+-	encoder->funcs->destroy(encoder);
+ }
+ 
+ static const struct component_ops exynos_dp_ops = {
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dpi.c b/drivers/gpu/drm/exynos/exynos_drm_dpi.c
+index 96c87db..3dc678e 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dpi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dpi.c
+@@ -338,14 +338,10 @@ err_del_component:
+ 
+ int exynos_dpi_remove(struct device *dev)
+ {
+-	struct drm_encoder *encoder = exynos_dpi_display.encoder;
+ 	struct exynos_dpi *ctx = exynos_dpi_display.ctx;
+ 
+ 	exynos_dpi_dpms(&exynos_dpi_display, DRM_MODE_DPMS_OFF);
+ 
+-	exynos_dpi_connector_destroy(&ctx->connector);
+-	encoder->funcs->destroy(encoder);
+-
+ 	if (ctx->panel)
+ 		drm_panel_detach(ctx->panel);
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+index 24741d8..acf7e9e 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+@@ -1660,13 +1660,9 @@ static void exynos_dsi_unbind(struct device *dev, struct device *master,
+ 				void *data)
+ {
+ 	struct exynos_dsi *dsi = exynos_dsi_display.ctx;
+-	struct drm_encoder *encoder = dsi->encoder;
+ 
+ 	exynos_dsi_dpms(&exynos_dsi_display, DRM_MODE_DPMS_OFF);
+ 
+-	exynos_dsi_connector_destroy(&dsi->connector);
+-	encoder->funcs->destroy(encoder);
+-
+ 	mipi_dsi_host_unregister(&dsi->dsi_host);
+ }
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_vidi.c b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+index d565207..9395e85 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_vidi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
+@@ -639,9 +639,6 @@ static int vidi_remove(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	encoder->funcs->destroy(encoder);
+-	drm_connector_cleanup(&ctx->connector);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 7910fb3..563a19e 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -2312,12 +2312,6 @@ static int hdmi_bind(struct device *dev, struct device *master, void *data)
+ 
+ static void hdmi_unbind(struct device *dev, struct device *master, void *data)
+ {
+-	struct exynos_drm_display *display = get_hdmi_display(dev);
+-	struct drm_encoder *encoder = display->encoder;
+-	struct hdmi_context *hdata = display->ctx;
+-
+-	hdmi_connector_destroy(&hdata->connector);
+-	encoder->funcs->destroy(encoder);
+ }
+ 
+ static const struct component_ops hdmi_component_ops = {
 -- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-University of Cambridge Information Services, Roger Needham Building
-7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+1.9.1
 
