@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbaIVSxX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:53:23 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:33090 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128AbaIVSxW (ORCPT
+	id S1754237AbaIVSyY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:54:24 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:34530 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaIVSyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:53:22 -0400
-Date: Mon, 22 Sep 2014 12:53:15 -0600
+	Mon, 22 Sep 2014 14:54:22 -0400
+Date: Mon, 22 Sep 2014 12:54:18 -0600
 From: Bjorn Helgaas <bhelgaas@google.com>
 To: Rajat Jain <rajatxjain@gmail.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rajatjain@juniper.net, groeck@juniper.net
-Subject: Re: [PATCH] pci/probe: Ignore the device id while handling CRS
-Message-ID: <20140922185315.GA1880@google.com>
-References: <540E1D75.5000500@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Yang <weiyang@linux.vnet.ibm.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v2] pci/probe: Enable CRS for root port if it is supported
+Message-ID: <20140922185418.GB1880@google.com>
+References: <53FFA54D.9000907@gmail.com>
+ <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
+ <54065208.3080309@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540E1D75.5000500@gmail.com>
+In-Reply-To: <54065208.3080309@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 02:19:49PM -0700, Rajat Jain wrote:
-> Some root ports may return the actual device id returned by the
-> endpoint, instead of faking up a synthetic id (0xFFFF) as specified
-> by the PCIe spec (sec 2.3.2). We have seen such broken devices in the
-> past that match this behaviour:
-> (Ref: https://lkml.org/lkml/2007/11/1/198)
+On Tue, Sep 02, 2014 at 04:26:00PM -0700, Rajat Jain wrote:
 > 
-> To take care of the same, CRS was disabled then, however, we want to
-> enable CRS now (https://lkml.org/lkml/2014/9/2/509), but still do not
-> want to break such devices. Thus check only against the
-> (vendor id == 1) and ignore the device id.
+> As per the PCIe spec, an endpoint may return the configuration cycles
+> with CRS if it is not yet fully ready to be accessed. If the CRS visibility
+> is not enabled at the root port, the spec leaves the retry behaviour open
+> to implementation in such a case. The Intel root ports have chosen to retry
+> endlessly in this situation. Thus, the root controller may "hang" (repeatedly
+> retrying the configuration requests until it gets a status other than CRS) if
+> a device returns CRS for a long time. This can cause a broken endpoint to bring
+> down the whole PCI hierarchy.
+> 
+> This was recently known to cause problems on Intel systems and
+> was discussed here:
+> http://marc.info/?t=140926298500002&r=1&w=2
+> 
+> Ref1:
+> https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
+> 
+> Ref2:
+> PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
+> 
+> Thus enable the CRS visibility for the root ports that support it. This
+> patch reverts the following commit, but enables CRS visibility only
+> when the root port supports it:
+> 
+> ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by default")
+> 
+> (Linus' response: http://marc.info/?l=linux-pci&m=140968622520192&w=2)
 > 
 > Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
 > Signed-off-by: Rajat Jain <rajatjain@juniper.net>
@@ -43,29 +67,56 @@ On Mon, Sep 08, 2014 at 02:19:49PM -0700, Rajat Jain wrote:
 Applied to pci/enumeration for v3.18, thanks!
 
 > ---
->  drivers/pci/probe.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+> v2: Remove the white list, that was enabling the CRS for certain known Intel systems.
+>     Rather now enable it for all systems that support this capability.
+> v1: Enable CRS for only some given Intel systems (maintain a whitelist)
+> 
+>  drivers/pci/probe.c           |   13 +++++++++++++
+>  include/uapi/linux/pci_regs.h |    1 +
+>  2 files changed, 14 insertions(+)
 > 
 > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 3c4c35c..0076a9b 100644
+> index e3cf8a2..3c4c35c 100644
 > --- a/drivers/pci/probe.c
 > +++ b/drivers/pci/probe.c
-> @@ -1305,8 +1305,13 @@ bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *l,
->  	    *l == 0x0000ffff || *l == 0xffff0000)
->  		return false;
+> @@ -740,6 +740,17 @@ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
+>  }
+>  EXPORT_SYMBOL(pci_add_new_bus);
 >  
-> -	/* Configuration request Retry Status */
-> -	while (*l == 0xffff0001) {
-> +	/*
-> +	 * Configuration request Retry Status. Note that some root ports
-> +	 * are broken and may return actual device ID instead of a synthetic ID
-> +	 * (0xFFFF) to be faked as per the PCIe spec. Hence ignore the device ID
-> +	 * and only check for (vendor id == 1)
-> +	 */
-> +	while (*l & 0xffff == 0x0001) {
->  		if (!crs_timeout)
->  			return false;
+> +static void pci_enable_crs(struct pci_dev *pdev)
+> +{
+> +	u16 root_cap = 0;
+> +
+> +	/* Enable CRS Software visibility if supported */
+> +	pcie_capability_read_word(pdev, PCI_EXP_RTCAP, &root_cap);
+> +	if (root_cap & PCI_EXP_RTCAP_CRSVIS)
+> +		pcie_capability_set_word(pdev, PCI_EXP_RTCTL,
+> +					 PCI_EXP_RTCTL_CRSSVE);
+> +}
+> +
+>  /*
+>   * If it's a bridge, configure it and scan the bus behind it.
+>   * For CardBus bridges, we don't scan behind as the devices will
+> @@ -787,6 +798,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+>  	pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
+>  			      bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
 >  
+> +	pci_enable_crs(dev);
+> +
+>  	if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
+>  	    !is_cardbus && !broken) {
+>  		unsigned int cmax;
+> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
+> index 30db069..a75106d 100644
+> --- a/include/uapi/linux/pci_regs.h
+> +++ b/include/uapi/linux/pci_regs.h
+> @@ -552,6 +552,7 @@
+>  #define  PCI_EXP_RTCTL_PMEIE	0x0008	/* PME Interrupt Enable */
+>  #define  PCI_EXP_RTCTL_CRSSVE	0x0010	/* CRS Software Visibility Enable */
+>  #define PCI_EXP_RTCAP		30	/* Root Capabilities */
+> +#define  PCI_EXP_RTCAP_CRSVIS	0x0001	/* CRS software visibility capability */
+>  #define PCI_EXP_RTSTA		32	/* Root Status */
+>  #define PCI_EXP_RTSTA_PME	0x00010000 /* PME status */
+>  #define PCI_EXP_RTSTA_PENDING	0x00020000 /* PME pending */
 > -- 
 > 1.7.9.5
-> 
