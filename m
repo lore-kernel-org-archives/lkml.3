@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847AbaIVJ4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:56:49 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:22164 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaIVJ4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:56:47 -0400
-X-IronPort-AV: E=Sophos;i="5.04,571,1406617200"; 
-   d="scan'208";a="46247094"
-Message-ID: <541FF25B.9000404@broadcom.com>
-Date: Mon, 22 Sep 2014 11:56:43 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1753650AbaIVJ7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:59:17 -0400
+Received: from sauhun.de ([89.238.76.85]:48640 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750914AbaIVJ7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 05:59:16 -0400
+Date: Mon, 22 Sep 2014 11:59:39 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Anders Berg <anders.berg@avagotech.com>
+Cc: devicetree <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: axxia: Add I2C driver for AXM55xx
+Message-ID: <20140922095939.GB1406@katana>
+References: <1408967482-17723-1-git-send-email-anders.berg@avagotech.com>
+ <20140920121242.GA3833@katana>
+ <CAE0=X_0VQ8rWrUgbsgKm1MwCP8bwWm3UJPq9p=xNDfjP4CC7Bg@mail.gmail.com>
 MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: Brett Rudley <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Daniel Kim <dekim@broadcom.com>, <linux-wireless@vger.kernel.org>,
-        <brcm80211-dev-list@broadcom.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: Fix off by one bug in brcmf_count_20mhz_channels()
-References: <1411253932-27973-1-git-send-email-emilgoode@gmail.com>
-In-Reply-To: <1411253932-27973-1-git-send-email-emilgoode@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XF85m9dhOBO43t/C"
+Content-Disposition: inline
+In-Reply-To: <CAE0=X_0VQ8rWrUgbsgKm1MwCP8bwWm3UJPq9p=xNDfjP4CC7Bg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/14 00:58, Emil Goode wrote:
-> In the brcmf_count_20mhz_channels function we are looping through a list
-> of channels received from firmware. Since the index of the first channel
-> is 0 the condition leads to an off by one bug. This is causing us to hit
-> the WARN_ON_ONCE(1) calls in the brcmu_d11n_decchspec function, which is
-> how I discovered the bug.
 
-The fix is fine. Would like to know what exactly is going wrong. Can you 
-provide a kernel log with brcmfmac debugging enabled, ie. insmod 
-brcmfmac.ko debug=0x1416
+--XF85m9dhOBO43t/C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Arend
 
-> Introduced by:
-> commit b48d891676f756d48b4d0ee131e4a7a5d43ca417
-> ("brcmfmac: rework wiphy structure setup")
->
-> Signed-off-by: Emil Goode<emilgoode@gmail.com>
-> ---
->   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-> index 02fe706..93b5dd9 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-> @@ -4918,7 +4918,7 @@ static void brcmf_count_20mhz_channels(struct brcmf_cfg80211_info *cfg,
->   	struct brcmu_chan ch;
->   	int i;
->
-> -	for (i = 0; i<= total; i++) {
-> +	for (i = 0; i<  total; i++) {
->   		ch.chspec = (u16)le32_to_cpu(chlist->element[i]);
->   		cfg->d11inf.decchspec(&ch);
->
+> >> +             if (idev->msg_xfrd =3D=3D 0 && i2c_m_recv_len(msg)) {
+> >> +                     /*
+> >> +                      * Check length byte for SMBus block read
+> >> +                      */
+> >> +                     if (c <=3D 0) {
+> >> +                             idev->msg_err =3D -EPROTO;
+> >> +                             i2c_int_disable(idev, ~0);
+> >> +                             complete(&idev->msg_complete);
+> >> +                             break;
+> >> +                     } else if (c > I2C_SMBUS_BLOCK_MAX) {
+> >> +                             c =3D I2C_SMBUS_BLOCK_MAX;
+> >
+> > What about returning -EPROTO here as well? I don't think that reading
+> > just a slice of all the data is helpful.
+> >
+>=20
+> Right, that is probably true. This came from the device I was using to
+> test the block-read operation. This device violated the
+> I2C_SMBUS_BLOCK_MAX limit, so I added this truncation to at least get
+> something out...
 
+Which device was it? I know there are some doing that, yet I like to
+know which ones.
+
+> >> +{
+> >> +     struct axxia_i2c_dev *idev =3D _dev;
+> >> +     u32 status;
+> >> +
+> >> +     if (!idev->msg)
+> >> +             return IRQ_NONE;
+> >
+> > This is actually not true. There might be interrupt bits set, so there
+> > is an IRQ. There shouldn't be one, right, but that's another case IMO.
+> >
+>=20
+> You could see it as: there is no interrupt that this handler is
+> interested in serving. I'd like to keep this test as there is some
+> legacy software that could be run on platforms with this driver that
+> access the I2C controller directly. If this happens, this test assures
+> that the user get an informative "unhandled irq" error message
+> (instead of a null pointer dereference).
+
+IRQ_NONE is "this interrupt wasn't by me" so for shared IRQs, the next
+handler can check. You shouldn't remove the check per se. Still,  since
+this interrupt was definately from the I2C core, you should return
+IRQ_HANDLED and print an error message to the logs.
+
+> >> +static int
+> >> +axxia_i2c_xfer_msg(struct axxia_i2c_dev *idev, struct i2c_msg *msg)
+> >> +{
+> >> +     u32 int_mask =3D MST_STATUS_ERR | MST_STATUS_SNS;
+> >> +     u32 rx_xfer, tx_xfer;
+> >> +     u32 addr_1, addr_2;
+> >> +     int ret;
+> >> +
+> >> +     if (msg->len =3D=3D 0 || msg->len > 255)
+> >> +             return -EINVAL;
+> >
+> > Ouch, really? Maybe we should warn the user here.
+>=20
+> Yeah, the transfer length register limits the length to 255. I'll add
+> a warning here.
+
+Please also add this information to the Kconfig description and
+somewhere at the top of the source file. This is an important flaw which
+people should easily find out about.
+
+
+--XF85m9dhOBO43t/C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUH/MKAAoJEBQN5MwUoCm2ymYP/1JbkMkXmmKIVrRuwQht2Q5T
+6JoCLwzMGNOoip8e8PsgjQUeiHrI45QPL2o81SZIxikQkfQKDTtrkIc2gm1wywub
+cKziXpQaPhQgXyoDIxml1v3m12Tyr5pczi55pge9U/WOtt5dAyU8RdAQj068m+Pq
+DGNlv2lF2ZGB3Xx46hXC9QyUF/V033eXvt3pJTphDKCsalWf7c/Ew60xioU36bxp
+dHLj43u9V+ITRE3ZkWWul5D9sWfn9kSt6/uWvM8FZQUQmC5YbDxcV7hHNosFBC9R
+I2B0ejXakpjtZ8d68cj8yvcqniul/ee6kQlWBE/EaD9SHSU/a/r6AlUNAEfD9KY2
+sPnbJU1qZSRXtDg0611jY++sVZ2fMUUIh2Malqp1vyCiVb4seW02rrDzUquMyRJr
+i4LuvbMCdTd1fXCvuKGFVdiEyHJs5wdyKIo4bQffYD/rbzmPs4m55GnFQ8lMFOBE
+cjHtgou8FEbzmS/IhLQ37+4uLdPnM4h2ScqLSLDmakz2IW6tq0gJdUJrU7X4nRaA
+nEmTDOwxsniy15Op9oReYya1QsPxl8ynC82qu5fe2YC/noCVJ08oAXUPPAQXec6E
+t6KTQVXz7X4mHDol7Al/gUSHNZc+6zN9vTZw9IHXN4gKtp6r65B9MxHYkU7nVaZF
+kACawNtgt9TUEkLnUehO
+=tNHL
+-----END PGP SIGNATURE-----
+
+--XF85m9dhOBO43t/C--
