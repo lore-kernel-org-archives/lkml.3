@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaIVI3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:29:45 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:41929 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaIVI3n (ORCPT
+	id S1753485AbaIVIcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:32:13 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:38091 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaIVIcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:29:43 -0400
-Message-ID: <541FDDF3.6020609@gmail.com>
-Date: Mon, 22 Sep 2014 10:29:39 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 22 Sep 2014 04:32:11 -0400
+Date: Mon, 22 Sep 2014 12:32:04 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 3/3] mm: memcontrol: continue cache reclaim from offlined
+ groups
+Message-ID: <20140922083204.GC18526@esperanza>
+References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
+ <1411243235-24680-4-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH v2 1/3] clk: samsung: exynos3250: Register DMC clk provider
-References: <1409664077-27121-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1409664077-27121-1-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1411243235-24680-4-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.09.2014 15:21, Krzysztof Kozlowski wrote:
-> Add clock provider for clocks in DMC domain including EPLL and BPLL. The
-> DMC clocks are necessary for Exynos3 devfreq driver.
+On Sat, Sep 20, 2014 at 04:00:35PM -0400, Johannes Weiner wrote:
+> On cgroup deletion, outstanding page cache charges are moved to the
+> parent group so that they're not lost and can be reclaimed during
+> pressure on/inside said parent.  But this reparenting is fairly tricky
+> and its synchroneous nature has led to several lock-ups in the past.
 > 
-> The DMC clock domain uses different address space (0x105C0000) than
-> standard clock domain (0x10030000 - 0x10050000). The difference is huge
-> enough to add new DT node for the clock provider, rather than extending
-> existing address space.
+> Since css iterators now also include offlined css, memcg iterators can
+> be changed to include offlined children during reclaim of a group, and
+> leftover cache can just stay put.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> There is a slight change of behavior in that charges of deleted groups
+> no longer show up as local charges in the parent.  But they are still
+> included in the parent's hierarchical statistics.
 > 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > ---
+>  mm/memcontrol.c | 260 ++------------------------------------------------------
+>  1 file changed, 5 insertions(+), 255 deletions(-)
 > 
-> Changes since v1:
-> =================
-> 1. Fix overwritteing main clock provider reg_base with DMC clock domain
->    reg_basr. This leads to OOPS in suspend.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 019a44ac25d6..48531433a2fc 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -736,8 +736,6 @@ static void disarm_static_keys(struct mem_cgroup *memcg)
+>  	disarm_kmem_keys(memcg);
+>  }
+>  
+> -static void drain_all_stock_async(struct mem_cgroup *memcg);
+> -
+>  static struct mem_cgroup_per_zone *
+>  mem_cgroup_zone_zoneinfo(struct mem_cgroup *memcg, struct zone *zone)
+>  {
+> @@ -1208,7 +1206,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>  				goto out_unlock;
+>  			continue;
+>  		}
+> -		if (css == &root->css || css_tryget_online(css)) {
+> +		if (css == &root->css || css_tryget(css)) {
+>  			memcg = mem_cgroup_from_css(css);
+>  			break;
+>  		}
+> @@ -2349,10 +2347,12 @@ static void refill_stock(struct mem_cgroup *memcg, unsigned int nr_pages)
+>   * of the hierarchy under it. sync flag says whether we should block
 
-Applied the whole series for next.
+Please update the comment.
 
-Best regards,
-Tomasz
+>   * until the work is done.
+>   */
+> -static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+> +static void drain_all_stock(struct mem_cgroup *root_memcg)
+>  {
+>  	int cpu, curcpu;
+>  
+> +	if (!mutex_trylock(&percpu_charge_mutex))
+> +		return;
+
+It's not obvious why we need it here. The old code has an explanatory
+comment. Could you please add one?
+
+Thanks,
+Vladimir
