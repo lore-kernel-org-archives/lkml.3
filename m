@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaIVRvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:51:36 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:39570 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbaIVRvf (ORCPT
+	id S1754403AbaIVRxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:53:13 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38403 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486AbaIVRxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:51:35 -0400
-From: Ashley Lai <ashley@ashleylai.com>
-X-Google-Original-From: Ashley Lai <alai@ant>
-Date: Mon, 22 Sep 2014 12:45:38 -0500 (CDT)
-To: Anton Blanchard <anton@samba.org>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tpm/tpm_ibmvtpm: Fail in ibmvtpm_get_data if
- driver_data is bad
-In-Reply-To: <20140920072942.27c28768@kryten>
-Message-ID: <alpine.DEB.2.10.1409221243390.4510@ant>
-References: <20140920072942.27c28768@kryten>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 22 Sep 2014 13:53:12 -0400
+X-Originating-IP: 75.92.167.159
+Date: Mon, 22 Sep 2014 10:53:04 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Please add the tiny tree to linux-next
+Message-ID: <20140922175301.GA27348@thin>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stephen,
 
+Can you please add the tiny tree, branch tiny/next of
+https://git.kernel.org/pub/scm/linux/kernel/git/josh/linux.git , to
+linux-next?
 
-On Sat, 20 Sep 2014, Anton Blanchard wrote:
+I'll be using this tree to upstream various patches for Linux kernel
+tinification.  I plan to use topic branches under tiny/* for separate
+topics, typically based on the previous -rc1, merging them into
+tiny/next; when the merge window opens, I'll submit a pull request for
+tiny/next and start merging new tiny/* topic branches into a
+tiny/next-next branch or similar that will become the new tiny/next
+after tiny/next gets merged.
 
-> I'm looking at an oops in tpm_ibmvtpm_get_desired_dma:
->
->  28:	00 00 20 39 	li      r9,0
->  2c:	10 00 01 e8 	ld      r0,16(r1)
->  30:	28 00 69 80 	lwz     r3,40(r9)
->
-> We set r9 to 0 then load r9+40. The problem is actually in
-> ibmvtpm_get_data, it can return NULL but the rest of the driver
-> never expects it.
->
-> Add a BUG_ON in ibmvtpm_get_data. We still need to identify the root
-> cause but at least this makes it obvious what went wrong.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> ---
->
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-> index af74c57..0d1eeba 100644
-> --- a/drivers/char/tpm/tpm_ibmvtpm.c
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> @@ -63,9 +63,9 @@ static int ibmvtpm_send_crq(struct vio_dev *vdev, u64 w1, u64 w2)
-> static struct ibmvtpm_dev *ibmvtpm_get_data(const struct device *dev)
-> {
-> 	struct tpm_chip *chip = dev_get_drvdata(dev);
-> -	if (chip)
-> -		return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> -	return NULL;
-> +
-> +	BUG_ON(!chip);
-> +	return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> }
->
-> /**
->
-
-Acked-by: Ashley Lai <ashley@ashleylai.com>
-
+- Josh Triplett
