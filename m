@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaIVOrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:47:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20970 "EHLO mga02.intel.com"
+	id S1754237AbaIVOrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:47:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40202 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647AbaIVOrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:47:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,571,1406617200"; 
-   d="scan'208";a="479187570"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH] mfd: viperboard: allocate I/O buffer separately
-Date: Mon, 22 Sep 2014 17:46:52 +0300
-Message-Id: <1411397212-31625-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753982AbaIVOrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 10:47:43 -0400
+Date: Mon, 22 Sep 2014 10:47:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        ltp-list <ltp-list@lists.sourceforge.net>,
+        crash-utility <crash-utility@redhat.com>,
+        kexec <kexec@lists.infradead.org>,
+        kexec kdump redhat mailing list 
+	<kexec-kdump-list@redhat.com>
+Subject: Re: [RFC] autokdump - automated kdump testsuite
+Message-ID: <20140922144713.GA4250@redhat.com>
+References: <145412866.25258463.1411119061796.JavaMail.zimbra@redhat.com>
+ <293476264.25264480.1411120345360.JavaMail.zimbra@redhat.com>
+ <20140919132236.GB2190@redhat.com>
+ <594480021.25988504.1411355660836.JavaMail.zimbra@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <594480021.25988504.1411355660836.JavaMail.zimbra@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the I/O buffer is allocated part of the device status
-structure, potentially sharing the same cache line with other members
-in this structure.
+On Mon, Sep 22, 2014 at 09:00:00AM -0400, CAI Qian wrote:
+> 
+> 
+> ----- Original Message -----
+> > From: "Vivek Goyal" <vgoyal@redhat.com>
+> > To: "CAI Qian" <caiqian@redhat.com>
+> > Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "ltp-list" <ltp-list@lists.sourceforge.net>, "crash-utility"
+> > <crash-utility@redhat.com>, "kexec" <kexec@lists.infradead.org>, "kexec kdump redhat mailing list"
+> > <kexec-kdump-list@redhat.com>
+> > Sent: Friday, September 19, 2014 9:22:36 PM
+> > Subject: Re: [RFC] autokdump - automated kdump testsuite
+> > 
+> > On Fri, Sep 19, 2014 at 05:52:25AM -0400, CAI Qian wrote:
+> > > I plan to release an automated kdump testsuite that will be
+> > 
+> > So will this be a standalone test suit? Can it be merged with
+> > something already existing say, LTP.
+> Yes, it is likely to be standalone. It won't make use of the LTP
+> API, and the LTP kdump test suite is outdated, so there is no
+> benefit to continue working over there.
 
-Allocate the buffer separately, to avoid the I/O operations corrupting
-the device status structure due to cache line sharing.
+So why make it standalone and not replace the old LTP kdump test suite
+with this new one?
 
-Compiled tested only, as I don't have access to hardware.
+> > 
+> > > focus on testing kernel and the crash utility. It should work
+> > > for all major distros since it will use none of distro-specific
+> > > stuff, and also support different arches including x86, ARM,
+> > > PPC64 and s390x.
+> > > 
+> > > It does the following:
+> > > 1) check if there is a memory reserved for kdump. If not,
+> > >    reserve the memory and reboot the system.
+> > > 2) once the system is back, load kexec on panic and
+> > >    prepare a separate initramfs that including needed
+> > >    modules to load a local filesystem and necessary utilities
+> > 
+> > So you will write logic to prepare custom initramfs or will rely
+> > on dracut or some other utility for that.
+> I'll probably prepare custom initramfs for the sake of simplicity.
 
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- drivers/mfd/viperboard.c       | 16 ++++++++++------
- include/linux/mfd/viperboard.h |  2 +-
- 2 files changed, 11 insertions(+), 7 deletions(-)
+Well, preparing custom initramfs will become very tricky. We used
+to do that and finally we switched to dracut.
 
-diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
-index e00f534..d27c131 100644
---- a/drivers/mfd/viperboard.c
-+++ b/drivers/mfd/viperboard.c
-@@ -59,9 +59,13 @@ static int vprbrd_probe(struct usb_interface *interface,
- 
- 	/* allocate memory for our device state and initialize it */
- 	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
--	if (vb == NULL) {
--		dev_err(&interface->dev, "Out of memory\n");
-+	if (vb == NULL)
- 		return -ENOMEM;
-+
-+	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
-+	if (vb->buf == NULL) {
-+		ret = -ENOMEM;
-+		goto error;
- 	}
- 
- 	mutex_init(&vb->lock);
-@@ -103,10 +107,9 @@ static int vprbrd_probe(struct usb_interface *interface,
- 	return 0;
- 
- error:
--	if (vb) {
--		usb_put_dev(vb->usb_dev);
--		kfree(vb);
--	}
-+	usb_put_dev(vb->usb_dev);
-+	kfree(vb->buf);
-+	kfree(vb);
- 
- 	return ret;
- }
-@@ -118,6 +121,7 @@ static void vprbrd_disconnect(struct usb_interface *interface)
- 	mfd_remove_devices(&interface->dev);
- 	usb_set_intfdata(interface, NULL);
- 	usb_put_dev(vb->usb_dev);
-+	kfree(vb->buf);
- 	kfree(vb);
- 
- 	dev_dbg(&interface->dev, "disconnected\n");
-diff --git a/include/linux/mfd/viperboard.h b/include/linux/mfd/viperboard.h
-index 1934528..af928d0 100644
---- a/include/linux/mfd/viperboard.h
-+++ b/include/linux/mfd/viperboard.h
-@@ -103,7 +103,7 @@ struct vprbrd_i2c_addr_msg {
- struct vprbrd {
- 	struct usb_device *usb_dev; /* the usb device for this device */
- 	struct mutex lock;
--	u8 buf[sizeof(struct vprbrd_i2c_write_msg)];
-+	u8 *buf;
- 	struct platform_device pdev;
- };
- 
--- 
-1.9.1
+Why not simply let the respective service on the host do this job and
+test only makes sure that kdump service is running. It feels little
+out of place that a test is generating custom initramfs. 
 
+> > 
+> > >    in order to analyse /proc/vmcore in the 2nd kernel.
+> > > 3) trigger the system crash using methods like sysrq-c, NMI,
+> > >    and panic_on_hung_task etc.
+> > > 4) in the 2nd kernel, mount a filesystem and use the crash
+> > >    utility to analyse /proc/vmcore. Then, gather the analyse
+> > >    logs, serial console output, dmesg etc into the filesystem.
+> > 
+> > Why not save core and boot back in first kernel and then analyze.
+> > 
+> > Trying to work directly with /proc/vmcore does not test makedumfile
+> > which everybody uses. Also it will require more memory to be reserved
+> > and packing crash and debug vmlinux into initramfs.
+> The additional memory for vmlinux and the crash utility is predictable
+> and manageable, so it can just ask 256M memory reserved before running
+> the program. On the other hand, it is not usually feasible to ask
+> the systems under testing has enough available disk spaces bigger than
+> the memory size.
+
+makedumpfile will reduce the vmcore file size to few hundreds of mega
+bytes on most of the systems. Especially, this is just a test, so 
+system will be lightly loaded and vmcore will be small after filtering.
+
+If there is not enough space, test fails, period. I don't think there
+is any need to try to circumvent that and try to run crash in initramfs.
+And in the process we don't test makedumpfile which is very imporatnt
+component of this whole process.
+
+IMHO, just rely on "systemctl start kdump" to generate and load custom
+initramfs and save filtered vmcore to root fs by default and alanyze
+vmcore post reboot. That will keep things simple.
+
+Thanks
+Vivek
