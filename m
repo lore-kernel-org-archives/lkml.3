@@ -1,144 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaIVEiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 00:38:54 -0400
-Received: from mail-am1on0142.outbound.protection.outlook.com ([157.56.112.142]:29247
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750758AbaIVEix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 00:38:53 -0400
-Message-ID: <541FA7C9.30509@toradex.com>
-Date: Mon, 22 Sep 2014 10:08:33 +0530
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1751615AbaIVEoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 00:44:32 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:23659 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaIVEob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 00:44:31 -0400
+Message-ID: <541FA8F4.90703@huawei.com>
+Date: Mon, 22 Sep 2014 12:43:32 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: <shawn.guo@freescale.com>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] ARM: dts: vf610-colibri: Add PWM support
-References: <cover.1411130205.git.bhuvanchandra.dv@toradex.com> <d28bb6c5aeee7b5b4b7b20484fbaf0ba4eeb4ad4.1411130205.git.bhuvanchandra.dv@toradex.com> <e63381e2dd14625e5395f892928b38f2@agner.ch>
-In-Reply-To: <e63381e2dd14625e5395f892928b38f2@agner.ch>
-Content-Type: text/plain; charset="windows-1252"
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        <keescook@chromium.org>
+Subject: [PATCH v2 1/3] sched: fix confusing PFA_NO_NEW_PRIVS constant
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [115.115.225.206]
-X-ClientProxiedBy: DM2PR00CA0002.namprd00.prod.outlook.com (25.160.243.12) To
- AM3PR05MB257.eurprd05.prod.outlook.com (10.242.249.14)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:AM3PR05MB257;
-X-Forefront-PRVS: 034215E98F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(377454003)(189002)(199003)(24454002)(377424004)(51704005)(90102001)(23746002)(92726001)(92566001)(77096002)(50986999)(85852003)(575784001)(21056001)(20776003)(95666004)(33656002)(47776003)(65956001)(76176999)(36756003)(99396002)(66066001)(4396001)(64706001)(86362001)(54356999)(50466002)(101416001)(87976001)(74662003)(106356001)(107046002)(77982003)(81342003)(74502003)(81542003)(46102003)(19580405001)(83322001)(76482002)(79102003)(80022003)(19580395003)(42186005)(110136001)(83072002)(105586002)(85306004)(83506001)(97736003)(31966008)(120916001)(7059019)(414714003)(473944003);DIR:OUT;SFP:1102;SCL:1;SRVR:AM3PR05MB257;H:[10.18.0.136];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: toradex.com
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.541FA8F7.0006,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 315b0b8b5ef5db29177dd00180e515f6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
+defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
+because it is used as bit number. Redefine it as decimal bit number.
 
-On Friday 19 September 2014 09:30 PM, Stefan Agner wrote:
+Note this changes the bit position of PFA_NOW_NEW_PRIVS from 1 to 0.
 
-> Am 2014-09-19 15:38, schrieb Bhuvanchandra DV:
->> The Colibri standard defines four pins as PWM outputs, two of them (PWM
->> A and C) are routed to FTM instance 0 and the other two (PWM B and D)
->> are routed to FTM instance 1. Hence enable both FTM instances for the
->> Colibri module and mux the four pins accordingly.
->>
->> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
->> ---
->>  arch/arm/boot/dts/vf610-colibri-eval-v3.dts |    8 +++++++
->>  arch/arm/boot/dts/vf610-colibri.dtsi        |   31 +++++++++++++++++++++++----
->>  2 files changed, 35 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> index 7fb3066..00f63d9 100644
->> --- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> +++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
->> @@ -33,6 +33,14 @@
->>  	status = "okay";
->>  };
->>  
->> +&pwm0 {
->> +	status = "okay";
->> +};
->> +
->> +&pwm1 {
->> +	status = "okay";
->> +};
->> +
->>  &uart0 {
->>  	status = "okay";
->>  };
->> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi
->> b/arch/arm/boot/dts/vf610-colibri.dtsi
->> index 0cd8343..560cd69 100644
->> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
->> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
->> @@ -13,10 +13,6 @@
->>  	model = "Toradex Colibri VF61 COM";
->>  	compatible = "toradex,vf610-colibri_vf61", "fsl,vf610";
->>  
->> -	memory {
->> -		reg = <0x80000000 0x10000000>;
->> -	};
->> -
->>  	clocks {
->>  		enet_ext {
->>  			compatible = "fixed-clock";
->> @@ -25,6 +21,9 @@
->>  		};
->>  	};
->>  
->> +	memory {
->> +		reg = <0x80000000 0x10000000>;
->> +	};
-> Memory is a bit an exception here: In almost all device tree this is the
-> first node after model/compatible. Also, it's generally not allowed to
-> make changes outside of the topic (PWM in this case)... Hence I would
-> drop this change.
->
-> The rest
-> Acked-By: Stefan Agner <stefan@agner.ch>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Kees Cook <keescook@chromium.org>
+[ lizf: slightly modified subject and changelog ]
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
 
-OK. Will drop the change.
+The other two patches don't need to be updated, so no need to resend them.
 
->>  };
->>  
->>  &esdhc1 {
->> @@ -44,6 +43,16 @@
->>  	arm,tag-latency = <3 2 3>;
->>  };
->>  
->> +&pwm0 {
->> +	pinctrl-names = "default";
->> +	pinctrl-0 = <&pinctrl_pwm0>;
->> +};
->> +
->> +&pwm1 {
->> +	pinctrl-names = "default";
->> +	pinctrl-0 = <&pinctrl_pwm1>;
->> +};
->> +
->>  &uart0 {
->>  	pinctrl-names = "default";
->>  	pinctrl-0 = <&pinctrl_uart0>;
->> @@ -97,6 +106,20 @@
->>  			>;
->>  		};
->>  
->> +		pinctrl_pwm0: pwm0grp {
->> +			fsl,pins = <
->> +				VF610_PAD_PTB0__FTM0_CH0		0x1182
->> +				VF610_PAD_PTB1__FTM0_CH1		0x1182
->> +			>;
->> +		};
->> +
->> +		pinctrl_pwm1: pwm1grp {
->> +			fsl,pins = <
->> +				VF610_PAD_PTB8__FTM1_CH0		0x1182
->> +				VF610_PAD_PTB9__FTM1_CH1		0x1182
->> +			>;
->> +		};
->> +
->>  		pinctrl_uart0: uart0grp {
->>  			fsl,pins = <
->>  				VF610_PAD_PTB10__UART0_TX		0x21a2
+---
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..4557765 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
+ }
+ 
+ /* Per-process atomic flags. */
+-#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
++#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+ 
+ static inline bool task_no_new_privs(struct task_struct *p)
+ {
+-- 
+1.8.0.2
 
