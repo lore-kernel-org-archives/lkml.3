@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaIVTBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:01:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40066 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaIVTBe (ORCPT
+	id S1754323AbaIVTFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:05:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55662 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaIVTFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:01:34 -0400
-Date: Mon, 22 Sep 2014 21:01:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mark D Rustad <mark.d.rustad@intel.com>
-Cc: sparse@chrisli.org, linux-kernel@vger.kernel.org,
-        richard.weinberger@gmail.com, linux-sparse@vger.kernel.org,
-        mingo@redhat.com, jeffrey.t.kirsher@intel.com,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH] sched: Remove nested extern
-Message-ID: <20140922190128.GA2805@worktop.programming.kicks-ass.net>
-References: <CAFLxGvwfuE-458duC9ARMLLMBCvZaBQnwDjPW6uJC4FAViBXjQ@mail.gmail.com>
- <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
+	Mon, 22 Sep 2014 15:05:44 -0400
+Message-ID: <5420731E.6040104@wwwdotorg.org>
+Date: Mon, 22 Sep 2014 13:06:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Vidya Sagar <vidyas@nvidia.com>
+CC: thierry.reding@gmail.com, ldewangan@nvidia.com, kthota@nvidia.com,
+        linux-tegra@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+ tree
+References: <1411408675-32315-1-git-send-email-vidyas@nvidia.com>
+In-Reply-To: <1411408675-32315-1-git-send-email-vidyas@nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:55:11AM -0700, Mark D Rustad wrote:
-> Avoid W=2 nested-externs warning by moving the nested extern to
-> a normal extern. This eliminates that warning which is generated
-> for every inclusion of sched.h in a kernel build when W=2 is used.
-> This also removes a point of maintenance if the definition of
-> delayacct_on were ever to change.
-> 
+On 09/22/2014 11:57 AM, Vidya Sagar wrote:
+> sd4 is an always on regulator which is turned on at boot time.
+> It is externally controller through gpio. This change
+> reflects the same in Jetson TK1 device tree
 
-Yeah, so why is that warning worth using? Just disable the warn if
-you're bothered by it.
+In the schematics, the "Power Sequencing" timing diagram says "S/W 
+controlled" for SD4/+1.05V_RUN. I also don't see an "ENABLE1" pin on the 
+AS3722, which would be required for ...
+
+> +					ams,ext-control = <1>;
+
+... to be valid.
+
+What's the source of information behind this change?
+
+What symptoms does this patch correct?
