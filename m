@@ -1,117 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaIVQL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:11:29 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:35066 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbaIVQL1 (ORCPT
+	id S1754392AbaIVQLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:11:45 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:61074 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaIVQLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:11:27 -0400
-X-Originating-IP: 75.92.167.159
-Date: Mon, 22 Sep 2014 09:11:16 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] mm: Support compiling out madvise and fadvise
-Message-ID: <20140922161109.GA25027@thin>
+	Mon, 22 Sep 2014 12:11:43 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 22 Sep 2014 18:08:44 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] mfd: viperboard: allocate I/O buffer separately
+Message-ID: <20140922160844.GK5237@localhost>
+References: <1411397212-31625-1-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411397212-31625-1-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many embedded systems will not need these syscalls, and omitting them
-saves space.  Add a new EXPERT config option CONFIG_ADVISE_SYSCALLS
-(default y) to support compiling them out.
+On Mon, Sep 22, 2014 at 05:46:52PM +0300, Octavian Purdila wrote:
+> Currently the I/O buffer is allocated part of the device status
+> structure, potentially sharing the same cache line with other members
+> in this structure.
+> 
+> Allocate the buffer separately, to avoid the I/O operations corrupting
+> the device status structure due to cache line sharing.
+> 
+> Compiled tested only, as I don't have access to hardware.
+> 
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
 
-bloat-o-meter:
-add/remove: 0/3 grow/shrink: 0/0 up/down: 0/-2250 (-2250)
-function                                     old     new   delta
-sys_fadvise64                                 57       -     -57
-sys_fadvise64_64                             691       -    -691
-sys_madvise                                 1502       -   -1502
+Change itself looks sane, although the driver's use of a shared buffer
+and relying on undocumented locking is a different story.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
+However, you do more than your commit message claims below.
 
-Posting this for review.  I can upstream this directly through my new tiny
-tree.
+>  drivers/mfd/viperboard.c       | 16 ++++++++++------
+>  include/linux/mfd/viperboard.h |  2 +-
+>  2 files changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+> index e00f534..d27c131 100644
+> --- a/drivers/mfd/viperboard.c
+> +++ b/drivers/mfd/viperboard.c
+> @@ -59,9 +59,13 @@ static int vprbrd_probe(struct usb_interface *interface,
+>  
+>  	/* allocate memory for our device state and initialize it */
+>  	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
+> -	if (vb == NULL) {
+> -		dev_err(&interface->dev, "Out of memory\n");
 
- init/Kconfig    | 10 ++++++++++
- kernel/sys_ni.c |  3 +++
- mm/Makefile     |  7 +++++--
- 3 files changed, 18 insertions(+), 2 deletions(-)
+Here you're also removing a redundant OOM message.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index e84c642..782a65b 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1537,6 +1537,16 @@ config AIO
- 	  by some high performance threaded applications. Disabling
- 	  this option saves about 7k.
- 
-+config ADVISE_SYSCALLS
-+	bool "Enable madvise/fadvise syscalls" if EXPERT
-+	default y
-+	help
-+	  This option enables the madvise and fadvise syscalls, used by
-+	  applications to advise the kernel about their future memory or file
-+	  usage, improving performance. If building an embedded system where no
-+	  applications use these syscalls, you can disable this option to save
-+	  space.
-+
- config PCI_QUIRKS
- 	default y
- 	bool "Enable PCI quirk workarounds" if EXPERT
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 391d4dd..d4709d4 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -156,6 +156,9 @@ cond_syscall(sys_process_vm_writev);
- cond_syscall(compat_sys_process_vm_readv);
- cond_syscall(compat_sys_process_vm_writev);
- cond_syscall(sys_uselib);
-+cond_syscall(sys_fadvise64);
-+cond_syscall(sys_fadvise64_64);
-+cond_syscall(sys_madvise);
- 
- /* arch-specific weak syscall entries */
- cond_syscall(sys_pciconfig_read);
-diff --git a/mm/Makefile b/mm/Makefile
-index 632ae77..fe7a053 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -3,7 +3,7 @@
- #
- 
- mmu-y			:= nommu.o
--mmu-$(CONFIG_MMU)	:= fremap.o gup.o highmem.o madvise.o memory.o mincore.o \
-+mmu-$(CONFIG_MMU)	:= fremap.o gup.o highmem.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
- 			   vmalloc.o pagewalk.o pgtable-generic.o
- 
-@@ -11,7 +11,7 @@ ifdef CONFIG_CROSS_MEMORY_ATTACH
- mmu-$(CONFIG_MMU)	+= process_vm_access.o
- endif
- 
--obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
-+obj-y			:= filemap.o mempool.o oom_kill.o \
- 			   maccess.o page_alloc.o page-writeback.o \
- 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
- 			   util.o mmzone.o vmstat.o backing-dev.o \
-@@ -28,6 +28,9 @@ else
- 	obj-y		+= bootmem.o
- endif
- 
-+ifdef CONFIG_MMU
-+	obj-$(CONFIG_ADVISE_SYSCALLS)	+= fadvise.o madvise.o
-+endif
- obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.o
- 
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o
--- 
-2.1.0
+> +	if (vb == NULL)
+>  		return -ENOMEM;
+> +
+> +	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
+> +	if (vb->buf == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error;
+>  	}
+>  
+>  	mutex_init(&vb->lock);
+> @@ -103,10 +107,9 @@ static int vprbrd_probe(struct usb_interface *interface,
+>  	return 0;
+>  
+>  error:
+> -	if (vb) {
 
+And cleaning up the error path.
+
+> -		usb_put_dev(vb->usb_dev);
+> -		kfree(vb);
+> -	}
+> +	usb_put_dev(vb->usb_dev);
+> +	kfree(vb->buf);
+> +	kfree(vb);
+>  
+>  	return ret;
+>  }
+
+Don't mix fixes and clean ups like this, but rather submit them as
+separate patches.
+
+Johan
