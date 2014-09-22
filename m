@@ -1,92 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaIVH4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 03:56:22 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:38541 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751270AbaIVH4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 03:56:21 -0400
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-arm-kernel@lists.infradead.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <d9727af1a9f16f4f9e96b79beb973d16>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <541FD619.3060108@rock-chips.com>
-Date: Mon, 22 Sep 2014 15:56:09 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: rockchip: add initcall to set clk defaults after
- syscons are available
-References: <1566610.B4NH8lpaoI@diego>
-In-Reply-To: <1566610.B4NH8lpaoI@diego>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753198AbaIVH7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 03:59:16 -0400
+Received: from mail.viasens.com ([85.10.205.146]:34381 "EHLO mail.seluxit.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068AbaIVH7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 03:59:15 -0400
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Sep 2014 03:59:14 EDT
+From: Andreas Bomholtz <andreas@seluxit.com>
+To: johan@kernel.org
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andreas Bomholtz <andreas@seluxit.com>
+Subject: [PATCH 1/1] Added support for Seluxit USB dongle to cp210x driver.
+Date: Mon, 22 Sep 2014 09:50:43 +0200
+Message-Id: <1411372243-23933-1-git-send-email-andreas@seluxit.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko,
+Added the Seluxit ApS USB Serial Dongle to cp210x driver.
 
-On 08/07/2014 08:57 PM, Heiko Stübner wrote:
-> PLLs on Rockchip platforms report their locking state in an external
-> register situated in the "General Register Files" which is provided
-> through a syscon device.
->
-> When the initial clk init runs, this syscon is of course not yet
-> available, making it impossible to set PLLs to other frequencies
-> through the assigned-rate property of the clock-controller node.
->
-> Syscon devices are initialized through a postcore initcall, so add an
-> arch_initcall to rerun the rockchip specific clock initalization when
-> the GRF is available.
->
-> As the clock init already runs two times (through of_clk_add_provider
-> and of_clk_init), a third time shouldn't hurt to much and in the best
-> case wouldn't change any settings at all.
->
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->   drivers/clk/rockchip/clk.c | 13 +++++++++++++
->   1 file changed, 13 insertions(+)
->
-> diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
-> index 9a3adb1..e14b108 100644
-> --- a/drivers/clk/rockchip/clk.c
-> +++ b/drivers/clk/rockchip/clk.c
-> @@ -23,6 +23,7 @@
->   #include <linux/slab.h>
->   #include <linux/clk.h>
->   #include <linux/clk-provider.h>
-> +#include <linux/clk/clk-conf.h>
->   #include <linux/mfd/syscon.h>
->   #include <linux/regmap.h>
->   #include "clk.h"
-> @@ -126,6 +127,18 @@ void __init rockchip_clk_init(struct device_node *np, void __iomem *base,
->   	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
->   }
->   
-> +/**
-> + * Set clock-defaults again, after grf regmap is available for PLLs.
-> + */
-> +static int __init rockchip_clk_set_defaults(void)
-> +{
-> +	if (cru_node)
-> +		return of_clk_set_defaults(cru_node, true);
-> +
-> +	return 0;
-> +}
-> +arch_initcall(rockchip_clk_set_defaults);
-> +
->   struct regmap *rockchip_clk_get_grf(void)
->   {
->   	if (IS_ERR(grf))
-This patch works on my rk3288 evb, so,
-Tested-by: Kever Yang <kever.yang@rock-chips.com>
+Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
+---
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index e4bb622..abd7577 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -155,6 +155,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+-- 
+1.9.1
 
