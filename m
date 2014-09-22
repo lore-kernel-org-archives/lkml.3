@@ -1,173 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaIVSKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:10:55 -0400
-Received: from smtprelay0016.hostedemail.com ([216.40.44.16]:48491 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753524AbaIVSKy (ORCPT
+	id S1754667AbaIVSL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:11:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50855 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754563AbaIVSL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:10:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3867:3871:4321:4605:5007:6119:7652:9592:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:13161:13229:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: skate91_41be6f9fc2d1b
-X-Filterd-Recvd-Size: 5437
-Message-ID: <1411409450.2952.55.camel@joe-AO725>
-Subject: [PATCH net-next] net: Change netdev_<level> logging functions to
- return void
-From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Sep 2014 11:10:50 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 14:11:57 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Yassin Jaffer <yassinjaffer@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 1/2] mtd: nand: support ONFI timing mode retrieval for non-ONFI NANDs
+Date: Mon, 22 Sep 2014 20:11:50 +0200
+Message-Id: <1411409511-4381-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411409511-4381-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411409511-4381-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No caller or macro uses the return value so make all
-the functions return void.
+Add an onfi_timing_mode_default field to nand_chip and nand_flash_dev in
+order to support NAND timings definition for non-ONFI NAND.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+NAND that support better timings mode than the default one have to define
+a new entry in the nand_ids table.
+
+The default timing mode should be deduced from timings description from
+the datasheet and the ONFI specification
+(www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf, chapter 4.15
+"Timing Parameters").
+You should choose the closest mode that fit the timings requirements of
+your NAND chip.
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
-This change is associated to a desire to eventually
-change printk to return void.
+ drivers/mtd/nand/nand_base.c |  2 ++
+ include/linux/mtd/nand.h     | 11 +++++++++++
+ 2 files changed, 13 insertions(+)
 
- include/linux/netdevice.h | 19 +++++++++----------
- net/core/dev.c            | 44 +++++++++++++++++---------------------------
- 2 files changed, 26 insertions(+), 37 deletions(-)
-
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 28d4378..3d7ea30 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -3612,22 +3612,22 @@ static inline const char *netdev_reg_state(const struct net_device *dev)
- }
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index ae6e7c4..c37fa2a 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -3594,6 +3594,8 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
+ 		chip->options |= type->options;
+ 		chip->ecc_strength_ds = NAND_ECC_STRENGTH(type);
+ 		chip->ecc_step_ds = NAND_ECC_STEP(type);
++		chip->onfi_timing_mode_default =
++					type->onfi_timing_mode_default;
  
- __printf(3, 4)
--int netdev_printk(const char *level, const struct net_device *dev,
--		  const char *format, ...);
-+void netdev_printk(const char *level, const struct net_device *dev,
-+		   const char *format, ...);
- __printf(2, 3)
--int netdev_emerg(const struct net_device *dev, const char *format, ...);
-+void netdev_emerg(const struct net_device *dev, const char *format, ...);
- __printf(2, 3)
--int netdev_alert(const struct net_device *dev, const char *format, ...);
-+void netdev_alert(const struct net_device *dev, const char *format, ...);
- __printf(2, 3)
--int netdev_crit(const struct net_device *dev, const char *format, ...);
-+void netdev_crit(const struct net_device *dev, const char *format, ...);
- __printf(2, 3)
--int netdev_err(const struct net_device *dev, const char *format, ...);
-+void netdev_err(const struct net_device *dev, const char *format, ...);
- __printf(2, 3)
--int netdev_warn(const struct net_device *dev, const char *format, ...);
-+void netdev_warn(const struct net_device *dev, const char *format, ...);
- __printf(2, 3)
--int netdev_notice(const struct net_device *dev, const char *format, ...);
-+void netdev_notice(const struct net_device *dev, const char *format, ...);
- __printf(2, 3)
--int netdev_info(const struct net_device *dev, const char *format, ...);
-+void netdev_info(const struct net_device *dev, const char *format, ...);
+ 		*busw = type->options & NAND_BUSWIDTH_16;
  
- #define MODULE_ALIAS_NETDEV(device) \
- 	MODULE_ALIAS("netdev-" device)
-@@ -3645,7 +3645,6 @@ do {								\
- ({								\
- 	if (0)							\
- 		netdev_printk(KERN_DEBUG, __dev, format, ##args); \
--	0;							\
- })
- #endif
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index b7c1199..b0b74cc 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -587,6 +587,11 @@ struct nand_buffers {
+  * @ecc_step_ds:	[INTERN] ECC step required by the @ecc_strength_ds,
+  *                      also from the datasheet. It is the recommended ECC step
+  *			size, if known; if unknown, set to zero.
++ * @onfi_timing_mode_default: [INTERN] default ONFI timing mode. This field is
++ *			      either deduced from the datasheet if the NAND
++ *			      chip is not ONFI compliant or set to 0 if it is
++ *			      (an ONFI chip is always configured in mode 0
++ *			      after a NAND reset)
+  * @numchips:		[INTERN] number of physical chips
+  * @chipsize:		[INTERN] the size of one chip for multichip arrays
+  * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
+@@ -671,6 +676,7 @@ struct nand_chip {
+ 	uint8_t bits_per_cell;
+ 	uint16_t ecc_strength_ds;
+ 	uint16_t ecc_step_ds;
++	int onfi_timing_mode_default;
+ 	int badblockpos;
+ 	int badblockbits;
  
-diff --git a/net/core/dev.c b/net/core/dev.c
-index ad2522d..fa47b81 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -7074,53 +7074,45 @@ const char *netdev_drivername(const struct net_device *dev)
- 	return empty;
- }
+@@ -773,6 +779,10 @@ struct nand_chip {
+  *               @ecc_step_ds in nand_chip{}, also from the datasheet.
+  *               For example, the "4bit ECC for each 512Byte" can be set with
+  *               NAND_ECC_INFO(4, 512).
++ * @onfi_timing_mode_default: the default ONFI timing mode entered after a NAND
++ *			      reset. Should be deduced from timings described
++ *			      in the datasheet.
++ *
+  */
+ struct nand_flash_dev {
+ 	char *name;
+@@ -793,6 +803,7 @@ struct nand_flash_dev {
+ 		uint16_t strength_ds;
+ 		uint16_t step_ds;
+ 	} ecc;
++	int onfi_timing_mode_default;
+ };
  
--static int __netdev_printk(const char *level, const struct net_device *dev,
--			   struct va_format *vaf)
-+static void __netdev_printk(const char *level, const struct net_device *dev,
-+			    struct va_format *vaf)
- {
--	int r;
--
- 	if (dev && dev->dev.parent) {
--		r = dev_printk_emit(level[1] - '0',
--				    dev->dev.parent,
--				    "%s %s %s%s: %pV",
--				    dev_driver_string(dev->dev.parent),
--				    dev_name(dev->dev.parent),
--				    netdev_name(dev), netdev_reg_state(dev),
--				    vaf);
-+		dev_printk_emit(level[1] - '0',
-+				dev->dev.parent,
-+				"%s %s %s%s: %pV",
-+				dev_driver_string(dev->dev.parent),
-+				dev_name(dev->dev.parent),
-+				netdev_name(dev), netdev_reg_state(dev),
-+				vaf);
- 	} else if (dev) {
--		r = printk("%s%s%s: %pV", level, netdev_name(dev),
--			   netdev_reg_state(dev), vaf);
-+		printk("%s%s%s: %pV",
-+		       level, netdev_name(dev), netdev_reg_state(dev), vaf);
- 	} else {
--		r = printk("%s(NULL net_device): %pV", level, vaf);
-+		printk("%s(NULL net_device): %pV", level, vaf);
- 	}
--
--	return r;
- }
- 
--int netdev_printk(const char *level, const struct net_device *dev,
--		  const char *format, ...)
-+void netdev_printk(const char *level, const struct net_device *dev,
-+		   const char *format, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	int r;
- 
- 	va_start(args, format);
- 
- 	vaf.fmt = format;
- 	vaf.va = &args;
- 
--	r = __netdev_printk(level, dev, &vaf);
-+	__netdev_printk(level, dev, &vaf);
- 
- 	va_end(args);
--
--	return r;
- }
- EXPORT_SYMBOL(netdev_printk);
- 
- #define define_netdev_printk_level(func, level)			\
--int func(const struct net_device *dev, const char *fmt, ...)	\
-+void func(const struct net_device *dev, const char *fmt, ...)	\
- {								\
--	int r;							\
- 	struct va_format vaf;					\
- 	va_list args;						\
- 								\
-@@ -7129,11 +7121,9 @@ int func(const struct net_device *dev, const char *fmt, ...)	\
- 	vaf.fmt = fmt;						\
- 	vaf.va = &args;						\
- 								\
--	r = __netdev_printk(level, dev, &vaf);			\
-+	__netdev_printk(level, dev, &vaf);			\
- 								\
- 	va_end(args);						\
--								\
--	return r;						\
- }								\
- EXPORT_SYMBOL(func);
- 
-
+ /**
+-- 
+1.9.1
 
