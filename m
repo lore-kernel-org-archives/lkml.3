@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272AbaIVWkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 18:40:06 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:37126 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754931AbaIVWkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 18:40:04 -0400
-Date: Mon, 22 Sep 2014 19:39:56 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] media:st-rc: Misc fixes.
-Message-ID: <20140922193956.6e445cd9@recife.lan>
-In-Reply-To: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1755282AbaIVWk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 18:40:26 -0400
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:55206 "HELO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755153AbaIVWkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 18:40:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo4C_6mh7hais14254rYBeMYArvf=nETmgvBjgP290aD4Q@mail.gmail.com>
+References: <1410906824-9321-1-git-send-email-tinamdar@apm.com>
+	<1410906824-9321-2-git-send-email-tinamdar@apm.com>
+	<20140919223258.GA32208@google.com>
+	<CACoXjcnVU3+fQHQ0-zEVRjoedrrod-aua6AVybj7UuSHO9HBaw@mail.gmail.com>
+	<CAErSpo4C_6mh7hais14254rYBeMYArvf=nETmgvBjgP290aD4Q@mail.gmail.com>
+Date: Mon, 22 Sep 2014 15:40:03 -0700
+Message-ID: <CACoXjc=od24kz4RbMLOZNGbMwsAjc8+Ko0rEXNc=2yKnN_3NkQ@mail.gmail.com>
+Subject: Re: [PATCH v9 1/4] pci:host: APM X-Gene PCIe host controller driver
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 22 Sep 2014 23:21:41 +0100
-Srinivas Kandagatla <srinivas.kandagatla@linaro.org> escreveu:
+On Mon, Sep 22, 2014 at 3:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Sep 22, 2014 at 3:33 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>
+>>>> +static void xgene_pcie_fixup_bridge(struct pci_dev *dev)
+>>>> +{
+>>>> +     int i;
+>>>> +
+>>>> +     /* Hide the PCI host BARs from the kernel as their content doesn't
+>>>> +      * fit well in the resource management
+>>>> +      */
+>>>
+>>> This needs a better explanation than "doesn't fit well."
+>>>
+>>> I *think* you're probably talking about something similar to the MVEBU
+>>> devices mentioned here:
+>>> http://lkml.kernel.org/r/CAErSpo56jB1Bf2JtYCGKXZBZqRF1jXFxGmeewPX_e6vSXueGyA@mail.gmail.com
+>>>
+>>> where the device can be configured as either an endpoint or a root port,
+>>> and the endpoint BARs are still visible when configured as a root port.
+>>>
+>>
+>> It is true that X-Gene PCIe port can be configured as EP, however the
+>> the FIXUP is required not because of the BARs are still visible when
+>> configured as EP in past. X-Gene PCIe port, when configured as RC,
+>> uses BAR0-BAR1 of RC's configuration space as inbound BARs. Entire DDR
+>> region is mapped in these BARs so that it is accessible for EP devices
+>> for DMA. So if the fixup is not done during enumeration, whole
+>> outbound memory resource space gets assigned to RC and nothing is left
+>> EP devices.
+>
+> I'm not familiar with the concept of an "inbound BAR"; at least I'm
+> not aware of anything like this in the PCI specs.  I think it might
+> reduce confusion if we avoided calling them "BARs".  They happen to be
+> at the same addresses where real BARs would be, but they certainly
+> don't behave like real BARs.
+>
+> It sounds like this is basically a trivial IOMMU that determines which
+> DMA accesses can reach main memory.
+>
 
-> Hi Mauro,
-> 
-> Thankyou for the "[media] enable COMPILE_TEST for media drivers" patch
-> which picked up few things in st-rc driver in linux-next testing.
+Yes. That is correct.
 
-Anytime. Yeah, the idea is to let more people to test and check for
-hidden issues there.
-> 
-> Here is a few minor fixes to the driver, could you consider them for
-> the next merge window.
+>>> In any event, I'd like a description of exactly what these BARs are and wha
+>>> the problem is.
+>>
+>> Is it ok to put above description in comment to explain the fixup?
+>>
+>>> Presumably the BARs exist and were sized by the PCI core
+>>> in __pci_read_base().  That will generate some log messages and possibly
+>>> some warnings, depending on how the host bridge windows are set up.
+>
+> Instead of doing this in a fixup, can you change the PCI config
+> accessors so that when accessing these inbound DMA mapping registers,
+> they drop writes and return zeros for reads?  Then the PCI core won't
+> think there are BARs there, and it won't mistakenly corrupt them when
+> it tries to size them.
+>
 
-Applied, thanks!
+I suppose this can be done. I will fix this in next revision.
 
-Btw, there are still lots of warnings there produced with smatch:
-
-$ make ARCH=i386 C=1 CF=-D__CHECK_ENDIAN__ CONFIG_DEBUG_SECTION_MISMATCH=y W=1 CF=-D__CHECK_ENDIAN__ M=drivers/media
-drivers/media/rc/st_rc.c:107:38: warning: incorrect type in argument 1 (different address spaces)
-drivers/media/rc/st_rc.c:107:38:    expected void const volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:107:38:    got void *
-drivers/media/rc/st_rc.c:110:53: warning: incorrect type in argument 1 (different address spaces)
-drivers/media/rc/st_rc.c:110:53:    expected void const volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:110:53:    got void *
-drivers/media/rc/st_rc.c:116:54: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:116:54:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:116:54:    got void *
-drivers/media/rc/st_rc.c:120:45: warning: incorrect type in argument 1 (different address spaces)
-drivers/media/rc/st_rc.c:120:45:    expected void const volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:120:45:    got void *
-drivers/media/rc/st_rc.c:121:43: warning: incorrect type in argument 1 (different address spaces)
-drivers/media/rc/st_rc.c:121:43:    expected void const volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:121:43:    got void *
-drivers/media/rc/st_rc.c:150:46: warning: incorrect type in argument 1 (different address spaces)
-drivers/media/rc/st_rc.c:150:46:    expected void const volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:150:46:    got void *
-drivers/media/rc/st_rc.c:153:42: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:153:42:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:153:42:    got void *
-drivers/media/rc/st_rc.c:174:32: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:174:32:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:174:32:    got void *
-drivers/media/rc/st_rc.c:177:48: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:177:48:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:177:48:    got void *
-drivers/media/rc/st_rc.c:187:48: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:187:48:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:187:48:    got void *
-drivers/media/rc/st_rc.c:204:42: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:204:42:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:204:42:    got void *
-drivers/media/rc/st_rc.c:205:35: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:205:35:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:205:35:    got void *
-drivers/media/rc/st_rc.c:215:35: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:215:35:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:215:35:    got void *
-drivers/media/rc/st_rc.c:216:35: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:216:35:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:216:35:    got void *
-drivers/media/rc/st_rc.c:269:22: warning: incorrect type in assignment (different address spaces)
-drivers/media/rc/st_rc.c:269:22:    expected void *base
-drivers/media/rc/st_rc.c:269:22:    got void [noderef] <asn:2>*
-drivers/media/rc/st_rc.c:349:46: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:349:46:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:349:46:    got void *
-drivers/media/rc/st_rc.c:350:46: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:350:46:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:350:46:    got void *
-drivers/media/rc/st_rc.c:371:61: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:371:61:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:371:61:    got void *
-drivers/media/rc/st_rc.c:372:54: warning: incorrect type in argument 2 (different address spaces)
-drivers/media/rc/st_rc.c:372:54:    expected void volatile [noderef] <asn:2>*addr
-drivers/media/rc/st_rc.c:372:54:    got void *
-
-Regards,
-Mauro
+> Bjorn
