@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaIVWk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 18:40:26 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:55206 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755153AbaIVWkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 18:40:05 -0400
+	id S1755305AbaIVWl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 18:41:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765AbaIVWlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 18:41:24 -0400
+Message-ID: <5420A54B.8080202@redhat.com>
+Date: Mon, 22 Sep 2014 16:40:11 -0600
+From: Al Stone <ahs3@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4C_6mh7hais14254rYBeMYArvf=nETmgvBjgP290aD4Q@mail.gmail.com>
-References: <1410906824-9321-1-git-send-email-tinamdar@apm.com>
-	<1410906824-9321-2-git-send-email-tinamdar@apm.com>
-	<20140919223258.GA32208@google.com>
-	<CACoXjcnVU3+fQHQ0-zEVRjoedrrod-aua6AVybj7UuSHO9HBaw@mail.gmail.com>
-	<CAErSpo4C_6mh7hais14254rYBeMYArvf=nETmgvBjgP290aD4Q@mail.gmail.com>
-Date: Mon, 22 Sep 2014 15:40:03 -0700
-Message-ID: <CACoXjc=od24kz4RbMLOZNGbMwsAjc8+Ko0rEXNc=2yKnN_3NkQ@mail.gmail.com>
-Subject: Re: [PATCH v9 1/4] pci:host: APM X-Gene PCIe host controller driver
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+To: Pavel Machek <pavel@ucw.cz>, Hanjun Guo <hanjun.guo@linaro.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org> <20140922194841.GA9868@amd>
+In-Reply-To: <20140922194841.GA9868@amd>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 3:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Mon, Sep 22, 2014 at 3:33 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
->
->>>> +static void xgene_pcie_fixup_bridge(struct pci_dev *dev)
->>>> +{
->>>> +     int i;
->>>> +
->>>> +     /* Hide the PCI host BARs from the kernel as their content doesn't
->>>> +      * fit well in the resource management
->>>> +      */
->>>
->>> This needs a better explanation than "doesn't fit well."
->>>
->>> I *think* you're probably talking about something similar to the MVEBU
->>> devices mentioned here:
->>> http://lkml.kernel.org/r/CAErSpo56jB1Bf2JtYCGKXZBZqRF1jXFxGmeewPX_e6vSXueGyA@mail.gmail.com
->>>
->>> where the device can be configured as either an endpoint or a root port,
->>> and the endpoint BARs are still visible when configured as a root port.
->>>
+On 09/22/2014 01:48 PM, Pavel Machek wrote:
+> On Fri 2014-09-12 22:00:16, Hanjun Guo wrote:
+>> From: Graeme Gregory <graeme.gregory@linaro.org>
 >>
->> It is true that X-Gene PCIe port can be configured as EP, however the
->> the FIXUP is required not because of the BARs are still visible when
->> configured as EP in past. X-Gene PCIe port, when configured as RC,
->> uses BAR0-BAR1 of RC's configuration space as inbound BARs. Entire DDR
->> region is mapped in these BARs so that it is accessible for EP devices
->> for DMA. So if the fixup is not done during enumeration, whole
->> outbound memory resource space gets assigned to RC and nothing is left
->> EP devices.
->
-> I'm not familiar with the concept of an "inbound BAR"; at least I'm
-> not aware of anything like this in the PCI specs.  I think it might
-> reduce confusion if we avoided calling them "BARs".  They happen to be
-> at the same addresses where real BARs would be, but they certainly
-> don't behave like real BARs.
->
-> It sounds like this is basically a trivial IOMMU that determines which
-> DMA accesses can reach main memory.
->
+>> Add documentation for the guidelines of how to use ACPI
+>> on ARM64.
+> 
+>> +No code shall be accepted into the kernel unless it complies with the released
+>> +standards from UEFI ASWG. If there are features missing from ACPI to make it
+>> +function on a platform, ECRs should be submitted to ASWG and go through the
+>> +approval process.
+> 
+> Surely this should be narrowed down somehow? Or is reading all the
+> released standards from ASWG mandatory before patching the kernel now?
 
-Yes. That is correct.
+Asking someone to read the ACPI standard when implementing ACPI
+functionality is no different than doing the same thing for PCI,
+SCSI, TCP/IP or any of a bazillion others that are used by the
+kernel.  Yes, the wording of this sentence is awkward; that's a
+very different problem and easily fixed.
 
->>> In any event, I'd like a description of exactly what these BARs are and wha
->>> the problem is.
->>
->> Is it ok to put above description in comment to explain the fixup?
->>
->>> Presumably the BARs exist and were sized by the PCI core
->>> in __pci_read_base().  That will generate some log messages and possibly
->>> some warnings, depending on how the host bridge windows are set up.
->
-> Instead of doing this in a fixup, can you change the PCI config
-> accessors so that when accessing these inbound DMA mapping registers,
-> they drop writes and return zeros for reads?  Then the PCI core won't
-> think there are BARs there, and it won't mistakenly corrupt them when
-> it tries to size them.
->
+> Spelling out wtf ECR is would be nice, too.
 
-I suppose this can be done. I will fix this in next revision.
+ECR stands for "Engineering Change Request".  It is simply a
+recommended document format for requesting changes to be made to
+the ACPI specification (and is also used by other UEFI working
+groups).  The text can easily be fixed to make that clear.
 
-> Bjorn
+> And if you expect all kernel contributors to comply with your
+> favourite standards, you should put an URL where the standards can be
+> downloaded here.
+> 
+
+Easily enough corrected; until the patch is updated, one can find
+the specs at the oh so very cleverly named URL:
+
+    http://www.uefi.org/specifications
+
+
+-- 
+ciao,
+al
+-----------------------------------
+Al Stone
+Software Engineer
+Red Hat, Inc.
+ahs3@redhat.com
+-----------------------------------
