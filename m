@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaIVTdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:33:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7890 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914AbaIVTdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:33:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,573,1406617200"; 
-   d="asc'?scan'208";a="606743683"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "richard.weinberger@gmail.com" <richard.weinberger@gmail.com>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-Subject: Re: [PATCH] sched: Remove nested extern
-Thread-Topic: [PATCH] sched: Remove nested extern
-Thread-Index: AQHP1o5n4j/Km9jR6U6Rx5Rq0DoBGpwN93YAgAAIi4A=
-Date: Mon, 22 Sep 2014 19:32:04 +0000
-Message-ID: <D428C53D-F663-4846-ACAB-74922033B048@intel.com>
-References: <CAFLxGvwfuE-458duC9ARMLLMBCvZaBQnwDjPW6uJC4FAViBXjQ@mail.gmail.com>
- <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
- <20140922190128.GA2805@worktop.programming.kicks-ass.net>
-In-Reply-To: <20140922190128.GA2805@worktop.programming.kicks-ass.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.176.145]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_8CCC8EA9-24BF-4637-A31E-5A11B69304C9";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
-MIME-Version: 1.0
+	id S1754373AbaIVTgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:36:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57786 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaIVTgw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:36:52 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAL1qeaEd2L8NUugh27hkGMa1aqaxviupRJnBd2+aru1wq6KKGg@mail.gmail.com>
+Date: Mon, 22 Sep 2014 14:36:44 -0500
+Cc: Rob Herring <robherring2@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C73B2A63-4396-462B-8172-F9CA32E573F1@codeaurora.org>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-11-git-send-email-abrestic@chromium.org> <CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com> <CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com> <1E0E7540-B04F-4E89-91F7-B6FAC3C5D889@codeaurora.org> <CAL1qeaEd2L8NUugh27hkGMa1aqaxviupRJnBd2+aru1wq6KKGg@mail.gmail.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_8CCC8EA9-24BF-4637-A31E-5A11B69304C9
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
 
-On Sep 22, 2014, at 12:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+On Sep 22, 2014, at 2:30 PM, Andrew Bresticker <abrestic@chromium.org> wrote:
 
-> On Mon, Sep 22, 2014 at 10:55:11AM -0700, Mark D Rustad wrote:
->> Avoid W=2 nested-externs warning by moving the nested extern to
->> a normal extern. This eliminates that warning which is generated
->> for every inclusion of sched.h in a kernel build when W=2 is used.
->> This also removes a point of maintenance if the definition of
->> delayacct_on were ever to change.
+> On Mon, Sep 22, 2014 at 12:01 PM, Kumar Gala <galak@codeaurora.org> wrote:
+>> 
+>> On Sep 22, 2014, at 11:28 AM, Andrew Bresticker <abrestic@chromium.org> wrote:
+>> 
+>>> On Mon, Sep 22, 2014 at 7:23 AM, Rob Herring <robherring2@gmail.com> wrote:
+>>>> On Fri, Sep 5, 2014 at 12:30 PM, Andrew Bresticker
+>>>> <abrestic@chromium.org> wrote:
+>>>>> Add the vendor prefix "mti" for MIPS Technologies, Inc.
+>>>>> 
+>>>>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>>>>> ---
+>>>>> New for v2.
+>>>>> ---
+>>>>> Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>>>>> 1 file changed, 1 insertion(+)
+>>>>> 
+>>>>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>>>> index ac7269f..efa5a5b 100644
+>>>>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>>>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>>>> @@ -86,6 +86,7 @@ microchip     Microchip Technology Inc.
+>>>>> mosaixtech     Mosaix Technologies, Inc.
+>>>>> moxa   Moxa
+>>>>> mpl    MPL AG
+>>>>> +mti    MIPS Technologies, Inc.
+>>>> 
+>>>> Why not mips as that is more common and the stock ticker.
+>>> 
+>>> "mti" is already in use, see
+>>> Documentation/devicetree/bindings/mips/cpu_irq.txt,
+>>> arch/mips/mti-sead3/sead3.dts, and arch/mips/ralink/dts/*.dtsi.
+>> 
+>> Isn’t mips already used as well:
 > 
-> Yeah, so why is that warning worth using? Just disable the warn if
-> you're bothered by it.
+> Yes, however it is only used for CPUs, it does not appear in any
+> binding document, and no code actually matches against it.
 
-I assume that nested-externs is included in W=2 because many uses of
-them, especially with function prototypes, creates a risk of inconsistent
-declarations. The kernel has a fair number of them that seem to have
-been added to disentangle include files. If they are judged to be
-worthwhile, then it would be good to silence the warnings so that
-attention can be given to other instances of the warnings. If those
-nested externs are not worth the risk, well that is a different conversation.
+Do you intend to change those usages to “mti” than?
+
+- k
 
 -- 
-Mark Rustad, Networking Division, Intel Corporation
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
-
---Apple-Mail=_8CCC8EA9-24BF-4637-A31E-5A11B69304C9
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIcBAEBAgAGBQJUIHkzAAoJEDwO/+eO4+5u45wP/11SArEWtpADJbQnAfcGPBR3
-qlryiWpF9e5hqj55QFSFIcg+Ff9KxGKo0tq2ZwxAY4oA+46J09TuvsAtEzHrIo+v
-My+e5l9ToMbEk7/PjUGVw/Xl/0pgFMQ50trPkHQyG0VJezjKfJAzM2TKmJCqYpt8
-croy6C9spXlajEcLnN67XWgUsAz02y+m/kKwZEpYQKzqg+aaC7Qm811AgxXdFZ0y
-Oft1t+DmA+RQXi1Dgn6jI3LPlH02Y10fiubSbAe2uEAvcj9A4lqXli9PIe37Rr3o
-urSTWwWgidMz43ZHAznRZIknTXOKQq9l8O7JqvejfOEP9J/HsD9Yg5/Xmo5Wvgm+
-5QGKjtTqcEH2zG4vhAmHxkwOjPQwaDZTrEiWraacrlFp1znfW2U43qzMqcPQ0vme
-2khFZdfaZI2jqi80BMb6sYuYdO36kV5UKilCfGjo3NNjZvXt/rzey2nSHXhvLFS4
-kPINyajdqp8k1UBOW/902WST5ljWipdaV2QAfsLC7QH372Gc+f8A/08xv8xio+Uc
-Frmmy4Kk2VjdSgJcAdUoJwD2YLUnFBXEcIrUO546xsu/ELLfAGTXcCcSbcp2pksX
-WrKdJNGbebB707ezrVc6Tq3lrft2qX7JJ2/rXaSMOFNPdr1BmDhO39aliiPSynGZ
-0PSiRgJwmg1v/hQBOA7Z
-=B3pP
------END PGP SIGNATURE-----
-
---Apple-Mail=_8CCC8EA9-24BF-4637-A31E-5A11B69304C9--
