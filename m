@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaIVADr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 20:03:47 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42496 "EHLO
+	id S1752848AbaIVADq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 20:03:46 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:42448 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaIVACl (ORCPT
+	with ESMTP id S1751506AbaIVACl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 21 Sep 2014 20:02:41 -0400
 X-Original-SENDERIP: 10.177.220.156
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
         Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v1 4/5] zram: add swap full hint
-Date: Mon, 22 Sep 2014 09:03:10 +0900
-Message-Id: <1411344191-2842-5-git-send-email-minchan@kernel.org>
+Subject: [PATCH v1 1/5] zram: generalize swap_slot_free_notify
+Date: Mon, 22 Sep 2014 09:03:07 +0900
+Message-Id: <1411344191-2842-2-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1411344191-2842-1-git-send-email-minchan@kernel.org>
 References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
@@ -28,154 +28,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implement SWAP_FULL handler in zram so that VM can
-know whether zram is full or not and use it to stop anonymous
-page reclaim.
+Currently, swap_slot_free_notify is used for zram to free
+duplicated copy page for memory efficiency when it knows
+there is no reference to the swap slot.
 
-How to judge fullness is below,
-
-fullness = (100 * used space / total space)
-
-It means the higher fullness is, the slower we reach zram full.
-Now, default of fullness is 80 so that it biased more momory
-consumption rather than early OOM kill.
-
-Above logic works only when used space of zram hit over the limit
-but zram also pretend to be full once 32 consecutive allocation
-fail happens. It's safe guard to prevent system hang caused by
-fragment uncertainty.
+This patch generalizes it to be able to use for other
+swap hint to communicate with VM.
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/block/zram/zram_drv.c | 60 ++++++++++++++++++++++++++++++++++++++++---
- drivers/block/zram/zram_drv.h |  1 +
- 2 files changed, 57 insertions(+), 4 deletions(-)
+ Documentation/filesystems/Locking |  4 ++--
+ drivers/block/zram/zram_drv.c     | 18 ++++++++++++++++--
+ include/linux/blkdev.h            |  7 +++++--
+ mm/page_io.c                      |  6 +++---
+ mm/swapfile.c                     |  6 +++---
+ 5 files changed, 29 insertions(+), 12 deletions(-)
 
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index 94d93b1f8b53..c262bfbeafa9 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -405,7 +405,7 @@ prototypes:
+ 	void (*unlock_native_capacity) (struct gendisk *);
+ 	int (*revalidate_disk) (struct gendisk *);
+ 	int (*getgeo)(struct block_device *, struct hd_geometry *);
+-	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
++	int (*swap_hint) (struct block_device *, unsigned int, void *);
+ 
+ locking rules:
+ 			bd_mutex
+@@ -418,7 +418,7 @@ media_changed:		no
+ unlock_native_capacity:	no
+ revalidate_disk:	no
+ getgeo:			no
+-swap_slot_free_notify:	no	(see below)
++swap_hint:		no	(see below)
+ 
+ media_changed, unlock_native_capacity and revalidate_disk are called only from
+ check_disk_change().
 diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 22a37764c409..649cad9d0b1c 100644
+index d78b245bae06..22a37764c409 100644
 --- a/drivers/block/zram/zram_drv.c
 +++ b/drivers/block/zram/zram_drv.c
-@@ -43,6 +43,20 @@ static const char *default_compressor = "lzo";
- /* Module params (documentation at end) */
- static unsigned int num_devices = 1;
- 
-+/*
-+ * If (100 * used_pages / total_pages) >= ZRAM_FULLNESS_PERCENT),
-+ * we regards it as zram-full. It means that the higher
-+ * ZRAM_FULLNESS_PERCENT is, the slower we reach zram full.
-+ */
-+#define ZRAM_FULLNESS_PERCENT 80
-+
-+/*
-+ * If zram fails to allocate memory consecutively up to this,
-+ * we regard it as zram-full. It's safe guard to prevent too
-+ * many swap write fail due to lack of fragmentation uncertainty.
-+ */
-+#define ALLOC_FAIL_MAX	32
-+
- #define ZRAM_ATTR_RO(name)						\
- static ssize_t zram_attr_##name##_show(struct device *d,		\
- 				struct device_attribute *attr, char *b)	\
-@@ -148,6 +162,7 @@ static ssize_t mem_limit_store(struct device *dev,
- 
- 	down_write(&zram->init_lock);
- 	zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
-+	atomic_set(&zram->alloc_fail, 0);
- 	up_write(&zram->init_lock);
- 
- 	return len;
-@@ -410,6 +425,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	atomic64_sub(zram_get_obj_size(meta, index),
- 			&zram->stats.compr_data_size);
- 	atomic64_dec(&zram->stats.pages_stored);
-+	atomic_set(&zram->alloc_fail, 0);
- 
- 	meta->table[index].handle = 0;
- 	zram_set_obj_size(meta, index, 0);
-@@ -597,10 +613,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	}
- 
- 	alloced_pages = zs_get_total_pages(meta->mem_pool);
--	if (zram->limit_pages && alloced_pages > zram->limit_pages) {
--		zs_free(meta->mem_pool, handle);
--		ret = -ENOMEM;
--		goto out;
-+	if (zram->limit_pages) {
-+		if (alloced_pages > zram->limit_pages) {
-+			zs_free(meta->mem_pool, handle);
-+			atomic_inc(&zram->alloc_fail);
-+			ret = -ENOMEM;
-+			goto out;
-+		} else {
-+			atomic_set(&zram->alloc_fail, 0);
-+		}
- 	}
- 
- 	update_used_max(zram, alloced_pages);
-@@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 	down_write(&zram->init_lock);
- 
- 	zram->limit_pages = 0;
-+	atomic_set(&zram->alloc_fail, 0);
- 
- 	if (!init_done(zram)) {
- 		up_write(&zram->init_lock);
-@@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
- 	return 0;
+@@ -926,7 +926,8 @@ error:
+ 	bio_io_error(bio);
  }
  
-+static int zram_full(struct block_device *bdev, void *arg)
-+{
-+	struct zram *zram;
-+	struct zram_meta *meta;
-+	unsigned long total_pages, compr_pages;
-+
-+	zram = bdev->bd_disk->private_data;
-+	if (!zram->limit_pages)
-+		return 0;
-+
-+	meta = zram->meta;
-+	total_pages = zs_get_total_pages(meta->mem_pool);
-+
-+	if (total_pages >= zram->limit_pages) {
-+
-+		compr_pages = atomic64_read(&zram->stats.compr_data_size)
-+					>> PAGE_SHIFT;
-+		if ((100 * compr_pages / total_pages)
-+			>= ZRAM_FULLNESS_PERCENT)
-+			return 1;
-+	}
-+
-+	if (atomic_read(&zram->alloc_fail) > ALLOC_FAIL_MAX)
-+		return 1;
+-static void zram_slot_free_notify(struct block_device *bdev,
++/* this callback is with swap_lock and sometimes page table lock held */
++static int zram_slot_free_notify(struct block_device *bdev,
+ 				unsigned long index)
+ {
+ 	struct zram *zram;
+@@ -939,10 +940,23 @@ static void zram_slot_free_notify(struct block_device *bdev,
+ 	zram_free_page(zram, index);
+ 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+ 	atomic64_inc(&zram->stats.notify_free);
 +
 +	return 0;
 +}
 +
- static int zram_swap_hint(struct block_device *bdev,
- 				unsigned int hint, void *arg)
- {
-@@ -951,6 +1001,8 @@ static int zram_swap_hint(struct block_device *bdev,
- 
- 	if (hint == SWAP_FREE)
- 		ret = zram_slot_free_notify(bdev, (unsigned long)arg);
-+	else if (hint == SWAP_FULL)
-+		ret = zram_full(bdev, arg);
- 
- 	return ret;
++static int zram_swap_hint(struct block_device *bdev,
++				unsigned int hint, void *arg)
++{
++	int ret = -EINVAL;
++
++	if (hint == SWAP_FREE)
++		ret = zram_slot_free_notify(bdev, (unsigned long)arg);
++
++	return ret;
  }
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index c6ee271317f5..fcf3176a9f15 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -113,6 +113,7 @@ struct zram {
- 	u64 disksize;	/* bytes */
- 	int max_comp_streams;
- 	struct zram_stats stats;
-+	atomic_t alloc_fail;
- 	/*
- 	 * the number of pages zram can consume for storing compressed data
- 	 */
+ 
+ static const struct block_device_operations zram_devops = {
+-	.swap_slot_free_notify = zram_slot_free_notify,
++	.swap_hint = zram_swap_hint,
+ 	.owner = THIS_MODULE
+ };
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index e267bf0db559..c7220409456c 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1609,6 +1609,10 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
+ 
+ #endif /* CONFIG_BLK_DEV_INTEGRITY */
+ 
++enum swap_blk_hint {
++	SWAP_FREE,
++};
++
+ struct block_device_operations {
+ 	int (*open) (struct block_device *, fmode_t);
+ 	void (*release) (struct gendisk *, fmode_t);
+@@ -1624,8 +1628,7 @@ struct block_device_operations {
+ 	void (*unlock_native_capacity) (struct gendisk *);
+ 	int (*revalidate_disk) (struct gendisk *);
+ 	int (*getgeo)(struct block_device *, struct hd_geometry *);
+-	/* this callback is with swap_lock and sometimes page table lock held */
+-	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
++	int (*swap_hint)(struct block_device *, unsigned int, void *);
+ 	struct module *owner;
+ };
+ 
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 955db8b0d497..c6cc19655e97 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -114,7 +114,7 @@ void end_swap_bio_read(struct bio *bio, int err)
+ 			 * we again wish to reclaim it.
+ 			 */
+ 			struct gendisk *disk = sis->bdev->bd_disk;
+-			if (disk->fops->swap_slot_free_notify) {
++			if (disk->fops->swap_hint) {
+ 				swp_entry_t entry;
+ 				unsigned long offset;
+ 
+@@ -122,8 +122,8 @@ void end_swap_bio_read(struct bio *bio, int err)
+ 				offset = swp_offset(entry);
+ 
+ 				SetPageDirty(page);
+-				disk->fops->swap_slot_free_notify(sis->bdev,
+-						offset);
++				disk->fops->swap_hint(sis->bdev,
++						SWAP_FREE, (void *)offset);
+ 			}
+ 		}
+ 	}
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 8798b2e0ac59..c07f7f4912e9 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -816,9 +816,9 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+ 		frontswap_invalidate_page(p->type, offset);
+ 		if (p->flags & SWP_BLKDEV) {
+ 			struct gendisk *disk = p->bdev->bd_disk;
+-			if (disk->fops->swap_slot_free_notify)
+-				disk->fops->swap_slot_free_notify(p->bdev,
+-								  offset);
++			if (disk->fops->swap_hint)
++				disk->fops->swap_hint(p->bdev,
++						SWAP_FREE, (void *)offset);
+ 		}
+ 	}
+ 
 -- 
 2.0.0
 
