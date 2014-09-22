@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaIVOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:51:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38702 "EHLO mx2.suse.de"
+	id S1754192AbaIVOwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:52:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64210 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754399AbaIVOvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:51:16 -0400
-Date: Mon, 22 Sep 2014 16:51:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 1/2] memcg: move memcg_{alloc,free}_cache_params to
- slab_common.c
-Message-ID: <20140922145115.GI336@dhcp22.suse.cz>
-References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
- <20140922135245.GE336@dhcp22.suse.cz>
- <20140922141420.GD18526@esperanza>
+	id S1753538AbaIVOwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 10:52:15 -0400
+Date: Mon, 22 Sep 2014 16:51:33 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf pollfd v3
+Message-ID: <20140922145133.GA18809@krava.brq.redhat.com>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <20140911113336.GB13634@krava.brq.redhat.com>
+ <20140911114825.GC13634@krava.brq.redhat.com>
+ <20140911133029.GC10158@kernel.org>
+ <20140911213638.GC1801@kernel.org>
+ <20140918160455.GI2770@kernel.org>
+ <20140922133526.GB18187@krava.brq.redhat.com>
+ <20140922144949.GE32694@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140922141420.GD18526@esperanza>
+In-Reply-To: <20140922144949.GE32694@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-09-14 18:14:20, Vladimir Davydov wrote:
-> On Mon, Sep 22, 2014 at 03:52:45PM +0200, Michal Hocko wrote:
-> > On Thu 18-09-14 19:50:19, Vladimir Davydov wrote:
-> > > The only reason why they live in memcontrol.c is that we get/put css
-> > > reference to the owner memory cgroup in them. However, we can do that in
-> > > memcg_{un,}register_cache.
+On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
+> > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Done, updated it there:
 > > > 
-> > > So let's move them to slab_common.c and make them static.
+> > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
+> > > 
+> > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
+> > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
+> > > mmap_read loop to consume what is left after all fds for a mmap are
+> > > closed.
+> > > 
+> > > I'll wait a bit before reposting, probably Jiri will not be able to
+> > > comment this week, but I would like to at least post the URL for this
+> > > latest v4 kit.
+> > > 
+> > > Adrian, if you could take a look at it, would be really great :-)
 > > 
-> > Why is it better?
+> > I checked the branch.. the last patch brakes the functionality
+> > of perf record for me
 > 
-> First, I think that the less public interface functions we have in
-> memcontrol.h the better. Since the functions I move don't depend on
-> memcontrol, I think it's worth making them private to slab, especially
-> taking into account that the arrays are defined on the slab's side too.
-> 
-> Second, the way how per-memcg arrays are updated looks rather awkward:
-> it proceeds from memcontrol.c (__memcg_activate_kmem) to slab_common.c
-> (memcg_update_all_caches) and back to memcontrol.c again
-> (memcg_update_array_size). In the next patch I move the function
-> relocating the arrays (memcg_update_array_size) to slab_common.c and
-> therefore get rid this circular call path. I think we should have the
-> cache allocation stuff in the same place where we have relocation,
-> because it's easier to follow the code then. So I move arrays alloc/free
-> functions to slab_common.c too.
-> 
-> The third point isn't obvious. In the "Per memcg slab shrinkers" patch
-> set, which I sent recently, I have to update per-memcg list_lrus arrays
-> too. And it's much easier and cleaner to do it in list_lru.c rather than
-> in memcontrol.c. The current patchset makes cache arrays allocation path
-> conform that of the upcoming list_lru.
+> Breaks in what sense?
 
-Exactly what I would love to have in the changelog...
+perf record -p pid
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+and killing the pid won't finish perf record
+
+jirka
