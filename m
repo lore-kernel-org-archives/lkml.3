@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039AbaIVUuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:50:18 -0400
-Received: from [118.99.31.190] ([118.99.31.190]:57410 "EHLO a.00k8.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754777AbaIVUuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 16:50:17 -0400
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Sep 2014 16:50:17 EDT
-Date: Tue, 23 Sep 2014 04:42:26 +0800
-From: "LED LENSER" <iu1@a.00k8.com>
-Reply-To: seles1@jrs-tech.net
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: RE:LED LENSER Flashlight headlamp
-Message-ID: <201409230442260621581@a.00k8.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1754885AbaIVUyy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:54:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37777 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaIVUyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 16:54:52 -0400
+Message-ID: <54208C9B.9000504@canonical.com>
+Date: Mon, 22 Sep 2014 15:54:51 -0500
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+To: hch@infradead.org
+CC: bruce.lucas@mongodb.com,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, adam.radford@avagotech.com,
+        kashyap.desai@avagotech.com
+Subject: Re: [PATCH v2] mptfusion: enable no_write_same for vmware scsi disks
+References: <20140922181929.GA11319@infradead.org> <1411418701-25025-1-git-send-email-chris.j.arges@canonical.com>
+In-Reply-To: <1411418701-25025-1-git-send-email-chris.j.arges@canonical.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8MKoPuZ031225
 
-Many thanks for your valuable time to read my letter.
+On 09/22/2014 03:44 PM, Chris J Arges wrote:
+> When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
+> data can be improperly zeroed out using the mptfusion driver. This patch
+> disables write_same for this driver and the vmware subsystem_vendor which
+> ensures that manual zeroing out is used instead.
+> 
+> BugLink: http://bugs.launchpad.net/bugs/1371591
+> Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
+> Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+> ---
+>  drivers/message/fusion/mptspi.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
+> index 787933d..fca1594 100644
+> --- a/drivers/message/fusion/mptspi.c
+> +++ b/drivers/message/fusion/mptspi.c
+> @@ -1409,6 +1409,12 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  		return 0;
+>  	}
+>  
+> +	/* Fix for vmware guests that do not implement write_same
+> +         */
+> +	if (pdev->subsystem_vendor == 0x15AD) {
+> +		mptspi_driver_template.no_write_same = 1;
+> +	}
+> +
+>  	sh = scsi_host_alloc(&mptspi_driver_template, sizeof(MPT_SCSI_HOST));
+>  
+>  	if (!sh) {
+> 
 
-This is Hellen from JRS Technology Co.,Ltd.
-We do LED LENSER flashlight and headlamp Wholesale business. Many models are available with competitive price.
-For more information, please contact us in any time
-it will be our honor to serve you well and be your supplier
-Waitting for your reply.
+This is a do-no-harm patch, with a case to check for vmware
+subsystem_vendor as suggested by Christoph. Let me know if there are
+issues with this patch (do I need a define for the vendor ID? Is the
+comment a little too vague or unnecessary?)
 
-Thanks and best regards
+Adding those that were CC'ed in the other part of the thread.
 
-Hellen
-
-JRS Technology Co.,Ltd
-
-E-mail : sales@JRS-Tech.net
-Msn:     techjrsb@msn.cn
-Skype:   techjrsa
-http://www.jrs-tech.net
-
-we would be grateful if you will be our led lenser catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+--chris j arges
