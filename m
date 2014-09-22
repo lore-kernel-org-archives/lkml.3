@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189AbaIVNr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:47:59 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57167 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753528AbaIVNr4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:47:56 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>, viresh.kumar@linaro.org,
-        "'Dirk Brandewie'" <dirk.j.brandewie@intel.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Dirk Brandewie'" <dirk.brandewie@gmail.com>
-Subject: Re: [PATCH 1/1] Cpufreq: Keep cpufreq sysfs nodes across S2RAM/S2DISK when using intel_pstate driver.
-Date: Mon, 22 Sep 2014 16:07:42 +0200
-Message-ID: <8879768.rKXiR3iWPo@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411023787-11458-1-git-send-email-tianyu.lan@intel.com>
-References: <1411023787-11458-1-git-send-email-tianyu.lan@intel.com>
+	id S1754197AbaIVNsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:48:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37209 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753625AbaIVNsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 09:48:30 -0400
+Date: Mon, 22 Sep 2014 15:48:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Steven Rostedt <rostedt@goodmis.org>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] cgroup/kmemleak: add kmemleak_free() for cgroup
+ deallocations.
+Message-ID: <20140922134827.GD336@dhcp22.suse.cz>
+References: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411004285-42101-1-git-send-email-wangnan0@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 18, 2014 03:03:07 PM Lan Tianyu wrote:
-> Cpufreq core introduces cpufreq_suspended flag to let cpufreq sysfs nodes
-> across S2RAM/S2DISK. But the flag is only set in the cpufreq_suspend()
-> for cpufreq drivers which have target or target_index callback. This
-> skips intel_pstate driver. This patch is to set the flag before checking
-> target or target_index callback.
+On Thu 18-09-14 09:38:05, Wang Nan wrote:
+> Commit ff7ee93f4 introduces kmemleak_alloc() for alloc_page_cgroup(),
+> but corresponding kmemleak_free() is missing, which makes kmemleak be
+> wrongly disabled after memory offlining. Log is pasted at the end of
+> this commit message.
 > 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> This patch add kmemleak_free() into free_page_cgroup(). During page
+> offlining, this patch removes corresponding entries in kmemleak rbtree.
+> After that, the freed memory can be allocated again by other subsystems
+> without killing kmemleak.
+> 
+> bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
+> [   45.537934] Offlined Pages 32768
+> [   46.617892] kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
+> [   46.617892] CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
+> [   46.617892] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [   46.617892]  ffff880016823d10 ffff880018bdfc38 ffffffff81725d2c ffff88001780e950
+> [   46.617892]  ffff880016969000 ffff880018bdfc88 ffffffff8117a9e6 ffff880018bdfc78
+> [   46.617892]  0000000000000096 ffff880017812800 ffffffff81c2eda0 ffff880016969000
+> [   46.617892] Call Trace:
+> [   46.617892]  [<ffffffff81725d2c>] dump_stack+0x46/0x58
+> [   46.617892]  [<ffffffff8117a9e6>] create_object+0x266/0x2c0
+> [   46.617892]  [<ffffffff8171d2f6>] kmemleak_alloc+0x26/0x50
+> [   46.617892]  [<ffffffff8116a3a3>] kmem_cache_alloc+0xd3/0x160
+> [   46.617892]  [<ffffffff81058e59>] __sigqueue_alloc+0x49/0xd0
+> [   46.617892]  [<ffffffff8105a41b>] __send_signal+0xcb/0x410
+> [   46.617892]  [<ffffffff8105a7a5>] send_signal+0x45/0x90
+> [   46.617892]  [<ffffffff8105a803>] __group_send_sig_info+0x13/0x20
+> [   46.617892]  [<ffffffff8105bd0b>] do_notify_parent+0x1bb/0x260
+> [   46.617892]  [<ffffffff81077e7a>] ? sched_move_task+0xaa/0x130
+> [   46.617892]  [<ffffffff81050917>] do_exit+0x767/0xa40
+> [   46.617892]  [<ffffffff81050c84>] do_group_exit+0x44/0xa0
+> [   46.617892]  [<ffffffff81050cf7>] SyS_exit_group+0x17/0x20
+> [   46.617892]  [<ffffffff8172cd12>] system_call_fastpath+0x16/0x1b
+> [   46.617892] kmemleak: Kernel memory leak detector disabled
+> [   46.617892] kmemleak: Object 0xffff880016900000 (size 524288):
+> [   46.617892] kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
+> [   46.617892] kmemleak:   min_count = 0
+> [   46.617892] kmemleak:   count = 0
+> [   46.617892] kmemleak:   flags = 0x1
+> [   46.617892] kmemleak:   checksum = 0
+> [   46.617892] kmemleak:   backtrace:
+> [   46.617892]      [<ffffffff81d0a7f0>] log_early+0x63/0x77
+> [   46.617892]      [<ffffffff8171d31b>] kmemleak_alloc+0x4b/0x50
+> [   46.617892]      [<ffffffff81720e4f>] init_section_page_cgroup+0x7f/0xf5
+> [   46.617892]      [<ffffffff81d0a6f0>] page_cgroup_init+0xc5/0xd0
+> [   46.617892]      [<ffffffff81ce4ed9>] start_kernel+0x333/0x408
+> [   46.617892]      [<ffffffff81ce45b2>] x86_64_start_reservations+0x2a/0x2c
+> [   46.617892]      [<ffffffff81ce46a9>] x86_64_start_kernel+0xf5/0xfc
+> [   46.617892]      [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
 
-Viresh, Dirk, this looks like a fix that should go into 3.17, so I'm
-queuing it up accordingly.  Please let me know if that's not correct.
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+And sorry, I should have noticed that when reviewing the original patch
+which added kmemleak_alloc.
+
+I think this is worth going into stable. The risk is marginal and
+somebody might be relying on kmemleak even on older kernels when
+debugging a bug during memory hotplug.
+
+Thanks!
 
 > ---
->  drivers/cpufreq/cpufreq.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  mm/page_cgroup.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index d9fdedd..eb9bb78 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1656,6 +1656,8 @@ void cpufreq_suspend(void)
->  	if (!cpufreq_driver)
->  		return;
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 3708264..5331c2b 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -171,6 +171,7 @@ static void free_page_cgroup(void *addr)
+>  			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
 >  
-> +	cpufreq_suspended = true;
-> +
->  	if (!has_target())
->  		return;
->  
-> @@ -1670,8 +1672,6 @@ void cpufreq_suspend(void)
->  			pr_err("%s: Failed to suspend driver: %p\n", __func__,
->  				policy);
+>  		BUG_ON(PageReserved(page));
+> +		kmemleak_free(addr);
+>  		free_pages_exact(addr, table_size);
 >  	}
-> -
-> -	cpufreq_suspended = true;
 >  }
->  
->  /**
-> @@ -1687,13 +1687,13 @@ void cpufreq_resume(void)
->  	if (!cpufreq_driver)
->  		return;
->  
-> +	cpufreq_suspended = false;
-> +
->  	if (!has_target())
->  		return;
->  
->  	pr_debug("%s: Resuming Governors\n", __func__);
->  
-> -	cpufreq_suspended = false;
-> -
->  	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
->  		if (cpufreq_driver->resume && cpufreq_driver->resume(policy))
->  			pr_err("%s: Failed to resume driver: %p\n", __func__,
+> -- 
+> 1.8.4
 > 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Michal Hocko
+SUSE Labs
