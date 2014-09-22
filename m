@@ -1,63 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaIVCMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 22:12:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44490 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347AbaIVCMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 22:12:00 -0400
-Date: Sun, 21 Sep 2014 19:11:59 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: nick <yocto6@gmail.com>
-Cc: Peter Chen <Peter.Chen@freescale.com>,
-        "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>,
-        "oneukum@suse.de" <oneukum@suse.de>,
-        "himangi774@gmail.com" <himangi774@gmail.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: FIX ME in  oxu210p-hcd.c
-Message-ID: <20140922021159.GA28285@kroah.com>
-References: <541DB6BF.7090909@gmail.com>
- <541DB8C1.2000101@gmail.com>
- <2d062bb368d94327b89cba3d547bff9d@BN1PR0301MB0772.namprd03.prod.outlook.com>
- <541F8370.4040705@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <541F8370.4040705@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752813AbaIVCNJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 22:13:09 -0400
+Received: from mga14.intel.com ([192.55.52.115]:34276 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617AbaIVCNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 22:13:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,568,1406617200"; 
+   d="scan'208";a="594737298"
+Message-ID: <1411351981.26108.5.camel@yhuang-dev>
+Subject: Re: [PATCH 3/3] f2fs: fix roll-forward missing scenarios
+From: Huang Ying <ying.huang@intel.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: huang ying <huang.ying.caritas@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Mon, 22 Sep 2014 10:13:01 +0800
+In-Reply-To: <20140921033639.GA19487@jaegeuk-mac02.hsd1.ca.comcast.net>
+References: <1411019468-2201-1-git-send-email-jaegeuk@kernel.org>
+	 <1411019468-2201-3-git-send-email-jaegeuk@kernel.org>
+	 <CAC=cRTPotgNXbuPwG95HHuWiicS2OiD5R3HsOqdMG+2b=8ZyEg@mail.gmail.com>
+	 <20140920162358.GA18133@jaegeuk-mac02.hsd1.ca.comcast.net>
+	 <1411255352.10688.7.camel@yhuang-mobile.sh.intel.com>
+	 <20140921033639.GA19487@jaegeuk-mac02.hsd1.ca.comcast.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 21, 2014 at 10:03:28PM -0400, nick wrote:
+On Sat, 2014-09-20 at 20:36 -0700, Jaegeuk Kim wrote:
+> On Sun, Sep 21, 2014 at 07:22:32AM +0800, Huang Ying wrote:
+> > On Sat, 2014-09-20 at 09:23 -0700, Jaegeuk Kim wrote:
+> > > On Thu, Sep 18, 2014 at 09:04:11PM +0800, huang ying wrote:
+> > > > On Thu, Sep 18, 2014 at 1:51 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
+> > > > 
+> > > > > We can summarize the roll forward recovery scenarios as follows.
+> > > > >
+> > > > > [Term] F: fsync_mark, D: dentry_mark
+> > > > >
+> > > > > 1. inode(x) | CP | inode(x) | dnode(F)
+> > > > > -> Update the latest inode(x).
+> > > > >
+> > > > > 2. inode(x) | CP | inode(F) | dnode(F)
+> > > > > -> No problem.
+> > > > >
+> > > > > 3. inode(x) | CP | dnode(F) | inode(x)
+> > > > > -> Recover to the latest dnode(F), and drop the last inode(x)
+> > > > >
+> > > > > 4. inode(x) | CP | dnode(F) | inode(F)
+> > > > > -> No problem.
+> > > > >
+> > > > > 5. CP | inode(x) | dnode(F)
+> > > > > -> The inode(DF) was missing. Should drop this dnode(F).
+> > > > >
+> > > > > 6. CP | inode(DF) | dnode(F)
+> > > > > -> No problem.
+> > > > >
+> > > > > 7. CP | dnode(F) | inode(DF)
+> > > > > -> If f2fs_iget fails, then goto next to find inode(DF).
+> > > > >
+> > > > > 8. CP | dnode(F) | inode(x)
+> > > > > -> If f2fs_iget fails, then goto next to find inode(DF).
+> > > > >    But it will fail due to no inode(DF).
+> > > > >
+> > > > > So, this patch adds some missing points such as #1, #5, #7, and #8.
+> > > > >
+> > > > > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > > > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > > > > ---
+> > > > >  fs/f2fs/recovery.c | 71
+> > > > > +++++++++++++++++++++++++++++++++++++++++++++---------
+> > > > >  1 file changed, 60 insertions(+), 11 deletions(-)
+> > > > >
+> > > > > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> > > > > index 36d4f73..a4eb978 100644
+> > > > > --- a/fs/f2fs/recovery.c
+> > > > > +++ b/fs/f2fs/recovery.c
+> > > > > @@ -14,6 +14,37 @@
+> > > > >  #include "node.h"
+> > > > >  #include "segment.h"
+> > > > >
+> > > > > +/*
+> > > > > + * Roll forward recovery scenarios.
+> > > > > + *
+> > > > > + * [Term] F: fsync_mark, D: dentry_mark
+> > > > > + *
+> > > > > + * 1. inode(x) | CP | inode(x) | dnode(F)
+> > > > > + * -> Update the latest inode(x).
+> > > > > + *
+> > > > > + * 2. inode(x) | CP | inode(F) | dnode(F)
+> > > > > + * -> No problem.
+> > > > > + *
+> > > > > + * 3. inode(x) | CP | dnode(F) | inode(x)
+> > > > > + * -> Recover to the latest dnode(F), and drop the last inode(x)
+> > > > > + *
+> > > > > + * 4. inode(x) | CP | dnode(F) | inode(F)
+> > > > > + * -> No problem.
+> > > > > + *
+> > > > > + * 5. CP | inode(x) | dnode(F)
+> > > > > + * -> The inode(DF) was missing. Should drop this dnode(F).
+> > > > > + *
+> > > > > + * 6. CP | inode(DF) | dnode(F)
+> > > > > + * -> No problem.
+> > > > > + *
+> > > > > + * 7. CP | dnode(F) | inode(DF)
+> > > > > + * -> If f2fs_iget fails, then goto next to find inode(DF).
+> > > > > + *
+> > > > > + * 8. CP | dnode(F) | inode(x)
+> > > > > + * -> If f2fs_iget fails, then goto next to find inode(DF).
+> > > > > + *    But it will fail due to no inode(DF).
+> > > > > + */
+> > > > > +
+> > > > >  static struct kmem_cache *fsync_entry_slab;
+> > > > >
+> > > > >  bool space_for_roll_forward(struct f2fs_sb_info *sbi)
+> > > > > @@ -110,27 +141,32 @@ out:
+> > > > >         return err;
+> > > > >  }
+> > > > >
+> > > > > -static int recover_inode(struct inode *inode, struct page *node_page)
+> > > > > +static void __recover_inode(struct inode *inode, struct page *page)
+> > > > >  {
+> > > > > -       struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
+> > > > > +       struct f2fs_inode *raw = F2FS_INODE(page);
+> > > > > +
+> > > > > +       inode->i_mode = le16_to_cpu(raw->i_mode);
+> > > > > +       i_size_write(inode, le64_to_cpu(raw->i_size));
+> > > > > +       inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
+> > > > > +       inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
+> > > > > +       inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
+> > > > > +       inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> > > > > +       inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
+> > > > > +       inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> > > > > +}
+> > > > >
+> > > > > +static int recover_inode(struct inode *inode, struct page *node_page)
+> > > > > +{
+> > > > >         if (!IS_INODE(node_page))
+> > > > >                 return 0;
+> > > > >
+> > > > > -       inode->i_mode = le16_to_cpu(raw_inode->i_mode);
+> > > > > -       i_size_write(inode, le64_to_cpu(raw_inode->i_size));
+> > > > > -       inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
+> > > > > -       inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
+> > > > > -       inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
+> > > > > -       inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+> > > > > -       inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
+> > > > > -       inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+> > > > > +       __recover_inode(inode, node_page);
+> > > > >
+> > > > >         if (is_dent_dnode(node_page))
+> > > > >                 return recover_dentry(node_page, inode);
+> > > > >
+> > > > >         f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name
+> > > > > = %s",
+> > > > > -                       ino_of_node(node_page), raw_inode->i_name);
+> > > > > +                       ino_of_node(node_page),
+> > > > > F2FS_INODE(node_page)->i_name);
+> > > > >         return 0;
+> > > > >  }
+> > > > >
+> > > > > @@ -183,10 +219,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info
+> > > > > *sbi, struct list_head *head)
+> > > > >                                 break;
+> > > > >                         }
+> > > > >
+> > > > > +                       /*
+> > > > > +                        * CP | dnode(F) | inode(DF)
+> > > > > +                        * For this case, we should not give up now.
+> > > > > +                        */
+> > > > >                         entry->inode = f2fs_iget(sbi->sb,
+> > > > > ino_of_node(page));
+> > > > >                         if (IS_ERR(entry->inode)) {
+> > > > >                                 err = PTR_ERR(entry->inode);
+> > > > >                                 kmem_cache_free(fsync_entry_slab, entry);
+> > > > > +                               if (err == -ENOENT)
+> > > > > +                                       goto next;
+> > > > >                                 break;
+> > > > >                         }
+> > > > >                         list_add_tail(&entry->list, head);
+> > > > > @@ -423,6 +465,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
+> > > > >                 entry = get_fsync_inode(head, ino_of_node(page));
+> > > > >                 if (!entry)
+> > > > >                         goto next;
+> > > > > +               /*
+> > > > > +                * inode(x) | CP | inode(x) | dnode(F)
+> > > > > +                * In this case, we can lose the latest inode(x).
+> > > > > +                * So, call __recover_inode for the inode update.
+> > > > > +                */
+> > > > >
+> > > > 
+> > > > With 2/3, because both IS_CHECKPOINTED and HAS_FSYNCED_INODE flag are unset
+> > > > for inode, we will append a inode(F).
+> > > 
+> > > No, inode(F) is not appended.
+> > > Please check the fsync rule #1.
+> > 
+> > >From implementation of need_inode_block_update, we do not append an
+> > inode(F) or inode(DF), only if:
+> > 
+> >   get_nat_flag(e, HAS_LAST_FSYNC) &&
+> >           (get_nat_flag(e, IS_CHECKPOINTED) ||
+> >            get_nat_flag(e, HAS_FSYNCED_INODE)))
+> > 
+> > e is nat entry for the inode.
+> > 
+> > For inode(x) | CP | inode(x) | dnode(F)
+> > 
+> > We have:
+> > 
+> > HAS_LAST_FSYNC:    true
+> > IS_CHECKPOINTED:   false
 > 
+> IS_CHECKPOINTED: true
 > 
-> On 14-09-21 07:53 PM, Peter Chen wrote:
-> > 
-> >  
-> >> Subject: Re: FIX ME in oxu210p-hcd.c
-> >>
-> >>
-> >> I found a unfixed FIX ME in the file stated in my above message. I am
-> >> wondering what to set hcd->self.comtroller->dma_mask to as it's now been
-> >> defined to NULL and clearly even as a newbie this seem incorrect.
-> >> Regards Nick
-> > 
-> > Usually, it is set at its controller driver or pass through through device tree or
-> > platform data.
-> > 
-> > Peter
-> > 
-> Sorry Peter,
-> I apologize for asking for more help here but I will paste the function below and with my changes.
-> Please let me known if I am wrong and how to fix it as I new here.
-> Sorry for Wasting Your Time,
+> I changed the rule for CHECKPOINTED too.
 
-Then please do not.  Just because your other email addresses were banned
-from lkml, don't keep popping up and bothering people, it's rude, and
-will cause this address to be banned as well.
+Sorry for the noise.  I did not notice that.
+
+Best Regards,
+Huang, Ying
+
+> > HAS_FSYNCED_INODE: false
+> > 
+> > So we will append a inode(DF) here.
+> > 
+> > > > So we do not need to call
+> > > > __recover_inode here?
+> > 
+> > Thought again, __recover_inode here may be helpful here for the
+> > following situation:
+> > 
+> > inode(x) | CP | inode(x) | dnode(F) | inode(DF)
+> >                                     |
+> >                                     v
+> >                                Sudden power off
+> > 
+> > That is, sudden power off before writing inode(DF).
+> > 
+> > So I think we should keep the code, but maybe change the comments?
+> > 
+> > Best Regards,
+> > Huang, Ying
+> > 
+> > > > 
+> > > > 
+> > > > > +               if (IS_INODE(page))
+> > > > > +                       __recover_inode(entry->inode, page);
+> > > > >
+> > > > >                 err = do_recover_data(sbi, entry->inode, page, blkaddr);
+> > > > >                 if (err) {
+> > > > > --
+> > > > >
+
 
