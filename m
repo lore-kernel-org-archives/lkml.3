@@ -1,204 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaIVROM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 13:14:12 -0400
-Received: from mout.web.de ([212.227.17.11]:51296 "EHLO mout.web.de"
+	id S1754764AbaIVROe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 13:14:34 -0400
+Received: from mout.web.de ([212.227.17.11]:54051 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622AbaIVROG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 13:14:06 -0400
+	id S1754017AbaIVROK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 13:14:10 -0400
 From: Martin Walch <walch.martin@web.de>
 To: yann.morin.1998@free.fr
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         Martin Walch <walch.martin@web.de>
-Subject: [PATCH v2 1/2] kconfig: fix bad syntactic transformation in expr.c
-Date: Mon, 22 Sep 2014 19:13:18 +0200
-Message-Id: <1411405999-20212-2-git-send-email-walch.martin@web.de>
+Subject: [PATCH v2 2/2] kconfig: trivial - adjust comments
+Date: Mon, 22 Sep 2014 19:13:19 +0200
+Message-Id: <1411405999-20212-3-git-send-email-walch.martin@web.de>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1411405999-20212-1-git-send-email-walch.martin@web.de>
 References: <3491939.FtiyjGE4Of@tacticalops>
  <1411405999-20212-1-git-send-email-walch.martin@web.de>
-X-Provags-ID: V03:K0:bE3L2Hhi1ktPY2nIjWn45Ro/CuVPFvKFRDuKbOTnoH3WuMgtldD
- aRHxp1cGJwqs67UcpVLOrodKb3nbz1CdKbmemNsaoer5hlVJh7KEXtbQCIHuH0ON/hZBSRJ
- QEzTJOC1c4Nmlmi7ddOZgd7+ONVgqD3iOv1p7FayTKK1Lq5Uk05er8ARcIoL1GE7hROvO/o
- RDaF1x3k8VgAHcbrITyEQ==
+X-Provags-ID: V03:K0:RUZ9ANPSqwiwZptojjAJRPJ3K02Nt7Td6lDonLuAVMLM2RIIZZO
+ nMO/LkkvOYaHaOFk8HMmLiNVLnY1d3/KiIMQSCnbUw42S60cYlwEki6jqvPF7g2Tf4RRAA6
+ 42F1iyZQ3Mq8yoDOvHh2MNkt04XegtAVOf8L4jJEsBx8vUuF9y84apWA1ztAmRMQLvlvTXW
+ thq4G30Rwflgc4yUIWgGg==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-expr_eliminate_dups2() in scripts/kconfig/expr.c applies two bad
-inference rules:
+Replace any C99 comments with traditional ones (/*...*/).
 
-(FOO || BAR) && (!FOO && !BAR) -> n
-(FOO && BAR) || (!FOO || !BAR) -> y
+Also fix the contents of two comments:
 
-They would be correct in propositional logic, but this is a three-valued
-logic, and here it is wrong in that it changes semantics. It becomes
-immediately visible when substituting FOO and BAR with m.
+1) the second occurrence of
+(a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
+is probably copy & paste from above, missing the adjustment corresponding
+to the code.
+It should probably read
+(a!='b') && (a='c') -> 'b'='c' ? 'n' : a='c'
 
-Fix it by removing expr_eliminate_dups2() and the functions that have no use
-anywhere else: expr_extract_eq_and(), expr_extract_eq_or(),
-and expr_extract_eq() from scripts/kconfig/expr.[ch]
-
-Currently the bug is not triggered in mainline, so this patch does not modify
-the configuration space there.
-
-As a side effect, this reduces code size in expr.c by roughly 10% and slightly
-improves startup time for all configuration frontends.
+2) that one is similar:
+(a!='m') && (a!='n') -> (a='m')
+it should be
+(a!='m') && (a!='n') -> (a='y')
 
 Signed-off-by: Martin Walch <walch.martin@web.de>
 ---
- scripts/kconfig/expr.c | 108 -------------------------------------------------
- scripts/kconfig/expr.h |   3 --
- 2 files changed, 111 deletions(-)
+ scripts/kconfig/expr.c | 38 +++++++++++++++++++-------------------
+ 1 file changed, 19 insertions(+), 19 deletions(-)
 
 diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
-index d662652..4aa171b 100644
+index 4aa171b..c840e52 100644
 --- a/scripts/kconfig/expr.c
 +++ b/scripts/kconfig/expr.c
-@@ -553,62 +553,6 @@ static void expr_eliminate_dups1(enum expr_type type, struct expr **ep1, struct
- #undef e2
- }
- 
--static void expr_eliminate_dups2(enum expr_type type, struct expr **ep1, struct expr **ep2)
--{
--#define e1 (*ep1)
--#define e2 (*ep2)
--	struct expr *tmp, *tmp1, *tmp2;
--
--	if (e1->type == type) {
--		expr_eliminate_dups2(type, &e1->left.expr, &e2);
--		expr_eliminate_dups2(type, &e1->right.expr, &e2);
--		return;
--	}
--	if (e2->type == type) {
--		expr_eliminate_dups2(type, &e1, &e2->left.expr);
--		expr_eliminate_dups2(type, &e1, &e2->right.expr);
--	}
--	if (e1 == e2)
--		return;
--
--	switch (e1->type) {
--	case E_OR:
--		expr_eliminate_dups2(e1->type, &e1, &e1);
--		// (FOO || BAR) && (!FOO && !BAR) -> n
--		tmp1 = expr_transform(expr_alloc_one(E_NOT, expr_copy(e1)));
--		tmp2 = expr_copy(e2);
--		tmp = expr_extract_eq_and(&tmp1, &tmp2);
--		if (expr_is_yes(tmp1)) {
--			expr_free(e1);
--			e1 = expr_alloc_symbol(&symbol_no);
--			trans_count++;
--		}
--		expr_free(tmp2);
--		expr_free(tmp1);
--		expr_free(tmp);
--		break;
--	case E_AND:
--		expr_eliminate_dups2(e1->type, &e1, &e1);
--		// (FOO && BAR) || (!FOO || !BAR) -> y
--		tmp1 = expr_transform(expr_alloc_one(E_NOT, expr_copy(e1)));
--		tmp2 = expr_copy(e2);
--		tmp = expr_extract_eq_or(&tmp1, &tmp2);
--		if (expr_is_no(tmp1)) {
--			expr_free(e1);
--			e1 = expr_alloc_symbol(&symbol_yes);
--			trans_count++;
--		}
--		expr_free(tmp2);
--		expr_free(tmp1);
--		expr_free(tmp);
--		break;
--	default:
--		;
--	}
--#undef e1
--#undef e2
--}
--
- struct expr *expr_eliminate_dups(struct expr *e)
- {
- 	int oldcount;
-@@ -621,7 +565,6 @@ struct expr *expr_eliminate_dups(struct expr *e)
- 		switch (e->type) {
- 		case E_OR: case E_AND:
- 			expr_eliminate_dups1(e->type, &e, &e);
--			expr_eliminate_dups2(e->type, &e, &e);
- 		default:
- 			;
+@@ -326,7 +326,7 @@ struct expr *expr_trans_bool(struct expr *e)
+ 		e->right.expr = expr_trans_bool(e->right.expr);
+ 		break;
+ 	case E_UNEQUAL:
+-		// FOO!=n -> FOO
++		/* FOO!=n -> FOO */
+ 		if (e->left.sym->type == S_TRISTATE) {
+ 			if (e->right.sym == &symbol_no) {
+ 				e->type = E_SYMBOL;
+@@ -375,19 +375,19 @@ static struct expr *expr_join_or(struct expr *e1, struct expr *e2)
+ 		if (e1->type == E_EQUAL && e2->type == E_EQUAL &&
+ 		    ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_mod) ||
+ 		     (e1->right.sym == &symbol_mod && e2->right.sym == &symbol_yes))) {
+-			// (a='y') || (a='m') -> (a!='n')
++			/* (a='y') || (a='m') -> (a!='n') */
+ 			return expr_alloc_comp(E_UNEQUAL, sym1, &symbol_no);
  		}
-@@ -823,57 +766,6 @@ bool expr_depends_symbol(struct expr *dep, struct symbol *sym)
-  	return false;
- }
+ 		if (e1->type == E_EQUAL && e2->type == E_EQUAL &&
+ 		    ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_no) ||
+ 		     (e1->right.sym == &symbol_no && e2->right.sym == &symbol_yes))) {
+-			// (a='y') || (a='n') -> (a!='m')
++			/* (a='y') || (a='n') -> (a!='m') */
+ 			return expr_alloc_comp(E_UNEQUAL, sym1, &symbol_mod);
+ 		}
+ 		if (e1->type == E_EQUAL && e2->type == E_EQUAL &&
+ 		    ((e1->right.sym == &symbol_mod && e2->right.sym == &symbol_no) ||
+ 		     (e1->right.sym == &symbol_no && e2->right.sym == &symbol_mod))) {
+-			// (a='m') || (a='n') -> (a!='y')
++			/* (a='m') || (a='n') -> (a!='y') */
+ 			return expr_alloc_comp(E_UNEQUAL, sym1, &symbol_yes);
+ 		}
+ 	}
+@@ -438,29 +438,29 @@ static struct expr *expr_join_and(struct expr *e1, struct expr *e2)
  
--struct expr *expr_extract_eq_and(struct expr **ep1, struct expr **ep2)
--{
--	struct expr *tmp = NULL;
--	expr_extract_eq(E_AND, &tmp, ep1, ep2);
--	if (tmp) {
--		*ep1 = expr_eliminate_yn(*ep1);
--		*ep2 = expr_eliminate_yn(*ep2);
--	}
--	return tmp;
--}
--
--struct expr *expr_extract_eq_or(struct expr **ep1, struct expr **ep2)
--{
--	struct expr *tmp = NULL;
--	expr_extract_eq(E_OR, &tmp, ep1, ep2);
--	if (tmp) {
--		*ep1 = expr_eliminate_yn(*ep1);
--		*ep2 = expr_eliminate_yn(*ep2);
--	}
--	return tmp;
--}
--
--void expr_extract_eq(enum expr_type type, struct expr **ep, struct expr **ep1, struct expr **ep2)
--{
--#define e1 (*ep1)
--#define e2 (*ep2)
--	if (e1->type == type) {
--		expr_extract_eq(type, ep, &e1->left.expr, &e2);
--		expr_extract_eq(type, ep, &e1->right.expr, &e2);
--		return;
--	}
--	if (e2->type == type) {
--		expr_extract_eq(type, ep, ep1, &e2->left.expr);
--		expr_extract_eq(type, ep, ep1, &e2->right.expr);
--		return;
--	}
--	if (expr_eq(e1, e2)) {
--		*ep = *ep ? expr_alloc_two(type, *ep, e1) : e1;
--		expr_free(e2);
--		if (type == E_AND) {
--			e1 = expr_alloc_symbol(&symbol_yes);
--			e2 = expr_alloc_symbol(&symbol_yes);
--		} else if (type == E_OR) {
--			e1 = expr_alloc_symbol(&symbol_no);
--			e2 = expr_alloc_symbol(&symbol_no);
--		}
--	}
--#undef e1
--#undef e2
--}
--
- struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym)
- {
- 	struct expr *e1, *e2;
-diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
-index 412ea8a..9c9fb57 100644
---- a/scripts/kconfig/expr.h
-+++ b/scripts/kconfig/expr.h
-@@ -214,9 +214,6 @@ struct expr *expr_eliminate_dups(struct expr *e);
- struct expr *expr_transform(struct expr *e);
- int expr_contains_symbol(struct expr *dep, struct symbol *sym);
- bool expr_depends_symbol(struct expr *dep, struct symbol *sym);
--struct expr *expr_extract_eq_and(struct expr **ep1, struct expr **ep2);
--struct expr *expr_extract_eq_or(struct expr **ep1, struct expr **ep2);
--void expr_extract_eq(enum expr_type type, struct expr **ep, struct expr **ep1, struct expr **ep2);
- struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym);
- struct expr *expr_simplify_unmet_dep(struct expr *e1, struct expr *e2);
+ 	if ((e1->type == E_SYMBOL && e2->type == E_EQUAL && e2->right.sym == &symbol_yes) ||
+ 	    (e2->type == E_SYMBOL && e1->type == E_EQUAL && e1->right.sym == &symbol_yes))
+-		// (a) && (a='y') -> (a='y')
++		/* (a) && (a='y') -> (a='y') */
+ 		return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
  
+ 	if ((e1->type == E_SYMBOL && e2->type == E_UNEQUAL && e2->right.sym == &symbol_no) ||
+ 	    (e2->type == E_SYMBOL && e1->type == E_UNEQUAL && e1->right.sym == &symbol_no))
+-		// (a) && (a!='n') -> (a)
++		/* (a) && (a!='n') -> (a) */
+ 		return expr_alloc_symbol(sym1);
+ 
+ 	if ((e1->type == E_SYMBOL && e2->type == E_UNEQUAL && e2->right.sym == &symbol_mod) ||
+ 	    (e2->type == E_SYMBOL && e1->type == E_UNEQUAL && e1->right.sym == &symbol_mod))
+-		// (a) && (a!='m') -> (a='y')
++		/* (a) && (a!='m') -> (a='y') */
+ 		return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
+ 
+ 	if (sym1->type == S_TRISTATE) {
+ 		if (e1->type == E_EQUAL && e2->type == E_UNEQUAL) {
+-			// (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
++			/* (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b' */
+ 			sym2 = e1->right.sym;
+ 			if ((e2->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
+ 				return sym2 != e2->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
+ 							     : expr_alloc_symbol(&symbol_no);
+ 		}
+ 		if (e1->type == E_UNEQUAL && e2->type == E_EQUAL) {
+-			// (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
++			/* (a!='b') && (a='c') -> 'b'='c' ? 'n' : a='c' */
+ 			sym2 = e2->right.sym;
+ 			if ((e1->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
+ 				return sym2 != e1->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
+@@ -469,19 +469,19 @@ static struct expr *expr_join_and(struct expr *e1, struct expr *e2)
+ 		if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
+ 			   ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_no) ||
+ 			    (e1->right.sym == &symbol_no && e2->right.sym == &symbol_yes)))
+-			// (a!='y') && (a!='n') -> (a='m')
++			/* (a!='y') && (a!='n') -> (a='m') */
+ 			return expr_alloc_comp(E_EQUAL, sym1, &symbol_mod);
+ 
+ 		if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
+ 			   ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_mod) ||
+ 			    (e1->right.sym == &symbol_mod && e2->right.sym == &symbol_yes)))
+-			// (a!='y') && (a!='m') -> (a='n')
++			/* (a!='y') && (a!='m') -> (a='n') */
+ 			return expr_alloc_comp(E_EQUAL, sym1, &symbol_no);
+ 
+ 		if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
+ 			   ((e1->right.sym == &symbol_mod && e2->right.sym == &symbol_no) ||
+ 			    (e1->right.sym == &symbol_no && e2->right.sym == &symbol_mod)))
+-			// (a!='m') && (a!='n') -> (a='m')
++			/* (a!='m') && (a!='n') -> (a='y') */
+ 			return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
+ 
+ 		if ((e1->type == E_SYMBOL && e2->type == E_EQUAL && e2->right.sym == &symbol_mod) ||
+@@ -641,7 +641,7 @@ struct expr *expr_transform(struct expr *e)
+ 	case E_NOT:
+ 		switch (e->left.expr->type) {
+ 		case E_NOT:
+-			// !!a -> a
++			/* !!a -> a */
+ 			tmp = e->left.expr->left.expr;
+ 			free(e->left.expr);
+ 			free(e);
+@@ -650,14 +650,14 @@ struct expr *expr_transform(struct expr *e)
+ 			break;
+ 		case E_EQUAL:
+ 		case E_UNEQUAL:
+-			// !a='x' -> a!='x'
++			/* !a='x' -> a!='x' */
+ 			tmp = e->left.expr;
+ 			free(e);
+ 			e = tmp;
+ 			e->type = e->type == E_EQUAL ? E_UNEQUAL : E_EQUAL;
+ 			break;
+ 		case E_OR:
+-			// !(a || b) -> !a && !b
++			/* !(a || b) -> !a && !b */
+ 			tmp = e->left.expr;
+ 			e->type = E_AND;
+ 			e->right.expr = expr_alloc_one(E_NOT, tmp->right.expr);
+@@ -666,7 +666,7 @@ struct expr *expr_transform(struct expr *e)
+ 			e = expr_transform(e);
+ 			break;
+ 		case E_AND:
+-			// !(a && b) -> !a || !b
++			/* !(a && b) -> !a || !b */
+ 			tmp = e->left.expr;
+ 			e->type = E_OR;
+ 			e->right.expr = expr_alloc_one(E_NOT, tmp->right.expr);
+@@ -676,7 +676,7 @@ struct expr *expr_transform(struct expr *e)
+ 			break;
+ 		case E_SYMBOL:
+ 			if (e->left.expr->left.sym == &symbol_yes) {
+-				// !'y' -> 'n'
++				/* !'y' -> 'n' */
+ 				tmp = e->left.expr;
+ 				free(e);
+ 				e = tmp;
+@@ -685,7 +685,7 @@ struct expr *expr_transform(struct expr *e)
+ 				break;
+ 			}
+ 			if (e->left.expr->left.sym == &symbol_mod) {
+-				// !'m' -> 'm'
++				/* !'m' -> 'm' */
+ 				tmp = e->left.expr;
+ 				free(e);
+ 				e = tmp;
+@@ -694,7 +694,7 @@ struct expr *expr_transform(struct expr *e)
+ 				break;
+ 			}
+ 			if (e->left.expr->left.sym == &symbol_no) {
+-				// !'n' -> 'y'
++				/* !'n' -> 'y' */
+ 				tmp = e->left.expr;
+ 				free(e);
+ 				e = tmp;
 -- 
 1.8.5.5
 
