@@ -1,82 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaIVTBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:01:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55192 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaIVTBJ convert rfc822-to-8bit (ORCPT
+	id S1754882AbaIVTBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:01:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40066 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaIVTBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:01:09 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com>
-Date: Mon, 22 Sep 2014 14:01:03 -0500
-Cc: Rob Herring <robherring2@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1E0E7540-B04F-4E89-91F7-B6FAC3C5D889@codeaurora.org>
-References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-11-git-send-email-abrestic@chromium.org> <CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com> <CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 22 Sep 2014 15:01:34 -0400
+Date: Mon, 22 Sep 2014 21:01:28 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark D Rustad <mark.d.rustad@intel.com>
+Cc: sparse@chrisli.org, linux-kernel@vger.kernel.org,
+        richard.weinberger@gmail.com, linux-sparse@vger.kernel.org,
+        mingo@redhat.com, jeffrey.t.kirsher@intel.com,
+        computersforpeace@gmail.com
+Subject: Re: [PATCH] sched: Remove nested extern
+Message-ID: <20140922190128.GA2805@worktop.programming.kicks-ass.net>
+References: <CAFLxGvwfuE-458duC9ARMLLMBCvZaBQnwDjPW6uJC4FAViBXjQ@mail.gmail.com>
+ <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 22, 2014, at 11:28 AM, Andrew Bresticker <abrestic@chromium.org> wrote:
-
-> On Mon, Sep 22, 2014 at 7:23 AM, Rob Herring <robherring2@gmail.com> wrote:
->> On Fri, Sep 5, 2014 at 12:30 PM, Andrew Bresticker
->> <abrestic@chromium.org> wrote:
->>> Add the vendor prefix "mti" for MIPS Technologies, Inc.
->>> 
->>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->>> ---
->>> New for v2.
->>> ---
->>> Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
->>> 1 file changed, 1 insertion(+)
->>> 
->>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
->>> index ac7269f..efa5a5b 100644
->>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
->>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
->>> @@ -86,6 +86,7 @@ microchip     Microchip Technology Inc.
->>> mosaixtech     Mosaix Technologies, Inc.
->>> moxa   Moxa
->>> mpl    MPL AG
->>> +mti    MIPS Technologies, Inc.
->> 
->> Why not mips as that is more common and the stock ticker.
+On Mon, Sep 22, 2014 at 10:55:11AM -0700, Mark D Rustad wrote:
+> Avoid W=2 nested-externs warning by moving the nested extern to
+> a normal extern. This eliminates that warning which is generated
+> for every inclusion of sched.h in a kernel build when W=2 is used.
+> This also removes a point of maintenance if the definition of
+> delayacct_on were ever to change.
 > 
-> "mti" is already in use, see
-> Documentation/devicetree/bindings/mips/cpu_irq.txt,
-> arch/mips/mti-sead3/sead3.dts, and arch/mips/ralink/dts/*.dtsi.
 
-Isn’t mips already used as well:
-
-arch/mips/lantiq/dts/danube.dtsi:			compatible = "mips,mips24Kc";
-arch/mips/ralink/dts/mt7620a.dtsi:			compatible = "mips,mips24KEc";
-arch/mips/ralink/dts/rt2880.dtsi:			compatible = "mips,mips4KEc";
-arch/mips/ralink/dts/rt3050.dtsi:			compatible = "mips,mips24KEc";
-arch/mips/ralink/dts/rt3883.dtsi:
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Yeah, so why is that warning worth using? Just disable the warn if
+you're bothered by it.
