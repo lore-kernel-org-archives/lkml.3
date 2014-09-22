@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaIVV42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 17:56:28 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:59555 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981AbaIVV4T (ORCPT
+	id S932134AbaIVV4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 17:56:24 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:45925 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091AbaIVV4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 17:56:19 -0400
+	Mon, 22 Sep 2014 17:56:18 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         dsahern@gmail.com, mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz,
         namhyung@kernel.org
-Subject: [PATCH 15/15] perf: replace _BSD_SOURCE macro by _DEFAULT_SOURCE
-Date: Mon, 22 Sep 2014 23:53:16 +0200
-Message-Id: <1411422796-27049-16-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH 14/15] perf kbuild: add generated Kconfig build-test cases
+Date: Mon, 22 Sep 2014 23:53:15 +0200
+Message-Id: <1411422796-27049-15-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411422796-27049-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1411422796-27049-1-git-send-email-alexis.berlemont@gmail.com>
@@ -22,25 +22,3724 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting from glibc-2.20, the macro _BSD_SOURCE is deprecated and
-should be replaced by _DEFAULT_SOURCE.
+Thanks to the python module kconfiglib, we were able to generate build
+configurations. The set is, of course, not exhaustive but for each
+option, all the possible states are tested.
 ---
- tools/perf/util/util.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/MANIFEST                                |  1 +
+ tools/perf/tests/configs/MINIMAL_config            | 60 ++++++++++++++++++
+ tools/perf/tests/configs/NO_BACKTRACE_config       | 73 ++++++++++++++++++++++
+ .../perf/tests/configs/NO_BUILTIN_ANNOTATE_config  | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_BENCH_config   | 73 ++++++++++++++++++++++
+ .../tests/configs/NO_BUILTIN_BUILDID_CACHE_config  | 73 ++++++++++++++++++++++
+ .../tests/configs/NO_BUILTIN_BUILDID_LIST_config   | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_DIFF_config    | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_EVLIST_config  | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_HELP_config    | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_INJECT_config  | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_KMEM_config    | 73 ++++++++++++++++++++++
+ .../perf/tests/configs/NO_BUILTIN_KVM_STAT_config  | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_KVM_config     | 72 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_LIST_config    | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_LOCK_config    | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_MEM_config     | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_PROBE_config   | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_RECORD_config  | 63 +++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_REPORT_config  | 68 ++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_SCHED_config   | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config  | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_STAT_config    | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_TEST_config    | 73 ++++++++++++++++++++++
+ .../perf/tests/configs/NO_BUILTIN_TIMECHART_config | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_TOP_config     | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_BUILTIN_TRACE_config   | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_DEMANGLE_config        | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_GTK2_config            | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBAUDIT_config        | 72 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBDWARF_config        | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBELF_MMAP_config     | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBGTK2_config         | 71 +++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBNUMA_config         | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBPERL_config         | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBPYTHON_config       | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_LIBSLANG_config        | 72 +++++++++++++++++++++
+ .../tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config  | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_PERF_REGS_config       | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_STDIO_config           | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_TIMERFD_config         | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_TUI_config             | 73 ++++++++++++++++++++++
+ tools/perf/tests/configs/NO_UNWIND_config          | 69 ++++++++++++++++++++
+ tools/perf/tests/configs/REF_config                | 73 ++++++++++++++++++++++
+ tools/perf/tests/generate_configs.py               | 43 +++++++++++++
+ tools/perf/tests/make                              | 70 ++++++---------------
+ 47 files changed, 3227 insertions(+), 50 deletions(-)
+ create mode 100644 tools/perf/tests/configs/MINIMAL_config
+ create mode 100644 tools/perf/tests/configs/NO_BACKTRACE_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_ANNOTATE_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BENCH_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BUILDID_CACHE_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BUILDID_LIST_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_DIFF_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_EVLIST_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_HELP_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_INJECT_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KMEM_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KVM_STAT_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KVM_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_LIST_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_LOCK_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_MEM_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_PROBE_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_RECORD_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_REPORT_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_SCHED_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_STAT_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TEST_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TIMECHART_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TOP_config
+ create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TRACE_config
+ create mode 100644 tools/perf/tests/configs/NO_DEMANGLE_config
+ create mode 100644 tools/perf/tests/configs/NO_GTK2_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBAUDIT_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBDWARF_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBELF_MMAP_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBGTK2_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBNUMA_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBPERL_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBPYTHON_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBSLANG_config
+ create mode 100644 tools/perf/tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config
+ create mode 100644 tools/perf/tests/configs/NO_PERF_REGS_config
+ create mode 100644 tools/perf/tests/configs/NO_STDIO_config
+ create mode 100644 tools/perf/tests/configs/NO_TIMERFD_config
+ create mode 100644 tools/perf/tests/configs/NO_TUI_config
+ create mode 100644 tools/perf/tests/configs/NO_UNWIND_config
+ create mode 100644 tools/perf/tests/configs/REF_config
+ create mode 100644 tools/perf/tests/generate_configs.py
 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 6686436..f56b4e0 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -38,7 +38,7 @@
- #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index 344c4d3..def2b5b 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -1,3 +1,4 @@
++scripts
+ tools/perf
+ tools/scripts
+ tools/lib/traceevent
+diff --git a/tools/perf/tests/configs/MINIMAL_config b/tools/perf/tests/configs/MINIMAL_config
+new file mode 100644
+index 0000000..fa6503e
+--- /dev/null
++++ b/tools/perf/tests/configs/MINIMAL_config
+@@ -0,0 +1,60 @@
++#
++# Automatically generated file; DO NOT EDIT.
++# The perf configuration
++#
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++
++#
++# Libraries / Dependencies
++#
++# CONFIG_LIBSLANG is not set
++# CONFIG_LIBAUDIT is not set
++# CONFIG_LIBGTK2 is not set
++# CONFIG_LIBPERL is not set
++# CONFIG_LIBPYTHON is not set
++# CONFIG_TIMERFD is not set
++# CONFIG_LIBELF is not set
++CONFIG_LIBELF_MINIMAL=y
++# CONFIG_LIBNUMA is not set
++# CONFIG_BIONIC is not set
++# CONFIG_PERF_REGS is not set
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BACKTRACE_config b/tools/perf/tests/configs/NO_BACKTRACE_config
+new file mode 100644
+index 0000000..e0be1a4
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BACKTRACE_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++# CONFIG_BACKTRACE is not set
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_ANNOTATE_config b/tools/perf/tests/configs/NO_BUILTIN_ANNOTATE_config
+new file mode 100644
+index 0000000..4d38fb4
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_ANNOTATE_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++# CONFIG_BUILTIN_ANNOTATE is not set
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_BENCH_config b/tools/perf/tests/configs/NO_BUILTIN_BENCH_config
+new file mode 100644
+index 0000000..38a0cf2
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_BENCH_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++# CONFIG_BUILTIN_BENCH is not set
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_BUILDID_CACHE_config b/tools/perf/tests/configs/NO_BUILTIN_BUILDID_CACHE_config
+new file mode 100644
+index 0000000..d41e3e5
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_BUILDID_CACHE_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++# CONFIG_BUILTIN_BUILDID_CACHE is not set
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_BUILDID_LIST_config b/tools/perf/tests/configs/NO_BUILTIN_BUILDID_LIST_config
+new file mode 100644
+index 0000000..f8c7a98
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_BUILDID_LIST_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++# CONFIG_BUILTIN_BUILDID_LIST is not set
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_DIFF_config b/tools/perf/tests/configs/NO_BUILTIN_DIFF_config
+new file mode 100644
+index 0000000..4fdb2ff
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_DIFF_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++# CONFIG_BUILTIN_DIFF is not set
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_EVLIST_config b/tools/perf/tests/configs/NO_BUILTIN_EVLIST_config
+new file mode 100644
+index 0000000..4d474a6
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_EVLIST_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++# CONFIG_BUILTIN_EVLIST is not set
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_HELP_config b/tools/perf/tests/configs/NO_BUILTIN_HELP_config
+new file mode 100644
+index 0000000..9611823
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_HELP_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++# CONFIG_BUILTIN_HELP is not set
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_INJECT_config b/tools/perf/tests/configs/NO_BUILTIN_INJECT_config
+new file mode 100644
+index 0000000..ac9e908
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_INJECT_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++# CONFIG_BUILTIN_INJECT is not set
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_KMEM_config b/tools/perf/tests/configs/NO_BUILTIN_KMEM_config
+new file mode 100644
+index 0000000..e808a30
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_KMEM_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++# CONFIG_BUILTIN_KMEM is not set
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_KVM_STAT_config b/tools/perf/tests/configs/NO_BUILTIN_KVM_STAT_config
+new file mode 100644
+index 0000000..b7d36d5
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_KVM_STAT_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++# CONFIG_BUILTIN_KVM_STAT is not set
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_KVM_config b/tools/perf/tests/configs/NO_BUILTIN_KVM_config
+new file mode 100644
+index 0000000..dc47acb
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_KVM_config
+@@ -0,0 +1,72 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++# CONFIG_BUILTIN_KVM is not set
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_LIST_config b/tools/perf/tests/configs/NO_BUILTIN_LIST_config
+new file mode 100644
+index 0000000..a573501
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_LIST_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++# CONFIG_BUILTIN_LIST is not set
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_LOCK_config b/tools/perf/tests/configs/NO_BUILTIN_LOCK_config
+new file mode 100644
+index 0000000..6b3a100
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_LOCK_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++# CONFIG_BUILTIN_LOCK is not set
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_MEM_config b/tools/perf/tests/configs/NO_BUILTIN_MEM_config
+new file mode 100644
+index 0000000..247ab6e
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_MEM_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++# CONFIG_BUILTIN_MEM is not set
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_PROBE_config b/tools/perf/tests/configs/NO_BUILTIN_PROBE_config
+new file mode 100644
+index 0000000..19a083b
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_PROBE_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++# CONFIG_BUILTIN_PROBE is not set
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_RECORD_config b/tools/perf/tests/configs/NO_BUILTIN_RECORD_config
+new file mode 100644
+index 0000000..151c0f7
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_RECORD_config
+@@ -0,0 +1,63 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++# CONFIG_BUILTIN_RECORD is not set
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_REPORT_config b/tools/perf/tests/configs/NO_BUILTIN_REPORT_config
+new file mode 100644
+index 0000000..88c2c17
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_REPORT_config
+@@ -0,0 +1,68 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++# CONFIG_BUILTIN_REPORT is not set
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_SCHED_config b/tools/perf/tests/configs/NO_BUILTIN_SCHED_config
+new file mode 100644
+index 0000000..ded3e68
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_SCHED_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++# CONFIG_BUILTIN_SCHED is not set
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config b/tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config
+new file mode 100644
+index 0000000..369c58e
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++# CONFIG_BUILTIN_SCRIPT is not set
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_STAT_config b/tools/perf/tests/configs/NO_BUILTIN_STAT_config
+new file mode 100644
+index 0000000..147f3ff
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_STAT_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++# CONFIG_BUILTIN_STAT is not set
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_TEST_config b/tools/perf/tests/configs/NO_BUILTIN_TEST_config
+new file mode 100644
+index 0000000..66acb87
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_TEST_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++# CONFIG_BUILTIN_TEST is not set
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_TIMECHART_config b/tools/perf/tests/configs/NO_BUILTIN_TIMECHART_config
+new file mode 100644
+index 0000000..04dba98
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_TIMECHART_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++# CONFIG_BUILTIN_TIMECHART is not set
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_TOP_config b/tools/perf/tests/configs/NO_BUILTIN_TOP_config
+new file mode 100644
+index 0000000..0af5579
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_TOP_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++# CONFIG_BUILTIN_TOP is not set
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_BUILTIN_TRACE_config b/tools/perf/tests/configs/NO_BUILTIN_TRACE_config
+new file mode 100644
+index 0000000..5717064
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_BUILTIN_TRACE_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++# CONFIG_BUILTIN_TRACE is not set
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_DEMANGLE_config b/tools/perf/tests/configs/NO_DEMANGLE_config
+new file mode 100644
+index 0000000..47c8263
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_DEMANGLE_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++# CONFIG_DEMANGLE is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_GTK2_config b/tools/perf/tests/configs/NO_GTK2_config
+new file mode 100644
+index 0000000..529872b
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_GTK2_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++# CONFIG_GTK2 is not set
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBAUDIT_config b/tools/perf/tests/configs/NO_LIBAUDIT_config
+new file mode 100644
+index 0000000..c7db9d2
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBAUDIT_config
+@@ -0,0 +1,72 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++# CONFIG_LIBAUDIT is not set
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBDWARF_config b/tools/perf/tests/configs/NO_LIBDWARF_config
+new file mode 100644
+index 0000000..45cb7c8
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBDWARF_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++# CONFIG_LIBDWARF is not set
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBELF_MMAP_config b/tools/perf/tests/configs/NO_LIBELF_MMAP_config
+new file mode 100644
+index 0000000..ec83684
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBELF_MMAP_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++# CONFIG_LIBELF_MMAP is not set
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config b/tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config
+new file mode 100644
+index 0000000..9b62c67
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++# CONFIG_LIBGTK2_INFOBAR is not set
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBGTK2_config b/tools/perf/tests/configs/NO_LIBGTK2_config
+new file mode 100644
+index 0000000..c16fc4d
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBGTK2_config
+@@ -0,0 +1,71 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++# CONFIG_LIBGTK2 is not set
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBNUMA_config b/tools/perf/tests/configs/NO_LIBNUMA_config
+new file mode 100644
+index 0000000..c3006b4
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBNUMA_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++# CONFIG_LIBNUMA is not set
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBPERL_config b/tools/perf/tests/configs/NO_LIBPERL_config
+new file mode 100644
+index 0000000..317d3f28
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBPERL_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++# CONFIG_LIBPERL is not set
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBPYTHON_config b/tools/perf/tests/configs/NO_LIBPYTHON_config
+new file mode 100644
+index 0000000..a63acb3
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBPYTHON_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++# CONFIG_LIBPYTHON is not set
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBSLANG_config b/tools/perf/tests/configs/NO_LIBSLANG_config
+new file mode 100644
+index 0000000..fa7726c
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBSLANG_config
+@@ -0,0 +1,72 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++# CONFIG_LIBSLANG is not set
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config b/tools/perf/tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config
+new file mode 100644
+index 0000000..837a80f
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++# CONFIG_LIBUNWIND_DEBUG_FRAME is not set
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_PERF_REGS_config b/tools/perf/tests/configs/NO_PERF_REGS_config
+new file mode 100644
+index 0000000..eae8a16
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_PERF_REGS_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++# CONFIG_PERF_REGS is not set
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_STDIO_config b/tools/perf/tests/configs/NO_STDIO_config
+new file mode 100644
+index 0000000..b80e1ff
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_STDIO_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++# CONFIG_STDIO is not set
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_TIMERFD_config b/tools/perf/tests/configs/NO_TIMERFD_config
+new file mode 100644
+index 0000000..4a0d134
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_TIMERFD_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++# CONFIG_TIMERFD is not set
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_TUI_config b/tools/perf/tests/configs/NO_TUI_config
+new file mode 100644
+index 0000000..be233df
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_TUI_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++# CONFIG_TUI is not set
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/NO_UNWIND_config b/tools/perf/tests/configs/NO_UNWIND_config
+new file mode 100644
+index 0000000..caefd3a
+--- /dev/null
++++ b/tools/perf/tests/configs/NO_UNWIND_config
+@@ -0,0 +1,69 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++# CONFIG_UNWIND is not set
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/configs/REF_config b/tools/perf/tests/configs/REF_config
+new file mode 100644
+index 0000000..7708411
+--- /dev/null
++++ b/tools/perf/tests/configs/REF_config
+@@ -0,0 +1,73 @@
++CONFIG_ARCH="x86"
++CONFIG_X86_64=y
++CONFIG_CROSS_COMPILE=""
++
++#
++# Built-in commands
++#
++CONFIG_BUILTIN_RECORD=y
++CONFIG_BUILTIN_REPORT=y
++CONFIG_BUILTIN_STAT=y
++CONFIG_BUILTIN_TOP=y
++CONFIG_BUILTIN_TRACE=y
++CONFIG_BUILTIN_ANNOTATE=y
++CONFIG_BUILTIN_BENCH=y
++CONFIG_BUILTIN_BUILDID_CACHE=y
++CONFIG_BUILTIN_BUILDID_LIST=y
++CONFIG_BUILTIN_DIFF=y
++CONFIG_BUILTIN_EVLIST=y
++CONFIG_BUILTIN_HELP=y
++CONFIG_BUILTIN_INJECT=y
++CONFIG_BUILTIN_KMEM=y
++CONFIG_BUILTIN_KVM=y
++CONFIG_BUILTIN_KVM_STAT=y
++CONFIG_BUILTIN_LIST=y
++CONFIG_BUILTIN_LOCK=y
++CONFIG_BUILTIN_PROBE=y
++CONFIG_BUILTIN_SCHED=y
++CONFIG_BUILTIN_SCRIPT=y
++CONFIG_BUILTIN_TIMECHART=y
++CONFIG_BUILTIN_MEM=y
++CONFIG_BUILTIN_TEST=y
++
++#
++# GUI
++#
++CONFIG_STDIO=y
++CONFIG_TUI=y
++CONFIG_GTK2=y
++
++#
++# Libraries / Dependencies
++#
++CONFIG_LIBSLANG=y
++CONFIG_LIBAUDIT=y
++CONFIG_LIBGTK2=y
++CONFIG_LIBGTK2_INFOBAR=y
++CONFIG_LIBPERL=y
++CONFIG_LIBPYTHON=y
++CONFIG_TIMERFD=y
++CONFIG_DEMANGLE=y
++CONFIG_LIBBFD=y
++# CONFIG_LIBIBERTY_ONLY is not set
++CONFIG_LIBELF=y
++# CONFIG_LIBELF_MINIMAL is not set
++CONFIG_LIBELF_MMAP=y
++CONFIG_LIBELF_GETPHDRNUM=y
++CONFIG_LIBDWARF=y
++CONFIG_LIBDWARF_DIR=""
++CONFIG_UNWIND=y
++CONFIG_LIBUNWIND=y
++# CONFIG_LIBDWARF_UNWIND is not set
++CONFIG_LIBUNWIND_DEBUG_FRAME=y
++CONFIG_LIBUNWIND_DIR=""
++CONFIG_LIBNUMA=y
++# CONFIG_BIONIC is not set
++CONFIG_PERF_REGS=y
++
++#
++# Build
++#
++# CONFIG_DEBUG is not set
++# CONFIG_DEBUG_PARSER is not set
++CONFIG_BACKTRACE=y
+diff --git a/tools/perf/tests/generate_configs.py b/tools/perf/tests/generate_configs.py
+new file mode 100644
+index 0000000..4502ecd
+--- /dev/null
++++ b/tools/perf/tests/generate_configs.py
+@@ -0,0 +1,43 @@
++import os
++import sys
++import itertools
++import kconfiglib
++
++# Let's set some environment variables to define the target
++# architecture; we choose x86 because, so far, nearly all features are
++# available on x86.
++os.environ['ARCH'] = 'x86'
++os.environ['IS_X86_64'] = '1'
++os.environ['CROSS_COMPILE'] = ''
++
++# Load Kconfig pattern
++ref_config = kconfiglib.Config(sys.argv[1])
++
++# Generate defconfig (by default, all options are set to y)
++ref_config.write_config('REF_config')
++
++# Get all the symbols
++symbols = dict([(s.get_name(), s) for s in ref_config.get_symbols()])
++
++# Remove odd symbols
++symbols.pop('y', None)
++symbols.pop('m', None)
++symbols.pop('n', None)
++
++# Remove choice-related symbols
++choices = ref_config.get_choices()
++items = [c.get_items() for c in choices]
++names = [i.get_name() for i in itertools.chain.from_iterable(items)]
++for name in names:
++    symbols.pop(name, None)
++
++for name in symbols:
++    symbol = symbols[name]
++    if not symbol.is_modifiable():
++        continue
++    if symbol.get_value() != 'y':
++        continue
++    symbol.set_user_value('n')
++    filename = 'NO_' + name + '_config'
++    ref_config.write_config(filename)
++    symbol.set_user_value('y')
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index 69a71ff..7779fda 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -11,34 +11,17 @@ else
+ lib = lib
+ endif
  
- #define _ALL_SOURCE 1
--#define _BSD_SOURCE 1
-+#define _DEFAULT_SOURCE 1
- #define HAS_BOOL
++list = $(shell ls $1 2>/dev/null)
+ has = $(shell which $1 2>/dev/null)
  
- #include <unistd.h>
+ # standard single make variable specified
++make_pure           :=
+ make_clean_all      := clean all
+ make_python_perf_so := python/perf.so
+-make_debug          := DEBUG=1
+-make_no_libperl     := NO_LIBPERL=1
+-make_no_libpython   := NO_LIBPYTHON=1
+-make_no_scripts     := NO_LIBPYTHON=1 NO_LIBPERL=1
+-make_no_newt        := NO_NEWT=1
+-make_no_slang       := NO_SLANG=1
+-make_no_gtk2        := NO_GTK2=1
+-make_no_ui          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
+-make_no_demangle    := NO_DEMANGLE=1
+-make_no_libelf      := NO_LIBELF=1
+-make_no_libunwind   := NO_LIBUNWIND=1
+-make_no_libdw_dwarf_unwind := NO_LIBDW_DWARF_UNWIND=1
+-make_no_backtrace   := NO_BACKTRACE=1
+-make_no_libnuma     := NO_LIBNUMA=1
+-make_no_libaudit    := NO_LIBAUDIT=1
+-make_no_libbionic   := NO_LIBBIONIC=1
+ make_tags           := tags
+ make_cscope         := cscope
+ make_help           := help
+ make_doc            := doc
+-make_perf_o           := perf.o
+-make_util_map_o       := util/map.o
+-make_util_pmu_bison_o := util/pmu-bison.o
+ make_install        := install
+ make_install_bin    := install-bin
+ make_install_doc    := install-doc
+@@ -48,37 +31,11 @@ make_install_info   := install-info
+ make_install_pdf    := install-pdf
+ make_static         := LDFLAGS=-static
+ 
+-# all the NO_* variable combined
+-make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
+-make_minimal        += NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1
+-make_minimal        += NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
+-make_minimal        += NO_LIBDW_DWARF_UNWIND=1
+-
+ # $(run) contains all available tests
+ run := make_pure
+ run += make_clean_all
+-run += make_python_perf_so
+-run += make_debug
+-run += make_no_libperl
+-run += make_no_libpython
+-run += make_no_scripts
+-run += make_no_newt
+-run += make_no_slang
+-run += make_no_gtk2
+-run += make_no_ui
+-run += make_no_demangle
+-run += make_no_libelf
+-run += make_no_libunwind
+-run += make_no_libdw_dwarf_unwind
+-run += make_no_backtrace
+-run += make_no_libnuma
+-run += make_no_libaudit
+-run += make_no_libbionic
+ run += make_help
+ run += make_doc
+-run += make_perf_o
+-run += make_util_map_o
+-run += make_util_pmu_bison_o
+ run += make_install
+ run += make_install_bin
+ # FIXME 'install-*' commented out till they're fixed
+@@ -87,8 +44,7 @@ run += make_install_bin
+ # run += make_install_html
+ # run += make_install_info
+ # run += make_install_pdf
+-run += make_minimal
+-run += make_static
++# run += make_static
+ 
+ ifneq ($(call has,ctags),)
+ run += make_tags
+@@ -104,6 +60,10 @@ run_O := $(addsuffix _O,$(run))
+ # disable some tests for O=...
+ run_O := $(filter-out make_python_perf_so_O,$(run_O))
+ 
++# $(run_CONFIGS) is a set of automatically-generated Kconfig
++# configurations
++run_CONFIGS := $(call list,$(PERF)/tests/configs/)
++
+ # define test for each compile as 'test_NAME' variable
+ # with the test itself as a value
+ test_make_tags   = test -f tags
+@@ -183,7 +143,7 @@ test_make_util_pmu_bison_o_O := test -f $$TMP_O/util/pmu-bison.o
+ test_default = test -x $(PERF)/perf
+ test = $(if $(test_$1),$(test_$1),$(test_default))
+ 
+-test_default_O = test -x $$TMP_O/perf
++test_default_O = test -x $$TMP_O/tools/perf/perf
+ test_O = $(if $(test_$1),$(test_$1),$(test_default_O))
+ 
+ all:
+@@ -218,13 +178,23 @@ $(run_O):
+ 	$(call test_O,$@) && \
+ 	rm -rf $@ $$TMP_O $$TMP_DEST || (cat $@ ; false)
+ 
++$(run_CONFIGS):
++	$(call clean)
++	@TMP_DEST=$$(mktemp -d); \
++	cmd="cd $(PERF) && cp tests/configs/$@ .config && make -f $(MK) JOBS=4 DESTDIR=$$TMP_DEST $($@)"; \
++	echo "- $@: $$cmd" && echo $$cmd > $@ && \
++	( eval $$cmd ) >> $@ 2>&1; \
++	echo "  test: $(call test,$@)" >> $@ 2>&1; \
++	$(call test,$@) && \
++	rm -f $@ \
++	rm -rf $$TMP_DEST
++
+ tarpkg:
+ 	@cmd="$(PERF)/tests/perf-targz-src-pkg $(PERF)"; \
+ 	echo "- $@: $$cmd" && echo $$cmd > $@ && \
+ 	( eval $$cmd ) >> $@ 2>&1
+-	
+ 
+-all: $(run) $(run_O) tarpkg
++all: $(run) $(run_O) $(run_CONFIGS) tarpkg
+ 	@echo OK
+ 
+ out: $(run_O)
 -- 
 2.1.0
 
