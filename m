@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911AbaIVU7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 16:59:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63260 "EHLO mga11.intel.com"
+	id S1754958AbaIVU7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 16:59:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753128AbaIVU7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 16:59:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="389974727"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "richard.weinberger@gmail.com" <richard.weinberger@gmail.com>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-Subject: Re: [PATCH] sched: Remove nested extern
-Thread-Topic: [PATCH] sched: Remove nested extern
-Thread-Index: AQHP1o5n4j/Km9jR6U6Rx5Rq0DoBGpwN93YAgAAIi4CAAAlVgIAADxwA
-Date: Mon, 22 Sep 2014 20:59:32 +0000
-Message-ID: <D3423D3A-814F-4E22-A84B-61D76D137A98@intel.com>
-References: <CAFLxGvwfuE-458duC9ARMLLMBCvZaBQnwDjPW6uJC4FAViBXjQ@mail.gmail.com>
- <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
- <20140922190128.GA2805@worktop.programming.kicks-ass.net>
- <D428C53D-F663-4846-ACAB-74922033B048@intel.com>
- <20140922200527.GA3128@worktop.programming.kicks-ass.net>
-In-Reply-To: <20140922200527.GA3128@worktop.programming.kicks-ass.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.176.145]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_55C4654D-914A-40A7-AA3A-D0D0CB6FF672";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
+	id S1754930AbaIVU7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 16:59:46 -0400
+Date: Mon, 22 Sep 2014 16:59:39 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-audit@redhat.com, selinux@tycho.nsa.gov
+Subject: Re: [PATCH] selinux: hooks: cleanup orphan keywords in audit log text
+Message-ID: <20140922205939.GD26201@madcap2.tricolour.ca>
+References: <8bedc57ef45bf628ac344bc3d8513b9a93e274ca.1411087339.git.rgb@redhat.com>
+ <1456449.0ADpScPp6d@sifl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1456449.0ADpScPp6d@sifl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_55C4654D-914A-40A7-AA3A-D0D0CB6FF672
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+On 14/09/22, Paul Moore wrote:
+> On Thursday, September 18, 2014 08:50:17 PM Richard Guy Briggs wrote:
+> > Convert audit_log() call to WARN_ONCE().
+> >
+> > Rename "type=" to nlmsg_type=" to avoid confusion with the audit record
+> > type.
+> > 
+> > Added "protocol=" to help track down which protocol (NETLINK_AUDIT?) was
+> > used within the netlink protocol family.
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  security/selinux/hooks.c |    7 +++----
+> >  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> I rewrote the patch subject line as it doesn't really make much sense given 
+> the changes made by the patch, but other than that it looks fine to me.
 
-On Sep 22, 2014, at 1:05 PM, Peter Zijlstra <peterz@infradead.org> =
-wrote:
+Fair enough.  What's the new patch subject line?
 
-> On Mon, Sep 22, 2014 at 07:32:04PM +0000, Rustad, Mark D wrote:
->> I assume that nested-externs is included in W=3D2 because many uses =
-of
->> them, especially with function prototypes, creates a risk of =
-inconsistent
->> declarations. The kernel has a fair number of them that seem to have
->> been added to disentangle include files. If they are judged to be
->> worthwhile, then it would be good to silence the warnings so that
->> attention can be given to other instances of the warnings. If those
->> nested externs are not worth the risk, well that is a different =
-conversation.
->=20
-> So would using something like LTO not be way better at actually =
-finding
-> the problems, seeing how it can actually see the inconsistency in
-> declarations.
->=20
-> It seems to me that banning the use of nested extern is misguided as
-> they are a useful tool; they provide some means of keeping symbols =
-from
-> being globally visible even though they actually are. Its a really =
-poor
-> man's 'private', but its the best C provides.
+> Applied.
 
-By using the macros the use of nested externs can be discouraged without
-being banned. Presence of a DIAG_IGNORE macro should mean that the =
-exception
-has been noted and accepted. And the macro remains as an indicator of =
-that.
-Or to be taken as a warning label: readers choice perhaps.
+Thanks.
 
-> Also, why do you care about W=3D2 nonsense anyhow? They're default
-> disabled for a reason.
+> > diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> > index 83d06db..28ec61c 100644
+> > --- a/security/selinux/hooks.c
+> > +++ b/security/selinux/hooks.c
+> > @@ -4681,10 +4681,9 @@ static int selinux_nlmsg_perm(struct sock *sk, struct
+> > sk_buff *skb) err = selinux_nlmsg_lookup(sksec->sclass, nlh->nlmsg_type,
+> > &perm); if (err) {
+> >  		if (err == -EINVAL) {
+> > -			audit_log(current->audit_context, GFP_KERNEL, 
+> AUDIT_SELINUX_ERR,
+> > -				  "SELinux:  unrecognized netlink message"
+> > -				  " type=%hu for sclass=%hu\n",
+> > -				  nlh->nlmsg_type, sksec->sclass);
+> > +			WARN_ONCE(1, "selinux_nlmsg_perm: unrecognized netlink 
+> message:"
+> > +				  " protocol=%hu nlmsg_type=%hu sclass=%hu\n",
+> > +				  sk->sk_protocol, nlh->nlmsg_type, sksec->sclass);
+> >  			if (!selinux_enforcing || security_get_allow_unknown())
+> >  				err = 0;
+> >  		}
+> 
+> paul moore
 
-Because I have found that enabling many warnings helps identify problems
-in code and it has been my standard practice since about 1999 to do so.
-The compiler warnings are really just another form of static analysis,
-and I use it routinely on every compile. Here is how routinely: I have
-W=3D1 in my environment, W=3D12 is just too painful. I would change that
-default to W=3D12 if it wasn't insane to do so.
+- RGB
 
-In my own code, I use way more warnings than even W=3D12 enables and in
-that code I just resolve them. I had never resorted to using the =
-attributes
-in my own code, but they are an available tool.
-
-I just finally thought it might be time to consider opening up a new
-method to manage them for the kernel.
-
---=20
-Mark Rustad, Networking Division, Intel Corporation
-
-
---Apple-Mail=_55C4654D-914A-40A7-AA3A-D0D0CB6FF672
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIcBAEBAgAGBQJUII20AAoJEDwO/+eO4+5usBoQAIS8VsZExOmae1m1mEHxcu03
-ww7KWYbJ4vBTQBEjd+LDlEE7rjflSZaEWs9ibkVhDgrm2pyplnW8eqhKX8lR01Rl
-BPaO5643N1f28U8VzughgwXWoJ1a4ydyIswdTKf/v8pe4lW2mU4C9qEY/5W+Lxs2
-qIXWRNzAIZgrgXKs/rE4JsfPIYTMBwey8KviTu7EmzIDiujgShEwu5M0ti/uju2Y
-c/42NLUyqzKAkC2/WvKkTed9/h2um/SYm/Iuw24M3syByM6qy3dgygKcqz9Lp7Gf
-G4jHKyGC32txUnCYOYmMdvTWYOJlXSNcb0cmuoqxOipIXg6ZIrG3Ol/tu0pcLLTh
-8BPwDBXjqWiLPXkxsv4W1kz0vROnX73Rz5xxKDff9z2HsbQ//Hii3htEsndtwrz0
-Y2sPoEAK4LqB+91Ruy8vI6VqVYb8Cd0C5igljPzGui1lGE2CDQ+nB2Qg0RWaSm9O
-5f2+AKOE/5i+u5S3P8jlRPEzGmA4r9UTP6OyjHWaVbBRdPNCjLwcMnAPgJUt4QDZ
-67cZuterm8+/dIhrE6iiN7nUNdar9CCheRWnSYJUvd0oF7P8xhKFLgA0ZHEBPQ7h
-peWKMByFtAsK3Aeb+D/ACDK7hDPYrUVnTCbTv/KSU/PVFNy4f7LF3kpiVXq7nW7v
-plpY4VpMCxPkaIfwbYtx
-=bjvd
------END PGP SIGNATURE-----
-
---Apple-Mail=_55C4654D-914A-40A7-AA3A-D0D0CB6FF672--
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
