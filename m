@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaIVNQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:16:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48448 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956AbaIVNQu (ORCPT
+	id S1754087AbaIVNRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:17:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38650 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558AbaIVNRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:16:50 -0400
-Date: Mon, 22 Sep 2014 15:16:40 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Anders Berg <anders.berg@avagotech.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c: axxia: Add I2C driver for AXM55xx
-Message-ID: <20140922131640.GU3755@pengutronix.de>
-References: <1408967482-17723-1-git-send-email-anders.berg@avagotech.com>
- <20140920121242.GA3833@katana>
+	Mon, 22 Sep 2014 09:17:37 -0400
+Date: Mon, 22 Sep 2014 08:17:08 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, "Kristo, Tero" <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        "J, KEERTHY" <j-keerthy@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
+Message-ID: <20140922131708.GA17009@kahuna>
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+ <1408716154-26101-9-git-send-email-nm@ti.com>
+ <5419D7BD.30003@linaro.org>
+ <448912EABC71F84BBCADFD3C67C4BE52CAC748@DBDE04.ent.ti.com>
+ <541A25DA.8030101@linaro.org>
+ <541AE102.2070407@ti.com>
+ <541AE314.5040107@ti.com>
+ <54201DE3.6030207@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140920121242.GA3833@katana>
+In-Reply-To: <54201DE3.6030207@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 02:12:43PM +0200, Wolfram Sang wrote:
-> Hi,
-> 
-> thanks for the submission.
-> 
-> On Mon, Aug 25, 2014 at 01:51:22PM +0200, Anders Berg wrote:
-> > Add I2C bus driver for the controller found in the LSI Axxia family SoCs. The
-> > driver implements 10-bit addressing and SMBus transfer modes via emulation
-> > (including SMBus block data read).
-> > 
-> > Signed-off-by: Anders Berg <anders.berg@avagotech.com>
-> 
-> Looks pretty good already. Still, some comments:
-> 
-> > +config I2C_AXXIA
-> > +	tristate "Axxia I2C controller"
-> > +	depends on ARCH_AXXIA
-> > +	help
-> > +	  Say yes if you want to support the I2C bus on Axxia platforms.
-> > +
-> > +	  If you don't know, say Y.
-> 
-> I'd say skip this sentence and consider 'default y' if it is really
-> needed on this platform.
-Still better:
+Daniel,
+On 08:02-20140922, Nishanth Menon wrote:
+[...]
+> >>Test #2: 1200 seconds: (http://fpaste.org/134564/47289141/)
 
-	depends on ARCH_AXXIA || COMPILE_TEST
-	default ARCH_AXXIA
+Santosh wanted me to make certain that the following is noted;
+^^ -> is around 20 mins. -> So highlighting again.. I assume this is
+long enough test duration you requested for.
 
-Best regards
-Uwe
-
+> >>CMD: set -x;uname -a;cat /sys/kernel/debug/pm_debug/count;sleep
+> >>1;./cpuidle_killer_1200;sleep 1;cat
+> >>/sys/kernel/debug/pm_debug/count;set +x
+> >>
+> >>OMAP4 Panda-ES: (2 a9) - not impacted as part of this patch - just
+> >>base test vector
+> >>http://fpaste.org/134563/41104728/
+> >>
+> >>OMAP5 uEVM: (2 a15)
+> >>http://fpaste.org/134562/47221141/
+> >>
+> >>DRA74x EVM: (2 a15)
+> >>http://fpaste.org/134559/11047098/
+> >>
+> >>DRA72 EVM: (2 a15)
+> >	      ^^
+> >Correction should have been 1 a15
+> >
+> >>http://fpaste.org/134560/11047151/
+> >>
+> >>AM572x EVM: (2 A15)
+> >>http://fpaste.org/134561/47189141/
+> >>
+> >>
+> 
+> Daniel, Santosh: Gentle ping:
+> 
+> Any further comments? OR are we ok for this for being merged?
+> 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Regards,
+Nishanth Menon
