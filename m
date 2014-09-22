@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaIVXZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 19:25:39 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18645 "EHLO
+	id S1755317AbaIVX0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 19:26:15 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18671 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755126AbaIVXZZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755196AbaIVXZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 19:25:25 -0400
+	Mon, 22 Sep 2014 19:25:35 -0400
 From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+To: Mark Brown <broonie@kernel.org>
+CC: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
         Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
         Kumar Gala <galak@codeaurora.org>,
         Josh Cartwright <joshc@codeaurora.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-arm-msm@vger.kernel.org>
-Subject: [PATCH v7 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT binding
-Date: Mon, 22 Sep 2014 16:25:27 -0700
-Message-ID: <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
+Subject: [PATCH v7 3/3] regulator: qcom-rpm: Regulator driver for the Qualcomm RPM
+Date: Mon, 22 Sep 2014 16:25:29 -0700
+Message-ID: <1411428329-23172-4-git-send-email-bjorn.andersson@sonymobile.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
 References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
@@ -28,430 +28,859 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660,
-8960 and 8064 based devices. The binding currently describes the rpm
-itself and the regulator subnodes.
+Driver for regulators exposed by the Resource Power Manager (RPM) found
+in Qualcomm 8660, 8960 and 8064 based devices.
 
 Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
- Documentation/devicetree/bindings/mfd/qcom-rpm.txt |  246 ++++++++++++++++++++
- include/dt-bindings/mfd/qcom-rpm.h                 |  154 ++++++++++++
- 2 files changed, 400 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm.txt
- create mode 100644 include/dt-bindings/mfd/qcom-rpm.h
 
-diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
+No functional changes since v6.
+
+ drivers/regulator/Kconfig              |   12 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/qcom_rpm-regulator.c |  798 ++++++++++++++++++++++++++++++++
+ 3 files changed, 811 insertions(+)
+ create mode 100644 drivers/regulator/qcom_rpm-regulator.c
+
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 2dc8289..0e59754 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -449,6 +449,18 @@ config REGULATOR_PFUZE100
+ 	  Say y here to support the regulators found on the Freescale
+ 	  PFUZE100/PFUZE200 PMIC.
+ 
++config REGULATOR_QCOM_RPM
++	tristate "Qualcomm RPM regulator driver"
++	depends on MFD_QCOM_RPM
++	help
++	  If you say yes to this option, support will be included for the
++	  regulators exposed by the Resource Power Manager found in Qualcomm
++	  8660, 8960 and 8064 based devices.
++
++	  Say M here if you want to include support for the regulators on the
++	  Qualcomm RPM as a module. The module will be named
++	  "qcom_rpm-regulator".
++
+ config REGULATOR_RC5T583
+ 	tristate "RICOH RC5T583 Power regulators"
+ 	depends on MFD_RC5T583
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index aa4a6aa..9c50dc6 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -55,6 +55,7 @@ obj-$(CONFIG_REGULATOR_MAX77693) += max77693.o
+ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
++obj-$(CONFIG_REGULATOR_QCOM_RPM) += qcom_rpm-regulator.o
+ obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
+ obj-$(CONFIG_REGULATOR_PFUZE100) += pfuze100-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS51632) += tps51632-regulator.o
+diff --git a/drivers/regulator/qcom_rpm-regulator.c b/drivers/regulator/qcom_rpm-regulator.c
 new file mode 100644
-index 0000000..4264021
+index 0000000..8f28309
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-@@ -0,0 +1,246 @@
-+Qualcomm Resource Power Manager (RPM)
++++ b/drivers/regulator/qcom_rpm-regulator.c
+@@ -0,0 +1,798 @@
++/*
++ * Copyright (c) 2014, Sony Mobile Communications AB.
++ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+This driver is used to interface with the Resource Power Manager (RPM) found in
-+various Qualcomm platforms. The RPM allows each component in the system to vote
-+for state of the system resources, such as clocks, regulators and bus
-+frequencies.
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
++#include <linux/mfd/qcom_rpm.h>
 +
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,rpm-apq8064"
-+		    "qcom,rpm-msm8660"
-+		    "qcom,rpm-msm8960"
++#include <dt-bindings/mfd/qcom-rpm.h>
 +
-+- reg:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: base address and size of the RPM's message ram
++#define MAX_REQUEST_LEN 2
 +
-+- interrupts:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: three entries specifying the RPM's:
-+		    1. acknowledgement interrupt
-+		    2. error interrupt
-+		    3. wakeup interrupt
++struct request_member {
++	int		word;
++	unsigned int	mask;
++	int		shift;
++};
 +
-+- interrupt-names:
-+	Usage: required
-+	Value type: <string-array>
-+	Definition: must be the three strings "ack", "err" and "wakeup", in order
++struct rpm_reg_parts {
++	struct request_member mV;		/* used if voltage is in mV */
++	struct request_member uV;		/* used if voltage is in uV */
++	struct request_member ip;		/* peak current in mA */
++	struct request_member pd;		/* pull down enable */
++	struct request_member ia;		/* average current in mA */
++	struct request_member fm;		/* force mode */
++	struct request_member pm;		/* power mode */
++	struct request_member pc;		/* pin control */
++	struct request_member pf;		/* pin function */
++	struct request_member enable_state;	/* NCP and switch */
++	struct request_member comp_mode;	/* NCP */
++	struct request_member freq;		/* frequency: NCP and SMPS */
++	struct request_member freq_clk_src;	/* clock source: SMPS */
++	struct request_member hpm;		/* switch: control OCP and SS */
++	int request_len;
++};
 +
-+- #address-cells:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: must be 1
++#define FORCE_MODE_IS_2_BITS(reg) \
++	((vreg->parts->fm.mask >> vreg->parts->fm.shift) == 3)
 +
-+- #size-cells:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: must be 0
++struct qcom_rpm_reg {
++	struct qcom_rpm *rpm;
 +
-+- qcom,ipc:
-+	Usage: required
-+	Value type: <prop-encoded-array>
++	struct mutex lock;
++	struct device *dev;
++	struct regulator_desc desc;
++	const struct rpm_reg_parts *parts;
 +
-+	Definition: three entries specifying the outgoing ipc bit used for
-+		    signaling the RPM:
-+		    - phandle to a syscon node representing the apcs registers
-+		    - u32 representing offset to the register within the syscon
-+		    - u32 representing the ipc bit within the register
++	int resource;
++	u32 val[MAX_REQUEST_LEN];
 +
++	int uV;
++	int is_enabled;
 +
-+= SUBDEVICES
++	bool supports_force_mode_auto;
++	bool supports_force_mode_bypass;
++};
 +
-+The RPM exposes resources to its subnodes. The below bindings specify the set
-+of valid subnodes that can operate on these resources.
++static const struct rpm_reg_parts rpm8660_ldo_parts = {
++	.request_len    = 2,
++	.mV             = { 0, 0x00000FFF,  0 },
++	.ip             = { 0, 0x00FFF000, 12 },
++	.fm             = { 0, 0x03000000, 24 },
++	.pc             = { 0, 0x3C000000, 26 },
++	.pf             = { 0, 0xC0000000, 30 },
++	.pd             = { 1, 0x00000001,  0 },
++	.ia             = { 1, 0x00001FFE,  1 },
++};
 +
-+== Switch-mode Power Supply regulator
++static const struct rpm_reg_parts rpm8660_smps_parts = {
++	.request_len    = 2,
++	.mV             = { 0, 0x00000FFF,  0 },
++	.ip             = { 0, 0x00FFF000, 12 },
++	.fm             = { 0, 0x03000000, 24 },
++	.pc             = { 0, 0x3C000000, 26 },
++	.pf             = { 0, 0xC0000000, 30 },
++	.pd             = { 1, 0x00000001,  0 },
++	.ia             = { 1, 0x00001FFE,  1 },
++	.freq           = { 1, 0x001FE000, 13 },
++	.freq_clk_src   = { 1, 0x00600000, 21 },
++};
 +
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,rpm-pm8058-smps"
-+		    "qcom,rpm-pm8901-ftsmps"
-+		    "qcom,rpm-pm8921-smps"
-+		    "qcom,rpm-pm8921-ftsmps"
++static const struct rpm_reg_parts rpm8660_switch_parts = {
++	.request_len    = 1,
++	.enable_state   = { 0, 0x00000001,  0 },
++	.pd             = { 0, 0x00000002,  1 },
++	.pc             = { 0, 0x0000003C,  2 },
++	.pf             = { 0, 0x000000C0,  6 },
++	.hpm            = { 0, 0x00000300,  8 },
++};
 +
-+- reg:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: resource as defined in <dt-bindings/mfd/qcom-rpm.h>
-+		    must be one of:
-+		    QCOM_RPM_PM8058_SMPS0 - QCOM_RPM_PM8058_SMPS4,
-+		    QCOM_RPM_PM8821_SMPS1 - QCOM_RPM_PM8821_SMPS2,
-+		    QCOM_RPM_PM8901_SMPS0 - QCOM_RPM_PM8901_SMPS4,
-+		    QCOM_RPM_PM8921_SMPS1 - QCOM_RPM_PM8921_SMPS8
++static const struct rpm_reg_parts rpm8660_ncp_parts = {
++	.request_len    = 1,
++	.mV             = { 0, 0x00000FFF,  0 },
++	.enable_state   = { 0, 0x00001000, 12 },
++	.comp_mode      = { 0, 0x00002000, 13 },
++	.freq           = { 0, 0x003FC000, 14 },
++};
 +
-+- bias-pull-down:
-+	Usage: optional
-+	Value type: <empty>
-+	Definition: enable pull down of the regulator when inactive
++static const struct rpm_reg_parts rpm8960_ldo_parts = {
++	.request_len    = 2,
++	.uV             = { 0, 0x007FFFFF,  0 },
++	.pd             = { 0, 0x00800000, 23 },
++	.pc             = { 0, 0x0F000000, 24 },
++	.pf             = { 0, 0xF0000000, 28 },
++	.ip             = { 1, 0x000003FF,  0 },
++	.ia             = { 1, 0x000FFC00, 10 },
++	.fm             = { 1, 0x00700000, 20 },
++};
 +
-+- qcom,switch-mode-frequency:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: Frequency (Hz) of the switch-mode power supply;
-+		    must be one of:
-+		    19200000, 9600000, 6400000, 4800000, 3840000, 3200000,
-+		    2740000, 2400000, 2130000, 1920000, 1750000, 1600000,
-+		    1480000, 1370000, 1280000, 1200000
++static const struct rpm_reg_parts rpm8960_smps_parts = {
++	.request_len    = 2,
++	.uV             = { 0, 0x007FFFFF,  0 },
++	.pd             = { 0, 0x00800000, 23 },
++	.pc             = { 0, 0x0F000000, 24 },
++	.pf             = { 0, 0xF0000000, 28 },
++	.ip             = { 1, 0x000003FF,  0 },
++	.ia             = { 1, 0x000FFC00, 10 },
++	.fm             = { 1, 0x00700000, 20 },
++	.pm             = { 1, 0x00800000, 23 },
++	.freq           = { 1, 0x1F000000, 24 },
++	.freq_clk_src   = { 1, 0x60000000, 29 },
++};
 +
-+- qcom,force-mode:
-+	Usage: optional (default if no other qcom,force-mode is specified)
-+	Value type: <u32>
-+	Defintion: indicates that the regulator should be forced to a
-+		   particular mode, valid values are:
-+		   QCOM_RPM_FORCE_MODE_NONE - do not force any mode
-+		   QCOM_RPM_FORCE_MODE_LPM - force into low power mode
-+		   QCOM_RPM_FORCE_MODE_HPM - force into high power mode
-+		   QCOM_RPM_FORCE_MODE_AUTO - allow regulator to automatically
-+					      select its own mode based on
-+					      realtime current draw, only for:
-+					      qcom,rpm-pm8921-smps,
-+					      qcom,rpm-pm8921-ftsmps
++static const struct rpm_reg_parts rpm8960_switch_parts = {
++	.request_len    = 1,
++	.enable_state   = { 0, 0x00000001,  0 },
++	.pd             = { 0, 0x00000002,  1 },
++	.pc             = { 0, 0x0000003C,  2 },
++	.pf             = { 0, 0x000003C0,  6 },
++	.hpm            = { 0, 0x00000C00, 10 },
++};
 +
-+- qcom,power-mode-hysteretic:
-+	Usage: optional
-+	Value type: <empty>
-+	Definition: select that the power supply should operate in hysteretic
-+		    mode, instead of the default pwm mode
++static const struct rpm_reg_parts rpm8960_ncp_parts = {
++	.request_len    = 1,
++	.uV             = { 0, 0x007FFFFF,  0 },
++	.enable_state   = { 0, 0x00800000, 23 },
++	.comp_mode      = { 0, 0x01000000, 24 },
++	.freq           = { 0, 0x3E000000, 25 },
++};
 +
-+Standard regulator bindings are used inside switch mode power supply subnodes.
-+Check Documentation/devicetree/bindings/regulator/regulator.txt for more
-+details.
++/*
++ * Physically available PMIC regulator voltage ranges
++ */
++static const struct regulator_linear_range pldo_ranges[] = {
++	REGULATOR_LINEAR_RANGE( 750000,   0,  59, 12500),
++	REGULATOR_LINEAR_RANGE(1500000,  60, 123, 25000),
++	REGULATOR_LINEAR_RANGE(3100000, 124, 160, 50000),
++};
 +
-+== Low-dropout regulator
++static const struct regulator_linear_range nldo_ranges[] = {
++	REGULATOR_LINEAR_RANGE( 750000,   0,  63, 12500),
++};
 +
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,rpm-pm8058-pldo"
-+		    "qcom,rpm-pm8058-nldo"
-+		    "qcom,rpm-pm8901-pldo"
-+		    "qcom,rpm-pm8901-nldo"
-+		    "qcom,rpm-pm8921-pldo"
-+		    "qcom,rpm-pm8921-nldo"
-+		    "qcom,rpm-pm8921-nldo1200"
++static const struct regulator_linear_range nldo1200_ranges[] = {
++	REGULATOR_LINEAR_RANGE( 375000,   0,  59,  6250),
++	REGULATOR_LINEAR_RANGE( 750000,  60, 123, 12500),
++};
 +
-+- reg:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: resource as defined in <dt-bindings/mfd/qcom-rpm.h>
-+		    must be one of:
-+		    QCOM_RPM_PM8058_LDO0 - QCOM_RPM_PM8058_LDO25,
-+		    QCOM_RPM_PM8821_LDO1,
-+		    QCOM_RPM_PM8901_LDO0 - QCOM_RPM_PM8901_LDO6,
-+		    QCOM_RPM_PM8921_LDO1 - QCOM_RPM_PM8921_LDO29
++static const struct regulator_linear_range smps_ranges[] = {
++	REGULATOR_LINEAR_RANGE( 375000,   0,  29, 12500),
++	REGULATOR_LINEAR_RANGE( 750000,  30,  89, 12500),
++	REGULATOR_LINEAR_RANGE(1500000,  90, 153, 25000),
++};
 +
-+- bias-pull-down:
-+	Usage: optional
-+	Value type: <empty>
-+	Definition: enable pull down of the regulator when inactive
++static const struct regulator_linear_range ftsmps_ranges[] = {
++	REGULATOR_LINEAR_RANGE( 350000,   0,   6, 50000),
++	REGULATOR_LINEAR_RANGE( 700000,   7,  63, 12500),
++	REGULATOR_LINEAR_RANGE(1500000,  64, 100, 50000),
++};
 +
-+- qcom,force-mode:
-+	Usage: optional
-+	Value type: <u32>
-+	Defintion: indicates that the regulator should not be forced to any
-+		   particular mode, valid values are:
-+		   QCOM_RPM_FORCE_MODE_NONE - do not force any mode
-+		   QCOM_RPM_FORCE_MODE_LPM - force into low power mode
-+		   QCOM_RPM_FORCE_MODE_HPM - force into high power mode
-+		   QCOM_RPM_FORCE_MODE_BYPASS - set regulator to use bypass
-+						mode, i.e.  to act as a switch
-+						and not regulate, only for:
-+						qcom,rpm-pm8921-pldo,
-+						qcom,rpm-pm8921-nldo,
-+						qcom,rpm-pm8921-nldo1200
++static const struct regulator_linear_range ncp_ranges[] = {
++	REGULATOR_LINEAR_RANGE(1500000,   0,  31, 50000),
++};
 +
-+Standard regulator bindings are used inside switch low-dropout regulator
-+subnodes.  Check Documentation/devicetree/bindings/regulator/regulator.txt for
-+more details.
++static int rpm_reg_write(struct qcom_rpm_reg *vreg,
++			 const struct request_member *req,
++			 const int value)
++{
++	if (WARN_ON((value << req->shift) & ~req->mask))
++		return -EINVAL;
 +
-+== Negative Charge Pump
++	vreg->val[req->word] &= ~req->mask;
++	vreg->val[req->word] |= value << req->shift;
 +
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,rpm-pm8058-ncp"
-+		    "qcom,rpm-pm8921-ncp"
++	return qcom_rpm_write(vreg->rpm,
++			      vreg->resource,
++			      vreg->val,
++			      vreg->parts->request_len);
++}
 +
-+- reg:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: resource as defined in <dt-bindings/mfd/qcom-rpm.h>
-+		    must be one of:
-+		    QCOM_RPM_PM8058_NCP,
-+		    QCOM_RPM_PM8921_NCP
++static int rpm_reg_set_mV_sel(struct regulator_dev *rdev,
++			      unsigned selector)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->mV;
++	int ret = 0;
++	int uV;
 +
-+- qcom,switch-mode-frequency:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: Frequency (Hz) of the swith mode power supply;
-+		    must be one of:
-+		    19200000, 9600000, 6400000, 4800000, 3840000, 3200000,
-+		    2740000, 2400000, 2130000, 1920000, 1750000, 1600000,
-+		    1480000, 1370000, 1280000, 1200000
++	if (req->mask == 0)
++		return -EINVAL;
 +
-+Standard regulator bindings are used inside negative charge pump regulator
-+subnodes.  Check Documentation/devicetree/bindings/regulator/regulator.txt for
-+more details.
++	uV = regulator_list_voltage_linear_range(rdev, selector);
++	if (uV < 0)
++		return uV;
 +
-+== Switch
++	mutex_lock(&vreg->lock);
++	vreg->uV = uV;
++	if (vreg->is_enabled)
++		ret = rpm_reg_write(vreg, req, vreg->uV / 1000);
++	mutex_unlock(&vreg->lock);
 +
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,rpm-pm8058-switch"
-+		    "qcom,rpm-pm8901-switch"
-+		    "qcom,rpm-pm8921-switch"
++	return ret;
++}
 +
-+- reg:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: resource as defined in <dt-bindings/mfd/qcom/qcom-rpm.h>
-+		    must be one of:
-+		    QCOM_RPM_PM8058_LVS0 - QCOM_RPM_PM8058_LVS1,
-+		    QCOM_RPM_PM8901_LVS0 - QCOM_RPM_PM8901_LVS3,
-+		    QCOM_RPM_PM8901_MVS,
-+		    QCOM_RPM_PM8921_LVS1 - QCOM_RPM_PM8921_LVS7,
-+		    QCOM_RPM_PM8921_MVS
++static int rpm_reg_set_uV_sel(struct regulator_dev *rdev,
++			      unsigned selector)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->uV;
++	int ret = 0;
++	int uV;
 +
-+= EXAMPLE
++	if (req->mask == 0)
++		return -EINVAL;
 +
-+	#include <dt-bindings/mfd/qcom-rpm.h>
++	uV = regulator_list_voltage_linear_range(rdev, selector);
++	if (uV < 0)
++		return uV;
 +
-+	rpm@108000 {
-+		compatible = "qcom,rpm-msm8960";
-+		reg = <0x108000 0x1000>;
-+		qcom,ipc = <&apcs 0x8 2>;
++	mutex_lock(&vreg->lock);
++	vreg->uV = uV;
++	if (vreg->is_enabled)
++		ret = rpm_reg_write(vreg, req, vreg->uV);
++	mutex_unlock(&vreg->lock);
 +
-+		interrupts = <0 19 0>, <0 21 0>, <0 22 0>;
-+		interrupt-names = "ack", "err", "wakeup";
++	return ret;
++}
 +
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++static int rpm_reg_get_voltage(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
 +
-+		pm8921_smps1: pm8921-smps1 {
-+			compatible = "qcom,rpm-pm8921-smps";
-+			reg = <QCOM_RPM_PM8921_SMPS1>;
++	return vreg->uV;
++}
 +
-+			regulator-min-microvolt = <1225000>;
-+			regulator-max-microvolt = <1225000>;
-+			regulator-always-on;
++static int rpm_reg_mV_enable(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->mV;
++	int ret;
 +
-+			bias-pull-down;
++	if (req->mask == 0)
++		return -EINVAL;
 +
-+			qcom,switch-mode-frequency = <3200000>;
-+		};
++	mutex_lock(&vreg->lock);
++	ret = rpm_reg_write(vreg, req, vreg->uV / 1000);
++	if (!ret)
++		vreg->is_enabled = 1;
++	mutex_unlock(&vreg->lock);
++
++	return ret;
++}
++
++static int rpm_reg_uV_enable(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->uV;
++	int ret;
++
++	if (req->mask == 0)
++		return -EINVAL;
++
++	mutex_lock(&vreg->lock);
++	ret = rpm_reg_write(vreg, req, vreg->uV);
++	if (!ret)
++		vreg->is_enabled = 1;
++	mutex_unlock(&vreg->lock);
++
++	return ret;
++}
++
++static int rpm_reg_switch_enable(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->enable_state;
++	int ret;
++
++	if (req->mask == 0)
++		return -EINVAL;
++
++	mutex_lock(&vreg->lock);
++	ret = rpm_reg_write(vreg, req, 1);
++	if (!ret)
++		vreg->is_enabled = 1;
++	mutex_unlock(&vreg->lock);
++
++	return ret;
++}
++
++static int rpm_reg_mV_disable(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->mV;
++	int ret;
++
++	if (req->mask == 0)
++		return -EINVAL;
++
++	mutex_lock(&vreg->lock);
++	ret = rpm_reg_write(vreg, req, 0);
++	if (!ret)
++		vreg->is_enabled = 0;
++	mutex_unlock(&vreg->lock);
++
++	return ret;
++}
++
++static int rpm_reg_uV_disable(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->uV;
++	int ret;
++
++	if (req->mask == 0)
++		return -EINVAL;
++
++	mutex_lock(&vreg->lock);
++	ret = rpm_reg_write(vreg, req, 0);
++	if (!ret)
++		vreg->is_enabled = 0;
++	mutex_unlock(&vreg->lock);
++
++	return ret;
++}
++
++static int rpm_reg_switch_disable(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++	const struct rpm_reg_parts *parts = vreg->parts;
++	const struct request_member *req = &parts->enable_state;
++	int ret;
++
++	if (req->mask == 0)
++		return -EINVAL;
++
++	mutex_lock(&vreg->lock);
++	ret = rpm_reg_write(vreg, req, 0);
++	if (!ret)
++		vreg->is_enabled = 0;
++	mutex_unlock(&vreg->lock);
++
++	return ret;
++}
++
++static int rpm_reg_is_enabled(struct regulator_dev *rdev)
++{
++	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
++
++	return vreg->is_enabled;
++}
++
++static struct regulator_ops uV_ops = {
++	.list_voltage = regulator_list_voltage_linear_range,
++
++	.set_voltage_sel = rpm_reg_set_uV_sel,
++	.get_voltage = rpm_reg_get_voltage,
++
++	.enable = rpm_reg_uV_enable,
++	.disable = rpm_reg_uV_disable,
++	.is_enabled = rpm_reg_is_enabled,
++};
++
++static struct regulator_ops mV_ops = {
++	.list_voltage = regulator_list_voltage_linear_range,
++
++	.set_voltage_sel = rpm_reg_set_mV_sel,
++	.get_voltage = rpm_reg_get_voltage,
++
++	.enable = rpm_reg_mV_enable,
++	.disable = rpm_reg_mV_disable,
++	.is_enabled = rpm_reg_is_enabled,
++};
++
++static struct regulator_ops switch_ops = {
++	.enable = rpm_reg_switch_enable,
++	.disable = rpm_reg_switch_disable,
++	.is_enabled = rpm_reg_is_enabled,
++};
++
++/*
++ * PM8058 regulators
++ */
++static const struct qcom_rpm_reg pm8058_pldo = {
++	.desc.linear_ranges = pldo_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(pldo_ranges),
++	.desc.n_voltages = 161,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = false,
++};
++
++static const struct qcom_rpm_reg pm8058_nldo = {
++	.desc.linear_ranges = nldo_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(nldo_ranges),
++	.desc.n_voltages = 64,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = false,
++};
++
++static const struct qcom_rpm_reg pm8058_smps = {
++	.desc.linear_ranges = smps_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(smps_ranges),
++	.desc.n_voltages = 154,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_smps_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = false,
++};
++
++static const struct qcom_rpm_reg pm8058_ncp = {
++	.desc.linear_ranges = ncp_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(ncp_ranges),
++	.desc.n_voltages = 32,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_ncp_parts,
++};
++
++static const struct qcom_rpm_reg pm8058_switch = {
++	.desc.ops = &switch_ops,
++	.parts = &rpm8660_switch_parts,
++};
++
++/*
++ * PM8901 regulators
++ */
++static const struct qcom_rpm_reg pm8901_pldo = {
++	.desc.linear_ranges = pldo_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(pldo_ranges),
++	.desc.n_voltages = 161,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = true,
++};
++
++static const struct qcom_rpm_reg pm8901_nldo = {
++	.desc.linear_ranges = nldo_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(nldo_ranges),
++	.desc.n_voltages = 64,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = true,
++};
++
++static const struct qcom_rpm_reg pm8901_ftsmps = {
++	.desc.linear_ranges = ftsmps_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(ftsmps_ranges),
++	.desc.n_voltages = 101,
++	.desc.ops = &mV_ops,
++	.parts = &rpm8660_smps_parts,
++	.supports_force_mode_auto = true,
++	.supports_force_mode_bypass = false,
++};
++
++static const struct qcom_rpm_reg pm8901_switch = {
++	.desc.ops = &switch_ops,
++	.parts = &rpm8660_switch_parts,
++};
++
++/*
++ * PM8921 regulators
++ */
++static const struct qcom_rpm_reg pm8921_pldo = {
++	.desc.linear_ranges = pldo_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(pldo_ranges),
++	.desc.n_voltages = 161,
++	.desc.ops = &uV_ops,
++	.parts = &rpm8960_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = true,
++};
++
++static const struct qcom_rpm_reg pm8921_nldo = {
++	.desc.linear_ranges = nldo_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(nldo_ranges),
++	.desc.n_voltages = 64,
++	.desc.ops = &uV_ops,
++	.parts = &rpm8960_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = true,
++};
++
++static const struct qcom_rpm_reg pm8921_nldo1200 = {
++	.desc.linear_ranges = nldo1200_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(nldo1200_ranges),
++	.desc.n_voltages = 124,
++	.desc.ops = &uV_ops,
++	.parts = &rpm8960_ldo_parts,
++	.supports_force_mode_auto = false,
++	.supports_force_mode_bypass = true,
++};
++
++static const struct qcom_rpm_reg pm8921_smps = {
++	.desc.linear_ranges = smps_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(smps_ranges),
++	.desc.n_voltages = 154,
++	.desc.ops = &uV_ops,
++	.parts = &rpm8960_smps_parts,
++	.supports_force_mode_auto = true,
++	.supports_force_mode_bypass = false,
++};
++
++static const struct qcom_rpm_reg pm8921_ftsmps = {
++	.desc.linear_ranges = ftsmps_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(ftsmps_ranges),
++	.desc.n_voltages = 101,
++	.desc.ops = &uV_ops,
++	.parts = &rpm8960_smps_parts,
++	.supports_force_mode_auto = true,
++	.supports_force_mode_bypass = false,
++};
++
++static const struct qcom_rpm_reg pm8921_ncp = {
++	.desc.linear_ranges = ncp_ranges,
++	.desc.n_linear_ranges = ARRAY_SIZE(ncp_ranges),
++	.desc.n_voltages = 32,
++	.desc.ops = &uV_ops,
++	.parts = &rpm8960_ncp_parts,
++};
++
++static const struct qcom_rpm_reg pm8921_switch = {
++	.desc.ops = &switch_ops,
++	.parts = &rpm8960_switch_parts,
++};
++
++static const struct of_device_id rpm_of_match[] = {
++	{ .compatible = "qcom,rpm-pm8058-pldo",     .data = &pm8058_pldo },
++	{ .compatible = "qcom,rpm-pm8058-nldo",     .data = &pm8058_nldo },
++	{ .compatible = "qcom,rpm-pm8058-smps",     .data = &pm8058_smps },
++	{ .compatible = "qcom,rpm-pm8058-ncp",      .data = &pm8058_ncp },
++	{ .compatible = "qcom,rpm-pm8058-switch",   .data = &pm8058_switch },
++
++	{ .compatible = "qcom,rpm-pm8901-pldo",     .data = &pm8901_pldo },
++	{ .compatible = "qcom,rpm-pm8901-nldo",     .data = &pm8901_nldo },
++	{ .compatible = "qcom,rpm-pm8901-ftsmps",   .data = &pm8901_ftsmps },
++	{ .compatible = "qcom,rpm-pm8901-switch",   .data = &pm8901_switch },
++
++	{ .compatible = "qcom,rpm-pm8921-pldo",     .data = &pm8921_pldo },
++	{ .compatible = "qcom,rpm-pm8921-nldo",     .data = &pm8921_nldo },
++	{ .compatible = "qcom,rpm-pm8921-nldo1200", .data = &pm8921_nldo1200 },
++	{ .compatible = "qcom,rpm-pm8921-smps",     .data = &pm8921_smps },
++	{ .compatible = "qcom,rpm-pm8921-ftsmps",   .data = &pm8921_ftsmps },
++	{ .compatible = "qcom,rpm-pm8921-ncp",      .data = &pm8921_ncp },
++	{ .compatible = "qcom,rpm-pm8921-switch",   .data = &pm8921_switch },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, rpm_of_match);
++
++static int rpm_reg_set(struct qcom_rpm_reg *vreg,
++		       const struct request_member *req,
++		       const int value)
++{
++	if (req->mask == 0 || (value << req->shift) & ~req->mask)
++		return -EINVAL;
++
++	vreg->val[req->word] &= ~req->mask;
++	vreg->val[req->word] |= value << req->shift;
++
++	return 0;
++}
++
++static int rpm_reg_of_parse_freq(struct device *dev, struct qcom_rpm_reg *vreg)
++{
++	static const int freq_table[] = {
++		19200000, 9600000, 6400000, 4800000, 3840000, 3200000, 2740000,
++		2400000, 2130000, 1920000, 1750000, 1600000, 1480000, 1370000,
++		1280000, 1200000,
++
 +	};
++	const char *key;
++	u32 freq;
++	int ret;
++	int i;
 +
-diff --git a/include/dt-bindings/mfd/qcom-rpm.h b/include/dt-bindings/mfd/qcom-rpm.h
-new file mode 100644
-index 0000000..388a6f3
---- /dev/null
-+++ b/include/dt-bindings/mfd/qcom-rpm.h
-@@ -0,0 +1,154 @@
-+/*
-+ * This header provides constants for the Qualcomm RPM bindings.
-+ */
++	key = "qcom,switch-mode-frequency";
++	ret = of_property_read_u32(dev->of_node, key, &freq);
++	if (ret) {
++		dev_err(dev, "regulator requires %s property\n", key);
++		return -EINVAL;
++	}
 +
-+#ifndef _DT_BINDINGS_MFD_QCOM_RPM_H
-+#define _DT_BINDINGS_MFD_QCOM_RPM_H
++	for (i = 0; i < ARRAY_SIZE(freq_table); i++) {
++		if (freq == freq_table[i]) {
++			rpm_reg_set(vreg, &vreg->parts->freq, i + 1);
++			return 0;
++		}
++	}
 +
-+/*
-+ * Constants use to identify individual resources in the RPM.
-+ */
-+#define QCOM_RPM_APPS_FABRIC_ARB		1
-+#define QCOM_RPM_APPS_FABRIC_CLK		2
-+#define QCOM_RPM_APPS_FABRIC_HALT		3
-+#define QCOM_RPM_APPS_FABRIC_IOCTL		4
-+#define QCOM_RPM_APPS_FABRIC_MODE		5
-+#define QCOM_RPM_APPS_L2_CACHE_CTL		6
-+#define QCOM_RPM_CFPB_CLK			7
-+#define QCOM_RPM_CXO_BUFFERS			8
-+#define QCOM_RPM_CXO_CLK			9
-+#define QCOM_RPM_DAYTONA_FABRIC_CLK		10
-+#define QCOM_RPM_DDR_DMM			11
-+#define QCOM_RPM_EBI1_CLK			12
-+#define QCOM_RPM_HDMI_SWITCH			13
-+#define QCOM_RPM_MMFPB_CLK			14
-+#define QCOM_RPM_MM_FABRIC_ARB			15
-+#define QCOM_RPM_MM_FABRIC_CLK			16
-+#define QCOM_RPM_MM_FABRIC_HALT			17
-+#define QCOM_RPM_MM_FABRIC_IOCTL		18
-+#define QCOM_RPM_MM_FABRIC_MODE			19
-+#define QCOM_RPM_PLL_4				20
-+#define QCOM_RPM_PM8058_LDO0			21
-+#define QCOM_RPM_PM8058_LDO1			22
-+#define QCOM_RPM_PM8058_LDO2			23
-+#define QCOM_RPM_PM8058_LDO3			24
-+#define QCOM_RPM_PM8058_LDO4			25
-+#define QCOM_RPM_PM8058_LDO5			26
-+#define QCOM_RPM_PM8058_LDO6			27
-+#define QCOM_RPM_PM8058_LDO7			28
-+#define QCOM_RPM_PM8058_LDO8			29
-+#define QCOM_RPM_PM8058_LDO9			30
-+#define QCOM_RPM_PM8058_LDO10			31
-+#define QCOM_RPM_PM8058_LDO11			32
-+#define QCOM_RPM_PM8058_LDO12			33
-+#define QCOM_RPM_PM8058_LDO13			34
-+#define QCOM_RPM_PM8058_LDO14			35
-+#define QCOM_RPM_PM8058_LDO15			36
-+#define QCOM_RPM_PM8058_LDO16			37
-+#define QCOM_RPM_PM8058_LDO17			38
-+#define QCOM_RPM_PM8058_LDO18			39
-+#define QCOM_RPM_PM8058_LDO19			40
-+#define QCOM_RPM_PM8058_LDO20			41
-+#define QCOM_RPM_PM8058_LDO21			42
-+#define QCOM_RPM_PM8058_LDO22			43
-+#define QCOM_RPM_PM8058_LDO23			44
-+#define QCOM_RPM_PM8058_LDO24			45
-+#define QCOM_RPM_PM8058_LDO25			46
-+#define QCOM_RPM_PM8058_LVS0			47
-+#define QCOM_RPM_PM8058_LVS1			48
-+#define QCOM_RPM_PM8058_NCP			49
-+#define QCOM_RPM_PM8058_SMPS0			50
-+#define QCOM_RPM_PM8058_SMPS1			51
-+#define QCOM_RPM_PM8058_SMPS2			52
-+#define QCOM_RPM_PM8058_SMPS3			53
-+#define QCOM_RPM_PM8058_SMPS4			54
-+#define QCOM_RPM_PM8821_LDO1			55
-+#define QCOM_RPM_PM8821_SMPS1			56
-+#define QCOM_RPM_PM8821_SMPS2			57
-+#define QCOM_RPM_PM8901_LDO0			58
-+#define QCOM_RPM_PM8901_LDO1			59
-+#define QCOM_RPM_PM8901_LDO2			60
-+#define QCOM_RPM_PM8901_LDO3			61
-+#define QCOM_RPM_PM8901_LDO4			62
-+#define QCOM_RPM_PM8901_LDO5			63
-+#define QCOM_RPM_PM8901_LDO6			64
-+#define QCOM_RPM_PM8901_LVS0			65
-+#define QCOM_RPM_PM8901_LVS1			66
-+#define QCOM_RPM_PM8901_LVS2			67
-+#define QCOM_RPM_PM8901_LVS3			68
-+#define QCOM_RPM_PM8901_MVS			69
-+#define QCOM_RPM_PM8901_SMPS0			70
-+#define QCOM_RPM_PM8901_SMPS1			71
-+#define QCOM_RPM_PM8901_SMPS2			72
-+#define QCOM_RPM_PM8901_SMPS3			73
-+#define QCOM_RPM_PM8901_SMPS4			74
-+#define QCOM_RPM_PM8921_CLK1			75
-+#define QCOM_RPM_PM8921_CLK2			76
-+#define QCOM_RPM_PM8921_LDO1			77
-+#define QCOM_RPM_PM8921_LDO2			78
-+#define QCOM_RPM_PM8921_LDO3			79
-+#define QCOM_RPM_PM8921_LDO4			80
-+#define QCOM_RPM_PM8921_LDO5			81
-+#define QCOM_RPM_PM8921_LDO6			82
-+#define QCOM_RPM_PM8921_LDO7			83
-+#define QCOM_RPM_PM8921_LDO8			84
-+#define QCOM_RPM_PM8921_LDO9			85
-+#define QCOM_RPM_PM8921_LDO10			86
-+#define QCOM_RPM_PM8921_LDO11			87
-+#define QCOM_RPM_PM8921_LDO12			88
-+#define QCOM_RPM_PM8921_LDO13			89
-+#define QCOM_RPM_PM8921_LDO14			90
-+#define QCOM_RPM_PM8921_LDO15			91
-+#define QCOM_RPM_PM8921_LDO16			92
-+#define QCOM_RPM_PM8921_LDO17			93
-+#define QCOM_RPM_PM8921_LDO18			94
-+#define QCOM_RPM_PM8921_LDO19			95
-+#define QCOM_RPM_PM8921_LDO20			96
-+#define QCOM_RPM_PM8921_LDO21			97
-+#define QCOM_RPM_PM8921_LDO22			98
-+#define QCOM_RPM_PM8921_LDO23			99
-+#define QCOM_RPM_PM8921_LDO24			100
-+#define QCOM_RPM_PM8921_LDO25			101
-+#define QCOM_RPM_PM8921_LDO26			102
-+#define QCOM_RPM_PM8921_LDO27			103
-+#define QCOM_RPM_PM8921_LDO28			104
-+#define QCOM_RPM_PM8921_LDO29			105
-+#define QCOM_RPM_PM8921_LVS1			106
-+#define QCOM_RPM_PM8921_LVS2			107
-+#define QCOM_RPM_PM8921_LVS3			108
-+#define QCOM_RPM_PM8921_LVS4			109
-+#define QCOM_RPM_PM8921_LVS5			110
-+#define QCOM_RPM_PM8921_LVS6			111
-+#define QCOM_RPM_PM8921_LVS7			112
-+#define QCOM_RPM_PM8921_MVS			113
-+#define QCOM_RPM_PM8921_NCP			114
-+#define QCOM_RPM_PM8921_SMPS1			115
-+#define QCOM_RPM_PM8921_SMPS2			116
-+#define QCOM_RPM_PM8921_SMPS3			117
-+#define QCOM_RPM_PM8921_SMPS4			118
-+#define QCOM_RPM_PM8921_SMPS5			119
-+#define QCOM_RPM_PM8921_SMPS6			120
-+#define QCOM_RPM_PM8921_SMPS7			121
-+#define QCOM_RPM_PM8921_SMPS8			122
-+#define QCOM_RPM_PXO_CLK			123
-+#define QCOM_RPM_QDSS_CLK			124
-+#define QCOM_RPM_SFPB_CLK			125
-+#define QCOM_RPM_SMI_CLK			126
-+#define QCOM_RPM_SYS_FABRIC_ARB			127
-+#define QCOM_RPM_SYS_FABRIC_CLK			128
-+#define QCOM_RPM_SYS_FABRIC_HALT		129
-+#define QCOM_RPM_SYS_FABRIC_IOCTL		130
-+#define QCOM_RPM_SYS_FABRIC_MODE		131
-+#define QCOM_RPM_USB_OTG_SWITCH			132
-+#define QCOM_RPM_VDDMIN_GPIO			133
++	dev_err(dev, "invalid frequency %d\n", freq);
++	return -EINVAL;
++}
 +
-+/*
-+ * Constants used to select force mode for regulators.
-+ */
-+#define QCOM_RPM_FORCE_MODE_NONE		0
-+#define QCOM_RPM_FORCE_MODE_LPM			1
-+#define QCOM_RPM_FORCE_MODE_HPM			2
-+#define QCOM_RPM_FORCE_MODE_AUTO		3
-+#define QCOM_RPM_FORCE_MODE_BYPASS		4
++static int rpm_reg_probe(struct platform_device *pdev)
++{
++	struct regulator_init_data *initdata;
++	const struct qcom_rpm_reg *template;
++	const struct of_device_id *match;
++	struct regulator_config config = { 0 };
++	struct regulator_dev *rdev;
++	struct qcom_rpm_reg *vreg;
++	const char *key;
++	u32 force_mode;
++	bool pwm;
++	u32 val;
++	int ret;
 +
-+#endif
++	match = of_match_device(rpm_of_match, &pdev->dev);
++	template = match->data;
++
++	initdata = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node);
++	if (!initdata)
++		return -EINVAL;
++
++	vreg = devm_kmalloc(&pdev->dev, sizeof(*vreg), GFP_KERNEL);
++	if (!vreg) {
++		dev_err(&pdev->dev, "failed to allocate vreg\n");
++		return -ENOMEM;
++	}
++	memcpy(vreg, template, sizeof(*vreg));
++	mutex_init(&vreg->lock);
++	vreg->dev = &pdev->dev;
++	vreg->desc.id = -1;
++	vreg->desc.owner = THIS_MODULE;
++	vreg->desc.type = REGULATOR_VOLTAGE;
++	vreg->desc.name = pdev->dev.of_node->name;
++
++	vreg->rpm = dev_get_drvdata(pdev->dev.parent);
++	if (!vreg->rpm) {
++		dev_err(&pdev->dev, "unable to retrieve handle to rpm\n");
++		return -ENODEV;
++	}
++
++	key = "reg";
++	ret = of_property_read_u32(pdev->dev.of_node, key, &val);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to read %s\n", key);
++		return ret;
++	}
++	vreg->resource = val;
++
++	if ((vreg->parts->uV.mask || vreg->parts->mV.mask) &&
++	    (!initdata->constraints.min_uV || !initdata->constraints.max_uV)) {
++		dev_err(&pdev->dev, "no voltage specified for regulator\n");
++		return -EINVAL;
++	}
++
++	key = "bias-pull-down";
++	if (of_property_read_bool(pdev->dev.of_node, key)) {
++		ret = rpm_reg_set(vreg, &vreg->parts->pd, 1);
++		if (ret) {
++			dev_err(&pdev->dev, "%s is invalid", key);
++			return ret;
++		}
++	}
++
++	if (vreg->parts->freq.mask) {
++		ret = rpm_reg_of_parse_freq(&pdev->dev, vreg);
++		if (ret < 0)
++			return ret;
++	}
++
++	if (vreg->parts->pm.mask) {
++		key = "qcom,power-mode-hysteretic";
++		pwm = !of_property_read_bool(pdev->dev.of_node, key);
++
++		ret = rpm_reg_set(vreg, &vreg->parts->pm, pwm);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to set power mode\n");
++			return ret;
++		}
++	}
++
++	if (vreg->parts->fm.mask) {
++		force_mode = -1;
++
++		key = "qcom,force-mode";
++		ret = of_property_read_u32(pdev->dev.of_node, key, &val);
++		if (ret == -EINVAL) {
++			val = QCOM_RPM_FORCE_MODE_NONE;
++		} else if (ret < 0) {
++			dev_err(&pdev->dev, "failed to read %s\n", key);
++			return ret;
++		}
++
++		/*
++		 * If force-mode is encoded as 2 bits then the
++		 * possible register values are:
++		 * NONE, LPM, HPM
++		 * otherwise:
++		 * NONE, LPM, AUTO, HPM, BYPASS
++		 */
++		switch (val) {
++		case QCOM_RPM_FORCE_MODE_NONE:
++			force_mode = 0;
++			break;
++		case QCOM_RPM_FORCE_MODE_LPM:
++			force_mode = 1;
++			break;
++		case QCOM_RPM_FORCE_MODE_HPM:
++			if (FORCE_MODE_IS_2_BITS(vreg))
++				force_mode = 2;
++			else
++				force_mode = 3;
++			break;
++		case QCOM_RPM_FORCE_MODE_AUTO:
++			if (vreg->supports_force_mode_auto)
++				force_mode = 2;
++			break;
++		case QCOM_RPM_FORCE_MODE_BYPASS:
++			if (vreg->supports_force_mode_bypass)
++				force_mode = 4;
++			break;
++		}
++
++		if (force_mode < 0) {
++			dev_err(&pdev->dev, "invalid force mode\n");
++			return -EINVAL;
++		}
++
++		ret = rpm_reg_set(vreg, &vreg->parts->fm, force_mode);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to set force mode\n");
++			return ret;
++		}
++	}
++
++	config.dev = &pdev->dev;
++	config.init_data = initdata;
++	config.driver_data = vreg;
++	config.of_node = pdev->dev.of_node;
++	rdev = devm_regulator_register(&pdev->dev, &vreg->desc, &config);
++	if (IS_ERR(rdev)) {
++		dev_err(&pdev->dev, "can't register regulator\n");
++		return PTR_ERR(rdev);
++	}
++
++	return 0;
++}
++
++static struct platform_driver rpm_reg_driver = {
++	.probe          = rpm_reg_probe,
++	.driver  = {
++		.name  = "qcom_rpm_reg",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(rpm_of_match),
++	},
++};
++
++static int __init rpm_reg_init(void)
++{
++	return platform_driver_register(&rpm_reg_driver);
++}
++subsys_initcall(rpm_reg_init);
++
++static void __exit rpm_reg_exit(void)
++{
++	platform_driver_unregister(&rpm_reg_driver);
++}
++module_exit(rpm_reg_exit)
++
++MODULE_DESCRIPTION("Qualcomm RPM regulator driver");
++MODULE_LICENSE("GPL v2");
 -- 
 1.7.9.5
 
