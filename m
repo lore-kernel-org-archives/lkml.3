@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaIVTjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:39:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47090 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752856AbaIVTjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:39:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,573,1406617200"; 
-   d="scan'208";a="577112548"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, johan@kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v2 2/2] mfd: viperboard: remove redundant OOM message and NULL pointer check
-Date: Mon, 22 Sep 2014 22:39:19 +0300
-Message-Id: <1411414759-7056-3-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
-References: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
+	id S1754762AbaIVTlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:41:04 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:57227 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaIVTlC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:41:02 -0400
+Date: Mon, 22 Sep 2014 12:40:58 -0700
+From: David Matlack <dmatlack@google.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: don't take vcpu mutex for obviously invalid vcpu
+ ioctls
+Message-ID: <20140922194058.GC1018@google.com>
+References: <1411167805-2458-1-git-send-email-dmatlack@google.com>
+ <541FFEDE.9030800@redhat.com>
+ <542027F6.4050205@de.ibm.com>
+ <542032D4.305@redhat.com>
+ <54207668.3030502@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54207668.3030502@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- drivers/mfd/viperboard.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+On 09/22, Christian Borntraeger wrote:
+> On 09/22/2014 04:31 PM, Paolo Bonzini wrote:
+> > Il 22/09/2014 15:45, Christian Borntraeger ha scritto:
+> >> We now have an extra condition check for every valid ioctl, to make an error case go faster.
+> >> I know, the extra check is just a 1 or 2 cycles if branch prediction is right, but still.
+> > 
+> > I applied the patch because the delay could be substantial,
+> 
+> I know, but only for seriously misbehaving userspace, no? See my comment is really a minor one - lets say 2 more cycles for something that exited to userspace - nobody would even notice. I am just disturbed by the fact that we care about something that is not slow-path but broken beyond repair (why does userspace call a non-KVM ioctl on a fd of a vcpu from a different thread (otherwise the mutex would be free)?
+> 
+> Please, can we have an explanation, e.g. something like
+> "while using trinity to fuzz KVM, we noticed long stalls on invalid ioctls. Lets bail out early on invalid ioctls". or similar?
 
-diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
-index 5f62f4e..d27c131 100644
---- a/drivers/mfd/viperboard.c
-+++ b/drivers/mfd/viperboard.c
-@@ -59,10 +59,8 @@ static int vprbrd_probe(struct usb_interface *interface,
- 
- 	/* allocate memory for our device state and initialize it */
- 	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
--	if (vb == NULL) {
--		dev_err(&interface->dev, "Out of memory\n");
-+	if (vb == NULL)
- 		return -ENOMEM;
--	}
- 
- 	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
- 	if (vb->buf == NULL) {
-@@ -109,11 +107,9 @@ static int vprbrd_probe(struct usb_interface *interface,
- 	return 0;
- 
- error:
--	if (vb) {
--		usb_put_dev(vb->usb_dev);
--		kfree(vb->buf);
--		kfree(vb);
--	}
-+	usb_put_dev(vb->usb_dev);
-+	kfree(vb->buf);
-+	kfree(vb);
- 
- 	return ret;
- }
--- 
-1.9.1
+We noticed this while using code that inspects the open file descriptors
+of a process. One of the things it did was check if each file descriptor
+was a tty (isatty() calls ioctl(TCGETS)).
 
+> 
+> 
+> > depending on what the other VCPU is doing.
+> > Perhaps something like this would be
+> > better?
+> > 
+> > (Untested, but Tested-by/Reviewed-bys are welcome).
+> 
+> Given that it makes sense to improve a misbehaving userspace, I prefer Davids variant as the patch is smaller and easier to get right. No need to revert, but a better explanation for the use case would be appeciated.
+> 
+> Christian 
+> > 
+> > Paolo
+> > 
+> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > index 84e24b210273..ed31760d79fe 100644
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -117,12 +117,10 @@ bool kvm_is_mmio_pfn(pfn_t pfn)
+> >  /*
+> >   * Switches to specified vcpu, until a matching vcpu_put()
+> >   */
+> > -int vcpu_load(struct kvm_vcpu *vcpu)
+> > +static void __vcpu_load(struct kvm_vcpu *vcpu)
+> >  {
+> >  	int cpu;
+> > 
+> > -	if (mutex_lock_killable(&vcpu->mutex))
+> > -		return -EINTR;
+> >  	if (unlikely(vcpu->pid != current->pids[PIDTYPE_PID].pid)) {
+> >  		/* The thread running this VCPU changed. */
+> >  		struct pid *oldpid = vcpu->pid;
+> > @@ -136,6 +134,14 @@ int vcpu_load(struct kvm_vcpu *vcpu)
+> >  	preempt_notifier_register(&vcpu->preempt_notifier);
+> >  	kvm_arch_vcpu_load(vcpu, cpu);
+> >  	put_cpu();
+> > +}
+> > +
+> > +int vcpu_load(struct kvm_vcpu *vcpu)
+> > +{
+> > +	if (mutex_lock_killable(&vcpu->mutex))
+> > +		return -EINTR;
+> > +
+> > +	__vcpu_load(vcpu);
+> >  	return 0;
+> >  }
+> > 
+> > @@ -1989,9 +1995,6 @@ static long kvm_vcpu_ioctl(struct file *filp,
+> >  	if (vcpu->kvm->mm != current->mm)
+> >  		return -EIO;
+> > 
+> > -	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
+> > -		return -EINVAL;
+> > -
+> >  #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
+> >  	/*
+> >  	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
+> > @@ -2001,8 +2004,21 @@ static long kvm_vcpu_ioctl(struct file *filp,
+> >  		return kvm_arch_vcpu_ioctl(filp, ioctl, arg);
+> >  #endif
+> > 
+> > +	if (!mutex_trylock(&vcpu->mutex))) {
+> > +		/*
+> > +		 * Before a potentially long sleep, check if we'd exit anyway.
+> > +		 * The common case is for the mutex not to be contended, when
+> > +		 * this does not add overhead.
+> > +		 */
+> > +		if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
+> > +			return -EINVAL;
+> > +
+> > +		if (mutex_lock_killable(&vcpu->mutex))
+> > +			return -EINTR;
+> > +	}
+> > +
+> > 
+> > -	r = vcpu_load(vcpu);
+> > +	r = __vcpu_load(vcpu);
+> >  	if (r)
+> >  		return r;
+> >  	switch (ioctl) {
+> > 
+> 
