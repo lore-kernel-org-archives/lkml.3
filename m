@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaIVFwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 01:52:30 -0400
-Received: from mail-bn1on0130.outbound.protection.outlook.com ([157.56.110.130]:64955
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751380AbaIVFw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 01:52:29 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <mturquette@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] clk: use uninitialized_var instead setting 'flags' to 0 directly.
-Date: Mon, 22 Sep 2014 13:52:11 +0800
-Message-ID: <1411365131-22094-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(69596002)(105606002)(81156004)(50466002)(229853001)(50986999)(76482002)(107046002)(2351001)(97736003)(106466001)(47776003)(95666004)(92726001)(68736004)(99396002)(26826002)(92566001)(104166001)(83072002)(31966008)(81542003)(83322001)(86362001)(36756003)(85852003)(77156001)(89996001)(20776003)(110136001)(6806004)(88136002)(77982003)(80022003)(19580405001)(62966002)(44976005)(85306004)(79102003)(64706001)(21056001)(46102003)(19580395003)(104016003)(4396001)(84676001)(93916002)(87936001)(50226001)(81342003)(48376002)(87286001)(74502003)(120916001)(102836001)(74662003)(90102001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0615;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1753006AbaIVF5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 01:57:04 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:42651 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaIVF5B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 01:57:01 -0400
+Date: Sun, 21 Sep 2014 22:56:56 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Mack <daniel@zonque.org>
+Cc: Matt Ranostay <mranostay@gmail.com>, galak@codeaurora.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/3] cap1106: support for active-high interrupt option
+Message-ID: <20140922055656.GA4147@core.coreip.homeip.net>
+References: <1411268469-21283-1-git-send-email-mranostay@gmail.com>
+ <1411268469-21283-3-git-send-email-mranostay@gmail.com>
+ <541EA326.1070404@zonque.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0615;
-X-Forefront-PRVS: 034215E98F
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0647;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <541EA326.1070404@zonque.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting 'flags' to zero will be certainly a misleading way to avoid
-warning of 'flags' may be used uninitialized. uninitialized_var is
-a correct way because the warning is a false possitive.
+On Sun, Sep 21, 2014 at 12:06:30PM +0200, Daniel Mack wrote:
+> On 09/21/2014 05:01 AM, Matt Ranostay wrote:
+> > Some applications need to use the active-high push-pull interrupt
+> > option. This allows it be enabled in the device tree child node.
+> > 
+> > Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+> > ---
+> >  drivers/input/keyboard/cap1106.c | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+> > index b9c43b5..33e2590 100644
+> > --- a/drivers/input/keyboard/cap1106.c
+> > +++ b/drivers/input/keyboard/cap1106.c
+> > @@ -234,6 +234,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+> >  			dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+> >  	}
+> >  
+> > +	if (of_property_read_bool(node, "microchip,active-high")) {
+> 
+> I think the name of that property should make clear it's only changing
+> the interrupt output driver configuration. What about
+> "microchip,irq-active-high"?
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/clk/clk-gate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can we infer the setting from IRQ flags by chance?
 
-diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-index 4a58c55..51fd87f 100644
---- a/drivers/clk/clk-gate.c
-+++ b/drivers/clk/clk-gate.c
-@@ -45,7 +45,7 @@ static void clk_gate_endisable(struct clk_hw *hw, int enable)
- {
- 	struct clk_gate *gate = to_clk_gate(hw);
- 	int set = gate->flags & CLK_GATE_SET_TO_DISABLE ? 1 : 0;
--	unsigned long flags = 0;
-+	unsigned long uninitialized_var(flags);
- 	u32 reg;
- 
- 	set ^= enable;
+Thanks.
+
 -- 
-2.1.0.27.g96db324
-
+Dmitry
