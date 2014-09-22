@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192AbaIVOwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:52:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538AbaIVOwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:52:15 -0400
-Date: Mon, 22 Sep 2014 16:51:33 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf pollfd v3
-Message-ID: <20140922145133.GA18809@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <20140911113336.GB13634@krava.brq.redhat.com>
- <20140911114825.GC13634@krava.brq.redhat.com>
- <20140911133029.GC10158@kernel.org>
- <20140911213638.GC1801@kernel.org>
- <20140918160455.GI2770@kernel.org>
- <20140922133526.GB18187@krava.brq.redhat.com>
- <20140922144949.GE32694@kernel.org>
+	id S1754273AbaIVOx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:53:27 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44408 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaIVOx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 10:53:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922144949.GE32694@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAErSpo4Z1s7u08W6o+8Yxu7-QYN6YS9zt11=hH535YFYAwVKNw@mail.gmail.com>
+References: <CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
+ <gh4mwcef0r.fsf@quad.gouders.net> <CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
+ <ghoaukcx6b.fsf@quad.gouders.net> <CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
+ <ghk358crbe.fsf@quad.gouders.net> <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
+ <20140913040716.GA28080@google.com> <gh8ulnn9yo.fsf@quad.gouders.net>
+ <gh8uln71g1.fsf@lena.gouders.net> <20140919183943.GD19374@google.com>
+ <ghvboit9qt.fsf@lena.gouders.net> <CAErSpo4Z1s7u08W6o+8Yxu7-QYN6YS9zt11=hH535YFYAwVKNw@mail.gmail.com>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Mon, 22 Sep 2014 16:53:05 +0200
+Message-ID: <CAMxnaaWS+nxBM0gdLo0Qv3-x4fVwT0ePTr20miZvnpJUMgQ-NQ@mail.gmail.com>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dirk Gouders <dirk@gouders.net>, Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
-> > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Done, updated it there:
-> > > 
-> > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
-> > > 
-> > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
-> > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
-> > > mmap_read loop to consume what is left after all fds for a mmap are
-> > > closed.
-> > > 
-> > > I'll wait a bit before reposting, probably Jiri will not be able to
-> > > comment this week, but I would like to at least post the URL for this
-> > > latest v4 kit.
-> > > 
-> > > Adrian, if you could take a look at it, would be really great :-)
-> > 
-> > I checked the branch.. the last patch brakes the functionality
-> > of perf record for me
-> 
-> Breaks in what sense?
+On Mon, Sep 22, 2014 at 4:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sat, Sep 20, 2014 at 12:41 PM, Dirk Gouders <dirk@gouders.net> wrote:
+>> Bjorn Helgaas <bhelgaas@google.com> writes:
+>>
+>>> On Sat, Sep 13, 2014 at 09:41:34PM +0200, Dirk Gouders wrote:
+>>>> So, I did some tests on the VX50 which probably wasn't the worst idea,
+>>>> because it behaves different than the test machine.
+>>>>
+>>>> Summary:
+>>>>
+>>>> 1) Bjorn's back pocket patch works on the VX50.
+>>>>
+>>>>    On the test machine it causes a trace, mount_root has to do with
+>>>>    it.  I tried to use netconsole but it complained the interface were
+>>>>    not ready.
+>>>
+>>> OK, that's good.  I put this revert patch in for-linus for v3.17.  I regard
+>>> this as a temporary fix, not the real solution.  My guess is the test
+>>> machine doesn't boot because you're missing a driver, so not related to the
+>>> revert patch.
+>>
+>> I assumed my limit-host-bridge-aperture-and-ignore-bridges-patch on top
+>> of your patch caused this, so I took a closer look.
+>>
+>> Your patch works fine with current rc5+ on the test machine -- with and
+>> without my additional patch.
+>
+> Great, thanks for testing that!
+>
+>> Other various today's test results (VX50) will be appended to bugzilla
+>> in a few moments.
+>
+> The Windows Server 2008 boot shows that Windows reconfigures the
+> 00:0e.0 bridge so it fits inside the [bus 00-07] aperture reported by
+> the host bridge _CRS, and the LSI FC adapter is not enumerated at all.
+> That's basically the same behavior that prompted your bug report.
+> This suggests that Windows does *not* reset the secondary bus when
+> changing the bridge configuration.
+>
+> For v3.17, I reverted 1820ffdccb9b ("PCI: Make sure bus number
+> resources stay within their parents bounds").  For the future, I think
+> we should do a quirk to fix the _CRS, similar to what Andreas has
+> posted, and apply 1820ffdccb9b again.
+>
+> But I think the quirk should be specific to this system and BIOS.  I
+> don't want to add a workaround that silently covers up Linux and BIOS
+> bugs.  The reason amd_bus.c exists is because Linux was not smart
+> enough to pay attention to _CRS.  Linux is now pretty good at that, so
+> the reason for amd_bus.c is mostly gone.  I don't want to add new
+> dependencies on amd_bus.c that will prevent us from phasing it out.
+Why not always trust amd_bus over _CRS? Is there a scenario in which
+amd_bus is wrong?
 
-perf record -p pid
-
-and killing the pid won't finish perf record
-
-jirka
+Are these methods (like _CRS) meant to set limits for us, or are they
+simply used to report the configuration decisions made by the BIOS? So
+if _CRS says that the window is [00-07] would it be ok for us to
+simply increase it (possibly after reprogramming the registers in
+amd_bus)?
