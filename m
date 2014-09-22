@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaIVKKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:10:06 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:34880 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaIVKKE (ORCPT
+	id S1753709AbaIVKLe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:11:34 -0400
+Received: from mail-bl2on0107.outbound.protection.outlook.com ([65.55.169.107]:7110
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751270AbaIVKLd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:10:04 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8MA9W1H008220, This message is accepted by code: ctloc85258
-From: Roger Tseng <rogerable@realtek.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Wei_wang <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
-Thread-Topic: [PATCH] mmc: rtsx: add card power off during probe
-Thread-Index: AQHP04WDQdGgh34FlUGGFNVQtE8cSpwMbesA
-Date: Mon, 22 Sep 2014 10:09:32 +0000
-Message-ID: <1411380672.24091.18.camel@debian-rtk5880>
-References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
-	 <CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-	 <54195036.2010409@realsil.com.cn>
-	 <CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
-	 <1411024883.27455.11.camel@debian-rtk5880>
-	 <CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
-In-Reply-To: <CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
-Accept-Language: en-US, zh-TW
-Content-Language: zh-TW
+	Mon, 22 Sep 2014 06:11:33 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "vikas.sajjan@samsung.com" <vikas.sajjan@samsung.com>,
+        "joshi@samsung.com" <joshi@samsung.com>,
+        "naushad@samsung.com" <naushad@samsung.com>,
+        "thomas.ab@samsung.com" <thomas.ab@samsung.com>,
+        "chow.kim@samsung.com" <chow.kim@samsung.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "Aisheng.Dong@freescale.com" <Aisheng.Dong@freescale.com>
+Subject: RE: [PATCH v5] mfd: syscon: Decouple syscon interface from platform
+ devices
+Thread-Topic: [PATCH v5] mfd: syscon: Decouple syscon interface from platform
+ devices
+Thread-Index: AQHP1h/7kun2+wSlOUaNMEdBanKlXpwM6dUA
+Date: Mon, 22 Sep 2014 09:55:36 +0000
+Message-ID: <d986e3e3ea4d410ea3dab7483c89d640@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
+In-Reply-To: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.81.121]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A949DEFED3A09848AE1D9E669F51FE8D@realtek.com>
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 034215E98F
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(164054003)(189002)(199003)(79102003)(76482002)(46102003)(77982003)(101416001)(31966008)(81342003)(81542003)(80022003)(74662003)(74502003)(120916001)(20776003)(97736003)(66066001)(64706001)(106356001)(107046002)(106116001)(108616004)(83322001)(85306004)(77096002)(95666004)(74316001)(76576001)(105586002)(86362001)(4396001)(99286002)(21056001)(85852003)(2656002)(83072002)(50986999)(92566001)(54356999)(76176999)(90102001)(33646002)(87936001)(99396002)(2201001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB324;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8MAABK0027524
 
-On Thu, 2014-09-18 at 23:14 +0200, Ulf Hansson wrote:
-> [...]
-> 
-> >>
-> >> In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
-> >>
-> >> >
-> >> > if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
-> >> > then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
-> >> > return.
-> >>
-> >> Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
-> >> that path at all.
-> >>
-> >> Hmm, I think we should change the behavior in mmc_start_host(), like below:
-> >> 1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
-> >> should be assigned to at allocation.
-> >> 2 ) From mmc_start_host(), invoke mmc_power_off() when
-> >> MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
-> >>
-> >> Would that work?
-> > Yes. I have confirmed this by following changes. The MMC_POWER_UNDEFINED
-> > designation in mmc_start_host() will eventually cause a power-off
-> > operation.
-> >
-> > But I wonder if we need to additionally check MMC_CAP2_FULL_PWR_CYCLE
-> > before calling mmc_power_off()?
-> 
-> The intent from my side was to keep the current behaviour for those
-> that already used MMC_CAP2_NO_PRESCAN_POWERUP, but it's s not a big
-> deal.
-> 
+Hi,
 
-I checked the log and found the commit that invokes mmc_power_off():
-a08b17be8b984a7c51cd5a480cd977363df353f9
-0d3e3350d5871c53464be4c92d57198744247005
-(https://www.mail-archive.com/linux-mmc@vger.kernel.org/msg19638.html )
-
-The proposed change might bring back some delay since invoking
-mmc_power_off() in mmc_start_host() is more than NOP now and triggers
-real power-off and re-init in sdhci.
-
-Will this be OK?
-
-> So, let's try your proposal, thus don't check MMC_CAP2_FULL_PWR_CYCLE.
+[...]
+> +static struct regmap_config syscon_regmap_config = {
+> +	.reg_bits = 32,
+> +	.val_bits = 32,
+> +	.reg_stride = 4,
+>  };
 > 
-> Can you repost new version of your patches and please split them up on
-> core and host separately.
-> 
-> Kind regards
-> Uffe
-> 
-> ------Please consider the environment before printing this e-mail.
+> -static int syscon_match_node(struct device *dev, void *data)
+> +static struct syscon *of_syscon_register(struct device_node *np)
+>  {
+> -	struct device_node *dn = data;
+> +	struct platform_device *pdev = NULL;
 
--- 
-Best regards,
-Roger Tseng
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+struct platform_device *pdev; ?
+
+Thanks,
+
+BRs
+Xiubo
+
