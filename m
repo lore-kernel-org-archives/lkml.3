@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaIVQA7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:00:59 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:60479 "EHLO
+	id S1754398AbaIVQBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:01:14 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:60554 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145AbaIVQA5 (ORCPT
+	with ESMTP id S1754282AbaIVQBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:00:57 -0400
+	Mon, 22 Sep 2014 12:01:03 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Christoph Lameter <cl@linux.com>, <linux-kernel@vger.kernel.org>,
         <linux-mm@kvack.org>
-Subject: [PATCH v2 1/3] memcg: move memcg_{alloc,free}_cache_params to slab_common.c
-Date: Mon, 22 Sep 2014 20:00:44 +0400
-Message-ID: <6dce5fd23f4cdd9f7055474f27d0c35e76251892.1411401021.git.vdavydov@parallels.com>
+Subject: [PATCH v2 3/3] memcg: move memcg_update_cache_size to slab_common.c
+Date: Mon, 22 Sep 2014 20:00:46 +0400
+Message-ID: <dd66241915c99132e41f10d0cd0d346be3a4f39c.1411401021.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1411401021.git.vdavydov@parallels.com>
 References: <cover.1411401021.git.vdavydov@parallels.com>
@@ -24,202 +24,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason why they live in memcontrol.c is that we get/put css
-reference to the owner memory cgroup in them. However, we can do that in
-memcg_{un,}register_cache. OTOH, there are several reasons to move them
-to slab_common.c.
+While growing per memcg caches arrays, we jump between memcontrol.c and
+slab_common.c in a weird way:
 
-First, I think that the less public interface functions we have in
-memcontrol.h the better. Since the functions I move don't depend on
-memcontrol, I think it's worth making them private to slab, especially
-taking into account that the arrays are defined on the slab's side too.
+  memcg_alloc_cache_id - memcontrol.c
+    memcg_update_all_caches - slab_common.c
+      memcg_update_cache_size - memcontrol.c
 
-Second, the way how per-memcg arrays are updated looks rather awkward:
-it proceeds from memcontrol.c (__memcg_activate_kmem) to slab_common.c
-(memcg_update_all_caches) and back to memcontrol.c again
-(memcg_update_array_size). In the following patches I move the function
-relocating the arrays (memcg_update_array_size) to slab_common.c and
-therefore get rid this circular call path. I think we should have the
-cache allocation stuff in the same place where we have relocation,
-because it's easier to follow the code then. So I move arrays alloc/free
-functions to slab_common.c too.
+There's absolutely no reason why memcg_update_cache_size can't live on
+the slab's side though. So let's move it there and settle it comfortably
+amid per-memcg cache allocation functions.
 
-The third point isn't obvious. I'm going to make the list_lru structure
-per-memcg to allow targeted kmem reclaim. That means we will have
-per-memcg arrays in list_lrus too. It turns out that it's much easier to
-update these arrays in list_lru.c rather than in memcontrol.c, because
-all the stuff we need is defined there. This patch makes memcg caches
-arrays allocation path conform that of the upcoming list_lru.
-
-So let's move these functions to slab_common.c and make them static.
+Besides, this patch cleans this function up a bit, removing all the
+useless comments from it, and renames it to memcg_update_cache_params to
+conform to memcg_alloc/free_cache_params, which we already have in
+slab_common.c.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/memcontrol.h |   14 --------------
- mm/memcontrol.c            |   41 ++++-------------------------------------
- mm/slab_common.c           |   44 +++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 47 insertions(+), 52 deletions(-)
+ include/linux/memcontrol.h |    1 -
+ mm/memcontrol.c            |   49 --------------------------------------------
+ mm/slab_common.c           |   30 +++++++++++++++++++++++++--
+ 3 files changed, 28 insertions(+), 52 deletions(-)
 
 diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index e0752d204d9e..4d17242eeff7 100644
+index 4d17242eeff7..19df5d857411 100644
 --- a/include/linux/memcontrol.h
 +++ b/include/linux/memcontrol.h
-@@ -440,10 +440,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+@@ -440,7 +440,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
  
  int memcg_cache_id(struct mem_cgroup *memcg);
  
--int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
--			     struct kmem_cache *root_cache);
--void memcg_free_cache_params(struct kmem_cache *s);
--
- int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
+-int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
  void memcg_update_array_size(int num_groups);
  
-@@ -574,16 +570,6 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
- 	return -1;
- }
- 
--static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
--		struct kmem_cache *s, struct kmem_cache *root_cache)
--{
--	return 0;
--}
--
--static inline void memcg_free_cache_params(struct kmem_cache *s)
--{
--}
--
- static inline struct kmem_cache *
- memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- {
+ struct kmem_cache *
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 085dc6d2f876..b6bbb1e3e2ab 100644
+index 55d131645b45..1ec22bf380d0 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2970,43 +2970,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- 	return 0;
+@@ -2944,55 +2944,6 @@ void memcg_update_array_size(int num)
+ 	memcg_limited_groups_array_size = num;
  }
  
--int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
--			     struct kmem_cache *root_cache)
+-int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
 -{
+-	struct memcg_cache_params *cur_params = s->memcg_params;
+-	struct memcg_cache_params *new_params;
 -	size_t size;
+-	int i;
 -
--	if (!memcg_kmem_enabled())
--		return 0;
+-	VM_BUG_ON(!is_root_cache(s));
 -
--	if (!memcg) {
--		size = offsetof(struct memcg_cache_params, memcg_caches);
--		size += memcg_limited_groups_array_size * sizeof(void *);
--	} else
--		size = sizeof(struct memcg_cache_params);
+-	size = num_groups * sizeof(void *);
+-	size += offsetof(struct memcg_cache_params, memcg_caches);
 -
--	s->memcg_params = kzalloc(size, GFP_KERNEL);
--	if (!s->memcg_params)
+-	new_params = kzalloc(size, GFP_KERNEL);
+-	if (!new_params)
 -		return -ENOMEM;
 -
--	if (memcg) {
--		s->memcg_params->memcg = memcg;
--		s->memcg_params->root_cache = root_cache;
--		css_get(&memcg->css);
--	} else
--		s->memcg_params->is_root_cache = true;
+-	new_params->is_root_cache = true;
 -
+-	/*
+-	 * There is the chance it will be bigger than
+-	 * memcg_limited_groups_array_size, if we failed an allocation
+-	 * in a cache, in which case all caches updated before it, will
+-	 * have a bigger array.
+-	 *
+-	 * But if that is the case, the data after
+-	 * memcg_limited_groups_array_size is certainly unused
+-	 */
+-	for (i = 0; i < memcg_limited_groups_array_size; i++) {
+-		if (!cur_params->memcg_caches[i])
+-			continue;
+-		new_params->memcg_caches[i] =
+-			cur_params->memcg_caches[i];
+-	}
+-
+-	/*
+-	 * Ideally, we would wait until all caches succeed, and only
+-	 * then free the old one. But this is not worth the extra
+-	 * pointer per-cache we'd have to have for this.
+-	 *
+-	 * It is not a big deal if some caches are left with a size
+-	 * bigger than the others. And all updates will reset this
+-	 * anyway.
+-	 */
+-	rcu_assign_pointer(s->memcg_params, new_params);
+-	if (cur_params)
+-		kfree_rcu(cur_params, rcu_head);
 -	return 0;
--}
--
--void memcg_free_cache_params(struct kmem_cache *s)
--{
--	if (!s->memcg_params)
--		return;
--	if (!s->memcg_params->is_root_cache)
--		css_put(&s->memcg_params->memcg->css);
--	kfree(s->memcg_params);
 -}
 -
  static void memcg_register_cache(struct mem_cgroup *memcg,
  				 struct kmem_cache *root_cache)
  {
-@@ -3037,6 +3000,7 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
- 	if (!cachep)
- 		return;
- 
-+	css_get(&memcg->css);
- 	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
- 
- 	/*
-@@ -3070,6 +3034,9 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
- 	list_del(&cachep->memcg_params->list);
- 
- 	kmem_cache_destroy(cachep);
-+
-+	/* drop the reference taken in memcg_register_cache */
-+	css_put(&memcg->css);
- }
- 
- /*
 diff --git a/mm/slab_common.c b/mm/slab_common.c
-index d7d8ffd0c306..9c29ba792368 100644
+index 9c29ba792368..800314e2a075 100644
 --- a/mm/slab_common.c
 +++ b/mm/slab_common.c
-@@ -88,6 +88,38 @@ static inline int kmem_cache_sanity_check(const char *name, size_t size)
- #endif
+@@ -120,6 +120,33 @@ static void memcg_free_cache_params(struct kmem_cache *s)
+ 	kfree(s->memcg_params);
+ }
  
- #ifdef CONFIG_MEMCG_KMEM
-+static int memcg_alloc_cache_params(struct mem_cgroup *memcg,
-+		struct kmem_cache *s, struct kmem_cache *root_cache)
++static int memcg_update_cache_params(struct kmem_cache *s, int num_memcgs)
 +{
-+	size_t size;
++	int size;
++	struct memcg_cache_params *new_params, *cur_params;
 +
-+	if (!memcg_kmem_enabled())
-+		return 0;
++	BUG_ON(!is_root_cache(s));
 +
-+	if (!memcg) {
-+		size = offsetof(struct memcg_cache_params, memcg_caches);
-+		size += memcg_limited_groups_array_size * sizeof(void *);
-+	} else
-+		size = sizeof(struct memcg_cache_params);
++	size = offsetof(struct memcg_cache_params, memcg_caches);
++	size += num_memcgs * sizeof(void *);
 +
-+	s->memcg_params = kzalloc(size, GFP_KERNEL);
-+	if (!s->memcg_params)
++	new_params = kzalloc(size, GFP_KERNEL);
++	if (!new_params)
 +		return -ENOMEM;
 +
-+	if (memcg) {
-+		s->memcg_params->memcg = memcg;
-+		s->memcg_params->root_cache = root_cache;
-+	} else
-+		s->memcg_params->is_root_cache = true;
++	cur_params = s->memcg_params;
++	memcpy(new_params->memcg_caches, cur_params->memcg_caches,
++	       memcg_limited_groups_array_size * sizeof(void *));
++
++	new_params->is_root_cache = true;
++
++	rcu_assign_pointer(s->memcg_params, new_params);
++	if (cur_params)
++		kfree_rcu(cur_params, rcu_head);
 +
 +	return 0;
-+}
-+
-+static void memcg_free_cache_params(struct kmem_cache *s)
-+{
-+	kfree(s->memcg_params);
 +}
 +
  int memcg_update_all_caches(int num_memcgs)
  {
  	struct kmem_cache *s;
-@@ -113,7 +145,17 @@ out:
- 	mutex_unlock(&slab_mutex);
- 	return ret;
- }
--#endif
-+#else
-+static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
-+		struct kmem_cache *s, struct kmem_cache *root_cache)
-+{
-+	return 0;
-+}
-+
-+static inline void memcg_free_cache_params(struct kmem_cache *s)
-+{
-+}
-+#endif /* CONFIG_MEMCG_KMEM */
+@@ -130,9 +157,8 @@ int memcg_update_all_caches(int num_memcgs)
+ 		if (!is_root_cache(s))
+ 			continue;
  
- /*
-  * Figure out what the alignment of the objects will be given a set of
+-		ret = memcg_update_cache_size(s, num_memcgs);
++		ret = memcg_update_cache_params(s, num_memcgs);
+ 		/*
+-		 * See comment in memcontrol.c, memcg_update_cache_size:
+ 		 * Instead of freeing the memory, we'll just leave the caches
+ 		 * up to this point in an updated state.
+ 		 */
 -- 
 1.7.10.4
 
