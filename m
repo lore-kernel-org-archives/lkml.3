@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbaIVGay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 02:30:54 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:37538 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaIVGax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 02:30:53 -0400
-From: Sudhir Sreedharan <ssreedharan@mvista.com>
-To: linux-serial@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
-        Sudhir Sreedharan <ssreedharan@mvista.com>
-Subject: [PATCH] serial/core: Initialize the console pm state
-Date: Mon, 22 Sep 2014 12:00:22 +0530
-Message-Id: <1411367422-2095-1-git-send-email-ssreedharan@mvista.com>
-X-Mailer: git-send-email 1.7.0.1
+	id S1752245AbaIVGmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 02:42:07 -0400
+Received: from mail.southpole.se ([37.247.8.11]:34182 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaIVGmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 02:42:02 -0400
+X-Greylist: delayed 1096 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Sep 2014 02:42:02 EDT
+Message-ID: <541FC06D.4030102@southpole.se>
+Date: Mon, 22 Sep 2014 08:23:41 +0200
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: linux@openrisc.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] openrisc: Support both old (or32) and new (or1k) toolchain
+References: <1410210049-30800-1-git-send-email-linux@roeck-us.net> <541BB786.1070700@roeck-us.net> <20140922025334.GA19719@chokladfabriken.org> <541F9D86.4000506@roeck-us.net>
+In-Reply-To: <541F9D86.4000506@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.4.3(14246) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 67022-13927
+X-Assp-Session: 7F93851DD2C8 (mail 1)
+X-Assp-Client-SSL: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For console devices having UART_CAP_SLEEP capability, the uart_pm_state has
-to be initialized to UART_PM_STATE_ON. Otherwise the LCR regiser values
-are reinitialized when uart_change_pm is called from uart_configure_port.
+Hi Guenter,
 
-Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
----
- drivers/tty/serial/serial_core.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+On 09/22/2014 05:54 AM, Guenter Roeck wrote:
+> On 09/21/2014 07:53 PM, Stefan Kristiansson wrote:
+>> On Thu, Sep 18, 2014 at 09:56:38PM -0700, Guenter Roeck wrote:
+>>> ping ... comments / feedback anyone ?
+>>>
+>>> Guenter
+>>>
+>>
+>> FWIW, I've tested this and it works fine.
+>>
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 29a7be4..91bfd52 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2615,6 +2615,9 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	if (uport->cons && uport->dev)
- 		of_console_check(uport->dev->of_node, uport->cons->name, uport->line);
- 
-+	if (uart_console(uport))
-+		state->pm_state = UART_PM_STATE_ON;
-+
- 	uart_configure_port(drv, state, uport);
- 
- 	num_groups = 2;
--- 
-1.7.0.1
+Thanks, the patch is fine... will apply.  It's a nice solution to an
+icky problem...
+
+/Jonas
+
+> Hi Stefan,
+>
+> Great, thanks a lot for testing. Any idea if Jonas is available to
+> send it upstream,
+> or should I try to send it to Linus directly ?
+
 
