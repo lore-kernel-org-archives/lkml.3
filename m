@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaIVN1i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:27:38 -0400
-Received: from smtp-out-048.synserver.de ([212.40.185.48]:1080 "EHLO
-	smtp-out-047.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753578AbaIVN1h (ORCPT
+	id S1754135AbaIVN15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:27:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59770 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753988AbaIVN1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:27:37 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16922
-Message-ID: <542023C8.8080802@metafoo.de>
-Date: Mon, 22 Sep 2014 15:27:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
+	Mon, 22 Sep 2014 09:27:55 -0400
+Date: Mon, 22 Sep 2014 14:27:43 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus <magnus.damm@gmail.com>, Simon <horms@verge.net.au>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH][resend] of: Add vendor 2nd prefix for Asahi Kasei Corp
+Message-ID: <20140922132743.GM3290@leverpostej>
+References: <20140611165410.GK5099@sirena.org.uk>
+ <CAMuHMdUT0hEBGbN+W-Oz5zJ0N8S2VDMndqtDO=EtWF3jG2MEew@mail.gmail.com>
+ <20140611170233.GL5099@sirena.org.uk>
+ <5398A53D.3020706@wwwdotorg.org>
+ <20140611190444.GN5099@sirena.org.uk>
+ <5398AB07.4040304@wwwdotorg.org>
+ <87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
+ <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>
+ <20140922130026.GK3290@leverpostej>
+ <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-CC: wsa@the-dreams.de, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, srinivas.pandruvada@linux.intel.com
-Subject: Re: [PATCH] i2c: Add generic support passing secondary devices addresses
-References: <1409925739-28188-1-git-send-email-jean-michel.hautbois@vodalys.com> <20140922104555.GQ1786@lahna.fi.intel.com>
-In-Reply-To: <20140922104555.GQ1786@lahna.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 12:45 PM, Mika Westerberg wrote:
-> On Fri, Sep 05, 2014 at 04:02:19PM +0200, Jean-Michel Hautbois wrote:
->> Some I2C devices have multiple addresses assigned, for example each address
->> corresponding to a different internal register map page of the device.
->> So far drivers which need support for this have handled this with a driver
->> specific and non-generic implementation, e.g. passing the additional address
->> via platform data.
->>
->> This patch provides a new helper function called i2c_new_secondary_device()
->> which is intended to provide a generic way to get the secondary address
->> as well as instantiate a struct i2c_client for the secondary address.
->>
->> The function expects a pointer to the primary i2c_client, a name
->> for the secondary address and an optional default address. The name is used
->> as a handle to specify which secondary address to get.
->>
->> The default address is used as a fallback in case no secondary address
->> was explicitly specified. In case no secondary address and no default
->> address were specified the function returns NULL.
->>
->> For now the function only supports look-up of the secondary address
->> from devicetree, but it can be extended in the future
->> to for example support board files and/or ACPI.
->>
->> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
->
-> Sorry, just noticed this one.
->
-> Srinivas (CC'd) and I did similar patch series here:
->
-> http://patchwork.ozlabs.org/patch/338342/
->
-> We should probably collaborate on this one to get both DT and ACPI
-> supported.
+On Mon, Sep 22, 2014 at 02:24:24PM +0100, Geert Uytterhoeven wrote:
+> Hi Mark,
 
-Yes. The idea was to keep the interface of the API generic so it can be used 
-by ACPI or other device topology description mechanisms as well.
+Hi Geert,
 
-But it looks as if the ACPI case is a bit more complex and we may need a 
-revision of the API. How for example in the ACPI case do you know which 
-address is which, when different parts of a chip are addressed using 
-different addresses?
+> On Mon, Sep 22, 2014 at 3:00 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> > Given all that, I think we should get rid of the "ak" prefix entirely,
+> > fix up the seaboard dts, and leave the legacy matching for "ak,ak8975"
+> > up to the i2c framework. However, that would imply deleting from
+> > vendor-prefixes.txt (if we want people to be warned on use of "ak"), and
+> > that's not a good precedent to set.
+> 
+> Instead of deleting, we can deprecate, like was done for powervr:
+> 
+> powervr PowerVR (deprecated, use img)
 
-- Lars
+Ah. I tried to see if we had any deprecated bindings, but I somehow
+failed to search correctly and missed powervr.
 
+> Still missing is an update for checkpatch to warn when a deprecated
+> vendor prefix is used.
+
+Marking it deprecated and warning with checkpatch is certainly
+preferable.
+
+Mark.
