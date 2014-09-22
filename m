@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaIVCx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 22:53:28 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:37851 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948AbaIVCxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 22:53:25 -0400
-From: Chris Zhong <zyw@rock-chips.com>
-To: dianders@chromium.org, heiko@sntech.de
-Cc: linux-rockchip@lists.infradead.org, lee.jones@linaro.org,
-        broonie@kernel.org, Chris Zhong <zyw@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+	id S1753166AbaIVCyq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 22:54:46 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:55188 "EHLO smtp.nebula.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752738AbaIVCyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 22:54:45 -0400
+Date: Mon, 22 Sep 2014 05:53:35 +0300
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 2/2] dt-bindings: add devicetree bindings for st-pwm regulator
-Date: Mon, 22 Sep 2014 10:53:00 +0800
-Message-Id: <1411354380-14326-3-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411354380-14326-1-git-send-email-zyw@rock-chips.com>
-References: <1411354380-14326-1-git-send-email-zyw@rock-chips.com>
+Subject: Re: [PATCH] openrisc: Support both old (or32) and new (or1k)
+ toolchain
+Message-ID: <20140922025334.GA19719@chokladfabriken.org>
+References: <1410210049-30800-1-git-send-email-linux@roeck-us.net>
+ <541BB786.1070700@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <541BB786.1070700@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the st-pwm regulator
+On Thu, Sep 18, 2014 at 09:56:38PM -0700, Guenter Roeck wrote:
+> ping ... comments / feedback anyone ?
+> 
+> Guenter
+> 
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+FWIW, I've tested this and it works fine.
 
-Adviced by Doug Anderson
-- remove regulator-always-on and regulator-boot-on from the Example
+Stefan
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
----
-
-Changes in v4: None
-Changes in v3:
-Adviced by Doug Anderson
-- update the Example
-
-Changes in v2:
-Adviced by Lee Jones
-- rename the documentation
-Adviced by Doug Anderson
-- update the example
-Adviced by Mark Rutland
-- remove pwm-reg-period
-
- .../bindings/regulator/pwm-regulator.txt           |   27 ++++++++++++++++++++
- 1 file changed, 27 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/pwm-regulator.txt b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-new file mode 100644
-index 0000000..c6756a9
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-@@ -0,0 +1,27 @@
-+pwm regulator bindings
-+
-+Required properties:
-+- compatible: Should be "pwm-regulator"
-+- pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-+- voltage-table: voltage and duty table, include 2 merbers in each set of
-+  brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-+
-+Any property defined as part of the core regulator binding defined in
-+regulator.txt can also be used.
-+
-+Example:
-+	pwm_regulator {
-+		compatible = "pwm-regulator;
-+		pwms = <&pwm1 0 8448 0>;
-+
-+		voltage-table = <1114000 0>,
-+				<1095000 10>,
-+				<1076000 20>,
-+				<1056000 30>,
-+				<1036000 40>,
-+				<1016000 50>;
-+
-+		regulator-min-microvolt = <1016000>;
-+		regulator-max-microvolt = <1114000>;
-+		regulator-name = "vdd_logic";
-+	};
--- 
-1.7.9.5
-
+> On 09/08/2014 02:00 PM, Guenter Roeck wrote:
+> >The output file format for openrisc has changed from "elf32-or32"
+> >to "elf32-or1k" when using the or1k instead of the older or32 toochain.
+> >Select the correct output format automatically to be able to compile
+> >the kernel with both toolchain variants.
+> >
+> >Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> >Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> >---
+> >Candidate for -stable ?
+> >
+> >  arch/openrisc/kernel/vmlinux.lds.S | 8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> >
+> >diff --git a/arch/openrisc/kernel/vmlinux.lds.S b/arch/openrisc/kernel/vmlinux.lds.S
+> >index 2d69a85..1c5d21a 100644
+> >--- a/arch/openrisc/kernel/vmlinux.lds.S
+> >+++ b/arch/openrisc/kernel/vmlinux.lds.S
+> >@@ -30,7 +30,13 @@
+> >  #include <asm/cache.h>
+> >  #include <asm-generic/vmlinux.lds.h>
+> >
+> >-OUTPUT_FORMAT("elf32-or32", "elf32-or32", "elf32-or32")
+> >+#ifdef __OR1K__
+> >+#define __OUTPUT_FORMAT	"elf32-or1k"
+> >+#else
+> >+#define __OUTPUT_FORMAT	"elf32-or32"
+> >+#endif
+> >+
+> >+OUTPUT_FORMAT(__OUTPUT_FORMAT, __OUTPUT_FORMAT, __OUTPUT_FORMAT)
+> >  jiffies = jiffies_64 + 4;
+> >
+> >  SECTIONS
+> >
+> 
