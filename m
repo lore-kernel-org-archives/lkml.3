@@ -1,115 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671AbaIVJch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:32:37 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:57573 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaIVJcd (ORCPT
+	id S1753697AbaIVJdb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:33:31 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62261 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaIVJd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:32:33 -0400
-Date: Mon, 22 Sep 2014 11:32:28 +0200
-From: Robert Richter <rric@kernel.org>
-To: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sunil Goutham <sunil.goutham@caviumnetworks.com>
-Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
- bridge resources from DT
-Message-ID: <20140922093228.GA20256@rric.localhost>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
+	Mon, 22 Sep 2014 05:33:29 -0400
+Message-ID: <541FECE8.3070203@redhat.com>
+Date: Mon, 22 Sep 2014 11:33:28 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 5/9] kvm, mem-hotplug: Reload L1's apic access page
+ in vcpu_enter_guest().
+References: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com> <1411210071-14727-6-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1411210071-14727-6-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.09.14 02:30:23, Liviu Dudau wrote:
-> +int of_pci_get_host_bridge_resources(struct device_node *dev,
-> +			unsigned char busno, unsigned char bus_max,
-> +			struct list_head *resources, resource_size_t *io_base)
+Il 20/09/2014 12:47, Tang Chen ha scritto:
+> @@ -3624,6 +3624,11 @@ static bool svm_has_secondary_apic_access(struct kvm_vcpu *vcpu)
+>  	return false;
+>  }
+>  
+> +static void svm_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
 > +{
-> +	struct resource *res;
-> +	struct resource *bus_range;
-> +	struct of_pci_range range;
-> +	struct of_pci_range_parser parser;
-> +	char range_type[4];
-> +	int err;
+> +	return;
+> +}
 > +
-> +	if (!io_base)
-> +		return -EINVAL;
-> +	*io_base = OF_BAD_ADDR;
+>  static int svm_vm_has_apicv(struct kvm *kvm)
+>  {
+>  	return 0;
+> @@ -4379,6 +4384,7 @@ static struct kvm_x86_ops svm_x86_ops = {
+>  	.update_cr8_intercept = update_cr8_intercept,
+>  	.set_virtual_x2apic_mode = svm_set_virtual_x2apic_mode,
+>  	.has_secondary_apic_access = svm_has_secondary_apic_access,
+> +	.set_apic_access_page_addr = svm_set_apic_access_page_addr,
+>  	.vm_has_apicv = svm_vm_has_apicv,
+>  	.load_eoi_exitmap = svm_load_eoi_exitmap,
+>  	.hwapic_isr_update = svm_hwapic_isr_update,
 
-This breaks for mem-mapped pci host controllers. The patch below fixes
-this.
+Something's wrong in the way you're generating the patches, because
+you're adding these hunks twice.
 
-This series was tested with the fix on top for Cavium Thunder.
-
-Tested-by: Robert Richter <rrichter@cavium.com>
-
--Robert
-
-
-
->From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
-From: Robert Richter <rrichter@cavium.com>
-Date: Mon, 22 Sep 2014 10:46:01 +0200
-Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
-
-The pci host bridge was not created if io_base was not set when
-calling of_pci_get_host_bridge_resources(). This is esp. the case for
-mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
-parameter io_base is optional now.
-
-Signed-off-by: Robert Richter <rrichter@cavium.com>
----
- drivers/of/of_pci.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index ffdb45ed8682..1f0e7c2505ee 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -182,9 +182,8 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
- 	char range_type[4];
- 	int err;
- 
--	if (!io_base)
--		return -EINVAL;
--	*io_base = OF_BAD_ADDR;
-+	if (io_base)
-+		*io_base = OF_BAD_ADDR;
- 
- 	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
- 	if (!bus_range)
-@@ -242,7 +241,7 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
- 			goto parse_failed;
- 		}
- 
--		if (resource_type(res) == IORESOURCE_IO) {
-+		if (io_base && resource_type(res) == IORESOURCE_IO) {
- 			if (*io_base != OF_BAD_ADDR)
- 				pr_warn("More than one I/O resource converted. CPU offset for old range lost!\n");
- 			*io_base = range.cpu_addr;
--- 
-2.1.0
-
+Paolo
