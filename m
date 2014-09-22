@@ -1,38 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036AbaIVNQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:16:07 -0400
-Received: from mail-by2on0143.outbound.protection.outlook.com ([207.46.100.143]:23520
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753880AbaIVNQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:16:05 -0400
-From: "Pickens, Rhonda" <RPICKENS@dallasisd.org>
-Subject: 
-Thread-Index: AQHP1lpUjsvlGRlZY0S0MuQzR7domA==
-Date: Mon, 22 Sep 2014 11:42:50 +0000
-Message-ID: <4a5554f61fe34b32bc7b6ba5c04ca313@BLUPR04MB740.namprd04.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [173.245.67.35]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR04MB740;
-x-forefront-prvs: 034215E98F
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(36304003)(189002)(199003)(81342003)(83072002)(106356001)(86362001)(85852003)(881003)(20776003)(76576001)(81542003)(66066001)(21056001)(90102001)(99286002)(99396002)(87936001)(74502003)(79102003)(120916001)(4396001)(95666004)(46102003)(2656002)(77982003)(74662003)(80022003)(50986999)(54356999)(92566001)(33646002)(106116001)(1671002)(85306004)(105586002)(76482002)(110136001)(97736003)(83322001)(19580405001)(109986003)(25636003)(31966008)(64706001)(107046002)(107886001)(19580395003)(108616004)(74316001)(567094001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR04MB740;H:BLUPR04MB740.namprd04.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1754063AbaIVNQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:16:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48448 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956AbaIVNQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 09:16:50 -0400
+Date: Mon, 22 Sep 2014 15:16:40 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Anders Berg <anders.berg@avagotech.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: axxia: Add I2C driver for AXM55xx
+Message-ID: <20140922131640.GU3755@pengutronix.de>
+References: <1408967482-17723-1-git-send-email-anders.berg@avagotech.com>
+ <20140920121242.GA3833@katana>
 MIME-Version: 1.0
-X-OriginatorOrg: dallasisd.org
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140920121242.GA3833@katana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8MDGC96028152
 
-Winning Batch No: QF-134-8876,V-588)
-Your email was listed for Qatar Foundation Compensation funds for Community development,contact(morganadmas@att.net)
-________________________________
- CONFIDENTIALITY NOTICE: This email message, including all attachments, is for the sole use of the intended recipient(s) and may contain confidential student and/or employee information. Unauthorized use and/or disclosure is prohibited under the federal Family Education Rights & Privacy Act (20 U.S.C. Â§1232g, 34 CFR Part 99, 19 TAC 247.2, Texas Government Code 552.023, Texas Education Code 21.355, 29 CFR 1630.14(b)(c)). If you are not the intended recipient, you may not use, disclose, copy or disseminate this information. Please call the sender immediately or reply by email and destroy all copies of the original message, including attachments.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Sat, Sep 20, 2014 at 02:12:43PM +0200, Wolfram Sang wrote:
+> Hi,
+> 
+> thanks for the submission.
+> 
+> On Mon, Aug 25, 2014 at 01:51:22PM +0200, Anders Berg wrote:
+> > Add I2C bus driver for the controller found in the LSI Axxia family SoCs. The
+> > driver implements 10-bit addressing and SMBus transfer modes via emulation
+> > (including SMBus block data read).
+> > 
+> > Signed-off-by: Anders Berg <anders.berg@avagotech.com>
+> 
+> Looks pretty good already. Still, some comments:
+> 
+> > +config I2C_AXXIA
+> > +	tristate "Axxia I2C controller"
+> > +	depends on ARCH_AXXIA
+> > +	help
+> > +	  Say yes if you want to support the I2C bus on Axxia platforms.
+> > +
+> > +	  If you don't know, say Y.
+> 
+> I'd say skip this sentence and consider 'default y' if it is really
+> needed on this platform.
+Still better:
+
+	depends on ARCH_AXXIA || COMPILE_TEST
+	default ARCH_AXXIA
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
