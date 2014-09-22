@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087AbaIVNRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:17:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38650 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558AbaIVNRh (ORCPT
+	id S1754033AbaIVNY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:24:28 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:58432 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaIVNY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:17:37 -0400
-Date: Mon, 22 Sep 2014 08:17:08 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, "Kristo, Tero" <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        "J, KEERTHY" <j-keerthy@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
-Message-ID: <20140922131708.GA17009@kahuna>
-References: <1408716154-26101-1-git-send-email-nm@ti.com>
- <1408716154-26101-9-git-send-email-nm@ti.com>
- <5419D7BD.30003@linaro.org>
- <448912EABC71F84BBCADFD3C67C4BE52CAC748@DBDE04.ent.ti.com>
- <541A25DA.8030101@linaro.org>
- <541AE102.2070407@ti.com>
- <541AE314.5040107@ti.com>
- <54201DE3.6030207@ti.com>
+	Mon, 22 Sep 2014 09:24:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <54201DE3.6030207@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140922130026.GK3290@leverpostej>
+References: <87ioo7c0g5.wl%kuninori.morimoto.gx@renesas.com>
+	<539815E6.2050304@codethink.co.uk>
+	<20140611165410.GK5099@sirena.org.uk>
+	<CAMuHMdUT0hEBGbN+W-Oz5zJ0N8S2VDMndqtDO=EtWF3jG2MEew@mail.gmail.com>
+	<20140611170233.GL5099@sirena.org.uk>
+	<5398A53D.3020706@wwwdotorg.org>
+	<20140611190444.GN5099@sirena.org.uk>
+	<5398AB07.4040304@wwwdotorg.org>
+	<87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
+	<878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>
+	<20140922130026.GK3290@leverpostej>
+Date: Mon, 22 Sep 2014 15:24:24 +0200
+X-Google-Sender-Auth: KrQPjEyLrrzCDg8bM4061ShtMIg
+Message-ID: <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
+Subject: Re: [PATCH][resend] of: Add vendor 2nd prefix for Asahi Kasei Corp
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus <magnus.damm@gmail.com>, Simon <horms@verge.net.au>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
-On 08:02-20140922, Nishanth Menon wrote:
-[...]
-> >>Test #2: 1200 seconds: (http://fpaste.org/134564/47289141/)
+Hi Mark,
 
-Santosh wanted me to make certain that the following is noted;
-^^ -> is around 20 mins. -> So highlighting again.. I assume this is
-long enough test duration you requested for.
+On Mon, Sep 22, 2014 at 3:00 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Given all that, I think we should get rid of the "ak" prefix entirely,
+> fix up the seaboard dts, and leave the legacy matching for "ak,ak8975"
+> up to the i2c framework. However, that would imply deleting from
+> vendor-prefixes.txt (if we want people to be warned on use of "ak"), and
+> that's not a good precedent to set.
 
-> >>CMD: set -x;uname -a;cat /sys/kernel/debug/pm_debug/count;sleep
-> >>1;./cpuidle_killer_1200;sleep 1;cat
-> >>/sys/kernel/debug/pm_debug/count;set +x
-> >>
-> >>OMAP4 Panda-ES: (2 a9) - not impacted as part of this patch - just
-> >>base test vector
-> >>http://fpaste.org/134563/41104728/
-> >>
-> >>OMAP5 uEVM: (2 a15)
-> >>http://fpaste.org/134562/47221141/
-> >>
-> >>DRA74x EVM: (2 a15)
-> >>http://fpaste.org/134559/11047098/
-> >>
-> >>DRA72 EVM: (2 a15)
-> >	      ^^
-> >Correction should have been 1 a15
-> >
-> >>http://fpaste.org/134560/11047151/
-> >>
-> >>AM572x EVM: (2 A15)
-> >>http://fpaste.org/134561/47189141/
-> >>
-> >>
-> 
-> Daniel, Santosh: Gentle ping:
-> 
-> Any further comments? OR are we ok for this for being merged?
-> 
--- 
-Regards,
-Nishanth Menon
+Instead of deleting, we can deprecate, like was done for powervr:
+
+powervr PowerVR (deprecated, use img)
+
+Still missing is an update for checkpatch to warn when a deprecated
+vendor prefix is used.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
