@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388AbaIVK60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:58:26 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:36700 "EHLO
+	id S1753528AbaIVK7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:59:50 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:49483 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaIVK6W (ORCPT
+	with ESMTP id S1751070AbaIVK7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:58:22 -0400
+	Mon, 22 Sep 2014 06:59:48 -0400
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: mark.yao@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <fd3ebe984f2d87bd3dbc373c33689b35>
+X-UNIQUE-TAG: <97004881aa960cc6cc38a17995475203>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 1
 From: Mark yao <mark.yao@rock-chips.com>
@@ -39,10 +39,11 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
         zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
         kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH v4 3/5] dt-bindings: video: Add documentation for rockchip vop
-Date: Mon, 22 Sep 2014 18:57:09 +0800
-Message-Id: <1411383429-1974-1-git-send-email-mark.yao@rock-chips.com>
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>,
+        Jeff Chen <jeff.chen@rock-chips.com>
+Subject: [PATCH v4 4/5] dt-bindings: video: Add documentation for rockchip edp
+Date: Mon, 22 Sep 2014 18:58:35 +0800
+Message-Id: <1411383515-2035-1-git-send-email-mark.yao@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411382820-1615-1-git-send-email-mark.yao@rock-chips.com>
 References: <1411382820-1615-1-git-send-email-mark.yao@rock-chips.com>
@@ -50,85 +51,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds binding documentation for Rockchip SoC VOP driver.
+Add binding documentation for Rockchip SoC EDP driver.
 
+Signed-off-by: Jeff Chen <jeff.chen@rock-chips.com>
 Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
 ---
 Changes in v2:
-- rename "lcdc" to "vop"
-- add vop reset
-- add iommu node
+- add edp reset
+- add panel node
 - add port for display-subsystem
 
 Changes in v3: None
 
 Changes in v4: None
 
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
- 1 file changed, 58 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
+ .../devicetree/bindings/video/rockchip-edp.txt     |   50 ++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-edp.txt
 
-diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
+diff --git a/Documentation/devicetree/bindings/video/rockchip-edp.txt b/Documentation/devicetree/bindings/video/rockchip-edp.txt
 new file mode 100644
-index 0000000..d15351f
+index 0000000..515e806
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-@@ -0,0 +1,58 @@
-+device-tree bindings for rockchip soc display controller (vop)
-+
-+VOP (Visual Output Processor) is the Display Controller for the Rockchip
-+series of SoCs which transfers the image data from a video memory
-+buffer to an external LCD interface.
++++ b/Documentation/devicetree/bindings/video/rockchip-edp.txt
+@@ -0,0 +1,50 @@
++Rockchip RK3288 EDP interface
++================================
 +
 +Required properties:
-+- compatible: value should be one of the following
-+		"rockchip,rk3288-vop";
++- compatible: "rockchip,rk3288-edp";
 +
-+- interrupts: should contain a list of all VOP IP block interrupts in the
-+		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
-+		 format depends on the interrupt controller used.
-+
-+- clocks: must include clock specifiers corresponding to entries in the
-+		clock-names property.
-+
-+- clock-names: Must contain
-+		aclk_vop: for ddr buffer transfer.
-+		hclk_vop: for ahb bus to R/W the phy regs.
-+		dclk_vop: pixel clock.
-+
++- reg: physical base address of the controller and length
++- clocks: from common clock binding: handle to dp clock.
++	of memory mapped region.
++- clock-names: from common clock binding:
++	Required elements: "clk_edp"
++			"clk_edp_24m"
++			"pclk_edp"
 +- resets: Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names: Must include the following entries:
-+  - axi
-+  - ahb
-+  - dclk
++	See ../reset/reset.txt for details.
++- reset-names: Must include the name "edp"
 +
-+- iommus: required a iommu node
++- rockchip,grf: this soc should set GRF regs, so need get grf here.
++- rockchip,panel: required a simple panel node as described by
++	Documentation/devicetree/bindings/panel/simple-panel.txt
 +
-+- port: A port node with endpoint definitions as defined in
++- ports: contain a port node with endpoint definitions as defined in
 +  Documentation/devicetree/bindings/media/video-interfaces.txt.
 +
 +Example:
-+SoC specific DT entry:
-+	vopb: vopb@ff930000 {
-+		compatible = "rockchip,rk3288-vop";
-+		reg = <0xff930000 0x19c>;
-+		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
-+		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
-+		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
-+		reset-names = "axi", "ahb", "dclk";
-+		iommus = <&vopb_mmu>;
-+		vopb_out: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			vopb_out_edp: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint=<&edp_in_vopb>;
-+			};
-+			vopb_out_hdmi: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint=<&hdmi_in_vopb>;
++	edp: edp@ff970000 {
++		compatible = "rockchip,rk3288-edp";
++		reg = <0xff970000 0x4000>;
++		interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru SCLK_EDP>, <&cru SCLK_EDP_24M>, <&cru PCLK_EDP_CTRL>;
++		clock-names = "clk_edp", "clk_edp_24m", "pclk_edp";
++		rockchip,grf = <&grf>;
++		resets = <&cru 111>;
++		reset-names = "edp";
++		rockchip,panel = <&panel>;
++		ports {
++			edp_in: port {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				edp_in_vopb: endpoint@0 {
++					reg = <0>;
++					remote-endpoint = <&vopb_out_edp>;
++				};
++				edp_in_vopl: endpoint@1 {
++					reg = <1>;
++					remote-endpoint = <&vopl_out_edp>;
++				};
 +			};
 +		};
 +	};
