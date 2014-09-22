@@ -1,93 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaIVExZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 00:53:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:63520 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaIVExX (ORCPT
+	id S1752591AbaIVFBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 01:01:54 -0400
+Received: from ozlabs.org ([103.22.144.67]:35065 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751746AbaIVFBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 00:53:23 -0400
-X-AuditID: cbfee690-f79ab6d0000046f7-52-541fab4122c9
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, s.nawrocki@samsung.com, mturquette@linaro.org,
-        "'Chander Kashyap'" <k.chander@samsung.com>,
-        "'Abhilash Kesavan'" <a.kesavan@samsung.com>
-References: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
- <54122962.5020903@gmail.com>
-In-reply-to: 
-Subject: RE: [PATCH] clk: samsung: exynos5260: fix typo in clock name
-Date: Mon, 22 Sep 2014 10:25:28 +0530
-Message-id: <001b01cfd621$738ed8c0$5aac8a40$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGjcMNdvmvoOe4ebVgYUdsP7pvQZwFqBtAdnEqku5CAD2rAsA==
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkStdxtXyIwbIpKhaP1yxmsli1YQmL
-	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLJ5OuMhmcfhNO6vFql1/GB04PXbOusvucefaHjaPzUvq
-	Pfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugStj+51HzAXtbBUz79xkbWB8xtLFyMkhIWAise7B
-	HjYIW0ziwr31YLaQwFJGiZ2302BqHlzZz9rFyAUUn84o8fP7eiYI5y+jxKM7/awgVWwCuhJP
-	3s9lBkmICExhlFi5uRXMYRZYzChx9ulOFoi56RKX9k8GszkFeCTW/elkBrGFBVwljrTcALNZ
-	BFQl1s3sZQKxeQUsJR5eO8kCYQtK/Jh8D8xmFtCSWL/zOBOELS+xec1bZohbFSR2nH3NCGKL
-	CDhJHH6yBKpGXGLSg4fsEDVf2SU2tuhD7BKQ+Db5ENBMDqC4rMSmA1BjJCUOrrjBMoFRYhaS
-	zbOQbJ6FZPMsJBsWMLKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/dxAiM6dP/nk3YwXjvgPUh
-	RgEORiUe3h8t8iFCrIllxZW5hxhNgS6ayCwlmpwPTBx5JfGGxmZGFqYmpsZG5pZmSuK8r6V+
-	BgPDMLEkNTs1tSC1KL6oNCe1+BAjEwenVANjhObrd8/tzMtfHKn+JODZ/l4x4EGy1GJN7t6N
-	OivtLP8LHa2d8Fvc6CF30aOkGfHGRg8/fW/6+aOfu7Fze9jKCEvjw2FNr/Zo6DlfN/v59eBZ
-	k+VPJb6vMrhWdWGNkINyD3uSZ3GXRdbGitBVvhGL+DhrVQ+0/su1vdGZFPjDK7b6UPZKX28l
-	luKMREMt5qLiRADOuUBb5AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQV3H1fIhBqcfyFg8XrOYyWLVhiUs
-	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsng64SKbxeE37awWq3b9YXTg9Ng56y67x51re9g8Ni+p
-	9+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
-	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGdvvPGIu
-	aGermHnnJmsD4zOWLkZODgkBE4kHV/azQthiEhfurWfrYuTiEBKYzijx8/t6JgjnL6PEozv9
-	YFVsAroST97PZQZJiAhMYZRYubkVzGEWWMwocfbpTrC5QgLpEpf2TwazOQV4JNb96WQGsYUF
-	XCWOtNwAs1kEVCXWzexlArF5BSwlHl47yQJhC0r8mHwPzGYW0JJYv/M4E4QtL7F5zVtmiFsV
-	JHacfc0IYosIOEkcfrIEqkZcYtKDh+wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqu
-	kV5xYm5xaV66XnJ+7iZGcNJ4Jr2DcVWDxSFGAQ5GJR7eHy3yIUKsiWXFlbmHGCU4mJVEeI/m
-	AIV4UxIrq1KL8uOLSnNSiw8xmgJ9OpFZSjQ5H5jQ8kriDY1NzE2NTS1NLEzMLJXEeQ+2WgcC
-	wyuxJDU7NbUgtQimj4mDU6qB0WtCfusGk40tWgfELhecf6jRElAZnSrcfavcamrLvFhniyiV
-	4LvSF6Z+Xm595u66V4JC8dV3Kj5LP9re6PWad/uzzwJztYsqk/p424Ul5ufGqqj+j75ns455
-	U3kE+9fVKy75lZ+73/qI/XxKnXD68Q+fGCSfyn70s32/wS74+Oyr+bLTb6ptUmIpzkg01GIu
-	Kk4EAMFZvL4wAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 22 Sep 2014 01:01:36 -0400
+Message-ID: <1411362094.984.15.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH 07/15] powerpc/powerpc: Add new PCIe functions for
+ allocating cxl interrupts
+From: Michael Neuling <mikey@neuling.org>
+To: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org, cbe-oss-dev@lists.ozlabs.org,
+        imunsie@au1.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, anton@samba.org
+Date: Mon, 22 Sep 2014 15:01:34 +1000
+In-Reply-To: <20140919070939.GB27190@shangw>
+References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
+	 <1411028820-29933-8-git-send-email-mikey@neuling.org>
+	 <20140919070939.GB27190@shangw>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
-
-Will you please take this patch and following three Exynos3250 clock fixes
-in your tree.
-
-1: clk: samsung: exynos3250: fix width field of mout_mmc0/1
-   https://lkml.org/lkml/2014/9/5/265
-2: clk: samsung: exynos3250: fix width and shift of div_spi0_isp clock
-   https://lkml.org/lkml/2014/9/9/364
-3: clk: samsung: exynos3250: fix mout_cam_blk parent list
-  https://lkml.org/lkml/2014/9/6/41
-
-Thanks,
-Pankaj Dubey
-
+<snip>
+> >+struct device_node *pnv_pci_to_phb_node(struct pci_dev *dev)
+> >+{
+> >+	struct device_node *np;
+> >+	struct property *prop = NULL;
+> >+
+> >+	np = of_node_get(pci_device_to_OF_node(dev));
+> >+
+> >+	/* Scan up the tree looking for the PHB node */
+> >+	while (np) {
+> >+		if ((prop = of_find_property(np, "ibm,opal-phbid", NULL)))
+> >+			break;
+> >+		np = of_get_next_parent(np);
+> >+	}
+> >+
+> >+	if (!prop) {
+> >+		of_node_put(np);
+> >+		return NULL;
+> >+	}
+> >+
+> >+	return np;
+> >+}
+> >+EXPORT_SYMBOL(pnv_pci_to_phb_node);
 > 
-> Please add my sign-off as
+> Nitpick: I'm not sure it's better way. "struct pci_controller::dn" should
+> always have valid "ibm,opal-phbid", so I guess the code could be like this
+> way:
 > 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> 	struct pci_controller *hose = pci_bus_to_host(dev->bus);
 > 
-> >
-> > Missed your sign-off? You can reply with it inline and I will add it
-> > when applying this weekend.
-> >
-> > P.S. Please keep me on CC when sending patches for Samsung clock
-drivers.
-> >
-> > Best regards,
-> > Tomasz
+> 	return hose->dn;
 
+Nice.. that makes it much simpler.  I'll update.
+
+<snip>
+> >+
+> >+#ifdef CONFIG_CXL_BASE
+> >+int pnv_phb_to_cxl(struct pci_dev *dev)
+> >+{
+> >+	struct device_node *np;
+> >+	struct pnv_ioda_pe *pe;
+> >+	const u64 *prop64;
+> >+	u64 phb_id;
+> >+	int rc;
+> >+
+> >+	dev_info(&dev->dev, "switch PHB to CXL\n");
+> >+
+> >+	if (!(np = pnv_pci_to_phb_node(dev)))
+> >+		return -ENODEV;
+> >+
+> >+	prop64 = of_get_property(np, "ibm,opal-phbid", NULL);
+> >+
+> >+	phb_id = be64_to_cpup(prop64);
+> >+	dev_info(&dev->dev, "PHB-ID  : 0x%016llx\n", phb_id);
+> >+
+> 
+> The PHB ID would have been there: struct pnv_phb::opal_id. So
+> I guess we needn't grab it from device-tree again :)
+
+Nice, I'll update.
+
+> >+	if (!(pe = pnv_ioda_get_pe(dev))) {
+> >+		rc = -ENODEV;
+> >+		goto out;
+> >+	}
+> >+	dev_info(&dev->dev, "     pe : %i\n", pe->pe_number);
+> 
+> Perhaps you can reuse pe_info() here.
+
+Yep, will do.
+
+<snip>
+> >+#ifdef CONFIG_CXL_BASE
+> >+int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
+> >+			   unsigned int virq)
+> >+{
+> >+	struct pci_controller *hose = pci_bus_to_host(dev->bus);
+> >+	struct pnv_phb *phb = hose->private_data;
+> >+	unsigned int xive_num = hwirq - phb->msi_base;
+> >+	struct pnv_ioda_pe *pe;
+> >+	int rc;
+> >+
+> >+	if (!(pe = pnv_ioda_get_pe(dev)))
+> >+		return -ENODEV;
+> >+
+> >+	/* Assign XIVE to PE */
+> >+	rc = opal_pci_set_xive_pe(phb->opal_id, pe->pe_number, xive_num);
+> >+	if (rc) {
+> >+		pr_warn("%s: OPAL error %d setting msi_base 0x%x hwirq 0x%x XIVE 0x%x PE\n",
+> >+			pci_name(dev), rc, phb->msi_base, hwirq, xive_num);
+> >+		return -EIO;
+> >+	}
+> 
+> It seems current firmware doesn't support the OPAL API for PHB3.
+
+The current public version of skiboot seems to be doing something here
+in hw/phb3.c in phb3_set_ive_pe():
+
+https://github.com/open-power/skiboot/blob/c34c4ef8c660e3e439365c8f5c06143ff00bc6bc/hw/phb3.c#L1096
+
+I think we still need this.
+
+Thanks again!
+Mikey
