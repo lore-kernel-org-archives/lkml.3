@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaIVQmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:42:44 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55041 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaIVQmn (ORCPT
+	id S1754394AbaIVQo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:44:28 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:35043 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318AbaIVQo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:42:43 -0400
-Date: Mon, 22 Sep 2014 09:42:37 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Andreas Dilger <adilger@dilger.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-Message-ID: <20140922164237.GA30229@infradead.org>
-References: <cover.1410810247.git.milosz@adfin.com>
- <8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
- <94D0CD8314A33A4D9D801C0FE68B402958C81D56@G9W0745.americas.hpqcorp.net>
- <20140919112147.GA4639@infradead.org>
- <x49tx3zpsfg.fsf@segfault.boston.devel.redhat.com>
- <CANP1eJH0XYgcjzExLmqmViqpCiowquOj1yuWX1wFsbceteLYpw@mail.gmail.com>
+	Mon, 22 Sep 2014 12:44:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANP1eJH0XYgcjzExLmqmViqpCiowquOj1yuWX1wFsbceteLYpw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Date: Mon, 22 Sep 2014 17:44:26 +0100
+Message-ID: <CALyZvKz4gyH64an3NWz2zY4b0NN34LwSME-oD8-Vw+e1SCF0Nw@mail.gmail.com>
+Subject: mount BTRFS filesystems created with 3.8+ under 2.6.32 kernels ?
+From: Jason Vas Dias <jason.vas.dias@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 12:32:02PM -0400, Milosz Tanski wrote:
-> I spent some time thinking about multi-position scatter/gather in
-> context of this over the weekend. The non-blocking case seams easy,
-> the implementation I purposed needs an extra loop. Where this gets
-> hairy is making the non-trivial blocking case work well (as in have
-> concurrent requests for each of the ranges) in the filesystem code. If
-> that's the road we're going to go down I have a gut feeling we're
-> going to get stuck in the same spot(s) as the other non-blocking
-> buffered r/w attempts from the past.
+Good day -
 
-The other thing sis that we have a basically ready, easy to use
-implementation of flagged I/O (my name for the new syscalls), while
-S/G I/O will take forever to discuss and is the natual vehicle for
-other extensions like T10 DIX.
+I wonder if there is a GIT repository somewhere with a backport of the BTRFS
+kernel modules  that will allow BTRFS filesystems created with a 3.8 kernel to
+be mounted on a 2.6.32+ kernel .
 
-I'd like to suggest you consolidate your syscalls down from 4 to 2
-as suggestes by overloading the negative offset argument, giving
-us two more syscalls slows for S/G once it's ready.  Note that
-a sync S/G syscalls should of course also support these flags, although
-I suspect the primary use cases for S/G I/O would be through the aio
-machinery.
+When I try this, the 2.6.32 kernel crashes with the message :
+ 'BTRFS: couldn't mount because of unsupported optional features (40)'
+( kernel-2.6.32-431.29.2.el6.x86_64 from RHEL 6.4+ ).
+
+The same filesystem mounts fine under Oracle EL6 which now comes with
+kernel-uek 3.8+ .  Has anyone tried to backport the 3.8 BTRFS
+capabilities to 2.6.32 ,
+or is there any way I can remove "Option 40" to get it to mount
+without crashing ?
+It is a very small BTRFS filesystem with a root filesystem and a few snapshots.
+I did not specify any BTRFS options in :
+  $ mkfs.btrfs /dev/sda9;
+  ... # mount on /mnt/btr & create some files
+  $ btrfs subvolume snapshot -r /mnt/btr /mnt/btr/root-0
+  $ btrfs subvolume snapshot    /mnt/btr /mnt/btr/root-w-0
+Now I can mount /dev/sda9 under any 3.8+ kernel, but not under 2.6.32 .
+
+Thanks in advance for any replies,
+Best Regards, Jason Vas Dias
