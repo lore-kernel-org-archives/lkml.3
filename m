@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbaIVKBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:01:21 -0400
-Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:8811
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751894AbaIVKBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:01:19 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <wim@iguana.be>, <groeck7@gmail.com>, <linux-watchdog@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] watchdog: imx2_wdt: Add power management support.
-Date: Mon, 22 Sep 2014 18:00:52 +0800
-Message-ID: <1411380052-48655-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(85306004)(92726001)(83072002)(88136002)(74662003)(46102003)(36756003)(48376002)(93916002)(92566001)(44976005)(6806004)(19580405001)(86362001)(79102003)(85852003)(77156001)(68736004)(77982003)(74502003)(104016003)(62966002)(80022003)(19580395003)(2201001)(81342003)(26826002)(107046002)(50466002)(69596002)(87286001)(81542003)(90102001)(21056001)(102836001)(97736003)(50226001)(50986999)(81156004)(106466001)(31966008)(95666004)(105606002)(64706001)(84676001)(89996001)(4396001)(99396002)(83322001)(76482002)(20776003)(87936001)(47776003)(120916001)(104166001)(229853001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0624;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1753318AbaIVKGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:06:25 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:44354 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaIVKGX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 06:06:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0624;
-X-Forefront-PRVS: 034215E98F
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAMuHMdWx-+1WHQUXUZDGB1ZX9kpnyRALJB0NnhJddHD5X_Uo8g@mail.gmail.com>
+References: <CAMuHMdWx-+1WHQUXUZDGB1ZX9kpnyRALJB0NnhJddHD5X_Uo8g@mail.gmail.com>
+Date: Mon, 22 Sep 2014 12:06:22 +0200
+X-Google-Sender-Auth: ErE7m-PfWcrFalb6MXhYNk6Kwag
+Message-ID: <CAMuHMdXRt8hjY4AA4SYgqHiXoKUtmYKUdp+Evs9R_K=Mh3EqLQ@mail.gmail.com>
+Subject: Re: iter_file_splice_write() return value (was: Re: ->splice_write()
+ via ->write_iter())
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add power management operations(suspend and resume) as part of
-dev_pm_ops for IMX2 watchdog driver.
+Ping?
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/watchdog/imx2_wdt.c | 47 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+fs/splice.c:954: warning: ‘ret’ may be used uninitialized in this function
 
-diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index 68c3d37..941c36f 100644
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@ -295,6 +295,52 @@ static void imx2_wdt_shutdown(struct platform_device *pdev)
- 	}
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+/* Disable watchdog if it is active during suspend */
-+static int imx2_wdt_suspend(struct device *dev)
-+{
-+	struct watchdog_device *wdog = dev_get_drvdata(dev);
-+	struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
-+
-+	imx2_wdt_set_timeout(wdog, IMX2_WDT_MAX_TIME);
-+	imx2_wdt_ping(wdog);
-+
-+	/* Watchdog has been stopped but IP block is still running */
-+	if (!watchdog_active(&wdog) && imx2_wdt_is_running(wdev))
-+		del_timer_sync(&wdev->timer);
-+
-+	clk_disable_unprepare(wdev->clk);
-+
-+	return 0;
-+}
-+
-+/* Enable watchdog and configure it if necessary */
-+static int imx2_wdt_resume(struct device *dev)
-+{
-+	struct watchdog_device *wdog = dev_get_drvdata(dev);
-+	struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
-+
-+	clk_prepare_enable(wdev->clk);
-+
-+	if (watchdog_active(wdog) && !imx2_wdt_is_running(wdev)) {
-+		/* Resumes from deep sleep we need restart
-+		 * the watchdog again.
-+		 */
-+		imx2_wdt_setup(wdog);
-+		imx2_wdt_set_timeout(wdog, wdog->timeout);
-+		imx2_wdt_ping(wdog);
-+	} else if (imx2_wdt_is_running(wdev)) {
-+		imx2_wdt_ping(wdog);
-+		mod_timer(&wdev->timer, jiffies + wdog->timeout * HZ / 2);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(imx2_wdt_pm_ops, imx2_wdt_suspend,
-+			 imx2_wdt_resume);
-+
- static const struct of_device_id imx2_wdt_dt_ids[] = {
- 	{ .compatible = "fsl,imx21-wdt", },
- 	{ /* sentinel */ }
-@@ -307,6 +353,7 @@ static struct platform_driver imx2_wdt_driver = {
- 	.driver		= {
- 		.name	= DRIVER_NAME,
- 		.owner	= THIS_MODULE,
-+		.pm     = &imx2_wdt_pm_ops,
- 		.of_match_table = imx2_wdt_dt_ids,
- 	},
- };
--- 
-2.1.0.27.g96db324
+The splice syscall explicitly checks for len != 0, but this code is also
+called from do_sendfile(), where it's difficult to see if len is ever 0.
 
+On Mon, Jun 16, 2014 at 9:11 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Al,
+>
+> On Thu, Jun 12, 2014 at 8:14 PM, Linux Kernel Mailing List
+> <linux-kernel@vger.kernel.org> wrote:
+>> Gitweb:     http://git.kernel.org/linus/;a=commit;h=8d0207652cbe27d1f962050737848e5ad4671958
+>> Commit:     8d0207652cbe27d1f962050737848e5ad4671958
+>
+>>     ->splice_write() via ->write_iter()
+>>
+>>     iter_file_splice_write() - a ->splice_write() instance that gathers the
+>>     pipe buffers, builds a bio_vec-based iov_iter covering those and feeds
+>>     it to ->write_iter().  A bunch of simple cases coverted to that...
+>>
+>>     [AV: fixed the braino spotted by Cyrill]
+>>
+>>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+>
+>> @@ -1052,6 +1053,145 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+>>
+>>  EXPORT_SYMBOL(generic_file_splice_write);
+>>
+>> +/**
+>> + * iter_file_splice_write - splice data from a pipe to a file
+>> + * @pipe:      pipe info
+>> + * @out:       file to write to
+>> + * @ppos:      position in @out
+>> + * @len:       number of bytes to splice
+>> + * @flags:     splice modifier flags
+>> + *
+>> + * Description:
+>> + *    Will either move or copy pages (determined by @flags options) from
+>> + *    the given pipe inode to the given file.
+>> + *    This one is ->write_iter-based.
+>
+> What's the meaning of the return value? This is not documented.
+>
+>> +ssize_t
+>> +iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+>> +                         loff_t *ppos, size_t len, unsigned int flags)
+>> +{
+>> +       struct splice_desc sd = {
+>> +               .total_len = len,
+>> +               .flags = flags,
+>> +               .pos = *ppos,
+>> +               .u.file = out,
+>> +       };
+>> +       int nbufs = pipe->buffers;
+>> +       struct bio_vec *array = kcalloc(nbufs, sizeof(struct bio_vec),
+>> +                                       GFP_KERNEL);
+>> +       ssize_t ret;
+>
+> fs/splice.c:954: warning: ‘ret’ may be used uninitialized in this function
+>
+>> +
+>> +       if (unlikely(!array))
+>> +               return -ENOMEM;
+>> +
+>> +       pipe_lock(pipe);
+>> +
+>> +       splice_from_pipe_begin(&sd);
+>> +       while (sd.total_len) {
+>
+> If the "len" parameter is zero, this loop will be skipped, and "ret" will
+> be uninitialized.
+>
+> What should it return? 0? -EINVAL?
+>
+>> +       }
+>> +done:
+>> +       kfree(array);
+>> +       splice_from_pipe_end(pipe, &sd);
+>> +
+>> +       pipe_unlock(pipe);
+>> +
+>> +       if (sd.num_spliced)
+>> +               ret = sd.num_spliced;
+>> +
+>> +       return ret;
+>> +}
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
