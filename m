@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaIVSSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:18:21 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33700 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470AbaIVSSU (ORCPT
+	id S1754565AbaIVST0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:19:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52665 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525AbaIVSTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:18:20 -0400
-From: Johannes Pointner <johannes.pointner@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        AnilKumar Ch <anilkumar@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: tps65217: add compatible string for subdevices
-Date: Mon, 22 Sep 2014 20:18:15 +0200
-Message-ID: <5439652.jHp5aCCfrZ@lenovobook>
-User-Agent: KMail/4.14 (Linux/3.16.3-1-ARCH; KDE/4.14.0; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 22 Sep 2014 14:19:25 -0400
+Date: Mon, 22 Sep 2014 14:19:21 -0400 (EDT)
+Message-Id: <20140922.141921.577008114679288180.davem@davemloft.net>
+To: hock.leong.kweh@intel.com
+Cc: peppe.cavallaro@st.com, rayagond@vayavyalabs.com, vbridgers2013@gmail.com,
+        wens@csie.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        boon.leong.ong@intel.com, tobias.johannes.klausmann@mni.thm.de
+Subject: Re: [PATCH] net: stmmac: fix stmmac_pci_probe failed when
+ CONFIG_HAVE_CLK is selected
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
+References: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Sep 2014 11:19:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPS65217 is missing of_compatible string in the mfd_cell for its
-subdevices. This compatible string is necessary to use functions like
-of_find_backlight_by_node in backlight.c.
+From: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Date: Thu, 18 Sep 2014 20:34:10 +0800
 
-Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
----
- Documentation/devicetree/bindings/regulator/tps65217.txt            | 5 ++++-
- .../devicetree/bindings/video/backlight/tps65217-backlight.txt      | 6 +++---
- drivers/mfd/tps65217.c                                              | 2 ++
- 3 files changed, 9 insertions(+), 4 deletions(-)
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+> 
+> When the CONFIG_HAVE_CLK is selected for the system, the stmmac_pci_probe
+> will fail with dmesg:
+> [    2.167225] stmmaceth 0000:00:14.6: enabling device (0000 -> 0002)
+> [    2.178267] stmmaceth 0000:00:14.6: enabling bus mastering
+> [    2.178436] stmmaceth 0000:00:14.6: irq 24 for MSI/MSI-X
+> [    2.178703] stmmaceth 0000:00:14.6: stmmac_dvr_probe: warning: cannot
+> get CSR clock
+> [    2.186503] stmmac_pci_probe: main driver probe failed
+> [    2.194003] stmmaceth 0000:00:14.6: disabling bus mastering
+> [    2.196473] stmmaceth: probe of 0000:00:14.6 failed with error -2
+> 
+> This patch fix the issue by breaking the dependency to devm_clk_get()
+> as the CSR clock can be obtained at priv->plat->clk_csr from pci driver.
+> 
+> Reported-by: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
-index 4f05d20..ba835e2 100644
---- a/Documentation/devicetree/bindings/regulator/tps65217.txt
-+++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
-@@ -5,6 +5,7 @@ Required properties:
- - reg: I2C slave address
- - regulators: list of regulators provided by this controller, must be named
-   after their hardware counterparts: dcdc[1-3] and ldo[1-4]
-+- compatible: "ti,tps65217-pmic"
- - regulators: This is the list of child nodes that specify the regulator
-   initialization data for defined regulators. Not all regulators for the given
-   device need to be present. The definition for each of these nodes is defined
-@@ -23,9 +24,11 @@ Example:
- 
- 	tps: tps@24 {
- 		compatible = "ti,tps65217";
-+		reg = <0x24>;
- 		ti,pmic-shutdown-controller;
- 
--		regulators {
-+		tps_pmic: regulators {
-+			compatible = "ti,tps65217-pmic";
- 			dcdc1_reg: dcdc1 {
- 				regulator-min-microvolt = <900000>;
- 				regulator-max-microvolt = <1800000>;
-diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-index 5fb9279..c3fb649 100644
---- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-@@ -7,18 +7,18 @@ Required properties:
- - compatible: "ti,tps65217"
- - reg: I2C slave address
- - backlight: node for specifying WLED1 and WLED2 lines in TPS65217
-+- compatible: "ti,tps65217-bl"
- - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
- - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
- - default-brightness: valid values: 0-100
- 
--Each regulator is defined using the standard binding for regulators.
--
- Example:
- 
- 	tps: tps@24 {
- 		reg = <0x24>;
- 		compatible = "ti,tps65217";
--		backlight {
-+		tps_bl: backlight {
-+			compatible = "ti,tps65217-bl";
- 			isel = <1>;  /* 1 - ISET1, 2 ISET2 */
- 			fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
- 			default-brightness = <50>;
-diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
-index 3cc4c70..77708f9 100644
---- a/drivers/mfd/tps65217.c
-+++ b/drivers/mfd/tps65217.c
-@@ -33,9 +33,11 @@
- static const struct mfd_cell tps65217s[] = {
- 	{
- 		.name = "tps65217-pmic",
-+		.of_compatible = "ti,tps65217-pmic",
- 	},
- 	{
- 		.name = "tps65217-bl",
-+		.of_compatible = "ti,tps65217-bl",
- 	},
- };
- 
--- 
-2.1.0
-
-
+Giuseppe, Kweh, where are we with this patch?
