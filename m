@@ -1,122 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaIVSyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:54:24 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:34530 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaIVSyW (ORCPT
+	id S1754430AbaIVSyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:54:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52925 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbaIVSys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:54:22 -0400
-Date: Mon, 22 Sep 2014 12:54:18 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rajat Jain <rajatxjain@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Yang <weiyang@linux.vnet.ibm.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v2] pci/probe: Enable CRS for root port if it is supported
-Message-ID: <20140922185418.GB1880@google.com>
-References: <53FFA54D.9000907@gmail.com>
- <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
- <54065208.3080309@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54065208.3080309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Sep 2014 14:54:48 -0400
+Date: Mon, 22 Sep 2014 14:54:46 -0400 (EDT)
+Message-Id: <20140922.145446.2112922203236872469.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net] r8152: disable ALDPS
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-44-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-44-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Sep 2014 11:54:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 04:26:00PM -0700, Rajat Jain wrote:
-> 
-> As per the PCIe spec, an endpoint may return the configuration cycles
-> with CRS if it is not yet fully ready to be accessed. If the CRS visibility
-> is not enabled at the root port, the spec leaves the retry behaviour open
-> to implementation in such a case. The Intel root ports have chosen to retry
-> endlessly in this situation. Thus, the root controller may "hang" (repeatedly
-> retrying the configuration requests until it gets a status other than CRS) if
-> a device returns CRS for a long time. This can cause a broken endpoint to bring
-> down the whole PCI hierarchy.
-> 
-> This was recently known to cause problems on Intel systems and
-> was discussed here:
-> http://marc.info/?t=140926298500002&r=1&w=2
-> 
-> Ref1:
-> https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
-> 
-> Ref2:
-> PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
-> 
-> Thus enable the CRS visibility for the root ports that support it. This
-> patch reverts the following commit, but enables CRS visibility only
-> when the root port supports it:
-> 
-> ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by default")
-> 
-> (Linus' response: http://marc.info/?l=linux-pci&m=140968622520192&w=2)
-> 
-> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> Signed-off-by: Guenter Roeck <groeck@juniper.net>
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 19 Sep 2014 15:17:18 +0800
 
-Applied to pci/enumeration for v3.18, thanks!
+> If the hw is in ALDPS mode, the hw may have no response for accessing
+> the most registers. Therefore, the ALDPS should be disabled before
+> accessing the hw in rtl_ops.init(), rtl_ops.disable(), rtl_ops.up(),
+> and rtl_ops.down(). Regardless of rtl_ops.enable(), because the hw
+> wouldn't enter ALDPS mode when linking on. The hw would enter the
+> ALDPS mode after several seconds when link down occurs and the ALDPS
+> is enabled.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-> ---
-> v2: Remove the white list, that was enabling the CRS for certain known Intel systems.
->     Rather now enable it for all systems that support this capability.
-> v1: Enable CRS for only some given Intel systems (maintain a whitelist)
-> 
->  drivers/pci/probe.c           |   13 +++++++++++++
->  include/uapi/linux/pci_regs.h |    1 +
->  2 files changed, 14 insertions(+)
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index e3cf8a2..3c4c35c 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -740,6 +740,17 @@ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
->  }
->  EXPORT_SYMBOL(pci_add_new_bus);
->  
-> +static void pci_enable_crs(struct pci_dev *pdev)
-> +{
-> +	u16 root_cap = 0;
-> +
-> +	/* Enable CRS Software visibility if supported */
-> +	pcie_capability_read_word(pdev, PCI_EXP_RTCAP, &root_cap);
-> +	if (root_cap & PCI_EXP_RTCAP_CRSVIS)
-> +		pcie_capability_set_word(pdev, PCI_EXP_RTCTL,
-> +					 PCI_EXP_RTCTL_CRSSVE);
-> +}
-> +
->  /*
->   * If it's a bridge, configure it and scan the bus behind it.
->   * For CardBus bridges, we don't scan behind as the devices will
-> @@ -787,6 +798,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
->  	pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
->  			      bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
->  
-> +	pci_enable_crs(dev);
-> +
->  	if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
->  	    !is_cardbus && !broken) {
->  		unsigned int cmax;
-> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-> index 30db069..a75106d 100644
-> --- a/include/uapi/linux/pci_regs.h
-> +++ b/include/uapi/linux/pci_regs.h
-> @@ -552,6 +552,7 @@
->  #define  PCI_EXP_RTCTL_PMEIE	0x0008	/* PME Interrupt Enable */
->  #define  PCI_EXP_RTCTL_CRSSVE	0x0010	/* CRS Software Visibility Enable */
->  #define PCI_EXP_RTCAP		30	/* Root Capabilities */
-> +#define  PCI_EXP_RTCAP_CRSVIS	0x0001	/* CRS software visibility capability */
->  #define PCI_EXP_RTSTA		32	/* Root Status */
->  #define PCI_EXP_RTSTA_PME	0x00010000 /* PME status */
->  #define PCI_EXP_RTSTA_PENDING	0x00020000 /* PME pending */
-> -- 
-> 1.7.9.5
+Applied, thanks.
