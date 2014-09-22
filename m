@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621AbaIVSZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:25:59 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60006 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495AbaIVSZ5 (ORCPT
+	id S1754656AbaIVS0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:26:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:35783 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753988AbaIVS0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:25:57 -0400
-X-Originating-IP: 75.92.167.159
-Date: Mon, 22 Sep 2014 11:25:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Mark D Rustad <mark.d.rustad@intel.com>
-Cc: sparse@chrisli.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        richard.weinberger@gmail.com, linux-sparse@vger.kernel.org,
-        mingo@redhat.com, jeffrey.t.kirsher@intel.com,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH] sched: Remove nested extern
-Message-ID: <20140922182544.GA27107@thin>
-References: <CAFLxGvwfuE-458duC9ARMLLMBCvZaBQnwDjPW6uJC4FAViBXjQ@mail.gmail.com>
- <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
+	Mon, 22 Sep 2014 14:26:43 -0400
+Date: Mon, 22 Sep 2014 14:26:42 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Markos Chandras <markos.chandras@imgtec.com>
+Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] MIPS: mcount: Fix selfpc address for static trace
+Message-ID: <20140922142642.7f70fb0f@gandalf.local.home>
+In-Reply-To: <1411392779-9554-3-git-send-email-markos.chandras@imgtec.com>
+References: <1411392779-9554-1-git-send-email-markos.chandras@imgtec.com>
+	<1411392779-9554-3-git-send-email-markos.chandras@imgtec.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922175511.62229.98784.stgit@mdrustad-wks.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:55:11AM -0700, Mark D Rustad wrote:
-> Avoid W=2 nested-externs warning by moving the nested extern to
-> a normal extern. This eliminates that warning which is generated
-> for every inclusion of sched.h in a kernel build when W=2 is used.
-> This also removes a point of maintenance if the definition of
-> delayacct_on were ever to change.
-> 
-> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+On Mon, 22 Sep 2014 14:32:59 +0100
+Markos Chandras <markos.chandras@imgtec.com> wrote:
 
-This seems sensible, and makes much more sense than wrapping the extern
-in a directive to disable warnings.
-
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  include/linux/delayacct.h |    1 -
->  include/linux/sched.h     |    3 ++-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+> According to Documentation/trace/ftrace-design.txt, the selfpc
+> should be the return address minus the mcount overhead (8 bytes).
+> This brings static trace in line with the dynamic trace regarding
+> the selfpc argument to the tracing function.
 > 
-> diff --git a/include/linux/delayacct.h b/include/linux/delayacct.h
-> index 6cee17c22313..51229790af00 100644
-> --- a/include/linux/delayacct.h
-> +++ b/include/linux/delayacct.h
-> @@ -30,7 +30,6 @@
->  
->  #ifdef CONFIG_TASK_DELAY_ACCT
->  
-> -extern int delayacct_on;	/* Delay accounting turned on/off */
->  extern struct kmem_cache *delayacct_cache;
->  extern void delayacct_init(void);
->  extern void __delayacct_tsk_init(struct task_struct *);
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 5c2c885ee52b..1f1dcfdcd92c 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -825,6 +825,8 @@ struct task_delay_info {
->  	u64 freepages_delay;	/* wait for memory reclaim */
->  	u32 freepages_count;	/* total count of memory reclaim */
->  };
-> +
-> +extern int delayacct_on;	/* Delay accounting turned on/off */
->  #endif	/* CONFIG_TASK_DELAY_ACCT */
->  
->  static inline int sched_info_on(void)
-> @@ -832,7 +834,6 @@ static inline int sched_info_on(void)
->  #ifdef CONFIG_SCHEDSTATS
->  	return 1;
->  #elif defined(CONFIG_TASK_DELAY_ACCT)
-> -	extern int delayacct_on;
->  	return delayacct_on;
->  #else
->  	return 0;
+> This also removes the magic number '8' with the proper
+> MCOUNT_INSN_SIZE.
+
+I could also update the generic code to handle delay slots.
+
+-- Steve
+
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sparse" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+> ---
+>  arch/mips/kernel/mcount.S | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+> index 2f7c734771f4..3af48b7c7a47 100644
+> --- a/arch/mips/kernel/mcount.S
+> +++ b/arch/mips/kernel/mcount.S
+> @@ -79,7 +79,7 @@ _mcount:
+>  	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
+>  #endif
+>  
+> -	PTR_SUBU a0, ra, 8	/* arg1: self address */
+> +	PTR_SUBU a0, ra, MCOUNT_INSN_SIZE /* arg1: self address */
+>  	PTR_LA   t1, _stext
+>  	sltu     t2, a0, t1	/* t2 = (a0 < _stext) */
+>  	PTR_LA   t1, _etext
+> @@ -138,7 +138,7 @@ NESTED(_mcount, PT_SIZE, ra)
+>  static_trace:
+>  	MCOUNT_SAVE_REGS
+>  
+> -	move	a0, ra		/* arg1: self return address */
+> +	PTR_SUBU a0, ra, MCOUNT_INSN_SIZE	/* arg1: self address */
+>  	jalr	t2		/* (1) call *ftrace_trace_function */
+>  	 move	a1, AT		/* arg2: parent's return address */
+>  
+
