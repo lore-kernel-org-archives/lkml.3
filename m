@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaIVPTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:19:21 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:63905 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaIVPTU (ORCPT
+	id S1754102AbaIVPU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:20:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40696 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625AbaIVPUz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:19:20 -0400
-Subject: Re: [PATCH 4/5] perf tools: Introduce perf_callchain_config()
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>, Milian Wolff <mail@milianw.de>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140922142410.GD18187@krava.brq.redhat.com>
-References: <1411229886-24390-1-git-send-email-namhyung@kernel.org>
-	 <1411229886-24390-5-git-send-email-namhyung@kernel.org>
-	 <20140922142410.GD18187@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Sep 2014 00:19:13 +0900
-Message-ID: <1411399153.1665.9.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 22 Sep 2014 11:20:55 -0400
+Date: Mon, 22 Sep 2014 16:20:48 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v11 07/10] OF: Introduce helper function for getting PCI
+ domain_nr
+Message-ID: <20140922152048.GZ1994@e106497-lin.cambridge.arm.com>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411003825-21521-8-git-send-email-Liviu.Dudau@arm.com>
+ <201409200424.20538.arnd@arndb.de>
+MIME-Version: 1.0
+In-Reply-To: <201409200424.20538.arnd@arndb.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 22 Sep 2014 15:20:49.0705 (UTC) FILETIME=[CA64B190:01CFD678]
+X-MC-Unique: 114092216205205301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-22 (월), 16:24 +0200, Jiri Olsa:
-> On Sun, Sep 21, 2014 at 01:18:05AM +0900, Namhyung Kim wrote:
+On Sat, Sep 20, 2014 at 03:24:20AM +0100, Arnd Bergmann wrote:
+> On Thursday 18 September 2014, Liviu Dudau wrote:
+> > 
+> > Add of_pci_get_domain_nr() to retrieve the PCI domain number
+> > of a given device from DT. If the information is not present,
+> > the function can be requested to allocate a new domain number.
+> > 
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 > 
-> SNIP
+> This is more elaborate than I remember it, and while the simpler
+> version (which potentially resulted in a conflict for inconsistent
+> DTs) was fine, this one also seems ok.
 > 
-> > +int perf_callchain_config(const char *var, const char *value)
-> > +{
-> > +	if (prefixcmp(var, "call-graph."))
-> > +		return 0;
-> > +	var += 11; /* strlen("call-graph.") == 11 */
-> > +
-> > +	if (!strcmp(var, "record-mode"))
-> > +		return parse_callchain_record_opt(value);
-> > +#ifdef HAVE_DWARF_UNWIND_SUPPORT
-> > +	if (!strcmp(var, "dump-size")) {
-> > +		unsigned long size = 0;
-> > +		int ret;
-> > +
-> > +		ret = get_stack_size(value, &size);
-> > +		callchain_param.dump_size = size;
-> > +
-> > +		return ret;
-> > +	}
-> > +#endif
-> > +	if (!strcmp(var, "print-type"))
-> > +		return parse_callchain_report_opt(value);
-> > +	if (!strcmp(var, "order"))
-> > +		return parse_callchain_report_opt(value);
-> > +	if (!strcmp(var, "threshold"))
-> > +		return parse_callchain_report_opt(value);
-> > +	if (!strcmp(var, "print-limit"))
-> > +		return parse_callchain_report_opt(value);
-> > +	if (!strcmp(var, "sort-key"))
-> > +		return parse_callchain_report_opt(value);
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Thanks Arnd!
+
+Best regards,
+Liviu
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> so this allows to spcify option like:
-> 
-> [call-graph]
->         sort-key = caller,function,1
-> 
-> which might be confusing for someone.. personaly I'm ok with that,
-> I'm just raising it, because it's not apparent and not sure how
-> strict we want to be in here ;-)
 
-Right, I just reused parse_callchain_{record,report}_opt() functions to
-simplify the code.
-
-Hmm.. now I rethink that at least threshold and print-limit will be
-treated differently as parse_callchain_report_opt() implies an order of
-them.  Will change in the next version.
-
-Thanks,
-Namhyung
-
-
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
