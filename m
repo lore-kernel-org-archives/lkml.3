@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaIVPvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:51:00 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48247 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538AbaIVPu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:50:59 -0400
-Date: Mon, 22 Sep 2014 11:50:49 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140922155049.GA6630@cmpxchg.org>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144436.GG336@dhcp22.suse.cz>
+	id S1754407AbaIVPv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:51:26 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:51265 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344AbaIVPvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 11:51:25 -0400
+Message-ID: <5420456C.4010103@gmail.com>
+Date: Mon, 22 Sep 2014 23:51:08 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922144436.GG336@dhcp22.suse.cz>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3 v2] xen/xenbus: Improve failure processing
+ code for __xenbus_switch_state()
+References: <541AE4E9.2040904@gmail.com> <541AE5C4.2070409@gmail.com> <54203A73.8030103@citrix.com>
+In-Reply-To: <54203A73.8030103@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 04:44:36PM +0200, Michal Hocko wrote:
-> On Fri 19-09-14 09:22:08, Johannes Weiner wrote:
-> > Memory is internally accounted in bytes, using spinlock-protected
-> > 64-bit counters, even though the smallest accounting delta is a page.
-> > The counter interface is also convoluted and does too many things.
-> > 
-> > Introduce a new lockless word-sized page counter API, then change all
-> > memory accounting over to it and remove the old one.  The translation
-> > from and to bytes then only happens when interfacing with userspace.
+On 09/22/2014 11:04 PM, David Vrabel wrote:
+> On 18/09/14 15:01, Chen Gang wrote:
+>> When failure occurs, need return failure code instead of 0, or some of
+>> indirect upper callers may misunderstand.
+>>
+>> e.g. in "block/xen-blkback/xenbus.c":
+>>
+>>     connect() -> xenbus_switch_state() -> __xenbus_switch_state().
 > 
-> Dunno why but I thought other controllers use res_counter as well. But
-> this doesn't seem to be the case so this is perfectly reasonable way
-> forward.
-
-You were fooled by its generic name!  It really is a lot less generic
-than what it was designed for, and there are no new users in sight.
-
-> I have only glanced through the patch and it mostly seems good to me 
-> (I have to look more closely on the atomicity of hierarchical operations).
+> Can you make xenbus_switch_state() void?  The callers don't need to do
+> any error handling.
 > 
-> Nevertheless I think that the counter should live outside of memcg (it
-> is ugly and bad in general to make HUGETLB controller depend on MEMCG
-> just to have a counter). If you made kernel/page_counter.c and led both
-> containers select CONFIG_PAGE_COUNTER then you do not need a dependency
-> on MEMCG and I would find it cleaner in general.
 
-The reason I did it this way is because the hugetlb controller simply
-accounts and limits a certain type of memory and in the future I would
-like to make it a memcg extension, just like kmem and swap.
+After "grep rn xenbus_switch_state *" under "drivers/", it is not one
+place to check the return value of xenbus_switch_state(), and also it
+is export to outside for individual modules.
 
-Once that is done, page counters can become fully private, but until
-then I think it's a good idea to make them part of memcg to express
-this relationship and to ensure we are moving in the same direction.
+So we need change many subsystems for it, and also need face the rick
+for incompatible with the old individual modules which source code are
+not in upstream.
 
-> > Aside from the locking costs, this gets rid of the icky unsigned long
-> > long types in the very heart of memcg, which is great for 32 bit and
-> > also makes the code a lot more readable.
-> 
-> Definitely. Nice work!
+And are you sure the caller need not notice about it, when it really
+fails? (for me, I guess they need notice about it)
 
-Thanks!
+Thanks.
+-- 
+Chen Gang
+
+Open share and attitude like air water and life which God blessed
