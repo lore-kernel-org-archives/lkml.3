@@ -1,198 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaIVHRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 03:17:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20459 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894AbaIVHRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 03:17:15 -0400
-Date: Mon, 22 Sep 2014 10:20:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>, linux-s390@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH] virtio: unify config_changed handling
-Message-ID: <1411370391-12291-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+	id S1752626AbaIVHWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 03:22:10 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:27588 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaIVHWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 03:22:08 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-b5-541fce1c88bc
+Message-id: <541FCE1B.7010101@samsung.com>
+Date: Mon, 22 Sep 2014 16:22:03 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        r.baldyga@samsung.com
+Subject: Re: [PATCH v3] extcon: max77693: Fix a bug occured at changing ADC
+ debounce time.
+References: <1410926323-8234-1-git-send-email-jonghwa3.lee@samsung.com>
+In-reply-to: <1410926323-8234-1-git-send-email-jonghwa3.lee@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42JZI2JSoCtzTj7EYP4PXovOs0+YLS7vmsNm
+	cbtxBZvFg8M72R1YPPq2rGL0+LxJLoApissmJTUnsyy1SN8ugStj0fFzrAVT+So6b5U0MC7n
+	7mLk5JAQMJGYfOoKC4QtJnHh3nq2LkYuDiGBpYwSV9auZIUp+tvzkx0isYhR4uiER1BVrxkl
+	Fl05zwRSxSugJfGq/Rs7iM0ioCrxctcdsG42oPj+FzfYQGxRgTCJldMh1vEKCEr8mHwPzBYB
+	qrn2+B0jiM0sECwxaU8HM4gtLBAjsf3CQbCZQgLuElO2TwKr5xTwkPixajsLRL2OxP7WaWwQ
+	trzE5jVvmUGOkxCYxy6x9MFLNoiDBCS+TT4E1MABlJCV2HSAGeIzSYmDK26wTGAUm4XkpFlI
+	xs5CMnYBI/MqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjMDYOf3v2cQdjPcPWB9iFOBgVOLh
+	/dEiHyLEmlhWXJl7iNEU6IqJzFKiyfnACM0riTc0NjOyMDUxNTYytzRTEufVkf4ZLCSQnliS
+	mp2aWpBaFF9UmpNafIiRiYNTqoFR68rjzUcTm/Z+q9jK1xauyFx8pmBzvskHwWUXnrfpphye
+	a3l64Vv9vW+/TuObm7wkt7zTaqpn7hzF3r3zF/tdyeawuH4jWfvZ442c3ds9PCcHCK9avPUy
+	V4f14evGr1R3+sfnPjN2Fg/yUfwos3o747eJqtcKltbJF936+kHTcfvGfQmV/WE/lViKMxIN
+	tZiLihMBvuxzyJgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t9jAV2Zc/IhBrvusll0nn3CbHF51xw2
+	i9uNK9gsHhzeye7A4tG3ZRWjx+dNcgFMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
+	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
+	GaCBhDWMGYuOn2MtmMpX0XmrpIFxOXcXIyeHhICJxN+en+wQtpjEhXvr2boYuTiEBBYxShyd
+	8AjKec0osejKeSaQKl4BLYlX7d/AOlgEVCVe7rrDCmKzAcX3v7jBBmKLCoRJrJx+hQWiXlDi
+	x+R7YLYIUM21x+8YQWxmgWCJSXs6mEFsYYEYie0XDoLNFBJwl5iyfRJYPaeAh8SPVdtZIOp1
+	JPa3TmODsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7u
+	JkZwZD6T2sG4ssHiEKMAB6MSD++CJvkQIdbEsuLK3EOMEhzMSiK8R3OAQrwpiZVVqUX58UWl
+	OanFhxhNgSEwkVlKNDkfmDTySuINjU3MjCyNzA0tjIzNlcR5D7RaBwoJpCeWpGanphakFsH0
+	MXFwSjUwbus7yHk/NPaQ38yFSYbryw4+mv2Wcf0KXTvfS0vLtnzbFXx31lrnmV71b84X/bXo
+	5Z1+QO7Uh5Jv++Tmnz8tuOi/6Xoep8mPIyXLnpxSqDpYZhZYr7Kmd1V5kcbE51liPFKuUd9W
+	Ciz0f67gadh54bdu4q0b1ra619IfBa6wvfdq29zTC15e11RiKc5INNRiLipOBADXyRwD4gIA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace duplicated code in all transports with a single wrapper in
-virtio.c.
+On 09/17/2014 12:58 PM, Jonghwa Lee wrote:
+> When it writes some value other than 0 to BTLDset and JIGset, muic device
+> will be reset automatically. And it happens during updating ADC debounce time,
+> because it shares same register. To update ADC debounce time without reset,
+> set value only to ADCDbset and 0 to BTLDset and JIGset.
+> 
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> ---
+> Changes:
+> v3:	- Fix typo (regmap_write_bits -> regmap_write)
+> v2:	- Fix comments.
+> 
+>  drivers/extcon/extcon-max77693.c |   13 +++++++++----
+>  1 file changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+> index 77460f2..132540e 100644
+> --- a/drivers/extcon/extcon-max77693.c
+> +++ b/drivers/extcon/extcon-max77693.c
+> @@ -255,10 +255,15 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
+>  	case ADC_DEBOUNCE_TIME_10MS:
+>  	case ADC_DEBOUNCE_TIME_25MS:
+>  	case ADC_DEBOUNCE_TIME_38_62MS:
+> -		ret = regmap_update_bits(info->max77693->regmap_muic,
+> -					  MAX77693_MUIC_REG_CTRL3,
+> -					  CONTROL3_ADCDBSET_MASK,
+> -					  time << CONTROL3_ADCDBSET_SHIFT);
+> +		/*
+> +		 * Don't touch BTLDset, JIGset when you want to change adc
+> +		 * debounce time. If it writes other than 0 to BTLDset, JIGset
+> +		 * muic device will be reset and loose current state.
+> +		 */
+> +		ret = regmap_write(info->max77693->regmap_muic,
+> +				  MAX77693_MUIC_REG_CTRL3,
+> +				  (CONTROL3_ADCDBSET_MASK &
+> +				  time << CONTROL3_ADCDBSET_SHIFT));
 
-The only functional change is in virtio_mmio.c: if a buggy device sends
-us an interrupt before driver is set, we previously returned IRQ_NONE,
-now we return IRQ_HANDLED.
+I think that masking operation is not necessary. I drop this operation and apply it.
 
-As this must not happen in practice, this does not look like a big deal.
+>  		if (ret) {
+>  			dev_err(info->dev, "failed to set ADC debounce time\n");
+>  			return ret;
+> 
 
-See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
-	virtio-pci: do not oops on config change if driver not loaded.
-for the original motivation behind the driver check.
+Applied.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/linux/virtio.h             |  2 ++
- drivers/misc/mic/card/mic_virtio.c |  6 +-----
- drivers/s390/kvm/kvm_virtio.c      |  9 +--------
- drivers/s390/kvm/virtio_ccw.c      |  6 +-----
- drivers/virtio/virtio.c            | 10 ++++++++++
- drivers/virtio/virtio_mmio.c       |  7 ++-----
- drivers/virtio/virtio_pci.c        |  6 +-----
- 7 files changed, 18 insertions(+), 28 deletions(-)
-
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index b46671e..3c19bd3 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -108,6 +108,8 @@ void unregister_virtio_device(struct virtio_device *dev);
- 
- void virtio_break_device(struct virtio_device *dev);
- 
-+void virtio_config_changed(struct virtio_device *dev);
-+
- /**
-  * virtio_driver - operations for a virtio I/O driver
-  * @driver: underlying device driver (populate name and owner).
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index f14b600..e647947 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -462,16 +462,12 @@ static void mic_handle_config_change(struct mic_device_desc __iomem *d,
- 	struct mic_device_ctrl __iomem *dc
- 		= (void __iomem *)d + mic_aligned_desc_size(d);
- 	struct mic_vdev *mvdev = (struct mic_vdev *)ioread64(&dc->vdev);
--	struct virtio_driver *drv;
- 
- 	if (ioread8(&dc->config_change) != MIC_VIRTIO_PARAM_CONFIG_CHANGED)
- 		return;
- 
- 	dev_dbg(mdrv->dev, "%s %d\n", __func__, __LINE__);
--	drv = container_of(mvdev->vdev.dev.driver,
--				struct virtio_driver, driver);
--	if (drv->config_changed)
--		drv->config_changed(&mvdev->vdev);
-+	virtio_config_changed(&mvdev->vdev);
- 	iowrite8(1, &dc->guest_ack);
- }
- 
-diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-index a134965..6431290 100644
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -406,15 +406,8 @@ static void kvm_extint_handler(struct ext_code ext_code,
- 
- 	switch (param) {
- 	case VIRTIO_PARAM_CONFIG_CHANGED:
--	{
--		struct virtio_driver *drv;
--		drv = container_of(vq->vdev->dev.driver,
--				   struct virtio_driver, driver);
--		if (drv->config_changed)
--			drv->config_changed(vq->vdev);
--
-+		virtio_config_changed(vq->vdev);
- 		break;
--	}
- 	case VIRTIO_PARAM_DEV_ADD:
- 		schedule_work(&hotplug_work);
- 		break;
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index d2c0b44..6cbe6ef 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -940,11 +940,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
- 		vring_interrupt(0, vq);
- 	}
- 	if (test_bit(0, &vcdev->indicators2)) {
--		drv = container_of(vcdev->vdev.dev.driver,
--				   struct virtio_driver, driver);
--
--		if (drv && drv->config_changed)
--			drv->config_changed(&vcdev->vdev);
-+		virtio_config_changed(&vcdev->vdev);
- 		clear_bit(0, &vcdev->indicators2);
- 	}
- }
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index fed0ce1..470b74f 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -239,6 +239,16 @@ void unregister_virtio_device(struct virtio_device *dev)
- }
- EXPORT_SYMBOL_GPL(unregister_virtio_device);
- 
-+void virtio_config_changed(struct virtio_device *dev)
-+{
-+        struct virtio_driver *drv = container_of(dev->dev.driver,
-+						 struct virtio_driver, driver);
-+
-+	if (drv && drv->config_changed)
-+		drv->config_changed(dev);
-+}
-+EXPORT_SYMBOL_GPL(virtio_config_changed);
-+
- static int virtio_init(void)
- {
- 	if (bus_register(&virtio_bus) != 0)
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index c600ccf..ef9a165 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -234,8 +234,6 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
- {
- 	struct virtio_mmio_device *vm_dev = opaque;
- 	struct virtio_mmio_vq_info *info;
--	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
--			struct virtio_driver, driver);
- 	unsigned long status;
- 	unsigned long flags;
- 	irqreturn_t ret = IRQ_NONE;
-@@ -244,9 +242,8 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
- 	status = readl(vm_dev->base + VIRTIO_MMIO_INTERRUPT_STATUS);
- 	writel(status, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
- 
--	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)
--			&& vdrv && vdrv->config_changed) {
--		vdrv->config_changed(&vm_dev->vdev);
-+	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
-+		virtio_config_changed(&vm_dev->vdev);
- 		ret = IRQ_HANDLED;
- 	}
- 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 3d1463c..58f7e45 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -211,12 +211,8 @@ static bool vp_notify(struct virtqueue *vq)
- static irqreturn_t vp_config_changed(int irq, void *opaque)
- {
- 	struct virtio_pci_device *vp_dev = opaque;
--	struct virtio_driver *drv;
--	drv = container_of(vp_dev->vdev.dev.driver,
--			   struct virtio_driver, driver);
- 
--	if (drv && drv->config_changed)
--		drv->config_changed(&vp_dev->vdev);
-+	virtio_config_changed(&vp_dev->vdev);
- 	return IRQ_HANDLED;
- }
- 
--- 
-MST
+Thanks,
+Chanwoo Choi
