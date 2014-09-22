@@ -1,73 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840AbaIVKnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:43:24 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:53279 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaIVKnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:43:23 -0400
-Date: Mon, 22 Sep 2014 12:43:20 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>
-Subject: Re: [PATCH] drm/panel: update innolux n116bge timings
-Message-ID: <20140922104319.GQ1470@ulmo>
-References: <1409626606-15225-1-git-send-email-djkurtz@chromium.org>
- <20140922083929.GG1470@ulmo>
- <CAGS+omBFQi2BokDCV8DpRYwKs7DsGWKfxtDu8+7zJfKatL0SeA@mail.gmail.com>
+	id S1753814AbaIVKqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:46:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14269 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642AbaIVKqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 06:46:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,571,1406617200"; 
+   d="scan'208";a="576847208"
+Date: Mon, 22 Sep 2014 13:45:55 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Cc: wsa@the-dreams.de, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, lars@metafoo.de,
+        srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH] i2c: Add generic support passing secondary devices
+ addresses
+Message-ID: <20140922104555.GQ1786@lahna.fi.intel.com>
+References: <1409925739-28188-1-git-send-email-jean-michel.hautbois@vodalys.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aNvCJ41Feu8IgPyB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGS+omBFQi2BokDCV8DpRYwKs7DsGWKfxtDu8+7zJfKatL0SeA@mail.gmail.com>
+In-Reply-To: <1409925739-28188-1-git-send-email-jean-michel.hautbois@vodalys.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 05, 2014 at 04:02:19PM +0200, Jean-Michel Hautbois wrote:
+> Some I2C devices have multiple addresses assigned, for example each address
+> corresponding to a different internal register map page of the device.
+> So far drivers which need support for this have handled this with a driver
+> specific and non-generic implementation, e.g. passing the additional address
+> via platform data.
+> 
+> This patch provides a new helper function called i2c_new_secondary_device()
+> which is intended to provide a generic way to get the secondary address
+> as well as instantiate a struct i2c_client for the secondary address.
+> 
+> The function expects a pointer to the primary i2c_client, a name
+> for the secondary address and an optional default address. The name is used
+> as a handle to specify which secondary address to get.
+> 
+> The default address is used as a fallback in case no secondary address
+> was explicitly specified. In case no secondary address and no default
+> address were specified the function returns NULL.
+> 
+> For now the function only supports look-up of the secondary address
+> from devicetree, but it can be extended in the future
+> to for example support board files and/or ACPI.
+> 
+> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
 
---aNvCJ41Feu8IgPyB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry, just noticed this one.
 
-On Mon, Sep 22, 2014 at 06:12:41PM +0800, Daniel Kurtz wrote:
-> On Mon, Sep 22, 2014 at 4:39 PM, Thierry Reding <thierry.reding@gmail.com=
-> wrote:
-> > It shouldn't matter all that much since the panel has EDID if I remember
-> > correctly. The modes parsed from EDID should take precedence over the
-> > fixed mode. If they don't then that's a bug.
->=20
-> The driver I am testing this with does not yet support reading the
-> EDID over eDP, so I am using the fixed values for now.
+Srinivas (CC'd) and I did similar patch series here:
 
-Ew... you should get a better driver, then. =3D)
+http://patchwork.ozlabs.org/patch/338342/
 
-Thierry
+We should probably collaborate on this one to get both DT and ACPI
+supported.
 
---aNvCJ41Feu8IgPyB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUH/1HAAoJEN0jrNd/PrOh6jQP/AuHn35zUI9p9QFa+M94hrVr
-LOIIRPxgVdQc7BIkc4Ai/2Zg5WE0u26fLdcyT9Sdmy1hmK7ZhYTqTCzdzqv9/ZZA
-RkIvSq42Bhiz/ebViVq63TLlT/vwmfiA8LJHh5uWXqD9C7lS0VfPXUFF/M3x2Yv7
-J23JqUA/Fw9NZe04PMEEUaGnfdosm6ip3eNbwYeIlwEsVkNxODb2yBu+XYfqvDOA
-EaQAUyu5687ljvJXzWUEVoYGUf1SOn3uVnNHcEjHUcFt6uzuqg3FPVSrU66N4L10
-/RBSiHAQ6mUBKnK2PRkx82z1LNbwXDbbEagHDMuAKpyuv953AJxDgmoNFlARsSsk
-QKtJYjfQg2oBRFnCABL3D5+12aaJipB6M6TNajjxGOJyh3T0vWhvB3lC5CUngZen
-kBlEZ5mMN6wSYbiWvmdAWK31LizY4SuNU/hA+S0dnKNhmBmliQXGNXNCguXR7EHB
-hGxQNJDrH3C/JWbXzbsyEWLM5AnAMSSmRI3Np38XDFqzbTk/ynOwTWdQIrq5UCbL
-dyxC8zSYRxc4H56v8u2mjEeEeWqBozzrc8xag1ChOPe1dGD3c9VAEZ2+MY0I0sJW
-bH4WG1pgrmxxTmDQ+OM8Kt0u9ZPv0AaMQqFhWHp+vlM/rjdfxsUBdOFgzQlGE3uW
-1hoEIEzo5sSkXkXTMHhM
-=vC5T
------END PGP SIGNATURE-----
-
---aNvCJ41Feu8IgPyB--
+> ---
+>  drivers/i2c/i2c-core.c | 40 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/i2c.h    |  8 ++++++++
+>  2 files changed, 48 insertions(+)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 632057a..ef31d6f 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -798,6 +798,46 @@ struct i2c_client *i2c_new_dummy(struct i2c_adapter *adapter, u16 address)
+>  }
+>  EXPORT_SYMBOL_GPL(i2c_new_dummy);
+>  
+> +/**
+> + * i2c_new_secondary_device - Helper to get the instantiated secondary address
+> + * @client: Handle to the primary client
+> + * @name: Handle to specify which secondary address to get
+> + * @default_addr: Used as a fallback if no secondary address was specified
+> + * Context: can sleep
+> + *
+> + * This returns an I2C client bound to the "dummy" driver based on DT parsing.
+> + *
+> + * This returns the new i2c client, which should be saved for later use with
+> + * i2c_unregister_device(); or NULL to indicate an error.
+> + */
+> +struct i2c_client *i2c_new_secondary_device(struct i2c_client *client,
+> +						const char *name,
+> +						u16 default_addr)
+> +{
+> +	int i;
+> +	u32 addr;
+> +	struct device_node *np;
+> +
+> +	np = client->dev.of_node;
+> +
+> +	if (np) {
+> +		i = of_property_match_string(np, "reg-names", name);
+> +		if (i >= 0)
+> +			of_property_read_u32_index(np, "reg", i, &addr);
+> +		else if (default_addr != 0)
+> +			addr = default_addr;
+> +		else
+> +			addr = NULL;
+> +	} else {
+> +		addr = default_addr;
+> +	}
+> +
+> +	dev_dbg(&client->adapter->dev, "Address for %s : 0x%x\n", name, addr);
+> +	return i2c_new_dummy(client->adapter, addr);
+> +}
+> +EXPORT_SYMBOL_GPL(i2c_new_secondary_device);
+> +
+> +
+>  /* ------------------------------------------------------------------------- */
+>  
+>  /* I2C bus adapters -- one roots each I2C or SMBUS segment */
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index a95efeb..0f190e6 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -322,6 +322,14 @@ extern int i2c_probe_func_quick_read(struct i2c_adapter *, unsigned short addr);
+>  extern struct i2c_client *
+>  i2c_new_dummy(struct i2c_adapter *adap, u16 address);
+>  
+> +/* Helper function providing a generic way to get the secondary address
+> + * as well as a client handle to this extra address.
+> + */
+> +extern struct i2c_client *
+> +i2c_new_secondary_device(struct i2c_client *client,
+> +				const char *name,
+> +				u32 default_addr);
+> +
+>  extern void i2c_unregister_device(struct i2c_client *);
+>  #endif /* I2C */
+>  
+> -- 
+> 2.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
