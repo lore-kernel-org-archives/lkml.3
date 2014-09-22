@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaIVNpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:45:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62052 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753486AbaIVNpG (ORCPT
+	id S1754104AbaIVNpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:45:35 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:39527 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671AbaIVNpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:45:06 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trivial] PM / Domains: Spelling s/domian/domain/
-Date: Mon, 22 Sep 2014 16:04:52 +0200
-Message-ID: <1514200.c92a0jFWZ0@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1410897579-28240-1-git-send-email-geert+renesas@glider.be>
-References: <1410897579-28240-1-git-send-email-geert+renesas@glider.be>
+	Mon, 22 Sep 2014 09:45:33 -0400
+Message-ID: <542027F6.4050205@de.ibm.com>
+Date: Mon, 22 Sep 2014 15:45:26 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Paolo Bonzini <pbonzini@redhat.com>, David Matlack <dmatlack@google.com>,
+        Gleb Natapov <gleb@kernel.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: don't take vcpu mutex for obviously invalid vcpu
+ ioctls
+References: <1411167805-2458-1-git-send-email-dmatlack@google.com> <541FFEDE.9030800@redhat.com>
+In-Reply-To: <541FFEDE.9030800@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092213-0342-0000-0000-000001255BE0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 16, 2014 09:59:39 PM Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-
-Queued up for 3.18, thanks!
-
-> ---
->  drivers/base/power/domain.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On 09/22/2014 12:50 PM, Paolo Bonzini wrote:
+> Il 20/09/2014 01:03, David Matlack ha scritto:
+>> vcpu ioctls can hang the calling thread if issued while a vcpu is
+>> running. If we know ioctl is going to be rejected as invalid anyway,
+>> we can fail before trying to take the vcpu mutex.
+>>
+>> This patch does not change functionality, it just makes invalid ioctls
+>> fail faster.
+>>
+>> Signed-off-by: David Matlack <dmatlack@google.com>
+>> ---
+>>  virt/kvm/kvm_main.c | 4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index 96ec622..f9234e5 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -52,6 +52,7 @@
+>>  
+>>  #include <asm/processor.h>
+>>  #include <asm/io.h>
+>> +#include <asm/ioctl.h>
+>>  #include <asm/uaccess.h>
+>>  #include <asm/pgtable.h>
+>>  
+>> @@ -1975,6 +1976,9 @@ static long kvm_vcpu_ioctl(struct file *filp,
+>>  	if (vcpu->kvm->mm != current->mm)
+>>  		return -EIO;
+>>  
+>> +	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
+>> +		return -EINVAL;
+>> +
+>>  #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
+>>  	/*
+>>  	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
+>>
 > 
-> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-> index cf4651a15a5753e5..e6a11ca3ce2634ab 100644
-> --- a/drivers/base/power/domain.c
-> +++ b/drivers/base/power/domain.c
-> @@ -1833,7 +1833,7 @@ int pm_genpd_name_detach_cpuidle(const char *name)
->  /* Default device callbacks for generic PM domains. */
->  
->  /**
-> - * pm_genpd_default_save_state - Default "save device state" for PM domians.
-> + * pm_genpd_default_save_state - Default "save device state" for PM domains.
->   * @dev: Device to handle.
->   */
->  static int pm_genpd_default_save_state(struct device *dev)
-> @@ -1856,7 +1856,7 @@ static int pm_genpd_default_save_state(struct device *dev)
->  }
->  
->  /**
-> - * pm_genpd_default_restore_state - Default PM domians "restore device state".
-> + * pm_genpd_default_restore_state - Default PM domains "restore device state".
->   * @dev: Device to handle.
->   */
->  static int pm_genpd_default_restore_state(struct device *dev)
-> 
+> Thanks, applying this patch.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Isnt that the wrong trade off?
+
+We now have an extra condition check for every valid ioctl, to make an error case go faster.
+I know, the extra check is just a 1 or 2 cycles if branch prediction is right, but still.
+
+Christian
+
