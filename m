@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaIVVJr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 17:09:47 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:42252 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825AbaIVVJq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 17:09:46 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1754991AbaIVVKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 17:10:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55243 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752887AbaIVVKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 17:10:33 -0400
+Date: Mon, 22 Sep 2014 18:10:27 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf pollfd v3
+Message-ID: <20140922211027.GA23362@kernel.org>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <20140911113336.GB13634@krava.brq.redhat.com>
+ <20140911114825.GC13634@krava.brq.redhat.com>
+ <20140911133029.GC10158@kernel.org>
+ <20140911213638.GC1801@kernel.org>
+ <20140918160455.GI2770@kernel.org>
+ <20140922133526.GB18187@krava.brq.redhat.com>
+ <20140922144949.GE32694@kernel.org>
+ <20140922145133.GA18809@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-User-Agent: alot/0.3.5
-To: torvalds@linux-foundation.org
-Message-ID: <20140922210924.19023.36624@quantum>
-Subject: [GIT PULL] clk: fixes for 3.17
-Date: Mon, 22 Sep 2014 14:09:24 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922145133.GA18809@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+Em Mon, Sep 22, 2014 at 04:51:33PM +0200, Jiri Olsa escreveu:
+> On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
+> > > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
 
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+> > > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
+> > > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
+> > > > mmap_read loop to consume what is left after all fds for a mmap are
+> > > > closed.
 
-are available in the git repository at:
+> > > > I'll wait a bit before reposting, probably Jiri will not be able to
+> > > > comment this week, but I would like to at least post the URL for this
+> > > > latest v4 kit.
 
-  http://git.linaro.org/people/mike.turquette/linux.git tags/clk-fixes-for-linus
+> > > > Adrian, if you could take a look at it, would be really great :-)
 
-for you to fetch changes up to 8ce8ebeb572d70e672a8d158e93ffaac80ea7576:
+> > > I checked the branch.. the last patch brakes the functionality
+> > > of perf record for me
 
-  clk/efm32gg: fix dt init prototype (2014-09-09 13:52:18 -0700)
+> > Breaks in what sense?
 
-----------------------------------------------------------------
-The fixes for the clock tree are mostly run-time bugs in clock drivers.
-The fixes for TI DRA7 remove divide-by-zero errors. The recently merged
-AT91 clock driver fixes some bad error checking and the QCOM driver fix
-restores audio for that platform, a clear regression. A list iteration
-bug in the framework core was hit recently and is fixed up here. Finally
-a compilation warning is fixed for efm32gg, which is also a regression
-fix.
+> perf record -p pid
 
-----------------------------------------------------------------
-Boris BREZILLON (1):
-      clk: at91: fix num_parents test in at91sam9260 slow clk implementation
+> and killing the pid won't finish perf record
 
-Doug Anderson (1):
-      clk: rockchip: Fix the clocks for i2c1 and i2c2
+Should be ok now, after making sure record uses
+perf_evlist__mmap_consume(), which does what you did in your proposed
+fix, tried both killing it and letting it exit normally, i.e. a 'sleep 5s'
+target.
 
-Mike Turquette (1):
-      Merge branch 'for-v3.17-rc/ti-clk-driver' of github.com:t-kristo/linux-pm into clk-fixes
+Pushed
+https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v6
+after moving the changesets for trace and record to be done last,
+waiting for all fds to be POLLHUP'ed and doing one last draining
+mmap_read loop over the mmaps.
 
-Nishanth Menon (2):
-      clk: ti: divider: Provide error check for incoming parameters in set_rate
-      clk: ti: dra7-atl: Provide error check for incoming parameters in set_rate
-
-Stephen Boyd (1):
-      clk: qcom: Fix sdc 144kHz frequency entry
-
-Tero Kristo (1):
-      clk: prevent erronous parsing of children during rate change
-
-Uwe Kleine-König (1):
-      clk/efm32gg: fix dt init prototype
-
- drivers/clk/at91/clk-slow.c       | 2 +-
- drivers/clk/clk-efm32gg.c         | 6 +++---
- drivers/clk/clk.c                 | 7 ++++++-
- drivers/clk/qcom/gcc-ipq806x.c    | 2 +-
- drivers/clk/rockchip/clk-rk3288.c | 4 ++--
- drivers/clk/ti/clk-dra7-atl.c     | 6 +++++-
- drivers/clk/ti/divider.c          | 7 ++++++-
- 7 files changed, 24 insertions(+), 10 deletions(-)
+- Arnaldo
