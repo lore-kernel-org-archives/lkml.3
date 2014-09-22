@@ -1,36 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaIVT3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:29:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130AbaIVT33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:29:29 -0400
-Message-ID: <5420788F.9050208@redhat.com>
-Date: Mon, 22 Sep 2014 21:29:19 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754647AbaIVTaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:30:09 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:50794 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237AbaIVTaH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 15:30:07 -0400
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Matlack <dmatlack@google.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH] kvm: don't take vcpu mutex for obviously invalid vcpu
- ioctls
-References: <1411167805-2458-1-git-send-email-dmatlack@google.com> <541FFEDE.9030800@redhat.com> <542027F6.4050205@de.ibm.com> <542032D4.305@redhat.com> <54207668.3030502@de.ibm.com>
-In-Reply-To: <54207668.3030502@de.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1E0E7540-B04F-4E89-91F7-B6FAC3C5D889@codeaurora.org>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
+	<1409938218-9026-11-git-send-email-abrestic@chromium.org>
+	<CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com>
+	<CAL1qeaGgBpkuGyxu_P9BNdHjncLA1pfPc-yE98UBj9Ot1koLrA@mail.gmail.com>
+	<1E0E7540-B04F-4E89-91F7-B6FAC3C5D889@codeaurora.org>
+Date: Mon, 22 Sep 2014 12:30:05 -0700
+X-Google-Sender-Auth: aEkrczW088li41yApwfNG3EX1Qc
+Message-ID: <CAL1qeaEd2L8NUugh27hkGMa1aqaxviupRJnBd2+aru1wq6KKGg@mail.gmail.com>
+Subject: Re: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Rob Herring <robherring2@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/09/2014 21:20, Christian Borntraeger ha scritto:
-> "while using trinity to fuzz KVM, we noticed long stalls on invalid ioctls. Lets bail out early on invalid ioctls". or similar?
+On Mon, Sep 22, 2014 at 12:01 PM, Kumar Gala <galak@codeaurora.org> wrote:
+>
+> On Sep 22, 2014, at 11:28 AM, Andrew Bresticker <abrestic@chromium.org> wrote:
+>
+>> On Mon, Sep 22, 2014 at 7:23 AM, Rob Herring <robherring2@gmail.com> wrote:
+>>> On Fri, Sep 5, 2014 at 12:30 PM, Andrew Bresticker
+>>> <abrestic@chromium.org> wrote:
+>>>> Add the vendor prefix "mti" for MIPS Technologies, Inc.
+>>>>
+>>>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>>>> ---
+>>>> New for v2.
+>>>> ---
+>>>> Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>>>> 1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>>> index ac7269f..efa5a5b 100644
+>>>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>>> @@ -86,6 +86,7 @@ microchip     Microchip Technology Inc.
+>>>> mosaixtech     Mosaix Technologies, Inc.
+>>>> moxa   Moxa
+>>>> mpl    MPL AG
+>>>> +mti    MIPS Technologies, Inc.
+>>>
+>>> Why not mips as that is more common and the stock ticker.
+>>
+>> "mti" is already in use, see
+>> Documentation/devicetree/bindings/mips/cpu_irq.txt,
+>> arch/mips/mti-sead3/sead3.dts, and arch/mips/ralink/dts/*.dtsi.
+>
+> Isn’t mips already used as well:
 
-Okay.  David, can you explain how you found it so that I can make up my
-mind?
-
-Gleb and Marcelo, a fourth and fifth opinion? :)
-
-Paolo
+Yes, however it is only used for CPUs, it does not appear in any
+binding document, and no code actually matches against it.
