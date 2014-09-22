@@ -1,363 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbaIVLBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 07:01:16 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:54894 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaIVLBN (ORCPT
+	id S1753752AbaIVLB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 07:01:59 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:33676 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaIVLB5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 07:01:13 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 22 Sep 2014 12:58:40 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Muthu Mani <muth@cypress.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rajaram Regupathy <rera@cypress.com>
-Subject: Re: [PATCH 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
- Bridge controller
-Message-ID: <20140922105840.GE5237@localhost>
-References: <1411378372-18351-1-git-send-email-muth@cypress.com>
-MIME-Version: 1.0
+	Mon, 22 Sep 2014 07:01:57 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH] Fix nasty 32-bit overflow bug in buffer i/o code.
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411378372-18351-1-git-send-email-muth@cypress.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <alpine.LSU.2.11.1409220249390.2396@eggly.anvils>
+Date: Mon, 22 Sep 2014 12:01:53 +0100
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AACB47F9-EC00-4060-BE7F-E10468C146BC@cam.ac.uk>
+References: <Pine.LNX.4.64.1409220042400.2595@hermes-1.csi.cam.ac.uk> <alpine.LSU.2.11.1409212122180.1182@eggly.anvils> <B2F9905E-8D29-45A0-8A15-B4EDA2B9B6AF@cam.ac.uk> <alpine.LSU.2.11.1409220249390.2396@eggly.anvils>
+To: Hugh Dickins <hughd@google.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 03:02:52PM +0530, Muthu Mani wrote:
-> Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
-> CYUSBS234 USB-Serial Bridge controller.
+Hi,
+
+On 22 Sep 2014, at 11:36, Hugh Dickins <hughd@google.com> wrote:
+> On Mon, 22 Sep 2014, Anton Altaparmakov wrote:
+>> On 22 Sep 2014, at 05:43, Hugh Dickins <hughd@google.com> wrote:
+>>> On Mon, 22 Sep 2014, Anton Altaparmakov wrote:
+>>>> Any code that uses __getblk() and thus bread(), breadahead(), sb_bread(), 
+>>>> sb_breadahead(), sb_getblk(), and calls it using a 64-bit block on a 
+>>>> 32-bit arch (where "long" is 32-bit) causes an inifinite loop in 
+>>>> __getblk_slow() with an infinite stream of errors logged to dmesg like 
+>>>> this:
+>>>> 
+>>>> __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
+>>>> b_state=0x00000020, b_size=512
+>>>> device sda1 blocksize: 512
+>>>> 
+>>>> Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the 
+>>>> top 32-bits are missing (in this case the 0x1 at the top).
+>>>> 
+>>>> This is because grow_dev_page() was broken in commit 676ce6d5ca30: "block: 
+>>>> replace __getblk_slow misfix by grow_dev_page fix" by Hugh Dickins so that 
+>>>> it now has a 32-bit overflow due to shifting the block value to the right 
+>>>> so it fits in 32-bits and storing the result in pgoff_t variable which is 
+>>>> 32-bit and then passing the pgoff_t variable left-shifted as the block 
+>>>> number which causes the top bits to get lost as the pgoff_t is not type 
+>>>> cast to sector_t / 64-bit before the shift.
+>>>> 
+>>>> This patch fixes this issue by type casting "index" to sector_t before 
+>>>> doing the left shift.
+>>>> 
+>>>> Note this is not a theoretical bug but has been seen in the field on a 
+>>>> 4TiB hard drive with logical sector size 512 bytes.
+>>>> 
+>>>> This patch has been verified to fix the infinite loop problem on 3.17-rc5 
+>>>> kernel using a 4TB disk image mounted using "-o loop".  Without this patch 
+>>>> doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop 
+>>>> 100% reproducibly whilst with the patch it works fine as expected.
+>>>> 
+>>>> Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
+>>>> Cc: stable@vger.kernel.org # 3.6 3.8 3.10 3.12 3.14 3.16
+>>> 
+>>> Acked-by: Hugh Dickins <hughd@google.com>
+>>> 
+>>> Yes indeed, that's bad, and entirely my fault (though it took me a while
+>>> to see how the "block = index << sizebits" which was there before was okay,
+>> 
+>> Ouch.  I failed to see that (I admit I did not pay too much attention to the original code - I just used "git blame" to find out which commit put that code in place - my bad).  It was never ok!  I went back to 2.6.12-rc2 (original commit to git Linus' kernel repository) and that is also affected.  That implies this is the first time anyone has used a 4TiB disk with 512 byte sectors with NTFS where Windows had previously created a file/directory with an attribute list attribute in it.  -  That is the only metadata type we use sb_bread() for and the disk image from the customer does contain it and I verified that is where the inifinite loop comes from.
 > 
-> Details about the device can be found at:
-> http://www.cypress.com/?rID=84126
-
-Ok, so this is a bit of an odd bird.
-
-First of all it has a single channel serial interface and is not even
-configured in i2c mode by default. The three modes uart, i2c, and spi
-are mutually exclusive and switching modes and pin configuration appears
-to require a Cypress (proprietary?) tool.
-
-You currently expose all 12 pins as gpios although some of these would
-be allocated for the serial interface. It appears this information could
-(should) be retrieved from flash at probe time.
-
-You should probably also read-out the preprogrammed mode and let the
-i2c-subdriver's probe fail unless in i2c mode.
-
+> Ow, that line needs some truncating itself :)
 > 
-> Signed-off-by: Muthu Mani <muth@cypress.com>
-> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
-> ---
->  drivers/mfd/Kconfig           |  12 ++++
->  drivers/mfd/Makefile          |   1 +
->  drivers/mfd/cyusbs23x.c       | 163 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/cyusbs23x.h |  51 +++++++++++++
->  4 files changed, 227 insertions(+)
->  create mode 100644 drivers/mfd/cyusbs23x.c
->  create mode 100644 include/linux/mfd/cyusbs23x.h
+> You generously interpret my words as seeing that for myself.
+> No, thank you for following up: I had persuaded myself when writing
+> before, that index would be promoted from pgoff_t to sector_t before
+> shifting in the original assignment, but not when I passed it as arg.
 > 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index de5abf2..a31e9e3 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -116,6 +116,18 @@ config MFD_ASIC3
->  	  This driver supports the ASIC3 multifunction chip found on many
->  	  PDAs (mainly iPAQ and HTC based ones)
->  
-> +config MFD_CYUSBS23X
-> +        tristate "Cypress CYUSBS23x USB Serial Bridge controller"
-> +	select MFD_CORE
-> +	depends on USB
-> +	default n
-> +	help
-> +	  Say yes here if you want support for Cypress Semiconductor
-> +	  CYUSBS23x USB-Serial Bridge controller.
-> +
-> +	  This driver can also be built as a module. If so, the module will be
-> +	  called cyusbs23x.
-> +
->  config PMIC_DA903X
->  	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
->  	depends on I2C=y
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index f001487..fc5bcd1 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -151,6 +151,7 @@ si476x-core-y := si476x-cmd.o si476x-prop.o si476x-i2c.o
->  obj-$(CONFIG_MFD_SI476X_CORE)	+= si476x-core.o
->  
->  obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
-> +obj-$(CONFIG_MFD_CYUSBS23X)     += cyusbs23x.o
->  obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
->  obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
->  obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
-> diff --git a/drivers/mfd/cyusbs23x.c b/drivers/mfd/cyusbs23x.c
-> new file mode 100644
-> index 0000000..824f020
-> --- /dev/null
-> +++ b/drivers/mfd/cyusbs23x.c
-> @@ -0,0 +1,163 @@
-> +/*
-> + * Cypress USB-Serial Bridge Controller USB adapter driver
-> + *
-> + * Copyright (c) 2014 Cypress Semiconductor Corporation.
-> + *
-> + * Author:
-> + *   Muthu Mani <muth@cypress.com>
-> + *
-> + * Additional contributors include:
-> + *   Rajaram Regupathy <rera@cypress.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/errno.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/mutex.h>
-> +
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/cyusbs23x.h>
-> +
-> +#include <linux/usb.h>
-> +
-> +static const struct usb_device_id cyusbs23x_usb_table[] = {
-> +	{ USB_DEVICE(0x04b4, 0x0004) },   /* Cypress Semiconductor */
-> +	{ }                               /* Terminating entry */
-> +};
-> +
-> +MODULE_DEVICE_TABLE(usb, cyusbs23x_usb_table);
-> +
-> +static const struct mfd_cell cyusbs23x_i2c_devs[] = {
-> +	{
-> +		.name = "cyusbs23x-i2c",
-> +	},
-> +	{
-> +		.name = "cyusbs23x-gpio",
-> +	},
-> +};
-> +
-> +static int update_ep_details(struct usb_interface *interface,
-> +				struct cyusbs23x *cyusbs)
-> +{
-> +	struct usb_host_interface *iface_desc;
-> +	struct usb_endpoint_descriptor *ep;
-> +	int i;
-> +
-> +	dev_dbg(&interface->dev, "%s\n", __func__);
-> +
-> +	iface_desc = interface->cur_altsetting;
-> +
-> +	for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
-> +
-> +		dev_dbg(&interface->dev, "%s %d/%d\n",
-> +			__func__, i, iface_desc->desc.bNumEndpoints);
-> +
-> +		ep = &iface_desc->endpoint[i].desc;
-> +
-> +		if (!cyusbs->bulk_in_ep_num &&
-> +			usb_endpoint_is_bulk_in(ep)) {
-> +			cyusbs->bulk_in_ep_num = ep->bEndpointAddress;
-> +		}
-> +		if (!cyusbs->bulk_out_ep_num &&
-> +			usb_endpoint_is_bulk_out(ep)) {
-> +			cyusbs->bulk_out_ep_num = ep->bEndpointAddress;
-> +		}
-> +		if (!cyusbs->intr_in_ep_num &&
-> +			usb_endpoint_is_int_in(ep)) {
-> +			cyusbs->intr_in_ep_num = ep->bEndpointAddress;
-> +		}
-> +	}
-> +
-> +	dev_dbg(&interface->dev, "%s %d, %d, %d\n",
-> +		__func__, cyusbs->intr_in_ep_num ,
-> +		cyusbs->bulk_in_ep_num, cyusbs->bulk_out_ep_num);
-> +
-> +	if (!cyusbs->bulk_in_ep_num || !cyusbs->bulk_out_ep_num ||
-> +		!cyusbs->intr_in_ep_num)
-> +		return -EINVAL;
+> I've resorted to writing a proggy to check, and it looks like I was
+> earlier confused, and you are right, and that code was "always" wrong.
+> 
+> Not much use of 4TiB disks on 32-bit kernels I suppose.
 
--ENODEV
+Actually on embedded devices like broadband routers/home network NAS boxes/PVR boxes, etc it is very common to have 32-bit (on ARM/MIPS or more recently also x86) and more and more people are plugging in larger disks to store their music/videos/movies, etc...  So this is something that is on the up and going to become an increasing problem as large disks get cheaper and cheaper.
 
-> +
-> +	return 0;
-> +}
-> +
-> +static int cyusbs23x_probe(struct usb_interface *interface,
-> +			   const struct usb_device_id *id)
-> +{
-> +	struct cyusbs23x *cyusbs;
-> +	int ret;
-> +
-> +	cyusbs = kzalloc(sizeof(*cyusbs), GFP_KERNEL);
-> +	if (cyusbs == NULL)
-> +		return -ENOMEM;
-> +
-> +	mutex_init(&cyusbs->lock);
-> +
-> +	cyusbs->usb_dev = usb_get_dev(interface_to_usbdev(interface));
-> +	cyusbs->usb_intf = interface;
-> +
-> +	ret = update_ep_details(interface, cyusbs);
-> +	if (ret < 0) {
-> +		dev_err(&interface->dev, "invalid interface\n");
-> +		goto error;
-> +	}
-> +
-> +	/* save our data pointer in this interface device */
-> +	usb_set_intfdata(interface, cyusbs);
-> +	dev_set_drvdata(&cyusbs->pdev.dev, cyusbs);
+>> So it appears sb_bread() and friends have always been broken on 32-bit architectures when accessing blocks outside the range 2^32 - 1 and it appears google finds lots of occurrences of such infinite loops being reported but the fixes have always been to not make the calls in the first place.  No-one seems to have recognized that there is a genuine problem here before.
+>> 
+>> Still my patch stands correct and should be applied to all kernel versions that have your patch and older kernels should have an equivalent patch applied to fix them, too for people who run very old kernels.
+> 
+> Yes, though I'm now uncertain whether your patch is a bugfix or an
+> enhancement.  Definitely a bugfix, given the infinite loops.  But the
+> oldest code ("index = block >> sizebits; block = index << sizebits;")
+> is so clearly trying to truncate block, that I wonder what departing
+> from that might be letting us in for.
 
-This makes no sense as you have no platform device.
+Having looked at it, I think I understand the original code and intention - it is not truncating the top bits, it is truncating the bottom bits, i.e. it is rounding down so that "block" becomes the first block in the page as that is what is needed to be passed into grow_dev_page().  And the shift right followed by shift left makes those bottom bits "fall off".
 
-> +
-> +	dev_dbg(&interface->dev,
-> +		"binding to %02x:%02x, in bus %03d address %03d\n",
-> +		le16_to_cpu(cyusbs->usb_dev->descriptor.idVendor),
-> +		le16_to_cpu(cyusbs->usb_dev->descriptor.idProduct),
-> +		cyusbs->usb_dev->bus->busnum,
-> +		cyusbs->usb_dev->devnum);
-> +
-> +	ret = mfd_add_devices(&interface->dev, -1, cyusbs23x_i2c_devs,
+A perfectly valid alternative way would be to do a logical "and" with appropriate mask to mask out the bottom bits which would have the same effect but given the shift is already done to get the page index it is probably the same amount of CPU cycles to do a shift left as to do a logical and of the original value and as the page index will be in current registers probably even more efficient than reloading the original value from the stack.
 
-You need to use a unique id here or you cannot have more than one of
-these adapters connected at the same time. Use
+> I see Andrew did 2.6.19's intervening e5657933863f ("grow_buffers()
+> infinite loop fix"): let's hope that he has a clearer head in the
+> morning than I have now - there's a chance that he might think it
+> safer to extend that check to exclude your case, than take your patch.
 
-	busnum << 8 | devnum
+I really don't think so.  His commit added a check to ensure the block is addressable using the page cache which is good but completely unrelated to not being able to access blocks outside 32-bits.
 
-for now.
-	
-> +				ARRAY_SIZE(cyusbs23x_i2c_devs), NULL, 0, NULL);
-> +	if (ret != 0) {
-> +		dev_err(&interface->dev, "Failed to add mfd devices to core\n");
-> +		goto error;
-> +	}
-> +
-> +	return 0;
-> +
-> +error:
-> +	if (cyusbs) {
+The whole point of having CONFIG_LBDAF is to allow 64-bit values for "block" on 32-bit architectures so it cannot be the intention here to limit it to 32-bits.
 
-cyusbs is never NULL here.
+This was either an oversight when CONFIG_LBDAF was added back in the day or was a bug that was introduced since when whoever wrote that code either forgot that sector_t can be 64-bit even when pgoff_t is 32-bit or they failed to notice that the compiler will not extend pgoff_t to 64-bit before doing the left shift without an explicit type cast being present.
 
-> +		usb_put_dev(cyusbs->usb_dev);
-> +		kfree(cyusbs);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static void cyusbs23x_disconnect(struct usb_interface *interface)
-> +{
-> +	struct cyusbs23x *cyusbs = usb_get_intfdata(interface);
-> +
-> +	mfd_remove_devices(&interface->dev);
-> +	usb_set_intfdata(interface, NULL);
-> +	usb_put_dev(cyusbs->usb_dev);
-> +	kfree(cyusbs);
-> +
-> +	dev_dbg(&interface->dev, "disconnected\n");
-> +}
-> +
-> +static struct usb_driver cyusbs23x_usb_driver = {
-> +	.name           = "cyusbs23x",
-> +	.probe          = cyusbs23x_probe,
-> +	.disconnect     = cyusbs23x_disconnect,
-> +	.id_table       = cyusbs23x_usb_table,
-> +};
-> +
-> +module_usb_driver(cyusbs23x_usb_driver);
-> +
-> +MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
-> +MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
-> +MODULE_DESCRIPTION("CYUSBS23x driver v0.1");
-> +MODULE_LICENSE("GPL");
-> +
-> diff --git a/include/linux/mfd/cyusbs23x.h b/include/linux/mfd/cyusbs23x.h
-> new file mode 100644
-> index 0000000..f2d37d4
-> --- /dev/null
-> +++ b/include/linux/mfd/cyusbs23x.h
-> @@ -0,0 +1,51 @@
-> +/*
-> + * Cypress USB-Serial Bridge Controller definitions
-> + *
-> + * Copyright (c) 2014 Cypress Semiconductor Corporation.
-> + *
-> + * Author:
-> + *   Muthu Mani <muth@cypress.com>
-> + *
-> + * Additional contributors include:
-> + *   Rajaram Regupathy <rera@cypress.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + */
-> +
-> +#ifndef __MFD_CYUSBS23X_H__
-> +#define __MFD_CYUSBS23X_H__
-> +
-> +#include <linux/types.h>
-> +#include <linux/usb.h>
-> +
-> +/* Structure to hold all device specific stuff */
-> +struct cyusbs23x {
-> +	struct usb_device *usb_dev; /* the usb device for this device */
-> +	struct usb_interface *usb_intf; /* the usb interface for this device */
+> I hope not, that would not please you; but right now I'm ruling
+> myself out of grasping the issues here!
 
-Drop the comments.
+Fair enough.  I can only hope that Linus/Andrew will agree with my understanding which I am confident is correct.  (-:
 
-> +	struct mutex lock;
-> +	struct platform_device pdev;
+Tthe fact that reading the disk works fine with my patch applied is quite good indication that other code related paths are fine as the 64-bit value passes all the way down the stack and the correct metadata is returned from the disk sector (verified by comparing what I can read from the disk using simple "dd" command).
 
-The usb interface driver has no platform device.
+Best regards,
 
-> +
-> +	__u8 bulk_in_ep_num;
-> +	__u8 bulk_out_ep_num;
-> +	__u8 intr_in_ep_num;
+	Anton
 
-Use u8
+> Hugh
+> 
+>> 
+>>> but my passing "index << sizebits" as arg to function very much not okay).
+>>> Thank you, Anton.
+>> 
+>> You are welcome.
+>> 
+>>> But I see my commit was marked for stable 3.0 3.2 3.4 3.5: so your fix
+>>> is needed in 3.2 and 3.4 longterm also (the others now beyond life).
+>> 
+>> You are quite right.  It needs to go back to all those kernels, too.  Thank you!
+>> 
+>> Best regards,
+>> 
+>> 	Anton
+>> 
+>>> Hugh
+>>> 
+>>>> ---
+>>>> 
+>>>> Linus, can you please apply this?  Alternatively, Andrew, can you please 
+>>>> pick this up and send it to Linus?
+>>>> 
+>>>> It would be good it it can be applied for 3.17 as well as to all stable 
+>>>> kernels >= 3.6 as they are all broken!
+>>>> 
+>>>> Thanks a lot in advance!
+>>>> 
+>>>> Best regards,
+>>>> 
+>>>> 	Anton
+>>>> -- 
+>>>> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+>>>> Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+>>>> Linux NTFS maintainer, http://www.linux-ntfs.org/
+>>>> 
+>>>> diff --git a/fs/buffer.c b/fs/buffer.c
+>>>> index 8f05111..3588a80 100644
+>>>> --- a/fs/buffer.c
+>>>> +++ b/fs/buffer.c
+>>>> @@ -1022,7 +1022,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+>>>> 		bh = page_buffers(page);
+>>>> 		if (bh->b_size == size) {
+>>>> 			end_block = init_page_buffers(page, bdev,
+>>>> -						index << sizebits, size);
+>>>> +						(sector_t)index << sizebits,
+>>>> +						size);
+>>>> 			goto done;
+>>>> 		}
+>>>> 		if (!try_to_free_buffers(page))
+>>>> @@ -1043,7 +1044,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+>>>> 	 */
+>>>> 	spin_lock(&inode->i_mapping->private_lock);
+>>>> 	link_dev_buffers(page, bh);
+>>>> -	end_block = init_page_buffers(page, bdev, index << sizebits, size);
+>>>> +	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
+>>>> +			size);
+>>>> 	spin_unlock(&inode->i_mapping->private_lock);
+>>>> done:
+>>>> 	ret = (block < end_block) ? 1 : -ENXIO;
 
-> +};
-> +
-> +enum CY_VENDOR_CMDS {
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
 
-lower case
-
-> +	CY_I2C_GET_CONFIG_CMD = 0xC4,
-> +	CY_I2C_SET_CONFIG_CMD = 0xC5,
-> +	CY_I2C_WRITE_CMD,
-
-initialise all explicitly
-
-> +	CY_I2C_READ_CMD,
-> +	CY_I2C_GET_STATUS_CMD,
-> +	CY_I2C_RESET_CMD,
-> +	CY_GPIO_GET_CONFIG_CMD = 0xD8,
-> +	CY_GPIO_SET_CONFIG_CMD,
-> +	CY_GPIO_GET_VALUE_CMD,
-> +	CY_GPIO_SET_VALUE_CMD,
-> +
-> +} CY_VENDOR_CMDS;
-
-Sure you don't want to define a global enum here.
-
-> +
-> +#define CY_SCB_INDEX_POS      15
-> +
-> +#endif /* __MFD_CYUSBS23X_H__ */
-
-Johan
