@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaIVOUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:20:45 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:40908 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486AbaIVOUo (ORCPT
+	id S1754051AbaIVOXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:23:30 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:57803 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaIVOX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:20:44 -0400
-Date: Mon, 22 Sep 2014 18:20:35 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/2] memcg: move memcg_update_cache_size to slab_common.c
-Message-ID: <20140922142035.GE18526@esperanza>
-References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
- <0689062e28e13375241dcc64df2a398c9d606c64.1411054735.git.vdavydov@parallels.com>
- <20140922140734.GF336@dhcp22.suse.cz>
+	Mon, 22 Sep 2014 10:23:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140922140734.GF336@dhcp22.suse.cz>
+In-Reply-To: <1409938218-9026-11-git-send-email-abrestic@chromium.org>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-11-git-send-email-abrestic@chromium.org>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 22 Sep 2014 09:23:06 -0500
+Message-ID: <CAL_JsqKGG3ei9=Od74VSL9Sm_=+vsW4U+WBgXmCEtK3iTDfJ0g@mail.gmail.com>
+Subject: Re: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 04:07:34PM +0200, Michal Hocko wrote:
-> On Thu 18-09-14 19:50:20, Vladimir Davydov wrote:
-> > The only reason why this function lives in memcontrol.c is that it
-> > depends on memcg_caches_array_size. However, we can pass the new array
-> > size immediately to it instead of new_id+1 so that it will be free of
-> > any memcontrol.c dependencies.
-> > 
-> > So let's move this function to slab_common.c and make it static.
-> 
-> Why?
+On Fri, Sep 5, 2014 at 12:30 PM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
+> Add the vendor prefix "mti" for MIPS Technologies, Inc.
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+> New for v2.
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index ac7269f..efa5a5b 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -86,6 +86,7 @@ microchip     Microchip Technology Inc.
+>  mosaixtech     Mosaix Technologies, Inc.
+>  moxa   Moxa
+>  mpl    MPL AG
+> +mti    MIPS Technologies, Inc.
 
-Jumping from memcontrol.c to slab_common.c and then back to memcontrol.c
-while updating per-memcg caches looks ugly IMO. We can do the update on
-the slab's side.
+Why not mips as that is more common and the stock ticker.
 
-> besides that the patch does more code reshuffling which should be
-> documented. I have got lost a bit to be honest.
-
-It just makes it sane :-) Currently we walk over all slab caches each
-time new kmemcg is created even if memcg_limited_groups_array_size
-doesn't grow and we've actually nothing to do. So it moves cache id
-allocation stuff to a separate function (memcg_alloc_cache_id) and
-places the check there so that memcg_update_all_caches is only called
-when it's really necessary.
-
-I'm sorry if it confuses you. I thought the patch isn't big and rather
-easy to understand :-/ Next time will split better.
-
-Thanks,
-Vladimir
+Rob
