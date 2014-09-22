@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaIVKNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 06:13:04 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:59150 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaIVKND (ORCPT
+	id S1753511AbaIVKSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 06:18:14 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:57379 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaIVKSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 06:13:03 -0400
+	Mon, 22 Sep 2014 06:18:12 -0400
+Date: Mon, 22 Sep 2014 14:18:03 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] mm: memcontrol: support transparent huge pages under
+ pressure
+Message-ID: <20140922101803.GB20398@esperanza>
+References: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20140922083929.GG1470@ulmo>
-References: <1409626606-15225-1-git-send-email-djkurtz@chromium.org> <20140922083929.GG1470@ulmo>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Mon, 22 Sep 2014 18:12:41 +0800
-X-Google-Sender-Auth: zNLq-bCFnzJuae0c2hyUWq_8_XA
-Message-ID: <CAGS+omBFQi2BokDCV8DpRYwKs7DsGWKfxtDu8+7zJfKatL0SeA@mail.gmail.com>
-Subject: Re: [PATCH] drm/panel: update innolux n116bge timings
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 4:39 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
->
-> On Tue, Sep 02, 2014 at 10:56:46AM +0800, Daniel Kurtz wrote:
-> > There are several different models of N116BGE.  According to the commit
-> > that added innolux_n116bge_mode [0], this N116BGE is for the eDP variety.
-> >
-> > [0] commit 0a2288c06aab73c966e82045c8f20b0e713baf2a
-> >  Author: Thierry Reding <treding@nvidia.com>
-> >  Date:   Thu Jul 3 14:02:59 2014 +0200
-> >
-> >    drm/panel: simple: Add Innolux N116BGE panel support
-> >
-> > The clock and htotal values from add by that patch are out of spec according to
-> > the datasheets I have seen for the eDP N116BGE (-EA2 and -EB2).
->
-> Does out of spec imply that these timings aren't working for you?
+On Fri, Sep 19, 2014 at 09:20:40AM -0400, Johannes Weiner wrote:
+> In a memcg with even just moderate cache pressure, success rates for
+> transparent huge page allocations drop to zero, wasting a lot of
+> effort that the allocator puts into assembling these pages.
+> 
+> The reason for this is that the memcg reclaim code was never designed
+> for higher-order charges.  It reclaims in small batches until there is
+> room for at least one page.  Huge pages charges only succeed when
+> these batches add up over a series of huge faults, which is unlikely
+> under any significant load involving order-0 allocations in the group.
+> 
+> Remove that loop on the memcg side in favor of passing the actual
+> reclaim goal to direct reclaim, which is already set up and optimized
+> to meet higher-order goals efficiently.
+> 
+> This brings memcg's THP policy in line with the system policy: if the
+> allocator painstakingly assembles a hugepage, memcg will at least make
+> an honest effort to charge it.  As a result, transparent hugepage
+> allocation rates amid cache activity are drastically improved:
+> 
+>                                       vanilla                 patched
+> pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
+> pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
+> pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
+> thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
+> thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
+> 
+> [ Note: this may in turn increase memory consumption from internal
+>   fragmentation, which is an inherent risk of transparent hugepages.
+>   Some setups may have to adjust the memcg limits accordingly to
+>   accomodate this - or, if the machine is already packed to capacity,
+>   disable the transparent huge page feature. ]
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-No, I didn't even try with your values, actually.
-Out of spec just means that the numbers do not fall between Min and
-Max on the datasheet:
+Looks like a really nice change to me. FWIW,
 
-72.6 <= DCLK <= 80.24 vs. 71
-1506 <= htotal <= 1716 vs. 1500
-
-> > This patch changes the values to the "Typ" values on the datasheet.
->
-> The original patch was based on -E42 of the datasheet. But I can run
-> some tests to see if the timings in this patch work on the panel that I
-> have. If so I guess the easiest would be to apply this.
-
-Thanks!
-
->
-> It shouldn't matter all that much since the panel has EDID if I remember
-> correctly. The modes parsed from EDID should take precedence over the
-> fixed mode. If they don't then that's a bug.
-
-The driver I am testing this with does not yet support reading the
-EDID over eDP, so I am using the fixed values for now.
-
-> Thierry
->
+Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
