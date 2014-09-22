@@ -1,266 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621AbaIVQt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:49:56 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:48823 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538AbaIVQtz (ORCPT
+	id S1754642AbaIVQu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:50:58 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:65204 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170AbaIVQu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:49:55 -0400
+	Mon, 22 Sep 2014 12:50:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140922162534.GA25352@thin>
-References: <1411318194-9433-1-git-send-email-bobby.prani@gmail.com> <20140922162534.GA25352@thin>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Mon, 22 Sep 2014 12:49:24 -0400
-Message-ID: <CAJhHMCCpkVqdbMirw2ON=4+pPQgWKczgq_Y9BCv3_fj6yGp_MQ@mail.gmail.com>
-Subject: Re: [PATCH] rcu: Remove redundant CONFIG_PREEMPT_RCU option
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <1411329923-15912-4-git-send-email-heiko@sntech.de>
+References: <1411329923-15912-1-git-send-email-heiko@sntech.de>
+	<1411329923-15912-4-git-send-email-heiko@sntech.de>
+Date: Mon, 22 Sep 2014 09:50:55 -0700
+X-Google-Sender-Auth: qUUevzj2fL7leyJ3UR78gcjKoPE
+Message-ID: <CAD=FV=Vkz1e-AEQv30YS-hFos59RES_4qNbH6Wu1UQvfAWLW8A@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] power: gpio-charger: do not use gpio value directly
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: sre@kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Heiko Stuebner <heiko.stuebner@bq.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 12:25 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> On Sun, Sep 21, 2014 at 12:49:54PM -0400, Pranith Kumar wrote:
->> PREEMPT_RCU and TREE_PREEMPT_RCU serve the same function after TINY_PREEMPT_RCU
->> has been removed. This patch removes CONFIG_PREEMPT_RCU and uses
->> CONFIG_TREE_PREEMPT_RCU in its place.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Heiko,
+
+On Sun, Sep 21, 2014 at 1:05 PM, Heiko Stuebner <heiko@sntech.de> wrote:
+> From: Heiko Stuebner <heiko.stuebner@bq.com>
 >
-> I think it would actually make more sense to do this the other way
-> around, if at all: drop TREE_PREEMPT_RCU in favor of PREEMPT_RCU.  The
-> instances shown here don't care about *which* preemptible RCU
-> implementation the kernel uses, they just need to behave differently
-> when preemptible.  Let's also not assume that no new RCU implementation
-> will ever arise superceding TREE_PREEMPT_RCU.
+> Some gpio implementations return interesting values for gpio_get_value when
+> the value is not 0 - as seen on a imx6sl board. Therefore do not use the
+> value returned from gpio_get_value directly but simply check for 0 or not 0.
+>
+> Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
+> ---
+>  drivers/power/gpio-charger.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+> index 5fe6879..ce99a29 100644
+> --- a/drivers/power/gpio-charger.c
+> +++ b/drivers/power/gpio-charger.c
+> @@ -57,7 +57,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
+>
+>         switch (psp) {
+>         case POWER_SUPPLY_PROP_ONLINE:
+> -               val->intval = gpio_get_value_cansleep(pdata->gpio);
+> +               val->intval = gpio_get_value_cansleep(pdata->gpio) ? 1 : 0;
 
-That is exactly what I did first and got the following changelog:
+There is a common practice about using "!!" for this.  AKA:
+"val->intval = !!gpio_get_value_cansleep(pdata->gpio);".
 
- 51 files changed, 77 insertions(+), 83 deletions(-)
+>                 val->intval ^= pdata->gpio_active_low;
 
-compared to
+It seems like while you're at it you could also fix
+"pdata->gpio_active_low" to have the "!!", just to be safe.
 
- 8 files changed, 19 insertions(+), 25 deletions(-)
+...if you don't fix this, perhaps you should fix your last patch to
+add a "!!", like:
 
-for the current one. Hence my patch opting for the latter. I will go
-ahead and send the other patch.
+  pdata->gpio_active_low = !!(flags & OF_GPIO_ACTIVE_LOW);
 
->>  8 files changed, 19 insertions(+), 25 deletions(-)
->>
->> diff --git a/arch/xtensa/configs/s6105_defconfig b/arch/xtensa/configs/s6105_defconfig
->> index 12a492a..dab1a99 100644
->> --- a/arch/xtensa/configs/s6105_defconfig
->> +++ b/arch/xtensa/configs/s6105_defconfig
->> @@ -35,7 +35,7 @@ CONFIG_SYSVIPC_SYSCTL=y
->>  #
->>  # CONFIG_CLASSIC_RCU is not set
->>  # CONFIG_TREE_RCU is not set
->> -CONFIG_PREEMPT_RCU=y
->> +CONFIG_TREE_PREEMPT_RCU=y
->>  # CONFIG_RCU_TRACE is not set
->>  # CONFIG_TREE_RCU_TRACE is not set
->>  # CONFIG_PREEMPT_RCU_TRACE is not set
->> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
->> index 77fc43f..39600f4 100644
->> --- a/include/linux/init_task.h
->> +++ b/include/linux/init_task.h
->> @@ -108,7 +108,7 @@ extern struct group_info init_groups;
->>  #else
->>  #define INIT_TASK_RCU_TREE_PREEMPT(tsk)
->>  #endif
->> -#ifdef CONFIG_PREEMPT_RCU
->> +#ifdef CONFIG_TREE_PREEMPT_RCU
->>  #define INIT_TASK_RCU_PREEMPT(tsk)                                   \
->>       .rcu_read_lock_nesting = 0,                                     \
->>       .rcu_read_unlock_special.s = 0,                                 \
->> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
->> index a4a819f..17a15d5 100644
->> --- a/include/linux/rcupdate.h
->> +++ b/include/linux/rcupdate.h
->> @@ -103,7 +103,7 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
->>
->>  /* Exported common interfaces */
->>
->> -#ifdef CONFIG_PREEMPT_RCU
->> +#ifdef CONFIG_TREE_PREEMPT_RCU
->>
->>  /**
->>   * call_rcu() - Queue an RCU callback for invocation after a grace period.
->> @@ -140,12 +140,12 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
->>  void call_rcu(struct rcu_head *head,
->>             void (*func)(struct rcu_head *head));
->>
->> -#else /* #ifdef CONFIG_PREEMPT_RCU */
->> +#else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
->>
->>  /* In classic RCU, call_rcu() is just call_rcu_sched(). */
->>  #define      call_rcu        call_rcu_sched
->>
->> -#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
->> +#endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
->>
->>  /**
->>   * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
->> @@ -217,7 +217,7 @@ void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
->>  void synchronize_rcu_tasks(void);
->>  void rcu_barrier_tasks(void);
->>
->> -#ifdef CONFIG_PREEMPT_RCU
->> +#ifdef CONFIG_TREE_PREEMPT_RCU
->>
->>  void __rcu_read_lock(void);
->>  void __rcu_read_unlock(void);
->> @@ -227,12 +227,12 @@ void synchronize_rcu(void);
->>  /*
->>   * Defined as a macro as it is a very low level header included from
->>   * areas that don't even know about current.  This gives the rcu_read_lock()
->> - * nesting depth, but makes sense only if CONFIG_PREEMPT_RCU -- in other
->> + * nesting depth, but makes sense only if CONFIG_TREE_PREEMPT_RCU -- in other
->>   * types of kernel builds, the rcu_read_lock() nesting depth is unknowable.
->>   */
->>  #define rcu_preempt_depth() (current->rcu_read_lock_nesting)
->>
->> -#else /* #ifdef CONFIG_PREEMPT_RCU */
->> +#else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
->>
->>  static inline void __rcu_read_lock(void)
->>  {
->> @@ -254,7 +254,7 @@ static inline int rcu_preempt_depth(void)
->>       return 0;
->>  }
->>
->> -#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
->> +#endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
->>
->>  /* Internal to kernel */
->>  void rcu_init(void);
->> @@ -530,7 +530,7 @@ static inline int rcu_read_lock_sched_held(void)
->>               }                                                       \
->>       } while (0)
->>
->> -#if defined(CONFIG_PROVE_RCU) && !defined(CONFIG_PREEMPT_RCU)
->> +#if defined(CONFIG_PROVE_RCU) && !defined(CONFIG_TREE_PREEMPT_RCU)
->>  static inline void rcu_preempt_sleep_check(void)
->>  {
->>       rcu_lockdep_assert(!lock_is_held(&rcu_lock_map),
->> diff --git a/include/linux/sched.h b/include/linux/sched.h
->> index 42888d7..6acaa30 100644
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1269,11 +1269,11 @@ struct task_struct {
->>       int nr_cpus_allowed;
->>       cpumask_t cpus_allowed;
->>
->> -#ifdef CONFIG_PREEMPT_RCU
->> +#ifdef CONFIG_TREE_PREEMPT_RCU
->>       int rcu_read_lock_nesting;
->>       union rcu_special rcu_read_unlock_special;
->>       struct list_head rcu_node_entry;
->> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
->> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
->>  #ifdef CONFIG_TREE_PREEMPT_RCU
->>       struct rcu_node *rcu_blocked_node;
->>  #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
->> @@ -2014,12 +2014,12 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
->>
->>  static inline void rcu_copy_process(struct task_struct *p)
->>  {
->> -#ifdef CONFIG_PREEMPT_RCU
->> +#ifdef CONFIG_TREE_PREEMPT_RCU
->>       p->rcu_read_lock_nesting = 0;
->>       p->rcu_read_unlock_special.s = 0;
->>       p->rcu_blocked_node = NULL;
->>       INIT_LIST_HEAD(&p->rcu_node_entry);
->> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
->> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
->>  #ifdef CONFIG_TASKS_RCU
->>       p->rcu_tasks_holdout = false;
->>       INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
->> @@ -2752,7 +2752,7 @@ extern int __cond_resched_softirq(void);
->>
->>  static inline void cond_resched_rcu(void)
->>  {
->> -#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
->> +#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_TREE_PREEMPT_RCU)
->>       rcu_read_unlock();
->>       cond_resched();
->>       rcu_read_lock();
->> diff --git a/init/Kconfig b/init/Kconfig
->> index 8a2b97c..27ad03c 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -501,12 +501,6 @@ config TINY_RCU
->>
->>  endchoice
->>
->> -config PREEMPT_RCU
->> -     def_bool TREE_PREEMPT_RCU
->> -     help
->> -       This option enables preemptible-RCU code that is common between
->> -       TREE_PREEMPT_RCU and, in the old days, TINY_PREEMPT_RCU.
->> -
->>  config TASKS_RCU
->>       bool "Task_based RCU implementation using voluntary context switch"
->>       default n
->> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
->> index 3ef8ba5..8848a32 100644
->> --- a/kernel/rcu/update.c
->> +++ b/kernel/rcu/update.c
->> @@ -62,7 +62,7 @@ MODULE_ALIAS("rcupdate");
->>
->>  module_param(rcu_expedited, int, 0);
->>
->> -#ifdef CONFIG_PREEMPT_RCU
->> +#ifdef CONFIG_TREE_PREEMPT_RCU
->>
->>  /*
->>   * Preemptible RCU implementation for rcu_read_lock().
->> @@ -108,7 +108,7 @@ void __rcu_read_unlock(void)
->>  }
->>  EXPORT_SYMBOL_GPL(__rcu_read_unlock);
->>
->> -#endif /* #ifdef CONFIG_PREEMPT_RCU */
->> +#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
->>
->>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->>  static struct lock_class_key rcu_lock_key;
->> diff --git a/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
->> index 28db67b..4fea92d 100644
->> --- a/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
->> +++ b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt
->> @@ -31,7 +31,7 @@ CONFIG_RCU_TORTURE_TEST
->>
->>  CONFIG_HOTPLUG_CPU
->>  CONFIG_PREEMPT
->> -CONFIG_PREEMPT_RCU
->> +CONFIG_TREE_PREEMPT_RCU
->>  CONFIG_SMP
->>  CONFIG_TINY_RCU
->>  CONFIG_TREE_PREEMPT_RCU
->> diff --git a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
->> index f85c45e..081dece 100644
->> --- a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
->> +++ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
->> @@ -62,7 +62,7 @@ CONFIG_NO_HZ_FULL_SYSIDLE_SMALL
->>       Defer until Frederic uses this.
->>
->>  CONFIG_PREEMPT_COUNT
->> -CONFIG_PREEMPT_RCU
->> +CONFIG_TREE_PREEMPT_RCU
->>
->>       Redundant with CONFIG_PREEMPT, ignore.
->>
->> --
->> 2.1.0
->>
-
-
-
--- 
-Pranith
+...technically OF_GPIO_ACTIVE_LOW is 0x1 so it's not a bug, but...
