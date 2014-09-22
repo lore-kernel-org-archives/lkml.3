@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaIVXhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 19:37:15 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46216 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792AbaIVXhN (ORCPT
+	id S1753596AbaIVXm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 19:42:56 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33316 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058AbaIVXmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 19:37:13 -0400
-Message-ID: <5420B2A1.7060503@hitachi.com>
-Date: Tue, 23 Sep 2014 08:37:05 +0900
+	Mon, 22 Sep 2014 19:42:55 -0400
+X-AuditID: 85900ec0-be8f3b9000002d32-fd-5420b3fbc3d3
+Subject: [PATCH v5 0/4] ftrace: Add a ftrace test collection
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, Shuah Khan <shuah.kh@samsung.com>,
+To: Shuah Khan <shuah.kh@samsung.com>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH v4 1/4] ftracetest: Initial commit for ftracetest
-References: <20140918120437.28308.72301.stgit@kbuild-f20.novalocal> <20140918120445.28308.57538.stgit@kbuild-f20.novalocal> <541AD905.6000700@osg.samsung.com> <541B80DE.1060902@hitachi.com> <541C3823.4090203@osg.samsung.com> <541DB8CD.7000107@hitachi.com> <20140922120006.75ef7eb3@gandalf.local.home>
-In-Reply-To: <20140922120006.75ef7eb3@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Sep 2014 23:42:48 +0000
+Message-ID: <20140922234248.23415.36560.stgit@kbuild-f20.novalocal>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/23 1:00), Steven Rostedt wrote:
-> On Sun, 21 Sep 2014 02:26:37 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
-> 
->> Steven, would I better resend updates?
->>
-> 
-> Yeah, can you please send a v5 with all the updates, just so I don't
-> miss anything. I'm still not at 100% capacity and this will help a lot.
-> 
-> Also, can you please add everyone's acked-bys and reviewed-bys that
-> have posted so far.
+Hi,
 
-OK, I'll update it soon :)
+Here is the collection of testcases for ftrace version 5.
+This is just a small update.
+
+  - Fix a TODO item, since this already integrated to kselftest.
+  - Print the test name at the first line.
+  - Add Shuah's acked-by. (Thanks!)
+
+ftracetest is a shell(dash) script for testing ftrace features.
+It will be required to add a unit test for each new feature
+after this is merged, because of preventing regressions.
 
 Thank you,
 
-> 
-> Thanks!
-> 
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+---
+
+Masami Hiramatsu (4):
+      ftracetest: Initial commit for ftracetest
+      ftracetest: Add ftrace basic testcases
+      ftracetest: Add kprobe basic testcases
+      ftracetest: Add POSIX.3 standard and XFAIL result codes
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+ MAINTAINERS                                        |    1 
+ tools/testing/selftests/Makefile                   |    1 
+ tools/testing/selftests/ftrace/Makefile            |    7 +
+ tools/testing/selftests/ftrace/README              |   82 +++++++
+ tools/testing/selftests/ftrace/ftracetest          |  251 ++++++++++++++++++++
+ tools/testing/selftests/ftrace/samples/fail.tc     |    4 
+ tools/testing/selftests/ftrace/samples/pass.tc     |    3 
+ .../testing/selftests/ftrace/samples/unresolved.tc |    4 
+ .../selftests/ftrace/samples/unsupported.tc        |    3 
+ tools/testing/selftests/ftrace/samples/untested.tc |    3 
+ tools/testing/selftests/ftrace/samples/xfail.tc    |    3 
+ .../selftests/ftrace/test.d/00basic/basic1.tc      |    3 
+ .../selftests/ftrace/test.d/00basic/basic2.tc      |    7 +
+ .../selftests/ftrace/test.d/00basic/basic3.tc      |    8 +
+ .../ftrace/test.d/kprobe/add_and_remove.tc         |   11 +
+ .../selftests/ftrace/test.d/kprobe/busy_check.tc   |   13 +
+ tools/testing/selftests/ftrace/test.d/template     |    9 +
+ 17 files changed, 413 insertions(+)
+ create mode 100644 tools/testing/selftests/ftrace/Makefile
+ create mode 100644 tools/testing/selftests/ftrace/README
+ create mode 100755 tools/testing/selftests/ftrace/ftracetest
+ create mode 100644 tools/testing/selftests/ftrace/samples/fail.tc
+ create mode 100644 tools/testing/selftests/ftrace/samples/pass.tc
+ create mode 100644 tools/testing/selftests/ftrace/samples/unresolved.tc
+ create mode 100644 tools/testing/selftests/ftrace/samples/unsupported.tc
+ create mode 100644 tools/testing/selftests/ftrace/samples/untested.tc
+ create mode 100644 tools/testing/selftests/ftrace/samples/xfail.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/template
 
-
+--
