@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaIVLTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 07:19:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48688 "EHLO mga09.intel.com"
+	id S1753773AbaIVLVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 07:21:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37856 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619AbaIVLTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 07:19:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,571,1406617200"; 
-   d="scan'208";a="576860594"
-Date: Mon, 22 Sep 2014 14:19:41 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@linux.intel.com>,
-        Ning Li <ning.li@intel.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] gpio: Add support for Intel Cherryview/Braswell
- GPIO controller
-Message-ID: <20140922111941.GS1786@lahna.fi.intel.com>
-References: <1410790185-31101-1-git-send-email-mika.westerberg@linux.intel.com>
- <1410790185-31101-2-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753414AbaIVLVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 07:21:37 -0400
+Date: Mon, 22 Sep 2014 14:24:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC 2/2] vhost: support urgent descriptors
+Message-ID: <20140922112457.GH14882@redhat.com>
+References: <1404203661-7521-1-git-send-email-mst@redhat.com>
+ <1404203661-7521-2-git-send-email-mst@redhat.com>
+ <541BD6E9.2010707@redhat.com>
+ <541D503B.3070507@redhat.com>
+ <541F97CF.7000305@redhat.com>
+ <20140922065539.GA12057@redhat.com>
+ <541FF20B.4080201@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410790185-31101-2-git-send-email-mika.westerberg@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <541FF20B.4080201@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 05:09:45PM +0300, Mika Westerberg wrote:
-> From: Ning Li <ning.li@intel.com>
+On Mon, Sep 22, 2014 at 05:55:23PM +0800, Jason Wang wrote:
+> On 09/22/2014 02:55 PM, Michael S. Tsirkin wrote:
+> > On Mon, Sep 22, 2014 at 11:30:23AM +0800, Jason Wang wrote:
+> >> On 09/20/2014 06:00 PM, Paolo Bonzini wrote:
+> >>> Il 19/09/2014 09:10, Jason Wang ha scritto:
+> >>>>>>  
+> >>>>>> -	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+> >>>>>> +	if (vq->urgent || !vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+> >>>> So the urgent descriptor only work when event index was not enabled?
+> >>>> This seems suboptimal, we may still want to benefit from event index
+> >>>> even if urgent descriptor is used. Looks like we need return true here
+> >>>> when vq->urgent is true?
+> >>> Its ||, not &&.
+> >>>
+> >>> Without event index, all descriptors are treated as urgent.
+> >>>
+> >>> Paolo
+> >>>
+> >> The problem is if vq->urgent is true, the patch checks
+> >> VRING_AVAIL_F_NO_INTERRUPT bit. This bit were set unconditionally in
+> >> virtqueue_enable_cb() regardless of event index feature and cleared
+> >> unconditionally in virtqueue_disable_cb().
+> > The reverse actually, right?
 > 
-> This driver supports the GPIO controllers found in newer Intel SoCs like
-> Cherryview and Braswell.
+> Ah, right.
+> >
+> >> So virtqueue_enable_cb() was
+> >> used to not only publish a new event index but also enable the urgent
+> >> descriptor. And virtqueue_disable_cb() disabled all interrupts including
+> >> the urgent descriptor. Guest won't get urgent interrupts by just adding
+> >> virtqueue_add_outbuf_urgent() since what it needs is to enable and
+> >> disable interrupt for !urgent descriptor.
+> > Right, we want a new API that advances event index but does not
+> > set VRING_AVAIL_F_NO_INTERRUPT.
+> > IMO still want to set VRING_AVAIL_F_NO_INTERRUPT when handling tx
+> > interrupts, to avoid interrupt storms.
 > 
-> Signed-off-by: Ning Li <ning.li@intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/gpio/Kconfig           |   8 +
->  drivers/gpio/Makefile          |   1 +
->  drivers/gpio/gpio-cherryview.c | 947 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 956 insertions(+)
->  create mode 100644 drivers/gpio/gpio-cherryview.c
+> I see, so urgent descriptor needs to be disabled in this case. But vhost
+> parts need a little big changes, we could not just check
+> VRING_AVAIL_F_NO_INTERRUPT when vq->urgent is true. If event index is
+> enabled, we still need to check used event to make sure the current tx
+> delayed interrupt works.
+> 
+> But just re-using VRING_AVAIL_F_NO_INTERRUPT for urgent descriptor may
+> not work in some case. I see codes of virtqueue_get_buf() that may
+> breaks this:
+> 
+>         /* If we expect an interrupt for the next entry, tell
+> host                                                                                                       
+> 
+>          * by writing event index and flush out the write
+> before                                                                                                         
+> 
+>          * the read in the next get_buf call. */
+>         if (!(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
+>                 vring_used_event(&vq->vring) = vq->last_used_idx;
+>                 virtio_mb(vq->weak_barriers);
+>         }
 
-Hi GPIO maintainers,
 
-Just checking if there is any comments to this driver?
+Right, we need to change this path to use a private flag.
 
-If the ARCH_NR_GPIOS patch is not accepted as is (or we are even getting
-rid of the limit), could you consider taking this driver patch to the
-GPIO tree separately?
+> Consider if only urgent descriptor is enabled, this will publish used
+> event which in fact enable lots of unnecessary interrupt. In fact I
+> don't quite understand how the above lines is used. Virtio-net stop the
+> queue before enable the tx interrupt in start_xmit(), so the above lines
+> will not run at all.
+
+True - this code is for drivers which process VQ without
+disabling interrupts first. No rule says this is not allowed.
+
+> >> Btw, not sure "urgent" is a suitable name, since interrupt is often slow
+> >> in kvm guest. And in fact virtio-net will probably use "urgent"
+> >> descriptor for those packets (e.g stream packets who can be delayed a
+> >> little bit to batch more bytes from userspace) who was not urgent
+> >> compared to other packets.
+> >>
+> > Yes but we are asking for an interrupt before event index is reached
+> > because something is waiting for the packet to be transmitted.
+> > I couldn't come up with a better name.
+> >
+> 
+> Ok.
