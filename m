@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaIVSgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:36:42 -0400
-Received: from forward9l.mail.yandex.net ([84.201.143.142]:46294 "EHLO
-	forward9l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939AbaIVSgj (ORCPT
+	id S1754978AbaIVSgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:36:48 -0400
+Received: from forward6l.mail.yandex.net ([84.201.143.139]:41039 "EHLO
+	forward6l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959AbaIVSgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:36:39 -0400
-X-Yandex-Uniq: da3e46f3-fd18-4f1a-b738-b97f49c5b769
-Authentication-Results: smtp1o.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v3 5/6] sched: Use rq->rd in sched_setaffinity() under RCU
- read lock
+	Mon, 22 Sep 2014 14:36:46 -0400
+X-Yandex-Uniq: fa9e68de-da3b-455e-9202-c41a19dd6146
+Authentication-Results: smtp3h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v3 6/6] sched/rt: Use resched_curr() in task_tick_rt()
 From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Kirill Tkhai <ktkhai@parallels.com>
-Date: Mon, 22 Sep 2014 22:36:36 +0400
-Message-ID: <20140922183636.11015.83611.stgit@localhost>
+Date: Mon, 22 Sep 2014 22:36:43 +0400
+Message-ID: <20140922183642.11015.66039.stgit@localhost>
 In-Reply-To: <20140922183612.11015.64200.stgit@localhost>
 References: <20140922183612.11015.64200.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -29,35 +28,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <ktkhai@parallels.com>
 
-Probability of use-after-free isn't zero in this place.
+Some time ago PREEMPT_NEED_RESCHED was implemented,
+so reschedule technics is a little more difficult now.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <stable@vger.kernel.org> # v3.14+
 ---
- kernel/sched/core.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ kernel/sched/rt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3b07710..643ee99 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4023,13 +4023,14 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
- 	 * root_domain.
- 	 */
- #ifdef CONFIG_SMP
--	if (task_has_dl_policy(p)) {
--		const struct cpumask *span = task_rq(p)->rd->span;
--
--		if (dl_bandwidth_enabled() && !cpumask_subset(span, new_mask)) {
-+	if (task_has_dl_policy(p) && dl_bandwidth_enabled()) {
-+		rcu_read_lock();
-+		if (!cpumask_subset(task_rq(p)->rd->span, new_mask)) {
- 			retval = -EBUSY;
-+			rcu_read_unlock();
- 			goto out_free_new_mask;
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index de356b0..c322071 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -2077,7 +2077,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+ 	for_each_sched_rt_entity(rt_se) {
+ 		if (rt_se->run_list.prev != rt_se->run_list.next) {
+ 			requeue_task_rt(rq, p, 0);
+-			set_tsk_need_resched(p);
++			resched_curr(rq);
+ 			return;
  		}
-+		rcu_read_unlock();
  	}
- #endif
- again:
 
