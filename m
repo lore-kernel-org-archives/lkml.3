@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241AbaIVQip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:38:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17605 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538AbaIVQio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:38:44 -0400
-Message-ID: <1411403609.25340.55.camel@deneb.redhat.com>
-Subject: Re: [PATCH 7/7] efi_rtc: probe function error out in case no efi
- runtime enabled
-From: Mark Salter <msalter@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>,
-        rtc-linux@googlegroups.com
-Date: Mon, 22 Sep 2014 12:33:29 -0400
-In-Reply-To: <1408007953-15151-1-git-send-email-dyoung@redhat.com>
-References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
-	 <1408007953-15151-1-git-send-email-dyoung@redhat.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754376AbaIVQmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:42:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55041 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaIVQmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 12:42:43 -0400
+Date: Mon, 22 Sep 2014 09:42:37 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Andreas Dilger <adilger@dilger.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+Message-ID: <20140922164237.GA30229@infradead.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+ <8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
+ <94D0CD8314A33A4D9D801C0FE68B402958C81D56@G9W0745.americas.hpqcorp.net>
+ <20140919112147.GA4639@infradead.org>
+ <x49tx3zpsfg.fsf@segfault.boston.devel.redhat.com>
+ <CANP1eJH0XYgcjzExLmqmViqpCiowquOj1yuWX1wFsbceteLYpw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANP1eJH0XYgcjzExLmqmViqpCiowquOj1yuWX1wFsbceteLYpw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-14 at 17:19 +0800, Dave Young wrote:
-> efi rtc depends on efi runtime services, so if efi runtime services are not
-> usable it should error out.
-> 
-> Without this patch rtc-efi will panic with 'noefi' boot
+On Mon, Sep 22, 2014 at 12:32:02PM -0400, Milosz Tanski wrote:
+> I spent some time thinking about multi-position scatter/gather in
+> context of this over the weekend. The non-blocking case seams easy,
+> the implementation I purposed needs an extra loop. Where this gets
+> hairy is making the non-trivial blocking case work well (as in have
+> concurrent requests for each of the ranges) in the filesystem code. If
+> that's the road we're going to go down I have a gut feeling we're
+> going to get stuck in the same spot(s) as the other non-blocking
+> buffered r/w attempts from the past.
 
-Is this still needed after commit da167ad7638759:
+The other thing sis that we have a basically ready, easy to use
+implementation of flagged I/O (my name for the new syscalls), while
+S/G I/O will take forever to discuss and is the natual vehicle for
+other extensions like T10 DIX.
 
-  rtc: ia64: allow other architectures to use EFI RTC
-
-That should keep efi_rtc_probe from being called if runtime services
-are not available.
-
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  drivers/rtc/rtc-efi.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
-> index c4c3843..ca2487b 100644
-> --- a/drivers/rtc/rtc-efi.c
-> +++ b/drivers/rtc/rtc-efi.c
-> @@ -191,6 +191,9 @@ static int __init efi_rtc_probe(struct platform_device *dev)
->  {
->  	struct rtc_device *rtc;
->  
-> +	if (!efi_enabled(EFI_RUNTIME_SERVICES))
-> +		return -ENODEV;
-> +
->  	rtc = devm_rtc_device_register(&dev->dev, "rtc-efi", &efi_rtc_ops,
->  					THIS_MODULE);
->  	if (IS_ERR(rtc))
-
-
+I'd like to suggest you consolidate your syscalls down from 4 to 2
+as suggestes by overloading the negative offset argument, giving
+us two more syscalls slows for S/G once it's ready.  Note that
+a sync S/G syscalls should of course also support these flags, although
+I suspect the primary use cases for S/G I/O would be through the aio
+machinery.
