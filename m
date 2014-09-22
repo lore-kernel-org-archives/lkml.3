@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaIVS4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:56:40 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43751 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053AbaIVS4i (ORCPT
+	id S1754733AbaIVS4v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:56:51 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:51938 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525AbaIVS4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:56:38 -0400
-Message-ID: <542070E5.8060107@linaro.org>
-Date: Mon, 22 Sep 2014 20:56:37 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Mon, 22 Sep 2014 14:56:48 -0400
 MIME-Version: 1.0
-To: Nathan Lynch <Nathan_Lynch@mentor.com>, Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code consolidation
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <54204B32.5000905@mentor.com>
-In-Reply-To: <54204B32.5000905@mentor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411379189-3017-3-git-send-email-k.kozlowski@samsung.com>
+References: <1411379189-3017-1-git-send-email-k.kozlowski@samsung.com>
+	<1411379189-3017-3-git-send-email-k.kozlowski@samsung.com>
+Date: Mon, 22 Sep 2014 20:56:47 +0200
+Message-ID: <CAPDyKFpADBgR90_4s6Dxa8GSQ3F2kQFf6Az-J85D_1ZVD6=A5A@mail.gmail.com>
+Subject: Re: [PATCH v6 2/4] amba: Add helper macros for (un)preparing AMBA clock
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 06:15 PM, Nathan Lynch wrote:
-
-[ ... ]
-
-> MAINTAINERS does not have a specific entry for
-> drivers/clocksource/arm_arch_timer.c, so I am working under the
-> assumption that the series would go through Daniel or Thomas.
+On 22 September 2014 11:46, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> Add amba_pclk_prepare() and amba_pclk_unprepare() macros for handling
+> the AMBA bus clock by device drivers.
 >
-> Daniel and/or Thomas, can you take this series please?
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  include/linux/amba/bus.h | 6 ++++++
+>  1 file changed, 6 insertions(+)
 >
+> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+> index fdd7e1b61f60..ad52027a9cbf 100644
+> --- a/include/linux/amba/bus.h
+> +++ b/include/linux/amba/bus.h
+> @@ -92,6 +92,12 @@ void amba_release_regions(struct amba_device *);
+>  #define amba_pclk_disable(d)   \
+>         do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
+>
+> +#define amba_pclk_prepare(d)   \
+> +       (IS_ERR((d)->pclk) ? 0 : clk_prepare((d)->pclk))
 
-Yes, I will take care of it.
+You don't need the IS_ERR, because amba_probe will fail if it won't be
+able to fetch the clock.
 
-   -- Daniel
+Same comment below.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Kind regards
+Uffe
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> +
+> +#define amba_pclk_unprepare(d) \
+> +       do { if (!IS_ERR((d)->pclk)) clk_unprepare((d)->pclk); } while (0)
+> +
+>  /* Some drivers don't use the struct amba_device */
+>  #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
+>  #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
+> --
+> 1.9.1
+>
