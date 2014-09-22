@@ -1,95 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825AbaIVWfC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 18:35:02 -0400
-Received: from ozlabs.org ([103.22.144.67]:50098 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754853AbaIVWfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 18:35:00 -0400
-Date: Tue, 23 Sep 2014 08:34:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Please add the tiny tree to linux-next
-Message-ID: <20140923083442.15400844@canb.auug.org.au>
-In-Reply-To: <20140922175301.GA27348@thin>
-References: <20140922175301.GA27348@thin>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/=Y/DdP+olILEj54F7_uFlbp"; protocol="application/pgp-signature"
+	id S1755198AbaIVWgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 18:36:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40939 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824AbaIVWgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 18:36:36 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: qcom: Fix SCM interface for big-endian kernels
+Date: Mon, 22 Sep 2014 15:36:33 -0700
+Message-Id: <1411425393-5537-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=Y/DdP+olILEj54F7_uFlbp
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The secure environment only runs in little-endian mode, so any
+buffers shared with the secure environment should have their
+contents converted to little-endian. We also mark such elements
+with __le32 to allow sparse to catch such problems.
 
-Hi Josh,
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/soc/qcom/scm-boot.c |  8 ++++----
+ drivers/soc/qcom/scm.c      | 34 ++++++++++++++++++----------------
+ 2 files changed, 22 insertions(+), 20 deletions(-)
 
-On Mon, 22 Sep 2014 10:53:04 -0700 Josh Triplett <josh@joshtriplett.org> wr=
-ote:
->
-> Can you please add the tiny tree, branch tiny/next of
-> https://git.kernel.org/pub/scm/linux/kernel/git/josh/linux.git , to
-> linux-next?
->=20
-> I'll be using this tree to upstream various patches for Linux kernel
-> tinification.  I plan to use topic branches under tiny/* for separate
-> topics, typically based on the previous -rc1, merging them into
-> tiny/next; when the merge window opens, I'll submit a pull request for
-> tiny/next and start merging new tiny/* topic branches into a
-> tiny/next-next branch or similar that will become the new tiny/next
-> after tiny/next gets merged.
+diff --git a/drivers/soc/qcom/scm-boot.c b/drivers/soc/qcom/scm-boot.c
+index 60ff7b482141..3e4d77b371c6 100644
+--- a/drivers/soc/qcom/scm-boot.c
++++ b/drivers/soc/qcom/scm-boot.c
+@@ -27,12 +27,12 @@
+ int scm_set_boot_addr(phys_addr_t addr, int flags)
+ {
+ 	struct {
+-		unsigned int flags;
+-		phys_addr_t  addr;
++		__le32 flags;
++		__le32 addr;
+ 	} cmd;
+ 
+-	cmd.addr = addr;
+-	cmd.flags = flags;
++	cmd.addr = cpu_to_le32(addr);
++	cmd.flags = cpu_to_le32(flags);
+ 	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
+ 			&cmd, sizeof(cmd), NULL, 0);
+ }
+diff --git a/drivers/soc/qcom/scm.c b/drivers/soc/qcom/scm.c
+index be1e2beec796..feeb4e4bb22d 100644
+--- a/drivers/soc/qcom/scm.c
++++ b/drivers/soc/qcom/scm.c
+@@ -62,11 +62,11 @@ static DEFINE_MUTEX(scm_lock);
+  * to access the buffers in a safe manner.
+  */
+ struct scm_command {
+-	u32	len;
+-	u32	buf_offset;
+-	u32	resp_hdr_offset;
+-	u32	id;
+-	u32	buf[0];
++	__le32 len;
++	__le32 buf_offset;
++	__le32 resp_hdr_offset;
++	__le32 id;
++	__le32 buf[0];
+ };
+ 
+ /**
+@@ -76,9 +76,9 @@ struct scm_command {
+  * @is_complete: indicates if the command has finished processing
+  */
+ struct scm_response {
+-	u32	len;
+-	u32	buf_offset;
+-	u32	is_complete;
++	__le32 len;
++	__le32 buf_offset;
++	__le32 is_complete;
+ };
+ 
+ /**
+@@ -96,12 +96,14 @@ static struct scm_command *alloc_scm_command(size_t cmd_size, size_t resp_size)
+ 	struct scm_command *cmd;
+ 	size_t len = sizeof(*cmd) + sizeof(struct scm_response) + cmd_size +
+ 		resp_size;
++	u32 offset;
+ 
+ 	cmd = kzalloc(PAGE_ALIGN(len), GFP_KERNEL);
+ 	if (cmd) {
+-		cmd->len = len;
+-		cmd->buf_offset = offsetof(struct scm_command, buf);
+-		cmd->resp_hdr_offset = cmd->buf_offset + cmd_size;
++		cmd->len = cpu_to_le32(len);
++		offset = offsetof(struct scm_command, buf);
++		cmd->buf_offset = cpu_to_le32(offset);
++		cmd->resp_hdr_offset = cpu_to_le32(offset + cmd_size);
+ 	}
+ 	return cmd;
+ }
+@@ -126,7 +128,7 @@ static inline void free_scm_command(struct scm_command *cmd)
+ static inline struct scm_response *scm_command_to_response(
+ 		const struct scm_command *cmd)
+ {
+-	return (void *)cmd + cmd->resp_hdr_offset;
++	return (void *)cmd + le32_to_cpu(cmd->resp_hdr_offset);
+ }
+ 
+ /**
+@@ -148,7 +150,7 @@ static inline void *scm_get_command_buffer(const struct scm_command *cmd)
+  */
+ static inline void *scm_get_response_buffer(const struct scm_response *rsp)
+ {
+-	return (void *)rsp + rsp->buf_offset;
++	return (void *)rsp + le32_to_cpu(rsp->buf_offset);
+ }
+ 
+ static int scm_remap_error(int err)
+@@ -201,8 +203,8 @@ static int __scm_call(const struct scm_command *cmd)
+ 	 * Flush the command buffer so that the secure world sees
+ 	 * the correct data.
+ 	 */
+-	__cpuc_flush_dcache_area((void *)cmd, cmd->len);
+-	outer_flush_range(cmd_addr, cmd_addr + cmd->len);
++	__cpuc_flush_dcache_area((void *)cmd, le32_to_cpu(cmd->len));
++	outer_flush_range(cmd_addr, cmd_addr + le32_to_cpu(cmd->len));
+ 
+ 	ret = smc(cmd_addr);
+ 	if (ret < 0)
+@@ -260,7 +262,7 @@ int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
+ 	if (!cmd)
+ 		return -ENOMEM;
+ 
+-	cmd->id = (svc_id << 10) | cmd_id;
++	cmd->id = cpu_to_le32((svc_id << 10) | cmd_id);
+ 	if (cmd_buf)
+ 		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Added from today.  I used git:// instead of https:// for the URL.
-
-I do not want code for release N in linux-next until after (N-1)-rc1
-has been released.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-        Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
---Sig_/=Y/DdP+olILEj54F7_uFlbp
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUIKQRAAoJEMDTa8Ir7ZwVzbsP/jPHxV9dpsEH8sgZ9IzM48YX
-yaX5NG69AC/ElswzywPKi6mWyL3NdOEnZbn1uWQGqUCAEqL5MO+BrrOaAxKZntcY
-7cb1AGeZvFIcdxAeLtQKEuD9jccA1Ic+wUhLfhb2Gxb830+UVqhnoN/gy8T8ZCnq
-Tx2uD0/rlUQcdk3UumXVhfffMgwxHPFR7a/WtisrqL0efJqLyW9Vv+q8Fq3N2zfJ
-7OO11wdu2tGP4Fwq41ejfMqDTgP59EG7eLthaAufndYfleYuLj3lYp8+ORqYoxXV
-jQ5FlaG/usPsU4cz76Q+7V/VGvU91SoYKh5u/p5W+wFCt+U86Shs9NwC/VuT16mK
-lF/jXBgkrU82OkyjgjrVb3Slp30LlGM9AJRIFPmb4CRS5lESKipmoWRsUiG3WbLl
-bv2Apr/H6Fc/6t7mvOeZ4Axzq/FGmzmuF3U2I9V6ECTEjqSAlnT2Z1UL7Du3K9q0
-efVHP2AAHRvgM5qvQ/hMhWa1o9BudrnZoj7yITrkZ2pMokIV9YTjC6B6mh7ZOTUL
-n+OWEcWc1Kcln8Tb/Z4ccZqswQ7EuPLU3Ju07JgWKPwz1Cg78Snpb9j/8L2LcDTu
-5uZEpN7C7kKsuEuFUOcwa2pZtfMlmkRV27uQw9Cf3DeSOyCb+bxLdNdP8SumdLFf
-BuU2xcyuiLBD/tAnwpkt
-=/uJU
------END PGP SIGNATURE-----
-
---Sig_/=Y/DdP+olILEj54F7_uFlbp--
