@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaIVDaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Sep 2014 23:30:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaIVDa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Sep 2014 23:30:28 -0400
-Message-ID: <541F97CF.7000305@redhat.com>
-Date: Mon, 22 Sep 2014 11:30:23 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753073AbaIVDa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Sep 2014 23:30:56 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:10418 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751893AbaIVDaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Sep 2014 23:30:55 -0400
+From: Yifan Zhang <zhangyf@marvell.com>
+To: Yifan Zhang <zhangyf@marvell.com>, Tejun Heo <tj@kernel.org>,
+        Jing Xiang <jxiang@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 21 Sep 2014 20:30:32 -0700
+Subject: RE: [PATCH] workqueue: fix a workqueue kernel panic issue.
+Thread-Topic: [PATCH] workqueue: fix a workqueue kernel panic issue.
+Thread-Index: Ac/SUVXUgv9WYXxTSbWGdimo3SCSngDxBw6w
+Message-ID: <4737A960563B524DA805CA602BE04B307EEE6C2694@SC-VEXCH2.marvell.com>
+References: <1410941884-26034-1-git-send-email-zhangyf@marvell.com>
+In-Reply-To: <1410941884-26034-1-git-send-email-zhangyf@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC 2/2] vhost: support urgent descriptors
-References: <1404203661-7521-1-git-send-email-mst@redhat.com>	<1404203661-7521-2-git-send-email-mst@redhat.com> <541BD6E9.2010707@redhat.com> <541D503B.3070507@redhat.com>
-In-Reply-To: <541D503B.3070507@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-22_01:2014-09-19,2014-09-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1409220039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8M3V24s025934
 
-On 09/20/2014 06:00 PM, Paolo Bonzini wrote:
-> Il 19/09/2014 09:10, Jason Wang ha scritto:
->>>>  
->>>> -	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
->>>> +	if (vq->urgent || !vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
->> So the urgent descriptor only work when event index was not enabled?
->> This seems suboptimal, we may still want to benefit from event index
->> even if urgent descriptor is used. Looks like we need return true here
->> when vq->urgent is true?
-> Its ||, not &&.
->
-> Without event index, all descriptors are treated as urgent.
->
-> Paolo
->
+Hi Tejun,
 
-The problem is if vq->urgent is true, the patch checks
-VRING_AVAIL_F_NO_INTERRUPT bit. This bit were set unconditionally in
-virtqueue_enable_cb() regardless of event index feature and cleared
-unconditionally in virtqueue_disable_cb(). So virtqueue_enable_cb() was
-used to not only publish a new event index but also enable the urgent
-descriptor. And virtqueue_disable_cb() disabled all interrupts including
-the urgent descriptor. Guest won't get urgent interrupts by just adding
-virtqueue_add_outbuf_urgent() since what it needs is to enable and
-disable interrupt for !urgent descriptor.
+What's do you think of this patch ? Any concern ?
 
-Btw, not sure "urgent" is a suitable name, since interrupt is often slow
-in kvm guest. And in fact virtio-net will probably use "urgent"
-descriptor for those packets (e.g stream packets who can be delayed a
-little bit to batch more bytes from userspace) who was not urgent
-compared to other packets.
+BR,
+Yifan
 
+-----Original Message-----
+From: Yifan Zhang [mailto:zhangyf@marvell.com] 
+Sent: 2014Äê9ÔÂ17ÈÕ 16:18
+To: Tejun Heo; Jing Xiang; linux-kernel@vger.kernel.org
+Cc: Yifan Zhang
+Subject: [PATCH] workqueue: fix a workqueue kernel panic issue.
 
+if created workqueue in multi-thread unsynchronized,
+get_work_pwq() may return NULL, which cause kernel panic. Judge get_work_pwq() return value before use
+pwq->wq->flags.
+
+Signed-off-by: Yifan Zhang <zhangyf@marvell.com>
+---
+ kernel/workqueue.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c index 5dbe22a..d3ac87f 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1947,9 +1947,19 @@ __acquires(&pool->lock)  {
+ 	struct pool_workqueue *pwq = get_work_pwq(work);
+ 	struct worker_pool *pool = worker->pool;
+-	bool cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
++	bool cpu_intensive;
+ 	int work_color;
+ 	struct worker *collision;
++
++	if (pwq == NULL) {
++		pr_err("BUG: invalid struct work_struct.data %lu\n",
++				atomic_long_read(&work->data));
++		dump_stack();
++		return;
++	}
++
++	cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
++
+ #ifdef CONFIG_LOCKDEP
+ 	/*
+ 	 * It is permissible to free the struct work_struct from
+--
+1.7.9.5
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
