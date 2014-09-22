@@ -1,127 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaIVJbl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 05:31:41 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:35916 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079AbaIVJbj (ORCPT
+	id S1753671AbaIVJch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 05:32:37 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:57573 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaIVJcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 05:31:39 -0400
-Message-ID: <541FEC79.40209@redhat.com>
-Date: Mon, 22 Sep 2014 11:31:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 22 Sep 2014 05:32:33 -0400
+Date: Mon, 22 Sep 2014 11:32:28 +0200
+From: Robert Richter <rric@kernel.org>
+To: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sunil Goutham <sunil.goutham@caviumnetworks.com>
+Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+Message-ID: <20140922093228.GA20256@rric.localhost>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 8/9] kvm, mem-hotplug: Add arch specific mmu notifier
- to handle apic access migration.
-References: <1411210071-14727-1-git-send-email-tangchen@cn.fujitsu.com> <1411210071-14727-9-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1411210071-14727-9-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/09/2014 12:47, Tang Chen ha scritto:
-> We are handling "L1 and L2 share one apic access page" situation when migrating
-> apic access page. We should do some handling when migration happens in the
-> following situations:
-> 
->    1) when L0 is running: Update L1's vmcs in the next L0->L1 entry and L2's
->       vmcs in the next L1->L2 entry.
-> 
->    2) when L1 is running: Force a L1->L0 exit, update L1's vmcs in the next
->       L0->L1 entry and L2's vmcs in the next L1->L2 entry.
-> 
->    3) when L2 is running: Force a L2->L0 exit, update L2's vmcs in the next
->       L0->L2 entry and L1's vmcs in the next L2->L1 exit.
-> 
-> This patch force a L1->L0 exit or L2->L0 exit when shared apic access page is
-> migrated using mmu notifier. Since apic access page is only used on intel x86,
-> this is arch specific code.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/x86.c       | 11 +++++++++++
->  include/linux/kvm_host.h | 14 +++++++++++++-
->  virt/kvm/kvm_main.c      |  3 +++
->  3 files changed, 27 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 2ae2dc7..7dd4179 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6011,6 +6011,17 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
->  
-> +void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +					   unsigned long address)
+On 18.09.14 02:30:23, Liviu Dudau wrote:
+> +int of_pci_get_host_bridge_resources(struct device_node *dev,
+> +			unsigned char busno, unsigned char bus_max,
+> +			struct list_head *resources, resource_size_t *io_base)
 > +{
-> +	/*
-> +	 * The physical address of apic access page is stored in VMCS.
-> +	 * Update it when it becomes invalid.
-> +	 */
-> +	if (address == gfn_to_hva(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT))
-> +		kvm_make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
-> +}
+> +	struct resource *res;
+> +	struct resource *bus_range;
+> +	struct of_pci_range range;
+> +	struct of_pci_range_parser parser;
+> +	char range_type[4];
+> +	int err;
 > +
->  /*
->   * Returns 1 to let __vcpu_run() continue the guest execution loop without
->   * exiting to the userspace.  Otherwise, the value will be returned to the
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 73de13c..b6e4d38 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -917,7 +917,19 @@ static inline int mmu_notifier_retry(struct kvm *kvm, unsigned long mmu_seq)
->  		return 1;
->  	return 0;
->  }
-> -#endif
-> +
-> +#ifdef _ASM_X86_KVM_HOST_H
-> +void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +					   unsigned long address);
-> +#else /* _ASM_X86_KVM_HOST_H */
-> +inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +						  unsigned long address)
+> +	if (!io_base)
+> +		return -EINVAL;
+> +	*io_base = OF_BAD_ADDR;
 
-This needs to be static.
+This breaks for mem-mapped pci host controllers. The patch below fixes
+this.
 
-However, do not add it here.  Instead, touch all
-arch/*/include/asm/kvm_host.h files, adding either the prototype or the
-inline function.
+This series was tested with the fix on top for Cavium Thunder.
 
-Apart from this, the patch looks good.
+Tested-by: Robert Richter <rrichter@cavium.com>
 
-Paolo
+-Robert
 
-> +{
-> +	return;
-> +}
-> +#endif /* _ASM_X86_KVM_HOST_H */
-> +
-> +#endif /* CONFIG_MMU_NOTIFIER & KVM_ARCH_WANT_MMU_NOTIFIER */
->  
->  #ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
->  
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 0f8b6f6..5427973d 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -295,6 +295,9 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
->  		kvm_flush_remote_tlbs(kvm);
->  
->  	spin_unlock(&kvm->mmu_lock);
-> +
-> +	kvm_arch_mmu_notifier_invalidate_page(kvm, address);
-> +
->  	srcu_read_unlock(&kvm->srcu, idx);
->  }
->  
-> 
+
+
+>From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
+From: Robert Richter <rrichter@cavium.com>
+Date: Mon, 22 Sep 2014 10:46:01 +0200
+Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
+
+The pci host bridge was not created if io_base was not set when
+calling of_pci_get_host_bridge_resources(). This is esp. the case for
+mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
+parameter io_base is optional now.
+
+Signed-off-by: Robert Richter <rrichter@cavium.com>
+---
+ drivers/of/of_pci.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index ffdb45ed8682..1f0e7c2505ee 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -182,9 +182,8 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
+ 	char range_type[4];
+ 	int err;
+ 
+-	if (!io_base)
+-		return -EINVAL;
+-	*io_base = OF_BAD_ADDR;
++	if (io_base)
++		*io_base = OF_BAD_ADDR;
+ 
+ 	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
+ 	if (!bus_range)
+@@ -242,7 +241,7 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
+ 			goto parse_failed;
+ 		}
+ 
+-		if (resource_type(res) == IORESOURCE_IO) {
++		if (io_base && resource_type(res) == IORESOURCE_IO) {
+ 			if (*io_base != OF_BAD_ADDR)
+ 				pr_warn("More than one I/O resource converted. CPU offset for old range lost!\n");
+ 			*io_base = range.cpu_addr;
+-- 
+2.1.0
 
