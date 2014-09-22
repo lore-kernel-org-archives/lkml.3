@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaIVOI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:08:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:47422 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647AbaIVOIY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:08:24 -0400
-Message-ID: <54202D53.4090202@kernel.dk>
-Date: Mon, 22 Sep 2014 08:08:19 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754101AbaIVOJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:09:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37604 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753486AbaIVOJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 10:09:55 -0400
+Date: Mon, 22 Sep 2014 16:09:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+cc: Ping Cheng <pinglinux@gmail.com>, killertofu@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: wacom: fix timeout on probe for some wacoms
+In-Reply-To: <1410900999-24692-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1409221608420.5523@pobox.suse.cz>
+References: <1410900999-24692-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: fix blk_abort_request on blk-mq
-References: <1411394371-16254-1-git-send-email-hch@lst.de> <1411394371-16254-2-git-send-email-hch@lst.de>
-In-Reply-To: <1411394371-16254-2-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-22 07:59, Christoph Hellwig wrote:
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+On Tue, 16 Sep 2014, Benjamin Tissoires wrote:
+
+> Some Wacom tablets (at least the ISDv4 found in the Lenovo X230) timeout
+> during probe while retrieving the input reports.
+> The only time this information is valuable is during the feature_mapping
+> stage, so we can ask for it there and discard the generic input reports
+> retrieval.
+> 
+> This gives a code path closer to the wacom.ko driver when it was in the
+> input subtree (not HID).
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 > ---
->   block/blk-mq.c      | 2 +-
->   block/blk-timeout.c | 5 ++++-
->   block/blk.h         | 2 ++
->   3 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/block/blk.h b/block/blk.h
-> index e515a28..159e973 100644
-> --- a/block/blk.h
-> +++ b/block/blk.h
-> @@ -250,4 +250,6 @@ static inline int blk_throtl_init(struct request_queue *q) { return 0; }
->   static inline void blk_throtl_exit(struct request_queue *q) { }
->   #endif /* CONFIG_BLK_DEV_THROTTLING */
->
-> +extern void blk_mq_rq_timed_out(struct request *req, bool reserved);
+> 
+> Hi Jiri,
+> 
+> I run into this today while trying to improve the generic support of the ISDv4
+> sensors (those found on laptops not sold by Wacom).
+> This is a regression from 3.16, in a sense that it can add up to 10 seconds to
+> the boot of the laptop. So IMO, this should go as a fix for 3.17-rc6.
+> 
+> Unfortunately, c64d883476 changed the ABI and wacom_get_report() takes now one
+> less argument. I based my patch on top of the for-3.18/wacom branch, so in 3.17,
+> it will not compile.
+> I would personally be in favor of having c64d883476 and this one in 3.17, but
+> c64d883476 will also require some manual conflict resolution (cherry-pick is
+> complaining).
+> I can also resend it based on the v3.17-rc5 tag, but then we will have to update
+> the for-3.18/wacom when you will merge with Linus' tree.
 
-Moving this to blk-mq.h.
+Hi Benjamin,
 
-Applied.
+c64d883476 is not really a rc7 material, so I'd not like to be 
+cherry-picking it for this.
+
+My take on this would actually be to apply to for-3.18/wacom, mark it for 
+stable, and then make sure that c64d883476 makes it to the first 
+3.17-stable.
+
+What do you think?
 
 -- 
-Jens Axboe
-
+Jiri Kosina
+SUSE Labs
