@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515AbaIVIfY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 04:35:24 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:43322 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaIVIfV (ORCPT
+	id S1753532AbaIVIfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 04:35:45 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:46354 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaIVIfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 04:35:21 -0400
-Date: Mon, 22 Sep 2014 10:35:18 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>
-Subject: Re: [PATCH] drm/panel: update innolux n116bge timings
-Message-ID: <20140922083517.GF1470@ulmo>
-References: <1409626606-15225-1-git-send-email-djkurtz@chromium.org>
- <CAGS+omDXZ6TONNuUaLkCGwMzuZ12OGQ0Ju8Jvsij4LW+drp2Lw@mail.gmail.com>
+	Mon, 22 Sep 2014 04:35:42 -0400
+Message-ID: <541FDF5A.5060709@gmail.com>
+Date: Mon, 22 Sep 2014 10:35:38 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vKFfOv5t3oGVpiF+"
-Content-Disposition: inline
-In-Reply-To: <CAGS+omDXZ6TONNuUaLkCGwMzuZ12OGQ0Ju8Jvsij4LW+drp2Lw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Krzysztof Kozlowski <k.kozlowski.k.linux@gmail.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: kgene.kim@samsung.com, s.nawrocki@samsung.com, mturquette@linaro.org,
+        naushad@samsung.com
+Subject: Re: [PATCH] clk: samsung: exynos3250: fix width and shift of div_spi0_isp
+ clock
+References: <1410263697-768-1-git-send-email-pankaj.dubey@samsung.com> <540EEF33.9010207@gmail.com>
+In-Reply-To: <540EEF33.9010207@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09.09.2014 14:14, Krzysztof Kozlowski wrote:
+> On 09.09.2014 13:54, Pankaj Dubey wrote:
+>> Update shift and width field of div_spi0_isp clock as per Exynos3250
+>> user manual.
+>>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>   drivers/clk/samsung/clk-exynos3250.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
---vKFfOv5t3oGVpiF+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applied for next.
 
-On Sun, Sep 21, 2014 at 03:53:51PM +0800, Daniel Kurtz wrote:
-> Hi Thierry,
->=20
-> Congratulations!  I saw in one thread that you said you are out on
-> paternity leave.
-
-Thanks.
-
-> You mentioned that you would be back around v3.17-rc6, which should be
-> soonish, so just a gentle ping on this patch for when you return.
-
-I'm back to work starting today but catching up on a lot of email, so
-it might take me a little to get to the bottom of this.
-
-Thierry
-
---vKFfOv5t3oGVpiF+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUH99FAAoJEN0jrNd/PrOhEawP/0YQLEpxzcbJ+V+YAeKSS2iY
-wThxGvtbstDyphGJM/JBuGc/b5uhpnAJxHSnZoIun04Uf5BC8wCyRqT1zV8kld53
-GGxvjBqJTfme7YxpjjRcnLt3n4u2T+TQhKbV3CxZc2CTo3tT3AfF4CMWgHxXosAF
-piGv9Q0emsGs+6Jl19NjYImX9nn8klHDtu2gM0nLHNk6Fjc+Uo9BhKfZDLmJK6Iy
-Lun3dxO/YgR/oLBBVj2Unz9EymsTJOPxmRstDbCraqJyWLBT8IMRqG3KnSyGpHSo
-qK9grmQYWJXEDZJxHgT+wNg3AVhi8zG7lTo/oFTVQ06xhF2FN3WXjsYEEmCcD2g6
-urWAUCfx5SCmJhwBGgw0Axnb6+P0A7ta16I3KPF2Yb9SoRpvAkXj0nn6glL+emmH
-m1t21nKPx0mJRpkECCrSuB6/Ka/wZgOITf6aEYu9S/SLXBCpuvweVdWUywRAajGb
-dEWLLofHKEHv1KjFNzQ+bS6GqR3xe1YCSd0mT4ByRr0LjpviLdlXUyL330viNJzF
-YNLTVHlivl+8K2+k0PSArJsej1Olnvm9qK0vLWqRHLutFyrO3a1WtF/AY1a+vCrp
-x6HCHrIIUl8JEhJjCjzrAvivNkhlW4iGkRE7dJzwlPElLekE7GcUTEBQaJwf6nJW
-02IRUPmMZM0cfOsA71II
-=tJQ9
------END PGP SIGNATURE-----
-
---vKFfOv5t3oGVpiF+--
+Best regards,
+Tomasz
