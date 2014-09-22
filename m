@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaIVN15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 09:27:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59770 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753988AbaIVN1z (ORCPT
+	id S1754086AbaIVNdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 09:33:15 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:29534 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558AbaIVNdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 09:27:55 -0400
-Date: Mon, 22 Sep 2014 14:27:43 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus <magnus.damm@gmail.com>, Simon <horms@verge.net.au>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH][resend] of: Add vendor 2nd prefix for Asahi Kasei Corp
-Message-ID: <20140922132743.GM3290@leverpostej>
-References: <20140611165410.GK5099@sirena.org.uk>
- <CAMuHMdUT0hEBGbN+W-Oz5zJ0N8S2VDMndqtDO=EtWF3jG2MEew@mail.gmail.com>
- <20140611170233.GL5099@sirena.org.uk>
- <5398A53D.3020706@wwwdotorg.org>
- <20140611190444.GN5099@sirena.org.uk>
- <5398AB07.4040304@wwwdotorg.org>
- <87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
- <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>
- <20140922130026.GK3290@leverpostej>
- <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
+	Mon, 22 Sep 2014 09:33:13 -0400
+From: Markos Chandras <markos.chandras@imgtec.com>
+To: <linux-mips@linux-mips.org>
+CC: Markos Chandras <markos.chandras@imgtec.com>,
+        Steven Rostedt <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] MIPS: mcount: Fix selfpc address for static trace
+Date: Mon, 22 Sep 2014 14:32:59 +0100
+Message-ID: <1411392779-9554-3-git-send-email-markos.chandras@imgtec.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1411392779-9554-1-git-send-email-markos.chandras@imgtec.com>
+References: <1411392779-9554-1-git-send-email-markos.chandras@imgtec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 02:24:24PM +0100, Geert Uytterhoeven wrote:
-> Hi Mark,
+According to Documentation/trace/ftrace-design.txt, the selfpc
+should be the return address minus the mcount overhead (8 bytes).
+This brings static trace in line with the dynamic trace regarding
+the selfpc argument to the tracing function.
 
-Hi Geert,
+This also removes the magic number '8' with the proper
+MCOUNT_INSN_SIZE.
 
-> On Mon, Sep 22, 2014 at 3:00 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> > Given all that, I think we should get rid of the "ak" prefix entirely,
-> > fix up the seaboard dts, and leave the legacy matching for "ak,ak8975"
-> > up to the i2c framework. However, that would imply deleting from
-> > vendor-prefixes.txt (if we want people to be warned on use of "ak"), and
-> > that's not a good precedent to set.
-> 
-> Instead of deleting, we can deprecate, like was done for powervr:
-> 
-> powervr PowerVR (deprecated, use img)
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+---
+ arch/mips/kernel/mcount.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Ah. I tried to see if we had any deprecated bindings, but I somehow
-failed to search correctly and missed powervr.
+diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
+index 2f7c734771f4..3af48b7c7a47 100644
+--- a/arch/mips/kernel/mcount.S
++++ b/arch/mips/kernel/mcount.S
+@@ -79,7 +79,7 @@ _mcount:
+ 	PTR_S	MCOUNT_RA_ADDRESS_REG, PT_R12(sp)
+ #endif
+ 
+-	PTR_SUBU a0, ra, 8	/* arg1: self address */
++	PTR_SUBU a0, ra, MCOUNT_INSN_SIZE /* arg1: self address */
+ 	PTR_LA   t1, _stext
+ 	sltu     t2, a0, t1	/* t2 = (a0 < _stext) */
+ 	PTR_LA   t1, _etext
+@@ -138,7 +138,7 @@ NESTED(_mcount, PT_SIZE, ra)
+ static_trace:
+ 	MCOUNT_SAVE_REGS
+ 
+-	move	a0, ra		/* arg1: self return address */
++	PTR_SUBU a0, ra, MCOUNT_INSN_SIZE	/* arg1: self address */
+ 	jalr	t2		/* (1) call *ftrace_trace_function */
+ 	 move	a1, AT		/* arg2: parent's return address */
+ 
+-- 
+2.1.0
 
-> Still missing is an update for checkpatch to warn when a deprecated
-> vendor prefix is used.
-
-Marking it deprecated and warning with checkpatch is certainly
-preferable.
-
-Mark.
