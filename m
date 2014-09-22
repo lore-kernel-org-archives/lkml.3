@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaIVFcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 01:32:09 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:47911 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaIVFcH (ORCPT
+	id S1752763AbaIVFej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 01:34:39 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:43076 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaIVFeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 01:32:07 -0400
-Message-ID: <541FB42C.7010704@linaro.org>
-Date: Mon, 22 Sep 2014 07:31:24 +0200
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 22 Sep 2014 01:34:37 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: linux-next: build failure after merge of the kvm-arm tree
-References: <20140922140645.7c2ad9c8@canb.auug.org.au> <541FAE98.6080806@linaro.org>
-In-Reply-To: <541FAE98.6080806@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <Pine.LNX.4.44L0.1409181048290.894-100000@iolanthe.rowland.org>
+References: <1411014258-17877-1-git-send-email-gautam.vivek@samsung.com>
+	<Pine.LNX.4.44L0.1409181048290.894-100000@iolanthe.rowland.org>
+Date: Mon, 22 Sep 2014 11:04:36 +0530
+X-Google-Sender-Auth: xqHcaAgtjMG1Yc8QjmJMg4WOyJ0
+Message-ID: <CAFp+6iGXLKhtGaHm=dFDGCpN38G=w6mX0PuatskBhvcL_HA=Bg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] usb: host: ehci-exynos: Remove unnecessary usb-phy support
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 07:07 AM, Eric Auger wrote:
-> Dear all,
-> 
-> Thanks Stephen for reporting the problem. Indeed removing irq.h header
-> file is no more possible since commit
-> c77dcacb397519b6ade8f08201a4a90a7f4f751e, "KVM: Move more code under
-> CONFIG_HAVE_KVM_IRQFD" which moves among other things
-> kvm_register_irq_ack_notifier and kvm_unregister_irq_ack_notifier in
-> eventfd.c.
-
-Hi,
-
-kvm_register_irq_ack_notifier and kvm_unregister_irq_ack_notifier were
-already included in Paul's patch,
-commit e4d57e1ee1ab59f0cef0272800ac6c52e0ec814a, KVM: Move irq notifier
-implementation into eventfd.c and just moved in above patch.
-
-So I completely missed this ioapic function.
-
-You can remove my commit. No commit does depend on it yet.
-
-Thanks
-
-Eric
-> 
-> including virt/kvm/ioapic.h might fix the problem but I am OoO next week
-> and cannot investigate further right now.
-> 
-> Please can you remove that commit. Sorry for the inconvenience.
-> 
-> Best Regards
-> 
-> Eric
-> 
-> 
-> On 09/22/2014 06:06 AM, Stephen Rothwell wrote:
->> Hi all,
+On Thu, Sep 18, 2014 at 8:20 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Thu, 18 Sep 2014, Vivek Gautam wrote:
+>
+>> Now that we have completely moved from older USB-PHY drivers
+>> to newer GENERIC-PHY drivers for PHYs available with USB controllers
+>> on Exynos series of SoCs, we can remove the support for the same
+>> in our host drivers too.
 >>
->> After merging the kvm-arm tree, today's linux-next build (x86_64 allmodconfig)
->> failed like this:
->>
->> arch/x86/kvm/../../../virt/kvm/eventfd.c: In function 'kvm_register_irq_ack_notifier':
->> arch/x86/kvm/../../../virt/kvm/eventfd.c:493:2: error: implicit declaration of function 'kvm_vcpu_request_scan_ioapic' [-Werror=implicit-function-declaration]
->>   kvm_vcpu_request_scan_ioapic(kvm);
->>   ^
->>
->> Probably caused by commit 0ba09511ddc3 ("KVM: EVENTFD: remove inclusion
->> of irq.h").
->>
->> I have used the kvm-arm tree from next-20140919 for today.
->>
-> 
+>> We also defer the probe for our host in case we end up getting
+>> EPROBE_DEFER error when getting PHYs.
+>
+> Better now.  But I didn't notice this the first time:
+>
+>> +             if (IS_ERR(phy)) {
+>> +                     ret = PTR_ERR(phy);
+>> +                     if (ret == -EPROBE_DEFER) {
+>> +                             return ret;
+>> +                     } else if (ret != -ENOSYS && ret != -ENODEV) {
+>> +                             dev_err(dev,
+>> +                                     "Error retrieving usb2 phy: %d\n", ret);
+>> +                             return PTR_ERR(phy);
+>
+> It doesn't make any real difference, but wouldn't you prefer to say
+> "return ret" here?
 
+sure, will update this.
+
+>
+> With or without that change, for both these two patches:
+>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
