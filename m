@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaIVOMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 10:12:50 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45455 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137AbaIVOMr (ORCPT
+	id S1754211AbaIVOOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 10:14:34 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:36704 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871AbaIVOOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 10:12:47 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, tomasz.figa@gmail.com,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v12 01/10] clk: Export __clk_put and __clk_get so they can be used by modules
-Date: Mon, 22 Sep 2014 16:12:03 +0200
-Message-Id: <1411395124-2476-2-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com>
+	Mon, 22 Sep 2014 10:14:33 -0400
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: dann frazier <dannf@hp.com>, Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH] rtc-efi: Add missing module alias
+Date: Mon, 22 Sep 2014 16:13:45 +0200
+Message-Id: <1411395225-11159-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed for the split between provider and user clk APIs, for clocks
-that are implemented in modules.
+Without proper alias kernel module is not loaded for rtc-efi driver
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 ---
- drivers/clk/clk.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/rtc/rtc-efi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index b76fa69..5db9710 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2197,6 +2197,7 @@ int __clk_get(struct clk *clk)
- 	}
- 	return 1;
- }
-+EXPORT_SYMBOL(__clk_get);
+diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
+index 8225b89..c384fec 100644
+--- a/drivers/rtc/rtc-efi.c
++++ b/drivers/rtc/rtc-efi.c
+@@ -232,6 +232,7 @@ static struct platform_driver efi_rtc_driver = {
  
- void __clk_put(struct clk *clk)
- {
-@@ -2209,6 +2210,7 @@ void __clk_put(struct clk *clk)
+ module_platform_driver_probe(efi_rtc_driver, efi_rtc_probe);
  
- 	module_put(clk->owner);
- }
-+EXPORT_SYMBOL(__clk_put);
- 
- /***        clk rate change notifiers        ***/
- 
++MODULE_ALIAS("platform:rtc-efi");
+ MODULE_AUTHOR("dann frazier <dannf@hp.com>");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("EFI RTC driver");
 -- 
-1.9.3
+1.7.9.5
 
