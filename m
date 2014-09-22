@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647AbaIVTRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 15:17:20 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:38260 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408AbaIVTRR (ORCPT
+	id S1754731AbaIVTSU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 15:18:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55840 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164AbaIVTSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 15:17:17 -0400
-Date: Mon, 22 Sep 2014 13:17:14 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: gregkh@linuxfoundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pci/pci-sysfs: Set pci interface in uppercase
-Message-ID: <20140922191714.GC1880@google.com>
-References: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
+	Mon, 22 Sep 2014 15:18:18 -0400
+Date: Mon, 22 Sep 2014 12:18:16 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tero Kristo <t-kristo@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, tony@atomide.com,
+        nm@ti.com, mturquette@linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: prevent erronous parsing of children during rate
+ change
+Message-ID: <20140922191816.GF10233@codeaurora.org>
+References: <1408628866-32351-1-git-send-email-t-kristo@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409144277-23379-1-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1408628866-32351-1-git-send-email-t-kristo@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 02:57:57PM +0200, Ricardo Ribalda Delgado wrote:
-> There is a missmatch between the way file2alias generates the modalias
-> and the way the pci driver generates it.
+On 08/21, Tero Kristo wrote:
+> In some cases, clocks can switch their parent with clk_set_rate, for
+> example clk_mux can do this in some cases. Current implementation of
+> clk_change_rate uses un-safe list iteration on the clock children, which
+> will cause wrong clocks to be parsed in case any of the clock children
+> change their parents during the change rate operation. Fixed by using
+> the safe list iterator instead.
 > 
-> Some implementations of modprobe will fail to load the driver for a pci
-> device automatically when the pci interface is defined on the driver. As
-> one will be in uppercase and the other in lowercase.
+> The problem was detected due to some divide by zero errors generated
+> by clock init on dra7-evm board, see discussion under
+> http://article.gmane.org/gmane.linux.ports.arm.kernel/349180 for details.
 > 
-> Fortunatelly not many drivers define this.
-> 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-
-Applied to pci/enumeration for v3.18, with Greg's ack and marked for
-stable.
-
+> Signed-off-by: Tero Kristo <t-kristo@ti.com>
+> To: Mike Turquette <mturquette@linaro.org>
+> Reported-by: Nishanth Menon <nm@ti.com>
 > ---
->  drivers/pci/pci-sysfs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/clk/clk.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 9ff0a90..76ef791 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -177,7 +177,7 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index b76fa69..bacc06f 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1467,6 +1467,7 @@ static struct clk *clk_propagate_rate_change(struct clk *clk, unsigned long even
+>  static void clk_change_rate(struct clk *clk)
 >  {
->  	struct pci_dev *pci_dev = to_pci_dev(dev);
+>  	struct clk *child;
+> +	struct hlist_node *tmp;
+>  	unsigned long old_rate;
+>  	unsigned long best_parent_rate = 0;
+>  	bool skip_set_rate = false;
+> @@ -1502,7 +1503,11 @@ static void clk_change_rate(struct clk *clk)
+>  	if (clk->notifier_count && old_rate != clk->rate)
+>  		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
 >  
-> -	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
-> +	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
->  		       pci_dev->vendor, pci_dev->device,
->  		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
->  		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
-> -- 
-> 2.1.0
-> 
+> -	hlist_for_each_entry(child, &clk->children, child_node) {
+> +	/*
+> +	 * Use safe iteration, as change_rate can actually swap parents
+> +	 * for certain clock types.
+> +	 */
+> +	hlist_for_each_entry_safe(child, tmp, &clk->children, child_node) {
+>  		/* Skip children who will be reparented to another clock */
+>  		if (child->new_parent && child->new_parent != clk)
+>  			continue;
+
+Are we not hitting the new_parent check here? I don't understand
+how we can be changing parents here unless the check is being
+avoided, in which case I wonder why determine_rate isn't being
+used.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
