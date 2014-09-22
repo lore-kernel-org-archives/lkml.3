@@ -1,161 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671AbaIVLnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 07:43:24 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52491 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372AbaIVLnW convert rfc822-to-8bit (ORCPT
+	id S1753823AbaIVLpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 07:45:34 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:47753 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753505AbaIVLpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 07:43:22 -0400
-Date: Mon, 22 Sep 2014 12:43:17 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sunil Goutham <sunil.goutham@caviumnetworks.com>
-Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
- bridge resources from DT
-Message-ID: <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
- <1411003825-21521-9-git-send-email-Liviu.Dudau@arm.com>
- <20140922093228.GA20256@rric.localhost>
+	Mon, 22 Sep 2014 07:45:33 -0400
+Message-ID: <54200BD2.3040204@de.ibm.com>
+Date: Mon, 22 Sep 2014 13:45:22 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-In-Reply-To: <20140922093228.GA20256@rric.localhost>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 22 Sep 2014 11:43:18.0804 (UTC) FILETIME=[67733D40:01CFD65A]
-X-MC-Unique: 114092212432000301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+CC: Cornelia Huck <cornelia.huck@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>, linux-s390@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio: unify config_changed handling
+References: <1411370391-12291-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1411370391-12291-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092211-0542-0000-0000-000000DD3CC6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:32:28AM +0100, Robert Richter wrote:
-> On 18.09.14 02:30:23, Liviu Dudau wrote:
-> > +int of_pci_get_host_bridge_resources(struct device_node *dev,
-> > +			unsigned char busno, unsigned char bus_max,
-> > +			struct list_head *resources, resource_size_t *io_base)
-> > +{
-> > +	struct resource *res;
-> > +	struct resource *bus_range;
-> > +	struct of_pci_range range;
-> > +	struct of_pci_range_parser parser;
-> > +	char range_type[4];
-> > +	int err;
-> > +
-> > +	if (!io_base)
-> > +		return -EINVAL;
-> > +	*io_base = OF_BAD_ADDR;
+On 09/22/2014 09:20 AM, Michael S. Tsirkin wrote:
+> Replace duplicated code in all transports with a single wrapper in
+> virtio.c.
 > 
-
-Hi Robert,
-
-> This breaks for mem-mapped pci host controllers. The patch below fixes
-> this.
-
-I think you mean PCI host controller that have only memory mapped ranges,
-am I right? Initially I've read your reply as to mean that the host
-controller is accessed through some memory mapped area, which I believe is
-the case for all host controllers.
-
+> The only functional change is in virtio_mmio.c: if a buggy device sends
+> us an interrupt before driver is set, we previously returned IRQ_NONE,
+> now we return IRQ_HANDLED.
 > 
-> This series was tested with the fix on top for Cavium Thunder.
+> As this must not happen in practice, this does not look like a big deal.
 > 
-> Tested-by: Robert Richter <rrichter@cavium.com>
+> See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
+> 	virtio-pci: do not oops on config change if driver not loaded.
+> for the original motivation behind the driver check.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Thanks for that!
+please fold in the whitespace fix, 
 
-> 
-> -Robert
-> 
-> 
-> 
-> From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
-> From: Robert Richter <rrichter@cavium.com>
-> Date: Mon, 22 Sep 2014 10:46:01 +0200
-> Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
-> 
-> The pci host bridge was not created if io_base was not set when
-> calling of_pci_get_host_bridge_resources(). This is esp. the case for
-> mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
-> parameter io_base is optional now.
+Reviewed-by: Christian Borntraeger <borntraeger@d.ibm.com> # s390 parts
 
-I think the message is misleading. What you want to do is make io_base
-optional for the case where the PCI host bridge only expects to have only
-IORESOURCE_MEM ranges and doesn't care about IORESOURCE_IO ones.
-
-As I'm going to touch this area again to address a comment from Bjorn,
-do you mind if I roll this patch into mine with your Signed-off-by and
-the mention that you have made io_base optional?
-
-Best regards,
-Liviu
-
-> 
-> Signed-off-by: Robert Richter <rrichter@cavium.com>
 > ---
->  drivers/of/of_pci.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
+>  include/linux/virtio.h             |  2 ++
+>  drivers/misc/mic/card/mic_virtio.c |  6 +-----
+>  drivers/s390/kvm/kvm_virtio.c      |  9 +--------
+>  drivers/s390/kvm/virtio_ccw.c      |  6 +-----
+>  drivers/virtio/virtio.c            | 10 ++++++++++
+>  drivers/virtio/virtio_mmio.c       |  7 ++-----
+>  drivers/virtio/virtio_pci.c        |  6 +-----
+>  7 files changed, 18 insertions(+), 28 deletions(-)
 > 
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index ffdb45ed8682..1f0e7c2505ee 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -182,9 +182,8 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
->  	char range_type[4];
->  	int err;
->  
-> -	if (!io_base)
-> -		return -EINVAL;
-> -	*io_base = OF_BAD_ADDR;
-> +	if (io_base)
-> +		*io_base = OF_BAD_ADDR;
->  
->  	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
->  	if (!bus_range)
-> @@ -242,7 +241,7 @@ int of_pci_get_host_bridge_resources(struct device_node *dev,
->  			goto parse_failed;
->  		}
->  
-> -		if (resource_type(res) == IORESOURCE_IO) {
-> +		if (io_base && resource_type(res) == IORESOURCE_IO) {
->  			if (*io_base != OF_BAD_ADDR)
->  				pr_warn("More than one I/O resource converted. CPU offset for old range lost!\n");
->  			*io_base = range.cpu_addr;
-> -- 
-> 2.1.0
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index b46671e..3c19bd3 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -108,6 +108,8 @@ void unregister_virtio_device(struct virtio_device *dev);
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  void virtio_break_device(struct virtio_device *dev);
 > 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+> +void virtio_config_changed(struct virtio_device *dev);
+> +
+>  /**
+>   * virtio_driver - operations for a virtio I/O driver
+>   * @driver: underlying device driver (populate name and owner).
+> diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
+> index f14b600..e647947 100644
+> --- a/drivers/misc/mic/card/mic_virtio.c
+> +++ b/drivers/misc/mic/card/mic_virtio.c
+> @@ -462,16 +462,12 @@ static void mic_handle_config_change(struct mic_device_desc __iomem *d,
+>  	struct mic_device_ctrl __iomem *dc
+>  		= (void __iomem *)d + mic_aligned_desc_size(d);
+>  	struct mic_vdev *mvdev = (struct mic_vdev *)ioread64(&dc->vdev);
+> -	struct virtio_driver *drv;
+> 
+>  	if (ioread8(&dc->config_change) != MIC_VIRTIO_PARAM_CONFIG_CHANGED)
+>  		return;
+> 
+>  	dev_dbg(mdrv->dev, "%s %d\n", __func__, __LINE__);
+> -	drv = container_of(mvdev->vdev.dev.driver,
+> -				struct virtio_driver, driver);
+> -	if (drv->config_changed)
+> -		drv->config_changed(&mvdev->vdev);
+> +	virtio_config_changed(&mvdev->vdev);
+>  	iowrite8(1, &dc->guest_ack);
+>  }
+> 
+> diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
+> index a134965..6431290 100644
+> --- a/drivers/s390/kvm/kvm_virtio.c
+> +++ b/drivers/s390/kvm/kvm_virtio.c
+> @@ -406,15 +406,8 @@ static void kvm_extint_handler(struct ext_code ext_code,
+> 
+>  	switch (param) {
+>  	case VIRTIO_PARAM_CONFIG_CHANGED:
+> -	{
+> -		struct virtio_driver *drv;
+> -		drv = container_of(vq->vdev->dev.driver,
+> -				   struct virtio_driver, driver);
+> -		if (drv->config_changed)
+> -			drv->config_changed(vq->vdev);
+> -
+> +		virtio_config_changed(vq->vdev);
+>  		break;
+> -	}
+>  	case VIRTIO_PARAM_DEV_ADD:
+>  		schedule_work(&hotplug_work);
+>  		break;
+> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> index d2c0b44..6cbe6ef 100644
+> --- a/drivers/s390/kvm/virtio_ccw.c
+> +++ b/drivers/s390/kvm/virtio_ccw.c
+> @@ -940,11 +940,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
+>  		vring_interrupt(0, vq);
+>  	}
+>  	if (test_bit(0, &vcdev->indicators2)) {
+> -		drv = container_of(vcdev->vdev.dev.driver,
+> -				   struct virtio_driver, driver);
+> -
+> -		if (drv && drv->config_changed)
+> -			drv->config_changed(&vcdev->vdev);
+> +		virtio_config_changed(&vcdev->vdev);
+>  		clear_bit(0, &vcdev->indicators2);
+>  	}
+>  }
+> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+> index fed0ce1..470b74f 100644
+> --- a/drivers/virtio/virtio.c
+> +++ b/drivers/virtio/virtio.c
+> @@ -239,6 +239,16 @@ void unregister_virtio_device(struct virtio_device *dev)
+>  }
+>  EXPORT_SYMBOL_GPL(unregister_virtio_device);
+> 
+> +void virtio_config_changed(struct virtio_device *dev)
+> +{
+> +        struct virtio_driver *drv = container_of(dev->dev.driver,
+> +						 struct virtio_driver, driver);
+> +
+> +	if (drv && drv->config_changed)
+> +		drv->config_changed(dev);
+> +}
+> +EXPORT_SYMBOL_GPL(virtio_config_changed);
+> +
+>  static int virtio_init(void)
+>  {
+>  	if (bus_register(&virtio_bus) != 0)
+> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+> index c600ccf..ef9a165 100644
+> --- a/drivers/virtio/virtio_mmio.c
+> +++ b/drivers/virtio/virtio_mmio.c
+> @@ -234,8 +234,6 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
+>  {
+>  	struct virtio_mmio_device *vm_dev = opaque;
+>  	struct virtio_mmio_vq_info *info;
+> -	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
+> -			struct virtio_driver, driver);
+>  	unsigned long status;
+>  	unsigned long flags;
+>  	irqreturn_t ret = IRQ_NONE;
+> @@ -244,9 +242,8 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
+>  	status = readl(vm_dev->base + VIRTIO_MMIO_INTERRUPT_STATUS);
+>  	writel(status, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
+> 
+> -	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)
+> -			&& vdrv && vdrv->config_changed) {
+> -		vdrv->config_changed(&vm_dev->vdev);
+> +	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
+> +		virtio_config_changed(&vm_dev->vdev);
+>  		ret = IRQ_HANDLED;
+>  	}
+> 
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index 3d1463c..58f7e45 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -211,12 +211,8 @@ static bool vp_notify(struct virtqueue *vq)
+>  static irqreturn_t vp_config_changed(int irq, void *opaque)
+>  {
+>  	struct virtio_pci_device *vp_dev = opaque;
+> -	struct virtio_driver *drv;
+> -	drv = container_of(vp_dev->vdev.dev.driver,
+> -			   struct virtio_driver, driver);
+> 
+> -	if (drv && drv->config_changed)
+> -		drv->config_changed(&vp_dev->vdev);
+> +	virtio_config_changed(&vp_dev->vdev);
+>  	return IRQ_HANDLED;
+>  }
+> 
 
