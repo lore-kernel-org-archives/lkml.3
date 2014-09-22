@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaIVPHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 11:07:20 -0400
-Received: from resqmta-po-05v.sys.comcast.net ([96.114.154.164]:56349 "EHLO
-	resqmta-po-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754021AbaIVPHO (ORCPT
+	id S1754289AbaIVPHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 11:07:31 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37374 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754255AbaIVPH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 11:07:14 -0400
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: m.chehab@samsung.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, crope@iki.fi, olebowle@gmx.com,
-        dheitmueller@kernellabs.co, hverkuil@xs4all.nl, ramakrmu@cisco.com,
-        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: [PATCH 4/5] media: dvb-core changes to use media tuner token api
-Date: Mon, 22 Sep 2014 09:00:48 -0600
-Message-Id: <cc4b6198b88277b2c0d56d288bde0e4c35e14d8b.1411397045.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1411397045.git.shuahkh@osg.samsung.com>
-References: <cover.1411397045.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1411397045.git.shuahkh@osg.samsung.com>
-References: <cover.1411397045.git.shuahkh@osg.samsung.com>
+	Mon, 22 Sep 2014 11:07:27 -0400
+Date: Mon, 22 Sep 2014 16:06:58 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v12 00/10] Per-user clock constraints
+Message-ID: <20140922150658.GM5182@n2100.arm.linux.org.uk>
+References: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change to hold media tuner token exclusive mode in
-dvb_frontend_start() before starting the dvb thread
-and release from dvb_frontend_thread() when thread
-exits. dvb frontend thread is started only when the
-dvb device is opened in Read/Write mode.
+On Mon, Sep 22, 2014 at 04:12:02PM +0200, Tomeu Vizoso wrote:
+> Hello,
+> 
+> my branch was finally processed by the 0day build farm and I have fixed the
+> three issues that came up:
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
----
- drivers/media/dvb-core/dvb_frontend.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+Patch 3 did not come through, so I can't see the changes there.  I'm
+assuming that there's some changes to clkdev in there which I need to
+see.
 
-diff --git a/drivers/media/dvb-core/dvb_frontend.c b/drivers/media/dvb-core/dvb_frontend.c
-index c862ad7..22833c6 100644
---- a/drivers/media/dvb-core/dvb_frontend.c
-+++ b/drivers/media/dvb-core/dvb_frontend.c
-@@ -41,6 +41,7 @@
- #include <linux/jiffies.h>
- #include <linux/kthread.h>
- #include <asm/processor.h>
-+#include <linux/media_tknres.h>
- 
- #include "dvb_frontend.h"
- #include "dvbdev.h"
-@@ -742,6 +743,7 @@ restart:
- 	if (semheld)
- 		up(&fepriv->sem);
- 	dvb_frontend_wakeup(fe);
-+	media_put_tuner_tkn(fe->dvb->device, MEDIA_MODE_DVB);
- 	return 0;
- }
- 
-@@ -836,6 +838,13 @@ static int dvb_frontend_start(struct dvb_frontend *fe)
- 	fepriv->state = FESTATE_IDLE;
- 	fe->exit = DVB_FE_NO_EXIT;
- 	fepriv->thread = NULL;
-+
-+	ret = media_get_tuner_tkn(fe->dvb->device, MEDIA_MODE_DVB);
-+	if (ret == -EBUSY) {
-+		dev_info(fe->dvb->device, "dvb: Tuner is busy\n");
-+		return ret;
-+	}
-+
- 	mb();
- 
- 	fe_thread = kthread_run(dvb_frontend_thread, fe,
-@@ -846,6 +855,7 @@ static int dvb_frontend_start(struct dvb_frontend *fe)
- 				"dvb_frontend_start: failed to start kthread (%d)\n",
- 				ret);
- 		up(&fepriv->sem);
-+		media_put_tuner_tkn(fe->dvb->device, MEDIA_MODE_DVB);
- 		return ret;
- 	}
- 	fepriv->thread = fe_thread;
+> * export __clk_get and __clk_put, so they can be used by clock implementations
+> in modules that previously used clk_get and clk_put.
+
+This is something I'm not happy about.  We don't want people getting
+access to these low level functions.
+
 -- 
-1.7.10.4
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
