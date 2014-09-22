@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaIVQLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 12:11:45 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:61074 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaIVQLn (ORCPT
+	id S1754430AbaIVQNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 12:13:45 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:56482 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501AbaIVQNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 12:11:43 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 22 Sep 2014 18:08:44 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] mfd: viperboard: allocate I/O buffer separately
-Message-ID: <20140922160844.GK5237@localhost>
-References: <1411397212-31625-1-git-send-email-octavian.purdila@intel.com>
+	Mon, 22 Sep 2014 12:13:44 -0400
+X-Originating-IP: 75.92.167.159
+Date: Mon, 22 Sep 2014 09:13:31 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] bloat-o-meter: Ignore syscall aliases SyS_ and compat_SyS_
+Message-ID: <20140922161327.GA25256@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411397212-31625-1-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 05:46:52PM +0300, Octavian Purdila wrote:
-> Currently the I/O buffer is allocated part of the device status
-> structure, potentially sharing the same cache line with other members
-> in this structure.
-> 
-> Allocate the buffer separately, to avoid the I/O operations corrupting
-> the device status structure due to cache line sharing.
-> 
-> Compiled tested only, as I don't have access to hardware.
-> 
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> ---
+This avoids double-counting size changes in syscall implementations.
 
-Change itself looks sane, although the driver's use of a shared buffer
-and relying on undocumented locking is a different story.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
 
-However, you do more than your commit message claims below.
+Posting for review.  I can upstream this through my new tiny tree.
 
->  drivers/mfd/viperboard.c       | 16 ++++++++++------
->  include/linux/mfd/viperboard.h |  2 +-
->  2 files changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
-> index e00f534..d27c131 100644
-> --- a/drivers/mfd/viperboard.c
-> +++ b/drivers/mfd/viperboard.c
-> @@ -59,9 +59,13 @@ static int vprbrd_probe(struct usb_interface *interface,
->  
->  	/* allocate memory for our device state and initialize it */
->  	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
-> -	if (vb == NULL) {
-> -		dev_err(&interface->dev, "Out of memory\n");
+ scripts/bloat-o-meter | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Here you're also removing a redundant OOM message.
+diff --git a/scripts/bloat-o-meter b/scripts/bloat-o-meter
+index 549d0ab..23e78dc 100755
+--- a/scripts/bloat-o-meter
++++ b/scripts/bloat-o-meter
+@@ -20,6 +20,8 @@ def getsizes(file):
+         if type in "tTdDbBrR":
+             # strip generated symbols
+             if name.startswith("__mod_"): continue
++            if name.startswith("SyS_"): continue
++            if name.startswith("compat_SyS_"): continue
+             if name == "linux_banner": continue
+             # statics and some other optimizations adds random .NUMBER
+             name = re.sub(r'\.[0-9]+', '', name)
+-- 
+2.1.0
 
-> +	if (vb == NULL)
->  		return -ENOMEM;
-> +
-> +	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
-> +	if (vb->buf == NULL) {
-> +		ret = -ENOMEM;
-> +		goto error;
->  	}
->  
->  	mutex_init(&vb->lock);
-> @@ -103,10 +107,9 @@ static int vprbrd_probe(struct usb_interface *interface,
->  	return 0;
->  
->  error:
-> -	if (vb) {
-
-And cleaning up the error path.
-
-> -		usb_put_dev(vb->usb_dev);
-> -		kfree(vb);
-> -	}
-> +	usb_put_dev(vb->usb_dev);
-> +	kfree(vb->buf);
-> +	kfree(vb);
->  
->  	return ret;
->  }
-
-Don't mix fixes and clean ups like this, but rather submit them as
-separate patches.
-
-Johan
