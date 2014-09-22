@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985AbaIVVx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 17:53:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54778 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339AbaIVVx1 (ORCPT
+	id S1755109AbaIVVya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 17:54:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37677 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887AbaIVVy2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 17:53:27 -0400
-Date: Mon, 22 Sep 2014 14:53:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Andres Lagar-Cavilla <andreslc@google.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
-Message-Id: <20140922145325.a63c848db6ebc02b5a4e5b35@linux-foundation.org>
-In-Reply-To: <54209574.6020002@redhat.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-	<1410976308-7683-1-git-send-email-andreslc@google.com>
-	<20140918002917.GA3921@kernel>
-	<20140918061326.GC30733@minantech.com>
-	<20140919003207.GA4296@kernel>
-	<CAJu=L5_SPcqca0sBYcCLjt4hv6RQwa+QV8Fhi6t3mxz0+X=KSA@mail.gmail.com>
-	<541BC848.6080001@redhat.com>
-	<CAJu=L5-B+2POA1h0P5cO2-SBDpQpHi35bvcAxWw4G+GMaQeHCw@mail.gmail.com>
-	<54209574.6020002@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 17:54:28 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [GIT PULL] qcom SoC changes for v3.18 (updated)
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
+Date: Mon, 22 Sep 2014 16:54:21 -0500
+Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A9208907-75E3-487C-B1CF-21AF3E3B5841@codeaurora.org>
+References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
+To: arm@kernel.org
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014 23:32:36 +0200 Paolo Bonzini <pbonzini@redhat.com> wrote:
+[ some how scm-boot.c got dropped, fixed now ]
 
-> Il 22/09/2014 22:49, Andres Lagar-Cavilla ha scritto:
-> >>> > > Paolo, should I recut including the recent Reviewed-by's?
-> >> >
-> >> > No, I'll add them myself.
-> > Paolo, is this patch waiting for something? Is Gleb's Reviewed-by enough?
-> 
-> It's waiting for an Acked-by on the mm/ changes.
-> 
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-The MM changes look good to me.
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
+
+for you to fetch changes up to 6d42c5c5ce79b20139eec15dc359dfbcda3b3557:
+
+  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-22 16:49:13 -0500)
+
+----------------------------------------------------------------
+Qualcomm ARM Based SoC Updates for v3.18
+
+* Moved scm support into drivers/soc/qcom (allows for use by drivers)
+* Various bug fixes and minor feature additions to scm code
+* Added big-endian support to debug MSM uart
+
+----------------------------------------------------------------
+Lina Iyer (2):
+      ARM: qcom: Add SCM warmboot flags for quad core targets.
+      ARM: qcom: Move scm-boot files to drivers/soc and include/soc
+
+Olav Haugan (1):
+      ARM: qcom: scm: Add logging of actual return code from scm call
+
+Stephen Boyd (6):
+      ARM: debug: Update MSM and QCOM DEBUG_LL help
+      ARM: debug: msm: Support big-endian CPUs
+      ARM: qcom: scm: Fix incorrect cache invalidation
+      ARM: qcom: scm: Get cacheline size from CTR
+      ARM: qcom: scm: Move the scm driver to drivers/soc/qcom
+      ARM: qcom: scm: Add atomic SCM APIs
+
+Vikram Mulukutla (1):
+      ARM: qcom: scm: Flush the command buffer only instead of the entire cache
+
+ arch/arm/Kconfig.debug                             |   5 +-
+ arch/arm/include/debug/msm.S                       |   6 +
+ arch/arm/mach-qcom/Kconfig                         |   3 -
+ arch/arm/mach-qcom/Makefile                        |   3 -
+ arch/arm/mach-qcom/platsmp.c                       |   2 +-
+ drivers/soc/qcom/Kconfig                           |   2 +
+ drivers/soc/qcom/Makefile                          |   2 +
+ .../arm/mach-qcom => drivers/soc/qcom}/scm-boot.c  |   4 +-
+ {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c     | 131 ++++++++++++++++++---
+ .../arm/mach-qcom => include/soc/qcom}/scm-boot.h  |   2 +
+ {arch/arm/mach-qcom => include/soc/qcom}/scm.h     |   5 +-
+ 11 files changed, 137 insertions(+), 28 deletions(-)
+ rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm-boot.c (95%)
+ rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c (67%)
+ rename {arch/arm/mach-qcom => include/soc/qcom}/scm-boot.h (92%)
+ rename {arch/arm/mach-qcom => include/soc/qcom}/scm.h (80%)
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
