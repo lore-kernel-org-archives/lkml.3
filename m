@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109AbaIVVya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 17:54:30 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37677 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887AbaIVVy2 convert rfc822-to-8bit (ORCPT
+	id S1755154AbaIVVys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 17:54:48 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:45316 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130AbaIVVyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 17:54:28 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [GIT PULL] qcom SoC changes for v3.18 (updated)
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
-Date: Mon, 22 Sep 2014 16:54:21 -0500
-Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A9208907-75E3-487C-B1CF-21AF3E3B5841@codeaurora.org>
-References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
-To: arm@kernel.org
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 22 Sep 2014 17:54:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <5420991C.2000400@redhat.com>
+References: <1411410865-3603-1-git-send-email-andreslc@google.com>
+	<1411417565-15748-1-git-send-email-andreslc@google.com>
+	<5420991C.2000400@redhat.com>
+Date: Mon, 22 Sep 2014 14:54:45 -0700
+Message-ID: <CAJu=L59=QGpWWW=ghPkFyhParXB4jMepQROiQ+5ZBh235Dmepg@mail.gmail.com>
+Subject: Re: [PATCH v3] kvm: Fix page ageing bugs
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andres Lagar-Cavilla <andreslc@gooogle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ some how scm-boot.c got dropped, fixed now ]
+On Mon, Sep 22, 2014 at 2:48 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 22/09/2014 22:26, Andres Lagar-Cavilla ha scritto:
+>> +             __entry->gfn            = gfn;
+>> +             __entry->hva            = ((gfn - slot->base_gfn) >>
+>
+> This must be <<.
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+Correct, thanks.
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+>
+>> +                                         PAGE_SHIFT) + slot->userspace_addr;
+>
+>> +             /*
+>> +              * No need for _notify because we're called within an
+>> +              * mmu_notifier_invalidate_range_ {start|end} scope.
+>> +              */
+>
+> Why "called within"?  It is try_to_unmap_cluster itself that calls
+> mmu_notifier_invalidate_range_*, so "we're within an
+> mmu_notifier_invalidate_range_start/end scope" sounds better, and it's
+> also what you use in the commit message.
 
-are available in the git repository at:
+Also correct. V4...
+Andres
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
+>
+> Paolo
 
-for you to fetch changes up to 6d42c5c5ce79b20139eec15dc359dfbcda3b3557:
 
-  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-22 16:49:13 -0500)
 
-----------------------------------------------------------------
-Qualcomm ARM Based SoC Updates for v3.18
-
-* Moved scm support into drivers/soc/qcom (allows for use by drivers)
-* Various bug fixes and minor feature additions to scm code
-* Added big-endian support to debug MSM uart
-
-----------------------------------------------------------------
-Lina Iyer (2):
-      ARM: qcom: Add SCM warmboot flags for quad core targets.
-      ARM: qcom: Move scm-boot files to drivers/soc and include/soc
-
-Olav Haugan (1):
-      ARM: qcom: scm: Add logging of actual return code from scm call
-
-Stephen Boyd (6):
-      ARM: debug: Update MSM and QCOM DEBUG_LL help
-      ARM: debug: msm: Support big-endian CPUs
-      ARM: qcom: scm: Fix incorrect cache invalidation
-      ARM: qcom: scm: Get cacheline size from CTR
-      ARM: qcom: scm: Move the scm driver to drivers/soc/qcom
-      ARM: qcom: scm: Add atomic SCM APIs
-
-Vikram Mulukutla (1):
-      ARM: qcom: scm: Flush the command buffer only instead of the entire cache
-
- arch/arm/Kconfig.debug                             |   5 +-
- arch/arm/include/debug/msm.S                       |   6 +
- arch/arm/mach-qcom/Kconfig                         |   3 -
- arch/arm/mach-qcom/Makefile                        |   3 -
- arch/arm/mach-qcom/platsmp.c                       |   2 +-
- drivers/soc/qcom/Kconfig                           |   2 +
- drivers/soc/qcom/Makefile                          |   2 +
- .../arm/mach-qcom => drivers/soc/qcom}/scm-boot.c  |   4 +-
- {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c     | 131 ++++++++++++++++++---
- .../arm/mach-qcom => include/soc/qcom}/scm-boot.h  |   2 +
- {arch/arm/mach-qcom => include/soc/qcom}/scm.h     |   5 +-
- 11 files changed, 137 insertions(+), 28 deletions(-)
- rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm-boot.c (95%)
- rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c (67%)
- rename {arch/arm/mach-qcom => include/soc/qcom}/scm-boot.h (92%)
- rename {arch/arm/mach-qcom => include/soc/qcom}/scm.h (80%)
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
