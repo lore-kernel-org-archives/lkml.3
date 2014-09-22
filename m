@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaIVSao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 14:30:44 -0400
-Received: from clem.clem-digital.net ([68.16.168.10]:55114 "EHLO
-	clem.clem-digital.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119AbaIVSam (ORCPT
+	id S1754648AbaIVScJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 14:32:09 -0400
+Received: from forward9l.mail.yandex.net ([84.201.143.142]:45408 "EHLO
+	forward9l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524AbaIVScI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 14:30:42 -0400
-From: Pete Clements <clem@clem.clem-digital.net>
-Message-Id: <201409221830.s8MIUbWS002990@clem.clem-digital.net>
-Subject: Re: Corrupt Network Packets -- 3.17-rc5/rc6
-To: davem@davemloft.net (David Miller)
-Date: Mon, 22 Sep 2014 14:30:36 -0400 (EDT)
-Cc: clem@clem.clem-digital.net, xiyou.wangcong@gmail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20140922.133831.220769383344675250.davem@davemloft.net>
-X-Mailer: ELM [version 2.5 PL7]
+	Mon, 22 Sep 2014 14:32:08 -0400
+X-Yandex-Uniq: 39c9cc93-87f7-4168-9bad-600f907a26e3
+Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v2 1/6] sched/fair: Remove duplicate code from
+ can_migrate_task()
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <ktkhai@parallels.com>
+Date: Mon, 22 Sep 2014 22:32:03 +0400
+Message-ID: <20140922183202.10761.6682.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-Thanks. Does not patch. Code looks not to be in the rc6 that Linus
-put out. Guess there is more to come.  (This is what I believe is
-the segment in rc6 -- at line 2179.)
+Combine two branches which do the same.
 
-	vp->tx_ring[entry].frag[i+1].addr =
-		cpu_to_le32(skb_frag_dma_map(
-		&VORTEX_PCI(vp)->dev,
-		frag,
-		frag->page_offset, frag->size, DMA_TO_DEVICE));
---
-Pete Clements 
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ kernel/sched/fair.c |   16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
-Quoting David Miller
-  > From: Pete Clements <clem@clem.clem-digital.net>
-  > Date: Mon, 22 Sep 2014 13:24:59 -0400 (EDT)
-  > 
-  > > Quoting Cong Wang
-  > >   > <clem@clem.clem-digital.net> wrote:
-  > >   > > Heads up fyi: system is i386 UP.
-  > >   > >
-  > >   > > Started getting some pop3 reception errors from the above system.
-  > >   > > Investigating the problem discovered scp of the mailbox failed
-  > >   > > with "Corrupted MAC on input"
-  > >   > >
-  > >   > > Problem started with rc5, still in rc6. Running rc4 with no
-  > >   > > problem.
-  > >   > >
-  > >   > > Sorry for lack of better definition.
-  > >   > 
-  > >   > 
-  > >   > Which driver are you using?
-  > >   > 
-  > > Here's the output from boot log:
-  > > 
-  > >  PCI: setting IRQ 11 as level-triggered
-  > >  3c59x 0000:00:0d.0: found PCI INT A -> IRQ 11
-  > >  3c59x: Donald Becker and others.
-  > >  0000:00:0d.0: 3Com PCI 3c900 Cyclone 10Mbps TPC at d8812000.
-  > 
-  > Should be fixed by:
-  > 
-  > commit 8400dd029e764e30361a51a7ae35900ae0032b43
-  > Author: Neil Horman <nhorman@tuxdriver.com>
-  > Date:   Wed Sep 17 09:04:45 2014 -0400
-  > 
-  >     3c59x: Fix bad offset spec in skb_frag_dma_map
-  >     
-  >     Recently aded the use of skb_frag_dma_map to 3c59x, but didn't realize it
-  >     automatically included the frag_offset internally, as well as provided an option
-  >     to specify an extra offset in the parameter list.  We need to specify an offset
-  >     of 0 in the parameter list to avoid skb corruption that results in lost
-  >     connections.
-  >     
-  >     Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-  >     CC: Linux Kernel list <linux-kernel@vger.kernel.org>
-  >     CC: "David S. Miller" <davem@davemloft.net>
-  >     CC: Meelis Roos <mroos@linux.ee>
-  >     Tested-by: Meelis Roos <mroos@linux.ee>
-  > 
-  > diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-  > index 8ab87ff..8ca49f04 100644
-  > --- a/drivers/net/ethernet/3com/3c59x.c
-  > +++ b/drivers/net/ethernet/3com/3c59x.c
-  > @@ -2186,7 +2186,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
-  >  			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-  >  
-  >  			dma_addr = skb_frag_dma_map(&VORTEX_PCI(vp)->dev, frag,
-  > -						    frag->page_offset,
-  > +						    0,
-  >  						    frag->size,
-  >  						    DMA_TO_DEVICE);
-  >  			if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr)) {
-  > 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2a1e6ac..420bc98 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5292,24 +5292,12 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	if (!tsk_cache_hot)
+ 		tsk_cache_hot = migrate_degrades_locality(p, env);
+ 
+-	if (migrate_improves_locality(p, env)) {
+-#ifdef CONFIG_SCHEDSTATS
++	if (migrate_improves_locality(p, env) || !tsk_cache_hot ||
++	    env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+ 		if (tsk_cache_hot) {
+ 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
+ 			schedstat_inc(p, se.statistics.nr_forced_migrations);
+ 		}
+-#endif
+-		return 1;
+-	}
+-
+-	if (!tsk_cache_hot ||
+-		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+-
+-		if (tsk_cache_hot) {
+-			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
+-			schedstat_inc(p, se.statistics.nr_forced_migrations);
+-		}
+-
+ 		return 1;
+ 	}
+ 
+
