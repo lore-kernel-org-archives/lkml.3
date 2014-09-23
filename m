@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306AbaIWPKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:10:22 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:45560 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094AbaIWPKT (ORCPT
+	id S1754890AbaIWPOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:14:03 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:58505 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaIWPOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:10:19 -0400
+	Tue, 23 Sep 2014 11:14:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <b54e0c34addb2b9cc4c3a20d5afc8b27a3096d09.1410632835.git.joe@perches.com>
-References: <cover.1410632834.git.joe@perches.com>
-	<b54e0c34addb2b9cc4c3a20d5afc8b27a3096d09.1410632835.git.joe@perches.com>
-Date: Tue, 23 Sep 2014 17:10:18 +0200
-Message-ID: <CACRpkdbHCAVUL6VwSSNdV1OXgiC2dPCLnhVm7ih9XMcwM-a29w@mail.gmail.com>
-Subject: Re: [PATCH 8/8] arm: mach-u300: Convert pr_warning to pr_warn
+In-Reply-To: <1410703015-24127-1-git-send-email-fabf@skynet.be>
+References: <1410703015-24127-1-git-send-email-fabf@skynet.be>
+Date: Tue, 23 Sep 2014 17:13:59 +0200
+Message-ID: <CACRpkdbZHLqfVZabm47tg9LDC7VS3XfB8zqs+d=0HroH-syMgQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1 linux-next] gpio: use container_of to resolve
+ cs5535_gpio_chip from gpio_chip
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 8:31 PM, Joe Perches <joe@perches.com> wrote:
+On Sun, Sep 14, 2014 at 3:56 PM, Fabian Frederick <fabf@skynet.be> wrote:
 
-> Use the more common pr_warn.
+> Use container_of instead of casting first structure member.
 >
-> Other miscellanea:
->
-> o Coalesce formats
-> o Realign arguments
-> o typo fixes of Siple to Simple
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> Compiled but untested.
 
 Patch applied.
+The existing code is unintelligible, so thanks a lot.
 
 Yours,
 Linus Walleij
