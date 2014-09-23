@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaIWWEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:04:38 -0400
-Received: from na3sys010aog105.obsmtp.com ([74.125.245.78]:42537 "HELO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1755000AbaIWWEg (ORCPT
+	id S932320AbaIWWFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:05:10 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:33098 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932239AbaIWWFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:04:36 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 18:04:36 EDT
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Tue, 23 Sep 2014 14:58:21 -0700
-Message-Id: <1411509501-23138-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 2.1.0
+	Tue, 23 Sep 2014 18:05:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140923215509.GB15481@roeck-us.net>
+References: <1402347812-8059-1-git-send-email-andreas.noever@gmail.com>
+ <580c2c85f8424369910b69a8f871f82e@DM2PR05MB671.namprd05.prod.outlook.com> <20140923215509.GB15481@roeck-us.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 23 Sep 2014 16:04:42 -0600
+Message-ID: <CAErSpo6dEevVxCS2bqq=+_99uLvN0tccbAdvH2cn12xRVSv2oQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Prevent NULL dereference during pciehp probe
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Rajat Jain <rajatjain@juniper.net>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Guenter Roeck <groeck@juniper.net>,
+        "rajatxjain@gmail.com" <rajatxjain@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Sep 23, 2014 at 3:55 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Mon, Sep 15, 2014 at 10:20:41PM +0000, Rajat Jain wrote:
+>> Hello Bjorn,
+>>
+>> I think this patch needs to be applied to all -stable branches (all the way back to 3.2).
+>>
+>> I encounter this same issue on my platform that is running 3.14.y.
+>>
+> Bjorn,
+>
+> can you send this to -stable, or is it ok if I do it ?
 
-Please pull from
+I forgot to mention it, but I did mark it for stable, so it should
+happen automatically:
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/hotplug&id=bceee4a97eb58bd0e80e39eff11b506ddd9e7ad3
 
-This is later and bigger than I would like, and the blame is all on
-me: I got very busy with other stuff for a few weeks during the 3.17
-cycle, and didn't prepare this tree as soon as I should have.  However
-I don't think there's anything risky here, and no one really cares if
-we break InfiniBand in 3.17 anyway...
-
-----------------------------------------------------------------
-Last late set of InfiniBand/RDMA fixes for 3.17:
-
- - Fixes for the new memory region re-registration support
- - iSER initiator error path fixes
- - Grab bag of small fixes for the qib and ocrdma hardware drivers
- - Larger set of fixes for mlx4, especially in RoCE mode
-
-----------------------------------------------------------------
-Alex Estrin (1):
-      IPoIB: Remove unnecessary port query
-
-Devesh Sharma (2):
-      RDMA/ocrdma: Report correct value of max_fast_reg_page_list_len
-      RDMA/ocrdma: Do not skip setting deferred_arm
-
-Jack Morgenstein (6):
-      IB/mlx4: Fix lockdep splat for the iboe lock
-      mlx4: Fix mlx4 reg/unreg mac to work properly with 0-mac addresses
-      IB/mlx4: Avoid accessing netdevice when building RoCE qp1 header
-      IB/mlx4: Don't update QP1 in native mode
-      IB/mlx4: Do not allow APM under RoCE
-      IB/mlx4: Fix VF mac handling in RoCE
-
-Markus Stockhausen (1):
-      IB/mlx4: Disable TSO for Connect-X rev. A0 HCAs
-
-Matan Barak (2):
-      mlx4: Correct error flows in rereg_mr
-      IB/core: When marshaling uverbs path, clear unused fields
-
-Mike Marciniszyn (3):
-      IB/ipath: Change get_user_pages() usage to always NULL vmas
-      IB/qib: Change get_user_pages() usage to always NULL vmas
-      IB/qib: Correct reference counting in debugfs qp_stats
-
-Moni Shoua (5):
-      IB/mlx4: Avoid null pointer dereference in mlx4_ib_scan_netdevs()
-      IB/mlx4: Don't duplicate the default RoCE GID
-      IB/mlx4: Reorder steps in RoCE GID table initialization
-      IB/mlx4: Get upper dev addresses as RoCE GIDs when port comes up
-      IB/mlx4: Avoid executing gid task when device is being removed
-
-Or Gerlitz (1):
-      IB/iser: Bump version to 1.4.1
-
-Roi Dayan (1):
-      IB/iser: Fix RX/TX CQ resource leak on error flow
-
-Roland Dreier (1):
-      Merge branches 'core', 'ipoib', 'iser', 'mlx4', 'ocrdma' and 'qib' into for-next
-
-Sagi Grimberg (1):
-      IB/iser: Allow bind only when connection state is UP
-
-Shawn Bohrer (1):
-      IB: ib_umem_release() should decrement mm->pinned_vm from ib_umem_get
-
-devesh.sharma@emulex.com (2):
-      RDMA/ocrdma: Resolve L2 address when creating user AH
-      RDMA/ocrdma: Use right macro in query AH
-
- drivers/infiniband/core/umem.c                 |  19 ++-
- drivers/infiniband/core/uverbs_marshall.c      |   4 +
- drivers/infiniband/hw/ipath/ipath_user_pages.c |   6 +-
- drivers/infiniband/hw/mlx4/main.c              | 169 +++++++++++++++++--------
- drivers/infiniband/hw/mlx4/mlx4_ib.h           |   1 +
- drivers/infiniband/hw/mlx4/mr.c                |   7 +-
- drivers/infiniband/hw/mlx4/qp.c                |  60 +++++----
- drivers/infiniband/hw/ocrdma/ocrdma_ah.c       |  43 +++++--
- drivers/infiniband/hw/ocrdma/ocrdma_verbs.c    |   6 +-
- drivers/infiniband/hw/qib/qib_debugfs.c        |   3 +-
- drivers/infiniband/hw/qib/qib_qp.c             |   8 --
- drivers/infiniband/hw/qib/qib_user_pages.c     |   6 +-
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |  10 +-
- drivers/infiniband/ulp/iser/iscsi_iser.c       |  19 ++-
- drivers/infiniband/ulp/iser/iscsi_iser.h       |   2 +-
- drivers/infiniband/ulp/iser/iser_verbs.c       |  24 ++--
- drivers/net/ethernet/mellanox/mlx4/mr.c        |  33 +++--
- drivers/net/ethernet/mellanox/mlx4/port.c      |  11 +-
- include/rdma/ib_umem.h                         |   1 +
- 19 files changed, 277 insertions(+), 155 deletions(-)
+>> > -----Original Message-----
+>> > From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
+>> > owner@vger.kernel.org] On Behalf Of Andreas Noever
+>> > Sent: Monday, June 09, 2014 2:04 PM
+>> > To: linux-kernel@vger.kernel.org; Bjorn Helgaas; linux-pci@vger.kernel.org
+>> > Cc: Andreas Noever
+>> > Subject: [PATCH] PCI: Prevent NULL dereference during pciehp probe
+>> >
+>> > pciehp assumes that dev->subordinate exists. But we do not assign a bus if
+>> > we run out of bus numbers during enumeration. This leads to a NULL
+>> > dereference in init_slot (and other places).
+>> >
+>> > Change pciehp_probe to return -ENODEV when no subordinate bus is
+>> > present.
+>> >
+>> > Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+>> > ---
+>> >  drivers/pci/hotplug/pciehp_core.c | 7 +++++++
+>> >  1 file changed, 7 insertions(+)
+>> >
+>> > diff --git a/drivers/pci/hotplug/pciehp_core.c
+>> > b/drivers/pci/hotplug/pciehp_core.c
+>> > index 0e0a2ff..e5abcaf 100644
+>> > --- a/drivers/pci/hotplug/pciehp_core.c
+>> > +++ b/drivers/pci/hotplug/pciehp_core.c
+>> > @@ -255,6 +255,13 @@ static int pciehp_probe(struct pcie_device *dev)
+>> >     else if (pciehp_acpi_slot_detection_check(dev->port))
+>> >             goto err_out_none;
+>> >
+>> > +   if (!dev->port->subordinate) {
+>> > +           /* Can happen if we run out of bus numbers during probe */
+>> > +           dev_err(&dev->device,
+>> > +                   "Hotplug bridge without secondary bus, ignoring\n");
+>> > +           goto err_out_none;
+>> > +   }
+>> > +
+>> >     ctrl = pcie_init(dev);
+>> >     if (!ctrl) {
+>> >             dev_err(&dev->device, "Controller initialization failed\n");
+>> > --
+>> > 2.0.0
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in the
+>> > body of a message to majordomo@vger.kernel.org More majordomo info at
+>> > http://vger.kernel.org/majordomo-info.html
