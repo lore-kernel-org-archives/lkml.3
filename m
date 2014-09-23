@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826AbaIWPmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:42:18 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:42799 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaIWPmR (ORCPT
+	id S1756158AbaIWPnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:43:31 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:55139 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169AbaIWPna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:42:17 -0400
+	Tue, 23 Sep 2014 11:43:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <1411030649.2017.7.camel@x220>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-	<53C67783.4090407@samsung.com>
-	<1409825317.5546.94.camel@x220>
-	<201409041803.46098.arnd@arndb.de>
-	<1411030649.2017.7.camel@x220>
-Date: Tue, 23 Sep 2014 17:42:16 +0200
-Message-ID: <CACRpkdZ8ZnD7t+QKTD9MkN7AWXtcNbO8H382-V6KeLcXG_MHkA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: samsung: Remove remaining check for CONFIG_S5P_GPIO_DRVSTR
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+In-Reply-To: <20140922203428.GF1880@google.com>
+References: <1409001999-23161-1-git-send-email-minipli@googlemail.com>
+	<20140922202748.GE1880@google.com>
+	<20140922203428.GF1880@google.com>
+Date: Tue, 23 Sep 2014 17:43:29 +0200
+Message-ID: <CA+rthh-7onXuO=CVfRxfuUUThSFaAAWF0+gc0eSq3cZLDXyAAQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] x86/PCI: Minor size reduction by marking init code
+ and data as such
+From: Mathias Krause <minipli@googlemail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86-ml <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 10:57 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-
-> From: Paul Bolle <pebolle@tiscali.nl>
+On 22 September 2014 22:34, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc x86 folks]
 >
-> Commit d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
-> removed the Kconfig symbol S5P_GPIO_DRVSTR. It didn't remove one check
-> for the related macro. Remove that check and the dead code it hides.
+> On Mon, Sep 22, 2014 at 02:27:48PM -0600, Bjorn Helgaas wrote:
+>> On Mon, Aug 25, 2014 at 11:26:34PM +0200, Mathias Krause wrote:
+>> > Hi Bjorn,
+>> >
+>> > [...]
+>> >
+>> > Mathias Krause (5):
+>> >   x86/PCI: Mark DMI tables as initialization data
+>> >   x86/PCI: Move __init annotation were it belongs to
+>> >   x86/PCI: Mark constants of pci_mmcfg_nvidia_mcp55() as __initconst
+>> >   x86/PCI: Constify pci_mmcfg_probes[] array
+>> >   x86/PCI: Mark PCI BIOS initialization code as such
+>>
+>> All applied to pci/initdata for v3.18, thanks!
 >
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Oops, I didn't notice that you hadn't cc'd the x86 folks.
 
-Patch applied with Tomasz Review tag.
+The reason for me not cc'ing the x86 maintainers, but linux-pci
+instead was probably because you're listed as maintainer for these
+files in the MAINTAINERS file. But, true, x86 maintainers should be
+cc'ed for all patches to code below arch/x86/. Just an oversight of
+mine :/
 
-Yours,
-Linus Walleij
+>
+> Guys, if these should go through -tip, here's my ack:
+>
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+>
+> I don't have any other arch/x86 changes in my tree, so I don't care which
+> way these go.
+
+
+Regards,
+Mathias
