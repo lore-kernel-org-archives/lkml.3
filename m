@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaIWGIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:08:55 -0400
-Received: from [112.213.117.95] ([112.213.117.95]:52800 "EHLO a.35yixin.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752794AbaIWGIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:08:54 -0400
-Date: Tue, 23 Sep 2014 14:09:15 +0800
-From: "FEEDBACK" <sales@xjftfood.com>
-Reply-To: sales@xjftfood.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: sunflower oil for you
-Message-ID: <201409231409150318456@a.35yixin.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1754296AbaIWGJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:09:12 -0400
+Received: from verein.lst.de ([213.95.11.211]:49093 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754237AbaIWGJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 02:09:09 -0400
+Date: Tue, 23 Sep 2014 08:09:06 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq
+	usage count
+Message-ID: <20140923060906.GA10547@lst.de>
+References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk> <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org> <20140923055924.GA10295@lst.de> <20140923060141.GF11740@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923060141.GF11740@mtj.dyndns.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8N68xeg001549
 
-Hi,
- 
-Have you got the update price of oil dated on AUGUEST.28.
- 
-If not, kindly send us the concrete type you need. we will send mail to you ASAP!
- 
-Sunflower oil
-soybean oil
-Linseed oil
-Rapeseed oil
- 
- 
-Update news from your esteemed company will be appreciated.
- 
-Thanks!
- 
-Anna 
-XINJIANG FIRST FOOD CO.,LTDÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Tue, Sep 23, 2014 at 02:01:41AM -0400, Tejun Heo wrote:
+> On Tue, Sep 23, 2014 at 07:59:24AM +0200, Christoph Hellwig wrote:
+> > "[PATCHSET percpu/for-3.18] percpu_ref: implement switch_to_atomic/percpu()"
+> > 
+> > looks way to big for 3.17, and the regression was introduced in the 3.17
+> > merge window.  I'm not sure what was broken before, but it defintively
+> > survived a lot of testing.
+> 
+> Do we even care about fixing it for 3.17?  scsi-mq isn't enabled by
+> default even for 3.18.  The open-coded percpu ref thing was subtly
+> broken there.  It'd be difficult to trigger but I'm fairly sure it'd
+> crap out in the wild once in a blue moon.
+
+It's compiled in by default, and people are extremly eager to test it.
