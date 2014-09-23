@@ -1,158 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaIWBCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 21:02:49 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:35083 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579AbaIWBCo (ORCPT
+	id S932161AbaIWBDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 21:03:15 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59266 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601AbaIWBCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 21:02:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410362945-30623-1-git-send-email-stigge@antcom.de>
-References: <1410362945-30623-1-git-send-email-stigge@antcom.de>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 22 Sep 2014 18:02:22 -0700
-Message-ID: <CAK5ve-JF3e4nutBwGin7uib6-6ffWnW--SZH=hfc738uROJE3Q@mail.gmail.com>
-Subject: Re: [PATCH v3] leds: Add DT support for leds-pca9532
-To: Roland Stigge <stigge@antcom.de>
-Cc: Rob Herring <robh+dt@kernel.org>, Riku Voipio <riku.voipio@iki.fi>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Sep 2014 21:02:10 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Milian Wolff <mail@milianw.de>
+Subject: [PATCH 4/5] perf tools: Introduce perf_callchain_config()
+Date: Tue, 23 Sep 2014 10:01:43 +0900
+Message-Id: <1411434104-5307-5-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411434104-5307-1-git-send-email-namhyung@kernel.org>
+References: <1411434104-5307-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 8:29 AM, Roland Stigge <stigge@antcom.de> wrote:
-> This patch adds DT support for leds-pca9532.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
->
-> ---
-> Applies to v3.17-rc4
->
->  v3: Removed superfluous whitespace
->  v2: Removed #ifdef statements
->
->  Documentation/devicetree/bindings/leds/leds-pca9532.txt |   43 ++++++++++++++
->  drivers/leds/leds-pca9532.c                             |   47 ++++++++++++++++
->  2 files changed, 90 insertions(+)
->
-> --- /dev/null
-> +++ linux-2.6/Documentation/devicetree/bindings/leds/leds-pca9532.txt
-> @@ -0,0 +1,43 @@
-> +NXP PCA9532 LED (incl. GPIO) controller
-> +
-> +Required properties:
-> +- compatible: must be "nxp,pca9532"
-> +- reg: I2C address
-> +- gpio-controller: Marks the device node as a GPIO controller.
-> +- #gpio-cells: Should be 2:
-> +   1) pin number
-> +   2) optional parameters:
-> +      - bit 0 specifies polarity (0 for normal, 1 for inverted)
-> +- nxp,typecodes: groups of 2 bits for each of the 16 pins:
-> +  0: None
-> +  1: LED
-> +  2: Beep
-> +  3: GPIO
-> +- nxp,statecodes: groups of 2 bits for each of the 16 pins:
-> +  0: off
-> +  1: on
-> +  2: pwm0
-> +  3: pwm1
-> +
-> +Optional properties:
-> +- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (see datasheet)
-> +- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (see datasheet)
-> +
-> +Example:
-> +
-> +       pca9532: pca9532@60 {
-> +               compatible = "nxp,pca9532";
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +               nxp,typecodes = <0xffffffff>;
-> +               nxp,statecodes = <0x00000000>;
-> +               reg = <0x60>;
-> +       };
-> +
-> +       sd@20098000 {
-> +               wp-gpios = <&pca9532 5 0>;
-> +               cd-gpios = <&pca9532 4 0>;
-> +               cd-inverted;
-> +               bus-width = <4>;
-> +               status = "okay";
-> +       };
-> --- linux-2.6.orig/drivers/leds/leds-pca9532.c
-> +++ linux-2.6/drivers/leds/leds-pca9532.c
-> @@ -21,6 +21,7 @@
->  #include <linux/workqueue.h>
->  #include <linux/leds-pca9532.h>
->  #include <linux/gpio.h>
-> +#include <linux/of.h>
->
->  /* m =  num_leds*/
->  #define PCA9532_REG_INPUT(i)   ((i) >> 3)
-> @@ -442,6 +443,43 @@ exit:
->         return err;
->  }
->
-> +static struct pca9532_platform_data *pca9532_parse_dt(struct device *dev)
-> +{
-> +       struct device_node *np = dev->of_node;
-> +       struct pca9532_platform_data *pca9532_pdata;
-> +       u32 typecodes, statecodes;
-> +       u32 pwm[2];
-> +       u32 psc[2];
-> +       int i;
-> +
-> +       pca9532_pdata = devm_kzalloc(dev, sizeof(*pca9532_pdata), GFP_KERNEL);
-> +       if (!pca9532_pdata)
-> +               return NULL;
-> +
-> +       if (!of_property_read_u32(np, "nxp,typecodes", &typecodes)) {
+This patch adds support for following config options to ~/.perfconfig file.
 
-Can we do some error check here and print out warning/error message?
-If this fails (unlikely), will we still continue?
+  [call-graph]
+    record-mode = dwarf
+    dump-size = 8192
+    print-type = fractal
+    order = callee
+    threshold = 0.5
+    print-limit = 128
+    sort-key = function
 
--Bryan
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/callchain.c | 109 ++++++++++++++++++++++++++++++++++++--------
+ tools/perf/util/callchain.h |   1 +
+ tools/perf/util/config.c    |   3 ++
+ 3 files changed, 94 insertions(+), 19 deletions(-)
 
-> +               for (i = 0; i < 16; i++)
-> +                       pca9532_pdata->leds[i].type =
-> +                               (typecodes >> (2 * i)) & 0x3;
-> +       }
-> +       if (!of_property_read_u32(np, "nxp,statecodes", &statecodes)) {
-> +               for (i = 0; i < 16; i++)
-> +                       pca9532_pdata->leds[i].state =
-> +                               (statecodes >> (2 * i)) & 0x3;
-> +       }
-> +       if (!of_property_read_u32_array(np, "nxp,pwm", &pwm[0], 2)) {
-> +               for (i = 0; i < 2; i++)
-> +                       pca9532_pdata->pwm[i] = pwm[i];
-> +       }
-> +       if (!of_property_read_u32_array(np, "nxp,psc", &psc[0], 2)) {
-> +               for (i = 0; i < 2; i++)
-> +                       pca9532_pdata->psc[i] = psc[i];
-> +       }
-> +
-> +       pca9532_pdata->gpio_base = -1; /* dynamically assign gpio base */
-> +
-> +       return pca9532_pdata;
-> +}
-> +
->  static int pca9532_probe(struct i2c_client *client,
->         const struct i2c_device_id *id)
->  {
-> @@ -449,6 +487,9 @@ static int pca9532_probe(struct i2c_clie
->         struct pca9532_platform_data *pca9532_pdata =
->                         dev_get_platdata(&client->dev);
->
-> +       if (IS_ENABLED(CONFIG_OF) && !pca9532_pdata && client->dev.of_node)
-> +               pca9532_pdata = pca9532_parse_dt(&client->dev);
-> +
->         if (!pca9532_pdata)
->                 return -EIO;
->
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index ba7297230143..c84d3f8dcb75 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -109,6 +109,49 @@ int parse_callchain_record_opt(const char *arg)
+ 	return ret;
+ }
+ 
++static int parse_callchain_mode(const char *value)
++{
++	if (!strncmp(value, "graph", strlen(value))) {
++		callchain_param.mode = CHAIN_GRAPH_ABS;
++		return 0;
++	}
++	if (!strncmp(value, "flat", strlen(value))) {
++		callchain_param.mode = CHAIN_FLAT;
++		return 0;
++	}
++	if (!strncmp(value, "fractal", strlen(value))) {
++		callchain_param.mode = CHAIN_GRAPH_REL;
++		return 0;
++	}
++	return -1;
++}
++
++static int parse_callchain_order(const char *value)
++{
++	if (!strncmp(value, "caller", strlen(value))) {
++		callchain_param.order = ORDER_CALLER;
++		return 0;
++	}
++	if (!strncmp(value, "callee", strlen(value))) {
++		callchain_param.order = ORDER_CALLEE;
++		return 0;
++	}
++	return -1;
++}
++
++static int parse_callchain_sort_key(const char *value)
++{
++	if (!strncmp(value, "function", strlen(value))) {
++		callchain_param.key = CCKEY_FUNCTION;
++		return 0;
++	}
++	if (!strncmp(value, "address", strlen(value))) {
++		callchain_param.key = CCKEY_ADDRESS;
++		return 0;
++	}
++	return -1;
++}
++
+ int
+ parse_callchain_report_opt(const char *arg)
+ {
+@@ -128,25 +171,12 @@ parse_callchain_report_opt(const char *arg)
+ 			return 0;
+ 		}
+ 
+-		/* try to get the output mode */
+-		if (!strncmp(tok, "graph", strlen(tok)))
+-			callchain_param.mode = CHAIN_GRAPH_ABS;
+-		else if (!strncmp(tok, "flat", strlen(tok)))
+-			callchain_param.mode = CHAIN_FLAT;
+-		else if (!strncmp(tok, "fractal", strlen(tok)))
+-			callchain_param.mode = CHAIN_GRAPH_REL;
+-		/* try to get the call chain order */
+-		else if (!strncmp(tok, "caller", strlen(tok)))
+-			callchain_param.order = ORDER_CALLER;
+-		else if (!strncmp(tok, "callee", strlen(tok)))
+-			callchain_param.order = ORDER_CALLEE;
+-		/* try to get the sort key */
+-		else if (!strncmp(tok, "function", strlen(tok)))
+-			callchain_param.key = CCKEY_FUNCTION;
+-		else if (!strncmp(tok, "address", strlen(tok)))
+-			callchain_param.key = CCKEY_ADDRESS;
+-		/* try to get the min percent */
+-		else if (!minpcnt_set) {
++		if (!parse_callchain_mode(tok) ||
++		    !parse_callchain_order(tok) ||
++		    !parse_callchain_sort_key(tok)) {
++			/* parsing ok - move on to the next */
++		} else if (!minpcnt_set) {
++			/* try to get the min percent */
+ 			callchain_param.min_percent = strtod(tok, &endptr);
+ 			if (tok == endptr)
+ 				return -1;
+@@ -168,6 +198,47 @@ parse_callchain_report_opt(const char *arg)
+ 	return 0;
+ }
+ 
++int perf_callchain_config(const char *var, const char *value)
++{
++	char *endptr;
++
++	if (prefixcmp(var, "call-graph."))
++		return 0;
++	var += sizeof("call-graph.") - 1;
++
++	if (!strcmp(var, "record-mode"))
++		return parse_callchain_record_opt(value);
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
++	if (!strcmp(var, "dump-size")) {
++		unsigned long size = 0;
++		int ret;
++
++		ret = get_stack_size(value, &size);
++		callchain_param.dump_size = size;
++
++		return ret;
++	}
++#endif
++	if (!strcmp(var, "print-type"))
++		return parse_callchain_mode(value);
++	if (!strcmp(var, "order"))
++		return parse_callchain_order(value);
++	if (!strcmp(var, "sort-key"))
++		return parse_callchain_sort_key(value);
++	if (!strcmp(var, "threshold")) {
++		callchain_param.min_percent = strtod(value, &endptr);
++		if (value == endptr)
++			return -1;
++	}
++	if (!strcmp(var, "print-limit")) {
++		callchain_param.print_limit = strtod(value, &endptr);
++		if (value == endptr)
++			return -1;
++	}
++
++	return 0;
++}
++
+ static void
+ rb_insert_callchain(struct rb_root *root, struct callchain_node *chain,
+ 		    enum chain_mode mode)
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 8adfbf0bab5c..2a1f5a46543a 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -170,6 +170,7 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
+ extern const char record_callchain_help[];
+ int parse_callchain_record_opt(const char *arg);
+ int parse_callchain_report_opt(const char *arg);
++int perf_callchain_config(const char *var, const char *value);
+ 
+ static inline void callchain_cursor_snapshot(struct callchain_cursor *dest,
+ 					     struct callchain_cursor *src)
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 9970b8b0190b..953512ed72ba 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -396,6 +396,9 @@ int perf_default_config(const char *var, const char *value,
+ 	if (!prefixcmp(var, "ui."))
+ 		return perf_ui_config(var, value);
+ 
++	if (!prefixcmp(var, "call-graph."))
++		return perf_callchain_config(var, value);
++
+ 	/* Add other config variables here. */
+ 	return 0;
+ }
+-- 
+2.1.0
+
