@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593AbaIWIGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 04:06:24 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34470 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451AbaIWIGP (ORCPT
+	id S1754681AbaIWIIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 04:08:15 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:57846 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaIWIIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 04:06:15 -0400
-Message-ID: <542129F1.1080608@de.ibm.com>
-Date: Tue, 23 Sep 2014 10:06:09 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	Tue, 23 Sep 2014 04:08:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Naveen Krishna Ch <naveenkrishna.ch@gmail.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Subject: Re: [PATCH] tty/serial: fix config dependencies for samsung serial
+Date: Tue, 23 Sep 2014 10:07:31 +0200
+Message-ID: <5903767.VzDJhUfQDI@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAM4voaky-zin8ikdkLBwpTKy13hz3iON8tmNsd55-kr8po8Qaw@mail.gmail.com>
+References: <1409671320-7604-1-git-send-email-ch.naveen@samsung.com> <10202237.9vbtDF9MIQ@wuerfel> <CAM4voaky-zin8ikdkLBwpTKy13hz3iON8tmNsd55-kr8po8Qaw@mail.gmail.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
-CC: David Matlack <dmatlack@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH] kvm: don't take vcpu mutex for obviously invalid vcpu
- ioctls
-References: <1411167805-2458-1-git-send-email-dmatlack@google.com> <541FFEDE.9030800@redhat.com> <542027F6.4050205@de.ibm.com> <542032D4.305@redhat.com> <54207668.3030502@de.ibm.com> <5420788F.9050208@redhat.com> <20140923064918.GE30733@minantech.com>
-In-Reply-To: <20140923064918.GE30733@minantech.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092308-4966-0000-0000-0000016A4CCA
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:aZ/zBDLMhwqhnB96gshq5ovHm5dsOj5rVsHWxA2R4pC
+ kDU6XAUbvqsBzybYNRLamX/WAb+NkB8bdT50bByxMxLH3d9iLc
+ yeHuTviuBjFjSMG7Wb2IOFz6RnLmkaP2gTZpGsytbbila+tyRl
+ LFR8tdFEJJO2VFlY5r42hRkevvfApwX6cHKBO/vg2uXodJUQXd
+ W8AzruTbJz7l7aTK02q5vYmFjvy+Mq8pXkPsPTaVIYkMPU2jbn
+ MlR/fNE+besdtciEKs8zlTXOvvyWUEyBbQnokElW3xBFXWqjUT
+ HNeRJhoEu3GLu74/d4tGA/FXBUK/+zN16lIRWl1bDegflyvD6J
+ MPQ83FZ838QeDCwaWKWo=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 08:49 AM, Gleb Natapov wrote:
-> On Mon, Sep 22, 2014 at 09:29:19PM +0200, Paolo Bonzini wrote:
->> Il 22/09/2014 21:20, Christian Borntraeger ha scritto:
->>> "while using trinity to fuzz KVM, we noticed long stalls on invalid ioctls. Lets bail out early on invalid ioctls". or similar?
->>
->> Okay.  David, can you explain how you found it so that I can make up my
->> mind?
->>
->> Gleb and Marcelo, a fourth and fifth opinion? :)
->>
-> I agree with Christian that simpler fix is better here.
-> The overhead is minimal. If we ever notice this overhead
-> we can revert the patch all together since the problem it
-> fixes can only be inflicted on userspace by itself and there
-> are myriads other ways userspace can hurt itself.
->
+On Tuesday 23 September 2014 12:34:26 Abhilash Kesavan wrote:
+> >>
+> >> The SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS config options are
+> >> meaningful only if SERIAL_SAMSUNG is enabled. Hence the dependency
+> >> rules were changed. I will repost this patch with better description.
+> >
+> > My point is that the options are used by both the uart driver and
+> > the platform code, e.g. for the purpose of PM debugging which can
+> > be enabled even when the serial-samsung driver is turned off.
+> 
+> I looked through the code and could find two references to these
+> symbols in the platform-specific code: arch/arm/plat-samsung/init.c
+> and arch/arm/mach-s3c64xx/irq-pm.c. The first one is being used to
+> initialize the uart platform device in non-dt way while the second one
+> saves and restores the uart irq masks for all channels across a
+> suspend/resume cycle. Also, the save/restore will get bypassed in case
+> CONFIG_SERIAL_SAMSUNG_UARTS is not defined. It does not look like
+> either of these cases would cause any issue with the current patch,
+> can you please help me understand the problem ?
 
-Yes. Davids explanation also makes sense as a commit message. Paolo, if you use David patch with a better description of the "why" I am fine with this patch.
+It's possible that it works fine now, I just pointed out that we
+had bugs in this area in the past, so it would be good if you can
+add to the changelog a statement that you have checked that the
+new patch does not cause problems here.
 
-Christian
-
+	Arnd
