@@ -1,169 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaIWJSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:18:38 -0400
-Received: from mga14.intel.com ([192.55.52.115]:26597 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754428AbaIWJSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:18:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
-   d="scan'208";a="479398204"
-Message-ID: <542139E6.2030806@intel.com>
-Date: Tue, 23 Sep 2014 17:14:14 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754786AbaIWJUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:20:45 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:49722 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479AbaIWJUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:20:43 -0400
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean Delvare <jdelvare@suse.de>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>
-Subject: Re: [PATCH] i2c: move acpi code back into the core
-References: <1411420006-4713-1-git-send-email-wsa@the-dreams.de> <5420CEC9.1030400@intel.com> <20140923053951.GA1411@katana> <54211C96.3030608@intel.com>
-In-Reply-To: <54211C96.3030608@intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411380672.24091.18.camel@debian-rtk5880>
+References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
+	<CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
+	<54195036.2010409@realsil.com.cn>
+	<CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
+	<1411024883.27455.11.camel@debian-rtk5880>
+	<CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
+	<1411380672.24091.18.camel@debian-rtk5880>
+Date: Tue, 23 Sep 2014 11:20:42 +0200
+Message-ID: <CAPDyKFq+NJ33AT4Lg0cvfZWnOKew6fTaLW--SVZ0w0xKvXw+Wg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Wei_wang <wei_wang@realsil.com.cn>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年09月23日 15:09, Lan Tianyu wrote:
-> On 2014年09月23日 13:39, Wolfram Sang wrote:
+On 22 September 2014 12:09, Roger Tseng <rogerable@realtek.com> wrote:
+> On Thu, 2014-09-18 at 23:14 +0200, Ulf Hansson wrote:
+>> [...]
 >>
->>> Sorry for later response due to sickness. I can't write this patch in
->>> time. Sorry again. I will test it soon.
+>> >>
+>> >> In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
+>> >>
+>> >> >
+>> >> > if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
+>> >> > then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
+>> >> > return.
+>> >>
+>> >> Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
+>> >> that path at all.
+>> >>
+>> >> Hmm, I think we should change the behavior in mmc_start_host(), like below:
+>> >> 1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
+>> >> should be assigned to at allocation.
+>> >> 2 ) From mmc_start_host(), invoke mmc_power_off() when
+>> >> MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
+>> >>
+>> >> Would that work?
+>> > Yes. I have confirmed this by following changes. The MMC_POWER_UNDEFINED
+>> > designation in mmc_start_host() will eventually cause a power-off
+>> > operation.
+>> >
+>> > But I wonder if we need to additionally check MMC_CAP2_FULL_PWR_CYCLE
+>> > before calling mmc_power_off()?
 >>
->> Oh, get well soon! Please say so next time, so I know.
+>> The intent from my side was to keep the current behaviour for those
+>> that already used MMC_CAP2_NO_PRESCAN_POWERUP, but it's s not a big
+>> deal.
 >>
-> 
-> Thanks. OK.
-> I have put the patch into test system and need to wait some time.
-> 
+>
+> I checked the log and found the commit that invokes mmc_power_off():
+> a08b17be8b984a7c51cd5a480cd977363df353f9
+> 0d3e3350d5871c53464be4c92d57198744247005
+> (https://www.mail-archive.com/linux-mmc@vger.kernel.org/msg19638.html )
+>
+> The proposed change might bring back some delay since invoking
+> mmc_power_off() in mmc_start_host() is more than NOP now and triggers
+> real power-off and re-init in sdhci.
 
-Hi Wolfram:
-The patch passed through the following 110 configure build test in the
-0-day build test system.
+Actually the above commits was added due to the below commit:
 
+fa5501890d8974301042e0202d342a6cbe8609f4
 
-configs tested: 110
+But the commits you refer to, didn't bring back the old behaviour,
+which I think was the intent. Instead we added a NOP call to
+mmc_power_off() from mmc_start_host().
 
-mips                             allmodconfig
-mips                                   jz4740
-mips                              allnoconfig
-mips                      fuloong2e_defconfig
-mips                                     txx9
-x86_64                            allnoconfig
-sh                            titan_defconfig
-sh                          rsk7269_defconfig
-sh                  sh7785lcr_32bit_defconfig
-sh                                allnoconfig
-x86_64                     randconfig-c3-0923
-x86_64                     randconfig-c1-0923
-x86_64                     randconfig-c2-0923
-x86_64                     randconfig-c0-0923
-arm                       omap2plus_defconfig
-arm                                    sa1100
-arm                              allmodconfig
-arm                          prima2_defconfig
-arm                         at91_dt_defconfig
-arm                               allnoconfig
-arm                                   samsung
-arm                       spear13xx_defconfig
-arm                         s3c2410_defconfig
-arm                                  iop-adma
-arm                       imx_v6_v7_defconfig
-arm                                       mmp
-arm                           tegra_defconfig
-arm                                      arm5
-arm                          marzen_defconfig
-arm                                  at_hdmac
-arm                                    ep93xx
-arm                                        sh
-arm                                     arm67
-parisc                        c3000_defconfig
-parisc                         b180_defconfig
-parisc                              defconfig
-alpha                               defconfig
-parisc                            allnoconfig
-powerpc                  iss476-smp_defconfig
-powerpc                 mpc8315_rdb_defconfig
-mips                          ath79_defconfig
-arm                             bcm_defconfig
-powerpc                   gef_ppc9a_defconfig
-i386                      randconfig-ha0-0923
-i386                      randconfig-ha1-0923
-i386                      randconfig-ha2-0923
-i386                      randconfig-ha3-0923
-ia64                             allmodconfig
-ia64                              allnoconfig
-ia64                                defconfig
-ia64                             alldefconfig
-microblaze                      mmu_defconfig
-microblaze                    nommu_defconfig
-microblaze                       allyesconfig
-s390                             allmodconfig
-s390                              allnoconfig
-s390                                defconfig
-x86_64                    randconfig-ha1-0923
-x86_64                    randconfig-ha3-0923
-x86_64                    randconfig-ha0-0923
-x86_64                    randconfig-ha2-0923
-xtensa                       common_defconfig
-m32r                       m32104ut_defconfig
-xtensa                          iss_defconfig
-m32r                         opsput_defconfig
-m32r                           usrv_defconfig
-m32r                     mappi3.smp_defconfig
-sparc                               defconfig
-sparc64                           allnoconfig
-sparc64                             defconfig
-i386                             allyesconfig
-cris                 etrax-100lx_v2_defconfig
-blackfin                  TCM-BF537_defconfig
-blackfin            BF561-EZKIT-SMP_defconfig
-blackfin                BF533-EZKIT_defconfig
-blackfin                BF526-EZBRD_defconfig
-i386                       randconfig-r0-0923
-i386                       randconfig-r2-0923
-i386                       randconfig-r3-0923
-i386                       randconfig-r1-0923
-x86_64                 randconfig-s0-09231616
-x86_64                 randconfig
-Hi Wolfram:
-	The patch passed through the following 110 configure build test in the
-0-day build test system.-s1-09231616
-x86_64                           allmodconfig
-i386                             alldefconfig
-i386                             allmodconfig
-i386                              allnoconfig
-i386                                defconfig
-i386                     randconfig-x009-0922
-x86_64                   randconfig-x003-0922
-x86_64                   randconfig-x004-0922
-i386                     randconfig-x006-0922
-x86_64                   randconfig-x001-0922
-i386                     randconfig-x005-0922
-x86_64                   randconfig-x006-0922
-i386                     randconfig-x001-0922
-i386                     randconfig-x004-0922
-i386                     randconfig-x003-0922
-i386                     randconfig-x000-0922
-x86_64                   randconfig-x002-0922
-x86_64                   randconfig-x008-0922
-i386                     randconfig-x008-0922
-i386                     randconfig-x007-0922
-x86_64                   randconfig-x009-0922
-x86_64                   randconfig-x000-0922
-x86_64                   randconfig-x007-0922
-i386                     randconfig-x002-0922
-x86_64                   randconfig-x005-0922
-x86_64                             acpi-redef
-x86_64                           allyesdebian
-x86_64                                nfsroot
+We have few options on how to go forward, but let's loop in Adrian
+Hunter first, since he might be able to comment on this as well.
 
-
--- 
-Best regards
-Tianyu Lan
+Kind regards
+Uffe
