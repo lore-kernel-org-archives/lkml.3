@@ -1,128 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaIWRiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:38:21 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:50269 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756426AbaIWRiQ (ORCPT
+	id S1756545AbaIWRip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:38:45 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:52423 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382AbaIWRin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:38:16 -0400
-X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
-From: Stefan Agner <stefan@agner.ch>
-To: linus.walleij@linaro.org, gnurou@gmail.com, shawn.guo@freescale.com,
-        kernel@pengutronix.de
-Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com, stefan@agner.ch
-Subject: [PATCH v2 1/5] pinctrl: imx: detect uninitialized pins
-Date: Tue, 23 Sep 2014 19:37:53 +0200
-Message-Id: <6d676a88eb82a47f8fa9e16abbc768e3e9ac236a.1411492954.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1411492954.git.stefan@agner.ch>
-References: <cover.1411492954.git.stefan@agner.ch>
-In-Reply-To: <cover.1411492954.git.stefan@agner.ch>
-References: <cover.1411492954.git.stefan@agner.ch>
+	Tue, 23 Sep 2014 13:38:43 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.17-rc7
+Date: Tue, 23 Sep 2014 10:38:36 -0700
+Message-Id: <1411493916-23435-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pinctrl driver initialized the register offsets for the pins
-with 0. On Vybrid an offset of 0 is a valid offset for the pinctrl
-mux register. So far, this was solved using the ZERO_OFFSET_VALID
-flag which allowed offsets of 0. However, this does not allow to
-verify whether a pins struct imx_pmx_func was initialized or not.
+Hi Linus,
 
-Use signed offset values for register offsets and initialize those
-with -1 in order to detect uninitialized offset values reliable.
+Please pull hwmon fixes for Linux 3.17-rc7 from signed tag:
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/pinctrl/pinctrl-imx.c   | 9 +++++----
- drivers/pinctrl/pinctrl-imx.h   | 7 +++----
- drivers/pinctrl/pinctrl-vf610.c | 2 +-
- 3 files changed, 9 insertions(+), 9 deletions(-)
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-index 946d594..0d4558b 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/pinctrl-imx.c
-@@ -204,7 +204,7 @@ static int imx_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
- 		pin_id = pin->pin;
- 		pin_reg = &info->pin_regs[pin_id];
- 
--		if (!(info->flags & ZERO_OFFSET_VALID) && !pin_reg->mux_reg) {
-+		if (pin_reg->mux_reg == -1) {
- 			dev_err(ipctl->dev, "Pin(%s) does not support mux function\n",
- 				info->pins[pin_id].name);
- 			return -EINVAL;
-@@ -308,7 +308,7 @@ static int imx_pinconf_get(struct pinctrl_dev *pctldev,
- 	const struct imx_pinctrl_soc_info *info = ipctl->info;
- 	const struct imx_pin_reg *pin_reg = &info->pin_regs[pin_id];
- 
--	if (!(info->flags & ZERO_OFFSET_VALID) && !pin_reg->conf_reg) {
-+	if (pin_reg->conf_reg == -1) {
- 		dev_err(info->dev, "Pin(%s) does not support config function\n",
- 			info->pins[pin_id].name);
- 		return -EINVAL;
-@@ -331,7 +331,7 @@ static int imx_pinconf_set(struct pinctrl_dev *pctldev,
- 	const struct imx_pin_reg *pin_reg = &info->pin_regs[pin_id];
- 	int i;
- 
--	if (!(info->flags & ZERO_OFFSET_VALID) && !pin_reg->conf_reg) {
-+	if (pin_reg->conf_reg == -1) {
- 		dev_err(info->dev, "Pin(%s) does not support config function\n",
- 			info->pins[pin_id].name);
- 		return -EINVAL;
-@@ -586,10 +586,11 @@ int imx_pinctrl_probe(struct platform_device *pdev,
- 	if (!ipctl)
- 		return -ENOMEM;
- 
--	info->pin_regs = devm_kzalloc(&pdev->dev, sizeof(*info->pin_regs) *
-+	info->pin_regs = devm_kmalloc(&pdev->dev, sizeof(*info->pin_regs) *
- 				      info->npins, GFP_KERNEL);
- 	if (!info->pin_regs)
- 		return -ENOMEM;
-+	memset(info->pin_regs, 0xff, sizeof(*info->pin_regs) * info->npins);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	ipctl->base = devm_ioremap_resource(&pdev->dev, res);
-diff --git a/drivers/pinctrl/pinctrl-imx.h b/drivers/pinctrl/pinctrl-imx.h
-index db408b0..49e55d3 100644
---- a/drivers/pinctrl/pinctrl-imx.h
-+++ b/drivers/pinctrl/pinctrl-imx.h
-@@ -67,8 +67,8 @@ struct imx_pmx_func {
-  * @conf_reg: config register offset
-  */
- struct imx_pin_reg {
--	u16 mux_reg;
--	u16 conf_reg;
-+	s16 mux_reg;
-+	s16 conf_reg;
- };
- 
- struct imx_pinctrl_soc_info {
-@@ -83,8 +83,7 @@ struct imx_pinctrl_soc_info {
- 	unsigned int flags;
- };
- 
--#define ZERO_OFFSET_VALID	0x1
--#define SHARE_MUX_CONF_REG	0x2
-+#define SHARE_MUX_CONF_REG	0x1
- 
- #define NO_MUX		0x0
- #define NO_PAD		0x0
-diff --git a/drivers/pinctrl/pinctrl-vf610.c b/drivers/pinctrl/pinctrl-vf610.c
-index bddd913..b788e15 100644
---- a/drivers/pinctrl/pinctrl-vf610.c
-+++ b/drivers/pinctrl/pinctrl-vf610.c
-@@ -299,7 +299,7 @@ static const struct pinctrl_pin_desc vf610_pinctrl_pads[] = {
- static struct imx_pinctrl_soc_info vf610_pinctrl_info = {
- 	.pins = vf610_pinctrl_pads,
- 	.npins = ARRAY_SIZE(vf610_pinctrl_pads),
--	.flags = ZERO_OFFSET_VALID | SHARE_MUX_CONF_REG,
-+	.flags = SHARE_MUX_CONF_REG,
- };
- 
- static struct of_device_id vf610_pinctrl_of_match[] = {
--- 
-2.1.0
+Thanks,
+Guenter
+------
 
+The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
+
+  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 4e66cd13ff9cd7eaae69e2fae0335d8d99d8afdf:
+
+  hwmon: (tmp103) Fix resource leak bug in tmp103 temperature sensor driver (2014-09-22 11:11:48 -0700)
+
+----------------------------------------------------------------
+Fix a resource leak in tmp103 driver.
+Add support for two more processors to fam15h_power driver.
+Also fix a bug in the same driver to only report the power level
+on chips which actually support reporting it.
+
+----------------------------------------------------------------
+Aravind Gopalakrishnan (2):
+      hwmon: (fam15h_power) Make actual power reporting conditional
+      hwmon: (fam15h_power) Add support for two more processors
+
+sundarjdev (1):
+      hwmon: (tmp103) Fix resource leak bug in tmp103 temperature sensor driver
+
+ drivers/hwmon/fam15h_power.c | 20 +++++++++++++++++++-
+ drivers/hwmon/tmp103.c       |  2 +-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
