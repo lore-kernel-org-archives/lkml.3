@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaIWJ4K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:56:10 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51371 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754424AbaIWJ4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:56:08 -0400
-Message-ID: <542143B2.1090707@mm-sol.com>
-Date: Tue, 23 Sep 2014 12:56:02 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754956AbaIWJ6D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:58:03 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:58133 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134AbaIWJ6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:58:00 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Lee Jones <lee.jones@linaro.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [PATCH] rtc: pm8xxx: rework to support pm8941 rtc
-References: <1410515044-31689-1-git-send-email-svarbanov@mm-sol.com> <1411462245.20236.17.camel@x220>
-In-Reply-To: <1411462245.20236.17.camel@x220>
+In-Reply-To: <ff236f6dab7f3408551f8f4b0345e62b37fd99c5.1410020459.git.stefan@agner.ch>
+References: <cover.1410020458.git.stefan@agner.ch>
+	<ff236f6dab7f3408551f8f4b0345e62b37fd99c5.1410020459.git.stefan@agner.ch>
+Date: Tue, 23 Sep 2014 11:58:00 +0200
+Message-ID: <CACRpkdaNbTj+hXtNFZ6DqosHPfHg2G+X2Cb_S_15mULpdebgrQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] gpio: vf610: add gpiolib/IRQ chip driver for Vybird
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Sat, Sep 6, 2014 at 6:25 PM, Stefan Agner <stefan@agner.ch> wrote:
 
-On 09/23/2014 11:50 AM, Paul Bolle wrote:
-> Hi Stanimar,
-> 
-> On Fri, 2014-09-12 at 12:44 +0300, Stanimir Varbanov wrote:
->> Adds support for RTC device inside PM8941 PMIC. The RTC
->> in this PMIC have two register spaces. Thus the rtc-pm8xxx
->> is slightly reworked to reflect these differences.
->>
->> The register set for different PMIC chips are selected
->> on DT compatible string base.
->>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> 
-> This patch just landed in next-20140923 as commit 99abd227988a
-> ("drivers/rtc/rtc-pm8xxx.c: rework to support pm8941 rtc").
-> 
->> --- a/drivers/rtc/Kconfig
->> +++ b/drivers/rtc/Kconfig
->> @@ -1283,7 +1283,7 @@ config RTC_DRV_LPC32XX
->>  
->>  config RTC_DRV_PM8XXX
->>  	tristate "Qualcomm PMIC8XXX RTC"
->> -	depends on MFD_PM8XXX
->> +	depends on MFD_PM8XXX || MFD_SPMI_PMIC
-> 
-> There's currently no Kconfig symbol MFD_SPMI_PMIC in linux-next. I guess
-> it's currently queued somewhere. Is that correct?
+> Add a gpiolib and IRQ chip driver for Vybrid ARM SoC using the
+> Vybrid's GPIO and PORT module. The driver is instanced once per
+> each GPIO/PORT module pair and handles 32 GPIO's.
+>
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+(...)
+>  obj-$(CONFIG_GPIO_UCB1400)     += gpio-ucb1400.o
+> +obj-$(CONFIG_GPIO_VF610)       += gpio-vf610.o
 
-The MFD driver which adds MFD_SPMI_PMIC symbol is still pending in the
-mailing list. I will ask Lee Jones to add it to the MFD queue for 3.18.
+Some like to keep GPIOs tightly associated with a pin controller
+in a file next to the pin controller.
 
--- 
-regards,
-Stan
+I.e. in drivers/pinctrl/freescale/gpio-vf610.c
+
+But this works too. Any preference?
+
+> +#define GPIO_PER_PORT          32
+
+Very generic define. VF610_GPIOS_PER_PORT?
+
+> +struct vf610_gpio_port {
+> +       struct gpio_chip gc;
+> +       void __iomem *base;
+> +       void __iomem *gpio_base;
+> +       u8 irqc[GPIO_PER_PORT];
+> +       int irq;
+
+irq? Why do you need to keep this around?
+
+> +static const struct of_device_id vf610_gpio_dt_ids[] = {
+> +       { .compatible = "fsl,vf610-gpio" },
+> +       { /* sentinel */ }
+> +};
+> +
+> +static inline void vf610_gpio_writel(u32 val, void __iomem *reg)
+> +{
+> +       __raw_writel(val, reg);
+
+Use writel_relaxed() instead unless you can explain why you want this.
+
+(Same for all occurences.)
+
+> +static int vf610_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+> +{
+> +       struct vf610_gpio_port *port =
+> +               container_of(gc, struct vf610_gpio_port, gc);
+> +
+> +       return !!(vf610_gpio_readl(port->gpio_base + GPIO_PDIR) & 1 << gpio);
+
+#include <linux/bitops.h>
+
+... & BIT(gpio)
+
+> +static void vf610_gpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+> +{
+> +       struct vf610_gpio_port *port =
+> +               container_of(gc, struct vf610_gpio_port, gc);
+> +       unsigned long mask = 1 << gpio;
+
+= BIT(gpio);
+
+> +static void vf610_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+> +{
+> +       struct vf610_gpio_port *port = irq_get_handler_data(irq);
+> +       struct irq_chip *chip = irq_desc_get_chip(desc);
+> +       int pin;
+> +       unsigned long irq_isfr;
+> +
+> +       chained_irq_enter(chip, desc);
+> +
+> +       irq_isfr = vf610_gpio_readl(port->base + PORT_ISFR);
+> +
+> +       for_each_set_bit(pin, &irq_isfr, GPIO_PER_PORT) {
+> +               vf610_gpio_writel(1 << pin, port->base + PORT_ISFR);
+
+BIT(pin)
+
+(etc)
+
+> +       port->irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
+> +       if (port->irq == NO_IRQ)
+> +               return -ENODEV;
+
+Can't you just use a local int irq; variable for this?
+
+> +static int __init gpio_vf610_init(void)
+> +{
+> +       return platform_driver_register(&vf610_gpio_driver);
+> +}
+> +postcore_initcall(gpio_vf610_init);
+
+postcore again. I don't like this, can you get rid of it?
+
+Overall the driver looks very nice except for these nitty gritty details.
+
+Yours,
+Linus Walleij
