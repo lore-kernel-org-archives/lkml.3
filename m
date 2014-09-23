@@ -1,95 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120AbaIWVzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:55:16 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:44098 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813AbaIWVzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:55:15 -0400
-Date: Tue, 23 Sep 2014 14:55:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Rajat Jain <rajatjain@juniper.net>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Guenter Roeck <groeck@juniper.net>,
-        "rajatxjain@gmail.com" <rajatxjain@gmail.com>
-Subject: Re: [PATCH] PCI: Prevent NULL dereference during pciehp probe
-Message-ID: <20140923215509.GB15481@roeck-us.net>
-References: <1402347812-8059-1-git-send-email-andreas.noever@gmail.com>
- <580c2c85f8424369910b69a8f871f82e@DM2PR05MB671.namprd05.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <580c2c85f8424369910b69a8f871f82e@DM2PR05MB671.namprd05.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757138AbaIWV4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:56:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756846AbaIWV4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 17:56:21 -0400
+Message-ID: <1411509370.24563.35.camel@ul30vt.home>
+Subject: Re: [PATCH v2 13/13] vfio: powerpc/spapr: Enable Dynamic DMA windows
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Tue, 23 Sep 2014 15:56:10 -0600
+In-Reply-To: <1411441262-11025-14-git-send-email-aik@ozlabs.ru>
+References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
+	 <1411441262-11025-14-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 10:20:41PM +0000, Rajat Jain wrote:
-> Hello Bjorn,
+On Tue, 2014-09-23 at 13:01 +1000, Alexey Kardashevskiy wrote:
+> This defines and implements VFIO IOMMU API which lets the userspace
+> create and remove DMA windows.
 > 
-> I think this patch needs to be applied to all -stable branches (all the way back to 3.2).
+> This updates VFIO_IOMMU_SPAPR_TCE_GET_INFO to return the number of
+> available windows and page mask.
 > 
-> I encounter this same issue on my platform that is running 3.14.y. 
+> This adds VFIO_IOMMU_SPAPR_TCE_CREATE and VFIO_IOMMU_SPAPR_TCE_REMOVE
+> to allow the user space to create and remove window(s).
 > 
-Bjorn,
+> The VFIO IOMMU driver does basic sanity checks and calls corresponding
+> SPAPR TCE functions. At the moment only IODA2 (POWER8 PCI host bridge)
+> implements them.
+> 
+> This advertises VFIO_IOMMU_SPAPR_TCE_FLAG_DDW capability via
+> VFIO_IOMMU_SPAPR_TCE_GET_INFO.
+> 
+> This calls platform DDW reset() callback when IOMMU is being disabled
+> to reset the DMA configuration to its original state.
+> 
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  drivers/vfio/vfio_iommu_spapr_tce.c | 135 ++++++++++++++++++++++++++++++++++--
+>  include/uapi/linux/vfio.h           |  25 ++++++-
+>  2 files changed, 153 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
+> index 0dccbc4..b518891 100644
+> --- a/drivers/vfio/vfio_iommu_spapr_tce.c
+> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
+> @@ -190,18 +190,25 @@ static void tce_iommu_disable(struct tce_container *container)
+>  
+>  	container->enabled = false;
+>  
+> -	if (!container->grp || !current->mm)
+> +	if (!container->grp)
+>  		return;
+>  
+>  	data = iommu_group_get_iommudata(container->grp);
+>  	if (!data || !data->iommu_owner || !data->ops->get_table)
+>  		return;
+>  
+> -	tbl = data->ops->get_table(data, 0);
+> -	if (!tbl)
+> -		return;
+> +	if (current->mm) {
+> +		tbl = data->ops->get_table(data, 0);
+> +		if (tbl)
+> +			decrement_locked_vm(tbl);
+>  
+> -	decrement_locked_vm(tbl);
+> +		tbl = data->ops->get_table(data, 1);
+> +		if (tbl)
+> +			decrement_locked_vm(tbl);
+> +	}
+> +
+> +	if (data->ops->reset)
+> +		data->ops->reset(data);
+>  }
+>  
+>  static void *tce_iommu_open(unsigned long arg)
+> @@ -243,7 +250,7 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  				 unsigned int cmd, unsigned long arg)
+>  {
+>  	struct tce_container *container = iommu_data;
+> -	unsigned long minsz;
+> +	unsigned long minsz, ddwsz;
+>  	long ret;
+>  
+>  	switch (cmd) {
+> @@ -288,6 +295,28 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  		info.dma32_window_size = tbl->it_size << tbl->it_page_shift;
+>  		info.flags = 0;
+>  
+> +		ddwsz = offsetofend(struct vfio_iommu_spapr_tce_info,
+> +				page_size_mask);
+> +
+> +		if (info.argsz == ddwsz) {
 
-can you send this to -stable, or is it ok if I do it ?
+>=
 
-Thanks,
-Guenter
+> +			if (data->ops->query && data->ops->create &&
+> +					data->ops->remove) {
+> +				info.flags |= VFIO_IOMMU_SPAPR_TCE_FLAG_DDW;
 
-> Thanks,
-> 
-> Rajat
-> 
-> > -----Original Message-----
-> > From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
-> > owner@vger.kernel.org] On Behalf Of Andreas Noever
-> > Sent: Monday, June 09, 2014 2:04 PM
-> > To: linux-kernel@vger.kernel.org; Bjorn Helgaas; linux-pci@vger.kernel.org
-> > Cc: Andreas Noever
-> > Subject: [PATCH] PCI: Prevent NULL dereference during pciehp probe
-> > 
-> > pciehp assumes that dev->subordinate exists. But we do not assign a bus if
-> > we run out of bus numbers during enumeration. This leads to a NULL
-> > dereference in init_slot (and other places).
-> > 
-> > Change pciehp_probe to return -ENODEV when no subordinate bus is
-> > present.
-> > 
-> > Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-> > ---
-> >  drivers/pci/hotplug/pciehp_core.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/drivers/pci/hotplug/pciehp_core.c
-> > b/drivers/pci/hotplug/pciehp_core.c
-> > index 0e0a2ff..e5abcaf 100644
-> > --- a/drivers/pci/hotplug/pciehp_core.c
-> > +++ b/drivers/pci/hotplug/pciehp_core.c
-> > @@ -255,6 +255,13 @@ static int pciehp_probe(struct pcie_device *dev)
-> >  	else if (pciehp_acpi_slot_detection_check(dev->port))
-> >  		goto err_out_none;
-> > 
-> > +	if (!dev->port->subordinate) {
-> > +		/* Can happen if we run out of bus numbers during probe */
-> > +		dev_err(&dev->device,
-> > +			"Hotplug bridge without secondary bus, ignoring\n");
-> > +		goto err_out_none;
-> > +	}
-> > +
-> >  	ctrl = pcie_init(dev);
-> >  	if (!ctrl) {
-> >  		dev_err(&dev->device, "Controller initialization failed\n");
-> > --
-> > 2.0.0
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in the
-> > body of a message to majordomo@vger.kernel.org More majordomo info at
-> > http://vger.kernel.org/majordomo-info.html
+I think you want to set this flag regardless of whether the user has
+provided space for it.  A valid use model is to call with the minimum
+size and look at the flags to determine if it needs to be called again
+with a larger size.
+
+> +
+> +				ret = data->ops->query(data,
+> +						&info.current_windows,
+> +						&info.windows_available,
+> +						&info.page_size_mask);
+> +				if (ret)
+> +					return ret;
+> +			} else {
+> +				info.current_windows = 0;
+> +				info.windows_available = 0;
+> +				info.page_size_mask = 0;
+> +			}
+> +			minsz = ddwsz;
+
+It's not really any longer the min size, is it?
+
+> +		}
+> +
+>  		if (copy_to_user((void __user *)arg, &info, minsz))
+>  			return -EFAULT;
+>  
+> @@ -412,12 +441,106 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  		tce_iommu_disable(container);
+>  		mutex_unlock(&container->lock);
+>  		return 0;
+> +
+>  	case VFIO_EEH_PE_OP:
+>  		if (!container->grp)
+>  			return -ENODEV;
+>  
+>  		return vfio_spapr_iommu_eeh_ioctl(container->grp,
+>  						  cmd, arg);
+> +
+> +	case VFIO_IOMMU_SPAPR_TCE_CREATE: {
+> +		struct vfio_iommu_spapr_tce_create create;
+> +		struct spapr_tce_iommu_group *data;
+> +		struct iommu_table *tbl;
+> +
+> +		if (WARN_ON(!container->grp))
+
+redux previous comment on this warning
+
+> +			return -ENXIO;
+> +
+> +		data = iommu_group_get_iommudata(container->grp);
+> +
+> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_create,
+> +				start_addr);
+> +
+> +		if (copy_from_user(&create, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (create.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		if (create.flags)
+> +			return -EINVAL;
+> +
+> +		if (!data->ops->create || !data->iommu_owner)
+> +			return -ENOSYS;
+> +
+> +		BUG_ON(!data || !data->ops || !data->ops->remove);
+
+Little late for this test since we'll oops on the previous test.  Why is
+this a BUG_ON?  A user could exploit this on a system with only a
+partial set of callbacks.
+
+> +
+> +		ret = data->ops->create(data, create.page_shift,
+> +				create.window_shift, &tbl);
+> +		if (ret)
+> +			return ret;
+> +
+> +		ret = try_increment_locked_vm(tbl);
+> +		if (ret) {
+> +			data->ops->remove(data, tbl);
+> +			return ret;
+> +		}
+> +
+> +		create.start_addr = tbl->it_offset << tbl->it_page_shift;
+> +
+> +		if (copy_to_user((void __user *)arg, &create, minsz)) {
+> +			data->ops->remove(data, tbl);
+> +			decrement_locked_vm(tbl);
+> +			return -EFAULT;
+> +		}
+> +		mutex_lock(&container->lock);
+> +		++container->windows_num;
+> +		mutex_unlock(&container->lock);
+> +
+> +		return ret;
+> +	}
+> +	case VFIO_IOMMU_SPAPR_TCE_REMOVE: {
+> +		struct vfio_iommu_spapr_tce_remove remove;
+> +		struct spapr_tce_iommu_group *data;
+> +		struct iommu_table *tbl;
+> +
+> +		if (WARN_ON(!container->grp))
+> +			return -ENXIO;
+> +
+> +		data = iommu_group_get_iommudata(container->grp);
+> +
+> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_remove,
+> +				start_addr);
+> +
+> +		if (copy_from_user(&remove, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (remove.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		if (remove.flags)
+> +			return -EINVAL;
+> +
+> +		if (!data->ops->remove || !data->iommu_owner)
+
+On this one we don't both to get data/data->ops.  Is there also an
+exploit where the user can call these CREATE/REMOVE interfaces even
+though INFO doesn't expose them if only a partial set of callbacks are
+present?
+
+> +			return -ENOSYS;
+> +
+> +		tbl = spapr_tce_find_table(container, data, remove.start_addr);
+
+What happens if this returns the 0 index rather than the expected 1
+index table?  Why doesn't this call ops->find_table()?
+
+> +		if (!tbl)
+> +			return -EINVAL;
+> +
+> +		ret = data->ops->remove(data, tbl);
+> +		if (ret)
+> +			return ret;
+> +
+> +		decrement_locked_vm(tbl);
+> +
+> +		mutex_lock(&container->lock);
+> +		--container->windows_num;
+> +		mutex_unlock(&container->lock);
+> +
+> +		return 0;
+> +	}
+>  	}
+>  
+>  	return -ENOTTY;
+> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> index 6612974..e71a6ef 100644
+> --- a/include/uapi/linux/vfio.h
+> +++ b/include/uapi/linux/vfio.h
+> @@ -451,9 +451,13 @@ struct vfio_iommu_type1_dma_unmap {
+>   */
+>  struct vfio_iommu_spapr_tce_info {
+>  	__u32 argsz;
+> -	__u32 flags;			/* reserved for future use */
+> +	__u32 flags;
+> +#define VFIO_IOMMU_SPAPR_TCE_FLAG_DDW	1 /* Support dynamic windows */
+>  	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
+>  	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
+> +	__u32 current_windows;
+> +	__u32 windows_available;
+> +	__u32 page_size_mask;
+>  };
+>  
+>  #define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
+> @@ -489,6 +493,25 @@ struct vfio_eeh_pe_op {
+>  
+>  #define VFIO_EEH_PE_OP			_IO(VFIO_TYPE, VFIO_BASE + 21)
+>  
+> +struct vfio_iommu_spapr_tce_create {
+> +	__u32 argsz;
+> +	__u32 flags;
+> +	/* in */
+> +	__u32 page_shift;
+> +	__u32 window_shift;
+> +	/* out */
+> +	__u64 start_addr;
+> +};
+> +#define VFIO_IOMMU_SPAPR_TCE_CREATE	_IO(VFIO_TYPE, VFIO_BASE + 18)
+> +
+> +struct vfio_iommu_spapr_tce_remove {
+> +	__u32 argsz;
+> +	__u32 flags;
+> +	/* in */
+> +	__u64 start_addr;
+> +};
+> +#define VFIO_IOMMU_SPAPR_TCE_REMOVE	_IO(VFIO_TYPE, VFIO_BASE + 19)
+> +
+
+Zero comments, no good.
+
+>  /* ***************************************************************** */
+>  
+>  #endif /* _UAPIVFIO_H */
+
+
+
