@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaIWMAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:00:42 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:53229 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaIWL7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:59:41 -0400
-From: Heiko Stuebner <heiko@sntech.de>
-To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, dianders@chromium.org, heiko@sntech.de,
-        Heiko Stuebner <heiko.stuebner@bq.com>
-Subject: [PATCH v3 1/3] dt-bindings: document gpio-charger bindings
-Date: Tue, 23 Sep 2014 13:59:03 +0200
-Message-Id: <1411473545-3290-2-git-send-email-heiko@sntech.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411473545-3290-1-git-send-email-heiko@sntech.de>
-References: <1411473545-3290-1-git-send-email-heiko@sntech.de>
+	id S1755290AbaIWMCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:02:14 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33839 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaIWMCN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:02:13 -0400
+Date: Tue, 23 Sep 2014 05:02:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Davidlohr Bueso <dbueso@suse.de>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, bobby.prani@gmail.com,
+        oleg@redhat.com, ard.biesheuvel@linaro.org, joe@perches.com,
+        rostedt@goodmis.org
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.18
+Message-ID: <20140923120206.GV4723@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140922214603.GA6356@linux.vnet.ibm.com>
+ <1411458392.8304.2.camel@linux-t7sj.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411458392.8304.2.camel@linux-t7sj.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092312-6688-0000-0000-00000506F875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bq.com>
+On Tue, Sep 23, 2014 at 09:46:32AM +0200, Davidlohr Bueso wrote:
+> Hi Paul,
+> 
+> On Mon, 2014-09-22 at 14:46 -0700, Paul E. McKenney wrote:
+> > 4.	Torture-test updates.  These were posted to LKML at
+> > 	https://lkml.org/lkml/2014/8/28/546 and at
+> > 	https://lkml.org/lkml/2014/9/11/1114.
+> 
+> I was planning on sending you another batch of torture patches. Would
+> you rather I hold off until the next merge window, or is it still ok to
+> send?
 
-This documents the binding for the gpio-charger power-supply.
+Feel free to send them now, if you like.  The probability of my pushing
+them into 3.18 is low, but if they are straightforward, I might do so.
 
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
----
- .../bindings/power_supply/gpio-charger.txt         | 27 ++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/gpio-charger.txt
+(I am actually sending this pull request a bit later than I normally
+do -- I usually try to send it about -rc5 time.)
 
-diff --git a/Documentation/devicetree/bindings/power_supply/gpio-charger.txt b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-new file mode 100644
-index 0000000..adbb5dc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-@@ -0,0 +1,27 @@
-+gpio-charger
-+
-+Required properties :
-+ - compatible : "gpio-charger"
-+ - gpios : GPIO indicating the charger presence.
-+   See GPIO binding in bindings/gpio/gpio.txt .
-+ - charger-type : power supply type, one of
-+     unknown
-+     battery
-+     ups
-+     mains
-+     usb-sdp (USB standard downstream port)
-+     usb-dcp (USB dedicated charging port)
-+     usb-cdp (USB charging downstream port)
-+     usb-aca (USB accessory charger adapter)
-+
-+Example:
-+
-+	usb_charger: charger {
-+		compatible = "gpio-charger";
-+		charger-type = "usb-sdp";
-+		gpios = <&gpf0 2 0 0 0>;
-+	}
-+
-+	battery {
-+		power-supplies = <&usb_charger>;
-+	};
--- 
-2.1.0
+							Thanx, Paul
 
