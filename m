@@ -1,67 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaIWRDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:03:50 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:51178 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618AbaIWRDr (ORCPT
+	id S932391AbaIWRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:03:25 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36224 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128AbaIWRDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:03:47 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140923162622.GA28059@ubuntu-hedt>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
-	<CAJfpegv4RJzWV7=oHvyUWqUnJYk8JHrQsiKfJ5AMRFRaN3frxw@mail.gmail.com>
-	<20140923162622.GA28059@ubuntu-hedt>
-Date: Tue, 23 Sep 2014 19:03:47 +0200
-Message-ID: <CAJfpeguw9LhU4Zf0iE3_ZbeYM=-F61rFpWp=FebngrMgdTCwng@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user namespaces
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 13:03:23 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
+Date: Tue, 23 Sep 2014 18:03:06 +0100
+Message-Id: <1411491787-25938-2-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
+References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 6:26 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> On Tue, Sep 23, 2014 at 06:07:35PM +0200, Miklos Szeredi wrote:
->> On Tue, Sep 2, 2014 at 5:44 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
->> > Here's an updated set of patches for allowing fuse mounts from pid and
->> > user namespaces. I discussed some of the issues we debated with the last
->> > patch set (and a few others) with Eric at LinuxCon, and the updates here
->> > mainly reflect the outcome of those discussions.
->> >
->> > The stickiest issue in the v1 patches was the question of where to get
->> > the user and pid namespaces from that are used for translating ids for
->> > communication with userspace. Eric told me that for user namespaces at
->> > least we need to grab a namespace at open or mount time and use only
->> > that namespace to prevent certain types of attacks.
->>
->> I'm not convinced.  Let us have the gory details, please.
->
-> I'll do my best, and hopefully Eric will fill in any details I miss.
->
-> I think there may have been more than one possible scenario that Eric
-> was describing to me, but this is the one I remember. A user could
-> create a namespace and mount a fuse filesystem without nosuid. It could
-> then pass the /dev/fuse fd to a process in init_user_ns, which could
-> expose a suid file owned by root (or any other user) and use it to gain
-> elevated privileges.
->
-> On the other hand, if file ownership is always interpreted in the
-> context of the namespace from which the filesystem is mounted then suid
-> can only be used to become another uid already under that user's
-> control.
+This patch adds an option to sample raw monotonic clock
+value with any perf event, with the the aim of allowing
+time correlation between data coming from perf and
+additional performance-related information generated in
+userspace.
 
-Much simpler solution: don't allow SUID in unprivileged namespaces.
-SUID is a really ugly hack with many problems, just get rid of it.
+In order to correlate timestamps in perf data stream
+with events happening in userspace (be it JITed debug
+symbols or hwmon-originating environment data), user
+requests a more or less periodic event (sched_switch
+trace event of a hrtimer-based cpu-clock being the
+most obvious examples) with PERF_SAMPLE_TIME *and*
+PERF_SAMPLE_CLOCK_RAW_MONOTONIC and stamps
+user-originating data with values obtained from
+clock_gettime(CLOCK_MONOTONIC_RAW). Then, during
+analysis, one looks at the perf events immediately
+preceding and following (in terms of the
+clock_raw_monotonic sample) the userspace event and
+does simple linear approximation to get the equivalent
+perf time.
 
-Thanks,
-Miklos
+        perf event     user event
+       -----O--------------+-------------O------> t_mono
+            :              |             :
+            :              V             :
+       -----O----------------------------O------> t_perf
+
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+Changes since v1:
+
+- none
+
+ include/linux/perf_event.h      |  2 ++
+ include/uapi/linux/perf_event.h |  4 +++-
+ kernel/events/core.c            | 13 +++++++++++++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 707617a..28b73b2 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -602,6 +602,8 @@ struct perf_sample_data {
+ 	 * Transaction flags for abort events:
+ 	 */
+ 	u64				txn;
++	/* Raw monotonic timestamp, for userspace time correlation */
++	u64				clock_raw_monotonic;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 9269de2..e5a75c5 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -137,8 +137,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
+ 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+ 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
++	PERF_SAMPLE_CLOCK_RAW_MONOTONIC		= 1U << 18,
+ 
+-	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
+ };
+ 
+ /*
+@@ -686,6 +687,7 @@ enum perf_event_type {
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
+ 	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
++	 *	{ u64			clock_raw_monotonic; } && PERF_SAMPLE_CLOCK_RAW_MONOTONIC
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f9c1ed0..f6df547 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1216,6 +1216,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_TRANSACTION)
+ 		size += sizeof(data->txn);
+ 
++	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC)
++		size += sizeof(data->clock_raw_monotonic);
++
+ 	event->header_size = size;
+ }
+ 
+@@ -4456,6 +4459,13 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 		data->cpu_entry.cpu	 = raw_smp_processor_id();
+ 		data->cpu_entry.reserved = 0;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC) {
++		struct timespec now;
++
++		getrawmonotonic(&now);
++		data->clock_raw_monotonic = timespec_to_ns(&now);
++	}
+ }
+ 
+ void perf_event_header__init_id(struct perf_event_header *header,
+@@ -4714,6 +4724,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_TRANSACTION)
+ 		perf_output_put(handle, data->txn);
+ 
++	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC)
++		perf_output_put(handle, data->clock_raw_monotonic);
++
+ 	if (!event->attr.watermark) {
+ 		int wakeup_events = event->attr.wakeup_events;
+ 
+-- 
+1.9.1
+
