@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaIWEpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:45:18 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39490 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaIWEpP (ORCPT
+	id S1754130AbaIWEpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:45:44 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:59188 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753772AbaIWEnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:45:15 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 23 Sep 2014 13:45:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Subject: Re: [PATCH v1 2/5] mm: add full variable in swap_info_struct
-Message-ID: <20140923044551.GB8325@bbox>
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
- <1411344191-2842-3-git-send-email-minchan@kernel.org>
- <20140922134522.00725f561fdae318446a41cb@linux-foundation.org>
+	Tue, 23 Sep 2014 00:43:10 -0400
+From: behanw@converseincode.com
+To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
+        fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
+        snitzer@redhat.com, tadeusz.struk@intel.com
+Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
+        james.l.morris@oracle.com, john.griffin@intel.com,
+        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
+        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
+        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu
+Subject: [PATCH v4 09/12] crypto: LLVMLinux: Remove VLAIS usage from crypto/hmac.c
+Date: Mon, 22 Sep 2014 21:42:14 -0700
+Message-Id: <1411447337-22362-10-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411447337-22362-1-git-send-email-behanw@converseincode.com>
+References: <1411447337-22362-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140922134522.00725f561fdae318446a41cb@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 01:45:22PM -0700, Andrew Morton wrote:
-> On Mon, 22 Sep 2014 09:03:08 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > Now, swap leans on !p->highest_bit to indicate a swap is full.
-> > It works well for normal swap because every slot on swap device
-> > is used up when the swap is full but in case of zram, swap sees
-> > still many empty slot although backed device(ie, zram) is full
-> > since zram's limit is over so that it could make trouble when
-> > swap use highest_bit to select new slot via free_cluster.
-> > 
-> > This patch introduces full varaiable in swap_info_struct
-> > to solve the problem.
-> > 
-> > ...
-> >
-> > --- a/include/linux/swap.h
-> > +++ b/include/linux/swap.h
-> > @@ -224,6 +224,7 @@ struct swap_info_struct {
-> >  	struct swap_cluster_info free_cluster_tail; /* free cluster list tail */
-> >  	unsigned int lowest_bit;	/* index of first free in swap_map */
-> >  	unsigned int highest_bit;	/* index of last free in swap_map */
-> > +	bool	full;			/* whether swap is full or not */
-> 
-> This is protected by swap_info_struct.lock, I worked out.
-> 
-> There's a large comment at swap_info_struct.lock which could be updated.
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-Sure.
+Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+compliant equivalent. This patch allocates the appropriate amount of memory
+using a char array using the SHASH_DESC_ON_STACK macro.
 
+The new code can be compiled with both gcc and clang.
+
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: pageexec@freemail.hu
+---
+ crypto/hmac.c | 25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/crypto/hmac.c b/crypto/hmac.c
+index 8d9544c..e392219 100644
+--- a/crypto/hmac.c
++++ b/crypto/hmac.c
+@@ -52,20 +52,17 @@ static int hmac_setkey(struct crypto_shash *parent,
+ 	struct hmac_ctx *ctx = align_ptr(opad + ss,
+ 					 crypto_tfm_ctx_alignment());
+ 	struct crypto_shash *hash = ctx->hash;
+-	struct {
+-		struct shash_desc shash;
+-		char ctx[crypto_shash_descsize(hash)];
+-	} desc;
++	SHASH_DESC_ON_STACK(shash, hash);
+ 	unsigned int i;
+ 
+-	desc.shash.tfm = hash;
+-	desc.shash.flags = crypto_shash_get_flags(parent) &
+-			    CRYPTO_TFM_REQ_MAY_SLEEP;
++	shash->tfm = hash;
++	shash->flags = crypto_shash_get_flags(parent)
++		& CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	if (keylen > bs) {
+ 		int err;
+ 
+-		err = crypto_shash_digest(&desc.shash, inkey, keylen, ipad);
++		err = crypto_shash_digest(shash, inkey, keylen, ipad);
+ 		if (err)
+ 			return err;
+ 
+@@ -81,12 +78,12 @@ static int hmac_setkey(struct crypto_shash *parent,
+ 		opad[i] ^= 0x5c;
+ 	}
+ 
+-	return crypto_shash_init(&desc.shash) ?:
+-	       crypto_shash_update(&desc.shash, ipad, bs) ?:
+-	       crypto_shash_export(&desc.shash, ipad) ?:
+-	       crypto_shash_init(&desc.shash) ?:
+-	       crypto_shash_update(&desc.shash, opad, bs) ?:
+-	       crypto_shash_export(&desc.shash, opad);
++	return crypto_shash_init(shash) ?:
++	       crypto_shash_update(shash, ipad, bs) ?:
++	       crypto_shash_export(shash, ipad) ?:
++	       crypto_shash_init(shash) ?:
++	       crypto_shash_update(shash, opad, bs) ?:
++	       crypto_shash_export(shash, opad);
+ }
+ 
+ static int hmac_export(struct shash_desc *pdesc, void *out)
 -- 
-Kind regards,
-Minchan Kim
+1.9.1
+
