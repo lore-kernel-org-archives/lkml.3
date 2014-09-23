@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821AbaIWOHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:07:00 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38982 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753321AbaIWOG7 (ORCPT
+	id S1756040AbaIWOHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:07:44 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58022 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755344AbaIWOHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:06:59 -0400
-Date: Tue, 23 Sep 2014 15:06:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Vidya Sagar <sagar.tv@gmail.com>, Yijing Wang <wangyijing@huawei.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Will Deacon <will.deacon@arm.com>,
-        Stephen Warren <swarren@nvidia.com>, Krishna Thota <kthota@nvidia.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] ARM: fix debug prints relevant to PCI devices
-Message-ID: <20140923140635.GR5182@n2100.arm.linux.org.uk>
-References: <1410085687-11273-1-git-send-email-vidyas@nvidia.com> <CAErSpo7CX3XiuNZO8tXYVN2tUJudObFKVBthHfxf9mPS6hE6Cg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7CX3XiuNZO8tXYVN2tUJudObFKVBthHfxf9mPS6hE6Cg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 23 Sep 2014 10:07:42 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 0/3] mtd: nand: gpmi: add proper raw access support
+Date: Tue, 23 Sep 2014 16:07:33 +0200
+Message-Id: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 07:56:01AM -0600, Bjorn Helgaas wrote:
-> This doesn't require any coordination with the PCI core, so I was just
-> leaving this up to the arch.  But I guess I can at least give you my
-> opinion :)
+Hello Huang, Brian,
 
-However, PCI core people have more knowledge of the issues here than I do.
+This is just a new proposal to support raw accesses in a more standard way
+in the GPMI driver.
+This series has been tested on an imx28 board.
 
-> > diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-> > index 17a26c1..03c56ba 100644
-> > --- a/arch/arm/kernel/bios32.c
-> > +++ b/arch/arm/kernel/bios32.c
-> > @@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> >  {
-> >         struct pci_dev *dev;
-> >         u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
-> > +       bool has_pcie_dev = false;
-> >
-> >         /*
-> >          * Walk the devices on this bus, working out what we can
-> > @@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> >         list_for_each_entry(dev, &bus->devices, bus_list) {
-> >                 u16 status;
-> >
-> > +               if (!has_pcie_dev)
-> > +                       has_pcie_dev = pci_is_pcie(dev);
-> >                 pci_read_config_word(dev, PCI_STATUS, &status);
-> >
-> >                 /*
-> > @@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> >
-> >         /*
-> >          * Report what we did for this bus
-> > +        * (only if the bus doesn't have any PCIe devices)
-> >          */
-> > -       printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
-> > -               bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-> > +       if (!has_pcie_dev)
-> > +               pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
-> > +                       bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-> 
-> My first choice would be to just drop the printk altogether.
+Any suggestions are welcome.
 
-It can be useful information.
+Best Regards,
 
-> If we want to keep the printk, it should be enough to test "bus->self
-> && !pci_is_pcie(bus->self)" to see whether Fast Back-to-Back can be
-> enabled.
+Boris
 
-This is exactly the kind of issue that needs to be picked up by core
-PCI people.  I've not looked at PCI stuff for a long time, because PCI
-isn't that relevent to me anymore, so I'm not up to speed with any PCI
-API changes since about 2.6.xx days, and I'm certainly not knowledgable
-of PCIe.  To a certain extent, that can be blamed on ARM's eval boards
-either having fundamentally fscked and unusable PCIe, or ARM not
-bothering to supply me PCI backplanes to be able to use them.
+Changes since v2:
+ - fixed a bug in gpmi_move_bits
+ - add a raw_buffer field to be used when using raw access methods
+   (experienced memory corruptions when directly using page_buffer_virt
+   buffer)
+ - add raw OOB access functions
 
-Isn't bus->self NULL for the PCI root bus, which would be one of the
-buses which we /do/ want to print this information for.  So, wouldn't:
+Boris BREZILLON (3):
+  mtd: nand: gpmi: add gpmi_move_bits function
+  mtd: nand: gpmi: add proper raw access support
+  mtd: nand: gpmi: add raw oob access functions
 
-	!bus->self || !pci_is_pcie(bus->self)
-
-be more correct?
- 
-> Personally, I would like to see everything in the file converted to
-> use dev_printk so it's consistent with the PCI core.  That would be a
-> separate patch, and there might be other instances under arch/arm,
-> too.
-
-It /was/ consistent with the PCI core, because the PCI core used to use
-this formatting.  If you wish to keep it consistent, please submit a
-patch to make it consistent /again/ with the core code.
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |  88 ++++++++++++++++++++
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 144 +++++++++++++++++++++++++++++++++
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   6 ++
+ 3 files changed, 238 insertions(+)
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
