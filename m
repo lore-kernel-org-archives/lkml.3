@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798AbaIWWVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:21:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756038AbaIWWVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:21:30 -0400
-Message-ID: <1411510876.24563.47.camel@ul30vt.home>
-Subject: Re: [PATCHv7 05/26] vfio: introduce the VFIO_DMA_MAP_FLAG_NOEXEC
- flag
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, kvm@vger.kernel.org,
-        christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com, "open list:ABI/API" <linux-api@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Sep 2014 16:21:16 -0600
-In-Reply-To: <1411483586-29304-6-git-send-email-a.motakis@virtualopensystems.com>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1411483586-29304-6-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756841AbaIWWYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:24:34 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:35711 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231AbaIWWYd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 18:24:33 -0400
+Date: Tue, 23 Sep 2014 15:24:30 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: =?UTF-8?B?5pyx6L6J?= <zhuhui@xiaomi.com>
+cc: Weijie Yang <weijie.yang.kh@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "vinayakm.list@gmail.com" <vinayakm.list@gmail.com>,
+        "weijie.yang@samsung.com" <weijie.yang@samsung.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "teawater@gmail.com" <teawater@gmail.com>
+Subject: Re: [PATCH] Fix the issue that lowmemkiller fell into a cycle that
+ try to kill a task
+In-Reply-To: <C1476EAB93B413409890F290A20101879D8E9B@ex-mbox2>
+Message-ID: <alpine.DEB.2.02.1409231523320.22630@chino.kir.corp.google.com>
+References: <1411441029-8428-1-git-send-email-zhuhui@xiaomi.com> <20140923041738.GA6779@kroah.com> <C1476EAB93B413409890F290A20101879D8C96@ex-mbox2> <CAL1ERfMbcQGHBdiDw2yGw82_zUT5hBk+5uFHV=SPswUY-EtXVQ@mail.gmail.com>
+ <C1476EAB93B413409890F290A20101879D8E9B@ex-mbox2>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-181491329-1411511071=:22630"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
-> We introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag to the VFIO dma map call,
-> and expose its availability via the capability VFIO_IOMMU_PROT_NOEXEC.
-> This way the user can control whether the XN flag will be set on the
-> requested mappings. The IOMMU_NOEXEC flag needs to be available for all
-> the IOMMUs of the container used.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--531381512-181491329-1411511071=:22630
+Content-Type: TEXT/PLAIN; charset=gb2312
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 23 Sep 2014, Öì»Ô wrote:
+
+> > By the way, whether we need to modify out_of_memory() which also
+> > try to kill task?
 > 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  include/uapi/linux/vfio.h | 2 ++
->  1 file changed, 2 insertions(+)
+> I am not sure because LMK handle the memory issue early than OOM.
+> But I think this issue will not affect OOM because OOM has oom_zonelist_trylock and oom_zonelist_unlock.
 > 
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 6612974..30f630c 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -29,6 +29,7 @@
->   * capability is subject to change as groups are added or removed.
->   */
->  #define VFIO_DMA_CC_IOMMU		4
-> +#define VFIO_IOMMU_PROT_NOEXEC		5
 
-Can't we advertise this as a flag bit in vfio_iommu_type1_info instead?
-Also, EEH already took 5 as seen immediately below.
-
->  
->  /* Check if EEH is supported */
->  #define VFIO_EEH			5
-> @@ -401,6 +402,7 @@ struct vfio_iommu_type1_dma_map {
->  	__u32	flags;
->  #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
->  #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
-> +#define VFIO_DMA_MAP_FLAG_NOEXEC (1 << 2)	/* not executable from device */
->  	__u64	vaddr;				/* Process virtual address */
->  	__u64	iova;				/* IO virtual address */
->  	__u64	size;				/* Size of mapping (bytes) */
-
-
-
+The oom killer tries to schedule other processes that exit the oom killer 
+without being a victim itself and any process that cannot get the zonelist 
+lock will do the same in the page allocator.  The low memory killer case 
+is somewhat different.
+--531381512-181491329-1411511071=:22630--
