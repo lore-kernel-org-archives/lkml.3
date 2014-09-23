@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835AbaIWVnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:43:23 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:64203 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaIWVnW (ORCPT
+	id S1756937AbaIWVqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:46:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35856 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053AbaIWVqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:43:22 -0400
-Date: Tue, 23 Sep 2014 14:43:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>, a.elovikov@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] mm, slab: initialize object alignment on cache creation
-In-Reply-To: <20140923141940.e2d3840f31d0f8850b925cf6@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1409231439190.22630@chino.kir.corp.google.com>
-References: <20140923141940.e2d3840f31d0f8850b925cf6@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 23 Sep 2014 17:46:17 -0400
+Message-ID: <5421EA22.6000206@infradead.org>
+Date: Tue, 23 Sep 2014 14:46:10 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ashutosh Dixit <ashutosh.dixit@intel.com>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Foley <pefoley2@pefoley.com>
+CC: Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH linux-next] Documentation: mic: mpssd: Disable mpssd builds
+ for kernels < 3.13
+References: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
+In-Reply-To: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 4590685546a3 ("mm/sl[aou]b: Common alignment code"), the "ralign" 
-automatic variable in __kmem_cache_create() may be used as uninitialized.
+On 09/23/14 14:55, Ashutosh Dixit wrote:
+> mpssd depends on headers available in kernels >= 3.13. Therefore
+> disable the build for kernels < 3.13. For kernels < 3.13, to avoid the
+> appearance of a build break simply print an error message and exit.
 
-The proper alignment defaults to BYTES_PER_WORD and can be overridden by 
-SLAB_RED_ZONE or the alignment specified by the caller.
+Why is this needed?  This file won't be built in any automated build
+in v3.13 or any kernel until v3.17 at the earliest?
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=85031
 
-Reported-by: Andrei Elovikov <a.elovikov@gmail.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- a.elovikov: If you respond to this email with your full name, Andrew can 
- give proper credit for reporting this issue.
+> Reported-by: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Peter Foley <pefoley2@pefoley.com>
+> Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
+> Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+> Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+> ---
+>  Documentation/mic/mpssd/mpssd.c | 15 +++++++++++++++
+>  Documentation/mic/mpssd/sysfs.c |  5 +++++
+>  2 files changed, 20 insertions(+)
+> 
+> diff --git a/Documentation/mic/mpssd/mpssd.c b/Documentation/mic/mpssd/mpssd.c
+> index 3c5c379..2cc48cc 100644
+> --- a/Documentation/mic/mpssd/mpssd.c
+> +++ b/Documentation/mic/mpssd/mpssd.c
+> @@ -18,6 +18,10 @@
+>   * Intel MIC User Space Tools.
+>   */
+>  
+> +#include <linux/version.h>
+> +
+> +#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0))
+> +
+>  #define _GNU_SOURCE
+>  
+>  #include <stdlib.h>
+> @@ -1726,3 +1730,14 @@ main(int argc, char *argv[])
+>  
+>  	exit(0);
+>  }
+> +#else /* kernel version < 3.13 */
+> +
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +
+> +int main(void)
+> +{
+> +	fprintf(stderr, "mpssd is only usable against kernels >= 3.13\n");
+> +	exit(1);
+> +}
+> +#endif
+> diff --git a/Documentation/mic/mpssd/sysfs.c b/Documentation/mic/mpssd/sysfs.c
+> index 8dd3269..1e3ff75 100644
+> --- a/Documentation/mic/mpssd/sysfs.c
+> +++ b/Documentation/mic/mpssd/sysfs.c
+> @@ -18,6 +18,10 @@
+>   * Intel MIC User Space Tools.
+>   */
+>  
+> +#include <linux/version.h>
+> +
+> +#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0))
+> +
+>  #include "mpssd.h"
+>  
+>  #define PAGE_SIZE 4096
+> @@ -100,3 +104,4 @@ done:
+>  		free(oldvalue);
+>  	return ret;
+>  }
+> +#endif
+> 
 
- mm/slab.c | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2128,7 +2128,8 @@ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
- int
- __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- {
--	size_t left_over, freelist_size, ralign;
-+	size_t left_over, freelist_size;
-+	size_t ralign = BYTES_PER_WORD;
- 	gfp_t gfp;
- 	int err;
- 	size_t size = cachep->size;
-@@ -2161,14 +2162,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 		size &= ~(BYTES_PER_WORD - 1);
- 	}
- 
--	/*
--	 * Redzoning and user store require word alignment or possibly larger.
--	 * Note this will be overridden by architecture or caller mandated
--	 * alignment if either is greater than BYTES_PER_WORD.
--	 */
--	if (flags & SLAB_STORE_USER)
--		ralign = BYTES_PER_WORD;
--
- 	if (flags & SLAB_RED_ZONE) {
- 		ralign = REDZONE_ALIGN;
- 		/* If redzoning, ensure that the second redzone is suitably
+-- 
+~Randy
