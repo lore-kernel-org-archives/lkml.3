@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312AbaIWSYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:24:23 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:46874 "EHLO dev.rtsoft.ru"
+	id S932359AbaIWSY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:24:26 -0400
+Received: from flmx07.ccur.com ([173.221.59.12]:1327 "EHLO flmx07.ccur.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932272AbaIWSYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:24:22 -0400
-X-Greylist: delayed 1682 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 14:24:21 EDT
-Message-ID: <5421B4B0.1020306@dev.rtsoft.ru>
-Date: Tue, 23 Sep 2014 21:58:08 +0400
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTSoft Software Development Center
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	id S932307AbaIWSYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 14:24:24 -0400
+X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 14:24:23 EDT
+Message-ID: <5421B992.6050500@ccur.com>
+Date: Tue, 23 Sep 2014 13:18:58 -0500
+From: John Blackwood <john.blackwood@ccur.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-To: devicetree@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Gennady Kuznetsov <kuznetsovg@dev.rtsoft.ru>,
-        Aleksey Makarov <amakarov@dev.rtsoft.ru>
-Subject: Device tree vs hardware configurations
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: <linux-kernel@vger.kernel.org>
+CC: Andi Kleen <ak@linux.intel.com>
+Subject: [ PATCH ] Remove numa_balancing sysctl dependence on CONFIG_SCHED_DEBUG
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-I'm currently forward-porting a BSP for imx6-based custom board from 
-pre-devicetree kernel to modern kernel.
+numa: numa_balancing sysctl scope change
 
-In old BSP there was a board setup file, that registered all board's 
-devices. For new BSP, I need to replace that with device tree based 
-solution.
+Make the 'numa_balancing' sysctl parameter no longer dependent upon
+CONFIG_SCHED_DEBUG so it can be used in non-debug kernels.
 
-However, old BSP used conditional code to register devices differently 
-based on GPIO inputs and on kernel command line. This approach was used to
+Signed-off-by: John Blackwood <john.blackwood@ccur.com>
 
-- handle board's jumper that switches SPI CS lines: current jumper 
-setting is available over gpio, depending on that old BSP registered 
-chips differently,
-
-- handle different i2c connections on different board revisions: board 
-has 5 i2c busses with quite a few devices connected, these busses are 
-routed to different hardware busses on different board revisions, board 
-revision could be read over gpios.
-
-- handle different possible display connections (lvds vs lcd, 6bit vs 
-8bit hw interface) based on kernel command line options
-
-- handle different possible camera connections by registered camera 
-differently based on kernel command line option
-
-... and more,
-
-
-Device tree describes hardware unconditionally. I already have to 
-provide 2 dts files for imx6q and imx6dl based setups (both just include 
-a common dtsi) ...  But providing separate dts file for every possible 
-hardware configuration will result into 2^n device trees, which is 
-inconvenient visible regression against old BSP that "just worked" on 
-all hardware configurations.
-
-
-Is there a sane way to handle hardware configurations like above in 
-device tree based kernel?
-
-
-Nikita Yushchenko
+Index: b/kernel/sysctl.c
+===================================================================
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -389,6 +389,9 @@ static struct ctl_table kern_table[] = {
+  		.mode		= 0644,
+  		.proc_handler	= proc_dointvec,
+  	},
++#endif /* CONFIG_NUMA_BALANCING */
++#endif /* CONFIG_SCHED_DEBUG */
++#ifdef CONFIG_NUMA_BALANCING
+  	{
+  		.procname	= "numa_balancing",
+  		.data		= NULL, /* filled in by handler */
+@@ -399,7 +402,6 @@ static struct ctl_table kern_table[] = {
+  		.extra2		= &one,
+  	},
+  #endif /* CONFIG_NUMA_BALANCING */
+-#endif /* CONFIG_SCHED_DEBUG */
+  	{
+  		.procname	= "sched_rt_period_us",
+  		.data		= &sysctl_sched_rt_period,
