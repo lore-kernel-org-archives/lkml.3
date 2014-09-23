@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205AbaIWRLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:11:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34355 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaIWRLx (ORCPT
+	id S1756336AbaIWRMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:12:35 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:48247 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaIWRMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:11:53 -0400
-Message-ID: <5421A9D5.8020503@infradead.org>
-Date: Tue, 23 Sep 2014 10:11:49 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 23 Sep 2014 13:12:34 -0400
+Message-ID: <5421A9F8.9070301@linux.vnet.ibm.com>
+Date: Tue, 23 Sep 2014 13:12:24 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Valentin Rothberg <valentinrothberg@gmail.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        pebolle@tiscali.nl
-Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
-References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>	 <5421A4B4.1040604@infradead.org> <1411492210.30136.15.camel@nebuchadnezzar>
-In-Reply-To: <1411492210.30136.15.camel@nebuchadnezzar>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Scot Doyle <lkml14@scotdoyle.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Michael Mullin <masmullin@gmail.com>, Ashley Lai <ashley@ashleylai.com>,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v9] tpm_tis: verify interrupt during init
+References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com> <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com> <alpine.LNX.2.11.1408302229001.579@localhost.localdomain> <20140902172015.GD13956@obsidianresearch.com> <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain> <20140908220238.GB6204@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain> <20140922171338.GB28082@obsidianresearch.com> <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain> <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain> <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain>
+In-Reply-To: <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092317-9332-0000-0000-0000021BDDFE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/14 10:10, Valentin Rothberg wrote:
-> On mar., 2014-09-23 at 09:49 -0700, Randy Dunlap wrote:
->> On 09/22/14 23:58, Valentin Rothberg wrote:
->>> The "_MODULE" suffix is reserved for tristates compiled as
->>> loadable kernel modules (LKM). The "TEST_MODULE" feature thereby
->>
->> Is that documented anywhere?
-> 
-> Sadly this is not made explicit, but the Kconfig code documents it. The
-> following code (./scripts/kconfig/confdata.c) is used to generate the
-> autoconf.h header file during the build process. When a feature is
-> selected as a kernel module ('m'), it is suffixed with "_MODULE" to
-> indicate it. 
-> 
-> »   »   switch (*value) {
-> »   »   case 'n':
-> »   »   »   break;
-> »   »   case 'm':
-> »   »   »   suffix = "_MODULE";
-> »   »   »   /* fall through */
-> 
->> Was this causing some kind of problem or error?  Please tell us what that was if so.
-> 
-> It causes problems for static code analysis, which assumes a consistent
-> use of the "_MODULE" suffix. 
-> 
-> Another possible change would be to rename the reference in the Makefile
-> to "TEST_MODULE_MODULE". Personally, I prefer my proposed patch.
+On 09/23/2014 07:55 AM, Scot Doyle wrote:
+> On Tue, 23 Sep 2014, Scot Doyle wrote:
+> ---
+> drivers/char/tpm/tpm_tis.c | 76 +++++++++++++++++++++++++++++++++++++---------
+> 1 file changed, 62 insertions(+), 14 deletions(-)
+>
+> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> index 2c46734..bfe1f1a 100644
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -75,6 +75,10 @@ enum tis_defaults {
+> #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
+> #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
+>
+> +struct priv_data {
+> +	bool irq_tested;
+> +};
+> +
+> static LIST_HEAD(tis_chips);
+> static DEFINE_MUTEX(tis_lock);
+>
+> @@ -338,12 +342,27 @@ out_err:
+> 	return rc;
+> }
+>
+> +static void disable_interrupts(struct tpm_chip *chip)
+> +{
+> +	u32 intmask;
+> +	intmask =
+> +	    ioread32(chip->vendor.iobase +
+> +		     TPM_INT_ENABLE(chip->vendor.locality));
+> +	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
+> +		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
 
-Sure, your patch is fine, but we need to know *why* the patch is needed.
+You want to disable interrupts but you set all the flags? Maybe you meant:
 
-Thanks.
+intmask &= ~(FOO|BAR)
 
->>
->>
->>> violates this convention. The feature is used to compile the
->>> lib/test_module.c kernel module.
->>>
->>> This patch renames the feature and its reference in a Makefile
->>> to "TEST_LKM", which still expresses the test of a LKM.
->>>
->>> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
->>> ---
->>>  lib/Kconfig.debug | 2 +-
->>>  lib/Makefile      | 2 +-
->>>  2 files changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
->>> index 07c2832..db91c97 100644
->>> --- a/lib/Kconfig.debug
->>> +++ b/lib/Kconfig.debug
->>> @@ -1627,7 +1627,7 @@ config DMA_API_DEBUG
->>>  
->>>  	  If unsure, say N.
->>>  
->>> -config TEST_MODULE
->>> +config TEST_LKM
->>>  	tristate "Test module loading with 'hello world' module"
->>>  	default n
->>>  	depends on m
->>> diff --git a/lib/Makefile b/lib/Makefile
->>> index d6b4bc4..382437a 100644
->>> --- a/lib/Makefile
->>> +++ b/lib/Makefile
->>> @@ -31,7 +31,7 @@ obj-y += string_helpers.o
->>>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
->>>  obj-y += kstrtox.o
->>>  obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
->>> -obj-$(CONFIG_TEST_MODULE) += test_module.o
->>> +obj-$(CONFIG_TEST_LKM) += test_module.o
->>>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
->>>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
->>>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
+?
 
+    Stefan
 
--- 
-~Randy
