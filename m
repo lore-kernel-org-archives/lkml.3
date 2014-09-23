@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242AbaIWVdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:33:42 -0400
-Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:52780 "EHLO
-	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756127AbaIWVdM (ORCPT
+	id S932454AbaIWVeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:34:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50217 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932278AbaIWVeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:33:12 -0400
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, dbueso@suse.de, ebiederm@xmission.com,
-        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
-        luto@amacapital.net
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 7/7] selftests/timers: change test to use ksft framework
-Date: Tue, 23 Sep 2014 15:33:00 -0600
-Message-Id: <d9a4d72ce50d6389aa8ce4d8458daf9a3ab8f090.1411506121.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
-References: <cover.1411506121.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
-References: <cover.1411506121.git.shuahkh@osg.samsung.com>
+	Tue, 23 Sep 2014 17:34:00 -0400
+Date: Tue, 23 Sep 2014 23:33:44 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+cc: marc.zyngier@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        jason@lakedaemon.net, pawel.moll@arm.com, Catalin.Marinas@arm.com,
+        Will.Deacon@arm.com, liviu.dudau@arm.com,
+        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [V8 1/2] irqchip: gic: Add support for multiple MSI for ARM64
+In-Reply-To: <5421A825.70201@amd.com>
+Message-ID: <alpine.DEB.2.10.1409232036200.4604@nanos>
+References: <1411230698-8081-1-git-send-email-suravee.suthikulpanit@amd.com> <1411230698-8081-2-git-send-email-suravee.suthikulpanit@amd.com> <alpine.DEB.2.10.1409222349560.4604@nanos> <5421A825.70201@amd.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change timers test to use kselftest framework to report
-test results.
+On Tue, 23 Sep 2014, Suravee Suthikulpanit wrote:
+> > > This patch implelments the ARM64 version of arch_setup_msi_irqs(),
+> > > which does not return 1 for when PCI_CAP_ID_MSI and nvec > 1.
+> > 
+> > I can see that myself. What your changelog is missing is the reason
+> > WHY you think that copying that code from drivers/pci/msi.c and
+> > removing the "PCI_CAP_ID_MSI and nvec > 1" has any value.
+> 
+> [Suravee] This is mainly be cause the weak version of arch_setup_msi_irqs() in
+> the drivers/pci/msi.c doesn't support multi-MSI. Sorry for not being clear in
+> the commit message.
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
----
- tools/testing/selftests/timers/posix_timers.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+Groan. I asked you: 
 
-diff --git a/tools/testing/selftests/timers/posix_timers.c b/tools/testing/selftests/timers/posix_timers.c
-index 41bd855..f87d970 100644
---- a/tools/testing/selftests/timers/posix_timers.c
-+++ b/tools/testing/selftests/timers/posix_timers.c
-@@ -15,6 +15,8 @@
- #include <time.h>
- #include <pthread.h>
- 
-+#include "../kselftest.h"
-+
- #define DELAY 2
- #define USECS_PER_SEC 1000000
- 
-@@ -194,16 +196,16 @@ int main(int argc, char **argv)
- 	printf("based timers if other threads run on the CPU...\n");
- 
- 	if (check_itimer(ITIMER_VIRTUAL) < 0)
--		return -1;
-+		return ksft_exit_fail();
- 
- 	if (check_itimer(ITIMER_PROF) < 0)
--		return -1;
-+		return ksft_exit_fail();
- 
- 	if (check_itimer(ITIMER_REAL) < 0)
--		return -1;
-+		return ksft_exit_fail();
- 
- 	if (check_timer_create(CLOCK_THREAD_CPUTIME_ID) < 0)
--		return -1;
-+		return ksft_exit_fail();
- 
- 	/*
- 	 * It's unfortunately hard to reliably test a timer expiration
-@@ -215,7 +217,7 @@ int main(int argc, char **argv)
- 	 * find a better solution.
- 	 */
- 	if (check_timer_create(CLOCK_PROCESS_CPUTIME_ID) < 0)
--		return -1;
-+		return ksft_exit_fail();
- 
--	return 0;
-+	return ksft_exit_pass();
- }
--- 
-1.9.1
+> > WHY you think that copying that code from drivers/pci/msi.c and
+> > removing the "PCI_CAP_ID_MSI and nvec > 1" has any value.
+
+And your answer is that the function in drivers/pci/msi.c does not
+support Multi-MSI. Hell I know that myself. And there is a fricking
+good reason why allocating multi-MSI via
+
+    for_each_msi()
+	alloc_msi_irq();
+
+is wrong. And while it might work by chance, there is no guarantee
+that it will work. It works for Multi-MSIX, but that has an additional
+X at the end and is a different beast when it comes to interrupts.
+
+I have no idea how crooked you are trying to work around that on the
+GIC side, but its going to be wrong and convoluted.
+
+Read and understand the MSI and MSI-X spec and the subtle differences
+of interrupt delivery. And if you groked that come back with a proper
+explanation why that patch makes sense or just go back to the drawing
+board and do it proper.
+
+Thanks,
+
+	tglx
+
+
+
 
