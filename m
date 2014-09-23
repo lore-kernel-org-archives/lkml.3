@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958AbaIWWAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:00:12 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:52934 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaIWWAJ (ORCPT
+	id S1757009AbaIWWA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:00:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38317 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756965AbaIWWAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:00:09 -0400
+	Tue, 23 Sep 2014 18:00:21 -0400
+Date: Tue, 23 Sep 2014 14:58:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frans Klaver <frans.klaver@xsens.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 0/2] Fix a division by zero
+Message-ID: <20140923215831.GB651@kroah.com>
+References: <1411502080-19769-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:8:ee7:c074:25b1:7d97:a0af]
-In-Reply-To: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
-References: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
-From: Peter Foley <pefoley2@pefoley.com>
-Date: Tue, 23 Sep 2014 17:59:48 -0400
-Message-ID: <CAOFdcFOdnyFCf-afZaO8ZS2fvC=-V=nhb1WonOa6AwmjxSgwgg@mail.gmail.com>
-Subject: Re: [PATCH linux-next] Documentation: mic: mpssd: Disable mpssd
- builds for kernels < 3.13
-To: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411502080-19769-1-git-send-email-frans.klaver@xsens.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 5:55 PM, Ashutosh Dixit
-<ashutosh.dixit@intel.com> wrote:
-> mpssd depends on headers available in kernels >= 3.13. Therefore
-> disable the build for kernels < 3.13. For kernels < 3.13, to avoid the
-> appearance of a build break simply print an error message and exit.
->
-Everything in Documentation should be built against the headers in the
-kernel source tree due to the dep on CONFIG_HEADERS_CHECK.
-The patch that added this code was in the 3.12 tree
-(https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Makefile?id=8d49751),
-did it not work when it was first merged?
-What was the exact command you used to compile this code?
-Did you make sure check_headers was run first?
+On Tue, Sep 23, 2014 at 09:54:38PM +0200, Frans Klaver wrote:
+> Hi Greg,
+> 
+> Here's a couple of patches that fix a divison by zero in omap-serial.c. One's a
+> cleanup, the other the actual fix.
 
-Thanks,
+So both would be needed to be backported to stable kernels?  Why not
+just do the fix first, then the cleanup afterward, to make backporting
+easier?
 
-Peter
+thanks,
+
+greg k-h
