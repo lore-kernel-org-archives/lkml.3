@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350AbaIWRKj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:10:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59404 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932115AbaIWRKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:10:38 -0400
-Message-ID: <5421A851.70403@redhat.com>
-Date: Tue, 23 Sep 2014 19:05:21 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756205AbaIWRLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:11:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34355 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaIWRLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 13:11:53 -0400
+Message-ID: <5421A9D5.8020503@infradead.org>
+Date: Tue, 23 Sep 2014 10:11:49 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Andres Lagar-Cavilla <andreslc@google.com>
-CC: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andres Lagar-Cavilla <andreslc@gooogle.com>
-Subject: Re: [PATCH v4] kvm: Fix page ageing bugs
-References: <1411410865-3603-1-git-send-email-andreslc@google.com>	<1411422882-16245-1-git-send-email-andreslc@google.com>	<542125F1.3080607@redhat.com> <CAJu=L58L4XrACYieQuM412TJuJoD+QYBb=qOcN1MtwdVAPzn2Q@mail.gmail.com>
-In-Reply-To: <CAJu=L58L4XrACYieQuM412TJuJoD+QYBb=qOcN1MtwdVAPzn2Q@mail.gmail.com>
+To: Valentin Rothberg <valentinrothberg@gmail.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        pebolle@tiscali.nl
+Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
+References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>	 <5421A4B4.1040604@infradead.org> <1411492210.30136.15.camel@nebuchadnezzar>
+In-Reply-To: <1411492210.30136.15.camel@nebuchadnezzar>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/09/2014 19:04, Andres Lagar-Cavilla ha scritto:
-> I'm not sure. The addition is not always by PAGE_SIZE, since it
-> depends on the current level we are iterating at in the outer
-> kvm_handle_hva_range(). IOW, could be PMD_SIZE or even PUD_SIZE, and
-> is_large_pte() enough to tell?
+On 09/23/14 10:10, Valentin Rothberg wrote:
+> On mar., 2014-09-23 at 09:49 -0700, Randy Dunlap wrote:
+>> On 09/22/14 23:58, Valentin Rothberg wrote:
+>>> The "_MODULE" suffix is reserved for tristates compiled as
+>>> loadable kernel modules (LKM). The "TEST_MODULE" feature thereby
+>>
+>> Is that documented anywhere?
 > 
-> This is probably worth a general fix, I can see all the callbacks
-> benefiting from knowing the gfn (passed down by
-> kvm_handle_hva_range()) without any additional computation, and adding
-> that to a tracing call if they don't already.
+> Sadly this is not made explicit, but the Kconfig code documents it. The
+> following code (./scripts/kconfig/confdata.c) is used to generate the
+> autoconf.h header file during the build process. When a feature is
+> selected as a kernel module ('m'), it is suffixed with "_MODULE" to
+> indicate it. 
 > 
-> Even passing the level down to the callback would help by cutting down
-> to one arithmetic op (subtract rmapp from slot rmap base pointer for
-> that level)
+> »   »   switch (*value) {
+> »   »   case 'n':
+> »   »   »   break;
+> »   »   case 'm':
+> »   »   »   suffix = "_MODULE";
+> »   »   »   /* fall through */
+> 
+>> Was this causing some kind of problem or error?  Please tell us what that was if so.
+> 
+> It causes problems for static code analysis, which assumes a consistent
+> use of the "_MODULE" suffix. 
+> 
+> Another possible change would be to rename the reference in the Makefile
+> to "TEST_MODULE_MODULE". Personally, I prefer my proposed patch.
 
-You're right.  Let's apply this patch and work on that as a follow-up.
+Sure, your patch is fine, but we need to know *why* the patch is needed.
 
-Paolo
+Thanks.
+
+>>
+>>
+>>> violates this convention. The feature is used to compile the
+>>> lib/test_module.c kernel module.
+>>>
+>>> This patch renames the feature and its reference in a Makefile
+>>> to "TEST_LKM", which still expresses the test of a LKM.
+>>>
+>>> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
+>>> ---
+>>>  lib/Kconfig.debug | 2 +-
+>>>  lib/Makefile      | 2 +-
+>>>  2 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+>>> index 07c2832..db91c97 100644
+>>> --- a/lib/Kconfig.debug
+>>> +++ b/lib/Kconfig.debug
+>>> @@ -1627,7 +1627,7 @@ config DMA_API_DEBUG
+>>>  
+>>>  	  If unsure, say N.
+>>>  
+>>> -config TEST_MODULE
+>>> +config TEST_LKM
+>>>  	tristate "Test module loading with 'hello world' module"
+>>>  	default n
+>>>  	depends on m
+>>> diff --git a/lib/Makefile b/lib/Makefile
+>>> index d6b4bc4..382437a 100644
+>>> --- a/lib/Makefile
+>>> +++ b/lib/Makefile
+>>> @@ -31,7 +31,7 @@ obj-y += string_helpers.o
+>>>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+>>>  obj-y += kstrtox.o
+>>>  obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
+>>> -obj-$(CONFIG_TEST_MODULE) += test_module.o
+>>> +obj-$(CONFIG_TEST_LKM) += test_module.o
+>>>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
+>>>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
+>>>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
+
+
+-- 
+~Randy
