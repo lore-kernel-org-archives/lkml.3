@@ -1,136 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699AbaIWLRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:17:13 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48371 "EHLO gum.cmpxchg.org"
+	id S1755912AbaIWLSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:18:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60598 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162AbaIWLRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:17:06 -0400
-Date: Tue, 23 Sep 2014 07:16:57 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: support transparent huge pages under
- pressure
-Message-ID: <20140923111657.GA13593@cmpxchg.org>
-References: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
- <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
+	id S1755887AbaIWLSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 07:18:44 -0400
+Date: Tue, 23 Sep 2014 13:18:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: dougthompson@xmission.com, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5] edac, amd64_edac: Modify usage of
+ amd64_read_dct_pci_cfg()
+Message-ID: <20140923111838.GG22072@pd.tnic>
+References: <1410799058-3149-1-git-send-email-aravind.gopalakrishnan@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <1410799058-3149-1-git-send-email-aravind.gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 10:52:50PM -0700, Greg Thelen wrote:
+On Mon, Sep 15, 2014 at 11:37:38AM -0500, Aravind Gopalakrishnan wrote:
+> From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 > 
-> On Fri, Sep 19 2014, Johannes Weiner wrote:
+> Rationale behind this change:
+>  - F2x1xx addresses were stopped from being mapped explicitly to DCT1
+>    from F15h (OR) onwards. They use _dct[0:1] mechanism to access the
+>    registers. So we should move away from using address ranges to select
+>    DCT for these families.
+>  - On newer processors, the address ranges used to indicate DCT1 (0x140,
+>    0x1a0) have different meanings than what is assumed currently.
 > 
-> > In a memcg with even just moderate cache pressure, success rates for
-> > transparent huge page allocations drop to zero, wasting a lot of
-> > effort that the allocator puts into assembling these pages.
-> >
-> > The reason for this is that the memcg reclaim code was never designed
-> > for higher-order charges.  It reclaims in small batches until there is
-> > room for at least one page.  Huge pages charges only succeed when
-> > these batches add up over a series of huge faults, which is unlikely
-> > under any significant load involving order-0 allocations in the group.
-> >
-> > Remove that loop on the memcg side in favor of passing the actual
-> > reclaim goal to direct reclaim, which is already set up and optimized
-> > to meet higher-order goals efficiently.
-> >
-> > This brings memcg's THP policy in line with the system policy: if the
-> > allocator painstakingly assembles a hugepage, memcg will at least make
-> > an honest effort to charge it.  As a result, transparent hugepage
-> > allocation rates amid cache activity are drastically improved:
-> >
-> >                                       vanilla                 patched
-> > pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
-> > pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
-> > pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
-> > thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
-> > thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
-> >
-> > [ Note: this may in turn increase memory consumption from internal
-> >   fragmentation, which is an inherent risk of transparent hugepages.
-> >   Some setups may have to adjust the memcg limits accordingly to
-> >   accomodate this - or, if the machine is already packed to capacity,
-> >   disable the transparent huge page feature. ]
+> Changes introduced:
+>  - amd64_read_dct_pci_cfg() now takes in dct value and uses it for
+>    'selecting the dct'
+>  - Update usage of the function. Keep in mind that different families
+>    have specific handling requirements
+>  - Remove [k8|f10]_read_dct_pci_cfg() as they don't do much different
+>    from amd64_read_pci_cfg()
+>    - Move the k8 specific check to amd64_read_pci_cfg
+>  - Remove f15_read_dct_pci_cfg() and move logic to amd64_read_dct_pci_cfg()
+>  - Remove now needless .read_dct_pci_cfg
 > 
-> We're using an earlier version of this patch, so I approve of the
-> general direction.  But I have some feedback.
+> Testing:
+>  - Tested on Fam 10h; Fam15h Models: 00h, 30h; Fam16h using 'EDAC_DEBUG'
+>    and mce_amd_inj
+>  - driver obtains info from F2x registers and caches it in pvt
+>    structures correctly
+>  - ECC decoding works fine
 > 
-> The memsw aspect of this change seems somewhat separate.  Can it be
-> split into a different patch?
+> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+> ---
+> Changes in V5: (per Boris suggestion)
+>  - use switch instead of if() in amd64_read_dct_pci_cfg() for better
+>    readability.
+>  - retain if(!dct_ganging_enabled) condition while reading dclr1.
 > 
-> The memsw aspect of this patch seems to change behavior.  Is this
-> intended?  If so, a mention of it in the commit log would assuage the
-> reader.  I'll explain...  Assume a machine with swap enabled and
-> res.limit==memsw.limit, thus memsw_is_minimum is true.  My understanding
-> is that memsw.usage represents sum(ram_usage, swap_usage).  So when
-> memsw_is_minimum=true, then both swap_usage=0 and
-> memsw.usage==res.usage.  In this condition, if res usage is at limit
-> then there's no point in swapping because memsw.usage is already
-> maximal.  Prior to this patch I think the kernel did the right thing,
-> but not afterwards.
+> Change in V4: (per Boris suggestion)
+>  - move amd64_read_dct_pci_cfg() to amd64_edac.c and save exporting
+>    f15h_select_dct() in the process
 > 
-> Before this patch:
->   if res.usage == res.limit, try_charge() indirectly calls
->   try_to_free_mem_cgroup_pages(noswap=true)
+> Changes in V3:
+>  - per Boris suggestion
+>    - move dct selection logic to amd64_read_dct_pci_cfg()
+>    - remove f15_read_dct_pci_cfg() and move logic to amd64_read_dct_pci_cfg()
+>  - misc
+>    - modify logic in amd64_read_dct_pci_cfg() to keep in mind the specific
+>      read handling requirements of different families. Previous version had
+>      failed to do that.
 > 
-> After this patch:
->   if res.usage == res.limit, try_charge() calls
->   try_to_free_mem_cgroup_pages(may_swap=true)
+> Changes in V2: (per Boris suggestion)
+>  - Hide family checks in amd64_read_dct_pci_cfg()
+>  - Use pvt structure for family checks and not boot_cpu_data
 > 
-> Notice the inverted swap-is-allowed value.
+>  drivers/edac/amd64_edac.c | 146 +++++++++++++++++++++++++---------------------
+>  drivers/edac/amd64_edac.h |   5 --
+>  2 files changed, 80 insertions(+), 71 deletions(-)
 
-For some reason I had myself convinced that this is dead code due to a
-change in callsites a long time ago, but you are right that currently
-try_charge() relies on it, thanks for pointing it out.
+Applied, thanks.
 
-However, memsw is always equal to or bigger than the memory limit - so
-instead of keeping a separate state variable to track when memory
-failure implies memsw failure, couldn't we just charge memsw first?
-
-How about the following?  But yeah, I'd split this into a separate
-patch now.
-
----
- mm/memcontrol.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e2def11f1ec1..7c9a8971d0f4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2497,16 +2497,17 @@ retry:
- 		goto done;
- 
- 	size = batch * PAGE_SIZE;
--	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
--		if (!do_swap_account)
-+	if (!do_swap_account ||
-+	    !res_counter_charge(&memcg->memsw, size, &fail_res)) {
-+		if (!res_counter_charge(&memcg->res, size, &fail_res))
- 			goto done_restock;
--		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
--			goto done_restock;
--		res_counter_uncharge(&memcg->res, size);
-+		if (do_swap_account)
-+			res_counter_uncharge(&memcg->memsw, size);
-+		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
-+	} else {
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
- 		may_swap = false;
--	} else
--		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
-+	}
- 
- 	if (batch > nr_pages) {
- 		batch = nr_pages;
 -- 
-2.1.0
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
