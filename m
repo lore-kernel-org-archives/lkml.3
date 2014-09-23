@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921AbaIWVdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:33:14 -0400
-Received: from qmta10.westchester.pa.mail.comcast.net ([76.96.62.17]:45874
-	"EHLO qmta10.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755694AbaIWVdH (ORCPT
+	id S1756899AbaIWVdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:33:12 -0400
+Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:39798
+	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751735AbaIWVdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Sep 2014 17:33:07 -0400
 From: Shuah Khan <shuahkh@osg.samsung.com>
@@ -14,83 +14,41 @@ To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
         luto@amacapital.net
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/7] selftests: add kselftest framework for uniform test reporting
-Date: Tue, 23 Sep 2014 15:32:54 -0600
-Message-Id: <0b1961bd4d2104beafd2e8c1a17690f6efe14a61.1411506121.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v2 0/7] kselftest framework and test changes to use it
+Date: Tue, 23 Sep 2014 15:32:53 -0600
+Message-Id: <cover.1411506121.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
-References: <cover.1411506121.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
-References: <cover.1411506121.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch v2 series: (revised to address v1 comments)
+
 Add kselftest framework for tests to use. This is a light
 weight framework provides a set of interfaces to report test
-results. Tests can use these interfaces to report pass, and
-fail cases as well as when failure is due to configuration
-problems such as missing modules, or when a test that is should
-fail, fails as expected, and a test that should fail, passes.
-The framework uses POSIX standard return codes for reporting
-results to address the needs of users that want to run the kernel
-selftests from their user-space test suites and want to know why a
-test failed. In addition, the framework includes interfaces to use
-to report test statistics on number of tests passed and failed.
+results and test statistics on number of tests passed and failed.
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
----
- tools/testing/selftests/kselftest.h | 41 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+Several tests are changed to use the framework to report results.
+
+Shuah Khan (7):
+  selftests: add kselftest framework for uniform test reporting
+  selftests/breakpoints: change test to use ksft framework
+  selftests/ipc: change test to use ksft framework
+  selftests/kcmp: change test to use ksft framework
+  selftests/mount: change test to use ksft framework
+  selftests/ptrace: change test to use ksft framework
+  selftests/timers: change test to use ksft framework
+
+ .../selftests/breakpoints/breakpoint_test.c        | 10 +++---
+ tools/testing/selftests/ipc/msgque.c               | 26 +++++++-------
+ tools/testing/selftests/kcmp/kcmp_test.c           | 27 ++++++++++----
+ tools/testing/selftests/kselftest.h                | 41 ++++++++++++++++++++++
+ .../selftests/mount/unprivileged-remount-test.c    |  8 +++--
+ tools/testing/selftests/ptrace/peeksiginfo.c       | 14 ++++----
+ tools/testing/selftests/timers/posix_timers.c      | 14 ++++----
+ 7 files changed, 101 insertions(+), 39 deletions(-)
  create mode 100644 tools/testing/selftests/kselftest.h
 
-diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
-new file mode 100644
-index 0000000..c73fc2c
---- /dev/null
-+++ b/tools/testing/selftests/kselftest.h
-@@ -0,0 +1,41 @@
-+/*
-+ * kselftest.h: kselftest framework return codes to include from
-+ *		 selftests.
-+ *
-+ * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+#ifndef __KSELFTEST_H
-+#define __KSELFTEST_H
-+
-+#include <stdlib.h>
-+#include <unistd.h>
-+
-+/* counters */
-+static int ksft_pass;
-+static int ksft_fail;
-+static int ksft_xfail;
-+static int ksft_xpass;
-+static int ksft_xskip;
-+
-+static inline void ksft_inc_pass_cnt(void) { ksft_pass++; }
-+static inline void ksft_inc_fail_cnt(void) { ksft_fail++; }
-+static inline void ksft_inc_xfail_cnt(void) { ksft_xfail++; }
-+static inline void ksft_inc_xpass_cnt(void) { ksft_xpass++; }
-+static inline void ksft_inc_xskip_cnt(void) { ksft_xskip++; }
-+
-+static inline void ksft_print_cnts(void)
-+{
-+	printf("Pass: %d Fail: %d Xfail: %d Xpass: %d, Xskip: %d\n",
-+		ksft_pass, ksft_fail, ksft_xfail, ksft_xpass, ksft_xskip);
-+}
-+
-+static inline int ksft_exit_pass(void) { exit(0); }
-+static inline int ksft_exit_fail(void) { exit(1); }
-+static inline int ksft_exit_xfail(void) { exit(2); }
-+static inline int ksft_exit_xpass(void) { exit(3); }
-+static inline int ksft_exit_skip(void) { exit(4); }
-+
-+#endif /* __KSELFTEST_H */
 -- 
 1.9.1
 
