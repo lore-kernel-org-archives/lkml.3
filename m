@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097AbaIWXTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:19:05 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:37326 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292AbaIWXTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:19:02 -0400
-Message-ID: <5421FFE3.8060402@osg.samsung.com>
-Date: Tue, 23 Sep 2014 17:18:59 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1756984AbaIWXYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:24:01 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:44770 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732AbaIWXX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 19:23:59 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, dbueso@suse.de, serge.hallyn@ubuntu.com,
-        thierry@linux.vnet.ibm.com, luto@amacapital.net,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v2 5/7] selftests/mount: change test to use ksft framework
-References: <cover.1411506121.git.shuahkh@osg.samsung.com> <cover.1411506121.git.shuahkh@osg.samsung.com> <969f0780734a04763f2b54063603b93380244d0c.1411506121.git.shuahkh@osg.samsung.com> <87d2am2c4v.fsf@x220.int.ebiederm.org> <5421FA8A.9050209@osg.samsung.com> <8761geylzj.fsf@x220.int.ebiederm.org>
-In-Reply-To: <8761geylzj.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [2001:470:8:ee7:c074:25b1:7d97:a0af]
+In-Reply-To: <ndhwbqvboe9c48.fsf@rasscmlmus001.pdx.intel.com>
+References: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
+ <5421EA22.6000206@infradead.org> <ndhwbqvboe9c48.fsf@rasscmlmus001.pdx.intel.com>
+From: Peter Foley <pefoley2@pefoley.com>
+Date: Tue, 23 Sep 2014 19:23:39 -0400
+Message-ID: <CAOFdcFMLYJ9qqRB-uwyLwyBpa=KTsHMbzdANJrmRu_wrqNArOA@mail.gmail.com>
+Subject: Re: [PATCH linux-next] Documentation: mic: mpssd: Disable mpssd
+ builds for kernels < 3.13
+To: ashutosh dixit <ashutosh.dixit@intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Dutt, Sudeep" <sudeep.dutt@intel.com>,
+        "Rao, Nikhil" <nikhil.rao@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 05:07 PM, Eric W. Biederman wrote:
-> Shuah Khan <shuahkh@osg.samsung.com> writes:
-> 
->> On 09/23/2014 04:41 PM, Eric W. Biederman wrote:
->>> Shuah Khan <shuahkh@osg.samsung.com> writes:
->>>
->>>> Change mount test to use kselftest framework to report
->>>> test results.
->>>
->>> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
->>>
->>> I am curious did you even run these tests?   I can't possibly see how
->>> the tests would have passed with this change.  At the very least you
->>> have taken this test from linear to exponential time complexity.
->>>
->>
->> Oops. I meant to drop this commit from the series. Sorry for the
->> noise.
-> 
-> No problem.  Except for the unnecessary semantic change the rest of the
-> change looked fine.  I just wanted to make certain you didn't break my
-> test by accident.
-> 
+On Tue, Sep 23, 2014 at 6:59 PM, ashutosh dixit
+<ashutosh.dixit@intel.com> wrote:
+> Correct, if things in Documentation will be compiled against the headers
+> in the kernel source tree then this patch is not required. However,
+> Andrew had reported the following compile error:
+>
+>> In file included from Documentation/mic/mpssd/sysfs.c:21:
+>> Documentation/mic/mpssd/mpssd.h:55:30: error: linux/virtio_ids.h: No such file or directory
+>
+> which made it appear to us that Documentation was being compiled against
+> headers installed on the system, not headers in the kernel source
+> tree. The patch was submitted to address this latter case, but if that
+> does not occur it is not required.
+>
+Alright, if you want to handle the case where somebody is trying to
+build against old and incompatible headers,
+just have a #error "Your kernel headers are too old, at least 3.13 is
+required" at the top of mpssd.c instead of having it fail at runtime.
 
-Thanks for catching it. The results didn't look right and I meant
-to delay this change for later after another round of testing.
-I will fix it without the unnecessary change and send it out
-separately.
+Thanks,
 
-thanks,
--- Shuah
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Peter
