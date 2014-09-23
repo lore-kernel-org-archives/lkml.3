@@ -1,94 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786AbaIWJUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:20:45 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:49722 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaIWJUn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:20:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411380672.24091.18.camel@debian-rtk5880>
-References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
-	<CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-	<54195036.2010409@realsil.com.cn>
-	<CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
-	<1411024883.27455.11.camel@debian-rtk5880>
-	<CAPDyKFqokjwerEC+6A=2h4cPH29rnX0tyW=2=KQX2rSE=SEKHw@mail.gmail.com>
-	<1411380672.24091.18.camel@debian-rtk5880>
-Date: Tue, 23 Sep 2014 11:20:42 +0200
-Message-ID: <CAPDyKFq+NJ33AT4Lg0cvfZWnOKew6fTaLW--SVZ0w0xKvXw+Wg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Wei_wang <wei_wang@realsil.com.cn>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754958AbaIWJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:24:28 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:49185 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754863AbaIWJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:24:26 -0400
+Message-ID: <1411464267.18580.46.camel@iivanov-dev>
+Subject: Re: [PATCH] spi: qup: Fix incorrect block transfers
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Mark Brown <broonie@kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Tue, 23 Sep 2014 12:24:27 +0300
+In-Reply-To: <1411360048-3388-1-git-send-email-agross@codeaurora.org>
+References: <1411360048-3388-1-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 September 2014 12:09, Roger Tseng <rogerable@realtek.com> wrote:
-> On Thu, 2014-09-18 at 23:14 +0200, Ulf Hansson wrote:
->> [...]
->>
->> >>
->> >> In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
->> >>
->> >> >
->> >> > if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
->> >> > then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
->> >> > return.
->> >>
->> >> Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
->> >> that path at all.
->> >>
->> >> Hmm, I think we should change the behavior in mmc_start_host(), like below:
->> >> 1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
->> >> should be assigned to at allocation.
->> >> 2 ) From mmc_start_host(), invoke mmc_power_off() when
->> >> MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
->> >>
->> >> Would that work?
->> > Yes. I have confirmed this by following changes. The MMC_POWER_UNDEFINED
->> > designation in mmc_start_host() will eventually cause a power-off
->> > operation.
->> >
->> > But I wonder if we need to additionally check MMC_CAP2_FULL_PWR_CYCLE
->> > before calling mmc_power_off()?
->>
->> The intent from my side was to keep the current behaviour for those
->> that already used MMC_CAP2_NO_PRESCAN_POWERUP, but it's s not a big
->> deal.
->>
->
-> I checked the log and found the commit that invokes mmc_power_off():
-> a08b17be8b984a7c51cd5a480cd977363df353f9
-> 0d3e3350d5871c53464be4c92d57198744247005
-> (https://www.mail-archive.com/linux-mmc@vger.kernel.org/msg19638.html )
->
-> The proposed change might bring back some delay since invoking
-> mmc_power_off() in mmc_start_host() is more than NOP now and triggers
-> real power-off and re-init in sdhci.
 
-Actually the above commits was added due to the below commit:
+Hi Andy,
 
-fa5501890d8974301042e0202d342a6cbe8609f4
+On Sun, 2014-09-21 at 23:27 -0500, Andy Gross wrote:
+> This patch fixes a number of errors with the QUP block transfer mode.  Errors
+> manifested themselves as input underruns, output overruns, and timed out
+> transactions.
 
-But the commits you refer to, didn't bring back the old behaviour,
-which I think was the intent. Instead we added a NOP call to
-mmc_power_off() from mmc_start_host().
+At what speeds are you seeing those errors?
 
-We have few options on how to go forward, but let's loop in Adrian
-Hunter first, since he might be able to comment on this as well.
+> 
+> The block mode does not require the priming that occurs in FIFO mode.  At the
+> moment that the QUP is placed into the RUN state, the QUP may immediately raise
+> an interrupt if the request is a write.  Therefore, there is no need to prime
+> the pump.
+> 
+> In addition, the block transfers require that whole blocks of data are
+> read/written at a time.  The last block of data that completes a transaction may
+> contain less than a full blocks worth of data.
 
-Kind regards
-Uffe
+Does this mean that block transfer will start only if the required
+bytes from block is written into buffer?
+
+> 
+> Each block of data results in an input/output service interrupt accompanied with
+> a input/output block flag set.  Additional block reads/writes require clearing
+> of the service flag.  It is ok to check for additional blocks of data in the
+> ISR, but you have to ack every block you transfer.  Imbalanced acks result in
+> early return from complete transactions with pending interrupts that still have
+> to be ack'd.  The next transaction can be affected by these interrupts.
+> 
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> ---
+>  drivers/spi/spi-qup.c |  194 +++++++++++++++++++++++++++++++++++--------------
+>  1 file changed, 141 insertions(+), 53 deletions(-)
+> 
+
+<snip>
+
+> +static void qup_fill_read_buffer(struct spi_qup *controller,
+> +	struct spi_transfer *xfer, u32 data)
+
+Please, could prefix this whit spi_ to be consistent with the
+rest of the code.
+
+>  {
+>  	u8 *rx_buf = xfer->rx_buf;
+> -	u32 word, state;
+> -	int idx, shift, w_size;
+> -
+> -	w_size = controller->w_size;
+> -
+> -	while (controller->rx_bytes < xfer->len) {
+> -
+> -		state = readl_relaxed(controller->base + QUP_OPERATIONAL);
+> -		if (0 == (state & QUP_OP_IN_FIFO_NOT_EMPTY))
+> -			break;
+> +	int idx, shift;
+> +	int read_len = min_t(int, xfer->len - controller->rx_bytes,
+> +				controller->w_size);
+
+You should not need this check here. xfer->len is multiple of controller->w_size
+and you always read one word at time.
+
+>  
+> -		word = readl_relaxed(controller->base + QUP_INPUT_FIFO);
+> -
+> -		if (!rx_buf) {
+> -			controller->rx_bytes += w_size;
+> -			continue;
+> -		}
+> -
+> -		for (idx = 0; idx < w_size; idx++, controller->rx_bytes++) {
+> +	if (rx_buf)
+> +		for (idx = 0; idx < read_len; idx++) {
+>  			/*
+>  			 * The data format depends on bytes per SPI word:
+>  			 *  4 bytes: 0x12345678
+> @@ -229,40 +218,129 @@ static void spi_qup_fifo_read(struct spi_qup *controller,
+>  			 *  1 byte : 0x00000012
+>  			 */
+>  			shift = BITS_PER_BYTE;
+> -			shift *= (w_size - idx - 1);
+> -			rx_buf[controller->rx_bytes] = word >> shift;
+> +			shift *= (controller->w_size - idx - 1);
+> +			rx_buf[controller->rx_bytes + idx] = data >> shift;
+>  		}
+> -	}
+> +
+> +	controller->rx_bytes += read_len;
+>  }
+>  
+> -static void spi_qup_fifo_write(struct spi_qup *controller,
+> -			    struct spi_transfer *xfer)
+> +static void qup_prepare_write_data(struct spi_qup *controller,
+> +	struct spi_transfer *xfer, u32 *data)
+>  {
+>  	const u8 *tx_buf = xfer->tx_buf;
+> -	u32 word, state, data;
+> -	int idx, w_size;
+> +	u32 val;
+> +	int idx;
+> +	int write_len = min_t(int, xfer->len - controller->tx_bytes,
+> +				controller->w_size);
+>  
+
+Same here.
+
+> -	w_size = controller->w_size;
+> +	*data = 0;
+>  
+> -	while (controller->tx_bytes < xfer->len) {
+> +	if (tx_buf)
+> +		for (idx = 0; idx < write_len; idx++) {
+> +			val = tx_buf[controller->tx_bytes + idx];
+> +			*data |= val << (BITS_PER_BYTE * (3 - idx));
+> +		}
+>  
+> -		state = readl_relaxed(controller->base + QUP_OPERATIONAL);
+> -		if (state & QUP_OP_OUT_FIFO_FULL)
+> -			break;
+> +	controller->tx_bytes += write_len;
+> +}
+>  
+> -		word = 0;
+> -		for (idx = 0; idx < w_size; idx++, controller->tx_bytes++) {
+> +static void spi_qup_service_block(struct spi_qup *controller,
+> +	struct spi_transfer *xfer, bool is_read)
+> +{
+
+Please, could you split this function to read and write, so we can use:
+
+spi_qup_fifo_read() and spi_qup_fifo_write() in FIFO modes and 
+spi_qup_block_read() and spi_qup_block_write() for BLOCK mode.
+
+> +	u32 data, words_per_blk, num_words, ack_flag, op_flag;
+> +	int i;
+> +
+> +	if (is_read) {
+> +		op_flag = QUP_OP_IN_BLOCK_READ_REQ;
+> +		ack_flag = QUP_OP_IN_SERVICE_FLAG;
+> +		num_words = DIV_ROUND_UP(xfer->len - controller->rx_bytes,
+> +					controller->w_size);
+
+Same here and below.
+
+> +		words_per_blk = controller->in_blk_sz >> 2;
+> +	} else {
+> +		op_flag = QUP_OP_OUT_BLOCK_WRITE_REQ;
+> +		ack_flag = QUP_OP_OUT_SERVICE_FLAG;
+> +		num_words = DIV_ROUND_UP(xfer->len - controller->tx_bytes,
+> +					controller->w_size);
+> +		words_per_blk = controller->out_blk_sz >> 2;
+> +	}
+
+Thank you.
+Ivan
+
+
