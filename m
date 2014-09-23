@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685AbaIWPCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:02:31 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:47531 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756384AbaIWPC2 convert rfc822-to-8bit (ORCPT
+	id S1756704AbaIWPCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:02:40 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36477 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756669AbaIWPCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:02:28 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
-From: Weston Andros Adamson <dros@primarydata.com>
-In-Reply-To: <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
-Date: Tue, 23 Sep 2014 11:02:26 -0400
-Cc: Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
+	Tue, 23 Sep 2014 11:02:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410340551-24023-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1410340551-24023-1-git-send-email-antoine.tenart@free-electrons.com>
+Date: Tue, 23 Sep 2014 17:02:35 +0200
+Message-ID: <CACRpkdbtoOmBE4thmegDDR1Ev+9+Neq5j8z2Nr5MDi_P7yA2hQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: berlin: fix the dt_free_map function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        zhiming Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
-References: <20140923130352.GK26472@arm.com> <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
-To: Will Deacon <will.deacon@arm.com>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 23, 2014, at 10:59 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
+On Wed, Sep 10, 2014 at 11:15 AM, Antoine Tenart
+<antoine.tenart@free-electrons.com> wrote:
 
-> On Sep 23, 2014, at 10:53 AM, Will Deacon <will.deacon@arm.com> wrote:
-> 
->> On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
->>> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
->>>> Any more info on how to reproduce this would be really great. Unfortunately I don’t
->>>> have access to an arm64 system.
->>> 
->>> I've not spotted a pattern other than using 64k pages, yet. If I manage to
->>> get a reproducer, I'll let you know.
->>> 
->>>> If it’s possible, could we get a packet trace around when this happens? This is pure
->>>> speculation, but this might have something to do the resend path - a commit fails
->>>> and all the requests on the commit list have to be resent.
->>> 
->>> Sure, once I can reproduce it reliably, then I'll try to do that.
->> 
->> Right, a bunch of DDing from /dev/zero over an ssh session triggers this
->> very quickly. I've put a binary tcpdump here:
->> 
->> http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
->> 
->> You may want to filter out the ssh packets. The only `interesting' thing to
->> me is a retransmission about half way through, but I don't know what I'm
->> looking for.
->> 
->> The NFS server is 10.1.203.204 and the client is 10.1.203.24.
-> 
-> Thanks! You are using NFSv2, so there are no commits - that rules out my hunch.
+> The berlin_pinctrl_dt_free_map function tries to free memory
+> allocated and handled by the of subsystem. This is wrong and
+> already handled by pinctrl_dt_free_maps() which calls
+> of_node_put().
+>
+> This patch fixes the Berlin pinctrl way of freeing its maps,
+> avoiding a kernel BUG(), by using the common
+> pinctrl_utils_dt_free_map function instead.
+>
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 
-Wait a second - the whole point of this extra reference (that the WARN_ON_ONCE is
-related to) is to handle the pass off to commit lists.
+Patch applied with Sebastian's ACK.
 
-Maybe I’m just doing the wrong thing here with NFSv2!
-
-More soon.
-
--dros
-
+Yours,
+Linus Walleij
