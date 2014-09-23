@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaIWObA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:31:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:19071 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753971AbaIWOa6 (ORCPT
+	id S1756002AbaIWOcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:32:17 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62019 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751755AbaIWOcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:30:58 -0400
-Date: Tue, 23 Sep 2014 10:30:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] signal: simplify deadlock-avoidance in
- lock_task_sighand()
-Message-ID: <20140923103053.7da6b7f8@gandalf.local.home>
-In-Reply-To: <20140923142037.GG3312@worktop.programming.kicks-ass.net>
-References: <20140922164404.GA28910@redhat.com>
-	<20140922164437.GA28939@redhat.com>
-	<20140922145828.4d06108a@gandalf.local.home>
-	<20140922191130.GA4527@redhat.com>
-	<20140922172405.71c4a110@gandalf.local.home>
-	<54215D52.8030201@redhat.com>
-	<20140923142037.GG3312@worktop.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Tue, 23 Sep 2014 10:32:16 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
+Date: Tue, 23 Sep 2014 16:52:01 +0200
+Message-ID: <1487657.QLes1WRKBI@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140923121712.GD18814@xps8300>
+References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com> <1408535728-10518-3-git-send-email-heikki.krogerus@linux.intel.com> <20140923121712.GD18814@xps8300>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 16:20:37 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, Sep 23, 2014 at 07:45:22AM -0400, Rik van Riel wrote:
+On Tuesday, September 23, 2014 03:17:12 PM Heikki Krogerus wrote:
+> On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
+> > Most devices are configured for 32-bit DMA addresses.
+> > Setting the mask to 32-bit here removes the need for the
+> > drivers to do it separately.
 > 
-> > > I really thing the preempt_disable/enable is not needed.
-> > > 
-> > > Paul, Thomas, care to comment?
+> Rafael, is this OK?
+
+Fine by me, but it should go in via dwc3 I think.
+
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > ---
+> >  drivers/acpi/acpi_platform.c | 2 ++
+> >  1 file changed, 2 insertions(+)
 > > 
-> > I suspect you are right.  On normal kernels, rcu_read_lock() will
-> > ensure preemption is disabled.
-> > 
-> > On -rt, the locks within are all sleepable mutexes.
-> > 
-> > Either way, things should be ok.
+> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> > index 2bf9082..8d099e6 100644
+> > --- a/drivers/acpi/acpi_platform.c
+> > +++ b/drivers/acpi/acpi_platform.c
+> > @@ -16,6 +16,7 @@
+> >  #include <linux/err.h>
+> >  #include <linux/kernel.h>
+> >  #include <linux/module.h>
+> > +#include <linux/dma-mapping.h>
+> >  #include <linux/platform_device.h>
+> >  
+> >  #include "internal.h"
+> > @@ -102,6 +103,7 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
+> >  	pdevinfo.res = resources;
+> >  	pdevinfo.num_res = count;
+> >  	pdevinfo.acpi_node.companion = adev;
+> > +	pdevinfo.dma_mask = DMA_BIT_MASK(32);
+> >  	pdev = platform_device_register_full(&pdevinfo);
+> >  	if (IS_ERR(pdev))
+> >  		dev_err(&adev->dev, "platform device creation failed: %ld\n",
 > 
-> But with CONFIG_PREEMPT we get preemptible RCU but not the
-> spinlock->rt_mutex conversion.
+> 
 
-Right, I was about to say that. That is, rcu_read_lock() in mainline
-does not always disable preemption (See CONFIG_PREEMPT_RCU).
-
-But I still think this should be safe. I don't see the siglock ever
-being taking in the scheduler or by rt_mutex_unlock().
-
--- Steve
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
