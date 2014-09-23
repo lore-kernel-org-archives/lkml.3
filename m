@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaIWQBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:01:53 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:36769 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633AbaIWQBv (ORCPT
+	id S1756101AbaIWQCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:02:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35157 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756014AbaIWQCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:01:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140923143712.GI18635@console-pimps.org>
-References: <20140919104021.GA11552@gmail.com>
-	<CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
-	<20140923053510.GB27825@gmail.com>
-	<20140923053711.GA28704@gmail.com>
-	<20140923055802.GA29052@gmail.com>
-	<1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAKv+Gu_xqnkVKuoWY=PRoAVYE_qOH8dwM+ZxG+ysC7Xvs82ZNw@mail.gmail.com>
-	<20140923131805.GH18635@console-pimps.org>
-	<542182E0.6090101@canonical.com>
-	<20140923143712.GI18635@console-pimps.org>
-Date: Tue, 23 Sep 2014 09:01:50 -0700
-X-Google-Sender-Auth: RCvR_x2JrWj03qalHZMfrq__Uj4
-Message-ID: <CA+55aFx7XBJJaSO3C=+wjxjYxMdz+x93p6fWwr6_zjyLDTeNnw@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 12:02:40 -0400
+Date: Tue, 23 Sep 2014 12:02:37 -0400 (EDT)
+Message-Id: <20140923.120237.1788295912902036193.davem@davemloft.net>
+To: mmarek@suse.cz
+Cc: sfr@canb.auug.org.au, rdunlap@infradead.org, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH 1/5] mips: Set CONFIG_NET=y in defconfigs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1411487044-14071-1-git-send-email-mmarek@suse.cz>
+References: <54218AEF.5090200@suse.cz>
+	<1411487044-14071-1-git-send-email-mmarek@suse.cz>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 23 Sep 2014 09:02:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 7:37 AM, Matt Fleming <matt@console-pimps.org> wrote:
->
-> I know Josh was in favour of getting this message dropped and treating
-> this as a regression fix, but I was erring on the side of caution
-> because it's not critical.
+From: Michal Marek <mmarek@suse.cz>
+Date: Tue, 23 Sep 2014 17:44:00 +0200
 
-I'd certainly prefer this too, because UI also see the annoying
-"setup_efi_pci() failed!" at bootup. I've ignored it, but I would
-certainly not mind having it gone either. It seems to result in no
-actual value.
+> Commit 5d6be6a5 ("scsi_netlink : Make SCSI_NETLINK dependent on NET
+> instead of selecting NET") removed what happened to be the only instance
+> of 'select NET'. Defconfigs that were relying on the select now lack
+> networking support.
+> 
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: linux-mips@linux-mips.org
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-               Linus
+On the contrary, since NET was being selected for them indirectly
+previously, weren't they depending instead upon NET being enabled?
+
+Likewise for SCSI_NETLINK, SCSI_FC_ATTRS, and whatever was triggering
+the select upon them?
+
+I'll remember this as yet another why 'select' is to be avoided at
+just about all costs.
