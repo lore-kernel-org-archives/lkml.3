@@ -1,362 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaIWRjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:39:45 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:50305 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444AbaIWRiS (ORCPT
+	id S1756560AbaIWRlC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:41:02 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:34173 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825AbaIWRlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:38:18 -0400
-X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
-From: Stefan Agner <stefan@agner.ch>
-To: linus.walleij@linaro.org, gnurou@gmail.com, shawn.guo@freescale.com,
-        kernel@pengutronix.de
-Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com, stefan@agner.ch
-Subject: [PATCH v2 3/5] gpio: vf610: add gpiolib/IRQ chip driver for Vybrid
-Date: Tue, 23 Sep 2014 19:37:55 +0200
-Message-Id: <81b47949f0806a335f380be916ec88f07b31290a.1411492954.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1411492954.git.stefan@agner.ch>
-References: <cover.1411492954.git.stefan@agner.ch>
-In-Reply-To: <cover.1411492954.git.stefan@agner.ch>
-References: <cover.1411492954.git.stefan@agner.ch>
+	Tue, 23 Sep 2014 13:41:00 -0400
+Date: Tue, 23 Sep 2014 19:40:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 1/3] memcg: move memcg_{alloc,free}_cache_params to
+ slab_common.c
+Message-ID: <20140923174056.GA29528@dhcp22.suse.cz>
+References: <cover.1411401021.git.vdavydov@parallels.com>
+ <6dce5fd23f4cdd9f7055474f27d0c35e76251892.1411401021.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6dce5fd23f4cdd9f7055474f27d0c35e76251892.1411401021.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a gpiolib and IRQ chip driver for Vybrid ARM SoC using the
-Vybrid's GPIO and PORT module. The driver is instanced once per
-each GPIO/PORT module pair and handles 32 GPIO's.
+On Mon 22-09-14 20:00:44, Vladimir Davydov wrote:
+> The only reason why they live in memcontrol.c is that we get/put css
+> reference to the owner memory cgroup in them. However, we can do that in
+> memcg_{un,}register_cache. OTOH, there are several reasons to move them
+> to slab_common.c.
+> 
+> First, I think that the less public interface functions we have in
+> memcontrol.h the better. Since the functions I move don't depend on
+> memcontrol, I think it's worth making them private to slab, especially
+> taking into account that the arrays are defined on the slab's side too.
+> 
+> Second, the way how per-memcg arrays are updated looks rather awkward:
+> it proceeds from memcontrol.c (__memcg_activate_kmem) to slab_common.c
+> (memcg_update_all_caches) and back to memcontrol.c again
+> (memcg_update_array_size). In the following patches I move the function
+> relocating the arrays (memcg_update_array_size) to slab_common.c and
+> therefore get rid this circular call path. I think we should have the
+> cache allocation stuff in the same place where we have relocation,
+> because it's easier to follow the code then. So I move arrays alloc/free
+> functions to slab_common.c too.
+> 
+> The third point isn't obvious. I'm going to make the list_lru structure
+> per-memcg to allow targeted kmem reclaim. That means we will have
+> per-memcg arrays in list_lrus too. It turns out that it's much easier to
+> update these arrays in list_lru.c rather than in memcontrol.c, because
+> all the stuff we need is defined there. This patch makes memcg caches
+> arrays allocation path conform that of the upcoming list_lru.
+> 
+> So let's move these functions to slab_common.c and make them static.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/gpio/Kconfig      |   7 ++
- drivers/gpio/Makefile     |   1 +
- drivers/gpio/gpio-vf610.c | 284 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 292 insertions(+)
- create mode 100644 drivers/gpio/gpio-vf610.c
+Excelent and thanks a lot for updating the changelog.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 9de1515..82b38f5 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -334,6 +334,13 @@ config GPIO_TZ1090_PDC
- 	help
- 	  Say yes here to support Toumaz Xenif TZ1090 PDC GPIOs.
- 
-+config GPIO_VF610
-+	def_bool y
-+	depends on ARCH_MXC && SOC_VF610
-+	select GPIOLIB_IRQCHIP
-+	help
-+	  Say yes here to support Vybrid vf610 GPIOs.
-+
- config GPIO_XILINX
- 	bool "Xilinx GPIO support"
- 	depends on PPC_OF || MICROBLAZE || ARCH_ZYNQ
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 5d024e3..9893d4c 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -95,6 +95,7 @@ obj-$(CONFIG_GPIO_TWL6040)	+= gpio-twl6040.o
- obj-$(CONFIG_GPIO_TZ1090)	+= gpio-tz1090.o
- obj-$(CONFIG_GPIO_TZ1090_PDC)	+= gpio-tz1090-pdc.o
- obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
-+obj-$(CONFIG_GPIO_VF610)	+= gpio-vf610.o
- obj-$(CONFIG_GPIO_VIPERBOARD)	+= gpio-viperboard.o
- obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
- obj-$(CONFIG_GPIO_VX855)	+= gpio-vx855.o
-diff --git a/drivers/gpio/gpio-vf610.c b/drivers/gpio/gpio-vf610.c
-new file mode 100644
-index 0000000..6649a13
---- /dev/null
-+++ b/drivers/gpio/gpio-vf610.c
-@@ -0,0 +1,284 @@
-+/*
-+ * vf610 GPIO support through PORT and GPIO module
-+ *
-+ * Copyright (c) 2014 Toradex AG.
-+ *
-+ * Author: Stefan Agner <stefan@agner.ch>.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/bitops.h>
-+#include <linux/gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_irq.h>
-+#include <linux/module.h>
-+#include <asm-generic/bug.h>
-+
-+
-+#define VF610_GPIO_PER_PORT		32
-+
-+struct vf610_gpio_port {
-+	struct gpio_chip gc;
-+	void __iomem *base;
-+	void __iomem *gpio_base;
-+	u8 irqc[VF610_GPIO_PER_PORT];
-+};
-+
-+#define GPIO_PDOR		0x00
-+#define GPIO_PSOR		0x04
-+#define GPIO_PCOR		0x08
-+#define GPIO_PTOR		0x0c
-+#define GPIO_PDIR		0x10
-+
-+#define PORT_PCR(n)		(n * 0x4)
-+#define PORT_PCR_IRQC_OFFSET	16
-+
-+#define PORT_ISFR		0xa0
-+#define PORT_DFER		0xc0
-+#define PORT_DFCR		0xc4
-+#define PORT_DFWR		0xc8
-+
-+#define PORT_INT_OFF		0x0
-+#define PORT_INT_LOGIC_ZERO	0x8
-+#define PORT_INT_RISING_EDGE	0x9
-+#define PORT_INT_FALLING_EDGE	0xa
-+#define PORT_INT_EITHER_EDGE	0xb
-+#define PORT_INT_LOGIC_ONE	0xc
-+
-+static const struct of_device_id vf610_gpio_dt_ids[] = {
-+	{ .compatible = "fsl,vf610-gpio" },
-+	{ /* sentinel */ }
-+};
-+
-+static inline void vf610_gpio_writel(u32 val, void __iomem *reg)
-+{
-+	writel_relaxed(val, reg);
-+}
-+
-+static inline u32 vf610_gpio_readl(void __iomem *reg)
-+{
-+	return readl_relaxed(reg);
-+}
-+
-+static int vf610_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void vf610_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+}
-+
-+static int vf610_gpio_get(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	struct vf610_gpio_port *port =
-+		container_of(gc, struct vf610_gpio_port, gc);
-+
-+	return !!(vf610_gpio_readl(port->gpio_base + GPIO_PDIR) & BIT(gpio));
-+}
-+
-+static void vf610_gpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	struct vf610_gpio_port *port =
-+		container_of(gc, struct vf610_gpio_port, gc);
-+	unsigned long mask = BIT(gpio);
-+
-+	if (val)
-+		vf610_gpio_writel(mask, port->gpio_base + GPIO_PSOR);
-+	else
-+		vf610_gpio_writel(mask, port->gpio_base + GPIO_PCOR);
-+}
-+
-+static int vf610_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
-+{
-+	return pinctrl_gpio_direction_input(chip->base + gpio);
-+}
-+
-+static int vf610_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
-+				       int value)
-+{
-+	vf610_gpio_set(chip, gpio, value);
-+
-+	return pinctrl_gpio_direction_output(chip->base + gpio);
-+}
-+
-+static void vf610_gpio_irq_handler(u32 irq, struct irq_desc *desc)
-+{
-+	struct vf610_gpio_port *port = irq_get_handler_data(irq);
-+	struct irq_chip *chip = irq_desc_get_chip(desc);
-+	int pin;
-+	unsigned long irq_isfr;
-+
-+	chained_irq_enter(chip, desc);
-+
-+	irq_isfr = vf610_gpio_readl(port->base + PORT_ISFR);
-+
-+	for_each_set_bit(pin, &irq_isfr, VF610_GPIO_PER_PORT) {
-+		vf610_gpio_writel(BIT(pin), port->base + PORT_ISFR);
-+
-+		generic_handle_irq(irq_find_mapping(port->gc.irqdomain, pin));
-+	}
-+
-+	chained_irq_exit(chip, desc);
-+}
-+
-+
-+static void vf610_gpio_irq_ack(struct irq_data *d)
-+{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	int gpio = d->hwirq;
-+
-+	vf610_gpio_writel(BIT(gpio), port->base + PORT_ISFR);
-+}
-+
-+static int vf610_gpio_irq_set_type(struct irq_data *d, u32 type)
-+{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	u8 irqc;
-+
-+	switch (type) {
-+	case IRQ_TYPE_EDGE_RISING:
-+		irqc = PORT_INT_RISING_EDGE;
-+		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		irqc = PORT_INT_FALLING_EDGE;
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		irqc = PORT_INT_EITHER_EDGE;
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		irqc = PORT_INT_LOGIC_ZERO;
-+		break;
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		irqc = PORT_INT_LOGIC_ONE;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	port->irqc[d->hwirq] = irqc;
-+
-+	return 0;
-+}
-+
-+static void vf610_gpio_irq_mask(struct irq_data *d)
-+{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	void __iomem *pcr_base = port->base + PORT_PCR(d->hwirq);
-+
-+	vf610_gpio_writel(0, pcr_base);
-+}
-+
-+static void vf610_gpio_irq_unmask(struct irq_data *d)
-+{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	void __iomem *pcr_base = port->base + PORT_PCR(d->hwirq);
-+
-+	vf610_gpio_writel(port->irqc[d->hwirq] << PORT_PCR_IRQC_OFFSET,
-+			  pcr_base);
-+}
-+
-+static struct irq_chip vf610_gpio_irq_chip = {
-+	.name		= "gpio-vf610",
-+	.irq_ack	= vf610_gpio_irq_ack,
-+	.irq_mask	= vf610_gpio_irq_mask,
-+	.irq_unmask	= vf610_gpio_irq_unmask,
-+	.irq_set_type	= vf610_gpio_irq_set_type,
-+};
-+
-+static int vf610_gpio_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+	struct vf610_gpio_port *port;
-+	struct resource *iores;
-+	struct gpio_chip *gc;
-+	int irq, ret;
-+
-+	port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
-+	if (!port)
-+		return -ENOMEM;
-+
-+	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	port->base = devm_ioremap_resource(dev, iores);
-+	if (IS_ERR(port->base))
-+		return PTR_ERR(port->base);
-+
-+	iores = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	port->gpio_base = devm_ioremap_resource(dev, iores);
-+	if (IS_ERR(port->gpio_base))
-+		return PTR_ERR(port->gpio_base);
-+
-+	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-+	if (irq == NO_IRQ)
-+		return -ENODEV;
-+
-+	gc = &port->gc;
-+	gc->of_node = np;
-+	gc->dev = dev;
-+	gc->label = "vf610-gpio",
-+	gc->ngpio = VF610_GPIO_PER_PORT,
-+	gc->base = of_alias_get_id(np, "gpio") * VF610_GPIO_PER_PORT;
-+
-+	gc->request = vf610_gpio_request,
-+	gc->free = vf610_gpio_free,
-+	gc->direction_input = vf610_gpio_direction_input,
-+	gc->get = vf610_gpio_get,
-+	gc->direction_output = vf610_gpio_direction_output,
-+	gc->set = vf610_gpio_set,
-+
-+	ret = gpiochip_add(gc);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Clear the interrupt status register for all GPIO's */
-+	vf610_gpio_writel(~0, port->base + PORT_ISFR);
-+
-+	ret = gpiochip_irqchip_add(gc, &vf610_gpio_irq_chip, 0,
-+				   handle_simple_irq, IRQ_TYPE_NONE);
-+	if (ret) {
-+		dev_err(dev, "failed to add irqchip\n");
-+		gpiochip_remove(gc);
-+		return ret;
-+	}
-+	gpiochip_set_chained_irqchip(gc, &vf610_gpio_irq_chip, irq,
-+				     vf610_gpio_irq_handler);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver vf610_gpio_driver = {
-+	.driver		= {
-+		.name	= "gpio-vf610",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = vf610_gpio_dt_ids,
-+	},
-+	.probe		= vf610_gpio_probe,
-+};
-+
-+static int __init gpio_vf610_init(void)
-+{
-+	return platform_driver_register(&vf610_gpio_driver);
-+}
-+subsys_initcall(gpio_vf610_init);
-+
-+MODULE_AUTHOR("Stefan Agner <stefan@agner.ch>");
-+MODULE_DESCRIPTION("Freescale VF610 GPIO");
-+MODULE_LICENSE("GPL v2");
+> ---
+>  include/linux/memcontrol.h |   14 --------------
+>  mm/memcontrol.c            |   41 ++++-------------------------------------
+>  mm/slab_common.c           |   44 +++++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 47 insertions(+), 52 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index e0752d204d9e..4d17242eeff7 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -440,10 +440,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+>  
+>  int memcg_cache_id(struct mem_cgroup *memcg);
+>  
+> -int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+> -			     struct kmem_cache *root_cache);
+> -void memcg_free_cache_params(struct kmem_cache *s);
+> -
+>  int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
+>  void memcg_update_array_size(int num_groups);
+>  
+> @@ -574,16 +570,6 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
+>  	return -1;
+>  }
+>  
+> -static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
+> -		struct kmem_cache *s, struct kmem_cache *root_cache)
+> -{
+> -	return 0;
+> -}
+> -
+> -static inline void memcg_free_cache_params(struct kmem_cache *s)
+> -{
+> -}
+> -
+>  static inline struct kmem_cache *
+>  memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+>  {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 085dc6d2f876..b6bbb1e3e2ab 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2970,43 +2970,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>  	return 0;
+>  }
+>  
+> -int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+> -			     struct kmem_cache *root_cache)
+> -{
+> -	size_t size;
+> -
+> -	if (!memcg_kmem_enabled())
+> -		return 0;
+> -
+> -	if (!memcg) {
+> -		size = offsetof(struct memcg_cache_params, memcg_caches);
+> -		size += memcg_limited_groups_array_size * sizeof(void *);
+> -	} else
+> -		size = sizeof(struct memcg_cache_params);
+> -
+> -	s->memcg_params = kzalloc(size, GFP_KERNEL);
+> -	if (!s->memcg_params)
+> -		return -ENOMEM;
+> -
+> -	if (memcg) {
+> -		s->memcg_params->memcg = memcg;
+> -		s->memcg_params->root_cache = root_cache;
+> -		css_get(&memcg->css);
+> -	} else
+> -		s->memcg_params->is_root_cache = true;
+> -
+> -	return 0;
+> -}
+> -
+> -void memcg_free_cache_params(struct kmem_cache *s)
+> -{
+> -	if (!s->memcg_params)
+> -		return;
+> -	if (!s->memcg_params->is_root_cache)
+> -		css_put(&s->memcg_params->memcg->css);
+> -	kfree(s->memcg_params);
+> -}
+> -
+>  static void memcg_register_cache(struct mem_cgroup *memcg,
+>  				 struct kmem_cache *root_cache)
+>  {
+> @@ -3037,6 +3000,7 @@ static void memcg_register_cache(struct mem_cgroup *memcg,
+>  	if (!cachep)
+>  		return;
+>  
+> +	css_get(&memcg->css);
+>  	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
+>  
+>  	/*
+> @@ -3070,6 +3034,9 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
+>  	list_del(&cachep->memcg_params->list);
+>  
+>  	kmem_cache_destroy(cachep);
+> +
+> +	/* drop the reference taken in memcg_register_cache */
+> +	css_put(&memcg->css);
+>  }
+>  
+>  /*
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index d7d8ffd0c306..9c29ba792368 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -88,6 +88,38 @@ static inline int kmem_cache_sanity_check(const char *name, size_t size)
+>  #endif
+>  
+>  #ifdef CONFIG_MEMCG_KMEM
+> +static int memcg_alloc_cache_params(struct mem_cgroup *memcg,
+> +		struct kmem_cache *s, struct kmem_cache *root_cache)
+> +{
+> +	size_t size;
+> +
+> +	if (!memcg_kmem_enabled())
+> +		return 0;
+> +
+> +	if (!memcg) {
+> +		size = offsetof(struct memcg_cache_params, memcg_caches);
+> +		size += memcg_limited_groups_array_size * sizeof(void *);
+> +	} else
+> +		size = sizeof(struct memcg_cache_params);
+> +
+> +	s->memcg_params = kzalloc(size, GFP_KERNEL);
+> +	if (!s->memcg_params)
+> +		return -ENOMEM;
+> +
+> +	if (memcg) {
+> +		s->memcg_params->memcg = memcg;
+> +		s->memcg_params->root_cache = root_cache;
+> +	} else
+> +		s->memcg_params->is_root_cache = true;
+> +
+> +	return 0;
+> +}
+> +
+> +static void memcg_free_cache_params(struct kmem_cache *s)
+> +{
+> +	kfree(s->memcg_params);
+> +}
+> +
+>  int memcg_update_all_caches(int num_memcgs)
+>  {
+>  	struct kmem_cache *s;
+> @@ -113,7 +145,17 @@ out:
+>  	mutex_unlock(&slab_mutex);
+>  	return ret;
+>  }
+> -#endif
+> +#else
+> +static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
+> +		struct kmem_cache *s, struct kmem_cache *root_cache)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void memcg_free_cache_params(struct kmem_cache *s)
+> +{
+> +}
+> +#endif /* CONFIG_MEMCG_KMEM */
+>  
+>  /*
+>   * Figure out what the alignment of the objects will be given a set of
+> -- 
+> 1.7.10.4
+> 
+
 -- 
-2.1.0
-
+Michal Hocko
+SUSE Labs
