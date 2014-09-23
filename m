@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418AbaIWOtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:49:45 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:64692 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396AbaIWOti (ORCPT
+	id S932440AbaIWOtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:49:52 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37166 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932420AbaIWOtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:49:38 -0400
+	Tue, 23 Sep 2014 10:49:47 -0400
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
         iommu@lists.linux-foundation.org
@@ -15,13 +15,10 @@ Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
         kim.phillips@freescale.com, eric.auger@linaro.org,
         marc.zyngier@arm.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>, Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCHv7 25/26] vfio: initialize the virqfd workqueue in VFIO generic code
-Date: Tue, 23 Sep 2014 16:46:24 +0200
-Message-Id: <1411483586-29304-26-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCHv7 26/26] vfio/platform: implement IRQ masking/unmasking via an eventfd
+Date: Tue, 23 Sep 2014 16:46:25 +0200
+Message-Id: <1411483586-29304-27-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -29,121 +26,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have finally completely decoupled virqfd from VFIO_PCI. We can
-initialize it from the VFIO generic code, in order to safely use it from
-multiple independent VFIO bus drivers.
+With this patch the VFIO user will be able to set an eventfd that can be
+used in order to mask and unmask IRQs of platform devices.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/pci/vfio_pci.c | 8 --------
- drivers/vfio/vfio.c         | 8 ++++++++
- drivers/vfio/virqfd.c       | 4 ++--
- include/linux/vfio.h        | 4 ++--
- 4 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/vfio/platform/vfio_platform_irq.c     | 48 +++++++++++++++++++++++++--
+ drivers/vfio/platform/vfio_platform_private.h |  2 ++
+ 2 files changed, 48 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index f782533..40e176d 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -1034,7 +1034,6 @@ static void vfio_pci_try_bus_reset(struct vfio_pci_device *vdev)
- static void __exit vfio_pci_cleanup(void)
- {
- 	pci_unregister_driver(&vfio_pci_driver);
--	vfio_pci_virqfd_exit();
- 	vfio_pci_uninit_perm_bits();
+diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+index 90fa25a..4ea3d5a 100644
+--- a/drivers/vfio/platform/vfio_platform_irq.c
++++ b/drivers/vfio/platform/vfio_platform_irq.c
+@@ -45,11 +45,21 @@ static void vfio_platform_mask(struct vfio_platform_irq *irq_ctx)
+ 	spin_unlock_irqrestore(&irq_ctx->lock, flags);
  }
  
-@@ -1047,11 +1046,6 @@ static int __init vfio_pci_init(void)
- 	if (ret)
- 		return ret;
- 
--	/* Start the virqfd cleanup handler */
--	ret = vfio_pci_virqfd_init();
--	if (ret)
--		goto out_virqfd;
--
- 	/* Register and scan for devices */
- 	ret = pci_register_driver(&vfio_pci_driver);
- 	if (ret)
-@@ -1060,8 +1054,6 @@ static int __init vfio_pci_init(void)
- 	return 0;
- 
- out_driver:
--	vfio_pci_virqfd_exit();
--out_virqfd:
- 	vfio_pci_uninit_perm_bits();
- 	return ret;
- }
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index f018d8d..8e84471 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -1464,6 +1464,11 @@ static int __init vfio_init(void)
- 	if (ret)
- 		goto err_cdev_add;
- 
-+	/* Start the virqfd cleanup handler used by some VFIO bus drivers */
-+	ret = vfio_virqfd_init();
-+	if (ret)
-+		goto err_virqfd;
++static int vfio_platform_mask_handler(void *opaque, void *unused)
++{
++	struct vfio_platform_irq *irq_ctx = opaque;
 +
- 	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
- 
- 	/*
-@@ -1476,6 +1481,8 @@ static int __init vfio_init(void)
- 
- 	return 0;
- 
-+err_virqfd:
-+	cdev_del(&vfio.group_cdev);
- err_cdev_add:
- 	unregister_chrdev_region(vfio.group_devt, MINORMASK);
- err_alloc_chrdev:
-@@ -1490,6 +1497,7 @@ static void __exit vfio_cleanup(void)
++	vfio_platform_mask(irq_ctx);
++
++	return 0;
++}
++
+ static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
+ 				    unsigned index, unsigned start,
+ 				    unsigned count, uint32_t flags, void *data)
  {
- 	WARN_ON(!list_empty(&vfio.group_list));
+ 	uint8_t irq_bitmap;
++	int32_t fd;
  
-+	vfio_virqfd_exit();
- 	idr_destroy(&vfio.group_idr);
- 	cdev_del(&vfio.group_cdev);
- 	unregister_chrdev_region(vfio.group_devt, MINORMASK);
-diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
-index ac63ec0..c28882f 100644
---- a/drivers/vfio/virqfd.c
-+++ b/drivers/vfio/virqfd.c
-@@ -18,7 +18,7 @@
- static struct workqueue_struct *vfio_irqfd_cleanup_wq;
- static spinlock_t lock;
+ 	if (start != 0 || count != 1)
+ 		return -EINVAL;
+@@ -75,7 +85,19 @@ static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
+ 		vfio_platform_mask(&vdev->irqs[index]);
+ 		return 0;
  
--int __init vfio_pci_virqfd_init(void)
-+int __init vfio_virqfd_init(void)
- {
- 	vfio_irqfd_cleanup_wq =
- 		create_singlethread_workqueue("vfio-irqfd-cleanup");
-@@ -30,7 +30,7 @@ int __init vfio_pci_virqfd_init(void)
- 	return 0;
+-	case VFIO_IRQ_SET_DATA_EVENTFD: /* XXX not implemented yet */
++	case VFIO_IRQ_SET_DATA_EVENTFD:
++		if (copy_from_user(&fd, data, sizeof(int32_t)))
++			return -EFAULT;
++
++		if (fd >= 0)
++			return virqfd_enable((void *) &vdev->irqs[index],
++					     vfio_platform_mask_handler,
++					     NULL, NULL,
++					     &vdev->irqs[index].mask, fd);
++
++		virqfd_disable(&vdev->irqs[index].mask);
++		return 0;
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+@@ -97,11 +119,21 @@ static void vfio_platform_unmask(struct vfio_platform_irq *irq_ctx)
+ 	spin_unlock_irqrestore(&irq_ctx->lock, flags);
  }
  
--void vfio_pci_virqfd_exit(void)
-+void vfio_virqfd_exit(void)
++static int vfio_platform_unmask_handler(void *opaque, void *unused)
++{
++	struct vfio_platform_irq *irq_ctx = opaque;
++
++	vfio_platform_unmask(irq_ctx);
++
++	return 0;
++}
++
+ static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+ 				    unsigned index, unsigned start,
+ 				    unsigned count, uint32_t flags, void *data)
  {
- 	destroy_workqueue(vfio_irqfd_cleanup_wq);
- }
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index ce23a42..9fa02c8 100644
---- a/include/linux/vfio.h
-+++ b/include/linux/vfio.h
-@@ -140,8 +140,8 @@ struct virqfd {
- 	struct virqfd		**pvirqfd;
+ 	uint8_t irq_bitmap;
++	int32_t fd;
+ 
+ 	if (start != 0 || count != 1)
+ 		return -EINVAL;
+@@ -123,7 +155,19 @@ static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+ 		vfio_platform_unmask(&vdev->irqs[index]);
+ 		return 0;
+ 
+-	case VFIO_IRQ_SET_DATA_EVENTFD: /* XXX not implemented yet */
++	case VFIO_IRQ_SET_DATA_EVENTFD:
++		if (copy_from_user(&fd, data, sizeof(int32_t)))
++			return -EFAULT;
++
++		if (fd >= 0)
++			return virqfd_enable((void *) &vdev->irqs[index],
++					     vfio_platform_unmask_handler,
++					     NULL, NULL,
++					     &vdev->irqs[index].unmask, fd);
++
++		virqfd_disable(&vdev->irqs[index].unmask);
++		return 0;
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+index 500e299..dd1beda 100644
+--- a/drivers/vfio/platform/vfio_platform_private.h
++++ b/drivers/vfio/platform/vfio_platform_private.h
+@@ -32,6 +32,8 @@ struct vfio_platform_irq {
+ 	struct eventfd_ctx	*trigger;
+ 	bool			masked;
+ 	spinlock_t		lock;
++	struct virqfd		*unmask;
++	struct virqfd		*mask;
  };
  
--extern int vfio_pci_virqfd_init(void);
--extern void vfio_pci_virqfd_exit(void);
-+extern int vfio_virqfd_init(void);
-+extern void vfio_virqfd_exit(void);
- extern int virqfd_enable(void *opaque,
- 			 int (*handler)(void *, void *),
- 			 void (*thread)(void *, void *),
+ struct vfio_platform_region {
 -- 
 1.8.3.2
 
