@@ -1,172 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472AbaIWOvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:51:31 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:51443 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372AbaIWOtd (ORCPT
+	id S1756153AbaIWOtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:49:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58560 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932275AbaIWOsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:49:33 -0400
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org
-Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
-        christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCHv7 24/26] vfio: pass an opaque pointer on virqfd initialization
-Date: Tue, 23 Sep 2014 16:46:23 +0200
-Message-Id: <1411483586-29304-25-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+	Tue, 23 Sep 2014 10:48:51 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v9 02/10] rtc: at91sam9: use standard readl/writel functions instead of raw versions
+Date: Tue, 23 Sep 2014 16:48:37 +0200
+Message-Id: <1411483725-31532-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO_PCI passes the VFIO device structure *vdev via eventfd to the handler
-that implements masking/unmasking of IRQs via an eventfd. We can replace
-it in the virqfd infrastructure with an opaque type so we can make use
-of the mechanism from other VFIO bus drivers.
+Raw versions of writel and writel should not be directly used and should
+be replaced by their relaxed versions (readl/writel_relaxed), which take
+endianness conversion into account.
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+In this driver we prefer the standard readl/writel function which add the
+appropriate memory barrier around the access (the performance penalty is
+negligible for this kind of application).
+
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Johan Hovold <johan@kernel.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/vfio/pci/vfio_pci_intrs.c | 11 +++++++----
- drivers/vfio/virqfd.c             | 17 ++++++++---------
- include/linux/vfio.h              | 12 ++++++------
- 3 files changed, 21 insertions(+), 19 deletions(-)
+ drivers/rtc/rtc-at91sam9.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index e56c814..6ca22a8 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -27,8 +27,10 @@
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 51f0038..74a9ca0 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -77,14 +77,14 @@ struct sam9_rtc {
+ };
+ 
+ #define rtt_readl(rtc, field) \
+-	__raw_readl((rtc)->rtt + AT91_RTT_ ## field)
++	readl((rtc)->rtt + AT91_RTT_ ## field)
+ #define rtt_writel(rtc, field, val) \
+-	__raw_writel((val), (rtc)->rtt + AT91_RTT_ ## field)
++	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
+ 
+ #define gpbr_readl(rtc) \
+-	__raw_readl((rtc)->gpbr)
++	readl((rtc)->gpbr)
+ #define gpbr_writel(rtc, val) \
+-	__raw_writel((val), (rtc)->gpbr)
++	writel((val), (rtc)->gpbr)
+ 
  /*
-  * INTx
-  */
--static void vfio_send_intx_eventfd(struct vfio_pci_device *vdev, void *unused)
-+static void vfio_send_intx_eventfd(void *opaque, void *unused)
- {
-+	struct vfio_pci_device *vdev = opaque;
-+
- 	if (likely(is_intx(vdev) && !vdev->virq_disabled))
- 		eventfd_signal(vdev->ctx[0].trigger, 1);
- }
-@@ -71,9 +73,9 @@ void vfio_pci_intx_mask(struct vfio_pci_device *vdev)
-  * a signal is necessary, which can then be handled via a work queue
-  * or directly depending on the caller.
-  */
--static int vfio_pci_intx_unmask_handler(struct vfio_pci_device *vdev,
--					void *unused)
-+static int vfio_pci_intx_unmask_handler(void *opaque, void *unused)
- {
-+	struct vfio_pci_device *vdev = opaque;
- 	struct pci_dev *pdev = vdev->pdev;
- 	unsigned long flags;
- 	int ret = 0;
-@@ -411,7 +413,8 @@ static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
- 	} else if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
- 		int32_t fd = *(int32_t *)data;
- 		if (fd >= 0)
--			return virqfd_enable(vdev, vfio_pci_intx_unmask_handler,
-+			return virqfd_enable((void *) vdev,
-+					     vfio_pci_intx_unmask_handler,
- 					     vfio_send_intx_eventfd, NULL,
- 					     &vdev->ctx[0].unmask, fd);
- 
-diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
-index 27fa2f0..ac63ec0 100644
---- a/drivers/vfio/virqfd.c
-+++ b/drivers/vfio/virqfd.c
-@@ -14,7 +14,6 @@
- #include <linux/eventfd.h>
- #include <linux/file.h>
- #include <linux/slab.h>
--#include "pci/vfio_pci_private.h"
- 
- static struct workqueue_struct *vfio_irqfd_cleanup_wq;
- static spinlock_t lock;
-@@ -49,7 +48,7 @@ static int virqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
- 	if (flags & POLLIN) {
- 		/* An event has been signaled, call function */
- 		if ((!virqfd->handler ||
--		     virqfd->handler(virqfd->vdev, virqfd->data)) &&
-+		     virqfd->handler(virqfd->opaque, virqfd->data)) &&
- 		    virqfd->thread)
- 			schedule_work(&virqfd->inject);
- 	}
-@@ -99,13 +98,13 @@ static void virqfd_inject(struct work_struct *work)
- {
- 	struct virqfd *virqfd = container_of(work, struct virqfd, inject);
- 	if (virqfd->thread)
--		virqfd->thread(virqfd->vdev, virqfd->data);
-+		virqfd->thread(virqfd->opaque, virqfd->data);
- }
- 
--int virqfd_enable(struct vfio_pci_device *vdev,
--			 int (*handler)(struct vfio_pci_device *, void *),
--			 void (*thread)(struct vfio_pci_device *, void *),
--			 void *data, struct virqfd **pvirqfd, int fd)
-+int virqfd_enable(void *opaque,
-+		  int (*handler)(void *, void *),
-+		  void (*thread)(void *, void *),
-+		  void *data, struct virqfd **pvirqfd, int fd)
- {
- 	struct fd irqfd;
- 	struct eventfd_ctx *ctx;
-@@ -118,7 +117,7 @@ int virqfd_enable(struct vfio_pci_device *vdev,
- 		return -ENOMEM;
- 
- 	virqfd->pvirqfd = pvirqfd;
--	virqfd->vdev = vdev;
-+	virqfd->opaque = opaque;
- 	virqfd->handler = handler;
- 	virqfd->thread = thread;
- 	virqfd->data = data;
-@@ -171,7 +170,7 @@ int virqfd_enable(struct vfio_pci_device *vdev,
- 	 * before we registered and trigger it as if we didn't miss it.
- 	 */
- 	if (events & POLLIN) {
--		if ((!handler || handler(vdev, data)) && thread)
-+		if ((!handler || handler(opaque, data)) && thread)
- 			schedule_work(&virqfd->inject);
- 	}
- 
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index fb6037b..ce23a42 100644
---- a/include/linux/vfio.h
-+++ b/include/linux/vfio.h
-@@ -128,10 +128,10 @@ static inline long vfio_spapr_iommu_eeh_ioctl(struct iommu_group *group,
-  * IRQFD support
-  */
- struct virqfd {
--	struct vfio_pci_device	*vdev;
-+	void			*opaque;
- 	struct eventfd_ctx	*eventfd;
--	int			(*handler)(struct vfio_pci_device *, void *);
--	void			(*thread)(struct vfio_pci_device *, void *);
-+	int			(*handler)(void *, void *);
-+	void			(*thread)(void *, void *);
- 	void			*data;
- 	struct work_struct	inject;
- 	wait_queue_t		wait;
-@@ -142,9 +142,9 @@ struct virqfd {
- 
- extern int vfio_pci_virqfd_init(void);
- extern void vfio_pci_virqfd_exit(void);
--extern int virqfd_enable(struct vfio_pci_device *vdev,
--			 int (*handler)(struct vfio_pci_device *, void *),
--			 void (*thread)(struct vfio_pci_device *, void *),
-+extern int virqfd_enable(void *opaque,
-+			 int (*handler)(void *, void *),
-+			 void (*thread)(void *, void *),
- 			 void *data, struct virqfd **pvirqfd, int fd);
- extern void virqfd_disable(struct virqfd **pvirqfd);
- 
+  * Read current time and date in RTC
 -- 
-1.8.3.2
+1.9.1
 
