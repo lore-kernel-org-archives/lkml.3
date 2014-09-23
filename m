@@ -1,74 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109AbaIWWtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:49:33 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:50887 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085AbaIWWtb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:49:31 -0400
-Date: Tue, 23 Sep 2014 18:49:26 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression]  cifs: sanity check length of data to send before
- sending
-Message-ID: <20140923184926.2fdbb6c6@tlielax.poochiereds.net>
-In-Reply-To: <5421C563.8070304@canonical.com>
-References: <5421C563.8070304@canonical.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1757155AbaIWWuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:50:19 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:57940 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757128AbaIWWuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 18:50:17 -0400
+Date: Tue, 23 Sep 2014 23:48:11 +0100
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v12 00/12] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20140923224810.GA32643@bart.dudau.co.uk>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140923215435.GD27117@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140923215435.GD27117@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Sep 23 23:50:15 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,5421f9263118729012970
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 15:09:23 -0400
-Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+On Tue, Sep 23, 2014 at 03:54:35PM -0600, Bjorn Helgaas wrote:
+> On Tue, Sep 23, 2014 at 08:01:02PM +0100, Liviu Dudau wrote:
+> > This is my version 12 of the attempt at adding support for generic PCI host
+> > bridge controllers that make use of device tree information to
+> > configure themselves. It contains cleanups to address comments posted for v11.
+> > 
+> > Bjorn intends to pull this series into his tree and send it to linux-next if
+> > no major issues arise.
+> > 
+> > 
+> > Changes from v11:
+> >  - fixed race condition in pci_register_io_range() and bug where the function
+> >    would return with the io_range_lock held.
+> >  - split patch 4/10 that fixes the convertion of IO ranges into resources into
+> >    two patches. The new 4/12 just moves the function into drivers/of/address.c
+> >    and 5/12 makes the functional changes.
+> >  - Added Linus Walleij ACK on 5/12 for the arch/arm/mach-integrator/pci_v3.c
+> >    part
+> >  - Removed the old PCI domain number parser and allocator and split the code
+> >    into two independent functions: 'int pci_get_new_domain_nr(void)' will
+> >    always return a new domain number when called while 'of_get_pci_domain_nr()'
+> >    will parse the DT and try to find a property of the given node called
+> >    'linux,pci-domain'. The property value, if found, will be truncated to
+> >    16-bit value and returned, or a negative value if an error occurs.
+> >  - Made the io_base pointer parameter that gets passed to
+> >    of_pci_get_host_bridge_resources() optional (thanks Robert Richter) and
+> >    be explicit when detecting multiple IO ranges about the device used.
+> >  - Fixed comments on commits to explain who uses pci_remap_iospace() as well
+> >    as making clear that the value used inside the function is a virtual address
+> >    and not a physical one. Also be explicit in the warning generated when
+> >    architectures without memory mapped IO support make use of this function
+> >  - Merged the arm64 patch into this series as Bjorn is going to pull it
+> >    into his tree.
+> > 
+> > Changes from v10:
+> >  - Addressed Lorenzo's comments wrt io_base not being initialised inside the
+> >    function that is supposed to modify it and also updated the comments to
+> >    explain the values returned by the function
+> >  - Updated pci_domain_nr helper function to split the allocation of the domain
+> >    number from the parsing of the device tree to find maximum defined domain
+> >    value
+> >  - Fixed up the commit author for commit 6/10
+> > 
+> > Changes from v9:
+> >  - Moved the DT parsing and assigning of IRQ patch from this series into arm64
+> >    specific patch. This keeps existing pcibios_add_device() unchanged and adds
+> >    an arch-specific version that can later be expanded to cater for dma_ops.
+> >  - Incorporated the fix for users of of_pci_range_to_resources() into the patch
+> >    that changes the behaviour for easier bisection.
+> >  - Added fixes for tegra and rcar host drivers in their usage of
+> >    of_pci_range_to_resources()
+> >  - Broke up of_create_pci_host_bridge() to remove the callback function. The
+> >    function left has been renamed into of_pci_get_host_bridge_resources(). The
+> >    added benefit of that is that the architectural hook for fixing up host bridge
+> >    resources now dissappears.
+> >  - Reshuffled the way pgprot_device gets introduced. It is now part of the patch
+> >    that adds pci_remap_iospace() function. The arm64 specific override is moved
+> >    into the arm64 patchset.
+> >  - Added a patch to pci_scan_root_bus() to assign unassigned resources if PCI
+> >    flags are not PCI_PROBE_ONLY
+> > 
+> > v11 thread here: https://lkml.org/lkml/2014/9/17/732
+> > v10 thread here: https://lkml.org/lkml/2014/9/8/333
+> > v9 thread here, with links to previous threads: https://lkml.org/lkml/2014/8/12/361
+> > 
+> > Best regards,
+> > Liviu
+> > 
+> > Catalin Marinas (1):
+> >   PCI: Introduce generic domain handling for PCI busses.
+> > 
+> > Liviu Dudau (11):
+> >   Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+> >   PCI: Introduce helper functions to deal with PCI I/O ranges.
+> >   ARM: Define PCI_IOBASE as the base of virtual PCI IO space.
+> >   PCI: OF: Move of_pci_range_to_resources() into address.c
+> >   PCI: OF: Fix the conversion of IO ranges into IO resources.
+> >   PCI: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+> >   PCI: OF: Introduce helper function for retrieving PCI domain numbers
+> >   OF: PCI: Add support for parsing PCI host bridge resources from DT
+> >   PCI: Assign unassigned bus resources in pci_scan_root_bus()
+> >   PCI: Introduce pci_remap_iospace() for remapping PCI I/O bus resources into CPU space
+> >   arm64: Add architectural support for PCIe
+> > 
+> >  arch/arm/include/asm/io.h         |   1 +
+> >  arch/arm/mach-integrator/pci_v3.c |  23 +++---
+> >  arch/arm64/Kconfig                |  22 +++++-
+> >  arch/arm64/include/asm/Kbuild     |   1 +
+> >  arch/arm64/include/asm/io.h       |   3 +-
+> >  arch/arm64/include/asm/pci.h      |  37 +++++++++
+> >  arch/arm64/include/asm/pgtable.h  |   2 +
+> >  arch/arm64/kernel/Makefile        |   1 +
+> >  arch/arm64/kernel/pci.c           |  70 +++++++++++++++++
+> >  drivers/of/address.c              | 155 ++++++++++++++++++++++++++++++++++++++
+> >  drivers/of/of_pci.c               | 140 ++++++++++++++++++++++++++++++++++
+> >  drivers/pci/host/pci-tegra.c      |  10 ++-
+> >  drivers/pci/host/pcie-rcar.c      |  21 ++++--
+> >  drivers/pci/pci.c                 |  43 +++++++++++
+> >  drivers/pci/probe.c               |  46 ++++++-----
+> >  include/asm-generic/io.h          |   2 +-
+> >  include/asm-generic/pgtable.h     |   4 +
+> >  include/linux/of_address.h        |  22 +++---
+> >  include/linux/of_pci.h            |  18 +++++
+> >  include/linux/pci.h               |  27 +++++++
+> >  20 files changed, 596 insertions(+), 52 deletions(-)
+> >  create mode 100644 arch/arm64/include/asm/pci.h
+> >  create mode 100644 arch/arm64/kernel/pci.c
+> 
+> Applied to pci/host-generic, headed for v3.18, thanks!
 
-> Hi Jeff,
+I really appreciate this, Bjorn, and many thanks!!!
+
+While the next immediate target is converting pci-host-generic.c, pci-imx6.c
+and probably pcie-designware.c to my series, I would like to ask you what
+is your longer term plan. Now that I have got my head full of PCI code,
+I have some ideas but feel that meeting with you and all those involved
+in core PCI support would be a better venue than sending emails back and
+forth. When is your next plan to attend a Linux conference?
+
+Best regards,
+Liviu
+
 > 
-> A kernel bug report was opened against Ubuntu [0].  It was found that
-> reverting the following commit resolved this bug:
-> 
-> 
-> commit a26054d184763969a411e3939fe243516715ff59
-> Author: Jeff Layton <jlayton@redhat.com>
-> Date:   Fri Feb 14 07:21:00 2014 -0500
-> 
->     cifs: sanity check length of data to send before sending
-> 
->       
-> The regression was introduced as of v3.14-rc7.
-> 
-> It appears the patch may be doing what it is supposed to, since the
-> send_length != smb_buf_length:
-> send_length=72
-> and
-> smb_buf_length=2164260932
-> 
-> However, without this check and WARN/return of -EIO the samba
-> connections still work correctly.
-> 
-> I was hoping to get your feedback, since you are the patch author.  Do
-> you think gathering any additional data will help diagnose this issue,
-> or would it be best to submit a revert request?
->     
-> Thanks,
->     
-> Joe
-> 
-> [0] http://pad.lv/1372482
+> Bjorn
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
-(I'm no longer with Red Hat, so the jlayton@redhat.com address won't
-reach me any longer...)
-
-It looks like you probably just need to merge
-dca1c8d17a2feae056f9e334ea75a462ae4cb52a into your kernel as well.
-
-Cheers,
 -- 
-Jeff Layton <jlayton@samba.org>
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
+
+ One small step
+   for me ...
+
