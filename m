@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227AbaIWPTO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:19:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41077 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098AbaIWPTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:19:12 -0400
-Date: Tue, 23 Sep 2014 17:18:55 +0200
-From: Jan Kara <jack@suse.cz>
-To: Tommy Kurby <tommykurby91@gmail.com>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fs: Ext2: xip.h: fixed coding style issues
-Message-ID: <20140923151855.GA18189@quack.suse.cz>
-References: <1411429600-4148-1-git-send-email-tommykurby91@gmail.com>
+	id S1756241AbaIWPUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:20:43 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:55622 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316AbaIWPUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 11:20:42 -0400
+Date: Tue, 23 Sep 2014 23:20:25 +0800
+From: Huang Shijie <shijie8@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v3 1/3] mtd: nand: gpmi: add gpmi_move_bits function
+Message-ID: <20140923152023.GB1791@localhost.localdomain>
+References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
+ <20140923145413.GA1633@localhost.localdomain>
+ <20140923165822.27cfde69@bbrezillon>
+ <20140923150427.GB1633@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411429600-4148-1-git-send-email-tommykurby91@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140923150427.GB1633@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-09-14 01:46:40, Tommy Kurby wrote:
-> Fixed coding style issues.
+On Tue, Sep 23, 2014 at 11:04:28PM +0800, Huang Shijie wrote:
+> On Tue, Sep 23, 2014 at 04:58:22PM +0200, Boris BREZILLON wrote:
+> > On Tue, 23 Sep 2014 22:54:15 +0800
+> > Huang Shijie <shijie8@gmail.com> wrote:
+> > 
+> > > On Tue, Sep 23, 2014 at 04:07:34PM +0200, Boris BREZILLON wrote:
+> > > > Add a new function to move bits (not bytes) from a memory region to
+> > > > another one.
+> > > > This function is similar to memmove except it acts at bit level.
+> > > > This function is needed to implement GPMI raw access functions, given the
+> > > > fact that ECC engine does not pad ECC bits to the next byte boundary.
+> > > sorry for not comment your v2 patch set.
+> > > 
+> > > > 
+> > > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > ---
+> > > >  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 88 ++++++++++++++++++++++++++++++++++
+> > > >  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |  4 ++
+> > > >  2 files changed, 92 insertions(+)
+> > > > 
+> > > > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> > > > index 87e658c..e2f706a 100644
+> > > > --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> > > > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> > > > @@ -1353,3 +1353,91 @@ int gpmi_read_page(struct gpmi_nand_data *this,
+> > > >  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
+> > > >  	return start_dma_with_bch_irq(this, desc);
+> > > >  }
+> > > > +
+> > > > +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
+> > > > +		    const u8 *src, size_t src_bit_off,
+> > > > +		    size_t nbits)
+> > > we can simplify the code.
+> > 
+> > Any suggestions ?
+> > 
+> > > 
+> > > We could use the bytes to replace the @nbits.
+> > > 
+> > > The chunk data is always byte aligned.
+> > 
+> > This function is also used to store ECC bits in the OOB buffer and
+> > these chunk of data are not byte aligned :-).
+> yes. you are right. I missed it.
 > 
-> Signed-off-by: Tommy Kurby <tommykurby91@gmail.com>
-  Hum, I think Matthew Wilcox's patches change this area as well and they
-actually also do something useful. So I prefer not to merge this trivial
-cleanup to not make Matthew's life unnecesarily harder.
+> could you also comment these two hooks in the patch set.
+I mean the @ecc->read_page_raw and @ecc->write_page_raw.
 
-								Honza
-> ---
->  fs/ext2/xip.h | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-> index 18b34d2..57b479b 100644
-> --- a/fs/ext2/xip.h
-> +++ b/fs/ext2/xip.h
-> @@ -6,12 +6,13 @@
->   */
->  
->  #ifdef CONFIG_EXT2_FS_XIP
-> -extern void ext2_xip_verify_sb (struct super_block *);
-> -extern int ext2_clear_xip_target (struct inode *, sector_t);
-> +extern void ext2_xip_verify_sb(struct super_block *);
-> +extern int ext2_clear_xip_target(struct inode *, sector_t);
->  
-> -static inline int ext2_use_xip (struct super_block *sb)
-> +static inline int ext2_use_xip(struct super_block *sb)
->  {
->  	struct ext2_sb_info *sbi = EXT2_SB(sb);
-> +
->  	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
->  }
->  int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
-> -- 
-> 2.1.0
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+thanks
+Huang Shijie
