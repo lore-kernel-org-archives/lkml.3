@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806AbaIWLY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:24:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56650 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755365AbaIWLY2 (ORCPT
+	id S1755956AbaIWLZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:25:32 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:43267 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185AbaIWLYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:24:28 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v8 09/10] rtc: at91sam9: add DT bindings documentation
-Date: Tue, 23 Sep 2014 13:24:03 +0200
-Message-Id: <1411471444-2764-10-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 07:24:55 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Tue, 23 Sep 2014 13:24:18 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>, linux-gpio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] pinctrl: imx: add gpio pinmux support for vf610
+In-Reply-To: <CACRpkdYk0zW12qNXgOstTLmdVDYacu0Un+8quTN+J_azOic7AA@mail.gmail.com>
+References: <cover.1410020458.git.stefan@agner.ch>
+ <4cf96e22ce2c7646513b64260c7bb1a2279e232d.1410020459.git.stefan@agner.ch>
+ <CACRpkdYk0zW12qNXgOstTLmdVDYacu0Un+8quTN+J_azOic7AA@mail.gmail.com>
+Message-ID: <0498face86b4dcbdf35619c8b124675c@agner.ch>
+User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add RTT bindings documentation.
+Am 2014-09-23 11:48, schrieb Linus Walleij:
+> On Sat, Sep 6, 2014 at 6:25 PM, Stefan Agner <stefan@agner.ch> wrote:
+> 
+>> Add pinmux support for GPIO for Vybrid (vf610) IOMUX controller.
+>> This is needed since direction configuration is not part of the
+>> GPIO module in Vybrid.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> (...)
+> 
+>> -arch_initcall(vf610_pinctrl_init);
+>> +postcore_initcall(vf610_pinctrl_init);
+> 
+> Why is this necessary? You should be able to rely on deferred
+> probing to do its work here. I think this should be module_init()
+> or driver_initcall() really.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Johan Hovold <johan@kernel.org>
----
- .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+Currently deferred probe doesn't work for gpiolib drivers which try to
+add gpio-ranges from device tree:
+gpiochip_add calls of_gpiochip_add_pin_range (through of_gpiochip_add).
+This function tries to get the pinctrl driver, which is not registred at
+that time. Currently the driver does not defer probing but fails
+silently...
 
-diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-new file mode 100644
-index 0000000..f307a1d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-@@ -0,0 +1,23 @@
-+Atmel AT91SAM9260 Real Time Timer
-+
-+Required properties:
-+- compatible: should be: "atmel,at91sam9260-rtt"
-+- reg: should encode the memory region of the RTT controller
-+- interrupts: rtt alarm/event interrupt
-+- clocks: should contain one clock pointing to the slow clk
-+- atmel,rtt-rtc-time-reg: should encode the GPBR register used to store
-+	the time base when the RTT is used as an RTC.
-+	The first cell should point to the GPBR node and the second one
-+	encode the offset within the GPBR block (or in other words, the
-+	GPBR register used to store the time base).
-+
-+
-+Example:
-+
-+rtt@fffffe00 {
-+	compatible = "atmel,at91sam9260-rtt";
-+	reg = <0xfffffd20 0x10>;
-+	interrupts = <1 4 7>;
-+	clocks = <&clk32k>;
-+	atmel,rtt-rtc-time-reg = <&gpbr 0x0>;
-+};
--- 
-1.9.1
+We would need to alter the return values of those two functions
+(of_gpiochip_add_pin_range/of_gpiochip_add) and honor the return value
+in gpiochip_add. 
 
+Currently, it seems that we quite often use an early initcall to get the
+pinctrl loaded early:
+$ grep -h -o ".*_initcall" drivers/pinctrl/*.c | sort | uniq -c
+     18 arch_initcall
+      3 core_initcall
+      3 postcore_initcall
+      1 subsys_initcall
+
+IMHO for those core services, it also makes sense to have them
+initialized early. I'd rather prefer this hard coded than having dozens
+of "requests probe deferral" messages...
+
+--
+Stefan
