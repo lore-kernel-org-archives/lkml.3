@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaIWOe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:34:26 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:53351 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039AbaIWOeY (ORCPT
+	id S1755877AbaIWOhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:37:18 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60216 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892AbaIWOhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:34:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/9] Documentation: bindings: net: add the Marvell PXA168 Ethernet controller
-Date: Tue, 23 Sep 2014 16:33:48 +0200
-Message-ID: <3708177.kEGF9Dk44n@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140923140113.GC18924@kwain>
-References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com> <51745791.Wuu5QiQB2e@wuerfel> <20140923140113.GC18924@kwain>
+	Tue, 23 Sep 2014 10:37:16 -0400
+Date: Tue, 23 Sep 2014 15:37:12 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Roy Franz <roy.franz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20140923143712.GI18635@console-pimps.org>
+References: <20140919104021.GA11552@gmail.com>
+ <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+ <20140923053510.GB27825@gmail.com>
+ <20140923053711.GA28704@gmail.com>
+ <20140923055802.GA29052@gmail.com>
+ <1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CAKv+Gu_xqnkVKuoWY=PRoAVYE_qOH8dwM+ZxG+ysC7Xvs82ZNw@mail.gmail.com>
+ <20140923131805.GH18635@console-pimps.org>
+ <542182E0.6090101@canonical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:5ix4XDrNM1RZbY1TWXI+4ROL9gwX7niXPxfp2LVUkoQ
- +WmsddD2bhDrUlrxw0RkIzEnDazr0d4WeEFb5PKbQxPkqsyvLp
- lRPt0hfD6/6fn/kw/ESMWGPkgBzqlql4f7wNdxZnz3m3O5VceW
- 7tpVgKdHlvTIQwhAHZMJ3XuA4c+/rggxx4nO8Lx1pi6z+zCuA7
- PhzFKacDco4xvd0+VphBzragk41HjH/GYINjb/N1scJyi90DFf
- PXEklNYvzC0pxczCSLYW7vsml9s6RyOv/5/RT9lWBpr4XK5SDN
- c0/yxgx9UElVSuV0Kty4BdOp0yjNrydeHsHJS1kimMDbyeJbOI
- tQGxzF4vrwI605mRdQBg=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <542182E0.6090101@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 16:01:13 Antoine Tenart wrote:
-> 
-> On Tue, Sep 23, 2014 at 02:38:39PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 23 September 2014 14:15:30 Antoine Tenart wrote:
-> > > +Optional properties:
-> > > +- port-id: should be '0','1' or '2'.
-> > > +- phy-addr: MDIO address of the PHY.
-> > > +- local-mac-address: see ethernet.txt file in the same directory.
-> > > +
-> > > 
-> > 
-> > I believe new bindings should not use "phy-addr" properties, but
-> > instead use a phy-handle property pointing to a phy device instead.
-> 
-> That's the MDIO address of the PHY. It's a bit difficult to use a phy
-> device as the driver uses the libphy. And that would break the platform
-> using it.
-> 
-> Or maybe you have something in mind?
+On Tue, 23 Sep, at 04:25:36PM, Maarten Lankhorst wrote:
+> It seems to boot for me with direct efi netboot. But when I'm doing a
+> local boot through refind instead I also hit that setup_efi_pci()
+> failed bug, it doesn't look like it's fixed by reverting all the efi
+> stub patches though.  This might need more bisecting first...
 
-I don't understand what you mean. Doesn't libphy imply using a phy_device?
-What I meant was that you should be able to just call the standard
-of_phy_connect() and other interfaces to deal with phylib.
+Thanks for testing!
 
-	Arnd
+The "setup_efi_pci() failed!" message doesn't indicate a bug, it's
+superfluous and I've queued up the below patch for v3.18.
+
+But maybe we should merge it sooner since people are likely to interpret
+it as indicating there's some boot bug (there isn't).
+
+I know Josh was in favour of getting this message dropped and treating
+this as a regression fix, but I was erring on the side of caution
+because it's not critical.
+
+tip folks, if I sent this patch to you in a pull request, would you
+merge it?
+
+---
+
+>From c988616127c10d8c68dd1b9b946cddf51e4ca718 Mon Sep 17 00:00:00 2001
+From: Matt Fleming <matt.fleming@intel.com>
+Date: Thu, 11 Sep 2014 09:04:25 +0100
+Subject: [PATCH] x86/efi: Delete misleading efi_printk() error message
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A number of people are reporting seeing the "setup_efi_pci() failed!"
+error message in what used to be a quiet boot,
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=81891
+
+The message isn't all that helpful because setup_efi_pci() can return a
+non-success error code for a variety of reasons, not all of them fatal.
+
+Drop the efi_printk() now that we have more fine-grained, and more
+specific, error messages throughout the *setup_efi_pci*() code paths.
+
+Reported-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Ulf Winkelvos <ulf@winkelvos.de>
+Cc: Andre Müller <andre.muller@web.de>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/compressed/eboot.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index ed8e06c59a4c..87398f9434f3 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -1394,10 +1394,7 @@ struct boot_params *efi_main(struct efi_config *c,
+ 
+ 	setup_graphics(boot_params);
+ 
+-	status = setup_efi_pci(boot_params);
+-	if (status != EFI_SUCCESS) {
+-		efi_printk(sys_table, "setup_efi_pci() failed!\n");
+-	}
++	setup_efi_pci(boot_params);
+ 
+ 	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
+ 				sizeof(*gdt), (void **)&gdt);
+-- 
+1.9.3
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
