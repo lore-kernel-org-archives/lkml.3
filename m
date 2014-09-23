@@ -1,40 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619AbaIWLHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:07:01 -0400
-Received: from mga14.intel.com ([192.55.52.115]:60164 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694AbaIWLG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:06:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,579,1406617200"; 
-   d="scan'208";a="595514450"
-Date: Tue, 23 Sep 2014 16:04:17 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH 2/2] dmaengine: qcom_adm: Add device tree binding
-Message-ID: <20140923103417.GJ24663@intel.com>
-References: <1410401933-20621-1-git-send-email-agross@codeaurora.org>
- <1410401933-20621-3-git-send-email-agross@codeaurora.org>
+	id S1755719AbaIWLHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:07:23 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:38811 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755544AbaIWLHU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 07:07:20 -0400
+Date: Tue, 23 Sep 2014 12:06:19 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: gregkh@linuxfoundation.org, davem@davemloft.net,
+        devel@driverdev.osuosl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH linux-next] et131x: Promote staging et131x driver to
+ drivers/net
+Message-ID: <20140923110619.GD5130@leicester.auvation.com>
+References: <1411421283-25073-1-git-send-email-mark.einon@gmail.com>
+ <20140923072251.GD4657@distanz.ch>
+ <20140923094614.GA5130@leicester.auvation.com>
+ <20140923100106.GE4657@distanz.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410401933-20621-3-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140923100106.GE4657@distanz.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:18:53PM -0500, Andy Gross wrote:
-> Add device tree binding support for the QCOM ADM DMA driver.
+On Tue, Sep 23, 2014 at 12:01:07PM +0200, Tobias Klauser wrote:
+> On 2014-09-23 at 11:46:15 +0200, Mark Einon <mark.einon@gmail.com> wrote:
+> > On Tue, Sep 23, 2014 at 09:22:53AM +0200, Tobias Klauser wrote:
+> > 
+> > Hi Tobias,
+> > 
+> > Thanks for the details review. I've replied below -
+> > 
+> > [...]
+> > > > +/* et131x_rx_dma_memory_alloc
+> > > > + *
+> > > > + * Allocates Free buffer ring 1 for sure, free buffer ring 0 if required,
+> > > > + * and the Packet Status Ring.
+> > > > + */
+> > > > +static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+> > > > +{
+> > > > +	u8 id;
+> > > > +	u32 i, j;
+> > > > +	u32 bufsize;
+> > > > +	u32 psr_size;
+> > > > +	u32 fbr_chunksize;
+> > > > +	struct rx_ring *rx_ring = &adapter->rx_ring;
+> > > > +	struct fbr_lookup *fbr;
+> > > > +
+> > > > +	/* Alloc memory for the lookup table */
+> > > > +	rx_ring->fbr[0] = kmalloc(sizeof(*fbr), GFP_KERNEL);
+> > > > +	if (rx_ring->fbr[0] == NULL)
+> > > > +		return -ENOMEM;
+> > > > +	rx_ring->fbr[1] = kmalloc(sizeof(*fbr), GFP_KERNEL);
+> > > > +	if (rx_ring->fbr[1] == NULL)
+> > > > +		return -ENOMEM;
+> > > 
+> > > If you fail here, et131x_rx_dma_memory_free() will be called by
+> > > et131x_adapter_memory_free() in the error handling path which in turn
+> > > will access the members of the already allocated rx_ring->fbr[0] (e.g.
+> > > ->buffsize). Since it is allocated with kmalloc() these members contain
+> > > arbitrary values and cause problems in et131x_rx_dma_memory_free(). I'
+> > > suggest to do the cleanup (i.e. free rx_ring->fbr[0] directly here and
+> > > not call et131x_rx_dma_memory_free() in the error handling path. You
+> > > might want to check that memory allocation failures are properly handled
+> > > in the rest of the driver as well. There are multiple other cases where
+> > > et131x_adapter_memory_free() is called on partially
+> > > allocated/initialized memory.
+> > > 
+> > 
+> > I don't think this is the case - the members of rx_ring->fbr[x] are not
+> > accessed unless this pointer is non-NULL in et131x_rx_dma_memory_free()
+> > (see code snippet below), which is exactly why the kmalloc code above
+> > would fail, so buffsize never gets accessed and the code is cleaned up
+> > correctly.  Actually, for further explanation, this thread discusses
+> > these changes:
+> > 
+> > http://www.spinics.net/lists/linux-driver-devel/msg42128.html
 > 
-Applied, thanks
+> Hm, won't rx_ring->fbr[0] be accessed, since it was successfully
+> allocated? However, it isn't properly initialized, so at least the
+> ->ring_virtaddr will get accessed and if this is non-NULL by accident
+> also further members?
 
--- 
-~Vinod
+I think you have a point there - does a kzalloc(fbr) sort out that problem?
+As we would want the !fbr->ring_virtaddr check in the cleanup code below
+to be true if allocation fails, and it would be unallocated if the
+second fbr alloc fails. The ->ring_virtaddr is NULLed on free, so this
+check will always fail subsequently.
 
+I'll take a closer look and provide a patch, thanks.
+
+Mark
+
+> > > > +/* et131x_rx_dma_memory_free - Free all memory allocated within this module */
+> > > > +static void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
+> > > > +{
+> > 
+> > [...]
+> > 
+> > > > +	/* Free Free Buffer Rings */
+> > > > +	for (id = 0; id < NUM_FBRS; id++) {
+> > > > +		fbr = rx_ring->fbr[id];
+> > > > +
+> > > > +		if (!fbr || !fbr->ring_virtaddr)
+> > > > +			continue;
+> > > > +
+> > > > +		/* First the packet memory */
+> > > > +		for (ii = 0; ii < fbr->num_entries / FBR_CHUNKS; ii++) {
+> > > > +			if (fbr->mem_virtaddrs[ii]) {
+> > > > +				bufsize = fbr->buffsize * FBR_CHUNKS;
+> > 
+> > [...]
