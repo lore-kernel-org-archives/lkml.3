@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaIWJJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:09:18 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:43580 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaIWJJO (ORCPT
+	id S1754920AbaIWJKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:10:15 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:49026 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695AbaIWJKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:09:14 -0400
-Message-ID: <542138B1.1020107@collabora.com>
-Date: Tue, 23 Sep 2014 11:09:05 +0200
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 23 Sep 2014 05:10:11 -0400
+X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
+   d="scan'208";a="46504411"
+Message-ID: <542138EB.40708@broadcom.com>
+Date: Tue, 23 Sep 2014 11:10:03 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v12 04/10] clk: use struct clk only for external API
-References: <1411395124-2476-1-git-send-email-tomeu.vizoso@collabora.com> <1411395353-3189-1-git-send-email-tomeu.vizoso@collabora.com> <20140922180807.GN5182@n2100.arm.linux.org.uk>
-In-Reply-To: <20140922180807.GN5182@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Emil Goode <emilgoode@gmail.com>
+CC: Brett Rudley <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Daniel Kim <dekim@broadcom.com>, <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH v2] brcmfmac: Fix off by one bug in brcmf_count_20mhz_channels()
+References: <1411426195-13467-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1411426195-13467-1-git-send-email-emilgoode@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 08:08 PM, Russell King - ARM Linux wrote:
-> On Mon, Sep 22, 2014 at 04:15:47PM +0200, Tomeu Vizoso wrote:
->> diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
->> index d278572..3b3068b 100644
->> --- a/drivers/clk/clk.h
->> +++ b/drivers/clk/clk.h
->> @@ -9,9 +9,15 @@
->>   * published by the Free Software Foundation.
->>   */
->>  
->> +#include <linux/clk-private.h>
->> +
->>  #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
->>  struct clk_core *of_clk_get_by_clkspec(struct of_phandle_args *clkspec);
->>  struct clk_core *__of_clk_get_from_provider(struct of_phandle_args *clkspec);
->>  void of_clk_lock(void);
->>  void of_clk_unlock(void);
->>  #endif
->> +
->> +#if defined(CONFIG_COMMON_CLK)
->> +struct clk *__clk_create_clk(struct clk_core *clk_core);
->> +#endif
-> 
-> Why does any of the above need ifdefs?
+On 09/23/14 00:49, Emil Goode wrote:
+> In the brcmf_count_20mhz_channels function we are looping through a list
+> of channels received from firmware. Since the index of the first channel
+> is 0 the condition leads to an off by one bug. This is causing us to hit
+> the WARN_ON_ONCE(1) calls in the brcmu_d11n_decchspec function, which is
+> how I discovered the bug.
+>
+> Introduced by:
+> commit b48d891676f756d48b4d0ee131e4a7a5d43ca417
+> ("brcmfmac: rework wiphy structure setup")
+>
 
-Because struct clk_core is only defined if CONFIG_COMMON_CLK, so clock
-implementations that don't use the CCF don't have to be converted to
-clk_core.
+Hi John,
 
->> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
->> index c751d0c..060041b 100644
->> --- a/drivers/clk/clkdev.c
->> +++ b/drivers/clk/clkdev.c
->> @@ -18,6 +18,7 @@
->>  #include <linux/string.h>
->>  #include <linux/mutex.h>
->>  #include <linux/clk.h>
->> +#include <linux/clk-private.h>
->>  #include <linux/clk-provider.h>
->>  #include <linux/clkdev.h>
->>  #include <linux/of.h>
->> @@ -33,13 +34,13 @@ static DEFINE_MUTEX(clocks_mutex);
-> 
-> I'm not happy with any of these changes, because it introduces a huge
-> number of ifdefs.
-> 
-> Instead of doing this, please introduce a local typedef in this .c file
-> which is conditional on whether we're using your new struct clk_core
-> or not, eg, clkdev_ret_t.
-> 
-> Then, rename all the functions here to be _provider based, and arrange
-> for these to return clkdev_ret_t.
-> 
-> Then provide the original functions, with your __clk_create_clk() call
-> to allocate your struct clk.  A dummy version which merely returns its
-> argument can be provided when we're not using clk_core.
-> 
-> This should result in substantially fewer ifdefs - probably just one
-> ifdef.
+This bug was introduced in 3.17 so can it still go in the wireless tree? 
+I verified it applies to wireless/master branch.
 
-Sounds like a neat improvement, will send soon v13 with this.
+Regards,
+Arend
 
-> Another concern here is what happens when __clk_create_clk() fails.
-> Your __clk_create_clk() function does nothing in that regard, so any
-> references which the parent function took are never released.
-
-Yeah, will address this in v13 as well.
-
-Thanks a lot for the feedback,
-
-Tomeu
+> Acked-by: Arend van Spriel<arend@broadcom.com>
+> Signed-off-by: Emil Goode<emilgoode@gmail.com>
+> ---
+> v2: Added Arends "Acked-by" tag.
+>
+>   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> index 12a60ca..0517687 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> @@ -4924,7 +4924,7 @@ static void brcmf_count_20mhz_channels(struct brcmf_cfg80211_info *cfg,
+>   	struct brcmu_chan ch;
+>   	int i;
+>
+> -	for (i = 0; i<= total; i++) {
+> +	for (i = 0; i<  total; i++) {
+>   		ch.chspec = (u16)le32_to_cpu(chlist->element[i]);
+>   		cfg->d11inf.decchspec(&ch);
+>
 
