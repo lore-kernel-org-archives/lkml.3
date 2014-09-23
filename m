@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840AbaIWK5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:57:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16491 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502AbaIWK46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:56:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,579,1406617200"; 
-   d="scan'208";a="595512234"
-Date: Tue, 23 Sep 2014 15:58:50 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH 1/2] dmaengine: Add QCOM ADM DMA driver
-Message-ID: <20140923102850.GI24663@intel.com>
-References: <1410401933-20621-1-git-send-email-agross@codeaurora.org>
- <1410401933-20621-2-git-send-email-agross@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410401933-20621-2-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755355AbaIWLBD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:01:03 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64708 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107AbaIWLBB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 07:01:01 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 1/5] ALSA: ctxfi: added reference of snd_card
+Date: Tue, 23 Sep 2014 16:30:20 +0530
+Message-Id: <1411470024-25244-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:18:52PM -0500, Andy Gross wrote:
+added a pointer of snd_card in some of the structures to get a
+reference of the card from other functions.
+these references of snd_card will be initialised in the next patch
+of this series and as of now these snd_card will be used to print the
+the device information when we convert the pr_* macros to dev_* in a
+later patch of this series.
 
-> +static int adm_slave_config(struct adm_chan *achan,
-> +		struct dma_slave_config *cfg)
-> +{
-> +	int ret = 0;
-> +	u32 burst;
-> +	struct adm_device *adev = achan->adev;
-> +
-> +	memcpy(&achan->slave, cfg, sizeof(*cfg));
-> +
-> +	/* set channel CRCI burst, if applicable */
-> +	if (achan->crci) {
-> +		burst = max_t(u32, cfg->src_maxburst, cfg->dst_maxburst);
-> +
-> +		switch (burst) {
-> +		case 16:
-> +			achan->blk_size = 0;
-> +			break;
-> +		case 32:
-> +			achan->blk_size = 1;
-> +			break;
-> +		case 64:
-> +			achan->blk_size = 2;
-> +			break;
-> +		case 128:
-> +			achan->blk_size = 3;
-> +			break;
-> +		case 192:
-> +			achan->blk_size = 4;
-> +			break;
-> +		case 256:
-> +			achan->blk_size = 5;
-> +			break;
-> +		default:
-> +			achan->slave.src_maxburst = 0;
-> +			achan->slave.dst_maxburst = 0;
-Why clear these for error cases
-> +			ret = -EINVAL;
-> +			break;
-> +		}
-> +
-> +		if (!ret)
-> +			writel(achan->blk_size,
-> +				adev->regs + HI_CRCI_CTL(achan->id, adev->ee));
-and why do we write to HW on this. Shouldn't this be done when you program
-the descriptor?
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ sound/pci/ctxfi/ctamixer.h   | 3 +++
+ sound/pci/ctxfi/ctdaio.h     | 2 ++
+ sound/pci/ctxfi/cthardware.h | 2 ++
+ sound/pci/ctxfi/ctsrc.h      | 3 +++
+ 4 files changed, 10 insertions(+)
 
-> +static enum dma_status adm_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
-> +	struct dma_tx_state *txstate)
-> +{
-> +	struct adm_chan *achan = to_adm_chan(chan);
-> +	struct virt_dma_desc *vd;
-> +	enum dma_status ret;
-> +	unsigned long flags;
-> +	size_t residue = 0;
-> +
-> +	ret = dma_cookie_status(chan, cookie, txstate);
-> +
-Last arg can be null to this, so before you do residue calcluation and block
-interrupts would make sense to return from here if arg is NULL
-
-> +	spin_lock_irqsave(&achan->vc.lock, flags);
-> +
-> +	vd = vchan_find_desc(&achan->vc, cookie);
-> +	if (vd)
-> +		residue = container_of(vd, struct adm_async_desc, vd)->length;
-> +	else if (achan->curr_txd && achan->curr_txd->vd.tx.cookie == cookie)
-> +		residue = achan->curr_txd->length;
-so this is current cookie, so you need to read from HW on current position
-> +
-> +	spin_unlock_irqrestore(&achan->vc.lock, flags);
-> +
-> +	dma_set_residue(txstate, residue);
-> +
-> +	if (achan->error)
-> +		return DMA_ERROR;
-> +
-> +	return ret;
-
+diff --git a/sound/pci/ctxfi/ctamixer.h b/sound/pci/ctxfi/ctamixer.h
+index cc49e5a..ea81b8a 100644
+--- a/sound/pci/ctxfi/ctamixer.h
++++ b/sound/pci/ctxfi/ctamixer.h
+@@ -21,6 +21,7 @@
+ 
+ #include "ctresource.h"
+ #include <linux/spinlock.h>
++#include <sound/core.h>
+ 
+ /* Define the descriptor of a summation node resource */
+ struct sum {
+@@ -35,6 +36,7 @@ struct sum_desc {
+ 
+ struct sum_mgr {
+ 	struct rsc_mgr mgr;	/* Basic resource manager info */
++	struct snd_card *card;	/* pointer to this card */
+ 	spinlock_t mgr_lock;
+ 
+ 	 /* request one sum resource */
+@@ -79,6 +81,7 @@ struct amixer_desc {
+ 
+ struct amixer_mgr {
+ 	struct rsc_mgr mgr;	/* Basic resource manager info */
++	struct snd_card *card;	/* pointer to this card */
+ 	spinlock_t mgr_lock;
+ 
+ 	 /* request one amixer resource */
+diff --git a/sound/pci/ctxfi/ctdaio.h b/sound/pci/ctxfi/ctdaio.h
+index 85ccb6e..19cb285 100644
+--- a/sound/pci/ctxfi/ctdaio.h
++++ b/sound/pci/ctxfi/ctdaio.h
+@@ -23,6 +23,7 @@
+ #include "ctimap.h"
+ #include <linux/spinlock.h>
+ #include <linux/list.h>
++#include <sound/core.h>
+ 
+ /* Define the descriptor of a daio resource */
+ enum DAIOTYP {
+@@ -98,6 +99,7 @@ struct daio_desc {
+ 
+ struct daio_mgr {
+ 	struct rsc_mgr mgr;	/* Basic resource manager info */
++	struct snd_card *card;	/* pointer to this card */
+ 	spinlock_t mgr_lock;
+ 	spinlock_t imap_lock;
+ 	struct list_head imappers;
+diff --git a/sound/pci/ctxfi/cthardware.h b/sound/pci/ctxfi/cthardware.h
+index 5977e9a..940bbd0 100644
+--- a/sound/pci/ctxfi/cthardware.h
++++ b/sound/pci/ctxfi/cthardware.h
+@@ -20,6 +20,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/pci.h>
++#include <sound/core.h>
+ 
+ enum CHIPTYP {
+ 	ATC20K1,
+@@ -184,6 +185,7 @@ struct hw {
+ 	void *irq_callback_data;
+ 
+ 	struct pci_dev *pci;	/* the pci kernel structure of this card */
++	struct snd_card *card; /* pointer to this card */
+ 	int irq;
+ 	unsigned long io_base;
+ 	unsigned long mem_base;
+diff --git a/sound/pci/ctxfi/ctsrc.h b/sound/pci/ctxfi/ctsrc.h
+index 259366a..7887cc6 100644
+--- a/sound/pci/ctxfi/ctsrc.h
++++ b/sound/pci/ctxfi/ctsrc.h
+@@ -23,6 +23,7 @@
+ #include "ctimap.h"
+ #include <linux/spinlock.h>
+ #include <linux/list.h>
++#include <sound/core.h>
+ 
+ #define SRC_STATE_OFF	0x0
+ #define SRC_STATE_INIT	0x4
+@@ -85,6 +86,7 @@ struct src_desc {
+ /* Define src manager object */
+ struct src_mgr {
+ 	struct rsc_mgr mgr;	/* Basic resource manager info */
++	struct snd_card *card;	/* pointer to this card */
+ 	spinlock_t mgr_lock;
+ 
+ 	 /* request src resource */
+@@ -123,6 +125,7 @@ struct srcimp_desc {
+ 
+ struct srcimp_mgr {
+ 	struct rsc_mgr mgr;	/* Basic resource manager info */
++	struct snd_card *card;	/* pointer to this card */
+ 	spinlock_t mgr_lock;
+ 	spinlock_t imap_lock;
+ 	struct list_head imappers;
 -- 
-~Vinod
+1.8.1.2
 
