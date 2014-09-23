@@ -1,90 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaIWEob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:44:31 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:57906 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826AbaIWEnN (ORCPT
+	id S1754051AbaIWEoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:44:38 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:39800 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119AbaIWEog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:43:13 -0400
-From: behanw@converseincode.com
-To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
-        fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
-        snitzer@redhat.com, tadeusz.struk@intel.com
-Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
-        james.l.morris@oracle.com, john.griffin@intel.com,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
-        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
-        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu
-Subject: [PATCH v4 10/12] crypto: LLVMLinux: Remove VLAIS usage from libcrc32c.c
-Date: Mon, 22 Sep 2014 21:42:15 -0700
-Message-Id: <1411447337-22362-11-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411447337-22362-1-git-send-email-behanw@converseincode.com>
-References: <1411447337-22362-1-git-send-email-behanw@converseincode.com>
+	Tue, 23 Sep 2014 00:44:36 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 23 Sep 2014 13:45:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Subject: Re: [PATCH v1 1/5] zram: generalize swap_slot_free_notify
+Message-ID: <20140923044512.GA8325@bbox>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+ <1411344191-2842-2-git-send-email-minchan@kernel.org>
+ <20140922134109.f61195768841a3b300e6b81e@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140922134109.f61195768841a3b300e6b81e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+Hi Andrew,
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This patch allocates the appropriate amount of memory
-using a char array using the SHASH_DESC_ON_STACK macro.
+On Mon, Sep 22, 2014 at 01:41:09PM -0700, Andrew Morton wrote:
+> On Mon, 22 Sep 2014 09:03:07 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > Currently, swap_slot_free_notify is used for zram to free
+> > duplicated copy page for memory efficiency when it knows
+> > there is no reference to the swap slot.
+> > 
+> > This patch generalizes it to be able to use for other
+> > swap hint to communicate with VM.
+> > 
+> 
+> I really think we need to do a better job of documenting the code.
+> 
+> > index 94d93b1f8b53..c262bfbeafa9 100644
+> > --- a/Documentation/filesystems/Locking
+> > +++ b/Documentation/filesystems/Locking
+> > @@ -405,7 +405,7 @@ prototypes:
+> >  	void (*unlock_native_capacity) (struct gendisk *);
+> >  	int (*revalidate_disk) (struct gendisk *);
+> >  	int (*getgeo)(struct block_device *, struct hd_geometry *);
+> > -	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
+> > +	int (*swap_hint) (struct block_device *, unsigned int, void *);
+> >  
+> >  locking rules:
+> >  			bd_mutex
+> > @@ -418,7 +418,7 @@ media_changed:		no
+> >  unlock_native_capacity:	no
+> >  revalidate_disk:	no
+> >  getgeo:			no
+> > -swap_slot_free_notify:	no	(see below)
+> > +swap_hint:		no	(see below)
+> 
+> This didn't tell anyone anythnig much.
 
-The new code can be compiled with both gcc and clang.
+Yeb. :(
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Reviewed-by: Mark Charlebois <charlebm@gmail.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: pageexec@freemail.hu
-Cc: "David S. Miller" <davem@davemloft.net>
----
- lib/libcrc32c.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+> 
+> > index d78b245bae06..22a37764c409 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -926,7 +926,8 @@ error:
+> >  	bio_io_error(bio);
+> >  }
+> >  
+> > -static void zram_slot_free_notify(struct block_device *bdev,
+> > +/* this callback is with swap_lock and sometimes page table lock held */
+> 
+> OK, that was useful.
+> 
+> It's called "page_table_lock".
+> 
+> Also *which* page_table_lock?  current->mm?
 
-diff --git a/lib/libcrc32c.c b/lib/libcrc32c.c
-index b3131f5..6a08ce7 100644
---- a/lib/libcrc32c.c
-+++ b/lib/libcrc32c.c
-@@ -41,20 +41,18 @@ static struct crypto_shash *tfm;
+It depends on ALLOC_SPLIT_PTLOCKS so it could be page->ptl, too.
+So, it would be better to call it as *ptlock*?
+Since it's ptlock, it isn't related to which mm struct.
+What we should make sure is just ptlock which belong to the page
+table pointed to this swap page.
+
+So, I want this.
+
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index c262bfbeafa9..19d2726e34f4 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -423,8 +423,8 @@ swap_hint:		no	(see below)
+ media_changed, unlock_native_capacity and revalidate_disk are called only from
+ check_disk_change().
  
- u32 crc32c(u32 crc, const void *address, unsigned int length)
- {
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
--	} desc;
-+	SHASH_DESC_ON_STACK(shash, tfm);
-+	u32 *ctx = (u32 *)shash_desc_ctx(shash);
- 	int err;
+-swap_slot_free_notify is called with swap_lock and sometimes the page lock
+-held.
++swap_hint is called with swap_info_struct->lock and sometimes the ptlock
++of the page table pointed to the swap page.
  
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
--	*(u32 *)desc.ctx = crc;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
-+	*ctx = crc;
  
--	err = crypto_shash_update(&desc.shash, address, length);
-+	err = crypto_shash_update(shash, address, length);
- 	BUG_ON(err);
- 
--	return *(u32 *)desc.ctx;
-+	return *ctx;
- }
- 
- EXPORT_SYMBOL(crc32c);
+ --------------------------- file_operations -------------------------------
+
+> 
+> > +static int zram_slot_free_notify(struct block_device *bdev,
+> >  				unsigned long index)
+> >  {
+> >  	struct zram *zram;
+> >
+> > ...
+> >
+> > --- a/include/linux/blkdev.h
+> > +++ b/include/linux/blkdev.h
+> > @@ -1609,6 +1609,10 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
+> >  
+> >  #endif /* CONFIG_BLK_DEV_INTEGRITY */
+> >  
+> > +enum swap_blk_hint {
+> > +	SWAP_FREE,
+> > +};
+> 
+> This would be a great place to document SWAP_FREE.
+
+Yes,
+
+> 
+> >  struct block_device_operations {
+> >  	int (*open) (struct block_device *, fmode_t);
+> >  	void (*release) (struct gendisk *, fmode_t);
+> > @@ -1624,8 +1628,7 @@ struct block_device_operations {
+> >  	void (*unlock_native_capacity) (struct gendisk *);
+> >  	int (*revalidate_disk) (struct gendisk *);
+> >  	int (*getgeo)(struct block_device *, struct hd_geometry *);
+> > -	/* this callback is with swap_lock and sometimes page table lock held */
+> > -	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
+> > +	int (*swap_hint)(struct block_device *, unsigned int, void *);
+> 
+> And this would be a suitable place to document ->swap_hint().
+
+If we consider to be able to add more hints in future so it could
+be verbose, IMO, it would be better to desribe it in enum swap_hint. :)
+
+> 
+> - Hint from who to who?  Is it the caller providing the callee a hint
+>   or is the caller asking the callee for a hint?
+> 
+> - What is the meaning of the return value?
+> 
+> - What are the meaning of the arguments?
+
+Okay.
+
+> 
+> Please don't omit the argument names like this.  They are useful!  How
+> is a reader to know what that "unsigned int" and "void *" actually
+> *do*?
+
+Yes.
+
+> 
+> The second arg-which-doesn't-have-a-name should have had type
+> swap_blk_hint, yes?
+
+Yes.
+
+> 
+> swap_blk_hint should be called swap_block_hint.  I assume that's what
+> "blk" means.  Why does the name have "block" in there anyway?  It has
+> something to do with disk blocks?  How is anyone supposed to work that
+> out?
+
+Yeb, I think we don't need block in name. I will remove it.
+
+> 
+> ->swap_hint was converted to return an `int', but all the callers
+> simply ignore the return value.
+
+You're right. All caller doesn't use it in this patch but this patch
+makes it generalize and in later patch, SWAP_FULL will use it so
+I want to make return as int. One more thought, SWAP_FULL could use
+void * as output param so we could remove return value, finally.
+I will consider it, too.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.9.1
-
+Kind regards,
+Minchan Kim
