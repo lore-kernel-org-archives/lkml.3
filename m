@@ -1,151 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512AbaIWVPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:15:51 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:41433 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875AbaIWVPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:15:47 -0400
-Date: Tue, 23 Sep 2014 14:17:27 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH 9/9] percpu_ref: make INIT_ATOMIC and switch_to_atomic()
- sticky
-Message-ID: <20140923211727.GJ15142@kmo-pixel>
-References: <1411451718-17807-1-git-send-email-tj@kernel.org>
- <1411451718-17807-10-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411451718-17807-10-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932530AbaIWVQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:16:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5877 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932292AbaIWVP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 17:15:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,582,1406617200"; 
+   d="scan'208";a="604270347"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Tue, 23 Sep 2014 14:15:47 -0700
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
+ properties interface
+From: Darren Hart <dvhart@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <david.woodhouse@intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Message-ID: <D04730D8.A9DB0%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH v2 07/16] gpio: Add support for unified device
+ properties interface
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <12538216.vu4CbU01qP@wuerfel>
+ <2895905.coa5UvrkJk@vostro.rjw.lan>
+ <2809308.3y5s7TV5Ip@wuerfel>
+In-Reply-To: <2809308.3y5s7TV5Ip@wuerfel>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 01:55:18AM -0400, Tejun Heo wrote:
-> Currently, a percpu_ref which is initialized with
-> PERPCU_REF_INIT_ATOMIC or switched to atomic mode via
-> switch_to_atomic() automatically reverts to percpu mode on the first
-> percpu_ref_reinit().  This makes the atomic mode difficult to use for
-> cases where a percpu_ref is used as a persistent on/off switch which
-> may be cycled multiple times.
-> 
-> This patch makes such atomic state sticky so that it survives through
-> kill/reinit cycles.  After this patch, atomic state is cleared only by
-> an explicit percpu_ref_switch_to_percpu() call.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
+On 9/23/14, 9:26, "Arnd Bergmann" <arnd@arndb.de> wrote:
 
-Reviewed-by: Kent Overstreet <kmo@daterainc.com>
+>On Tuesday 23 September 2014 18:25:01 Rafael J. Wysocki wrote:
+>> The problem is iteration over child nodes of a given one where there
+>> may not be struct device objects.
+>> 
+>> For example (from patch [2/16]):
+>> 
+>> +int acpi_for_each_child_node(struct acpi_device *adev,
+>> +                             int (*fn)(struct fw_dev_node *fdn, void
+>>*data),
+>> +                             void *data)
+>> +{
+>> +       struct acpi_device *child;
+>> +       int ret = 0;
+>> +
+>> +       list_for_each_entry(child, &adev->children, node) {
+>> +               struct fw_dev_node fdn = { .acpi_node = child, };
+>> +
+>> +               ret = fn(&fdn, data);
+>> +               if (ret)
+>> +                       break;
+>> +       }
+>> +       return ret;
+>> +}
+>> 
+>> and then fn() can be made work for both DTs and ACPI.  Without this we'd
+>> need to have two versions of fn(), one for DTs and one for ACPI (and
+>>possibly
+>> more for some other FW protocols), which isn't necessary in general (and
+>> duplicates code etc.).
+>> 
+>> That actually is used by some patches down in the series (eg. [10/16]).
+>> 
+>
+>Ok, I understand what you are doing now.
+>
+>Looking at the example you point to
+>(http://www.spinics.net/lists/devicetree/msg49502.html), I still feel
+>that this is adding more abstraction than what is good for us, and
+>I'd be happier with an implementation of gpio_leds_create() that
+>has a bit more duplication and less abstraction.
+>
+>The important part should be that the driver-side interface is
+>sensible, other than that an implementation like
+>
+>static struct gpio_leds_priv *gpio_leds_create(struct platform_device
+>*pdev)
+>{
+>	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
+>		return gpio_leds_create_of(pdev);
+>	else if (IS_ENABLED(CONFIG_ACPI))
+>		return gpio_leds_create_of(acpi);
 
-> ---
->  include/linux/percpu-refcount.h |  5 ++++-
->  lib/percpu-refcount.c           | 20 +++++++++++++++-----
->  2 files changed, 19 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-> index 5f84bf0..8459d3a 100644
-> --- a/include/linux/percpu-refcount.h
-> +++ b/include/linux/percpu-refcount.h
-> @@ -65,7 +65,9 @@ enum {
->  enum {
->  	/*
->  	 * Start w/ ref == 1 in atomic mode.  Can be switched to percpu
-> -	 * operation using percpu_ref_switch_to_percpu().
-> +	 * operation using percpu_ref_switch_to_percpu().  If initialized
-> +	 * with this flag, the ref will stay in atomic mode until
-> +	 * percpu_ref_switch_to_percpu() is invoked on it.
->  	 */
->  	PERCPU_REF_INIT_ATOMIC	= 1 << 0,
->  
-> @@ -85,6 +87,7 @@ struct percpu_ref {
->  	unsigned long		percpu_count_ptr;
->  	percpu_ref_func_t	*release;
->  	percpu_ref_func_t	*confirm_switch;
-> +	bool			force_atomic:1;
->  	struct rcu_head		rcu;
->  };
->  
-> diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-> index 74ec33e..c47e496 100644
-> --- a/lib/percpu-refcount.c
-> +++ b/lib/percpu-refcount.c
-> @@ -68,6 +68,8 @@ int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release,
->  	if (!ref->percpu_count_ptr)
->  		return -ENOMEM;
->  
-> +	ref->force_atomic = flags & PERCPU_REF_INIT_ATOMIC;
-> +
->  	if (flags & (PERCPU_REF_INIT_ATOMIC | PERCPU_REF_INIT_DEAD))
->  		ref->percpu_count_ptr |= __PERCPU_REF_ATOMIC;
->  	else
-> @@ -203,7 +205,8 @@ static void __percpu_ref_switch_to_atomic(struct percpu_ref *ref,
->   * are guaraneed to be in atomic mode, @confirm_switch, which may not
->   * block, is invoked.  This function may be invoked concurrently with all
->   * the get/put operations and can safely be mixed with kill and reinit
-> - * operations.
-> + * operations.  Note that @ref will stay in atomic mode across kill/reinit
-> + * cycles until percpu_ref_switch_to_percpu() is called.
->   *
->   * This function normally doesn't block and can be called from any context
->   * but it may block if @confirm_kill is specified and @ref is already in
-> @@ -217,6 +220,7 @@ static void __percpu_ref_switch_to_atomic(struct percpu_ref *ref,
->  void percpu_ref_switch_to_atomic(struct percpu_ref *ref,
->  				 percpu_ref_func_t *confirm_switch)
->  {
-> +	ref->force_atomic = true;
->  	__percpu_ref_switch_to_atomic(ref, confirm_switch);
->  }
->  
-> @@ -256,7 +260,10 @@ void __percpu_ref_switch_to_percpu(struct percpu_ref *ref)
->   *
->   * Switch @ref to percpu mode.  This function may be invoked concurrently
->   * with all the get/put operations and can safely be mixed with kill and
-> - * reinit operations.
-> + * reinit operations.  This function reverses the sticky atomic state set
-> + * by PERCPU_REF_INIT_ATOMIC or percpu_ref_switch_to_atomic().  If @ref is
-> + * dying or dead, the actual switching takes place on the following
-> + * percpu_ref_reinit().
->   *
->   * This function normally doesn't block and can be called from any context
->   * but it may block if @ref is in the process of switching to atomic mode
-> @@ -264,6 +271,8 @@ void __percpu_ref_switch_to_percpu(struct percpu_ref *ref)
->   */
->  void percpu_ref_switch_to_percpu(struct percpu_ref *ref)
->  {
-> +	ref->force_atomic = false;
-> +
->  	/* a dying or dead ref can't be switched to percpu mode w/o reinit */
->  	if (!(ref->percpu_count_ptr & __PERCPU_REF_DEAD))
->  		__percpu_ref_switch_to_percpu(ref);
-> @@ -305,8 +314,8 @@ EXPORT_SYMBOL_GPL(percpu_ref_kill_and_confirm);
->   * @ref: perpcu_ref to re-initialize
->   *
->   * Re-initialize @ref so that it's in the same state as when it finished
-> - * percpu_ref_init().  @ref must have been initialized successfully and
-> - * reached 0 but not exited.
-> + * percpu_ref_init() ignoring %PERCPU_REF_INIT_DEAD.  @ref must have been
-> + * initialized successfully and reached 0 but not exited.
->   *
->   * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
->   * this function is in progress.
-> @@ -317,6 +326,7 @@ void percpu_ref_reinit(struct percpu_ref *ref)
->  
->  	ref->percpu_count_ptr &= ~__PERCPU_REF_DEAD;
->  	percpu_ref_get(ref);
-> -	__percpu_ref_switch_to_percpu(ref);
-> +	if (!ref->force_atomic)
-> +		__percpu_ref_switch_to_percpu(ref);
->  }
->  EXPORT_SYMBOL_GPL(percpu_ref_reinit);
-> -- 
-> 1.9.3
-> 
+Arnd, I think you meant:
+
+	Return gpio_leds_create_acpi(pdev) ?
+
+This is what we did early on to prototype this concept, but the problem
+with this approach we duplicate all of the creation code, which leads to
+maintenance errors, and is inconsistent with the goals of the _DSD which
+is to reuse the same schemas for ACPI and FDT. If we have separate pdata
+creation functions anyway, we are leaving much of the advantage of the
+common schema on the table. Namely the ability to reuse drivers relatively
+easily across firmware implementations. We don't want driver authors to
+have to care if it's ACPI or FDT.
+
+We would have preferred to have deprecated the of property interface in
+favor of the new generic device_property interface, but Grant specifically
+requested that we update drivers individually rather than all at once,
+which means we can't just kill the OF interface.
+
+We agreed to that, somewhat reluctantly as it adds more work in updating
+the drivers over time which will slow adoption, but I understand the
+desire not to make large sweeping changes due to the risk of breaking
+things inadvertently as we cannot expect to be able to test all of them.
+That said, I don't want to forget that the goal is to use the common
+interface over time as we convert individual drivers, and using the common
+interface means we need a common iterator function and that we not have fw
+implementation specific pdata create functions.
+
+--
+Darren Hart
+Intel Open Source Technology Center
+
+
+
+
+
