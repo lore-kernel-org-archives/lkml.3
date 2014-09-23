@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaIWKl2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:41:28 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:57004 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580AbaIWKl0 (ORCPT
+	id S1755485AbaIWKl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:41:59 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:49185 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754381AbaIWKl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:41:26 -0400
-Date: Tue, 23 Sep 2014 12:41:22 +0200
-From: Robert Richter <rric@kernel.org>
-To: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>
-Subject: Re: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
-Message-ID: <20140923104122.GE20170@rric.localhost>
-References: <1410544187-15876-1-git-send-email-rric@kernel.org>
+	Tue, 23 Sep 2014 06:41:57 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 23 Sep 2014 12:39:23 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Johan Hovold <jhovold@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 06/10] rtc: at91sam9: rework the Kconfig description
+Message-ID: <20140923103923.GB404@localhost>
+References: <1411465130-29011-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1411465130-29011-7-git-send-email-boris.brezillon@free-electrons.com>
+ <542146AF.3060807@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410544187-15876-1-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <542146AF.3060807@atmel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.09.14 19:49:43, Robert Richter wrote:
-> From: Robert Richter <rrichter@cavium.com>
+On Tue, Sep 23, 2014 at 12:08:47PM +0200, Nicolas Ferre wrote:
+> On 23/09/2014 11:38, Boris BREZILLON :
+> > Remove all references to AT91CAP9 SoC which has been removed.
+> > Rework the help message to remove any specific references to AT91SAM9 SoCs.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/rtc/Kconfig | 17 +++++++++--------
+> >  1 file changed, 9 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> > index 7d76da8..455f2c3 100644
+> > --- a/drivers/rtc/Kconfig
+> > +++ b/drivers/rtc/Kconfig
+> > @@ -1079,17 +1079,18 @@ config RTC_DRV_AT91RM9200
+> >  	  this is powered by the backup power supply.
+> >  
+> >  config RTC_DRV_AT91SAM9
+> > -	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
+> > +	tristate "AT91SAM9 RTT as RTC"
+> >  	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
+> >  	select MFD_SYSCON
+> >  	help
+> > -	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
+> > -	  (Real Time Timer). These timers are powered by the backup power
+> > -	  supply (such as a small coin cell battery), but do not need to
+> > -	  be used as RTCs.
+> > -
+> > -	  (On AT91SAM9rl and AT91SAM9G45 chips you probably want to use the
+> > -	  dedicated RTC module and leave the RTT available for other uses.)
+> > +	  Some AT91SAM9 SoCs provide an RTT (Real Time Timer) block which
+> > +	  can be used as an RTC thanks to the backup power supply (e.g. a
+> > +	  small coin cell battery) which keeps this block and the GPBR
+> > +	  (General Purpose Backup Registers) block powered when the device
+> > +	  is shutdown.
+> > +	  Some AT91SAM9 SoCs provide a real RTC block, on those ones you'd
+> > +	  probably want to use the real RTC block instead of the RTT as an
+> > +	  RTT driver.
 > 
-> This initial patches enable Cavium Thunder SoC Family. The patches add
-> devicetree and Kconfig support and then add Thunder to the defconfig.
-> 
-> The Thunder system needs more enablement patches for subsystems and
-> devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
-> We will send separate patch sets for these. All of them base on this
-> initial patches.
-> 
-> I sent a separate patch set independently that introduces support for
-> dts vendor subdirs. After both patch sets have been applied I will
-> send a patch in addition that moves the dts file into a subdirectory.
-> 
-> I sent another separate patch that sets NR_CPUS to 64 per default.
-> 
-> The first patch introduces dts files without having a Kconfig option
-> for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
-> added to defconfig in patch 4 as this is my preferred solution. If
-> there is still resistance having an ARCH_THUNDER option, just drop
-> them.
-> 
-> Patches are available here:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
+> You mean:
+> "instead of the RTT as an RTC"
 
-Will,
+Boris, perhaps you should also update the Kconfig entries for
+RTC_DRV_AT91SAM9_RTT and RTC_DRV_AT91SAM9_GPBR to clarify that they are
+only used for legacy booting (and otherwise have no effect)?
 
-it would be good if these patches could be applied.
+> With that, good description: thanks!
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> So, now we can think of what to do with the series:
+> 
+> - Johan, do you want to "Ack" it?
+
+I had one comment to the slow-clock patch, but feel free to add my
+
+Acked-by: Johan Hovold <johan@kernel.org>
+
+to the whole series.
 
 Thanks,
-
--Robert
-
-> 
-> v3 changes:
-> * removed setting NR_CPUS for Thunder, I sent a separate patch that
->   increases this to 64 cpus per default
-> * reordered patches, dts files changes are know first using dtb-y
->   instead of ARCH_THUNDER option
-> * moved soc nodes to thunder-88xx.dtsi
-> 
-> v2 changes:
-> * rebased to 3.17
-> * placed commas between 32-bit portions of 64 bit addresses
-> * removed #address-cells and size-cells in gic node
-> * get rid of the clocks node
-> * changed to gpl/x11 dual license
-> * removed memreserve
-> * moved gic to bus node
-> 
-> Radha Mohan Chintakuntla (3):
->   arm64, thunder: Add initial dts for Cavium Thunder SoC
->   arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
->   arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
-> 
-> Robert Richter (1):
->   arm64, defconfig: Enable Cavium Thunder SoC in defconfig
-> 
->  .../devicetree/bindings/arm/cavium-thunder.txt     |  10 +
->  Documentation/devicetree/bindings/arm/cpus.txt     |   1 +
->  arch/arm64/Kconfig                                 |   5 +
->  arch/arm64/boot/dts/Makefile                       |   1 +
->  arch/arm64/boot/dts/thunder-88xx.dts               |  67 ++++
->  arch/arm64/boot/dts/thunder-88xx.dtsi              | 401 +++++++++++++++++++++
->  arch/arm64/configs/defconfig                       |   1 +
->  7 files changed, 486 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
->  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
->  create mode 100644 arch/arm64/boot/dts/thunder-88xx.dtsi
-> 
-> -- 
-> 2.1.0
-> 
+Johan
