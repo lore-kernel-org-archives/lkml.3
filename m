@@ -1,92 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428AbaIWRvI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:51:08 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:65485 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056AbaIWRvF (ORCPT
+	id S932215AbaIWRvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:51:11 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39401 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056AbaIWRvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:51:05 -0400
+	Tue, 23 Sep 2014 13:51:08 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 0/8] x86: Disentangle the vdso and clean it up
-Date: Tue, 23 Sep 2014 10:50:50 -0700
-Message-Id: <cover.1411494540.git.luto@amacapital.net>
+Subject: [PATCH 1/8] x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
+Date: Tue, 23 Sep 2014 10:50:51 -0700
+Message-Id: <a7ee266773671a05f00b7175ca65a0dd812d2e4b.1411494540.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1411494540.git.luto@amacapital.net>
+References: <cover.1411494540.git.luto@amacapital.net>
+In-Reply-To: <cover.1411494540.git.luto@amacapital.net>
+References: <cover.1411494540.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo and Thomas,
+This code exists for the sole purpose of making the vsyscall page
+look sort of like real userspace memory.  Move it so that it lives
+with the rest of the vsyscall code.
 
-This should all be straightforward.  It's primarily a cleanup, but it
-fixes what is arguably a bug in the PER_CPU mechanism.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/kernel/vsyscall_64.c | 49 +++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/mm/init_64.c         | 49 -------------------------------------------
+ 2 files changed, 49 insertions(+), 49 deletions(-)
 
-The first two patches just rearrange code to disentangle the vdso from
-the vsyscall emulation code.
-
-The next three patches are tiny.  Patch 3 rewrites the PER_CPU setup
-code to make it comprehensible; it has no effect other than clarify.
-Patches 4 and 5 fix two problems with the PER_CPU segment that are
-apparent after the code has been cleaned up.  (Patch 5 fixes a glitch
-that that is almost, but not quote, a security bug.)
-
-Patches 6 and 7 are just cleanups.  Patch 6 removes the "jiffies" vvar,
-which has been unused for years.  Patch 7 cleans up some initialization
-code.
-
-Patch 8 removes the vvar that selects the getcpu mode.  That vvar
-has been unnecessary for a couple of years, ever since alternative
-patching has worked in the vdso.
-
-There is a small but non quote zero chance that I will want to revert
-patch 8 at some point.  Reverting it will be needed to be able to
-disable the TSC (in the CR4.TSC sense) without breaking the vdso, unless
-we patch the vdso text.  That being said, I think it'll be a lot less
-messy to just patch the vdso text if we do that.
-
-Please consider applying these, or at least applying patches 1-7,
-to tip/x86/vdso for 3.18.
-
-Thanks,
-Andy
-
-
-Changes from way back when: This has been floating around since June in
-some form. See:
-http://lkml.kernel.org/g/cover.1404164803.git.luto@amacapital.net
-
-This version just disentangles the vdso and vsyscall code and does the
-vdso cleanups/fixes.  It does *not* contain the PER_CPU removal on
-RDTSCP systems, since hpa mentioned that this is potentially
-problematic, and, if we were to try it, it should soak in -next for a
-*long* time.  It is also heavily cleaned up since last time.
-
-
-Andy Lutomirski (8):
-  x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
-  x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
-  x86,vdso: Change the PER_CPU segment to use struct desc_struct
-  x86,vdso: Make the PER_CPU segment start out accessed
-  x86,vdso: Make the PER_CPU segment 32 bits
-  x86_64,vdso: Remove jiffies from the vvar page
-  x86_64,vdso: Clean up vgetcpu init and merge the vdso initcalls
-  x86,vdso: Replace vgetcpu_mode with static_cpu_has
-
- arch/x86/include/asm/vgtod.h    | 21 ++++++++++
- arch/x86/include/asm/vsyscall.h | 29 --------------
- arch/x86/include/asm/vvar.h     |  2 -
- arch/x86/kernel/cpu/common.c    | 10 -----
- arch/x86/kernel/time.c          |  2 +-
- arch/x86/kernel/vsyscall_64.c   | 84 ++++++++++++++++++----------------------
- arch/x86/mm/init_64.c           | 49 ------------------------
- arch/x86/vdso/vclock_gettime.c  |  3 ++
- arch/x86/vdso/vgetcpu.c         |  5 ++-
- arch/x86/vdso/vma.c             | 85 ++++++++++++++++++++++++++++++++---------
- 10 files changed, 132 insertions(+), 158 deletions(-)
-
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index e1e1e80fc6a6..420c4688c78a 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -284,6 +284,55 @@ sigsegv:
+ }
+ 
+ /*
++ * A pseudo VMA to allow ptrace access for the vsyscall page.  This only
++ * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
++ * not need special handling anymore:
++ */
++static const char *gate_vma_name(struct vm_area_struct *vma)
++{
++	return "[vsyscall]";
++}
++static struct vm_operations_struct gate_vma_ops = {
++	.name = gate_vma_name,
++};
++static struct vm_area_struct gate_vma = {
++	.vm_start	= VSYSCALL_ADDR,
++	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
++	.vm_page_prot	= PAGE_READONLY_EXEC,
++	.vm_flags	= VM_READ | VM_EXEC,
++	.vm_ops		= &gate_vma_ops,
++};
++
++struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
++{
++#ifdef CONFIG_IA32_EMULATION
++	if (!mm || mm->context.ia32_compat)
++		return NULL;
++#endif
++	return &gate_vma;
++}
++
++int in_gate_area(struct mm_struct *mm, unsigned long addr)
++{
++	struct vm_area_struct *vma = get_gate_vma(mm);
++
++	if (!vma)
++		return 0;
++
++	return (addr >= vma->vm_start) && (addr < vma->vm_end);
++}
++
++/*
++ * Use this when you have no reliable mm, typically from interrupt
++ * context. It is less reliable than using a task's mm and may give
++ * false positives.
++ */
++int in_gate_area_no_mm(unsigned long addr)
++{
++	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
++}
++
++/*
+  * Assume __initcall executes before all user space. Hopefully kmod
+  * doesn't violate that. We'll find out if it does.
+  */
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 5621c47d7a1a..e4e132956285 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1181,55 +1181,6 @@ int kern_addr_valid(unsigned long addr)
+ 	return pfn_valid(pte_pfn(*pte));
+ }
+ 
+-/*
+- * A pseudo VMA to allow ptrace access for the vsyscall page.  This only
+- * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
+- * not need special handling anymore:
+- */
+-static const char *gate_vma_name(struct vm_area_struct *vma)
+-{
+-	return "[vsyscall]";
+-}
+-static struct vm_operations_struct gate_vma_ops = {
+-	.name = gate_vma_name,
+-};
+-static struct vm_area_struct gate_vma = {
+-	.vm_start	= VSYSCALL_ADDR,
+-	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
+-	.vm_page_prot	= PAGE_READONLY_EXEC,
+-	.vm_flags	= VM_READ | VM_EXEC,
+-	.vm_ops		= &gate_vma_ops,
+-};
+-
+-struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
+-{
+-#ifdef CONFIG_IA32_EMULATION
+-	if (!mm || mm->context.ia32_compat)
+-		return NULL;
+-#endif
+-	return &gate_vma;
+-}
+-
+-int in_gate_area(struct mm_struct *mm, unsigned long addr)
+-{
+-	struct vm_area_struct *vma = get_gate_vma(mm);
+-
+-	if (!vma)
+-		return 0;
+-
+-	return (addr >= vma->vm_start) && (addr < vma->vm_end);
+-}
+-
+-/*
+- * Use this when you have no reliable mm, typically from interrupt
+- * context. It is less reliable than using a task's mm and may give
+- * false positives.
+- */
+-int in_gate_area_no_mm(unsigned long addr)
+-{
+-	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
+-}
+-
+ static unsigned long probe_memory_block_size(void)
+ {
+ 	/* start from 2g */
 -- 
 1.9.3
 
