@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792AbaIWLY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:24:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56622 "EHLO
+	id S1755971AbaIWL0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:26:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56650 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755449AbaIWLYY (ORCPT
+	with ESMTP id S1755269AbaIWLY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:24:24 -0400
+	Tue, 23 Sep 2014 07:24:26 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,9 +21,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v8 05/10] rtc: at91sam9: make use of syscon/regmap to access GPBR registers
-Date: Tue, 23 Sep 2014 13:23:59 +0200
-Message-Id: <1411471444-2764-6-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v8 07/10] ARM: at91: add clk_lookup entry for RTT devices
+Date: Tue, 23 Sep 2014 13:24:01 +0200
+Message-Id: <1411471444-2764-8-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -31,141 +31,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPBR registers are not part of the RTT block and thus should not be
-defined in the reg property of the rtt node.
-
-Use syscon to provide a proper DT representation and reference the GPBR
-syscon device in a new "atmel,rtt-rtc-time-reg" property which store both
-the syscon device phandle and the register offset within the GPBR block.
-
-When using non DT boards, we won't be able to retrieve the syscon regmap,
-hence we need to create our own regmap using the memory region defined
-in the 2nd memory resource assigned to the RTT platform device.
+First export the clk32k clk.
+Then add clk_lookup entries for RTT devices so that rtc-at91sam9 driver
+can retrieve and manipulate the slow clk.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Acked-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/rtc/Kconfig        |  1 +
- drivers/rtc/rtc-at91sam9.c | 64 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 56 insertions(+), 9 deletions(-)
+ arch/arm/mach-at91/at91sam9260.c | 2 ++
+ arch/arm/mach-at91/at91sam9261.c | 2 ++
+ arch/arm/mach-at91/at91sam9263.c | 4 ++++
+ arch/arm/mach-at91/at91sam9g45.c | 2 ++
+ arch/arm/mach-at91/at91sam9rl.c  | 2 ++
+ arch/arm/mach-at91/clock.c       | 2 +-
+ arch/arm/mach-at91/clock.h       | 1 +
+ 7 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..7d76da8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
- config RTC_DRV_AT91SAM9
- 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
- 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-+	select MFD_SYSCON
- 	help
- 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
- 	  (Real Time Timer). These timers are powered by the backup power
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index d72c34d..be9c28b 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,8 @@
- #include <linux/slab.h>
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
- 
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -72,7 +74,8 @@ struct sam9_rtc {
- 	void __iomem		*rtt;
- 	struct rtc_device	*rtcdev;
- 	u32			imr;
--	void __iomem		*gpbr;
-+	struct regmap		*gpbr;
-+	unsigned int		gpbr_offset;
- 	int 			irq;
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index 3477ba9..a853d4c 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -217,6 +217,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("pclk", "fffbc000.ssc", &ssc_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.0", &twi_clk),
++	CLKDEV_CON_DEV_ID(NULL, "rtc-at91sam9.0", &clk32k),
+ 	/* more usart lookup table for DT entries */
+ 	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
+ 	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
+@@ -237,6 +238,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("mci_clk", "fffa8000.mmc", &mmc_clk),
+ 	CLKDEV_CON_DEV_ID("spi_clk", "fffc8000.spi", &spi0_clk),
+ 	CLKDEV_CON_DEV_ID("spi_clk", "fffcc000.spi", &spi1_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffffd20.rtc", &clk32k),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
+ 	CLKDEV_CON_ID("pioA", &pioA_clk),
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index fb164a5..3f5a299 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -192,6 +192,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_ID("pioA", &pioA_clk),
+ 	CLKDEV_CON_ID("pioB", &pioB_clk),
+ 	CLKDEV_CON_ID("pioC", &pioC_clk),
++	CLKDEV_CON_DEV_ID(NULL, "rtc-at91sam9.0", &clk32k),
+ 	/* more lookup table for DT entries */
+ 	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
+ 	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
+@@ -209,6 +210,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffffd20.rtc", &clk32k),
  };
  
-@@ -81,10 +84,19 @@ struct sam9_rtc {
- #define rtt_writel(rtc, field, val) \
- 	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
--#define gpbr_readl(rtc) \
--	readl((rtc)->gpbr)
--#define gpbr_writel(rtc, val) \
--	writel((val), (rtc)->gpbr)
-+static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
-+{
-+	unsigned int val;
-+
-+	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
-+
-+	return val;
-+}
-+
-+static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
-+{
-+	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
-+}
- 
- /*
-  * Read current time and date in RTC
-@@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
- 	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
+ static struct clk_lookup usart_clocks_lookups[] = {
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 810fa5f..bef5b96 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -201,6 +201,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
++	CLKDEV_CON_DEV_ID(NULL, "rtc-at91sam9.0", &clk32k),
++	CLKDEV_CON_DEV_ID(NULL, "rtc-at91sam9.1", &clk32k),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
+ 	CLKDEV_CON_ID("pioA", &pioA_clk),
+@@ -227,6 +229,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCDE_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioCDE_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffb8000.pwm", &pwm_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffffd20.rtc", &clk32k),
++	CLKDEV_CON_DEV_ID(NULL, "fffffd50.rtc", &clk32k),
  };
  
-+static struct regmap_config gpbr_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
-+
- /*
-  * Initialize and install RTC driver
+ static struct clk_lookup usart_clocks_lookups[] = {
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 9d45496..69fdfcc 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -253,6 +253,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID(NULL, "atmel_tdes", &aestdessha_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "atmel_aes", &aestdessha_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
++	CLKDEV_CON_DEV_ID(NULL, "rtc-at91sam9.0", &clk32k),
+ 	/* more usart lookup table for DT entries */
+ 	CLKDEV_CON_DEV_ID("usart", "ffffee00.serial", &mck),
+ 	CLKDEV_CON_DEV_ID("usart", "fff8c000.serial", &usart0_clk),
+@@ -279,6 +280,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioC_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioDE_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioDE_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffffd20.rtc", &clk32k),
+ 
+ 	CLKDEV_CON_ID("pioA", &pioA_clk),
+ 	CLKDEV_CON_ID("pioB", &pioB_clk),
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 878d501..a82dc61 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -205,6 +205,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_ID("pioB", &pioB_clk),
+ 	CLKDEV_CON_ID("pioC", &pioC_clk),
+ 	CLKDEV_CON_ID("pioD", &pioD_clk),
++	CLKDEV_CON_DEV_ID(NULL, "rtc-at91sam9.0", &clk32k),
+ 	/* more lookup table for DT entries */
+ 	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
+ 	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
+@@ -223,6 +224,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioD_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffffd20.rtc", &clk32k),
+ 	CLKDEV_CON_ID("adc_clk", &tsc_clk),
+ };
+ 
+diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+index 034529d..f5cfed75 100644
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -115,7 +115,7 @@ static u32 at91_pllb_usb_init;
+  * 48 MHz (unless no USB function clocks are needed).  The main clock and
+  * both PLLs are turned off to run in "slow clock mode" (system suspend).
   */
-@@ -334,10 +352,38 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(rtc->rtt))
- 		return PTR_ERR(rtc->rtt);
+-static struct clk clk32k = {
++struct clk clk32k = {
+ 	.name		= "clk32k",
+ 	.rate_hz	= AT91_SLOW_CLOCK,
+ 	.users		= 1,		/* always on */
+diff --git a/arch/arm/mach-at91/clock.h b/arch/arm/mach-at91/clock.h
+index a98a39b..6eb825a 100644
+--- a/arch/arm/mach-at91/clock.h
++++ b/arch/arm/mach-at91/clock.h
+@@ -34,6 +34,7 @@ struct clk {
+ extern int __init clk_register(struct clk *clk);
+ extern struct clk mck;
+ extern struct clk utmi_clk;
++extern struct clk clk32k;
  
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
--	if (IS_ERR(rtc->gpbr))
--		return PTR_ERR(rtc->rtt);
-+	if (!pdev->dev.of_node) {
-+		/*
-+		 * TODO: Remove this code chunk when removing non DT board
-+		 * support. Remember to remove the gpbr_regmap_config
-+		 * variable too.
-+		 */
-+		void __iomem *gpbr;
-+
-+		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		gpbr = devm_ioremap_resource(&pdev->dev, r);
-+		if (IS_ERR(gpbr))
-+			return PTR_ERR(gpbr);
-+
-+		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
-+					     &gpbr_regmap_config);
-+	} else {
-+		struct of_phandle_args args;
-+
-+		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
-+						"atmel,rtt-rtc-time-reg", 1, 0,
-+						&args);
-+		if (ret)
-+			return ret;
-+
-+		rtc->gpbr = syscon_node_to_regmap(args.np);
-+		rtc->gpbr_offset = args.args[0];
-+	}
-+
-+	if (IS_ERR(rtc->gpbr)) {
-+		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
-+		return -ENOMEM;
-+	}
- 
- 	mr = rtt_readl(rtc, MR);
- 
+ #define CLKDEV_CON_ID(_id, _clk)			\
+ 	{						\
 -- 
 1.9.1
 
