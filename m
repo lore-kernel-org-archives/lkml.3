@@ -1,188 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176AbaIWSJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:09:25 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51134 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977AbaIWSJY (ORCPT
+	id S1756342AbaIWSLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:11:50 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:64316 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508AbaIWSLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:09:24 -0400
-Date: Tue, 23 Sep 2014 20:09:20 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 3/3] memcg: move memcg_update_cache_size to
- slab_common.c
-Message-ID: <20140923180920.GC29528@dhcp22.suse.cz>
-References: <cover.1411401021.git.vdavydov@parallels.com>
- <dd66241915c99132e41f10d0cd0d346be3a4f39c.1411401021.git.vdavydov@parallels.com>
+	Tue, 23 Sep 2014 14:11:48 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <5421AB20.8040606@hurleysoftware.com>
+References: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com> <1410789610-23059-4-git-send-email-frans.klaver@xsens.com> <54170823.7040801@hurleysoftware.com> <5417228C.5070503@hurleysoftware.com> <20140916085037.GI28458@ci00147.xsens-tech.local> <54197804.3020302@hurleysoftware.com> <20140917121303.GB20438@ci00147.xsens-tech.local> <20140923082445.GA16218@ci00147.xsens-tech.local> <5421AB20.8040606@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <dd66241915c99132e41f10d0cd0d346be3a4f39c.1411401021.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+From: Frans Klaver <fransklaver@gmail.com>
+Date: Tue, 23 Sep 2014 20:11:32 +0200
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Frans Klaver <frans.klaver@xsens.com>
+CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Alexey Pelykh <alexey.pelykh@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <88924386-79bc-44c7-9a07-249900cbd359@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-09-14 20:00:46, Vladimir Davydov wrote:
-> While growing per memcg caches arrays, we jump between memcontrol.c and
-> slab_common.c in a weird way:
-> 
->   memcg_alloc_cache_id - memcontrol.c
->     memcg_update_all_caches - slab_common.c
->       memcg_update_cache_size - memcontrol.c
-> 
-> There's absolutely no reason why memcg_update_cache_size can't live on
-> the slab's side though. So let's move it there and settle it comfortably
-> amid per-memcg cache allocation functions.
-> 
-> Besides, this patch cleans this function up a bit, removing all the
-> useless comments from it, and renames it to memcg_update_cache_params to
-> conform to memcg_alloc/free_cache_params, which we already have in
-> slab_common.c.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+On 23 September 2014 19:17:20 CEST, Peter Hurley <peter@hurleysoftware.com> wrote:
+>On 09/23/2014 04:24 AM, Frans Klaver wrote:
+>> On Wed, Sep 17, 2014 at 02:13:03PM +0200, Frans Klaver wrote:
+>>> On Wed, Sep 17, 2014 at 08:01:08AM -0400, Peter Hurley wrote:
+>>>> On 09/16/2014 04:50 AM, Frans Klaver wrote:
+>>>>> On Mon, Sep 15, 2014 at 01:31:56PM -0400, Peter Hurley wrote:
+>>>>>> On 09/15/2014 11:39 AM, Peter Hurley wrote:
+>>>>>>> On 09/15/2014 10:00 AM, Frans Klaver wrote:
+>>>>>>>> At 3.6Mbaud, with slightly over 2Mbit/s data coming in, we see
+>1600 uart
+>>>>>>>> rx buffer overflows within 30 seconds. Threading the interrupt
+>handling reduces
+>>>>>>>> this to about 170 overflows in 10 minutes.
+>>>>>>>
+>>>>>>> Why is the threadirqs kernel boot option not sufficient?
+>>>>>>> Or conversely, shouldn't this be selectable?
+>>>>>>
+>>>>>
+>>>>> I wasn't aware of the threadirqs boot option. I also wouldn't know
+>if
+>>>>> this should be selectable. What would be a reason to favor the
+>>>>> non-threaded irq over the threaded irq?
+>>>>
+>>>> Not everyone cares enough about serial to dedicate kthreads to it
+>:)
+>>>
+>>> Fair enough. In that light, we might not care enough about other
+>>> subsystems to dedicate kthreads to it :). Selectable seems
+>reasonable in
+>>> that case.
+>>>
+>>>
+>>>>>> Also, do you see the same performance differential when you
+>implement this
+>>>>>> in the 8250 driver (that is, on top of Sebastian's omap->8250
+>conversion)?
+>>>>>>
+>>>>>
+>>>>> I haven't gotten Sebastian's driver to work properly yet on the
+>console.
+>>>>> There was no reason for me yet to throw my omap changes on top of
+>>>>> Sebastian's queue.
+>> 
+>> Doing the threaded interrupt change on the 8250 driver doesn't seem
+>as
+>> trivial. Unless I'm mistaken, that version of this patch would mess
+>with
+>> all other 8250 based serial drivers, if it's done properly.
+>Incidentally
+>> I did try using threadirqs, but that didn't give my any significant
+>> results. I mostly noticed a difference in the console.
+>> 
+>> 
+>>>>>
+>>>>>>> PS - To overflow the 64 byte RX FIFO at those data rates means
+>interrupt
+>>>>>>> latency in excess of 250us?
+>>>>>
+>>>>> At 3686400 baud it should take about 174 us to fill a 64 byte
+>buffer. I
+>>>>> haven't done any measurements on the interrupt latency though. If
+>you
+>>>>> consider that we're sending about 1kB of data, 240 times a second,
+>we're
+>>>>> spending a lot of time reading data from the uart. I can imagine
+>the
+>>>>> system has other work to do as well.
+>>>>
+>>>> System work should not keep irqs from being serviced. Even 174us is
+>a long
+>>>> time not to service an interrupt. Maybe console writes are keeping
+>the isr
+>>>> from running?
+>>>
+>>> That's quite possible. I'll have to redo the test setup I had for
+>this to
+>>> give you a decent answer. I'll have to do that anyway as Sebastian's
+>>> 8250 conversion improves.
+>> 
+>> I haven't had time yet to look into this any further. I'll accept
+>that
+>> this patch may fix a case most people aren't the least interested in.
+>> I'll also happily accept that I probably need a better argumentation
+>> than "this works better for us".Would it make sense to drop this
+>patch
+>> and resubmit the other three? As I mentioned in the previous run, I
+>> think these are useful in any case.
+>
+>I would've thought the first 2 patches had already been picked up
+>because
+>they fix div-by-zero faults.
 
-I found new_params->memcg_caches[i] = ... style of initialization easier
-to read and understand than memcpy. This is not something to block
-this cleanup but I would be happier to have the array style back ;)
+I've had no confirmation of that happening so far. I also don't know if I should expect one. Who'd take these patches? Tony? 
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> ---
->  include/linux/memcontrol.h |    1 -
->  mm/memcontrol.c            |   49 --------------------------------------------
->  mm/slab_common.c           |   30 +++++++++++++++++++++++++--
->  3 files changed, 28 insertions(+), 52 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 4d17242eeff7..19df5d857411 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -440,7 +440,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
->  
->  int memcg_cache_id(struct mem_cgroup *memcg);
->  
-> -int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
->  void memcg_update_array_size(int num_groups);
->  
->  struct kmem_cache *
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 55d131645b45..1ec22bf380d0 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2944,55 +2944,6 @@ void memcg_update_array_size(int num)
->  	memcg_limited_groups_array_size = num;
->  }
->  
-> -int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
-> -{
-> -	struct memcg_cache_params *cur_params = s->memcg_params;
-> -	struct memcg_cache_params *new_params;
-> -	size_t size;
-> -	int i;
-> -
-> -	VM_BUG_ON(!is_root_cache(s));
-> -
-> -	size = num_groups * sizeof(void *);
-> -	size += offsetof(struct memcg_cache_params, memcg_caches);
-> -
-> -	new_params = kzalloc(size, GFP_KERNEL);
-> -	if (!new_params)
-> -		return -ENOMEM;
-> -
-> -	new_params->is_root_cache = true;
-> -
-> -	/*
-> -	 * There is the chance it will be bigger than
-> -	 * memcg_limited_groups_array_size, if we failed an allocation
-> -	 * in a cache, in which case all caches updated before it, will
-> -	 * have a bigger array.
-> -	 *
-> -	 * But if that is the case, the data after
-> -	 * memcg_limited_groups_array_size is certainly unused
-> -	 */
-> -	for (i = 0; i < memcg_limited_groups_array_size; i++) {
-> -		if (!cur_params->memcg_caches[i])
-> -			continue;
-> -		new_params->memcg_caches[i] =
-> -			cur_params->memcg_caches[i];
-> -	}
-> -
-> -	/*
-> -	 * Ideally, we would wait until all caches succeed, and only
-> -	 * then free the old one. But this is not worth the extra
-> -	 * pointer per-cache we'd have to have for this.
-> -	 *
-> -	 * It is not a big deal if some caches are left with a size
-> -	 * bigger than the others. And all updates will reset this
-> -	 * anyway.
-> -	 */
-> -	rcu_assign_pointer(s->memcg_params, new_params);
-> -	if (cur_params)
-> -		kfree_rcu(cur_params, rcu_head);
-> -	return 0;
-> -}
-> -
->  static void memcg_register_cache(struct mem_cgroup *memcg,
->  				 struct kmem_cache *root_cache)
->  {
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 9c29ba792368..800314e2a075 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -120,6 +120,33 @@ static void memcg_free_cache_params(struct kmem_cache *s)
->  	kfree(s->memcg_params);
->  }
->  
-> +static int memcg_update_cache_params(struct kmem_cache *s, int num_memcgs)
-> +{
-> +	int size;
-> +	struct memcg_cache_params *new_params, *cur_params;
-> +
-> +	BUG_ON(!is_root_cache(s));
-> +
-> +	size = offsetof(struct memcg_cache_params, memcg_caches);
-> +	size += num_memcgs * sizeof(void *);
-> +
-> +	new_params = kzalloc(size, GFP_KERNEL);
-> +	if (!new_params)
-> +		return -ENOMEM;
-> +
-> +	cur_params = s->memcg_params;
-> +	memcpy(new_params->memcg_caches, cur_params->memcg_caches,
-> +	       memcg_limited_groups_array_size * sizeof(void *));
-> +
-> +	new_params->is_root_cache = true;
-> +
-> +	rcu_assign_pointer(s->memcg_params, new_params);
-> +	if (cur_params)
-> +		kfree_rcu(cur_params, rcu_head);
-> +
-> +	return 0;
-> +}
-> +
->  int memcg_update_all_caches(int num_memcgs)
->  {
->  	struct kmem_cache *s;
-> @@ -130,9 +157,8 @@ int memcg_update_all_caches(int num_memcgs)
->  		if (!is_root_cache(s))
->  			continue;
->  
-> -		ret = memcg_update_cache_size(s, num_memcgs);
-> +		ret = memcg_update_cache_params(s, num_memcgs);
->  		/*
-> -		 * See comment in memcontrol.c, memcg_update_cache_size:
->  		 * Instead of freeing the memory, we'll just leave the caches
->  		 * up to this point in an updated state.
->  		 */
-> -- 
-> 1.7.10.4
-> 
+>I don't really have a problem with the patch (except for it should be
+>selectable, even if that's just a CONFIG_ setting). At the same time,
+>the performance results don't really make sense; so if there's actually
+>an underlying problem, I'd rather that get addressed (and the long
+>interrupt latency may be the underlying problem).
 
--- 
-Michal Hocko
-SUSE Labs
+Your questions got me thinking a bit more. I concluded that it's hard to define why this difference in performance is so big. I only got to it by just trying and seeing what would happen. 
+
+
+>As far as the 8250 driver and threaded irqs go, I just was hoping for
+>another data point with a simple hard-coded test jig, not a full-blown
+>patch series for all of them. Sorry for the misunderstanding.
+
+Ah yes. I'll see what I can do about it. It does make sense to get that data point somehow. 
+
+Thanks, 
+Frans 
+
+>
+>Regards,
+>Peter Hurley
+>
+>_______________________________________________
+>linux-arm-kernel mailing list
+>linux-arm-kernel@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
