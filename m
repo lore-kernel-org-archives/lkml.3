@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222AbaIWMPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:15:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57100 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751020AbaIWMPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:15:39 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 0/9] ARM: Berlin: Ethernet support
-Date: Tue, 23 Sep 2014 14:15:27 +0200
-Message-Id: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1755893AbaIWMSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:18:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755446AbaIWMSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:18:52 -0400
+Date: Tue, 23 Sep 2014 08:18:37 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20140923121837.GA7858@hansolo.jdub.homelinux.org>
+References: <20140919104021.GA11552@gmail.com>
+ <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+ <20140923053510.GB27825@gmail.com>
+ <20140923053711.GA28704@gmail.com>
+ <32c24277-c815-4ca6-98c5-77bf040c1384@email.android.com>
+ <CA+55aFyfhMA58ko_rMMbHYuprif+HGbMfwJ-2L1wxAE6-7cAog@mail.gmail.com>
+ <1411455419.21380.345.camel@mfleming-mobl1.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411455419.21380.345.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Sep 23, 2014 at 07:56:59AM +0100, Matt Fleming wrote:
+> On Mon, 2014-09-22 at 22:59 -0700, Linus Torvalds wrote:
+> > Yup. It's 9cb0e394234d ("x86/efi: Fixup GOT in all boot code paths")
+> > according to bisect.
+> > 
+> > Now building current git with that reverted, just to double-check,
+> > before pushing the revert out.
+> 
+> Crap. Sorry about that. I did get a report last night from Josh (Cc'd)
+> that the above commit caused hangs during boot on a bunch of his
+> machines. All grub2 and all secure boot enabled, I think.
 
-This series introduce support for the Ethernet controller on Berlin SoCs,
-using the existing pxa168 Ethernet driver. In order to do this, DT
-support is added to the driver alongside some other modifications and
-fixes.
+All shim/grub2, but only one machine has SB enabled.  All of the kernels are
+signed still.
 
-This has been tested on a Berlin BG2Q DMP board.
-
-Changes since v3:
-	- moved the addition of pxa168_eth_get_mac_address() to the patch
-	  using it first
-
-Changes since v2:
-        - reworked how the MAC address is configured
-        - made the clock anonymous
-
-Changes since v1:
-        - removed custom Berlin Ethernet driver
-        - used the pxa168 Ethernet driver instead
-        - made modifications to the pxa168 driver (DT support, fixes)
-
-Antoine Tenart (9):
-  net: pxa168_eth: clean up
-  net: pxa168_eth: add device tree support
-  Documentation: bindings: net: add the Marvell PXA168 Ethernet
-    controller
-  net: pxa168_eth: fix Ethernet flow control status
-  net: pxa168_eth: set the mac address on the Ethernet controller
-  net: pxa168_eth: rework the MAC address setup
-  net: pxa168_eth: allow Berlin SoCs to use the pxa168_eth driver
-  ARM: dts: berlin: add the Ethernet node
-  ARM: dts: berlin: enable the Ethernet port on the BG2Q DMP
-
- .../devicetree/bindings/net/marvell-pxa168.txt     |  21 ++
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |   4 +
- arch/arm/boot/dts/berlin2q.dtsi                    |  10 +
- drivers/net/ethernet/marvell/Kconfig               |   2 +-
- drivers/net/ethernet/marvell/pxa168_eth.c          | 216 +++++++++++++--------
- 5 files changed, 174 insertions(+), 79 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/marvell-pxa168.txt
-
--- 
-1.9.1
-
+josh
