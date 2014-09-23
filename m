@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124AbaIWOdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:33:09 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:63547 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896AbaIWOdH (ORCPT
+	id S1756052AbaIWOe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:34:26 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:53351 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039AbaIWOeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:33:07 -0400
-Date: Tue, 23 Sep 2014 10:33:03 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Yifan Zhang <zhangyf@marvell.com>
-Cc: Jing Xiang <jxiang@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yifan.zhangm@gmail.com" <yifan.zhangm@gmail.com>
-Subject: Re: [PATCH] workqueue: fix a workqueue kernel panic issue.
-Message-ID: <20140923143303.GC19208@htj.dyndns.org>
-References: <1410941884-26034-1-git-send-email-zhangyf@marvell.com>
- <4737A960563B524DA805CA602BE04B307EEE6C2694@SC-VEXCH2.marvell.com>
- <20140922033946.GA23583@htj.dyndns.org>
- <4737A960563B524DA805CA602BE04B307EEEA98F6B@SC-VEXCH2.marvell.com>
+	Tue, 23 Sep 2014 10:34:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/9] Documentation: bindings: net: add the Marvell PXA168 Ethernet controller
+Date: Tue, 23 Sep 2014 16:33:48 +0200
+Message-ID: <3708177.kEGF9Dk44n@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140923140113.GC18924@kwain>
+References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com> <51745791.Wuu5QiQB2e@wuerfel> <20140923140113.GC18924@kwain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4737A960563B524DA805CA602BE04B307EEEA98F6B@SC-VEXCH2.marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5ix4XDrNM1RZbY1TWXI+4ROL9gwX7niXPxfp2LVUkoQ
+ +WmsddD2bhDrUlrxw0RkIzEnDazr0d4WeEFb5PKbQxPkqsyvLp
+ lRPt0hfD6/6fn/kw/ESMWGPkgBzqlql4f7wNdxZnz3m3O5VceW
+ 7tpVgKdHlvTIQwhAHZMJ3XuA4c+/rggxx4nO8Lx1pi6z+zCuA7
+ PhzFKacDco4xvd0+VphBzragk41HjH/GYINjb/N1scJyi90DFf
+ PXEklNYvzC0pxczCSLYW7vsml9s6RyOv/5/RT9lWBpr4XK5SDN
+ c0/yxgx9UElVSuV0Kty4BdOp0yjNrydeHsHJS1kimMDbyeJbOI
+ tQGxzF4vrwI605mRdQBg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 03:40:55AM -0700, Yifan Zhang wrote:
-> You can tell it is a bug when pwq = get_work_pwq() return NULL, and
-> cpu_intensive = pwq->wq->flags use it w/o check.
+On Tuesday 23 September 2014 16:01:13 Antoine Tenart wrote:
+> 
+> On Tue, Sep 23, 2014 at 02:38:39PM +0200, Arnd Bergmann wrote:
+> > On Tuesday 23 September 2014 14:15:30 Antoine Tenart wrote:
+> > > +Optional properties:
+> > > +- port-id: should be '0','1' or '2'.
+> > > +- phy-addr: MDIO address of the PHY.
+> > > +- local-mac-address: see ethernet.txt file in the same directory.
+> > > +
+> > > 
+> > 
+> > I believe new bindings should not use "phy-addr" properties, but
+> > instead use a phy-handle property pointing to a phy device instead.
+> 
+> That's the MDIO address of the PHY. It's a bit difficult to use a phy
+> device as the driver uses the libphy. And that would break the platform
+> using it.
+> 
+> Or maybe you have something in mind?
 
-A bug somewhere else.
+I don't understand what you mean. Doesn't libphy imply using a phy_device?
+What I meant was that you should be able to just call the standard
+of_phy_connect() and other interfaces to deal with phylib.
 
-> Normally get_work_pwq doesn't return NULL, but we had a bug in code
-> which makes INIT_WORK(&work, do_work) is called in multi-thread. In
-> some cases, work_struct is re-init just before get_work_pwq is
-> called, it makes work_struct->data is invalid and thus causes the
-> problem. It is indeed a bug of ourselves, and after fix it there is
-> no such issue. But I wonder we still a NULL check before dereference
-> pwq here anyway, since get_work_pwq may return NULL in some cases.
-
-Do you realize how timing dependent that particular pattern of
-breakage is?  If you're doing INIT_WORK() in racy way, there are many
-places which can break in workqueue.  It's not that different from
-random memory corruption.  It doesn't make any sense at all to add a
-special case code for that in one particular place where this specific
-incidence happens to trigger.  In general, don't do things like this
-anywhere in the kernel.
-
-Thanks.
-
--- 
-tejun
+	Arnd
