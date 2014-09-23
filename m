@@ -1,264 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaIWExR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:53:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43355 "EHLO mail.kernel.org"
+	id S1753382AbaIWExU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:53:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43366 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889AbaIWExP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:53:15 -0400
+	id S1753198AbaIWExR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 00:53:17 -0400
 From: Jaegeuk Kim <jaegeuk@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net
 Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 1/3] f2fs: introduce cp_control structure
-Date: Mon, 22 Sep 2014 21:53:08 -0700
-Message-Id: <1411447990-37919-1-git-send-email-jaegeuk@kernel.org>
+Subject: [PATCH 2/3] f2fs: introduce FITRIM in f2fs_ioctl
+Date: Mon, 22 Sep 2014 21:53:09 -0700
+Message-Id: <1411447990-37919-2-git-send-email-jaegeuk@kernel.org>
 X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
+In-Reply-To: <1411447990-37919-1-git-send-email-jaegeuk@kernel.org>
+References: <1411447990-37919-1-git-send-email-jaegeuk@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a new data structure to control checkpoint parameters.
-Currently, it presents the reason of checkpoint such as is_umount and normal
-sync.
+This patch introduces FITRIM in f2fs_ioctl.
+In this case, f2fs will issue small discards and prefree discards as many as
+possible for the given area.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- fs/f2fs/checkpoint.c        | 16 ++++++++--------
- fs/f2fs/f2fs.h              | 11 ++++++++++-
- fs/f2fs/gc.c                |  7 +++++--
- fs/f2fs/recovery.c          |  5 ++++-
- fs/f2fs/super.c             | 13 ++++++++++---
- include/trace/events/f2fs.h | 15 ++++++++++-----
- 6 files changed, 47 insertions(+), 20 deletions(-)
+ fs/f2fs/checkpoint.c        |   4 +-
+ fs/f2fs/f2fs.h              |   9 +++-
+ fs/f2fs/file.c              |  29 ++++++++++++
+ fs/f2fs/segment.c           | 110 +++++++++++++++++++++++++++++++++++++++-----
+ fs/f2fs/super.c             |   1 +
+ include/trace/events/f2fs.h |   3 +-
+ 6 files changed, 141 insertions(+), 15 deletions(-)
 
 diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index e519aaf..e401ffd 100644
+index e401ffd..5d793ba 100644
 --- a/fs/f2fs/checkpoint.c
 +++ b/fs/f2fs/checkpoint.c
-@@ -826,7 +826,7 @@ static void wait_on_all_pages_writeback(struct f2fs_sb_info *sbi)
- 	finish_wait(&sbi->cp_wait, &wait);
- }
- 
--static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
-+static void do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
- {
- 	struct f2fs_checkpoint *ckpt = F2FS_CKPT(sbi);
- 	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
-@@ -894,7 +894,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	ckpt->cp_pack_start_sum = cpu_to_le32(1 + cp_payload_blks +
- 			orphan_blocks);
- 
--	if (is_umount) {
-+	if (cpc->reason == CP_UMOUNT) {
- 		set_ckpt_flags(ckpt, CP_UMOUNT_FLAG);
- 		ckpt->cp_pack_total_block_count = cpu_to_le32(F2FS_CP_PACKS+
- 				cp_payload_blks + data_sum_blocks +
-@@ -948,7 +948,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 
- 	write_data_summaries(sbi, start_blk);
- 	start_blk += data_sum_blocks;
--	if (is_umount) {
-+	if (cpc->reason == CP_UMOUNT) {
- 		write_node_summaries(sbi, start_blk);
- 		start_blk += NR_CURSEG_NODE_TYPE;
- 	}
-@@ -988,12 +988,12 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- /*
-  * We guarantee that this checkpoint procedure will not fail.
-  */
--void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
-+void write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
- {
- 	struct f2fs_checkpoint *ckpt = F2FS_CKPT(sbi);
- 	unsigned long long ckpt_ver;
- 
--	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "start block_ops");
-+	trace_f2fs_write_checkpoint(sbi->sb, cpc->reason, "start block_ops");
+@@ -997,7 +997,7 @@ void write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
  
  	mutex_lock(&sbi->cp_mutex);
  
-@@ -1004,7 +1004,7 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	if (block_operations(sbi))
+-	if (!sbi->s_dirty)
++	if (!sbi->s_dirty && cpc->reason != CP_DISCARD)
  		goto out;
+ 	if (unlikely(f2fs_cp_error(sbi)))
+ 		goto out;
+@@ -1020,7 +1020,7 @@ void write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
  
--	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "finish block_ops");
-+	trace_f2fs_write_checkpoint(sbi->sb, cpc->reason, "finish block_ops");
- 
- 	f2fs_submit_merged_bio(sbi, DATA, WRITE);
- 	f2fs_submit_merged_bio(sbi, NODE, WRITE);
-@@ -1023,13 +1023,13 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	flush_sit_entries(sbi);
+ 	/* write cached NAT/SIT entries to NAT/SIT area */
+ 	flush_nat_entries(sbi);
+-	flush_sit_entries(sbi);
++	flush_sit_entries(sbi, cpc);
  
  	/* unlock all the fs_lock[] in do_checkpoint() */
--	do_checkpoint(sbi, is_umount);
-+	do_checkpoint(sbi, cpc);
- 
- 	unblock_operations(sbi);
- 	stat_inc_cp_count(sbi->stat_info);
- out:
- 	mutex_unlock(&sbi->cp_mutex);
--	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "finish checkpoint");
-+	trace_f2fs_write_checkpoint(sbi->sb, cpc->reason, "finish checkpoint");
- }
- 
- void init_ino_entry_info(struct f2fs_sb_info *sbi)
+ 	do_checkpoint(sbi, cpc);
 diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 3b70b01..5298924 100644
+index 5298924..7b1e1d2 100644
 --- a/fs/f2fs/f2fs.h
 +++ b/fs/f2fs/f2fs.h
-@@ -96,6 +96,15 @@ enum {
- 	SIT_BITMAP
+@@ -99,10 +99,15 @@ enum {
+ enum {
+ 	CP_UMOUNT,
+ 	CP_SYNC,
++	CP_DISCARD,
  };
  
-+enum {
-+	CP_UMOUNT,
-+	CP_SYNC,
-+};
-+
-+struct cp_control {
-+	int reason;
-+};
-+
+ struct cp_control {
+ 	int reason;
++	__u64 trim_start;
++	__u64 trim_end;
++	__u64 trim_minlen;
++	__u64 trimmed;
+ };
+ 
  /*
-  * For CP/NAT/SIT/SSA readahead
+@@ -1276,9 +1281,11 @@ void destroy_flush_cmd_control(struct f2fs_sb_info *);
+ void invalidate_blocks(struct f2fs_sb_info *, block_t);
+ void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
+ void clear_prefree_segments(struct f2fs_sb_info *);
++void release_discard_addrs(struct f2fs_sb_info *);
+ void discard_next_dnode(struct f2fs_sb_info *, block_t);
+ int npages_for_summary_flush(struct f2fs_sb_info *);
+ void allocate_new_segments(struct f2fs_sb_info *);
++int f2fs_trim_fs(struct f2fs_sb_info *, struct fstrim_range *);
+ struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
+ void write_meta_page(struct f2fs_sb_info *, struct page *);
+ void write_node_page(struct f2fs_sb_info *, struct page *,
+@@ -1295,7 +1302,7 @@ void write_data_summaries(struct f2fs_sb_info *, block_t);
+ void write_node_summaries(struct f2fs_sb_info *, block_t);
+ int lookup_journal_in_cursum(struct f2fs_summary_block *,
+ 					int, unsigned int, int);
+-void flush_sit_entries(struct f2fs_sb_info *);
++void flush_sit_entries(struct f2fs_sb_info *, struct cp_control *);
+ int build_segment_manager(struct f2fs_sb_info *);
+ void destroy_segment_manager(struct f2fs_sb_info *);
+ int __init create_segment_manager_caches(void);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index ac8c680..1184207 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -860,6 +860,35 @@ out:
+ 		mnt_drop_write_file(filp);
+ 		return ret;
+ 	}
++	case FITRIM:
++	{
++		struct super_block *sb = inode->i_sb;
++		struct request_queue *q = bdev_get_queue(sb->s_bdev);
++		struct fstrim_range range;
++		int ret = 0;
++
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++
++		if (!blk_queue_discard(q))
++			return -EOPNOTSUPP;
++
++		if (copy_from_user(&range, (struct fstrim_range __user *)arg,
++					sizeof(range)))
++			return -EFAULT;
++
++		range.minlen = max((unsigned int)range.minlen,
++				   q->limits.discard_granularity);
++		ret = f2fs_trim_fs(F2FS_SB(sb), &range);
++		if (ret < 0)
++			return ret;
++
++		if (copy_to_user((struct fstrim_range __user *)arg, &range,
++					sizeof(range)))
++			return -EFAULT;
++
++		return 0;
++	}
+ 	default:
+ 		return -ENOTTY;
+ 	}
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 3125a3d..b423005 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -386,45 +386,92 @@ void discard_next_dnode(struct f2fs_sb_info *sbi, block_t blkaddr)
+ 	}
+ }
+ 
+-static void add_discard_addrs(struct f2fs_sb_info *sbi,
+-			unsigned int segno, struct seg_entry *se)
++static void add_discard_addrs(struct f2fs_sb_info *sbi, struct cp_control *cpc)
+ {
+ 	struct list_head *head = &SM_I(sbi)->discard_list;
+ 	struct discard_entry *new;
+ 	int entries = SIT_VBLOCK_MAP_SIZE / sizeof(unsigned long);
+ 	int max_blocks = sbi->blocks_per_seg;
++	struct seg_entry *se = get_seg_entry(sbi, cpc->trim_start);
+ 	unsigned long *cur_map = (unsigned long *)se->cur_valid_map;
+ 	unsigned long *ckpt_map = (unsigned long *)se->ckpt_valid_map;
+-	unsigned long dmap[entries];
++	unsigned long *dmap;
+ 	unsigned int start = 0, end = -1;
++	bool force = (cpc->reason == CP_DISCARD);
+ 	int i;
+ 
+-	if (!test_opt(sbi, DISCARD))
++	if (!force && !test_opt(sbi, DISCARD))
+ 		return;
+ 
++	if (force && !se->valid_blocks) {
++		struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
++		/*
++		 * if this segment is registered in the prefree list, then
++		 * we should skip adding a discard candidate, and let the
++		 * checkpoint do that later.
++		 */
++		mutex_lock(&dirty_i->seglist_lock);
++		if (test_bit(cpc->trim_start, dirty_i->dirty_segmap[PRE])) {
++			mutex_unlock(&dirty_i->seglist_lock);
++			cpc->trimmed += sbi->blocks_per_seg;
++			return;
++		}
++		mutex_unlock(&dirty_i->seglist_lock);
++
++		new = f2fs_kmem_cache_alloc(discard_entry_slab, GFP_NOFS);
++		INIT_LIST_HEAD(&new->list);
++		new->blkaddr = START_BLOCK(sbi, cpc->trim_start);
++		new->len = sbi->blocks_per_seg;
++		list_add_tail(&new->list, head);
++		SM_I(sbi)->nr_discards += sbi->blocks_per_seg;
++		cpc->trimmed += sbi->blocks_per_seg;
++		return;
++	}
++
+ 	/* zero block will be discarded through the prefree list */
+ 	if (!se->valid_blocks || se->valid_blocks == max_blocks)
+ 		return;
+ 
++	dmap = kzalloc(SIT_VBLOCK_MAP_SIZE, GFP_KERNEL);
++	if (!dmap)
++		return;
++
+ 	/* SIT_VBLOCK_MAP_SIZE should be multiple of sizeof(unsigned long) */
+ 	for (i = 0; i < entries; i++)
+ 		dmap[i] = (cur_map[i] ^ ckpt_map[i]) & ckpt_map[i];
+ 
+-	while (SM_I(sbi)->nr_discards <= SM_I(sbi)->max_discards) {
++	while (force || SM_I(sbi)->nr_discards <= SM_I(sbi)->max_discards) {
+ 		start = __find_rev_next_bit(dmap, max_blocks, end + 1);
+ 		if (start >= max_blocks)
+ 			break;
+ 
+ 		end = __find_rev_next_zero_bit(dmap, max_blocks, start + 1);
+ 
++		if (end - start < cpc->trim_minlen)
++			continue;
++
+ 		new = f2fs_kmem_cache_alloc(discard_entry_slab, GFP_NOFS);
+ 		INIT_LIST_HEAD(&new->list);
+-		new->blkaddr = START_BLOCK(sbi, segno) + start;
++		new->blkaddr = START_BLOCK(sbi, cpc->trim_start) + start;
+ 		new->len = end - start;
++		cpc->trimmed += end - start;
+ 
+ 		list_add_tail(&new->list, head);
+ 		SM_I(sbi)->nr_discards += end - start;
+ 	}
++	kfree(dmap);
++}
++
++void release_discard_addrs(struct f2fs_sb_info *sbi)
++{
++	struct list_head *head = &(SM_I(sbi)->discard_list);
++	struct discard_entry *entry, *this;
++
++	/* drop caches */
++	list_for_each_entry_safe(entry, this, head, list) {
++		list_del(&entry->list);
++		kmem_cache_free(discard_entry_slab, entry);
++	}
+ }
+ 
+ /*
+@@ -897,6 +944,40 @@ static const struct segment_allocation default_salloc_ops = {
+ 	.allocate_segment = allocate_segment_by_default,
+ };
+ 
++int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
++{
++	block_t start_addr = SM_I(sbi)->main_blkaddr;
++	__u64 start = range->start >> sbi->log_blocksize;
++	__u64 end = start + (range->len >> sbi->log_blocksize) - 1;
++	__u64 segment = 1 << (sbi->log_blocksize + sbi->log_blocks_per_seg);
++	unsigned int start_segno, end_segno;
++	struct cp_control cpc;
++
++	if (range->minlen > segment || start >= TOTAL_BLKS(sbi) ||
++			range->len < sbi->blocksize)
++		return -EINVAL;
++
++	if (end <= start_addr)
++		goto out;
++
++	/* start/end segment number in main_area */
++	start_segno = (start <= start_addr) ? 0 : GET_SEGNO(sbi, start);
++	end_segno = (end >= TOTAL_BLKS(sbi)) ? TOTAL_SEGS(sbi) - 1 :
++		GET_SEGNO(sbi, end);
++
++	cpc.reason = CP_DISCARD;
++	cpc.trim_start = start_segno;
++	cpc.trim_end = end_segno;
++	cpc.trim_minlen = range->minlen >> sbi->log_blocksize;
++	cpc.trimmed = 0;
++
++	/* do checkpoint to issue discard commands safely */
++	write_checkpoint(sbi, &cpc);
++out:
++	range->len = cpc.trimmed << sbi->log_blocksize;
++	return 0;
++}
++
+ static bool __has_curseg_space(struct f2fs_sb_info *sbi, int type)
+ {
+ 	struct curseg_info *curseg = CURSEG_I(sbi, type);
+@@ -1524,7 +1605,7 @@ static void remove_sits_in_journal(struct f2fs_sb_info *sbi)
+  * CP calls this function, which flushes SIT entries including sit_journal,
+  * and moves prefree segs to free segs.
   */
-@@ -1314,7 +1323,7 @@ void update_dirty_page(struct inode *, struct page *);
- void add_dirty_dir_inode(struct inode *);
- void remove_dirty_dir_inode(struct inode *);
- void sync_dirty_dir_inodes(struct f2fs_sb_info *);
--void write_checkpoint(struct f2fs_sb_info *, bool);
-+void write_checkpoint(struct f2fs_sb_info *, struct cp_control *);
- void init_ino_entry_info(struct f2fs_sb_info *);
- int __init create_checkpoint_caches(void);
- void destroy_checkpoint_caches(void);
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 7bf8392..e88fcf6 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -694,6 +694,9 @@ int f2fs_gc(struct f2fs_sb_info *sbi)
- 	int gc_type = BG_GC;
- 	int nfree = 0;
- 	int ret = -1;
-+	struct cp_control cpc = {
-+		.reason = CP_SYNC,
-+	};
+-void flush_sit_entries(struct f2fs_sb_info *sbi)
++void flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
+ {
+ 	struct sit_info *sit_i = SIT_I(sbi);
+ 	unsigned long *bitmap = sit_i->dirty_sentries_bitmap;
+@@ -1534,6 +1615,7 @@ void flush_sit_entries(struct f2fs_sb_info *sbi)
+ 	struct list_head *head = &SM_I(sbi)->sit_entry_set;
+ 	unsigned long nsegs = TOTAL_SEGS(sbi);
+ 	bool to_journal = true;
++	struct seg_entry *se;
  
- 	INIT_LIST_HEAD(&ilist);
- gc_more:
-@@ -704,7 +707,7 @@ gc_more:
+ 	mutex_lock(&curseg->curseg_mutex);
+ 	mutex_lock(&sit_i->sentry_lock);
+@@ -1580,11 +1662,14 @@ void flush_sit_entries(struct f2fs_sb_info *sbi)
+ 		/* flush dirty sit entries in region of current sit set */
+ 		for_each_set_bit_from(segno, bitmap, end) {
+ 			int offset, sit_offset;
+-			struct seg_entry *se = get_seg_entry(sbi, segno);
++
++			se = get_seg_entry(sbi, segno);
  
- 	if (gc_type == BG_GC && has_not_enough_free_secs(sbi, nfree)) {
- 		gc_type = FG_GC;
--		write_checkpoint(sbi, false);
-+		write_checkpoint(sbi, &cpc);
- 	}
+ 			/* add discard candidates */
+-			if (SM_I(sbi)->nr_discards < SM_I(sbi)->max_discards)
+-				add_discard_addrs(sbi, segno, se);
++			if (SM_I(sbi)->nr_discards < SM_I(sbi)->max_discards) {
++				cpc->trim_start = segno;
++				add_discard_addrs(sbi, cpc);
++			}
  
- 	if (!__get_victim(sbi, &segno, gc_type, NO_CHECK_TYPE))
-@@ -729,7 +732,7 @@ gc_more:
- 		goto gc_more;
+ 			if (to_journal) {
+ 				offset = lookup_journal_in_cursum(sum,
+@@ -1614,8 +1699,11 @@ void flush_sit_entries(struct f2fs_sb_info *sbi)
  
- 	if (gc_type == FG_GC)
--		write_checkpoint(sbi, false);
-+		write_checkpoint(sbi, &cpc);
- stop:
- 	mutex_unlock(&sbi->gc_mutex);
+ 	f2fs_bug_on(sbi, !list_empty(head));
+ 	f2fs_bug_on(sbi, sit_i->dirty_sentries);
+-
+ out:
++	if (cpc->reason == CP_DISCARD) {
++		for (; cpc->trim_start <= cpc->trim_end; cpc->trim_start++)
++			add_discard_addrs(sbi, cpc);
++	}
+ 	mutex_unlock(&sit_i->sentry_lock);
+ 	mutex_unlock(&curseg->curseg_mutex);
  
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index a3fcea3..4189003 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -542,8 +542,11 @@ out:
- 		set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
- 		mutex_unlock(&sbi->cp_mutex);
- 	} else if (need_writecp) {
-+		struct cp_control cpc = {
-+			.reason = CP_SYNC,
-+		};
- 		mutex_unlock(&sbi->cp_mutex);
--		write_checkpoint(sbi, false);
-+		write_checkpoint(sbi, &cpc);
- 	} else {
- 		mutex_unlock(&sbi->cp_mutex);
- 	}
 diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 7a91a38..128c420 100644
+index 128c420..bb6b568 100644
 --- a/fs/f2fs/super.c
 +++ b/fs/f2fs/super.c
-@@ -434,8 +434,12 @@ static void f2fs_put_super(struct super_block *sb)
- 	stop_gc_thread(sbi);
+@@ -446,6 +446,7 @@ static void f2fs_put_super(struct super_block *sb)
+ 	 * In addition, EIO will skip do checkpoint, we need this as well.
+ 	 */
+ 	release_dirty_inode(sbi);
++	release_discard_addrs(sbi);
  
- 	/* We don't need to do checkpoint when it's clean */
--	if (sbi->s_dirty)
--		write_checkpoint(sbi, true);
-+	if (sbi->s_dirty) {
-+		struct cp_control cpc = {
-+			.reason = CP_UMOUNT,
-+		};
-+		write_checkpoint(sbi, &cpc);
-+	}
- 
- 	/*
- 	 * normally superblock is clean, so we need to release this.
-@@ -466,8 +470,11 @@ int f2fs_sync_fs(struct super_block *sb, int sync)
- 	trace_f2fs_sync_fs(sb, sync);
- 
- 	if (sync) {
-+		struct cp_control cpc = {
-+			.reason = CP_SYNC,
-+		};
- 		mutex_lock(&sbi->gc_mutex);
--		write_checkpoint(sbi, false);
-+		write_checkpoint(sbi, &cpc);
- 		mutex_unlock(&sbi->gc_mutex);
- 	} else {
- 		f2fs_balance_fs(sbi);
+ 	iput(sbi->node_inode);
+ 	iput(sbi->meta_inode);
 diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index d06d443..66eaace 100644
+index 66eaace..bbc4de9 100644
 --- a/include/trace/events/f2fs.h
 +++ b/include/trace/events/f2fs.h
-@@ -69,6 +69,11 @@
- 		{ GC_GREEDY,	"Greedy" },				\
- 		{ GC_CB,	"Cost-Benefit" })
+@@ -72,7 +72,8 @@
+ #define show_cpreason(type)						\
+ 	__print_symbolic(type,						\
+ 		{ CP_UMOUNT,	"Umount" },				\
+-		{ CP_SYNC,	"Sync" })
++		{ CP_SYNC,	"Sync" },				\
++		{ CP_DISCARD,	"Discard" })
  
-+#define show_cpreason(type)						\
-+	__print_symbolic(type,						\
-+		{ CP_UMOUNT,	"Umount" },				\
-+		{ CP_SYNC,	"Sync" })
-+
  struct victim_sel_policy;
- 
- DECLARE_EVENT_CLASS(f2fs__inode,
-@@ -944,25 +949,25 @@ TRACE_EVENT(f2fs_submit_page_mbio,
- 
- TRACE_EVENT(f2fs_write_checkpoint,
- 
--	TP_PROTO(struct super_block *sb, bool is_umount, char *msg),
-+	TP_PROTO(struct super_block *sb, int reason, char *msg),
- 
--	TP_ARGS(sb, is_umount, msg),
-+	TP_ARGS(sb, reason, msg),
- 
- 	TP_STRUCT__entry(
- 		__field(dev_t,	dev)
--		__field(bool,	is_umount)
-+		__field(int,	reason)
- 		__field(char *,	msg)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->dev		= sb->s_dev;
--		__entry->is_umount	= is_umount;
-+		__entry->reason		= reason;
- 		__entry->msg		= msg;
- 	),
- 
- 	TP_printk("dev = (%d,%d), checkpoint for %s, state = %s",
- 		show_dev(__entry),
--		__entry->is_umount ? "clean umount" : "consistency",
-+		show_cpreason(__entry->reason),
- 		__entry->msg)
- );
  
 -- 
 1.8.5.2 (Apple Git-48)
