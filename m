@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257AbaIWXLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:11:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40541 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757187AbaIWXKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:10:12 -0400
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3] watchdog: qcom: register a restart notifier
-Date: Tue, 23 Sep 2014 18:04:38 -0500
-Message-Id: <2d539bc944f3e8fc70f39728b0f61fd171b2e5bf.1411513109.git.joshc@codeaurora.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1411513109.git.joshc@codeaurora.org>
-References: <cover.1411513109.git.joshc@codeaurora.org>
-In-Reply-To: <cover.1411513109.git.joshc@codeaurora.org>
-References: <cover.1411513109.git.joshc@codeaurora.org>
+	id S1757262AbaIWXLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:11:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756050AbaIWXLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 19:11:36 -0400
+Message-ID: <1411513877.24563.62.camel@ul30vt.home>
+Subject: Re: [PATCHv7 13/26] vfio: amba: add the VFIO for AMBA devices
+ module to Kconfig
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        tech@virtualopensystems.com, kvm@vger.kernel.org,
+        christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, eric.auger@linaro.org,
+        marc.zyngier@arm.com, open list <linux-kernel@vger.kernel.org>
+Date: Tue, 23 Sep 2014 17:11:17 -0600
+In-Reply-To: <1411483586-29304-14-git-send-email-a.motakis@virtualopensystems.com>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1411483586-29304-14-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
-resort mechanism for triggering chip reset.  Usually, other restart
-methods (such as PS_HOLD) are preferrable for issuing a more complete
-reset of the chip.  As such, keep the priority of the watchdog notifier
-low.
+On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+> Enable building the VFIO AMBA driver. VFIO_AMBA depends on VFIO_PLATFORM,
+> since it is sharing a portion of the code, and it is essentially implemented
+> as a platform device whose resources are discovered via AMBA specific APIs
+> in the kernel.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/Kconfig  | 10 ++++++++++
+>  drivers/vfio/platform/Makefile |  4 ++++
+>  2 files changed, 14 insertions(+)
+> 
+> diff --git a/drivers/vfio/platform/Kconfig b/drivers/vfio/platform/Kconfig
+> index c51af17..8b97786 100644
+> --- a/drivers/vfio/platform/Kconfig
+> +++ b/drivers/vfio/platform/Kconfig
+> @@ -7,3 +7,13 @@ config VFIO_PLATFORM
+>  	  framework.
+>  
+>  	  If you don't know what to do here, say N.
+> +
+> +config VFIO_AMBA
+> +	tristate "VFIO support for AMBA devices"
+> +	depends on VFIO && VFIO_PLATFORM && EVENTFD && ARM_AMBA
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- drivers/watchdog/qcom-wdt.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+nit, VFIO_PLATFORM already depends on VFIO && EVENTFD
 
-diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
-index d5e46e2..eba92ef 100644
---- a/drivers/watchdog/qcom-wdt.c
-+++ b/drivers/watchdog/qcom-wdt.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/reboot.h>
- #include <linux/watchdog.h>
- 
- #define WDT_RST		0x0
-@@ -25,6 +26,7 @@
- struct qcom_wdt {
- 	struct watchdog_device	wdd;
- 	struct clk		*clk;
-+	struct notifier_block	restart_nb;
- 	void __iomem		*base;
- };
- 
-@@ -86,6 +88,23 @@ static const struct watchdog_info qcom_wdt_info = {
- 	.identity	= KBUILD_MODNAME,
- };
- 
-+static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
-+			    void *data)
-+{
-+	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
-+
-+	/*
-+	 * Trigger watchdog bite:
-+	 *    Setup BITE_TIME to be very low, and enable WDT.
-+	 *      0x31F3 => 390ms @ 32kHz, also value at reset
-+	 */
-+	writel(0, wdt->base + WDT_EN);
-+	writel(1, wdt->base + WDT_RST);
-+	writel(0x31F3, wdt->base + WDT_BITE_TIME);
-+	writel(1, wdt->base + WDT_EN);
-+	return NOTIFY_DONE;
-+}
-+
- static int qcom_wdt_probe(struct platform_device *pdev)
- {
- 	struct qcom_wdt *wdt;
-@@ -141,6 +160,14 @@ static int qcom_wdt_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/*
-+	 * WDT restart notifier has priority 0 (use as a last resort)
-+	 */
-+	wdt->restart_nb.notifier_call = qcom_wdt_restart;
-+	ret = register_restart_handler(&wdt->restart_nb);
-+	if (ret)
-+		dev_err(&pdev->dev, "failed to setup restart handler\n");
-+
- 	platform_set_drvdata(pdev, wdt);
- 	return 0;
- }
-@@ -149,6 +176,7 @@ static int qcom_wdt_remove(struct platform_device *pdev)
- {
- 	struct qcom_wdt *wdt = platform_get_drvdata(pdev);
- 
-+	unregister_restart_handler(&wdt->restart_nb);
- 	watchdog_unregister_device(&wdt->wdd);
- 	clk_disable_unprepare(wdt->clk);
- 	return 0;
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> +	help
+> +	  Support for ARM AMBA devices with VFIO. This is required to make
+> +	  use of ARM AMBA devices present on the system using the VFIO
+> +	  framework.
+> +
+> +	  If you don't know what to do here, say N.
+> diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
+> index 279862b..1957170 100644
+> --- a/drivers/vfio/platform/Makefile
+> +++ b/drivers/vfio/platform/Makefile
+> @@ -2,3 +2,7 @@
+>  vfio-platform-y := vfio_platform.o vfio_platform_common.o
+>  
+>  obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
+> +
+> +vfio-amba-y := vfio_amba.o
+> +
+> +obj-$(CONFIG_VFIO_AMBA) += vfio-amba.o
+
+
 
