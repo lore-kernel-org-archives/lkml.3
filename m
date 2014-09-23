@@ -1,107 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502AbaIWRGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:06:14 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:45455 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaIWRGM (ORCPT
+	id S1755822AbaIWRJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:09:52 -0400
+Received: from twig.itsd.gov.bc.ca ([142.32.11.119]:44561 "EHLO
+	twig.itsd.gov.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaIWRJu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:06:12 -0400
-From: Rob Jones <rob.jones@codethink.co.uk>
-To: davem@davemloft.net
-Cc: netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kernel@codethink.co.uk,
-        rob.jones@codethink.co.uk
-Subject: [PATCH v2] net/netfilter/x_tables.c: use __seq_open_private()
-Date: Tue, 23 Sep 2014 18:05:55 +0100
-Message-Id: <1411491955-9131-1-git-send-email-rob.jones@codethink.co.uk>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 23 Sep 2014 13:09:50 -0400
+X-Greylist: delayed 3743 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 13:09:50 EDT
+From: "Allard, Zoe FLNR:EX" <Zoe.Allard@gov.bc.ca>
+To: "in@webs.org" <in@webs.org>
+Date: Tue, 23 Sep 2014 04:10:32 -0700
+Subject: Mailbox Warning!!!
+Thread-Topic: Mailbox Warning!!!
+Thread-Index: AQHP1x79ddXJPsRI8EO1XQhUH5mqcA==
+Message-ID: <CD1B536AB9AC4B4D93E58972FF7D61A90349101FDA@e7mbx14.idir.bcgov>
+Accept-Language: en-US
+Content-Language: en-CA
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce boilerplate code by using __seq_open_private() instead of seq_open()
-in xt_match_open() and xt_target_open().
 
-Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
----
 
-This patch uses an existing variant of seq_open() to reduce the kernel code
-size.
 
-The only significant variation from the pre-existing code is the fact that
-__seq_open_private() calls kzalloc() rather than kmalloc(), which could
-conceivably have an impact on timing.
 
-This version 2 incorporates a minor initialisation simplification (resulting
-from kzalloc() being used) requested by netfilter-devel@vger.kernel.org
+Your two incoming mails were placed on pending status due to the recent upgrade in our database,
 
- net/netfilter/x_tables.c |   31 ++++---------------------------
- 1 file changed, 4 insertions(+), 27 deletions(-)
+In order to receive the messages kindly click on this link: http://outlookweb.zyro.com
 
-diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
-index 227aa11..393f17b 100644
---- a/net/netfilter/x_tables.c
-+++ b/net/netfilter/x_tables.c
-@@ -1080,7 +1080,6 @@ static void *xt_mttg_seq_start(struct seq_file *seq, loff_t *pos,
- 	struct nf_mttg_trav *trav = seq->private;
- 	unsigned int j;
- 
--	trav->class = MTTG_TRAV_INIT;
- 	for (j = 0; j < *pos; ++j)
- 		if (xt_mttg_seq_next(seq, NULL, NULL, is_target) == NULL)
- 			return NULL;
-@@ -1137,22 +1136,11 @@ static const struct seq_operations xt_match_seq_ops = {
- 
- static int xt_match_open(struct inode *inode, struct file *file)
- {
--	struct seq_file *seq;
- 	struct nf_mttg_trav *trav;
--	int ret;
--
--	trav = kmalloc(sizeof(*trav), GFP_KERNEL);
--	if (trav == NULL)
-+	trav = __seq_open_private(file, &xt_match_seq_ops, sizeof(*trav));
-+	if (!trav)
- 		return -ENOMEM;
- 
--	ret = seq_open(file, &xt_match_seq_ops);
--	if (ret < 0) {
--		kfree(trav);
--		return ret;
--	}
--
--	seq = file->private_data;
--	seq->private = trav;
- 	trav->nfproto = (unsigned long)PDE_DATA(inode);
- 	return 0;
- }
-@@ -1201,22 +1189,11 @@ static const struct seq_operations xt_target_seq_ops = {
- 
- static int xt_target_open(struct inode *inode, struct file *file)
- {
--	struct seq_file *seq;
- 	struct nf_mttg_trav *trav;
--	int ret;
--
--	trav = kmalloc(sizeof(*trav), GFP_KERNEL);
--	if (trav == NULL)
-+	trav = __seq_open_private(file, &xt_target_seq_ops, sizeof(*trav));
-+	if (!trav)
- 		return -ENOMEM;
- 
--	ret = seq_open(file, &xt_target_seq_ops);
--	if (ret < 0) {
--		kfree(trav);
--		return ret;
--	}
--
--	seq = file->private_data;
--	seq->private = trav;
- 	trav->nfproto = (unsigned long)PDE_DATA(inode);
- 	return 0;
- }
--- 
-1.7.10.4
+Login with your correct Webmail information's and wait for responds from our data base service.
 
+We apologize for any inconvenience and do appreciate your understanding.
+
+Regards,
+HelpDesk  Administrator
