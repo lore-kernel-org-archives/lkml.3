@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552AbaIWHOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:14:43 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:60933 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999AbaIWHOl (ORCPT
+	id S1754601AbaIWHPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:15:03 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:62830 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979AbaIWHO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:14:41 -0400
+	Tue, 23 Sep 2014 03:14:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <1411413970-17480-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1411413970-17480-2-git-send-email-sboyd@codeaurora.org>
 References: <1411413970-17480-1-git-send-email-sboyd@codeaurora.org>
-Date: Tue, 23 Sep 2014 09:14:40 +0200
-Message-ID: <CAPDyKFrtTSgWx1NRUaEY7+xrfFXB7zcLqkoRx6MP5j9PpUi66Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: sdhci-msm: Make tuning block table endian agnostic
+	<1411413970-17480-2-git-send-email-sboyd@codeaurora.org>
+Date: Tue, 23 Sep 2014 09:14:58 +0200
+Message-ID: <CAPDyKFpuKSdZtnX46hc65RaOQ4sGzgFgV-iB6KQOt75whrTxvg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mmc: Consolidate emmc tuning blocks
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Stephen Boyd <sboyd@codeaurora.org>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -21,26 +22,18 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
 	<linux-arm-kernel@lists.infradead.org>,
         linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
         Georgi Djakov <gdjakov@mm-sol.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>
+        Jaehoon Chung <jh80.chung@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 22 September 2014 21:26, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> If we're tuning on a big-endian CPU we'll never determine we properly
-> tuned the device because we compare the data we received from the
-> controller with a table that assumes the CPU is little-endian.
-> Change the table to be an array of bytes instead of 32-bit words
-> so we can use memcmp() without needing to byte-swap every word
-> depending on the endianess of the CPU.
+> The same tuning block exists in the dw_mmc h.c and sdhci-msm.c
+> files. Move these into mmc.c so that they can be shared across
+> drivers.
 >
-> Cc: Asutosh Das <asutoshd@codeaurora.org>
-> Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
-> Reviewed-by: Georgi Djakov <gdjakov@mm-sol.com>
-> Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
+> Reported-by: Jaehoon Chung <jh80.chung@samsung.com>
 > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
 Thanks! Applied for next.
@@ -48,24 +41,23 @@ Thanks! Applied for next.
 Kind regards
 Uffe
 
+
 > ---
->  drivers/mmc/host/sdhci-msm.c | 42 +++++++++++++++++++++++++++---------------
->  1 file changed, 27 insertions(+), 15 deletions(-)
+>  drivers/mmc/core/mmc.c       | 32 ++++++++++++++++++++++++++++++++
+>  drivers/mmc/host/dw_mmc.c    | 30 ------------------------------
+>  drivers/mmc/host/sdhci-msm.c | 38 ++++----------------------------------
+>  include/linux/mmc/mmc.h      |  5 +++++
+>  4 files changed, 41 insertions(+), 64 deletions(-)
 >
-> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-> index 40573a58486a..5aabffc15ae8 100644
-> --- a/drivers/mmc/host/sdhci-msm.c
-> +++ b/drivers/mmc/host/sdhci-msm.c
-> @@ -47,22 +47,34 @@
->  #define CMUX_SHIFT_PHASE_SHIFT 24
->  #define CMUX_SHIFT_PHASE_MASK  (7 << CMUX_SHIFT_PHASE_SHIFT)
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 793c6f7ddb04..9608cc8a1f65 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1135,6 +1135,38 @@ bus_speed:
+>         return err;
+>  }
 >
-> -static const u32 tuning_block_64[] = {
-> -       0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
-> -       0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
-> -       0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
-> -       0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
-> +static const u8 tuning_block_64[] = {
+> +const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE] = {
 > +       0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
 > +       0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
 > +       0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
@@ -74,18 +66,10 @@ Uffe
 > +       0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
 > +       0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
 > +       0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
->  };
->
-> -static const u32 tuning_block_128[] = {
-> -       0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
-> -       0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
-> -       0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
-> -       0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
-> -       0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
-> -       0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
-> -       0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
-> -       0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
-> +static const u8 tuning_block_128[] = {
+> +};
+> +EXPORT_SYMBOL(tuning_blk_pattern_4bit);
+> +
+> +const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE] = {
 > +       0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
 > +       0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
 > +       0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
@@ -102,18 +86,132 @@ Uffe
 > +       0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
 > +       0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
 > +       0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+> +};
+> +EXPORT_SYMBOL(tuning_blk_pattern_8bit);
+> +
+>  /*
+>   * Execute tuning sequence to seek the proper bus operating
+>   * conditions for HS200 and HS400, which sends CMD21 to the device.
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 1ac227c603b7..f1cefdf5e2d0 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -81,36 +81,6 @@ struct idmac_desc {
 >  };
+>  #endif /* CONFIG_MMC_DW_IDMAC */
 >
+> -static const u8 tuning_blk_pattern_4bit[] = {
+> -       0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+> -       0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+> -       0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+> -       0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+> -       0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+> -       0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+> -       0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+> -       0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+> -};
+> -
+> -static const u8 tuning_blk_pattern_8bit[] = {
+> -       0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+> -       0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+> -       0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+> -       0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+> -       0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+> -       0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+> -       0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+> -       0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+> -       0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+> -       0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+> -       0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+> -       0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+> -       0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+> -       0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+> -       0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+> -       0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+> -};
+> -
+>  static inline bool dw_mci_fifo_reset(struct dw_mci *host);
+>  static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host);
+>
+> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+> index 5aabffc15ae8..da74c77f34cc 100644
+> --- a/drivers/mmc/host/sdhci-msm.c
+> +++ b/drivers/mmc/host/sdhci-msm.c
+> @@ -47,36 +47,6 @@
+>  #define CMUX_SHIFT_PHASE_SHIFT 24
+>  #define CMUX_SHIFT_PHASE_MASK  (7 << CMUX_SHIFT_PHASE_SHIFT)
+>
+> -static const u8 tuning_block_64[] = {
+> -       0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+> -       0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+> -       0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+> -       0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+> -       0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+> -       0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+> -       0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+> -       0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+> -};
+> -
+> -static const u8 tuning_block_128[] = {
+> -       0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+> -       0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+> -       0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+> -       0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+> -       0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+> -       0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+> -       0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+> -       0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+> -       0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+> -       0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+> -       0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+> -       0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+> -       0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+> -       0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+> -       0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+> -       0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+> -};
+> -
 >  struct sdhci_msm_host {
-> @@ -359,7 +371,7 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+>         struct platform_device *pdev;
+>         void __iomem *core_mem; /* MSM SDCC mapped address */
+> @@ -371,8 +341,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
 >  {
 >         int tuning_seq_cnt = 3;
 >         u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
-> -       const u32 *tuning_block_pattern = tuning_block_64;
-> +       const u8 *tuning_block_pattern = tuning_block_64;
->         int size = sizeof(tuning_block_64);     /* Pattern size in bytes */
+> -       const u8 *tuning_block_pattern = tuning_block_64;
+> -       int size = sizeof(tuning_block_64);     /* Pattern size in bytes */
+> +       const u8 *tuning_block_pattern = tuning_blk_pattern_4bit;
+> +       int size = sizeof(tuning_blk_pattern_4bit);
 >         int rc;
 >         struct mmc_host *mmc = host->mmc;
+>         struct mmc_ios ios = host->mmc->ios;
+> @@ -388,8 +358,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+>
+>         if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) &&
+>             (mmc->ios.bus_width == MMC_BUS_WIDTH_8)) {
+> -               tuning_block_pattern = tuning_block_128;
+> -               size = sizeof(tuning_block_128);
+> +               tuning_block_pattern = tuning_blk_pattern_8bit;
+> +               size = sizeof(tuning_blk_pattern_8bit);
+>         }
+>
+>         data_buf = kmalloc(size, GFP_KERNEL);
+> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+> index 64ec963ed347..cff1f2622061 100644
+> --- a/include/linux/mmc/mmc.h
+> +++ b/include/linux/mmc/mmc.h
+> @@ -53,6 +53,11 @@
+>  #define MMC_SEND_TUNING_BLOCK    19   /* adtc                    R1  */
+>  #define MMC_SEND_TUNING_BLOCK_HS200    21      /* adtc R1  */
+>
+> +#define MMC_TUNING_BLK_PATTERN_4BIT_SIZE        64
+> +#define MMC_TUNING_BLK_PATTERN_8BIT_SIZE       128
+> +extern const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE];
+> +extern const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE];
+> +
+>    /* class 3 */
+>  #define MMC_WRITE_DAT_UNTIL_STOP 20   /* adtc [31:0] data addr   R1  */
+>
 > --
 > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 > hosted by The Linux Foundation
