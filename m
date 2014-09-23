@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaIWORI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:17:08 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:49928 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826AbaIWORF (ORCPT
+	id S932126AbaIWORO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:17:14 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:58419 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105AbaIWORJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:17:05 -0400
+	Tue, 23 Sep 2014 10:17:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <54208A03.2010101@osg.samsung.com>
-References: <cover.1411397045.git.shuahkh@osg.samsung.com>
-	<b83cf780636a80aec53e3b7e8f101645049e94f3.1411397045.git.shuahkh@osg.samsung.com>
-	<CAGoCfizUWx-RrRbtuv7ctTqZskmDPK-w9bRTnEwjwn6oJ=V48g@mail.gmail.com>
-	<54208A03.2010101@osg.samsung.com>
-Date: Tue, 23 Sep 2014 10:17:04 -0400
-Message-ID: <CAGoCfix8BH0coq2q-ndvBvDHGJ6f28mVE0CzAnMZYgCaPg+yrw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] media: v4l2-core changes to use media tuner token api
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        sakari.ailus@linux.intel.com, ramakrmu@cisco.com,
-        Devin Heitmueller <dheitmueller@kernellabs.co>, olebowle@gmx.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1411480694.21299.18.camel@mtksdaap41>
+References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
+ <1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
+ <2770365.r419rjIAOU@wuerfel> <1411480694.21299.18.camel@mtksdaap41>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Tue, 23 Sep 2014 22:16:47 +0800
+X-Google-Sender-Auth: yyi5ZlHN2axp2TTqX985A1fPsg8
+Message-ID: <CAGb2v67F_3CCA2LA887X4TbewUcFj+bXzq912x6t5K4t2X_9mA@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
+To: "Joe.C" <srv_yingjoe.chen@mediatek.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        "Hongzhou. Yang" <srv_hongzhou.yang@mediatek.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, srv_heupstream@mediatek.com,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, dandan.he@mediatek.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Shuah,
+Hi,
 
->> What about G_INPUT and G_TUNER?  Consider the following use case, which is
->> entirely legal in the V4L2 API:
->
-> Did you mean G_INPUT and G_STD here? I didn't see G_TUNER mentioned
-> below in the use-case.
-
-It can be either ENUM_INPUT or G_TUNER.  Both return status
-information that requires communication with the video decoder chip
-and/or tuner.  It's probably worth mentioning that ENUMINPUT isn't
-like the other ENUM_ calls in that it doesn't return a static list
-without  talking to the driver - it contains a field (called .status)
-which actually needs to talk to the hardware in order to populate it.
-
->> 1.  Program opens /dev/video0
->> 2.  Program calls G_INPUT/G_STD and sees that the appropriate input and
->> standard are already set, since all devices have a default input at
->> initialization
->> 3.  Program never calls S_INPUT, S_STD, or S_TUNER
->> 4.  Program goes into a loop calling ENUM_INPUT, waiting until it returns
->> the input as having signal lock
->> 5.  When signal lock is seen, program calls STREAMON.
->
-> I am missing vb2 streamon change to hold the tuner in this patch set.
-> Without that change vb2 work isn't complete. Unfortunately I don't
-> have hybrid hardware that uses a vb2 driver.
-
-I don't think you quite understood my concern.  The concern is that in
-the use case above I'm actively using the tuner *before*
-VIDIOC_STREAMON is called.  Hence from a locking standpoint you
-probably don't want to allow the DVB device to take control of the
-tuner.
-
+On Tue, Sep 23, 2014 at 9:58 PM, Joe.C <srv_yingjoe.chen@mediatek.com> wrote:
+> On Tue, 2014-09-23 at 15:03 +0200, Arnd Bergmann wrote:
+>> On Tuesday 23 September 2014 11:39:05 Hongzhou. Yang wrote:
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_GPIO0 (MT_PIN_NO(0) | 0)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 (MT_PIN_NO(0) | 1)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_EINT49 (MT_PIN_NO(0) | 2)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_I2SOUT_DAT (MT_PIN_NO(0) | 3)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_DAC_DAT_OUT (MT_PIN_NO(0) | 4)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_PCM1_DO (MT_PIN_NO(0) | 5)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_SPI1_MO (MT_PIN_NO(0) | 6)
+>> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_NALE (MT_PIN_NO(0) | 7)
+>> > +
 >>
->> In the above case, you would be actively using the au8522 video decoder but
->> not holding the lock, so thr DVB device can be opened and screw everything
->> up.  Likewise if the DVB device were in use and such a program were run, it
->> wouls break.
->>
+>> This list looks like it just describes the hardware, I think it would
+>> be better to put the values directly into the DT, rather than
+>> using such macros.
 >
-> I think this use-case will be covered with changes to vb2 streamon
-> to check and hold tuner. I am thinking it might not be necessary to
-> change g_tuner, g_std, g_input and enum_input at v4l2-core level.
-> Does that sounds right??
-
-The more I think about it, the less confident I am that you actually
-can take a fine-grained locking approach without adding additional
-ioctls to make it explicit.  When is the tuner unlocked?  Is it when
-the filehandle is closed?  If so, then the the following script would
-behave in an unexpected manner:
-
-#!/bin/sh
-
-while [ 1 ]; do
-  v4l2-ctl -n
-  # Some code to parse the output and see if the "status" field for
-current input shows no signal
-  # If status shows as locked break
-done
-v4l2-ctl --stream-mmap=500 --stream-to=/tmp/foo.bin
-
-In the above case I'm actively using the tuner but not holding the
-lock most of the time, so a separate process can grab the DVB device
-between calls to "v4l2-ctl -n".
-
-However if you're keeping the device locked until STREAMOFF, then
-you'll break all sorts of applications which might just close the
-filehandle without calling STREAMOFF, and hence you'll have cases
-where the tuner is left locked in analog mode *forever*, preventing
-apps from using it in digital mode.
-
-Without adding a new ioctl to lock/unlock the analog side of the
-device, there is no real way to deal with this perfectly legal use
-case.  The downside of that of course is that applications would have
-to be modified in order for the locking to be used, and the default
-would have to be to not do locking in order to preserve backward
-compatibility with existing applications.
-
-What other ioctls have we not thought of?  I think there is an
-argument to be made that we're being too aggressive in trying to
-control the locking based on the ioctls called.  It might make sense
-to simplify the approach to lock on when the device is opened, and
-unlock when closed.  This avoids the complexity of trying to figure
-out *which* ioctls we need to set the lock on (which likely varies on
-a per device basis anyway), at the cost of not allowing the device to
-be used when something has the filehandle opened for the other side of
-the device (the behavior of which is currently undefined in the spec).
-I know there are concerns that some apps might leave the FD open even
-when done using it, but that seems like a less likely case than
-properly handling fine-grained locking (causing unexpected behavior
-for the applications that don't expect -EBUSY to be returned after the
-device has been successfully opened).
-
-We can always start with coarse locking on open/close, and do finer
-grained locking down the road if needed - or simply change the
-currently undefined behavior in the spec to say that you have to close
-the device handle before attempting to open the other side of the
-device.
-
-On a related note, you should be testing with MythTV - none of the
-applications you are currently testing with support both analog *and*
-digital, so you are not seeing all the race conditions that can occur
-when you close one side of the device and then *immediately* open the
-other side.  In particular, there is a known race that occurs when
-closing the DVB device and then opening the V4L device, because the
-DVB frontend shuts down the tuner asynchronously after the close()
-call returns to userland.  Exiting one application and starting
-another provides plenty of time for the close() logic to be run, so
-you're missing all the race conditions.
-
-Devin
+> Hi,
+>
+> Thanks for review.
+> The intend for these macros is helpin pinctrl user to write DT node.
+> With these macro, we could write like this for i2c0:
+>
+> mediatek,pinfunc = <MT8135_PIN_100_SDA0__FUNC_SDA0
+>                         MT8135_PIN_101_SCL0__FUNC_SCL0>;
+>
+> We feel this is less error prone and easier to write than this:
+>
+> mediatek,pinfunc = <MT_PIN_FUNC(100, 1) MT_PIN_FUNC(101, 1)>
 
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Since you've already imposed the following limit in the DT bindings:
+
+  The mediatek,pinfunc can be either a single value or an array.
+  If it is an array, that means all pins use same config in this node.
+
+Maybe you could split the bindings into
+
+  mediatek,pins = <1 2 3 4>;
+  mediatek,func = <1>;  (or some macro)
+
+Or better yet, since you've already defined all the function names
+in the pinctrl driver, you could just match by name for the functions.
+That makes it very verbose and explicit about what you specify.
+
+That's how we do it for sunxi anyway. Of course we have all the pin
+function documentation open, so users and reviewers alike can double
+check. Just a suggestion. :)
+
+
+Cheers
+ChenYu
