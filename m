@@ -1,110 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222AbaIWN6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:58:19 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:62356 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaIWN6R (ORCPT
+	id S932092AbaIWN6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:58:38 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51313 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136AbaIWN6g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:58:17 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-49-54217c751b1a
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Sjoerd Simons'" <sjoerd.simons@collabora.co.uk>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Arun Kumar K'" <arun.kk@samsung.com>
-Cc: "'Mauro Carvalho Chehab'" <m.chehab@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "'Daniel Drake'" <drake@endlessm.com>
-References: <1411390322-25212-1-git-send-email-sjoerd.simons@collabora.co.uk>
-In-reply-to: <1411390322-25212-1-git-send-email-sjoerd.simons@collabora.co.uk>
-Subject: RE: [PATCH] [media] s5p-mfc: Use decode status instead of display
- status on MFCv5
-Date: Tue, 23 Sep 2014 15:58:12 +0200
-Message-id: <085901cfd736$6ae349c0$40a9dd40$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/WZBXtp0Rh5qMJQvSjr9pTqLRtMAA0he1Q
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xa7qlNYohBtMajCw+nrrNavFo/mNm
-	i7NNb9gtNj2+xmpxedccNoueDVtZLWac38dkcXGdvMX0429ZHTg9/j6/zuKx6HuWx+Yl9R59
-	W1YxenzeJBfAGsVlk5Kak1mWWqRvl8CV0XHzCWPBfaGKQ+8nsDUwHufvYuTkkBAwkfj65h4j
-	hC0mceHeerYuRi4OIYGljBJTfvUyQTgNTBJvZ+8HquLgYBPQlFh1zwMkLiLQxSixbtYrZhCH
-	WeAho8Tr9zOZQUYJCfhKHFmwFMzmFPCTWPlqKwuILSwQIzHv61SwOIuAqsSDbWvZQWxeAQeJ
-	Y5ueskLYghI/Jt8Dq2cW0JJYv/M4E4QtL7F5zVtmkCMkBNQlHv3VBTFFBIwkJh50hKgQkbjb
-	8Jx1AqPQLCSDZiEZNAvJoFlIWhYwsqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECImdLzsY
-	Fx+zOsQowMGoxMPrsUYhRIg1say4MvcQowQHs5II74MqxRAh3pTEyqrUovz4otKc1OJDjEwc
-	nFINjN7GIXrG5WsXvztfdiNVYsHxYwx372Z2O/z6IWWVpDqvLJDXJ3BR6ubFnVG+U7nn71iW
-	0KH+9XyyUKHHwmNXjrgal2Yp16Tccb8kMuPk/7MZ4t2ZSTv6Ohbu+fI50e+XzNT2v/d7p/Pn
-	yxx9vnDf9er0Zxv2TdKwzNnf7fvI9/GD2kU3dKWza5VYijMSDbWYi4oTAeynz4l7AgAA
+	Tue, 23 Sep 2014 09:58:36 -0400
+Date: Tue, 23 Sep 2014 14:58:28 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Robert Richter <rric@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Sinan Kaya <okaya@codeaurora.org>,
+        Sunil Goutham <sunil.goutham@caviumnetworks.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+Message-ID: <20140923135828.GS1994@e106497-lin.cambridge.arm.com>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140922093228.GA20256@rric.localhost>
+ <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
+ <8687285.EH4RPBeOB5@wuerfel>
+ <CAL_JsqK3yH-uf++haBovWdX6er1PtzeiZ-2-yT1TRfYPxAjFow@mail.gmail.com>
+MIME-Version: 1.0
+In-Reply-To: <CAL_JsqK3yH-uf++haBovWdX6er1PtzeiZ-2-yT1TRfYPxAjFow@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 23 Sep 2014 13:58:30.0221 (UTC) FILETIME=[74A4FFD0:01CFD736]
+X-MC-Unique: 114092314583309001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjoerd,
-
-> From: linux-media-owner@vger.kernel.org [mailto:linux-media-
-> owner@vger.kernel.org] On Behalf Of Sjoerd Simons
-> Sent: Monday, September 22, 2014 2:52 PM
-> To: Kyungmin Park; Kamil Debski; Arun Kumar K
-> Cc: Mauro Carvalho Chehab; linux-arm-kernel@lists.infradead.org; linux-
-> media@vger.kernel.org; linux-kernel@vger.kernel.org; linux-samsung-
-> soc@vger.kernel.org; Daniel Drake; Sjoerd Simons
-> Subject: [PATCH] [media] s5p-mfc: Use decode status instead of display
-> status on MFCv5
+On Tue, Sep 23, 2014 at 02:30:08PM +0100, Rob Herring wrote:
+> On Tue, Sep 23, 2014 at 2:56 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Monday 22 September 2014 12:43:17 Liviu Dudau wrote:
+> >> >
+> >> > From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
+> >> > From: Robert Richter <rrichter@cavium.com>
+> >> > Date: Mon, 22 Sep 2014 10:46:01 +0200
+> >> > Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
+> >> >
+> >> > The pci host bridge was not created if io_base was not set when
+> >> > calling of_pci_get_host_bridge_resources(). This is esp. the case for
+> >> > mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
+> >> > parameter io_base is optional now.
+> >>
+> >> I think the message is misleading. What you want to do is make io_base
+> >> optional for the case where the PCI host bridge only expects to have only
+> >> IORESOURCE_MEM ranges and doesn't care about IORESOURCE_IO ones.
+> >>
+> >> As I'm going to touch this area again to address a comment from Bjorn,
+> >> do you mind if I roll this patch into mine with your Signed-off-by and
+> >> the mention that you have made io_base optional?
+> >
+> > I think the best way to deal with this is to move the check for
+> > io_base down into the place where it is used: As long as the DT only
+> > specifies IORESOURCE_MEM windows, we don't need to look at io_base,
+> > but if the host controller driver does not support IORESOURCE_IO
+> > while the DT specifies it, I guess it would be nice to return an
+> > error.
 > 
-> Commit 90c0ae50097 changed how the frame_type of a decoded frame
-> gets determined, by switching from the get_dec_frame_type to
-> get_disp_frame_type operation. Unfortunately it seems that on MFC v5
-> the
-> result of get_disp_frame_type is always 0 (no display) when decoding
-> (tested with H264), resulting in no frame ever being output from the
-> decoder.
+> The DT may specify it, but the h/w could be broken in some way so the
+> host driver chooses to ignore it. I don't think we should force the
+> host driver to provide a pointer in that case. Also, would we want it
+> added to the resource list if it is not going to be used?
 
-Could you tell me which firmware version do you use (date)?
+This is only for scanning the DT ranges. If the hardware is broken and
+the driver knows about that then it can filter out the I/O ranges
+before it passes them on to pci_scan_root_bus() or pci_create_root_bus().
 
-Best wishes,
+Lets not complicate this function any further. If you get an I/O range
+it should be expected to also pass an io_base pointer to store the
+CPU address of the range, otherwise it will get lost in the conversion
+to an IORESOURCE_IO resource. You want later to discard the resource
+and forget the CPU address, then don't use it!
+
+Best regards,
+Liviu
+
+> 
+> Rob
+> 
+
 -- 
-Kamil Debski
-Samsung R&D Institute Poland
- 
-> This patch reverts MFC v5 to the previous behaviour while keeping the
-> new behaviour for v6 and up.
-> 
-> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-> ---
->  drivers/media/platform/s5p-mfc/s5p_mfc.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> index d35b041..27ca9d0 100644
-> --- a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-> @@ -264,7 +264,12 @@ static void s5p_mfc_handle_frame_new(struct
-> s5p_mfc_ctx *ctx, unsigned int err)
->  	unsigned int frame_type;
-> 
->  	dspl_y_addr = s5p_mfc_hw_call(dev->mfc_ops, get_dspl_y_adr, dev);
-> -	frame_type = s5p_mfc_hw_call(dev->mfc_ops, get_disp_frame_type,
-> ctx);
-> +	if (IS_MFCV6_PLUS(dev))
-> +		frame_type = s5p_mfc_hw_call(dev->mfc_ops,
-> +			get_disp_frame_type, ctx);
-> +	else
-> +		frame_type = s5p_mfc_hw_call(dev->mfc_ops,
-> +			get_dec_frame_type, dev);
-> 
->  	/* If frame is same as previous then skip and do not dequeue */
->  	if (frame_type == S5P_FIMV_DECODE_FRAME_SKIPPED) {
-> --
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
