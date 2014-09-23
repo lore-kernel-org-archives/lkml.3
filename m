@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbaIWMsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:48:31 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:43105 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755587AbaIWMs2 (ORCPT
+	id S1755797AbaIWMts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:49:48 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:56808 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996AbaIWMtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:48:28 -0400
-Date: Tue, 23 Sep 2014 08:48:23 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
-        arm@kernel.org, bcm@fixthebug.org, jonathar@broadcom.com,
-        sbranden@broadcom.com, rjui@broadcom.com, linux-kernel@vger.kernel.org,
-        bcm-kernel-feedback-list@broadcom.com, hauke@hauke-m.de,
-        swarren@wwwdotorg.org, computersforpeace@gmail.com,
-        marc.ceeeee@gmail.com, cernekee@gmail.com, gregory.0xf0@gmail.com
-Subject: Re: [PATCH] MAINTAINERS: add a third maintainer to mach-bcm
-Message-ID: <20140923124823.GB12283@beef>
-References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
- <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+	Tue, 23 Sep 2014 08:49:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140923122437.GE2979@krava.brq.redhat.com>
+References: <1411453828-14832-1-git-send-email-namhyung@kernel.org> <20140923122437.GE2979@krava.brq.redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 23 Sep 2014 21:49:22 +0900
+X-Google-Sender-Auth: RASQM4JICPK4JvZnyS3rfBlPnNw
+Message-ID: <CAM9d7cjY9HwRSKJvuUfbQPmi6se1H7+vONGxDTBdv=xNR-EOUQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf callchain: Create an address space per thread
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:17:12AM -0700, Florian Fainelli wrote:
-> Add myself as a third maintainer to the mach-bcm code to increase the
-> chances the redundancy in the merging/reviewing process.
-> 
-> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+Hi Jiri,
 
-Acked-by: Matt Porter <mporter@linaro.org>
+On Tue, Sep 23, 2014 at 9:24 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Tue, Sep 23, 2014 at 03:30:27PM +0900, Namhyung Kim wrote:
+>> The unw_addr_space_t in libunwind represents an address space to be
+>> used for stack unwinding.  It doesn't need to be create/destory
+>> everytime to unwind callchain (as in get_entries) and can have a same
+>> lifetime as thread (unless exec called).
+>>
+>> So move the address space construction/destruction logic to the thread
+>> lifetime handling functions.  This is a preparation to enable caching
+>> in the unwind library.
+>>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Jean Pihet <jean.pihet@linaro.org>
+>> Cc: Arun Sharma <asharma@fb.com>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/perf/util/thread.c           |  8 ++++++++
+>>  tools/perf/util/unwind-libunwind.c | 30 +++++++++++++++++++++++++-----
+>>  tools/perf/util/unwind.h           | 17 +++++++++++++++++
+>>  3 files changed, 50 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+>> index a9df7f2c6dc9..c1fa4a3597ea 100644
+>> --- a/tools/perf/util/thread.c
+>> +++ b/tools/perf/util/thread.c
+>> @@ -7,6 +7,7 @@
+>>  #include "util.h"
+>>  #include "debug.h"
+>>  #include "comm.h"
+>> +#include "unwind.h"
+>>
+>>  int thread__init_map_groups(struct thread *thread, struct machine *machine)
+>>  {
+>> @@ -48,6 +49,12 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+>>                       goto err_thread;
+>>
+>>               list_add(&comm->list, &thread->comm_list);
+>> +
+>> +             if (unwind__prepare_access(thread) < 0) {
+>
+> you could call list_add below this call and thus save
+> the list_del call below in error path
+>
+> looks like you dont need comm to be on comm_list within
+> the unwind__prepare_access call
 
-Thanks for offering to take the lead on this. With my change in role at
-Linaro and lack of access to Broadcom documentation and tribal knowledge
-on Broadcom mobile parts I can't do this justice any longer.
+Right.  Will change.
 
--Matt
+Thanks,
+Namhyung
 
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 809ecd680d88..e0762fea2d02 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2004,6 +2004,7 @@ F:	drivers/net/ethernet/broadcom/bnx2x/
->  BROADCOM BCM281XX/BCM11XXX/BCM216XX ARM ARCHITECTURE
->  M:	Christian Daudt <bcm@fixthebug.org>
->  M:	Matt Porter <mporter@linaro.org>
-> +M:	Florian Fainelli <f.fainelli@gmail.com>
->  L:	bcm-kernel-feedback-list@broadcom.com
->  T:	git git://github.com/broadcom/mach-bcm
->  S:	Maintained
-> -- 
-> 1.9.1
-> 
+
+>
+>> +                     list_del(&comm->list);
+>> +                     free(comm);
+>> +                     goto err_thread;
+>> +             }
+>>       }
+>
+> SNIP
+>
+> jirka
