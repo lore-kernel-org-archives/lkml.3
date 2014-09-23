@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaIWAz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 20:55:28 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58050 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920AbaIWAzY (ORCPT
+	id S1755574AbaIWBBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 21:01:54 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59063 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328AbaIWBBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 20:55:24 -0400
-Date: Thu, 18 Sep 2014 10:57:52 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140918175752.GC7960@sirena.org.uk>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
- <53C675E4.4020502@samsung.com>
- <1409825105.5546.91.camel@x220>
- <201409041802.36466.arnd@arndb.de>
- <1411033409.2017.15.camel@x220>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iq4NytuvSVzaNT9H"
-Content-Disposition: inline
-In-Reply-To: <1411033409.2017.15.camel@x220>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 166.170.38.79
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: samsung: Remove goni or aquila with the WM8994
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 22 Sep 2014 21:01:53 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Milian Wolff <mail@milianw.de>
+Subject: [PATCHSET 0/5] perf tools: Add call-graph config options (v2)
+Date: Tue, 23 Sep 2014 10:01:39 +0900
+Message-Id: <1411434104-5307-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---iq4NytuvSVzaNT9H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is patchset to add new callchain related config options so that
+users don't need to pass their preference to the cmdline everytime.
 
-On Thu, Sep 18, 2014 at 11:43:29AM +0200, Paul Bolle wrote:
-> On Thu, 2014-09-04 at 18:02 +0200, Arnd Bergmann wrote:
+Following config options will be added, and users can set appropriate
+values to ~/.perfconfig file.  Note that the dump-size option is
+meaningful only if record-mode = dwarf.
 
-> > I think it would be nice if you could submit a patch to remove the
-> > drivers from ASoC, then we can see if anybody complains.
+  $ cat ~/.perfconfig
+  [call-graph]
+    record-mode = dwarf
+    dump-size = 4096
+    print-type = graph
+    order = callee
+    threshold = 0.5
+    print-limit = 128
+    sort-key = function
 
-> Same thing for v3.17-rc5 and next-20140918. Let's see if we can remove
-> the goni or aquila with wm8994 driver.
->=20
-> Done on top of next-20140918. Untested.
-> --------->8---------
-> From: Paul Bolle <pebolle@tiscali.nl>
+  $ perf record -vg sleep 1
+  callchain: type DWARF
+  callchain: stack dump size 4096
+  mmap size 528384B
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.054 MB perf.data (~2378 samples) ]
+  Looking at the vmlinux_path (7 entries long)
+  Using /lib/modules/3.16.3-1-ARCH/build/vmlinux for symbols
 
-Please follow the patch submission process in SubmittingPatches.
 
---iq4NytuvSVzaNT9H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Jiri and David, I kept your Acked-by and Reviewed-by in this version.
+Please take a look at the patch 4/5 which splits parser functions that
+it still looks okay to you.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUGx0gAAoJECTWi3JdVIfQ0dQH/0LObx/SgUOIE67+W1gel4jL
-FBJb1yYOLmdCAIpEt3jkJj+FC0mQr+2bicV04wFdJe+WSeV1NMLfZvdgdZjTAaIe
-u+w4sulgebk+AhPHlTHjHVqP4OfdOjnRSqk1IPTqBBC0aoD1YWXSTvwJk5/a+/lc
-eTioE0v620EQIOM5HuVCtk0yBjXfxjdw4XextM7iUZcTTXWBP1YLCMJBrCSLUcyF
-iIuqpbuFEHV2sb/G5ZCadRnEicY+4DB/Z+ecSazt4zVIlyoNPEOpQE55ActlgcAJ
-M4IhpjWk2hB37CH8DAMoJnEhJmWVTBfz7yYoN275TYxRWLgGHrB27D1YB0JoaVU=
-=Arz7
------END PGP SIGNATURE-----
+changes in v2)
+ * use sizeof("call-graph.") instead of hardcoding the length  (Jiri)
+ * split parse functions so that only handle relavant options
+ * add Acked/Reviewed-by tags from David and Jiri
 
---iq4NytuvSVzaNT9H--
+
+You can also get this from 'perf/callchain-config-v2' branch on my tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcomed, thanks
+Namhyung
+
+
+Namhyung Kim (5):
+  perf hists browser: Fix callchain print bug on TUI
+  perf tools: Move callchain config from record_opts to callchain_param
+  perf tools: Move some callchain parser functions to callchain.c
+  perf tools: Introduce perf_callchain_config()
+  perf tools: Convert {record,top}.call-graph option to
+    call-graph.record-mode
+
+ tools/perf/builtin-record.c    | 119 ++++---------------------
+ tools/perf/builtin-top.c       |   4 +-
+ tools/perf/perf.h              |   3 -
+ tools/perf/ui/browsers/hists.c |   3 -
+ tools/perf/util/callchain.c    | 193 +++++++++++++++++++++++++++++++++++++----
+ tools/perf/util/callchain.h    |   6 +-
+ tools/perf/util/config.c       |   3 +
+ tools/perf/util/evsel.c        |  11 ++-
+ 8 files changed, 203 insertions(+), 139 deletions(-)
+
+-- 
+2.1.0
+
