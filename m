@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296AbaIWQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:18:26 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:43805 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951AbaIWQSX (ORCPT
+	id S1756350AbaIWQUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:20:21 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:55699 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890AbaIWQTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:18:23 -0400
-Message-ID: <54219D47.6010102@collabora.co.uk>
-Date: Tue, 23 Sep 2014 18:18:15 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Tue, 23 Sep 2014 12:19:09 -0400
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>, Kukjin Kim <kgene@kernel.org>
-CC: =?UTF-8?B?J0FuZHJlYXMgRsOkcmJlcic=?= <afaerber@suse.de>,
-        "'Doug Anderson'" <dianders@chromium.org>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, "'Daniel Drake'" <drake@endlessm.com>,
-        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow
-References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk> <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com> <5419ADF9.3010509@suse.de> <00f801cfd6f6$07e10500$17a30f00$@kernel.org> <5421992F.6070908@samsung.com>
-In-Reply-To: <5421992F.6070908@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140919182221.0d8c2a92@sem.office.altlinux.ru>
+References: <1411037700-28966-1-git-send-email-sem@altlinux.org>
+	<20140918112206.GA26866@mguzik>
+	<20140919182221.0d8c2a92@sem.office.altlinux.ru>
+Date: Tue, 23 Sep 2014 18:19:06 +0200
+Message-ID: <CAELBmZDEEwp1bH9FKBouy+q86u_KLHBth=JvGy_dVLN7bEbmkQ@mail.gmail.com>
+Subject: Re: [PATCH] vfs: Don't exchange filenames unconditionally.
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Mikhail Efremov <sem@altlinux.ru>
+Cc: Mateusz Guzik <mguzik@redhat.com>, Mikhail Efremov <sem@altlinux.org>,
+        LKML <linux-kernel@vger.kernel.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+On Fri, Sep 19, 2014 at 4:22 PM, Mikhail Efremov <sem@altlinux.ru> wrote:
+> On Thu, 18 Sep 2014 13:22:07 +0200 Mateusz Guzik wrote:
+>> On Thu, Sep 18, 2014 at 02:55:00PM +0400, Mikhail Efremov wrote:
+>> > Only exchange source and destination filenames
+>> > if flags contain RENAME_EXCHANGE.
 
-On 09/23/2014 06:00 PM, Kukjin Kim wrote:
-> On 09/23/14 15:17, Kukjin Kim wrote:
-> 
-> I've applied above and this series and please double-check the commits 
-> in my tree. If no problems, I will send the branch out for v3.18 soon...
-> 
-> Thanks,
-> Kukjin
-> 
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
 
-I've looked the RTC source clock patches and look good to me. Thanks a lot for your help!
 
-Best regards,
-Javier
+>>
+>> But names are still exchanged without RENAME_EXCHANGE, provided they are
+>> long enough.
+>>
+>> da1ce0670c14 introduced this behaviour also for short names and this is
+>> what you are reverting here.
+>>
+>> That said, I think the patch is fine as an interim change, but should
+>> note facts mentioned above.
+>>
+>> For more info please see https://lkml.org/lkml/2014/9/7/6
+>
+> Thanks for pointing out that thread to me, I didn't read it before
+> sending the patch.
+>
+>> I'll be posting a RFC patch for actual problem next week.
+>
+> I suppose then that no sense to resend this patch right now, I'll just
+> wait the proper solution from you.
+> Yet this patch can be used as a temporary workaround (as you mentioned
+> above) if the proper solution takes longer than expected to implement.
+
+Yes, feel free to resend it to Linus, before 3.17 proper is out.
+
+Also please consider adding:
+
+Cc: stable@vger.kernel.org
+
+Thanks,
+Miklos
