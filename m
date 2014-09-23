@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaIWLI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:08:58 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56385 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754580AbaIWLI4 (ORCPT
+	id S1755834AbaIWLK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:10:56 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53231 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681AbaIWLKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:08:56 -0400
-Date: Tue, 23 Sep 2014 13:05:06 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 08/10] rtc: at91sam9: use clk API instead of relying
- on AT91_SLOW_CLOCK
-Message-ID: <20140923130506.3433c5a3@bbrezillon>
-In-Reply-To: <20140923103326.GA404@localhost>
-References: <1411465130-29011-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1411465130-29011-9-git-send-email-boris.brezillon@free-electrons.com>
-	<20140923103326.GA404@localhost>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 23 Sep 2014 07:10:54 -0400
+Message-ID: <1411470654.26859.183.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: optimise inet_proto_csum_replace4()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org
+Date: Tue, 23 Sep 2014 04:10:54 -0700
+In-Reply-To: <20140923085437.696B81AB26D@localhost.localdomain>
+References: <20140923085437.696B81AB26D@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 12:33:26 +0200
-Johan Hovold <johan@kernel.org> wrote:
-
-> On Tue, Sep 23, 2014 at 11:38:48AM +0200, Boris BREZILLON wrote:
+On Tue, 2014-09-23 at 10:54 +0200, Christophe Leroy wrote:
+> csum_partial() is a generic function which is not optimised for small fixed
+> length calculations, and its use requires to store "from" and "to" values in
+> memory while we already have them available in registers. This also has impact,
+> especially on RISC processors. In the same spirit as the change done by
+> Eric Dumazet on csum_replace2(), this patch rewrites inet_proto_csum_replace4()
+> taking into account RFC1624.
 > 
-> > @@ -328,6 +328,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
-> >  	struct sam9_rtc	*rtc;
-> >  	int		ret, irq;
-> >  	u32		mr;
-> > +	unsigned int	sclk_rate;
-> >  
-> >  	irq = platform_get_irq(pdev, 0);
-> >  	if (irq < 0) {
-> > @@ -385,11 +386,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
-> >  		return -ENOMEM;
-> >  	}
-> >  
-> > +	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-> > +	if (IS_ERR(rtc->sclk))
-> > +		return PTR_ERR(rtc->sclk);
-> > +
-> > +	sclk_rate = clk_get_rate(rtc->sclk);
-> > +	if (!sclk_rate || sclk_rate > AT91_RTT_RTTRST) {
+> I spotted during a NATted tcp transfert that csum_partial() is one of top 5
+> consuming functions (around 8%), and the second user of csum_partial() is 
+> inet_proto_csum_replace4().
 > 
-> You probably meant AT91_RTT_RTPRES here.
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
 
-Yes, that's what I meant.
-Nice catch!
+Acked-by: Eric Dumazet <edumazet@google.com>
 
-Thanks,
-
-Boris
+Thanks !
 
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
