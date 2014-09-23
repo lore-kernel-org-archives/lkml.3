@@ -1,152 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937AbaIWOIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:08:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58030 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755470AbaIWOHn (ORCPT
+	id S1756089AbaIWOI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:08:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:46790 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755875AbaIWOI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:07:43 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 1/3] mtd: nand: gpmi: add gpmi_move_bits function
-Date: Tue, 23 Sep 2014 16:07:34 +0200
-Message-Id: <1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 10:08:57 -0400
+X-IronPort-AV: E=Sophos;i="5.04,580,1406592000"; 
+   d="scan'208";a="175303977"
+Date: Tue, 23 Sep 2014 15:06:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Juergen Gross <jgross@suse.com>
+CC: <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <JBottomley@parallels.com>, <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] xen: make pvscsi frontend dependant on xenbus frontend
+In-Reply-To: <1410756301-23340-1-git-send-email-jgross@suse.com>
+Message-ID: <alpine.DEB.2.02.1409231506390.15268@kaball.uk.xensource.com>
+References: <1410756301-23340-1-git-send-email-jgross@suse.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new function to move bits (not bytes) from a memory region to
-another one.
-This function is similar to memmove except it acts at bit level.
-This function is needed to implement GPMI raw access functions, given the
-fact that ECC engine does not pad ECC bits to the next byte boundary.
+On Mon, 15 Sep 2014, Juergen Gross wrote:
+> The pvscsi frontend driver requires the xenbus frontend driver. Reflect
+> this in Kconfig.
+> 
+> Signed-off-by: Juergen Gross <jgross@suse.com>
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 88 ++++++++++++++++++++++++++++++++++
- drivers/mtd/nand/gpmi-nand/gpmi-nand.h |  4 ++
- 2 files changed, 92 insertions(+)
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index 87e658c..e2f706a 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -1353,3 +1353,91 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
- 	return start_dma_with_bch_irq(this, desc);
- }
-+
-+void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-+		    const u8 *src, size_t src_bit_off,
-+		    size_t nbits)
-+{
-+	size_t i;
-+	size_t nbytes;
-+	u32 src_byte = 0;
-+
-+	src += src_bit_off / 8;
-+	src_bit_off %= 8;
-+
-+	dst += dst_bit_off / 8;
-+	dst_bit_off %= 8;
-+
-+	if (src_bit_off) {
-+		src_byte = src[0] >> src_bit_off;
-+		nbits -= 8 - src_bit_off;
-+		src++;
-+	}
-+
-+	nbytes = nbits / 8;
-+
-+	if (dst_bit_off) {
-+		if (src_bit_off <= dst_bit_off) {
-+			dst[0] &= GENMASK(dst_bit_off - 1, 0);
-+			dst[0] |= src_byte << dst_bit_off;
-+			src_bit_off += (8 - dst_bit_off);
-+			src_byte >>= (8 - dst_bit_off);
-+			dst_bit_off = 0;
-+			dst++;
-+		} else if (nbytes) {
-+			src_byte |= src[0] << (8 - src_bit_off);
-+			dst[0] &= GENMASK(dst_bit_off - 1, 0);
-+			dst[0] |= src_byte << dst_bit_off;
-+			src_bit_off += dst_bit_off;
-+			src_byte >>= (8 - dst_bit_off);
-+			dst_bit_off = 0;
-+			dst++;
-+			nbytes--;
-+			src++;
-+			if (src_bit_off > 7) {
-+				src_bit_off -= 8;
-+				dst[0] = src_byte;
-+				dst++;
-+				src_byte >>= 8;
-+			}
-+		}
-+	}
-+
-+	if (!src_bit_off && !dst_bit_off) {
-+		if (nbytes)
-+			memcpy(dst, src, nbytes);
-+	} else {
-+		for (i = 0; i < nbytes; i++) {
-+			src_byte |= src[i] << (8 - src_bit_off);
-+			dst[i] = src_byte;
-+			src_byte >>= 8;
-+		}
-+	}
-+
-+	dst += nbytes;
-+	src += nbytes;
-+	nbits %= 8;
-+
-+	if (!nbits && !src_bit_off)
-+		return;
-+
-+	if (nbits)
-+		src_byte |= (*src & GENMASK(nbits - 1, 0)) <<
-+			    ((8 - src_bit_off) % 8);
-+	nbits += (8 - src_bit_off) % 8;
-+
-+	if (dst_bit_off)
-+		src_byte = (src_byte << dst_bit_off) |
-+			   (*dst & GENMASK(dst_bit_off - 1, 0));
-+	nbits += dst_bit_off;
-+
-+	if (nbits % 8)
-+		src_byte |= (dst[nbits / 8] & GENMASK(7, nbits % 8)) <<
-+			    (nbits / 8);
-+
-+	nbytes = DIV_ROUND_UP(nbits, 8);
-+	for (i = 0; i < nbytes; i++) {
-+		dst[i] = src_byte;
-+		src_byte >>= 8;
-+	}
-+}
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-index 32c6ba4..17d0736 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-@@ -290,6 +290,10 @@ extern int gpmi_send_page(struct gpmi_nand_data *,
- extern int gpmi_read_page(struct gpmi_nand_data *,
- 			dma_addr_t payload, dma_addr_t auxiliary);
- 
-+void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-+		    const u8 *src, size_t src_bit_off,
-+		    size_t nbits);
-+
- /* BCH : Status Block Completion Codes */
- #define STATUS_GOOD		0x00
- #define STATUS_ERASED		0xff
--- 
-1.9.1
-
+>  drivers/scsi/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+> index 9130df1..ff62dc1 100644
+> --- a/drivers/scsi/Kconfig
+> +++ b/drivers/scsi/Kconfig
+> @@ -579,6 +579,7 @@ config VMWARE_PVSCSI
+>  config XEN_SCSI_FRONTEND
+>  	tristate "XEN SCSI frontend driver"
+>  	depends on SCSI && XEN
+> +	select XEN_XENBUS_FRONTEND
+>  	help
+>  	  The XEN SCSI frontend driver allows the kernel to access SCSI Devices
+>  	  within another guest OS (usually Dom0).
+> -- 
+> 1.8.4.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://secure-web.cisco.com/1jE8NNDhHwOASDbIzbn-azzuN8MKBMP1e4rCG2hGFpNvqSN8uwPwleK_Lmj9tzbaylXigSiLek5R_LJBvhlKaVWIjN_cB2SWcOB2WEXe4nDTKNaIEC6vNV5stEFM1SLzyMntl4a2YTHo6X7bvUsZQqYkXr5h_oDDR84iBHb2dum8/http%3A%2F%2Fwww.tux.org%2Flkml%2F
+> 
