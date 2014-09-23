@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320AbaIWQbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:31:16 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:42905 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836AbaIWQbN convert rfc822-to-8bit (ORCPT
+	id S932277AbaIWQcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:32:45 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:61278 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119AbaIWQcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:31:13 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 12:31:13 EDT
-Date: Tue, 23 Sep 2014 18:25:09 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: C =?UTF-8?B?QmVyZ3N0csO2bQ==?= <cbergstrom@pathscale.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Stupid NVIDIA 3D vgaarb.c patch
-Message-ID: <20140923182509.46decd46@neptune.home>
-In-Reply-To: <CA+55aFwX_nV9oUjh6u5WY=jpLxN-a5GFLmXQWDbHW0Yom9OOVA@mail.gmail.com>
-References: <CAOnawYp7kv7Zjn4j-j4-TUOshE9G1uXWEqXB_=RHePNwNLmwWA@mail.gmail.com>
-	<CA+55aFwX_nV9oUjh6u5WY=jpLxN-a5GFLmXQWDbHW0Yom9OOVA@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i686-pc-linux-gnu)
+	Tue, 23 Sep 2014 12:32:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v9 09/10] rtc: at91sam9: add DT bindings documentation
+Date: Tue, 23 Sep 2014 18:30:59 +0200
+Message-ID: <471832556.XqbRT97ZJR@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411483725-31532-10-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com> <1411483725-31532-10-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:GC4HlYiPEoWGEXZKj/8A3WzNW/75TmERksuzry3quXE
+ rjPvuFXULkxsxL19X91mRfWv/h89MO1giJJmV1OnK0Sdmn8Lyo
+ qHDXLKnn6aJnrYUGF1pg+YEjWqd+ZXgb+5tA1CyJQdIBe2eBxU
+ nyuwlBjmus4C9shsqlF/xcjvZ7d37JTDa2UnD80f/OIABPY6FU
+ ENLrVeGL0tz2SmbkFTsEYjSQAhlXSFgjv6EJoR+kXH4QpmODIY
+ VC63kWM5m98GEOQxPXyMY3IQdDFSCWZ0S3V5HFzZTwu5ZNlpeP
+ i5kWMtArMY4l5HYcX4TYJQdMj0mXo8g/2cIf0wa2y/b2Kt7H+N
+ Cuf3cJFj0UnSGE9el6v8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 September 2014 Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> Adding proper people and mailing lists..
+On Tuesday 23 September 2014 16:48:44 Boris BREZILLON wrote:
+> Add RTT bindings documentation.
 > 
-> The PCI_CLASS_DISPLAY_VGA test goes back to the very beginning by
-> BenH, and I have no idea if adding PCI_CLASS_DISPLAY_3D is
-> appropriate, but hopefully somebody does. The fact that it makes
-> things work certainly argues fairly convincingly for it, but I want
-> some backup here.
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Acked-by: Johan Hovold <johan@kernel.org>
 > 
-> Dave, BenH?
-> 
-> Christopher(?), can you please also specify which laptop etc. And the
-> patch itself seems to have come from somebody else, unless you're
-> Lekensteyn. So we'd want to get the provenance of that too.
 
-More a question to Christopher, but what criteria is preventing the use
-of the NVIDIA GPU under this condition?
-
-As far as I've seen on my (single-GPU) systems X requires the GPU to
-have boot_vga=1 sysfs attribute to accept autoconfiguration (though
-with two GPUs and optimus/switcheroo interaction between the GPUs may
-change the picture).
-
-I've been looking at the open, nouveau side of things only. If NVIDIA
-closed driver has some other requirement, I don't know.
-
-But as here the intention seems to be to use exclusively the NVIDIA GPU
-just leaving the IGD along it should require explicit X configuration
-which then does not care about boot_vga.
-
-
-A more detailed description of what prevents operation with GPU not
-being added to vgaarb would certainly help understanding what happens,
-what is expected and where things differ.
-
-Bruno
-
->                 Linus
-> 
-> On Mon, Sep 22, 2014 at 1:28 PM, C Bergström <cbergstrom@pathscale.com> wrote:
-> > Hi Linus,
-> >
-> > I don't know who the original author is and I can have one of the distro
-> > graphics friends review it, but I need this patch below to get NVIDIA
-> > drivers to work (without using any Intel graphics) on my laptop
-> > http://pastebin.com/wpmFi38k
-> >
-> > Sorry - I know this is not the proper way to submit a patch, but it's
-> > trivial and I'm not a kernel dev.
-> >
-> > Thanks
-> >
-> > ./C
+Acked-by: Arnd Bergmann <arnd@arndb.de>
