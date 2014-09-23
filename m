@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbaIWOxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:53:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51646 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756280AbaIWOxw (ORCPT
+	id S1756328AbaIWOyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:54:05 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:45861 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136AbaIWOyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:53:52 -0400
-Date: Tue, 23 Sep 2014 15:53:56 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Weston Andros Adamson <dros@primarydata.com>
-Cc: Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
-Message-ID: <20140923145356.GD28608@arm.com>
-References: <20140923130352.GK26472@arm.com>
- <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com>
- <20140923135938.GB28608@arm.com>
+	Tue, 23 Sep 2014 10:54:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140923135938.GB28608@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410249101-12234-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1410249101-12234-1-git-send-email-pramod.gurav@smartplayin.com>
+Date: Tue, 23 Sep 2014 16:53:59 +0200
+Message-ID: <CACRpkdZkQB_zTuvQA-8T=qMK7jgHPJQ3fZV_25haEnkJ8Loo9A@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: st: remove gpiochip in failure cases
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        kernel@stlinux.com,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
-> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
-> > Any more info on how to reproduce this would be really great. Unfortunately I don’t
-> > have access to an arm64 system.
-> 
-> I've not spotted a pattern other than using 64k pages, yet. If I manage to
-> get a reproducer, I'll let you know.
-> 
-> > If it’s possible, could we get a packet trace around when this happens? This is pure
-> > speculation, but this might have something to do the resend path - a commit fails
-> > and all the requests on the commit list have to be resent.
-> 
-> Sure, once I can reproduce it reliably, then I'll try to do that.
+On Tue, Sep 9, 2014 at 9:51 AM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
 
-Right, a bunch of DDing from /dev/zero over an ssh session triggers this
-very quickly. I've put a binary tcpdump here:
+> This patch releases gpiochip related resources by calling
+> gpiochip_remove when gpiochip_irqchip_add fails.
+>
+> CC: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+> CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.com>
+> CC: Maxime Coquelin <maxime.coquelin@st.com>
+> CC: Patrice Chotard <patrice.chotard@st.com>
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+> Changes since v1:
+> Dropped adding remove function as it will never be tested as
+> the driver is bool.
 
-  http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
+Patch applied with Srinivas ACK.
 
-You may want to filter out the ssh packets. The only `interesting' thing to
-me is a retransmission about half way through, but I don't know what I'm
-looking for.
-
-The NFS server is 10.1.203.204 and the client is 10.1.203.24.
-
-Will
+Yours,
+Linus Walleij
