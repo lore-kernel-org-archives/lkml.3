@@ -1,355 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaIWGZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:25:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55373 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaIWGZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:25:46 -0400
-Message-ID: <54211266.70201@suse.com>
-Date: Tue, 23 Sep 2014 08:25:42 +0200
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, akpm@linux-foundation.org, arnd@arndb.de
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com
-Subject: Re: [PATCH v3 5/5] x86, mm, pat: Refactor !pat_enabled handling
-References: <1410983321-15162-1-git-send-email-toshi.kani@hp.com> <1410983321-15162-6-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1410983321-15162-6-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753399AbaIWGal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:30:41 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55700 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaIWGaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 02:30:39 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
+Subject: [PATCH 2/2] perf callchain: Use global caching provided by libunwind
+Date: Tue, 23 Sep 2014 15:30:28 +0900
+Message-Id: <1411453828-14832-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
+References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2014 09:48 PM, Toshi Kani wrote:
-> This patch refactors the !pat_enabled handling code and integrates
-> this case into the PAT abstraction code. The PAT table is emulated
-> by corresponding to the two cache attribute bits, PWT (Write Through)
-> and PCD (Cache Disable). The emulated PAT table is also the same as
-> the BIOS default setup in case the system has PAT but "nopat" boot
-> option is specified.
->
-> As a result of this change, cache aliasing is checked for all cases
-> including !pat_enabled.
->
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+The libunwind provides two caching policy which are global and
+per-thread.  As perf unwinds callchains in a single thread, it'd
+sufficient to use global caching.
 
-Reviewed-by: Juergen Gross <jgross@suse.com>
+This speeds up my perf report from 14s to 7s on a ~260MB data file.
+Although the output contains a slight difference (~0.01% in terms of
+number of lines printed) on callchains which were not resolved.
 
-> ---
->   arch/x86/mm/init.c     |    6 ++-
->   arch/x86/mm/iomap_32.c |   18 +++-------
->   arch/x86/mm/ioremap.c  |   10 +----
->   arch/x86/mm/pageattr.c |    3 --
->   arch/x86/mm/pat.c      |   90 +++++++++++++++++++++---------------------------
->   5 files changed, 50 insertions(+), 77 deletions(-)
->
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 82b41d5..2e147c8 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -37,7 +37,7 @@
->    */
->   uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
->   	[_PAGE_CACHE_MODE_WB]		= 0,
-> -	[_PAGE_CACHE_MODE_WC]		= _PAGE_PWT,
-> +	[_PAGE_CACHE_MODE_WC]		= _PAGE_PCD,
->   	[_PAGE_CACHE_MODE_UC_MINUS]	= _PAGE_PCD,
->   	[_PAGE_CACHE_MODE_UC]		= _PAGE_PCD | _PAGE_PWT,
->   	[_PAGE_CACHE_MODE_WT]		= _PAGE_PCD,
-> @@ -46,11 +46,11 @@ uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
->   EXPORT_SYMBOL_GPL(__cachemode2pte_tbl);
->   uint8_t __pte2cachemode_tbl[8] = {
->   	[__pte2cm_idx(0)] = _PAGE_CACHE_MODE_WB,
-> -	[__pte2cm_idx(_PAGE_PWT)] = _PAGE_CACHE_MODE_WC,
-> +	[__pte2cm_idx(_PAGE_PWT)] = _PAGE_CACHE_MODE_UC_MINUS,
->   	[__pte2cm_idx(_PAGE_PCD)] = _PAGE_CACHE_MODE_UC_MINUS,
->   	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD)] = _PAGE_CACHE_MODE_UC,
->   	[__pte2cm_idx(_PAGE_PAT)] = _PAGE_CACHE_MODE_WB,
-> -	[__pte2cm_idx(_PAGE_PWT | _PAGE_PAT)] = _PAGE_CACHE_MODE_WC,
-> +	[__pte2cm_idx(_PAGE_PWT | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC_MINUS,
->   	[__pte2cm_idx(_PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC_MINUS,
->   	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC,
->   };
-> diff --git a/arch/x86/mm/iomap_32.c b/arch/x86/mm/iomap_32.c
-> index ee58a0b..96aa8bf 100644
-> --- a/arch/x86/mm/iomap_32.c
-> +++ b/arch/x86/mm/iomap_32.c
-> @@ -70,29 +70,23 @@ void *kmap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot)
->   	return (void *)vaddr;
->   }
->
-> -/*
-> - * Map 'pfn' using protections 'prot'
-> - */
-> -#define __PAGE_KERNEL_WC	(__PAGE_KERNEL | \
-> -				 cachemode2protval(_PAGE_CACHE_MODE_WC))
-> -
->   void __iomem *
->   iomap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot)
->   {
->   	/*
-> -	 * For non-PAT systems, promote PAGE_KERNEL_WC to PAGE_KERNEL_UC_MINUS.
-> -	 * PAGE_KERNEL_WC maps to PWT, which translates to uncached if the
-> -	 * MTRR is UC or WC.  UC_MINUS gets the real intention, of the
-> -	 * user, which is "WC if the MTRR is WC, UC if you can't do that."
-> +	 * For non-PAT systems, translate non-WB request to UC- just in
-> +	 * case the caller set the PWT bit to prot directly without using
-> +	 * pgprot_writecombine(). UC- translates to uncached if the MTRR
-> +	 * is UC or WC. UC- gets the real intention, of the user, which is
-> +	 * "WC if the MTRR is WC, UC if you can't do that."
->   	 */
-> -	if (!pat_enabled && pgprot_val(prot) == __PAGE_KERNEL_WC)
-> +	if (!pat_enabled && pgprot2cachemode(prot) != _PAGE_CACHE_MODE_WB)
->   		prot = __pgprot(__PAGE_KERNEL |
->   				cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS));
->
->   	return (void __force __iomem *) kmap_atomic_prot_pfn(pfn, prot);
->   }
->   EXPORT_SYMBOL_GPL(iomap_atomic_prot_pfn);
-> -#undef __PAGE_KERNEL_WC
->
->   void
->   iounmap_atomic(void __iomem *kvaddr)
-> diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-> index 952f4b4..ff45c19 100644
-> --- a/arch/x86/mm/ioremap.c
-> +++ b/arch/x86/mm/ioremap.c
-> @@ -245,11 +245,8 @@ EXPORT_SYMBOL(ioremap_nocache);
->    */
->   void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
->   {
-> -	if (pat_enabled)
-> -		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WC,
-> +	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WC,
->   					__builtin_return_address(0));
-> -	else
-> -		return ioremap_nocache(phys_addr, size);
->   }
->   EXPORT_SYMBOL(ioremap_wc);
->
-> @@ -265,11 +262,8 @@ EXPORT_SYMBOL(ioremap_wc);
->    */
->   void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
->   {
-> -	if (pat_enabled)
-> -		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
-> +	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
->   					__builtin_return_address(0));
-> -	else
-> -		return ioremap_nocache(phys_addr, size);
->   }
->   EXPORT_SYMBOL(ioremap_wt);
->
-> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> index 6917b39..34f870d 100644
-> --- a/arch/x86/mm/pageattr.c
-> +++ b/arch/x86/mm/pageattr.c
-> @@ -1553,9 +1553,6 @@ int set_memory_wc(unsigned long addr, int numpages)
->   {
->   	int ret;
->
-> -	if (!pat_enabled)
-> -		return set_memory_uc(addr, numpages);
-> -
->   	ret = reserve_memtype(__pa(addr), __pa(addr) + numpages * PAGE_SIZE,
->   		_PAGE_CACHE_MODE_WC, NULL);
->   	if (ret)
-> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> index a0264d3..e0e836e 100644
-> --- a/arch/x86/mm/pat.c
-> +++ b/arch/x86/mm/pat.c
-> @@ -135,28 +135,48 @@ void pat_init(void)
->   	bool boot_cpu = !boot_pat_state;
->   	struct cpuinfo_x86 *c = &boot_cpu_data;
->
-> -	if (!pat_enabled)
-> -		return;
-> -
->   	if (!cpu_has_pat) {
->   		if (!boot_pat_state) {
->   			pat_disable("PAT not supported by CPU.");
-> -			return;
-> -		} else {
-> +		} else if (pat_enabled) {
->   			/*
->   			 * If this happens we are on a secondary CPU, but
->   			 * switched to PAT on the boot CPU. We have no way to
->   			 * undo PAT.
->   			 */
-> -			printk(KERN_ERR "PAT enabled, "
-> +			pr_err("PAT enabled, "
->   			       "but not supported by secondary CPU\n");
->   			BUG();
->   		}
->   	}
->
-> -	if ((c->x86_vendor == X86_VENDOR_INTEL) &&
-> -	    (((c->x86 == 0x6) && (c->x86_model <= 0xd)) ||
-> -	     ((c->x86 == 0xf) && (c->x86_model <= 0x6)))) {
-> +	if (!pat_enabled) {
-> +		/*
-> +		 * No PAT. Emulate the PAT table by corresponding to the two
-> +		 * cache bits, PWT (Write Through) and PCD (Cache Disable).
-> +		 * This is also the same as the BIOS default setup in case
-> +		 * the system has PAT but "nopat" boot option is specified.
-> +		 *
-> +		 *  PTE encoding used in Linux:
-> +		 *       PCD
-> +		 *       |PWT  PAT
-> +		 *       ||    slot
-> +		 *       00    0    WB : _PAGE_CACHE_MODE_WB
-> +		 *       01    1    WT : _PAGE_CACHE_MODE_WT
-> +		 *       10    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-> +		 *       11    3    UC : _PAGE_CACHE_MODE_UC
-> +		 *
-> +		 * NOTE: When WC or WP is used, it is redirected to UC- per
-> +		 * the default setup in __cachemode2pte_tbl[].
-> +		 */
-> +		pat = PAT(0, WB) | PAT(1, WT) | PAT(2, UC_MINUS) | PAT(3, UC) |
-> +		      PAT(4, WB) | PAT(5, WT) | PAT(6, UC_MINUS) | PAT(7, UC);
-> +		if (!boot_pat_state)
-> +			boot_pat_state = pat;
-> +
-> +	} else if ((c->x86_vendor == X86_VENDOR_INTEL) &&
-> +		   (((c->x86 == 0x6) && (c->x86_model <= 0xd)) ||
-> +		    ((c->x86 == 0xf) && (c->x86_model <= 0x6)))) {
->   		/*
->   		 * PAT support with the lower four entries. Intel Pentium 2,
->   		 * 3, M, and 4 are affected by PAT errata, which makes the
-> @@ -203,11 +223,13 @@ void pat_init(void)
->   		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
->   	}
->
-> -	/* Boot CPU check */
-> -	if (!boot_pat_state)
-> -		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
-> +	if (pat_enabled) {
-> +		/* Boot CPU check */
-> +		if (!boot_pat_state)
-> +			rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
->
-> -	wrmsrl(MSR_IA32_CR_PAT, pat);
-> +		wrmsrl(MSR_IA32_CR_PAT, pat);
-> +	}
->
->   	if (boot_cpu)
->   		pat_init_cache_modes();
-> @@ -375,17 +397,6 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
->
->   	BUG_ON(start >= end); /* end is exclusive */
->
-> -	if (!pat_enabled) {
-> -		/* This is identical to page table setting without PAT */
-> -		if (new_type) {
-> -			if (req_type == _PAGE_CACHE_MODE_WB)
-> -				*new_type = _PAGE_CACHE_MODE_WB;
-> -			else
-> -				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
-> -		}
-> -		return 0;
-> -	}
-> -
->   	/* Low ISA region is always mapped WB in page table. No need to track */
->   	if (x86_platform.is_untracked_pat_range(start, end)) {
->   		if (new_type)
-> @@ -450,9 +461,6 @@ int free_memtype(u64 start, u64 end)
->   	int is_range_ram;
->   	struct memtype *entry;
->
-> -	if (!pat_enabled)
-> -		return 0;
-> -
->   	/* Low ISA region is always mapped WB. No need to track */
->   	if (x86_platform.is_untracked_pat_range(start, end))
->   		return 0;
-> @@ -591,16 +599,13 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
->   	return 1;
->   }
->   #else
-> -/* This check is needed to avoid cache aliasing when PAT is enabled */
-> +/* This check is needed to avoid cache aliasing */
->   static inline int range_is_allowed(unsigned long pfn, unsigned long size)
->   {
->   	u64 from = ((u64)pfn) << PAGE_SHIFT;
->   	u64 to = from + size;
->   	u64 cursor = from;
->
-> -	if (!pat_enabled)
-> -		return 1;
-> -
->   	while (cursor < to) {
->   		if (!devmem_is_allowed(pfn)) {
->   			printk(KERN_INFO "Program %s tried to access /dev/mem between [mem %#010Lx-%#010Lx]\n",
-> @@ -704,9 +709,6 @@ static int reserve_pfn_range(u64 paddr, unsigned long size, pgprot_t *vma_prot,
->   	 * the type requested matches the type of first page in the range.
->   	 */
->   	if (is_ram) {
-> -		if (!pat_enabled)
-> -			return 0;
-> -
->   		pcm = lookup_memtype(paddr);
->   		if (want_pcm != pcm) {
->   			printk(KERN_WARNING "%s:%d map pfn RAM range req %s for [mem %#010Lx-%#010Lx], got %s\n",
-> @@ -819,9 +821,6 @@ int track_pfn_remap(struct vm_area_struct *vma, pgprot_t *prot,
->   		return ret;
->   	}
->
-> -	if (!pat_enabled)
-> -		return 0;
-> -
->   	/*
->   	 * For anything smaller than the vma size we set prot based on the
->   	 * lookup.
-> @@ -847,9 +846,6 @@ int track_pfn_insert(struct vm_area_struct *vma, pgprot_t *prot,
->   {
->   	enum page_cache_mode pcm;
->
-> -	if (!pat_enabled)
-> -		return 0;
-> -
->   	/* Set prot based on lookup */
->   	pcm = lookup_memtype((resource_size_t)pfn << PAGE_SHIFT);
->   	*prot = __pgprot((pgprot_val(vma->vm_page_prot) & (~_PAGE_CACHE_MASK)) |
-> @@ -888,21 +884,15 @@ void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
->
->   pgprot_t pgprot_writecombine(pgprot_t prot)
->   {
-> -	if (pat_enabled)
-> -		return __pgprot(pgprot_val(prot) |
-> +	return __pgprot(pgprot_val(prot) |
->   				cachemode2protval(_PAGE_CACHE_MODE_WC));
-> -	else
-> -		return pgprot_noncached(prot);
->   }
->   EXPORT_SYMBOL_GPL(pgprot_writecombine);
->
->   pgprot_t pgprot_writethrough(pgprot_t prot)
->   {
-> -	if (pat_enabled)
-> -		return __pgprot(pgprot_val(prot) |
-> +	return __pgprot(pgprot_val(prot) |
->   				cachemode2protval(_PAGE_CACHE_MODE_WT));
-> -	else
-> -		return pgprot_noncached(prot);
->   }
->   EXPORT_SYMBOL_GPL(pgprot_writethrough);
->
-> @@ -981,10 +971,8 @@ static const struct file_operations memtype_fops = {
->
->   static int __init pat_memtype_list_init(void)
->   {
-> -	if (pat_enabled) {
-> -		debugfs_create_file("pat_memtype_list", S_IRUSR,
-> +	debugfs_create_file("pat_memtype_list", S_IRUSR,
->   				    arch_debugfs_dir, NULL, &memtype_fops);
-> -	}
->   	return 0;
->   }
->
->
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Arun Sharma <asharma@fb.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/thread.c           | 3 +++
+ tools/perf/util/unwind-libunwind.c | 9 +++++++++
+ tools/perf/util/unwind.h           | 3 +++
+ 3 files changed, 15 insertions(+)
+
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index c1fa4a3597ea..e67d4ca6de44 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -119,6 +119,9 @@ int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
+ 		if (!new)
+ 			return -ENOMEM;
+ 		list_add(&new->list, &thread->comm_list);
++
++		if (exec)
++			unwind__flush_access(thread);
+ 	}
+ 
+ 	thread->comm_set = true;
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 76ec25663c95..6df06f0cd177 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -535,11 +535,20 @@ int unwind__prepare_access(struct thread *thread)
+ 		return -ENOMEM;
+ 	}
+ 
++	unw_set_caching_policy(addr_space, UNW_CACHE_GLOBAL);
+ 	thread__set_priv(thread, addr_space);
+ 
+ 	return 0;
+ }
+ 
++void unwind__flush_access(struct thread *thread)
++{
++	unw_addr_space_t addr_space;
++
++	addr_space = thread__priv(thread);
++	unw_flush_cache(addr_space, 0, 0);
++}
++
+ void unwind__finish_access(struct thread *thread)
+ {
+ 	unw_addr_space_t addr_space;
+diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
+index 4b99c6280c2a..d68f24d4f01b 100644
+--- a/tools/perf/util/unwind.h
++++ b/tools/perf/util/unwind.h
+@@ -23,6 +23,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ #ifdef HAVE_LIBUNWIND_SUPPORT
+ int libunwind__arch_reg_id(int regnum);
+ int unwind__prepare_access(struct thread *thread);
++void unwind__flush_access(struct thread *thread);
+ void unwind__finish_access(struct thread *thread);
+ #else
+ static inline int unwind__prepare_access(struct thread *thread)
+@@ -30,6 +31,7 @@ static inline int unwind__prepare_access(struct thread *thread)
+ 	return 0;
+ }
+ 
++static inline void unwind__flush_access(struct thread *thread) {}
+ static inline void unwind__finish_access(struct thread *thread) {}
+ #endif
+ #else
+@@ -49,6 +51,7 @@ static inline int unwind__prepare_access(struct thread *thread)
+ 	return 0;
+ }
+ 
++static inline void unwind__flush_access(struct thread *thread) {}
+ static inline void unwind__finish_access(struct thread *thread) {}
+ #endif /* HAVE_DWARF_UNWIND_SUPPORT */
+ #endif /* __UNWIND_H */
+-- 
+2.1.0
 
