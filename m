@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410AbaIWKqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:46:19 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:13539 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322AbaIWKqS (ORCPT
+	id S1755438AbaIWKrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:47:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47399 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754070AbaIWKrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:46:18 -0400
-Message-ID: <54214F76.6070808@imgtec.com>
-Date: Tue, 23 Sep 2014 11:46:14 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 23 Sep 2014 06:47:20 -0400
+Date: Tue, 23 Sep 2014 11:46:41 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>
+Subject: Re: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Message-ID: <20140923104641.GF26472@arm.com>
+References: <1410544187-15876-1-git-send-email-rric@kernel.org>
+ <20140923104122.GE20170@rric.localhost>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, David Daney <ddaney.cavm@gmail.com>
-CC: <linux-mips@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] MIPS: ftrace.h: Fix the MCOUNT_INSN_SIZE definition
-References: <1411392779-9554-1-git-send-email-markos.chandras@imgtec.com>	<1411392779-9554-2-git-send-email-markos.chandras@imgtec.com>	<5420546D.6050102@gmail.com> <20140922142534.4087a0a9@gandalf.local.home>
-In-Reply-To: <20140922142534.4087a0a9@gandalf.local.home>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.67]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923104122.GE20170@rric.localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 07:25 PM, Steven Rostedt wrote:
-> On Mon, 22 Sep 2014 09:55:09 -0700
-> David Daney <ddaney.cavm@gmail.com> wrote:
+Hi Robert,
+
+On Tue, Sep 23, 2014 at 11:41:22AM +0100, Robert Richter wrote:
+> On 12.09.14 19:49:43, Robert Richter wrote:
+> > From: Robert Richter <rrichter@cavium.com>
+> > 
+> > This initial patches enable Cavium Thunder SoC Family. The patches add
+> > devicetree and Kconfig support and then add Thunder to the defconfig.
+> > 
+> > The Thunder system needs more enablement patches for subsystems and
+> > devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
+> > We will send separate patch sets for these. All of them base on this
+> > initial patches.
+> > 
+> > I sent a separate patch set independently that introduces support for
+> > dts vendor subdirs. After both patch sets have been applied I will
+> > send a patch in addition that moves the dts file into a subdirectory.
+> > 
+> > I sent another separate patch that sets NR_CPUS to 64 per default.
+> > 
+> > The first patch introduces dts files without having a Kconfig option
+> > for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
+> > added to defconfig in patch 4 as this is my preferred solution. If
+> > there is still resistance having an ARCH_THUNDER option, just drop
+> > them.
+> > 
+> > Patches are available here:
+> > 
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
 > 
->> On 09/22/2014 06:32 AM, Markos Chandras wrote:
->>> The MCOUNT_INSN_SIZE is meant to be used to denote the overall
->>> size of the mcount() call. Since a jal instruction is used to
->>> call mcount() the delay slot should be taken into consideration
->>> as well.
->>> This also replaces the MCOUNT_INSN_SIZE usage with the real size
->>> of a single MIPS instruction since, as described above, the
->>> MCOUNT_INSN_SIZE is used to denote the total overhead of the
->>> mcount() call.
->>
->> Are you seeing errors with the existing code?  If so please state what 
->> they are.
->>
->> By changing this, we can no longer atomically replace the instruction. 
->> So I think shouldn't be changing this stuff unless there is a real bug 
->> we are fixing.
+> Will,
 > 
-> Actually, it looks like the code still works the same, as it uses the
-> old size of 4 (FTRACE_MIPS_INSN_SIZE) to do the update.
+> it would be good if these patches could be applied.
 
-Indeed I haven't seen any functional change when it comes to replacing
-the instruction.
+Catalin's handling the 3.18 merge window, but this looks like arm-soc
+material anyway and should go via Olof/Arnd.
 
-> [...]
-> 
-> It may also fix the stack tracer, as it searches for the ip saved in
-> the return address to find where the true stack is (skipping the stack
-> part that calls the strack tracer itself). If the link register holds
-> the location after the delay slot, then this would require
-> MCOUNT_INSN_SIZE to include the delay slot as well.
-
-Yes, this is the only case I spotted as well. Perhaps I should put that
-in the changelog.
-
-Or I could add
-> another macro called MCOUNT_DELAY_SLOT_SIZE that can be defined by an
-> arch (and keep it zero for all other archs). That wouldn't be too much
-> of an issue to implement.
-
-If you want to fix that in the generic code then I am fine with it.
-
--- 
-markos
+Will
