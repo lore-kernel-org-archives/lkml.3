@@ -1,72 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293AbaIWQUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:20:19 -0400
-Received: from omr2.cc.vt.edu ([198.82.141.100]:48387 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753832AbaIWQUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:20:09 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] mm, debug: mm-introduce-vm_bug_on_mm-fix-fix.patch
-In-Reply-To: Your message of "Tue, 23 Sep 2014 13:28:48 +0200."
-             <20140923112848.GA10046@dhcp22.suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org> <1411464279-20158-1-git-send-email-mhocko@suse.cz>
-            <20140923112848.GA10046@dhcp22.suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1411489189_2175P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 23 Sep 2014 12:19:49 -0400
-Message-ID: <83907.1411489189@turing-police.cc.vt.edu>
+	id S1755937AbaIWQYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:24:37 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:49916 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbaIWQYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 12:24:35 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:3d45:4858:41e8:cbeb]
+In-Reply-To: <54218B19.8070208@broadcom.com>
+References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
+	<20140923050339.GF7487@localhost>
+	<20140923125423.GC12283@beef>
+	<54218B19.8070208@broadcom.com>
+Date: Tue, 23 Sep 2014 09:24:34 -0700
+Message-ID: <CAOesGMjdvs87_hcY1p8E78tm7F_vEhZjToJc4P8h2vcWYgaWTg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mach-bcm: offer a new maintainer and process
+From: Olof Johansson <olof@lixom.net>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Matt Porter <mporter@linaro.org>, Florian Fainelli <f.fainelli@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>, jonathar@broadcom.com,
+        rjui@broadcom.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Marc C <marc.ceeeee@gmail.com>, cernekee@gmail.com,
+        Gregory Fong <gregory.0xf0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1411489189_2175P
-Content-Type: text/plain; charset=us-ascii
+On Tue, Sep 23, 2014 at 8:00 AM, Scott Branden <sbranden@broadcom.com> wrote:
+> On 14-09-23 05:54 AM, Matt Porter wrote:
+>>
+>> On Mon, Sep 22, 2014 at 10:03:39PM -0700, Olof Johansson wrote:
+>>>
+>>> On Fri, Sep 19, 2014 at 11:17:11AM -0700, Florian Fainelli wrote:
+>>>>
+>>>> Hi all,
+>>>>
+>>>> As some of you may have seen in the news, Broadcom has recently stopped
+>>>> its mobile SoC activities. Upstream support for Broadcom's Mobile SoCs
+>>>> was an effort initially started by Christian Daudt and his team, and
+>>>> then
+>>>> continued by Alex Eleder and Matter Porter assigned to a particular
+>>>> landing
+>>>> team within Linaro to help Broadcom doing so.
+>>>>
+>>>> As part of this effort, Christian and Matt volunteered for centralizing
+>>>> pull
+>>>> requests coming from the arch/arm/mach-bcm/* directory and as of today,
+>>>> they
+>>>> are still responsible for merging mach-bcm pull requests coming from
+>>>> brcmstb,
+>>>> bcm5301x, bcm2835 and bcm63xx, creating an intermediate layer to the
+>>>> arm-soc
+>>>> tree.
+>>>>
+>>>> Following the mobile group shut down, our group (in which Brian,
+>>>> Gregory, Marc,
+>>>> Kevin and myself are) inherited these mobile SoC platforms, although at
+>>>> this
+>>>> point we cannot comment on the future of mobile platforms, we know that
+>>>> our
+>>>> Linaro activities have been stopped.
+>>>>
+>>>> We have not heard much from Christian and Matt in a while, and some of
+>>>> our pull
+>>>> requests have been stalling as a result. We would like to offer both a
+>>>> new
+>>>> maintainer for the mobile platforms as well as reworking the pull
+>>>> request
+>>>> process:
+>>>>
+>>>> - our group has now full access to these platforms, putting us in the
+>>>> best
+>>>>    position to support Mobile SoCs questions
+>>>
+>>>
+>>> So, one question I have is whether it makes sense to keep the mobile
+>>> platforms in the kernel if the line of business is ending?
+>
+> I guess one problem is that BCM_MOBILE is quite misnamed.  It should really
+> be called BCM_KONA.  bcm281xx was a successful product in the mobile space.
+> But mobile products have short lifespans as new versions become available
+> every year.  In fact - there have already been more products made with this
+> chipset that are not mobile based nor in the consumer space.  The happen to
+> be based on an older kernel version but we are planning on moving to a newer
+> kernel version in the future. Variants of this chipset will continue to be
+> used in many non-mobile products for many years going forward.  We could
+> also rename it BCM_IMMOBILE going forward if that helps clarify things.
+>>>
+>>>
+>>> While I truly do appreciate the work done by Matt and others, there's
+>>> also little chance that it'll see substantial use by anyone. The Capri
+>>> boards aren't common out in the wild and I'm not aware of any dev
+>>> boards or consumer products with these SoCs that might want to run
+>>> mainline? Critical things such as power management and graphics are
+>>> missing from the current platform support in the kernel, so nobody is
+>>> likely to want it on their Android phone, etc.
+>
+> Yes, thanks for all the hard work in upstreaming this code.  It will be
+> built upon and highly leveraged for other purposes beyond Android phones and
+> power management.
+>>>
+>>>
+>>> Maybe the answer to this is "keep it for now, revisit sometime later",
+>>> which is perfectly sane -- it has practically no cost to keep it around
+>>> the way it's looking now.
+>>
+>>
+>> It won't hurt my feelings if it's decided that it has no value being in
+>> the kernel. :) All I can offer is that *maybe* somebody will have a root
+>> exploit for the bcm281xx Roku platforms (that lasts) and/or some of the
+>> capri and hawaii handsets out there and find it useful as a starting
+>> point to work from an Android vendor tree. I don't know if anybody cares
+>> about hacking those platforms or not.
+>>
+>> As mentioned in a followup, the VoIP parts (or some of them, at least)
+>> are part of the bcm281xx family and we were expecting them to submit an
+>> ethernet driver for the past year. There were repeated reminders that
+>> they really care about mainline so I would expect it would be premature
+>> to remove that support until we hear from them.
+>>
+>> -Matt
+>>
+> Yes, variants of this chipset will be developed in new products. bcm281xx
+> was also a poor choice of naming as well. Capri or Kona family would have
+> been much more appropriate.  This product is used in VoIP and other
+> non-mobile markets.
 
-On Tue, 23 Sep 2014 13:28:48 +0200, Michal Hocko said:
-> And there is another one hitting during randconfig. The patch makes my
-> eyes bleed
+Ok, cool -- and for those markets having mainline support might
+actually make sense. So the answer is fairly simple: Keep it for now.
+I'm glad I asked though since it means we have more knowledge of
+what's going on with the platform. And hopefully we'll see some of
+that missing functionality fill in over time.
 
-Amen.  But I'm not seeing a better fix either.
 
->  #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-> -		"tlb_flush_pending %d\n",
-> +		"tlb_flush_pending %d\n"
->  #endif
-> -		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
-> +		, mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
-
-I'm surprised that checkpatch doesn't explode on this.  And I'm starting
-a pool on how soon somebody submits a patch to "fix" this. :)
-
---==_Exmh_1411489189_2175P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVCGdpQdmEQWDXROgAQLLKBAAiTSdExIo2aogwb191B7h7hkYPyPVu8ne
-lyHn0dfT7JDVht3nsQBmDHn48qL/h4d+GvU0priCoHlvXG+17p5asW/bcaOttavH
-xPSagNrH7sCUGhZyupe9n5ZFfw4Mer41uA9H4cFqMOVJCoSJyCMvCPB9ilKWDOZl
-dTbzN/XyRVhFR6nHoecXGWlAsHFWi2zstPPYi98fmM9VqZQ/025wpr5Fb0Ffdphr
-csIwovxR2blTVQpGUSZhPRYbGaPPL6S4JJ8waC7IDmAWqdyvj7vY3Z5L5n44vu+d
-QeRUsCD30w0B14QdBO2fFl2LE2LppsEjjmQ2RrGoRpB9MSKhXdK2wF4uL6xzLIWL
-CGYoPkR6mvPmDX5rOJMN7AWx5wTcB6jhp1xnDyhK3IlfzurOmZaqi/YuzHqXUwkV
-DQL1VYz1FTBd1yRyqY6OCRcjaZHopijNiyAvrSwvcpylELDCLqg6Sm+6zQG8Nmw4
-CFLi6fRhYZUr0ypQQwsyk9KHQBWMkOi+gYGalM2ahD/TnfeLx+T2FA79Tb2rTW5w
-jtoPo5nryghgWSeF2oaWE13iJNEjyZUb6PjWcUn+lhbr+6lcCr0FCCXapSAlR80A
-++W/jsSBDNPbNNskbKzuvJxN+hxDzYWxNJLlhCqJeu5yydgS8Is5jXOa7N3dwKS3
-Esg0LBXwHp4=
-=2FOW
------END PGP SIGNATURE-----
-
---==_Exmh_1411489189_2175P--
+-Olof
