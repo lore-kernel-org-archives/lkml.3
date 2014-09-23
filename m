@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625AbaIWPqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:46:17 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:58839 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223AbaIWPqN (ORCPT
+	id S1756639AbaIWPqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:46:55 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57491 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756533AbaIWPp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:46:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
-Date: Tue, 23 Sep 2014 17:45:57 +0200
-Message-ID: <12538216.vu4CbU01qP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com> <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
+	Tue, 23 Sep 2014 11:45:56 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: balbi@ti.com, Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
+Date: Tue, 23 Sep 2014 18:05:36 +0200
+Message-ID: <1430862.A6ximsuo3m@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140923152945.GE28592@saruman>
+References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com> <2422219.EN0C5cKd3e@vostro.rjw.lan> <20140923152945.GE28592@saruman>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:VCCmUSgGCWPH/Q4BtjgkWNZ8zHFopDA0nPiy6KMgNx5
- gUgSypme2GQRCAEPCjZUQjW//iUp4QfCKI+NkONVgPw68EUzao
- r8Uytx7x/fXU0QlRpkH70jgCxUTCXdKHMuFFjtElLs5S0Ege+Y
- AN4Szid4uOL+rjzksHXb+dgZbBhtD/vdaGTl+8eUZkrJSggXPN
- RQL9xbTEzZc2K8COSD7B6o+ZlcFcSeRksd6dLOI64LGGyoeOTx
- SHXnKBz3gEp3NbIFWwco23PkvKurh+EvRbZoQnMQ2rNCaE8mXm
- 15a2bffzbj250tmyisOzlNC5j56HfY+mLb3I6YqQ62NMnMdw7r
- NSmELvjAfy99nmIuqxF4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; boundary="nextPart4112587.VOX5lP1ZHO"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 17:25:50 Linus Walleij wrote:
-> On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
+
+--nextPart4112587.VOX5lP1ZHO
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+
+On Tuesday, September 23, 2014 10:29:45 AM Felipe Balbi wrote:
+> On Tue, Sep 23, 2014 at 05:17:03PM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, September 23, 2014 09:52:21 AM Felipe Balbi wrote:
+> > > On Tue, Sep 23, 2014 at 04:52:01PM +0200, Rafael J. Wysocki wrote:
+> > > > On Tuesday, September 23, 2014 03:17:12 PM Heikki Krogerus wrote:
+> > > > > On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
+> > > > > > Most devices are configured for 32-bit DMA addresses.
+> > > > > > Setting the mask to 32-bit here removes the need for the
+> > > > > > drivers to do it separately.
+> > > > > 
+> > > > > Rafael, is this OK?
+> > > > 
+> > > > Fine by me, but it should go in via dwc3 I think.
+> > > 
+> > > huh ? Seems like there's no direct dependency.
+> > 
+> > Well, it's part of a series where all of the other patches touch dwc3.
+> > Doesn't anything in that series depend on this patch?
 > 
-> > Some drivers need to deal with only firmware representation of its
-> > GPIOs. An example would be a GPIO button array driver where each button
-> > is described as a separate firmware node in device tree. Typically these
-> > child nodes do not have physical representation in the Linux device
-> > model.
-> >
-> > In order to help device drivers to handle such firmware child nodes we
-> > add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
-> > parameter, finds the GPIO using whatever is the underlying firmware
-> > method, and requests the GPIO properly.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> I have a hard time figuring out if this is what we want for common
-> accessors between DT and ACPI.
-> 
-> Can I get some input from Grant, Arnd, Mark, Darren...?
+> dunno, I haven't received anything.
 
-I just took a brief look at this. My first impression is that the
-fw_dev_node structure is weird when all callers just do (in patch 2)
+Hmm.
 
-+	struct fw_dev_node fdn = {
-+		.of_node = dev->of_node,
-+		.acpi_node = ACPI_COMPANION(dev),
-+	};
+Heikki, can you please resend the series and CC all of it to Felipe?
 
-I'd much rather see an interface that passes the 'struct device'
-pointer down to dev_get_named_gpiod() and all other exported
-functions, and then internally does the conversion at the point
-where the access is done.
+Rafael
 
-	Arnd
+--nextPart4112587.VOX5lP1ZHO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABCAAGBQJUIZpWAAoJEILEb/54YlRxOWcP/RLr5w0JgRtmnog0qGGyzgyt
+l3h50pX/0YoKPR9q3Ix/rHt632WCm3pH01/5rsNxITMgBIf+arJ0DKP9KWxCd0Cb
+7XV6mFqXOkYDanT7+aMNy2pObzPUH7S8E8jyKw4HLUKSg0f1/dEVHo+5j+GXM1XU
+bzhj1VLpmi3xDjT7PzEX0lClULhw04qZd8+DmrdZF/OpJL1O1H0YXAkZGM/hHmZv
+GGMKuwf4pVO3hYnIjGOwJKW3aANkB6o3UNQPPsevqwXvM67k/UN00i1tS5Px8DKz
+wiEIUYt/q5K0gD3ax2ZVrW0nlk0vGi2rur2D++jAdGSxBHVDwHln6qcKZYuXkkIZ
+sbq2ncCFoE/Rb524WiVSEQeVQ2dX3MhLMpUm7wOwz3tPllNXwUCXkrcdUnR5atTO
+qF88UrpsLj9z7R8weKBtJRTH6nbgHr3TzR8lZfu8Y4jiP+NADl1h95+Z/r0NfrW3
+dAvAN93N+BHVHpj5DTFNW+hyKXaz1t7GNwgODmHz+nlj3E9ZzTrZ5fLeXxfKLR76
++AG+2+/+ICccYaEuCFDdltmYs3YkRVZBekMTpr6cvdIlXAl5cHf5A6Cj42RkAbrV
+dCCytDW+aIcMMTYApVaLqKF1rQjEKw84xBASu8kA+M0Th8wCkNXAUSbU6dI1URAR
+UVpgRNIhXT37yiEWGQzq
+=OkDE
+-----END PGP SIGNATURE-----
+
+--nextPart4112587.VOX5lP1ZHO--
+
