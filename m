@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772AbaIWOrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:47:17 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62296 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaIWOrO (ORCPT
+	id S1756450AbaIWPIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:08:43 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:57586 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393AbaIWPIj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:47:14 -0400
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org
-Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
-        christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        linux-api@vger.kernel.org (open list:ABI/API),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCHv7 08/26] driver core: amba: add documentation for binding path 'driver_override'
-Date: Tue, 23 Sep 2014 16:46:07 +0200
-Message-Id: <1411483586-29304-9-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+	Tue, 23 Sep 2014 11:08:39 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+From: Weston Andros Adamson <dros@primarydata.com>
+In-Reply-To: <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
+Date: Tue, 23 Sep 2014 11:08:36 -0400
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com>
+References: <20140923130352.GK26472@arm.com> <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com> <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
+To: Will Deacon <will.deacon@arm.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for alternative binding path 'driver_override' for
-AMBA devices.
+On Sep 23, 2014, at 11:02 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- Documentation/ABI/testing/sysfs-bus-amba | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-amba
+> On Sep 23, 2014, at 10:59 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
+> 
+>> On Sep 23, 2014, at 10:53 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> 
+>>> On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
+>>>> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
+>>>>> Any more info on how to reproduce this would be really great. Unfortunately I don’t
+>>>>> have access to an arm64 system.
+>>>> 
+>>>> I've not spotted a pattern other than using 64k pages, yet. If I manage to
+>>>> get a reproducer, I'll let you know.
+>>>> 
+>>>>> If it’s possible, could we get a packet trace around when this happens? This is pure
+>>>>> speculation, but this might have something to do the resend path - a commit fails
+>>>>> and all the requests on the commit list have to be resent.
+>>>> 
+>>>> Sure, once I can reproduce it reliably, then I'll try to do that.
+>>> 
+>>> Right, a bunch of DDing from /dev/zero over an ssh session triggers this
+>>> very quickly. I've put a binary tcpdump here:
+>>> 
+>>> http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
+>>> 
+>>> You may want to filter out the ssh packets. The only `interesting' thing to
+>>> me is a retransmission about half way through, but I don't know what I'm
+>>> looking for.
+>>> 
+>>> The NFS server is 10.1.203.204 and the client is 10.1.203.24.
+>> 
+>> Thanks! You are using NFSv2, so there are no commits - that rules out my hunch.
+> 
+> Wait a second - the whole point of this extra reference (that the WARN_ON_ONCE is
+> related to) is to handle the pass off to commit lists.
+> 
+> Maybe I’m just doing the wrong thing here with NFSv2!
+> 
+> More soon.
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-amba b/Documentation/ABI/testing/sysfs-bus-amba
-new file mode 100644
-index 0000000..e7b5467
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-amba
-@@ -0,0 +1,20 @@
-+What:		/sys/bus/amba/devices/.../driver_override
-+Date:		September 2014
-+Contact:	Antonios Motakis <a.motakis@virtualopensystems.com>
-+Description:
-+		This file allows the driver for a device to be specified which
-+		will override standard OF, ACPI, ID table, and name matching.
-+		When specified, only a driver with a name matching the value
-+		written to driver_override will have an opportunity to bind to
-+		the device. The override is specified by writing a string to the
-+		driver_override file (echo vfio-amba > driver_override)	and may
-+		be cleared with an empty string (echo > driver_override).
-+		This returns the device to standard matching rules binding.
-+		Writing to driver_override does not automatically unbind the
-+		device from its current driver or make any attempt to
-+		automatically load the specified driver. If no driver with a
-+		matching name is currently loaded in the kernel, the device will
-+		not bind to any driver. This also allows devices to opt-out of
-+		driver binding using a driver_override name such as "none".
-+		Only a single driver may be specified in the override, there is
-+		no support for parsing delimiters.
--- 
-1.8.3.2
+Actually, can you see if this is reproducible with NFSv3?
+
+Thanks,
+
+-dros
 
