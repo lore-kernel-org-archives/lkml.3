@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaIWLSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:18:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60598 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887AbaIWLSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:18:44 -0400
-Date: Tue, 23 Sep 2014 13:18:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5] edac, amd64_edac: Modify usage of
- amd64_read_dct_pci_cfg()
-Message-ID: <20140923111838.GG22072@pd.tnic>
-References: <1410799058-3149-1-git-send-email-aravind.gopalakrishnan@amd.com>
+	id S1755550AbaIWLVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:21:18 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35926 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590AbaIWLVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 07:21:16 -0400
+Date: Tue, 23 Sep 2014 12:21:05 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <Will.Deacon@arm.com>
+Cc: Robert Richter <rric@kernel.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Message-ID: <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
+References: <1410544187-15876-1-git-send-email-rric@kernel.org>
+ <20140923104122.GE20170@rric.localhost>
+ <20140923104641.GF26472@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410799058-3149-1-git-send-email-aravind.gopalakrishnan@amd.com>
+In-Reply-To: <20140923104641.GF26472@arm.com>
+Thread-Topic: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Accept-Language: en-GB, en-US
+Content-Language: en-US
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 11:37:38AM -0500, Aravind Gopalakrishnan wrote:
-> From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+On Tue, Sep 23, 2014 at 11:46:41AM +0100, Will Deacon wrote:
+> On Tue, Sep 23, 2014 at 11:41:22AM +0100, Robert Richter wrote:
+> > On 12.09.14 19:49:43, Robert Richter wrote:
+> > > From: Robert Richter <rrichter@cavium.com>
+> > > 
+> > > This initial patches enable Cavium Thunder SoC Family. The patches add
+> > > devicetree and Kconfig support and then add Thunder to the defconfig.
+> > > 
+> > > The Thunder system needs more enablement patches for subsystems and
+> > > devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
+> > > We will send separate patch sets for these. All of them base on this
+> > > initial patches.
+> > > 
+> > > I sent a separate patch set independently that introduces support for
+> > > dts vendor subdirs. After both patch sets have been applied I will
+> > > send a patch in addition that moves the dts file into a subdirectory.
+> > > 
+> > > I sent another separate patch that sets NR_CPUS to 64 per default.
+> > > 
+> > > The first patch introduces dts files without having a Kconfig option
+> > > for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
+> > > added to defconfig in patch 4 as this is my preferred solution. If
+> > > there is still resistance having an ARCH_THUNDER option, just drop
+> > > them.
+> > > 
+> > > Patches are available here:
+> > > 
+> > >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
+> > 
+> > it would be good if these patches could be applied.
 > 
-> Rationale behind this change:
->  - F2x1xx addresses were stopped from being mapped explicitly to DCT1
->    from F15h (OR) onwards. They use _dct[0:1] mechanism to access the
->    registers. So we should move away from using address ranges to select
->    DCT for these families.
->  - On newer processors, the address ranges used to indicate DCT1 (0x140,
->    0x1a0) have different meanings than what is assumed currently.
-> 
-> Changes introduced:
->  - amd64_read_dct_pci_cfg() now takes in dct value and uses it for
->    'selecting the dct'
->  - Update usage of the function. Keep in mind that different families
->    have specific handling requirements
->  - Remove [k8|f10]_read_dct_pci_cfg() as they don't do much different
->    from amd64_read_pci_cfg()
->    - Move the k8 specific check to amd64_read_pci_cfg
->  - Remove f15_read_dct_pci_cfg() and move logic to amd64_read_dct_pci_cfg()
->  - Remove now needless .read_dct_pci_cfg
-> 
-> Testing:
->  - Tested on Fam 10h; Fam15h Models: 00h, 30h; Fam16h using 'EDAC_DEBUG'
->    and mce_amd_inj
->  - driver obtains info from F2x registers and caches it in pvt
->    structures correctly
->  - ECC decoding works fine
-> 
-> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-> ---
-> Changes in V5: (per Boris suggestion)
->  - use switch instead of if() in amd64_read_dct_pci_cfg() for better
->    readability.
->  - retain if(!dct_ganging_enabled) condition while reading dclr1.
-> 
-> Change in V4: (per Boris suggestion)
->  - move amd64_read_dct_pci_cfg() to amd64_edac.c and save exporting
->    f15h_select_dct() in the process
-> 
-> Changes in V3:
->  - per Boris suggestion
->    - move dct selection logic to amd64_read_dct_pci_cfg()
->    - remove f15_read_dct_pci_cfg() and move logic to amd64_read_dct_pci_cfg()
->  - misc
->    - modify logic in amd64_read_dct_pci_cfg() to keep in mind the specific
->      read handling requirements of different families. Previous version had
->      failed to do that.
-> 
-> Changes in V2: (per Boris suggestion)
->  - Hide family checks in amd64_read_dct_pci_cfg()
->  - Use pvt structure for family checks and not boot_cpu_data
-> 
->  drivers/edac/amd64_edac.c | 146 +++++++++++++++++++++++++---------------------
->  drivers/edac/amd64_edac.h |   5 --
->  2 files changed, 80 insertions(+), 71 deletions(-)
+> Catalin's handling the 3.18 merge window, but this looks like arm-soc
+> material anyway and should go via Olof/Arnd.
 
-Applied, thanks.
+Yes. Olof said he's cherry-picking arm64 SoC patches (or Robert could
+send him a pull request).
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Catalin
