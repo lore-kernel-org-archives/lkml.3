@@ -1,235 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaIWFXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:23:49 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33239 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343AbaIWFXr (ORCPT
+	id S1753519AbaIWFYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:24:31 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:50801 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195AbaIWFYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:23:47 -0400
-Date: Tue, 23 Sep 2014 07:23:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, bobby.prani@gmail.com, oleg@redhat.com,
-        ard.biesheuvel@linaro.org, joe@perches.com, rostedt@goodmis.org,
-        dave@stgolabs.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.18
-Message-ID: <20140923052341.GA27825@gmail.com>
-References: <20140922214603.GA6356@linux.vnet.ibm.com>
+	Tue, 23 Sep 2014 01:24:30 -0400
+Message-ID: <54210407.1000602@gmail.com>
+Date: Tue, 23 Sep 2014 07:24:23 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922214603.GA6356@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Davidlohr Bueso <dave@stgolabs.net>
+CC: mtk.manpages@gmail.com, Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com> <1401823560.4911.2.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1401823560.4911.2.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2014 09:26 PM, Davidlohr Bueso wrote:
+> On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
+>> Hi Manfred,
+>>
+>> On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
+>> <manfred@colorfullife.com> wrote:
+>>> Hi all,
+>>>
+>>> the increase of SHMMAX/SHMALL is now a 4 patch series.
+>>> I don't have ideas how to improve it further.
+>>
+>> On the assumption that your patches are heading to mainline, could you
+>> send me a man-pages patch for the changes?
+> 
+> It seems we're still behind here and the 3.16 merge window is already
+> opened. Please consider this, and again feel free to add/modify as
+> necessary. I think adding a note as below is enough and was hesitant to
+> add a lot of details... Thanks.
+> 
+> 8<--------------------------------------------------
+> From: Davidlohr Bueso <davidlohr@hp.com>
+> Subject: [PATCH] shmget.2: document new limits for shmmax/shmall
+> 
+> These limits have been recently enlarged and
+> modifying them is no longer really necessary.
+> Update the manpage.
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  man2/shmget.2 | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/man2/shmget.2 b/man2/shmget.2
+> index f781048..77764ea 100644
+> --- a/man2/shmget.2
+> +++ b/man2/shmget.2
+> @@ -299,6 +299,11 @@ with 8kB page size, it yields 2^20 (1048576).
+>  
+>  On Linux, this limit can be read and modified via
+>  .IR /proc/sys/kernel/shmall .
+> +As of Linux 3.16, the default value for this limit is increased to
+> +.B ULONG_MAX - 2^24
+> +pages, which is as large as it can be without helping userspace overflow
+> +the values. Modifying this limit is therefore discouraged. This is suitable
+> +for both 32 and 64-bit systems.
+>  .TP
+>  .B SHMMAX
+>  Maximum size in bytes for a shared memory segment.
+> @@ -306,6 +311,12 @@ Since Linux 2.2, the default value of this limit is 0x2000000 (32MB).
+>  
+>  On Linux, this limit can be read and modified via
+>  .IR /proc/sys/kernel/shmmax .
+> +As of Linux 3.16, the default value for this limit is increased from 32Mb
+> +to
+> +.B ULONG_MAX - 2^24
+> +bytes, which is as large as it can be without helping userspace overflow
+> +the values. Modifying this limit is therefore discouraged. This is suitable
+> +for both 32 and 64-bit systems.
+>  .TP
+>  .B SHMMIN
+>  Minimum size in bytes for a shared memory segment: implementation
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+David,
 
-> Hello, Ingo,
-> 
-> The changes in this series include:
-> 
-> 1.	Update RCU documentation.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/8/28/378.
-> 
-> 2.	Miscellaneous fixes.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/8/28/386.  An additional fix that
-> 	eliminates a documented (but now inconvenient) deadlock between
-> 	RCU hotplug and expedited grace periods was posted at
-> 	https://lkml.org/lkml/2014/8/28/573.
-> 
-> 3.	Changes related to No-CBs CPUs and NO_HZ_FULL.  These were posted
-> 	to LKML at https://lkml.org/lkml/2014/8/28/412.
-> 
-> 4.	Torture-test updates.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/8/28/546 and at
-> 	https://lkml.org/lkml/2014/9/11/1114.
-> 
-> 5.	RCU-tasks implementation.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/8/28/540.
-> 
-> All of these have been exposed to -next testing.
-> These changes are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> 
-> for you to fetch changes up to dd56af42bd829c6e770ed69812bd65a04eaeb1e4:
-> 
->   rcu: Eliminate deadlock between CPU hotplug and expedited grace periods (2014-09-18 16:22:27 -0700)
-> 
-> ----------------------------------------------------------------
-> Ard Biesheuvel (1):
->       rcu: Define tracepoint strings only if CONFIG_TRACING is set
-> 
-> Davidlohr Bueso (9):
->       locktorture: Rename locktorture_runnable parameter
->       locktorture: Add documentation
->       locktorture: Support mutexes
->       locktorture: Teach about lock debugging
->       locktorture: Make statistics generic
->       torture: Address race in module cleanup
->       locktorture: Add infrastructure for torturing read locks
->       locktorture: Support rwsems
->       locktorture: Introduce torture context
-> 
-> Joe Perches (1):
->       rcu: Use pr_alert/pr_cont for printing logs
-> 
-> Oleg Nesterov (1):
->       rcu: Uninline rcu_read_lock_held()
-> 
-> Paul E. McKenney (46):
->       memory-barriers: Fix control-ordering no-transitivity example
->       memory-barriers: Retain barrier() in fold-to-zero example
->       memory-barriers: Fix description of 2-legged-if-based control dependencies
->       rcu: Break more call_rcu() deadlock involving scheduler and perf
->       rcu: Make TINY_RCU tinier by putting error checks under #ifdef
->       rcu: Replace flush_signals() with WARN_ON(signal_pending())
->       rcu: Add step to initrd documentation
->       rcutorture: Test partial nohz_full= configuration
->       rcutorture: Specify MAXSMP=y for TREE01
->       rcutorture: Specify CONFIG_CPUMASK_OFFSTACK=y for TREE07
->       rcutorture: Add callback-flood test
->       torture: Print PID in hung-kernel diagnostic message
->       torture: Check for nul bytes in console output
->       rcu: Add call_rcu_tasks()
->       rcu: Provide cond_resched_rcu_qs() to force quiescent states in long loops
->       rcu: Add synchronous grace-period waiting for RCU-tasks
->       rcu: Make TASKS_RCU handle tasks that are almost done exiting
->       rcutorture: Add torture tests for RCU-tasks
->       rcutorture: Add RCU-tasks test cases
->       rcu: Add stall-warning checks for RCU-tasks
->       rcu: Improve RCU-tasks energy efficiency
->       documentation: Add verbiage on RCU-tasks stall warning messages
->       rcu: Defer rcu_tasks_kthread() creation till first call_rcu_tasks()
->       rcu: Make TASKS_RCU handle nohz_full= CPUs
->       rcu: Make rcu_tasks_kthread()'s GP-wait loop allow preemption
->       rcu: Remove redundant preempt_disable() from rcu_note_voluntary_context_switch()
->       rcu: Additional information on RCU-tasks stall-warning messages
->       rcu: Remove local_irq_disable() in rcu_preempt_note_context_switch()
->       rcu: Per-CPU operation cleanups to rcu_*_qs() functions
->       rcutorture: Add RCU-tasks tests to default rcutorture list
->       rcu: Fix attempt to avoid unsolicited offloading of callbacks
->       rcu: Rationalize kthread spawning
->       rcu: Create rcuo kthreads only for onlined CPUs
->       rcu: Eliminate redundant rcu_sysidle_state variable
->       rcu: Don't track sysidle state if no nohz_full= CPUs
->       rcu: Avoid misordering in __call_rcu_nocb_enqueue()
->       rcu: Handle NOCB callbacks from irq-disabled idle code
->       rcu: Avoid misordering in nocb_leader_wait()
->       Merge branches 'doc.2014.09.07a', 'fixes.2014.09.10a', 'nocb-nohz.2014.09.16b' and 'torture.2014.09.07a' into HEAD
->       Merge branch 'rcu-tasks.2014.09.10a' into HEAD
->       locktorture: Make torture scripting account for new _runnable name
->       locktorture: Add test scenario for mutex_lock
->       locktorture: Add test scenario for rwsem_lock
->       rcutorture: Rename rcutorture_runnable parameter
->       locktorture: Document boot/module parameters
->       rcu: Eliminate deadlock between CPU hotplug and expedited grace periods
-> 
-> Pranith Kumar (18):
->       rcu: Remove remaining read-modify-write ACCESS_ONCE() calls
->       rcu: Fix sparse warning about rcu_batches_completed_preempt() being non-static
->       rcu: Use bool type for return value in rcu_is_watching()
->       rcu: Return bool type for rcu_try_advance_all_cbs()
->       rcu: Return bool type in rcu_lockdep_current_cpu_online()
->       rcu: Use true/false instead of 1/0 for a bool type
->       rcu: Update tiny.c references to tree.c
->       rcu: Remove stale comment in tree.c
->       rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads
->       rcutorture: Fix a sparse warning by marking boost_mutex static
->       rcutorture: Use bash shell for all the test scripts
->       rcutorture: Set executable bit and drop bash from Usage
->       rcu: Check the return value of zalloc_cpumask_var()
->       rcu: Use true/false for return in __call_rcu_nocb()
->       rcu: Use true/false for return in rcu_nocb_adopt_orphan_cbs()
->       rcu: Use false for return in __call_rcu_nocb()
->       rcu: Return false instead of 0 in rcu_nocb_adopt_orphan_cbs()
->       rcu: Check for have_rcu_nocb_mask instead of rcu_nocb_mask
-> 
-> Steven Rostedt (1):
->       rcu: Export RCU-tasks APIs to GPL modules
-> 
->  Documentation/RCU/stallwarn.txt                    |  33 +-
->  Documentation/kernel-parameters.txt                |  68 +++-
->  Documentation/locking/locktorture.txt              | 142 ++++++++
->  Documentation/memory-barriers.txt                  | 128 +++----
->  fs/file.c                                          |   2 +-
->  include/linux/cpu.h                                |   2 +
->  include/linux/init_task.h                          |  12 +-
->  include/linux/lockdep.h                            |   1 +
->  include/linux/rcupdate.h                           | 106 +++---
->  include/linux/rcutiny.h                            |   2 +-
->  include/linux/sched.h                              |  39 +-
->  include/linux/torture.h                            |   5 +-
->  include/trace/events/rcu.h                         |   3 +
->  init/Kconfig                                       |  14 +-
->  init/main.c                                        |   1 +
->  kernel/cpu.c                                       |  16 +-
->  kernel/exit.c                                      |   3 +
->  kernel/locking/locktorture.c                       | 392 ++++++++++++++++----
->  kernel/rcu/rcutorture.c                            | 278 ++++++++++----
->  kernel/rcu/tiny.c                                  |  20 +-
->  kernel/rcu/tree.c                                  | 115 +++---
->  kernel/rcu/tree.h                                  |  18 +-
->  kernel/rcu/tree_plugin.h                           | 404 ++++++++++++++-------
->  kernel/rcu/update.c                                | 345 +++++++++++++++++-
->  kernel/softirq.c                                   |   2 +-
->  kernel/sysctl.c                                    |   9 -
->  kernel/torture.c                                   |  32 +-
->  mm/mlock.c                                         |   2 +-
->  .../selftests/rcutorture/bin/config2frag.sh        |   4 +-
->  .../selftests/rcutorture/bin/configcheck.sh        |   4 +-
->  .../testing/selftests/rcutorture/bin/configinit.sh |   4 +-
->  .../testing/selftests/rcutorture/bin/functions.sh  |  20 +
->  .../testing/selftests/rcutorture/bin/kvm-build.sh  |   2 +-
->  .../selftests/rcutorture/bin/kvm-recheck-lock.sh   |   2 +-
->  .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    |   2 +-
->  .../selftests/rcutorture/bin/kvm-recheck.sh        |   2 +-
->  .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   5 +-
->  tools/testing/selftests/rcutorture/bin/kvm.sh      |   6 +-
->  .../selftests/rcutorture/bin/parse-build.sh        |   5 +-
->  .../selftests/rcutorture/bin/parse-console.sh      |   9 +-
->  .../selftests/rcutorture/bin/parse-torture.sh      |   5 +-
->  .../selftests/rcutorture/configs/lock/CFLIST       |   2 +
->  .../selftests/rcutorture/configs/lock/LOCK02       |   6 +
->  .../selftests/rcutorture/configs/lock/LOCK02.boot  |   1 +
->  .../selftests/rcutorture/configs/lock/LOCK03       |   6 +
->  .../selftests/rcutorture/configs/lock/LOCK03.boot  |   1 +
->  .../rcutorture/configs/lock/ver_functions.sh       |   2 +-
->  .../selftests/rcutorture/configs/rcu/CFLIST        |   3 +
->  .../selftests/rcutorture/configs/rcu/TASKS01       |   9 +
->  .../selftests/rcutorture/configs/rcu/TASKS01.boot  |   1 +
->  .../selftests/rcutorture/configs/rcu/TASKS02       |   5 +
->  .../selftests/rcutorture/configs/rcu/TASKS02.boot  |   1 +
->  .../selftests/rcutorture/configs/rcu/TASKS03       |  13 +
->  .../selftests/rcutorture/configs/rcu/TASKS03.boot  |   1 +
->  .../selftests/rcutorture/configs/rcu/TREE01        |   4 +-
->  .../selftests/rcutorture/configs/rcu/TREE01.boot   |   2 +-
->  .../selftests/rcutorture/configs/rcu/TREE07        |   3 +-
->  .../selftests/rcutorture/configs/rcu/TREE07.boot   |   1 +
->  .../rcutorture/configs/rcu/ver_functions.sh        |   2 +-
->  tools/testing/selftests/rcutorture/doc/initrd.txt  |   1 +
->  60 files changed, 1798 insertions(+), 530 deletions(-)
->  create mode 100644 Documentation/locking/locktorture.txt
->  mode change 100644 => 100755 tools/testing/selftests/rcutorture/bin/config2frag.sh
->  mode change 100644 => 100755 tools/testing/selftests/rcutorture/bin/kvm.sh
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK02
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK02.boot
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK03
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK03.boot
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS01
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS02
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS03
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TREE07.boot
-> 
+I applied various pieces from your patch on top of material
+that I already had, so that now we have the text below describing
+these limits.  Comments/suggestions/improvements from all welcome.
 
-Pulled into tip:core/rcu, thanks Paul!
+Cheers,
 
-	Ingo
+Michael
+
+       SHMALL System-wide limit on the number of pages of shared memory.
+
+              On  Linux,  this  limit  can  be  read  and  modified  via
+              /proc/sys/kernel/shmall.  Since Linux  3.16,  the  default
+              value for this limit is:
+
+                  ULONG_MAX - 2^24
+
+              The  effect  of  this  value  (which  is suitable for both
+              32-bit and 64-bit systems) is to impose no  limitation  on
+              allocations.   This value, rather than ULONG_MAX, was cho‐
+              sen as the default to prevent some cases where  historical
+              applications  simply  raised  the  existing  limit without
+              first checking its current value.  Such applications would
+              cause  the  value  to  overflow  if  the  limit was set at
+              ULONG_MAX.
+
+              From Linux 2.4 up to Linux 3.15,  the  default  value  for
+              this limit was:
+
+                  SHMMAX / PAGE_SIZE * (SHMMNI / 16)
+
+              If  SHMMAX  and SHMMNI were not modified, then multiplying
+              the result of this formula by the  page  size  (to  get  a
+              value  in  bytes)  yielded a value of 8 GB as the limit on
+              the total memory used by all shared memory segments.
+
+       SHMMAX Maximum size in bytes for a shared memory segment.
+
+              On  Linux,  this  limit  can  be  read  and  modified  via
+              /proc/sys/kernel/shmmax.   Since  Linux  3.16, the default
+              value for this limit is:
+
+                  ULONG_MAX - 2^24
+
+              The effect of this  value  (which  is  suitable  for  both
+              32-bit  and  64-bit systems) is to impose no limitation on
+              allocations.  See the description of SHMALL for a  discus‐
+              sion  of why this default value (rather than ULONG_MAX) is
+              used.
+
+              From Linux 2.2 up to Linux 3.15, the default value of this
+              limit was 0x2000000 (32MB).
+
+              Because  it  is  not possible to map just part of a shared
+              memory  segment,  the  amount  of  virtual  memory  places
+              another limit on the maximum size of a usable segment: for
+              example, on i386 the largest segments that can  be  mapped
+              have  a  size of around 2.8 GB, and on x86_64 the limit is
+              around 127 TB.
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
