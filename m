@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006AbaIWIQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 04:16:37 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:35416 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963AbaIWIQe (ORCPT
+	id S1755051AbaIWIQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 04:16:59 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:38760 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027AbaIWIQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 04:16:34 -0400
-Message-ID: <54212C5E.3010301@atmel.com>
-Date: Tue, 23 Sep 2014 10:16:30 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Johan Hovold <jhovold@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 4/9] rtc: at91sam9: add DT support
-References: <1411400563-570-1-git-send-email-boris.brezillon@free-electrons.com> <1411400563-570-5-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1411400563-570-5-git-send-email-boris.brezillon@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Tue, 23 Sep 2014 04:16:57 -0400
+From: Rostislav Lisovy <lisovy@gmail.com>
+X-Google-Original-From: Rostislav Lisovy <lisovy@merica.cz>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Marek Vasut <marex@denx.de>, Huang Shijie <b32955@freescale.com>,
+        sojkam1@fel.cvut.cz, michal.vokac@comap.cz, lisovy@gmail.com,
+        Rostislav Lisovy <lisovy@merica.cz>
+Subject: [PATCH RESEND] mtd: spi-nor: Add support for Fujitsu MB85RS1MT FRAM
+Date: Tue, 23 Sep 2014 10:16:42 +0200
+Message-Id: <1411460202-457-1-git-send-email-lisovy@merica.cz>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/09/2014 17:42, Boris BREZILLON :
-> Add of_match_table to the existing driver so that rtt nodes defined in at91
-> DTs can be attached to this driver.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Tested with this particular FRAM chip
 
-> ---
->  drivers/rtc/rtc-at91sam9.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-> index 38a2693..d72c34d 100644
-> --- a/drivers/rtc/rtc-at91sam9.c
-> +++ b/drivers/rtc/rtc-at91sam9.c
-> @@ -445,6 +445,14 @@ static int at91_rtc_resume(struct device *dev)
->  
->  static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id at91_rtc_dt_ids[] = {
-> +	{ .compatible = "atmel,at91sam9260-rtt" },
-> +	{ /* sentinel */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
-> +#endif
-> +
->  static struct platform_driver at91_rtc_driver = {
->  	.probe		= at91_rtc_probe,
->  	.remove		= at91_rtc_remove,
-> @@ -453,6 +461,7 @@ static struct platform_driver at91_rtc_driver = {
->  		.name	= "rtc-at91sam9",
->  		.owner	= THIS_MODULE,
->  		.pm	= &at91_rtc_pm_ops,
-> +		.of_match_table = of_match_ptr(at91_rtc_dt_ids),
->  	},
->  };
->  
-> 
+Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
+Acked-by: Marek Vasut <marex@denx.de>
+---
+ drivers/mtd/spi-nor/spi-nor.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+index b5ad6be..a914be9 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -505,6 +505,9 @@ const struct spi_device_id spi_nor_ids[] = {
+ 	{ "mr25h256", CAT25_INFO( 32 * 1024, 1, 256, 2, SPI_NOR_NO_ERASE | SPI_NOR_NO_FR) },
+ 	{ "mr25h10",  CAT25_INFO(128 * 1024, 1, 256, 3, SPI_NOR_NO_ERASE | SPI_NOR_NO_FR) },
+ 
++	/* Fujitsu */
++	{ "mb85rs1mt", INFO(0x047f27, 0, 128 * 1024, 1, SPI_NOR_NO_ERASE) },
++
+ 	/* GigaDevice */
+ 	{ "gd25q32", INFO(0xc84016, 0, 64 * 1024,  64, SECT_4K) },
+ 	{ "gd25q64", INFO(0xc84017, 0, 64 * 1024, 128, SECT_4K) },
 -- 
-Nicolas Ferre
+1.9.1
+
