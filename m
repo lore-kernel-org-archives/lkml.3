@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375AbaIWPBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:01:17 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:11837 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756160AbaIWPBN (ORCPT
+	id S1756685AbaIWPCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:02:31 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:47531 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756384AbaIWPC2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:01:13 -0400
-X-IronPort-AV: E=Sophos;i="5.04,580,1406617200"; 
-   d="scan'208";a="46368586"
-Message-ID: <54218B19.8070208@broadcom.com>
-Date: Tue, 23 Sep 2014 08:00:41 -0700
-From: Scott Branden <sbranden@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Matt Porter <mporter@linaro.org>, Olof Johansson <olof@lixom.net>
-CC: Florian Fainelli <f.fainelli@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>,
-        <arm@kernel.org>, <bcm@fixthebug.org>, <jonathar@broadcom.com>,
-        <rjui@broadcom.com>, <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <hauke@hauke-m.de>,
-        <swarren@wwwdotorg.org>, <computersforpeace@gmail.com>,
-        <marc.ceeeee@gmail.com>, <cernekee@gmail.com>,
-        <gregory.0xf0@gmail.com>
-Subject: Re: [PATCH] ARM: mach-bcm: offer a new maintainer and process
-References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com> <20140923050339.GF7487@localhost> <20140923125423.GC12283@beef>
-In-Reply-To: <20140923125423.GC12283@beef>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 11:02:28 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+From: Weston Andros Adamson <dros@primarydata.com>
+In-Reply-To: <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
+Date: Tue, 23 Sep 2014 11:02:26 -0400
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
+References: <20140923130352.GK26472@arm.com> <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
+To: Will Deacon <will.deacon@arm.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-09-23 05:54 AM, Matt Porter wrote:
-> On Mon, Sep 22, 2014 at 10:03:39PM -0700, Olof Johansson wrote:
->> On Fri, Sep 19, 2014 at 11:17:11AM -0700, Florian Fainelli wrote:
->>> Hi all,
->>>
->>> As some of you may have seen in the news, Broadcom has recently stopped
->>> its mobile SoC activities. Upstream support for Broadcom's Mobile SoCs
->>> was an effort initially started by Christian Daudt and his team, and then
->>> continued by Alex Eleder and Matter Porter assigned to a particular landing
->>> team within Linaro to help Broadcom doing so.
->>>
->>> As part of this effort, Christian and Matt volunteered for centralizing pull
->>> requests coming from the arch/arm/mach-bcm/* directory and as of today, they
->>> are still responsible for merging mach-bcm pull requests coming from brcmstb,
->>> bcm5301x, bcm2835 and bcm63xx, creating an intermediate layer to the arm-soc
->>> tree.
->>>
->>> Following the mobile group shut down, our group (in which Brian, Gregory, Marc,
->>> Kevin and myself are) inherited these mobile SoC platforms, although at this
->>> point we cannot comment on the future of mobile platforms, we know that our
->>> Linaro activities have been stopped.
->>>
->>> We have not heard much from Christian and Matt in a while, and some of our pull
->>> requests have been stalling as a result. We would like to offer both a new
->>> maintainer for the mobile platforms as well as reworking the pull request
->>> process:
->>>
->>> - our group has now full access to these platforms, putting us in the best
->>>    position to support Mobile SoCs questions
->>
->> So, one question I have is whether it makes sense to keep the mobile
->> platforms in the kernel if the line of business is ending?
-I guess one problem is that BCM_MOBILE is quite misnamed.  It should 
-really be called BCM_KONA.  bcm281xx was a successful product in the 
-mobile space.  But mobile products have short lifespans as new versions 
-become available every year.  In fact - there have already been more 
-products made with this chipset that are not mobile based nor in the 
-consumer space.  The happen to be based on an older kernel version but 
-we are planning on moving to a newer kernel version in the future. 
-Variants of this chipset will continue to be used in many non-mobile 
-products for many years going forward.  We could also rename it 
-BCM_IMMOBILE going forward if that helps clarify things.
->>
->> While I truly do appreciate the work done by Matt and others, there's
->> also little chance that it'll see substantial use by anyone. The Capri
->> boards aren't common out in the wild and I'm not aware of any dev
->> boards or consumer products with these SoCs that might want to run
->> mainline? Critical things such as power management and graphics are
->> missing from the current platform support in the kernel, so nobody is
->> likely to want it on their Android phone, etc.
-Yes, thanks for all the hard work in upstreaming this code.  It will be 
-built upon and highly leveraged for other purposes beyond Android phones 
-and power management.
->>
->> Maybe the answer to this is "keep it for now, revisit sometime later",
->> which is perfectly sane -- it has practically no cost to keep it around
->> the way it's looking now.
->
-> It won't hurt my feelings if it's decided that it has no value being in
-> the kernel. :) All I can offer is that *maybe* somebody will have a root
-> exploit for the bcm281xx Roku platforms (that lasts) and/or some of the
-> capri and hawaii handsets out there and find it useful as a starting
-> point to work from an Android vendor tree. I don't know if anybody cares
-> about hacking those platforms or not.
->
-> As mentioned in a followup, the VoIP parts (or some of them, at least)
-> are part of the bcm281xx family and we were expecting them to submit an
-> ethernet driver for the past year. There were repeated reminders that
-> they really care about mainline so I would expect it would be premature
-> to remove that support until we hear from them.
->
-> -Matt
->
-Yes, variants of this chipset will be developed in new products. 
-bcm281xx was also a poor choice of naming as well. Capri or Kona family 
-would have been much more appropriate.  This product is used in VoIP and 
-other non-mobile markets.
+On Sep 23, 2014, at 10:59 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
 
-Regards,
-  Scott
+> On Sep 23, 2014, at 10:53 AM, Will Deacon <will.deacon@arm.com> wrote:
+> 
+>> On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
+>>> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
+>>>> Any more info on how to reproduce this would be really great. Unfortunately I don’t
+>>>> have access to an arm64 system.
+>>> 
+>>> I've not spotted a pattern other than using 64k pages, yet. If I manage to
+>>> get a reproducer, I'll let you know.
+>>> 
+>>>> If it’s possible, could we get a packet trace around when this happens? This is pure
+>>>> speculation, but this might have something to do the resend path - a commit fails
+>>>> and all the requests on the commit list have to be resent.
+>>> 
+>>> Sure, once I can reproduce it reliably, then I'll try to do that.
+>> 
+>> Right, a bunch of DDing from /dev/zero over an ssh session triggers this
+>> very quickly. I've put a binary tcpdump here:
+>> 
+>> http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
+>> 
+>> You may want to filter out the ssh packets. The only `interesting' thing to
+>> me is a retransmission about half way through, but I don't know what I'm
+>> looking for.
+>> 
+>> The NFS server is 10.1.203.204 and the client is 10.1.203.24.
+> 
+> Thanks! You are using NFSv2, so there are no commits - that rules out my hunch.
+
+Wait a second - the whole point of this extra reference (that the WARN_ON_ONCE is
+related to) is to handle the pass off to commit lists.
+
+Maybe I’m just doing the wrong thing here with NFSv2!
+
+More soon.
+
+-dros
+
