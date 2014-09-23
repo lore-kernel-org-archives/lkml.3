@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987AbaIWVsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:48:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50257 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593AbaIWVsE (ORCPT
+	id S1756859AbaIWVwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:52:35 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:45164 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735AbaIWVwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:48:04 -0400
-Date: Tue, 23 Sep 2014 23:47:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "LF.Tan" <lftan.linux@gmail.com>
-cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for
- !CONFIG_SMP
-In-Reply-To: <CAFiDJ5-b_P7aWFXYP4GcgTUb3t_j6dZCsjeGZwVUs+7qo0v-GA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1409232335500.4604@nanos>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com> <1410168160-3624-2-git-send-email-lftan@altera.com> <CAFiDJ5-b_P7aWFXYP4GcgTUb3t_j6dZCsjeGZwVUs+7qo0v-GA@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 23 Sep 2014 17:52:34 -0400
+Date: Tue, 23 Sep 2014 16:52:26 -0500
+From: Michael Welling <mwelling@emacinc.com>
+To: linux-kernel@vger.kernel.org
+Subject: GPIO registration for external Ethernet PHY oscillator enable/disable
+Message-ID: <20140923215226.GA29000@sysresccd>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014, LF.Tan wrote:
-> On Mon, Sep 8, 2014 at 5:22 PM, Ley Foon Tan <lftan@altera.com> wrote:
-> > Follow m68k futex implementation for !CONFIG_SMP.
+I have some questions that span multiple subsystems including
+gpio/pinctrl, apm, and net subsystems.
 
-Great. Follow arch/random implementation blindly and copy all the bugs
-in it.
+On some of our system on module designs, we use a GPIO to toggle the
+enable pin on external oscillators. In particular, we are using a 50Mhz
+oscillator to drive a clock on a RMII Ethernet PHY.
 
-> > +static inline int
-> > +futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-> > +                             u32 oldval, u32 newval)
-> > +{
-> > +       u32 val;
-> > +
-> > +       if (unlikely(get_user(val, uaddr) != 0))
-> > +               return -EFAULT;
-> > +
-> > +       if (val == oldval && unlikely(put_user(newval, uaddr) != 0))
-> > +               return -EFAULT;
-> > +
-> > +       *uval = val;
-> > +
-> > +       return 0;
-> > +}
+Though I can configure the pin such that the Ethernet interface works we 
+are looking to disable the oscillator during APM sleep but after the PHY is 
+put into a low power mode.
 
-Care to explain how this works reliably and resembles proper cmpxchg
-semantics under all circumstances?
+How do I register a GPIO for use in the PHY suspend and resume code?
+Can it be handled outside of the PHY driver?
+If so how do ensure the appropriate suspend and resume sequencing?
 
-Thanks,
-
-	tglx
+For reference, we are using a Micrel KSZ8081 PHY connected to a
+AT91SAMA5D35 processor.
