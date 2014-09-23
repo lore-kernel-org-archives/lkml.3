@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783AbaIWMRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:17:55 -0400
+	id S1755877AbaIWMSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:18:41 -0400
 Received: from top.free-electrons.com ([176.31.233.9]:57113 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755235AbaIWMPm (ORCPT
+	with ESMTP id S1751881AbaIWMPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:15:42 -0400
+	Tue, 23 Sep 2014 08:15:41 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
@@ -15,9 +15,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 5/9] net: pxa168_eth: set the mac address on the Ethernet controller
-Date: Tue, 23 Sep 2014 14:15:32 +0200
-Message-Id: <1411474536-22626-6-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v4 2/9] net: pxa168_eth: add device tree support
+Date: Tue, 23 Sep 2014 14:15:29 +0200
+Message-Id: <1411474536-22626-3-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -25,53 +25,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When changing the MAC address, in addition to updating the dev_addr in
-the net_device structure, this patch also update the MAC address
-registers (high and low) of the Ethernet controller with the new MAC.
-The address stored in these registers is used for IEEE 802.3x Ethernet
-flow control, which is already enabled.
+Add the device tree support to the pxa168_eth driver.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- drivers/net/ethernet/marvell/pxa168_eth.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/net/ethernet/marvell/pxa168_eth.c | 67 ++++++++++++++++++++-----------
+ 1 file changed, 44 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 5aa2ce2625b4..897589455186 100644
+index b370162dbe02..a27cd85c030d 100644
 --- a/drivers/net/ethernet/marvell/pxa168_eth.c
 +++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -60,6 +60,8 @@
- #define PORT_COMMAND		0x0410
- #define PORT_STATUS		0x0418
- #define HTPR			0x0428
-+#define MAC_ADDR_LOW		0x0430
-+#define MAC_ADDR_HIGH		0x0438
- #define SDMA_CONFIG		0x0440
- #define SDMA_CMD		0x0448
- #define INT_CAUSE		0x0450
-@@ -609,11 +611,22 @@ static int pxa168_eth_set_mac_address(struct net_device *dev, void *addr)
- 	struct sockaddr *sa = addr;
- 	struct pxa168_eth_private *pep = netdev_priv(dev);
- 	unsigned char oldMac[ETH_ALEN];
-+	u32 mac_h, mac_l;
+@@ -193,6 +193,7 @@ struct tx_desc {
  
- 	if (!is_valid_ether_addr(sa->sa_data))
- 		return -EADDRNOTAVAIL;
- 	memcpy(oldMac, dev->dev_addr, ETH_ALEN);
- 	memcpy(dev->dev_addr, sa->sa_data, ETH_ALEN);
+ struct pxa168_eth_private {
+ 	int port_num;		/* User Ethernet port number    */
++	int phy_addr;
+ 
+ 	int rx_resource_err;	/* Rx ring resource error flag */
+ 
+@@ -1360,24 +1361,25 @@ static struct phy_device *phy_scan(struct pxa168_eth_private *pep, int phy_addr)
+ 	return phydev;
+ }
+ 
+-static void phy_init(struct pxa168_eth_private *pep, int speed, int duplex)
++static void phy_init(struct pxa168_eth_private *pep)
+ {
+ 	struct phy_device *phy = pep->phy;
+ 
+ 	phy_attach(pep->dev, dev_name(&phy->dev), PHY_INTERFACE_MODE_MII);
+ 
+-	if (speed == 0) {
++	if (pep->pd && pep->pd->speed != 0) {
++		phy->autoneg = AUTONEG_DISABLE;
++		phy->advertising = 0;
++		phy->speed = pep->pd->speed;
++		phy->duplex = pep->pd->duplex;
++	} else {
+ 		phy->autoneg = AUTONEG_ENABLE;
+ 		phy->speed = 0;
+ 		phy->duplex = 0;
+ 		phy->supported &= PHY_BASIC_FEATURES;
+ 		phy->advertising = phy->supported | ADVERTISED_Autoneg;
+-	} else {
+-		phy->autoneg = AUTONEG_DISABLE;
+-		phy->advertising = 0;
+-		phy->speed = speed;
+-		phy->duplex = duplex;
+ 	}
 +
-+	mac_h = sa->sa_data[0] << 24;
-+	mac_h |= sa->sa_data[1] << 16;
-+	mac_h |= sa->sa_data[2] << 8;
-+	mac_h |= sa->sa_data[3];
-+	mac_l = sa->sa_data[4] << 8;
-+	mac_l |= sa->sa_data[5];
-+	wrl(pep, MAC_ADDR_HIGH, mac_h);
-+	wrl(pep, MAC_ADDR_LOW, mac_l);
+ 	phy_start_aneg(phy);
+ }
+ 
+@@ -1385,11 +1387,13 @@ static int ethernet_phy_setup(struct net_device *dev)
+ {
+ 	struct pxa168_eth_private *pep = netdev_priv(dev);
+ 
+-	if (pep->pd->init)
++	if (pep->pd && pep->pd->init)
+ 		pep->pd->init();
+-	pep->phy = phy_scan(pep, pep->pd->phy_addr & 0x1f);
 +
- 	netif_addr_lock_bh(dev);
- 	update_hash_table_mac_address(pep, oldMac, dev->dev_addr);
- 	netif_addr_unlock_bh(dev);
++	pep->phy = phy_scan(pep, pep->phy_addr & 0x1f);
+ 	if (pep->phy != NULL)
+-		phy_init(pep, pep->pd->speed, pep->pd->duplex);
++		phy_init(pep);
++
+ 	update_hash_table_mac_address(pep, NULL, dev->dev_addr);
+ 
+ 	return 0;
+@@ -1453,12 +1457,12 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 
+ 	printk(KERN_NOTICE "PXA168 10/100 Ethernet Driver\n");
+ 
+-	clk = clk_get(&pdev->dev, "MFUCLK");
++	clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(clk)) {
+ 		dev_err(&pdev->dev, "Fast Ethernet failed to get clock\n");
+ 		return -ENODEV;
+ 	}
+-	clk_enable(clk);
++	clk_prepare_enable(clk);
+ 
+ 	dev = alloc_etherdev(sizeof(struct pxa168_eth_private));
+ 	if (!dev) {
+@@ -1475,8 +1479,8 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 		err = -ENODEV;
+ 		goto err_netdev;
+ 	}
+-	pep->base = ioremap(res->start, resource_size(res));
+-	if (pep->base == NULL) {
++	pep->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(pep->base)) {
+ 		err = -ENOMEM;
+ 		goto err_netdev;
+ 	}
+@@ -1493,16 +1497,26 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 	dev_info(&pdev->dev, "Using random mac address\n");
+ 	eth_hw_addr_random(dev);
+ 
+-	pep->pd = dev_get_platdata(&pdev->dev);
+ 	pep->rx_ring_size = NUM_RX_DESCS;
+-	if (pep->pd->rx_queue_size)
+-		pep->rx_ring_size = pep->pd->rx_queue_size;
+-
+ 	pep->tx_ring_size = NUM_TX_DESCS;
+-	if (pep->pd->tx_queue_size)
+-		pep->tx_ring_size = pep->pd->tx_queue_size;
+ 
+-	pep->port_num = pep->pd->port_number;
++	pep->pd = dev_get_platdata(&pdev->dev);
++	if (pep->pd) {
++		if (pep->pd->rx_queue_size)
++			pep->rx_ring_size = pep->pd->rx_queue_size;
++
++		if (pep->pd->tx_queue_size)
++			pep->tx_ring_size = pep->pd->tx_queue_size;
++
++		pep->port_num = pep->pd->port_number;
++		pep->phy_addr = pep->pd->phy_addr;
++	} else if (pdev->dev.of_node) {
++		of_property_read_u32(pdev->dev.of_node, "port-id",
++				     &pep->port_num);
++		of_property_read_u32(pdev->dev.of_node, "phy-addr",
++				     &pep->phy_addr);
++	}
++
+ 	/* Hardware supports only 3 ports */
+ 	BUG_ON(pep->port_num > 2);
+ 	netif_napi_add(dev, &pep->napi, pxa168_rx_poll, pep->rx_ring_size);
+@@ -1603,6 +1617,12 @@ static int pxa168_eth_suspend(struct platform_device *pdev, pm_message_t state)
+ #define pxa168_eth_suspend NULL
+ #endif
+ 
++static const struct of_device_id pxa168_eth_of_match[] = {
++	{ .compatible = "marvell,pxa168-eth" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, pxa168_eth_of_match)
++
+ static struct platform_driver pxa168_eth_driver = {
+ 	.probe = pxa168_eth_probe,
+ 	.remove = pxa168_eth_remove,
+@@ -1610,8 +1630,9 @@ static struct platform_driver pxa168_eth_driver = {
+ 	.resume = pxa168_eth_resume,
+ 	.suspend = pxa168_eth_suspend,
+ 	.driver = {
+-		   .name = DRIVER_NAME,
+-		   },
++		.name		= DRIVER_NAME,
++		.of_match_table	= of_match_ptr(pxa168_eth_of_match),
++	},
+ };
+ 
+ module_platform_driver(pxa168_eth_driver);
 -- 
 1.9.1
 
