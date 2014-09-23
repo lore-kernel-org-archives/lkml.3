@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670AbaIWTHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:07:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754196AbaIWTHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:07:01 -0400
-Date: Tue, 23 Sep 2014 21:03:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] signal: simplify deadlock-avoidance in
-	lock_task_sighand()
-Message-ID: <20140923190348.GA13976@redhat.com>
-References: <20140922164404.GA28910@redhat.com> <20140922164437.GA28939@redhat.com> <20140922145828.4d06108a@gandalf.local.home> <20140922191130.GA4527@redhat.com> <20140922172405.71c4a110@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922172405.71c4a110@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756256AbaIWTHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:07:54 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:45094 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536AbaIWTFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 15:05:49 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH 1/5] pinctrl: samsung: Make samsung_pinctrl_get_soc_data use ERR_PTR()
+Date: Tue, 23 Sep 2014 21:05:37 +0200
+Message-Id: <1411499141-26551-2-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
+References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22, Steven Rostedt wrote:
->
-> On Mon, 22 Sep 2014 21:11:30 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > > > @@ -1261,30 +1261,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
-> > > >  					   unsigned long *flags)
-> > > >  {
-> > > >  	struct sighand_struct *sighand;
-> > > > -
-> > > > +	/*
-> > > > +	 * We are going to do rcu_read_unlock() under spin_lock_irqsave().
-> > > > +	 * Make sure we can not be preempted after rcu_read_lock(), see
-> > > > +	 * rcu_read_unlock() comment header for details.
-> > > > +	 */
-> > > > +	preempt_disable();
-> > >
-> > > The sad part is, this is going to break -rt.
-> >
-> > Hmm, why??
->
-> Because in -rt, siglock is a mutex.
+Currently the function returns a valid pointer on success and NULL on
+error, so exact error code is lost. This patch changes return convention
+of the function to use ERR_PTR() on error instead.
 
-Yes, thanks... I thougt that -rt should handle this somehow, we have
-more examples of preempt_disable() + spin_lock().
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+ drivers/pinctrl/samsung/pinctrl-samsung.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-OK, let's forger this patch. It was supposed to be a cleanup, it should
-not disturb -rt.
-
-> > In fact this deadlock is not really possible in any case, scheduler locks
-> > should be fine under ->siglock (for example, signal_wake_up() is called
-> > under this lock).
-> >
-> > But, the comment above rcu_read_unlock() says:
-> >
-> > 	Given that the set of locks acquired by rt_mutex_unlock() might change
-> > 	at any time, a somewhat more future-proofed approach is to make sure
-> > 	that that preemption never happens ...
->
-> Hmm, I'm not sure we need to worry about this. As in -rt siglock is a
-> mutex, which is rt_mutex() itself, I highly doubt we will have
-> rt_mutex_unlock() grab siglock, otherwise that would cause havoc in -rt.
-
-Yes. And, the changelog in a841796f "signal: align __lock_task_sighand() irq
-disabling and RCU" says:
-
-	It is therefore possible that this RCU read-side critical
-	section will be preempted and later RCU priority boosted, which means
-	that rcu_read_unlock() will call rt_mutex_unlock() in order to deboost
-	itself, but with interrupts disabled. This results in lockdep splats
-	...
-	It is quite possible that a better long-term fix is to make rt_mutex_unlock()
-	disable irqs when acquiring the rt_mutex structure's ->wait_lock.
-
-but this doesn't look right, raw_spin_lock(&lock->wait_lock) should be
-fine with irqs disabled or I am totally confused. rt_mutex_adjust_prio()
-does _irqsave/irqrestore, so this can't enable interrupts.
-
-Paul, will you agree if we turn it into
-
-struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
-					   unsigned long *flags)
-{
-	struct sighand_struct *sighand;
-
-	rcu_read_lock();
-	for (;;) {
-		sighand = rcu_dereference(tsk->sighand);
-		if (unlikely(sighand == NULL))
-			break;
-
-		spin_lock_irqsave(&sighand->siglock, *flags);
-		if (likely(sighand == tsk->sighand))
-			break;
-		spin_unlock_irqrestore(&sighand->siglock, *flags);
-	}
-	/*
-	 * On the succesfull return we hold ->siglock. According to comment
-	 * above rcu_read_unlock() this is against the rules, but scheduler
-	 * locks are fine under this lock, signal_wake_up() takes them too.
-	 */
-	rcu_read_unlock();
-
-	return sighand;
-}
-
-?
-
-Or I can leave this code alone, this is the minor cleanup. Just to me this
-sequence
-
-	local_irq_save();
-	rcu_read_lock();
-	spin_lock();
-
-looks a bit confusing/annoying even with the comment.
-
-Oleg.
+diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.c b/drivers/pinctrl/samsung/pinctrl-samsung.c
+index 4a47691c32b1..0504f0b75de8 100644
+--- a/drivers/pinctrl/samsung/pinctrl-samsung.c
++++ b/drivers/pinctrl/samsung/pinctrl-samsung.c
+@@ -988,7 +988,7 @@ static struct samsung_pin_ctrl *samsung_pinctrl_get_soc_data(
+ 	id = of_alias_get_id(node, "pinctrl");
+ 	if (id < 0) {
+ 		dev_err(&pdev->dev, "failed to get alias id\n");
+-		return NULL;
++		return ERR_PTR(-ENOENT);
+ 	}
+ 	match = of_match_node(samsung_pinctrl_dt_match, node);
+ 	ctrl = (struct samsung_pin_ctrl *)match->data + id;
+@@ -1040,9 +1040,9 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	ctrl = samsung_pinctrl_get_soc_data(drvdata, pdev);
+-	if (!ctrl) {
++	if (IS_ERR(ctrl)) {
+ 		dev_err(&pdev->dev, "driver data not available\n");
+-		return -EINVAL;
++		return PTR_ERR(ctrl);
+ 	}
+ 	drvdata->ctrl = ctrl;
+ 	drvdata->dev = dev;
+-- 
+2.1.0
 
