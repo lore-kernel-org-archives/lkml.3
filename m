@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380AbaIWTFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:05:31 -0400
-Received: from mail-pd0-f201.google.com ([209.85.192.201]:36321 "EHLO
-	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756286AbaIWTF1 (ORCPT
+	id S1756053AbaIWTJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:09:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43968 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaIWTJi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:05:27 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickens <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Feiner <pfeiner@google.com>
-Subject: [PATCH 3/3] tools: parallel selftests building & running
-Date: Tue, 23 Sep 2014 12:05:23 -0700
-Message-Id: <1411499123-18050-3-git-send-email-pfeiner@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1411499123-18050-1-git-send-email-pfeiner@google.com>
-References: <1411499027-17801-1-git-send-email-pfeiner@google.com>
- <1411499123-18050-1-git-send-email-pfeiner@google.com>
+	Tue, 23 Sep 2014 15:09:38 -0400
+Message-ID: <5421C563.8070304@canonical.com>
+Date: Tue, 23 Sep 2014 15:09:23 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: jlayton@redhat.com
+CC: sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [Regression]  cifs: sanity check length of data to send before sending
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now make -jN builds and runs selftests in parallel. Also, if one
-selftest fails to build or run, make will return an error, whereas
-before the error was ignored.
+Hi Jeff,
 
-Also added missing clean target to user/Makefile so 'make clean' doesn't fail.
+A kernel bug report was opened against Ubuntu [0].  It was found that
+reverting the following commit resolved this bug:
 
-Signed-off-by: Peter Feiner <pfeiner@google.com>
----
- tools/testing/selftests/Makefile      | 49 ++++++++++++++---------------------
- tools/testing/selftests/user/Makefile |  2 ++
- 2 files changed, 22 insertions(+), 29 deletions(-)
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 36ff2e4..8c33716 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -18,32 +18,23 @@ TARGETS += firmware
- TARGETS_HOTPLUG = cpu-hotplug
- TARGETS_HOTPLUG += memory-hotplug
- 
--all:
--	for TARGET in $(TARGETS); do \
--		make -C $$TARGET; \
--	done;
--
--run_tests: all
--	for TARGET in $(TARGETS); do \
--		make -C $$TARGET run_tests; \
--	done;
--
--hotplug:
--	for TARGET in $(TARGETS_HOTPLUG); do \
--		make -C $$TARGET; \
--	done;
--
--run_hotplug: hotplug
--	for TARGET in $(TARGETS_HOTPLUG); do \
--		make -C $$TARGET run_full_test; \
--	done;
--
--clean_hotplug:
--	for TARGET in $(TARGETS_HOTPLUG); do \
--		make -C $$TARGET clean; \
--	done;
--
--clean:
--	for TARGET in $(TARGETS); do \
--		make -C $$TARGET clean; \
--	done;
-+BUILD_TARGETS=$(TARGETS:%=build-%) $(TARGETS_HOTPLUG:%=build-%)
-+TEST_TARGETS=$(TARGETS:%=test-%)
-+CLEAN_TARGETS=$(TARGETS:%=clean-%) $(TARGETS_HOTPLUG:%=clean-%)
-+
-+all: $(BUILD_TARGETS)
-+
-+run_hotplug: test-cpu-hotplug test-memory-hotplug
-+
-+run_tests: $(TEST_TARGETS)
-+
-+clean: $(CLEAN_TARGETS)
-+
-+build-%:
-+	$(MAKE) -C $(@:build-%=%)
-+
-+test-%: build-%
-+	$(MAKE) -C $(@:test-%=%) run_tests
-+
-+clean-%:
-+	$(MAKE) -C $(@:clean-%=%) clean
-diff --git a/tools/testing/selftests/user/Makefile b/tools/testing/selftests/user/Makefile
-index 396255b..8eb6583 100644
---- a/tools/testing/selftests/user/Makefile
-+++ b/tools/testing/selftests/user/Makefile
-@@ -3,6 +3,8 @@
- # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
- all:
- 
-+clean:
-+
- run_tests: all
- 	@if /sbin/modprobe test_user_copy ; then \
- 		rmmod test_user_copy; \
--- 
-2.1.0.rc2.206.gedb03e5
+commit a26054d184763969a411e3939fe243516715ff59
+Author: Jeff Layton <jlayton@redhat.com>
+Date:   Fri Feb 14 07:21:00 2014 -0500
+
+    cifs: sanity check length of data to send before sending
+
+      
+The regression was introduced as of v3.14-rc7.
+
+It appears the patch may be doing what it is supposed to, since the
+send_length != smb_buf_length:
+send_length=72
+and
+smb_buf_length=2164260932
+
+However, without this check and WARN/return of -EIO the samba
+connections still work correctly.
+
+I was hoping to get your feedback, since you are the patch author.  Do
+you think gathering any additional data will help diagnose this issue,
+or would it be best to submit a revert request?
+    
+Thanks,
+    
+Joe
+
+[0] http://pad.lv/1372482
 
