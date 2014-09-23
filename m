@@ -1,111 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557AbaIWLQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:16:09 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:37915 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980AbaIWLQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:16:06 -0400
-Date: Tue, 23 Sep 2014 13:15:00 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Carlo Caione <carlo@caione.org>,
-        Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: net: stmmac glue layer for Amlogic Meson SoCs
-Message-ID: <20140923111459.GA4487@gmail.com>
-References: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
- <54211032.6010009@st.com>
+	id S1755699AbaIWLRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:17:13 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48371 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752162AbaIWLRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 07:17:06 -0400
+Date: Tue, 23 Sep 2014 07:16:57 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
+        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: support transparent huge pages under
+ pressure
+Message-ID: <20140923111657.GA13593@cmpxchg.org>
+References: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
+ <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54211032.6010009@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 08:16:18AM +0200, Giuseppe CAVALLARO wrote:
-> On 9/20/2014 3:29 PM, Beniamino Galvani wrote:
-> >Hi,
+On Mon, Sep 22, 2014 at 10:52:50PM -0700, Greg Thelen wrote:
+> 
+> On Fri, Sep 19 2014, Johannes Weiner wrote:
+> 
+> > In a memcg with even just moderate cache pressure, success rates for
+> > transparent huge page allocations drop to zero, wasting a lot of
+> > effort that the allocator puts into assembling these pages.
 > >
-> >the Ethernet controller available in Amlogic Meson6 and Meson8 SoCs is
-> >a Synopsys DesignWare MAC IP core, already supported by the stmmac
-> >driver.
+> > The reason for this is that the memcg reclaim code was never designed
+> > for higher-order charges.  It reclaims in small batches until there is
+> > room for at least one page.  Huge pages charges only succeed when
+> > these batches add up over a series of huge faults, which is unlikely
+> > under any significant load involving order-0 allocations in the group.
 > >
-> >These patches add a glue layer to the driver for the platform-specific
-> >settings required by the Amlogic variant.
+> > Remove that loop on the memcg side in favor of passing the actual
+> > reclaim goal to direct reclaim, which is already set up and optimized
+> > to meet higher-order goals efficiently.
 > >
-> >This has been tested on a Amlogic S802 device with the initial Meson
-> >support submitted by Carlo Caione [1].
+> > This brings memcg's THP policy in line with the system policy: if the
+> > allocator painstakingly assembles a hugepage, memcg will at least make
+> > an honest effort to charge it.  As a result, transparent hugepage
+> > allocation rates amid cache activity are drastically improved:
+> >
+> >                                       vanilla                 patched
+> > pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
+> > pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
+> > pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
+> > thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
+> > thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
+> >
+> > [ Note: this may in turn increase memory consumption from internal
+> >   fragmentation, which is an inherent risk of transparent hugepages.
+> >   Some setups may have to adjust the memcg limits accordingly to
+> >   accomodate this - or, if the machine is already packed to capacity,
+> >   disable the transparent huge page feature. ]
 > 
-> patches look fine just a warning with checkpatch as shown below then
+> We're using an earlier version of this patch, so I approve of the
+> general direction.  But I have some feedback.
 > 
-> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> The memsw aspect of this change seems somewhat separate.  Can it be
+> split into a different patch?
 > 
+> The memsw aspect of this patch seems to change behavior.  Is this
+> intended?  If so, a mention of it in the commit log would assuage the
+> reader.  I'll explain...  Assume a machine with swap enabled and
+> res.limit==memsw.limit, thus memsw_is_minimum is true.  My understanding
+> is that memsw.usage represents sum(ram_usage, swap_usage).  So when
+> memsw_is_minimum=true, then both swap_usage=0 and
+> memsw.usage==res.usage.  In this condition, if res usage is at limit
+> then there's no point in swapping because memsw.usage is already
+> maximal.  Prior to this patch I think the kernel did the right thing,
+> but not afterwards.
 > 
-> [cavagiu@lxmcdt5 net.git]$ git-format-patch -2
-> 0001-net-stmmac-add-Amlogic-Meson-glue-layer.patch
-> 0002-net-stmmac-meson-document-device-tree-bindings.patch
-> [cavagiu@lxmcdt5 net.git]$ !./
-> ./scripts/checkpatch.pl 000*
-> WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
-> #57:
-> new file mode 100644
+> Before this patch:
+>   if res.usage == res.limit, try_charge() indirectly calls
+>   try_to_free_mem_cgroup_pages(noswap=true)
 > 
-> WARNING: DT compatible string vendor "amlogic" appears un-documented
-> -- check ./Documentation/devicetree/bindings/vendor-prefixes.txt
-> #152: FILE: drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c:34:
-> +	{ .compatible = "amlogic,meson6-dwmac", .data = &meson6_dwmac_data},
+> After this patch:
+>   if res.usage == res.limit, try_charge() calls
+>   try_to_free_mem_cgroup_pages(may_swap=true)
+> 
+> Notice the inverted swap-is-allowed value.
 
-Hi Giuseppe,
+For some reason I had myself convinced that this is dead code due to a
+change in callsites a long time ago, but you are right that currently
+try_charge() relies on it, thanks for pointing it out.
 
-thanks for the review. The amlogic vendor prefix is documented as part
-of the initial Meson support in the series reported in the cover
-letter.
+However, memsw is always equal to or bigger than the memory limit - so
+instead of keeping a separate state variable to track when memory
+failure implies memsw failure, couldn't we just charge memsw first?
 
-Beniamino
+How about the following?  But yeah, I'd split this into a separate
+patch now.
 
-> 
-> total: 0 errors, 2 warnings, 0 checks, 108 lines checked
-> 
-> 0001-net-stmmac-add-Amlogic-Meson-glue-layer.patch has style
-> problems, please review.
-> 
-> If any of these errors are false positives, please report
-> them to the maintainer, see CHECKPATCH in MAINTAINERS.
-> WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
-> #17:
-> new file mode 100644
-> 
-> total: 0 errors, 1 warnings, 25 lines checked
-> 
-> 0002-net-stmmac-meson-document-device-tree-bindings.patch has style
-> problems, please review.
-> 
-> If any of these errors are false positives, please report
-> them to the maintainer, see CHECKPATCH in MAINTAINERS.
-> 
-> >
-> >[1] http://lwn.net/Articles/612000/
-> >
-> >Beniamino Galvani (2):
-> >   net: stmmac: add Amlogic Meson glue layer
-> >   net: stmmac: meson: document device tree bindings
-> >
-> >  .../devicetree/bindings/net/meson-dwmac.txt        | 25 ++++++++
-> >  drivers/net/ethernet/stmicro/stmmac/Kconfig        | 10 ++++
-> >  drivers/net/ethernet/stmicro/stmmac/Makefile       |  1 +
-> >  drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c  | 67 ++++++++++++++++++++++
-> >  drivers/net/ethernet/stmicro/stmmac/stmmac.h       |  3 +
-> >  .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |  3 +
-> >  6 files changed, 109 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/net/meson-dwmac.txt
-> >  create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-meson.c
-> >
-> 
+---
+ mm/memcontrol.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e2def11f1ec1..7c9a8971d0f4 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2497,16 +2497,17 @@ retry:
+ 		goto done;
+ 
+ 	size = batch * PAGE_SIZE;
+-	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
+-		if (!do_swap_account)
++	if (!do_swap_account ||
++	    !res_counter_charge(&memcg->memsw, size, &fail_res)) {
++		if (!res_counter_charge(&memcg->res, size, &fail_res))
+ 			goto done_restock;
+-		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
+-			goto done_restock;
+-		res_counter_uncharge(&memcg->res, size);
++		if (do_swap_account)
++			res_counter_uncharge(&memcg->memsw, size);
++		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
++	} else {
+ 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
+ 		may_swap = false;
+-	} else
+-		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
++	}
+ 
+ 	if (batch > nr_pages) {
+ 		batch = nr_pages;
+-- 
+2.1.0
