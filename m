@@ -1,210 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920AbaIWVHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:07:23 -0400
-Received: from smtprelay0210.hostedemail.com ([216.40.44.210]:35441 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756176AbaIWVHV (ORCPT
+	id S1756871AbaIWVIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:08:20 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:55344 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735AbaIWVIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:07:21 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:2:41:69:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2194:2199:2393:2559:2562:2693:2828:2904:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3871:3872:3873:4049:4118:4225:4250:4321:4419:4605:5007:6119:7652:7875:7903:9592:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:12740:13972:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: birds92_3fcf57d6e2459
-X-Filterd-Recvd-Size: 7679
-Message-ID: <1411506437.29268.13.camel@joe-AO725>
-Subject: Re: [PATCH v2] et131x: Promote staging et131x driver to drivers/net
-From: Joe Perches <joe@perches.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@linuxfoundation.org, davem@davemloft.net, angus@agibson.me,
-        tklauser@distanz.ch, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, devel@driverdev.osuosl.org
-Date: Tue, 23 Sep 2014 14:07:17 -0700
-In-Reply-To: <1411502723-4628-1-git-send-email-mark.einon@gmail.com>
-References: <1411421283-25073-1-git-send-email-mark.einon@gmail.com>
-	 <1411502723-4628-1-git-send-email-mark.einon@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 17:08:19 -0400
+Date: Tue, 23 Sep 2014 14:09:58 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH 2/9] percpu_ref: minor code and comment updates
+Message-ID: <20140923210958.GC15142@kmo-pixel>
+References: <1411451718-17807-1-git-send-email-tj@kernel.org>
+ <1411451718-17807-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411451718-17807-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 21:05 +0100, Mark Einon wrote:
-> This patch moves the et131x gigabit ethernet driver from drivers/staging
-> to drivers/net/ethernet/agere.
+On Tue, Sep 23, 2014 at 01:55:11AM -0400, Tejun Heo wrote:
+> * Some comments became stale.  Updated.
+> * percpu_ref_tryget() unnecessarily initializes @ret.  Removed.
+> * A blank line removed from percpu_ref_kill_rcu().
+> * Explicit function name in a WARN format string replaced with __func__.
+> * WARN_ON() in percpu_ref_reinit() converted to WARN_ON_ONCE().
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Kent Overstreet <kmo@daterainc.com>
 
-checkpatch type modification you might consider:
+Reviewed-by: Kent Overstreet <kmo@daterainc.com>
 
-Reduce logging line count by consolidating repeated dev_warn
-Use ether_addr_copy
-Line wrapping for 80 columns
-Remove unnecessary parentheses
-Remove unnecessary OOM message
-
----
- drivers/staging/et131x/et131x.c | 51 ++++++++++++++++-------------------------
- 1 file changed, 20 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index eefa9f1..3aaedc9 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -1294,9 +1294,8 @@ static int et131x_phy_mii_read(struct et131x_adapter *adapter, u8 addr,
- 	/* If we hit the max delay, we could not read the register */
- 	if (delay == 50) {
- 		dev_warn(&adapter->pdev->dev,
--			 "reg 0x%08x could not be read\n", reg);
--		dev_warn(&adapter->pdev->dev, "status is  0x%08x\n",
--			 mii_indicator);
-+			 "reg 0x%08x could not be read - status is 0x%08x\n",
-+			 reg, mii_indicator);
- 
- 		status = -EIO;
- 		goto out;
-@@ -1371,11 +1370,8 @@ static int et131x_mii_write(struct et131x_adapter *adapter, u8 addr, u8 reg,
- 		u16 tmp;
- 
- 		dev_warn(&adapter->pdev->dev,
--			 "reg 0x%08x could not be written", reg);
--		dev_warn(&adapter->pdev->dev, "status is  0x%08x\n",
--			 mii_indicator);
--		dev_warn(&adapter->pdev->dev, "command is  0x%08x\n",
--			 readl(&mac->mii_mgmt_cmd));
-+			 "reg 0x%08x could not be written - status is 0x%08x - command is 0x%08x\n",
-+			 reg, mii_indicator, readl(&mac->mii_mgmt_cmd));
- 
- 		et131x_mii_read(adapter, reg, &tmp);
- 
-@@ -2444,10 +2440,8 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
- 	rfd->len = len;
- 
- 	skb = dev_alloc_skb(rfd->len + 2);
--	if (!skb) {
--		dev_err(&adapter->pdev->dev, "Couldn't alloc an SKB for Rx\n");
-+	if (!skb)
- 		return NULL;
--	}
- 
- 	adapter->netdev->stats.rx_bytes += rfd->len;
- 
-@@ -2661,7 +2655,7 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
- 				desc[frag].len_vlan = skb_headlen(skb) / 2;
- 				dma_addr = dma_map_single(&adapter->pdev->dev,
- 							  skb->data,
--							  (skb_headlen(skb) / 2),
-+							  skb_headlen(skb) / 2,
- 							  DMA_TO_DEVICE);
- 				desc[frag].addr_lo = lower_32_bits(dma_addr);
- 				desc[frag].addr_hi = upper_32_bits(dma_addr);
-@@ -2670,8 +2664,8 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
- 				desc[frag].len_vlan = skb_headlen(skb) / 2;
- 				dma_addr = dma_map_single(&adapter->pdev->dev,
- 							  skb->data +
--							  (skb_headlen(skb) / 2),
--							  (skb_headlen(skb) / 2),
-+							  skb_headlen(skb) / 2,
-+							  skb_headlen(skb) / 2,
- 							  DMA_TO_DEVICE);
- 				desc[frag].addr_lo = lower_32_bits(dma_addr);
- 				desc[frag].addr_hi = upper_32_bits(dma_addr);
-@@ -3212,15 +3206,13 @@ static void et131x_hwaddr_init(struct et131x_adapter *adapter)
- 		 * working with so we need to copy the current
- 		 * address into the permanent address
- 		 */
--		memcpy(adapter->rom_addr,
--		       adapter->addr, ETH_ALEN);
-+		ether_addr_copy(adapter->rom_addr, adapter->addr);
- 	} else {
- 		/* We do not have an override address, so set the
- 		 * current address to the permanent address and add
- 		 * it to the device
- 		 */
--		memcpy(adapter->addr,
--		       adapter->rom_addr, ETH_ALEN);
-+		ether_addr_copy(adapter->addr, adapter->rom_addr);
- 	}
- }
- 
-@@ -3415,7 +3407,8 @@ static void et131x_adjust_link(struct net_device *netdev)
- 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
- 					&register18);
- 			et131x_mii_write(adapter, phydev->addr,
--					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
-+					 PHY_MPHY_CONTROL_REG,
-+					 register18 | 0x4);
- 			et131x_mii_write(adapter, phydev->addr, PHY_INDEX_REG,
- 					 register18 | 0x8402);
- 			et131x_mii_write(adapter, phydev->addr, PHY_DATA_REG,
-@@ -3448,7 +3441,8 @@ static void et131x_adjust_link(struct net_device *netdev)
- 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
- 					&register18);
- 			et131x_mii_write(adapter, phydev->addr,
--					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
-+					 PHY_MPHY_CONTROL_REG,
-+					 register18 | 0x4);
- 			et131x_mii_write(adapter, phydev->addr,
- 					 PHY_INDEX_REG, register18 | 0x8402);
- 			et131x_mii_write(adapter, phydev->addr,
-@@ -3778,8 +3772,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
- 		 */
- 		/* TRAP();*/
- 
--		dev_warn(&adapter->pdev->dev,
--			 "RxDMA_ERR interrupt, error %x\n",
-+		dev_warn(&adapter->pdev->dev, "RxDMA_ERR interrupt, error %x\n",
- 			 readl(&iomem->txmac.tx_test));
- 	}
- 
-@@ -3805,8 +3798,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
- 		 * occur. In a nutshell, the whole Tx path will have to be reset
- 		 * and re-configured afterwards.
- 		 */
--		dev_warn(&adapter->pdev->dev,
--			 "TXMAC interrupt, error 0x%08x\n",
-+		dev_warn(&adapter->pdev->dev, "TXMAC interrupt, error 0x%08x\n",
- 			 err);
- 
- 		/* If we are debugging, we want to see this error, otherwise we
-@@ -3823,11 +3815,8 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
- 		/* MP_SET_FLAG( adapter, FMP_ADAPTER_HARDWARE_ERROR); */
- 
- 		dev_warn(&adapter->pdev->dev,
--			 "RXMAC interrupt, error 0x%08x.  Requesting reset\n",
-+			 "RXMAC interrupt, error 0x%08x - requesting reset - Enable 0x%08x, Diag 0x%08x\n",
- 			 readl(&iomem->rxmac.err_reg));
--
--		dev_warn(&adapter->pdev->dev,
--			 "Enable 0x%08x, Diag 0x%08x\n",
- 			 readl(&iomem->rxmac.ctrl),
- 			 readl(&iomem->rxmac.rxq_diag));
- 
-@@ -4081,7 +4070,7 @@ static void et131x_multicast(struct net_device *netdev)
- 	netdev_for_each_mc_addr(ha, netdev) {
- 		if (i == NIC_MAX_MCAST_LIST)
- 			break;
--		memcpy(adapter->multicast_list[i++], ha->addr, ETH_ALEN);
-+		ether_addr_copy(adapter->multicast_list[i++], ha->addr);
- 	}
- 	adapter->multicast_addr_count = i;
- 
-@@ -4211,7 +4200,7 @@ static int et131x_change_mtu(struct net_device *netdev, int new_mtu)
- 	et131x_init_send(adapter);
- 
- 	et131x_hwaddr_init(adapter);
--	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
-+	ether_addr_copy(netdev->dev_addr, adapter->addr);
- 
- 	/* Init the device with the new settings */
- 	et131x_adapter_setup(adapter);
-@@ -4329,7 +4318,7 @@ static int et131x_pci_setup(struct pci_dev *pdev,
- 	netif_napi_add(netdev, &adapter->napi, et131x_poll, 64);
- 
- 	/* Copy address into the net_device struct */
--	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
-+	ether_addr_copy(netdev->dev_addr, adapter->addr);
- 
- 	rc = -ENOMEM;
- 
-
-
+> ---
+>  include/linux/percpu-refcount.h | 25 ++++++++++++++++---------
+>  lib/percpu-refcount.c           | 14 ++++++--------
+>  2 files changed, 22 insertions(+), 17 deletions(-)
+> 
+> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+> index f015f13..d44b027 100644
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -115,8 +115,10 @@ static inline bool __pcpu_ref_alive(struct percpu_ref *ref,
+>   * percpu_ref_get - increment a percpu refcount
+>   * @ref: percpu_ref to get
+>   *
+> - * Analagous to atomic_inc().
+> -  */
+> + * Analagous to atomic_long_inc().
+> + *
+> + * This function is safe to call as long as @ref is between init and exit.
+> + */
+>  static inline void percpu_ref_get(struct percpu_ref *ref)
+>  {
+>  	unsigned long __percpu *pcpu_count;
+> @@ -138,12 +140,12 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+>   * Increment a percpu refcount unless its count already reached zero.
+>   * Returns %true on success; %false on failure.
+>   *
+> - * The caller is responsible for ensuring that @ref stays accessible.
+> + * This function is safe to call as long as @ref is between init and exit.
+>   */
+>  static inline bool percpu_ref_tryget(struct percpu_ref *ref)
+>  {
+>  	unsigned long __percpu *pcpu_count;
+> -	int ret = false;
+> +	int ret;
+>  
+>  	rcu_read_lock_sched();
+>  
+> @@ -166,12 +168,13 @@ static inline bool percpu_ref_tryget(struct percpu_ref *ref)
+>   * Increment a percpu refcount unless it has already been killed.  Returns
+>   * %true on success; %false on failure.
+>   *
+> - * Completion of percpu_ref_kill() in itself doesn't guarantee that tryget
+> - * will fail.  For such guarantee, percpu_ref_kill_and_confirm() should be
+> - * used.  After the confirm_kill callback is invoked, it's guaranteed that
+> - * no new reference will be given out by percpu_ref_tryget().
+> + * Completion of percpu_ref_kill() in itself doesn't guarantee that this
+> + * function will fail.  For such guarantee, percpu_ref_kill_and_confirm()
+> + * should be used.  After the confirm_kill callback is invoked, it's
+> + * guaranteed that no new reference will be given out by
+> + * percpu_ref_tryget_live().
+>   *
+> - * The caller is responsible for ensuring that @ref stays accessible.
+> + * This function is safe to call as long as @ref is between init and exit.
+>   */
+>  static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
+>  {
+> @@ -196,6 +199,8 @@ static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
+>   *
+>   * Decrement the refcount, and if 0, call the release function (which was passed
+>   * to percpu_ref_init())
+> + *
+> + * This function is safe to call as long as @ref is between init and exit.
+>   */
+>  static inline void percpu_ref_put(struct percpu_ref *ref)
+>  {
+> @@ -216,6 +221,8 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
+>   * @ref: percpu_ref to test
+>   *
+>   * Returns %true if @ref reached zero.
+> + *
+> + * This function is safe to call as long as @ref is between init and exit.
+>   */
+>  static inline bool percpu_ref_is_zero(struct percpu_ref *ref)
+>  {
+> diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+> index 070dab5..8ef3f5c 100644
+> --- a/lib/percpu-refcount.c
+> +++ b/lib/percpu-refcount.c
+> @@ -108,7 +108,6 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+>  	 * reaching 0 before we add the percpu counts. But doing it at the same
+>  	 * time is equivalent and saves us atomic operations:
+>  	 */
+> -
+>  	atomic_long_add((long)count - PCPU_COUNT_BIAS, &ref->count);
+>  
+>  	WARN_ONCE(atomic_long_read(&ref->count) <= 0,
+> @@ -120,8 +119,8 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+>  		ref->confirm_kill(ref);
+>  
+>  	/*
+> -	 * Now we're in single atomic_t mode with a consistent refcount, so it's
+> -	 * safe to drop our initial ref:
+> +	 * Now we're in single atomic_long_t mode with a consistent
+> +	 * refcount, so it's safe to drop our initial ref:
+>  	 */
+>  	percpu_ref_put(ref);
+>  }
+> @@ -134,8 +133,8 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+>   * Equivalent to percpu_ref_kill() but also schedules kill confirmation if
+>   * @confirm_kill is not NULL.  @confirm_kill, which may not block, will be
+>   * called after @ref is seen as dead from all CPUs - all further
+> - * invocations of percpu_ref_tryget() will fail.  See percpu_ref_tryget()
+> - * for more details.
+> + * invocations of percpu_ref_tryget_live() will fail.  See
+> + * percpu_ref_tryget_live() for more details.
+>   *
+>   * Due to the way percpu_ref is implemented, @confirm_kill will be called
+>   * after at least one full RCU grace period has passed but this is an
+> @@ -145,8 +144,7 @@ void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *confirm_kill)
+>  {
+>  	WARN_ONCE(ref->pcpu_count_ptr & PCPU_REF_DEAD,
+> -		  "percpu_ref_kill() called more than once on %pf!",
+> -		  ref->release);
+> +		  "%s called more than once on %pf!", __func__, ref->release);
+>  
+>  	ref->pcpu_count_ptr |= PCPU_REF_DEAD;
+>  	ref->confirm_kill = confirm_kill;
+> @@ -172,7 +170,7 @@ void percpu_ref_reinit(struct percpu_ref *ref)
+>  	int cpu;
+>  
+>  	BUG_ON(!pcpu_count);
+> -	WARN_ON(!percpu_ref_is_zero(ref));
+> +	WARN_ON_ONCE(!percpu_ref_is_zero(ref));
+>  
+>  	atomic_long_set(&ref->count, 1 + PCPU_COUNT_BIAS);
+>  
+> -- 
+> 1.9.3
+> 
