@@ -1,312 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124AbaIWGRC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:17:02 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:34614 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbaIWGQ6 (ORCPT
+	id S1754305AbaIWGRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:17:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:8820 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841AbaIWGRW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:16:58 -0400
-References: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
-From: Greg Thelen <gthelen@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: support transparent huge pages under pressure
-Date: Mon, 22 Sep 2014 22:52:50 -0700
-In-reply-to: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
-Message-ID: <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 23 Sep 2014 02:17:22 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-ec-542110703da2
+From: Kukjin Kim <kgene@kernel.org>
+To: "=?utf-8?Q?'Andreas_F=C3=A4rber'?=" <afaerber@suse.de>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        "'Daniel Drake'" <drake@endlessm.com>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk>
+ <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com>
+ <5419ADF9.3010509@suse.de>
+In-reply-to: 
+Subject: RE: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on
+ exynos5250-snow
+Date: Tue, 23 Sep 2014 15:17:17 +0900
+Message-id: <00f801cfd6f6$07e10500$17a30f00$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQLbS3wcopW0Zexicw3nUqbcbogB6QLhhACVAbb1ttEBy1EbVJnDBZWAgAEwYEA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zfd0CAcUQg3cT+S2aNxVbXP/ynNXi
+	7LKDbBaP5j9mtjj6u8Bi0+NrrBaXd81hs5hxfh+TA4fH7IaLLB5/n19n8Vj0Pctj85J6j74t
+	qxg9Np+u9vi8SS6APYrLJiU1J7MstUjfLoErY8eFDUwF3TwV744vYWxg/MvRxcjJISFgIrHp
+	dD8zhC0mceHeerYuRi4OIYFljBL3lqxngik6MncfVGIRo0Tz2YvMEM5fRomtf7eydDFycLAJ
+	KEs0NumDNAgLaEks3NLEAmKLCCRL7J27BayeWWACk8TWVfsYQRJCAj8ZJbb/qwKxOQV4JNb9
+	6WSGaA6WWLXyIJjNIqAq8X/LJFYQm1fAQqJzfS8zhC0o8WPyPbC9zALqElOm5IKEmQW0JZ68
+	u8AKcbSCxI6zrxkhbvCTOLx8ERNEjYjEvhfvGCFqWjkkpjawQKwSkPg2+RDYSAkBWYlNB6CB
+	IilxcMUNlgmMkrOQLJ6FsHgWksWzkCxYwMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMk
+	zifuYLx/wPoQowAHoxIPr8cahRAh1sSy4srcQ4ymQAdNZJYSTc4HJpO8knhDYzMjC1MTU2Mj
+	c0szJXFeHemfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYzR7oprMmWvROmG748n8qNzcv
+	y423D9ZZf71y5KmsxMoazp4ZEzwlZjyymDXvfHe0qoPqdQ9rAX8nR3mWB72c7748CZ+uv0nw
+	gFbKnG22tu9WPFbw/K8m5e7km+W1QPSKyqN5Ys4ykSF9iRXSj73ruvd+PPJp4g2PK6n93Tw+
+	BaVqZ/hWuM1WYinOSDTUYi4qTgQAoUwXee4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd0CAcUQg3mXuSyaNxVbXP/ynNXi
+	7LKDbBaP5j9mtjj6u8Bi0+NrrBaXd81hs5hxfh+TA4fH7IaLLB5/n19n8Vj0Pctj85J6j74t
+	qxg9Np+u9vi8SS6APaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfV
+	VsnFJ0DXLTMH6CIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aOCxuY
+	Crp5Kt4dX8LYwPiXo4uRk0NCwETiyNx9bBC2mMSFe+uBbC4OIYFFjBLNZy8yQzh/GSW2/t3K
+	0sXIwcEmoCzR2KQP0iAsoCWxcEsTC4gtIpAssXfuFrB6ZoEJTBJbV+1jBEkICfxklNj+rwrE
+	5hTgkVj3p5MZojlYYtXKg2A2i4CqxP8tk1hBbF4BC4nO9b3MELagxI/J98D2MguoS0yZkgsS
+	ZhbQlnjy7gIrxNEKEjvOvmaEuMFP4vDyRUwQNSIS+168Y5zAKDwLyaRZCJNmIZk0C0nHAkaW
+	VYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBaeSZ9A7GVQ0WhxgFOBiVeHg91yiECLEmlhVX
+	5h5ilOBgVhLhLZkIFOJNSaysSi3Kjy8qzUktPsRoCvTnRGYp0eR8YIrLK4k3NDYxM7I0MrMw
+	MjE3VxLnPdhqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAaHZa5OilH3d8NY3n7T/rf263cMm28mRn
+	3qBUK4UbxwVFTbaknxT466ay0Vf6lZuM/AFbybpLjUeWNpZMtEpaLDZ7e0elTXSu6daPiaU6
+	FVdeWK0/YSBxss1s6qS/r5yn+CU/uHvVrr8hgfV5xJqrC+7JLkurOqN1c+Wm1Yk3A4xy9h1o
+	8nj3SomlOCPRUIu5qDgRANCf4QY5AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kukjin Kim wrote:
+> > 
+> Andreas Färber wrote:
 
-On Fri, Sep 19 2014, Johannes Weiner wrote:
+[...]
 
-> In a memcg with even just moderate cache pressure, success rates for
-> transparent huge page allocations drop to zero, wasting a lot of
-> effort that the allocator puts into assembling these pages.
->
-> The reason for this is that the memcg reclaim code was never designed
-> for higher-order charges.  It reclaims in small batches until there is
-> room for at least one page.  Huge pages charges only succeed when
-> these batches add up over a series of huge faults, which is unlikely
-> under any significant load involving order-0 allocations in the group.
->
-> Remove that loop on the memcg side in favor of passing the actual
-> reclaim goal to direct reclaim, which is already set up and optimized
-> to meet higher-order goals efficiently.
->
-> This brings memcg's THP policy in line with the system policy: if the
-> allocator painstakingly assembles a hugepage, memcg will at least make
-> an honest effort to charge it.  As a result, transparent hugepage
-> allocation rates amid cache activity are drastically improved:
->
->                                       vanilla                 patched
-> pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
-> pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
-> pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
-> thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
-> thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
->
-> [ Note: this may in turn increase memory consumption from internal
->   fragmentation, which is an inherent risk of transparent hugepages.
->   Some setups may have to adjust the memcg limits accordingly to
->   accomodate this - or, if the machine is already packed to capacity,
->   disable the transparent huge page feature. ]
+> > > Kukjin: Andreas's patch series was Reviewed long ago I think and by
+> > > now I'd imagine it's got some conflicts due to it not having been
+> > > applied in a timely fashion.  Perhaps you could fix it up for Andreas
+> > > (since he's already rebased it several times) and land it?
+> > >
+> > > If I had to guess, outstanding from Andreas's series (patchwork IDs listed):
+> > >
+> > > 4751131 New          [v7] ARM: dts: Prepare node labels for exynos5250
+> > > 4664801 New          [v6,04/10] ARM: dts: Clean up exynos5250-snow
+> > > 4664771 New          [v6,05/10] ARM: dts: Fill in bootargs for exynos5250-snow
+> > > 4664731 New          [v6,06/10] ARM: dts: Clean up exynos5250-smdk5250
+> > > 4664751 New          [v6,07/10] ARM: dts: Clean up exynos5250-arndale
+> > > 4664711 New          [v6,08/10] ARM: dts: Fix apparent GPIO typo in
+> > > exynos5250-arndale
+> > > 4664681 New          [v6,09/10] ARM: dts: Simplify USB3503 on exynos5250-arndale
+> > > 4664691 New          [v6,10/10] ARM: dts: Add exynos5250-spring device tree
+> >
+> > Yes, Kukjin told me not to resend anything, and I haven't heard back
+> > from him since his Kernel Summit trip.
+> >
+> Sorry about that and I thought I took them :( I'll sort them out tonight
+> including this series together.
+> 
+Hmm...since some conflicts with dp and mmc_slot related patches, I couldn't,
+but Andreas' patches will be handled by tonight :(
 
-We're using an earlier version of this patch, so I approve of the
-general direction.  But I have some feedback.
+- Kukjin
 
-The memsw aspect of this change seems somewhat separate.  Can it be
-split into a different patch?
-
-The memsw aspect of this patch seems to change behavior.  Is this
-intended?  If so, a mention of it in the commit log would assuage the
-reader.  I'll explain...  Assume a machine with swap enabled and
-res.limit==memsw.limit, thus memsw_is_minimum is true.  My understanding
-is that memsw.usage represents sum(ram_usage, swap_usage).  So when
-memsw_is_minimum=true, then both swap_usage=0 and
-memsw.usage==res.usage.  In this condition, if res usage is at limit
-then there's no point in swapping because memsw.usage is already
-maximal.  Prior to this patch I think the kernel did the right thing,
-but not afterwards.
-
-Before this patch:
-  if res.usage == res.limit, try_charge() indirectly calls
-  try_to_free_mem_cgroup_pages(noswap=true)
-
-After this patch:
-  if res.usage == res.limit, try_charge() calls
-  try_to_free_mem_cgroup_pages(may_swap=true)
-
-Notice the inverted swap-is-allowed value.
-
-I haven't had time to look at your other outstanding memcg patches.
-These comments were made with this patch in isolation.
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/swap.h |  6 ++--
->  mm/memcontrol.c      | 86 +++++++++++-----------------------------------------
->  mm/vmscan.c          |  7 +++--
->  3 files changed, 25 insertions(+), 74 deletions(-)
->
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index ea4f926e6b9b..37a585beef5c 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -327,8 +327,10 @@ extern void lru_cache_add_active_or_unevictable(struct page *page,
->  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  					gfp_t gfp_mask, nodemask_t *mask);
->  extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
-> -extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
-> -						  gfp_t gfp_mask, bool noswap);
-> +extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-> +						  unsigned long nr_pages,
-> +						  gfp_t gfp_mask,
-> +						  bool may_swap);
->  extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						gfp_t gfp_mask, bool noswap,
->  						struct zone *zone,
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9431024e490c..e2def11f1ec1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -315,9 +315,6 @@ struct mem_cgroup {
->  	/* OOM-Killer disable */
->  	int		oom_kill_disable;
->  
-> -	/* set when res.limit == memsw.limit */
-> -	bool		memsw_is_minimum;
-> -
->  	/* protect arrays of thresholds */
->  	struct mutex thresholds_lock;
->  
-> @@ -481,14 +478,6 @@ enum res_type {
->  #define OOM_CONTROL		(0)
->  
->  /*
-> - * Reclaim flags for mem_cgroup_hierarchical_reclaim
-> - */
-> -#define MEM_CGROUP_RECLAIM_NOSWAP_BIT	0x0
-> -#define MEM_CGROUP_RECLAIM_NOSWAP	(1 << MEM_CGROUP_RECLAIM_NOSWAP_BIT)
-> -#define MEM_CGROUP_RECLAIM_SHRINK_BIT	0x1
-> -#define MEM_CGROUP_RECLAIM_SHRINK	(1 << MEM_CGROUP_RECLAIM_SHRINK_BIT)
-> -
-> -/*
->   * The memcg_create_mutex will be held whenever a new cgroup is created.
->   * As a consequence, any change that needs to protect against new child cgroups
->   * appearing has to hold it as well.
-> @@ -1794,42 +1783,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  			 NULL, "Memory cgroup out of memory");
->  }
->  
-> -static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
-> -					gfp_t gfp_mask,
-> -					unsigned long flags)
-> -{
-> -	unsigned long total = 0;
-> -	bool noswap = false;
-> -	int loop;
-> -
-> -	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
-> -		noswap = true;
-> -	if (!(flags & MEM_CGROUP_RECLAIM_SHRINK) && memcg->memsw_is_minimum)
-> -		noswap = true;
-> -
-> -	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
-> -		if (loop)
-> -			drain_all_stock_async(memcg);
-> -		total += try_to_free_mem_cgroup_pages(memcg, gfp_mask, noswap);
-> -		/*
-> -		 * Allow limit shrinkers, which are triggered directly
-> -		 * by userspace, to catch signals and stop reclaim
-> -		 * after minimal progress, regardless of the margin.
-> -		 */
-> -		if (total && (flags & MEM_CGROUP_RECLAIM_SHRINK))
-> -			break;
-> -		if (mem_cgroup_margin(memcg))
-> -			break;
-> -		/*
-> -		 * If nothing was reclaimed after two attempts, there
-> -		 * may be no reclaimable pages in this hierarchy.
-> -		 */
-> -		if (loop && !total)
-> -			break;
-> -	}
-> -	return total;
-> -}
-> -
->  /**
->   * test_mem_cgroup_node_reclaimable
->   * @memcg: the target memcg
-> @@ -2532,8 +2485,9 @@ static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	struct mem_cgroup *mem_over_limit;
->  	struct res_counter *fail_res;
->  	unsigned long nr_reclaimed;
-> -	unsigned long flags = 0;
->  	unsigned long long size;
-> +	bool may_swap = true;
-> +	bool drained = false;
->  	int ret = 0;
->  
->  	if (mem_cgroup_is_root(memcg))
-> @@ -2550,7 +2504,7 @@ retry:
->  			goto done_restock;
->  		res_counter_uncharge(&memcg->res, size);
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
-> -		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
-> +		may_swap = false;
->  	} else
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
->  
-> @@ -2576,11 +2530,18 @@ retry:
->  	if (!(gfp_mask & __GFP_WAIT))
->  		goto nomem;
->  
-> -	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
-> +	nr_reclaimed = try_to_free_mem_cgroup_pages(mem_over_limit, nr_pages,
-> +						    gfp_mask, may_swap);
->  
->  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->  		goto retry;
->  
-> +	if (!drained) {
-> +		drain_all_stock_async(mem_over_limit);
-> +		drained = true;
-> +		goto retry;
-> +	}
-> +
->  	if (gfp_mask & __GFP_NORETRY)
->  		goto nomem;
->  	/*
-> @@ -3655,19 +3616,13 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  			enlarge = 1;
->  
->  		ret = res_counter_set_limit(&memcg->res, val);
-> -		if (!ret) {
-> -			if (memswlimit == val)
-> -				memcg->memsw_is_minimum = true;
-> -			else
-> -				memcg->memsw_is_minimum = false;
-> -		}
->  		mutex_unlock(&set_limit_mutex);
->  
->  		if (!ret)
->  			break;
->  
-> -		mem_cgroup_reclaim(memcg, GFP_KERNEL,
-> -				   MEM_CGROUP_RECLAIM_SHRINK);
-> +		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, true);
-> +
->  		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
->  		/* Usage is reduced ? */
->  		if (curusage >= oldusage)
-> @@ -3714,20 +3669,13 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
->  		if (memswlimit < val)
->  			enlarge = 1;
->  		ret = res_counter_set_limit(&memcg->memsw, val);
-> -		if (!ret) {
-> -			if (memlimit == val)
-> -				memcg->memsw_is_minimum = true;
-> -			else
-> -				memcg->memsw_is_minimum = false;
-> -		}
->  		mutex_unlock(&set_limit_mutex);
->  
->  		if (!ret)
->  			break;
->  
-> -		mem_cgroup_reclaim(memcg, GFP_KERNEL,
-> -				   MEM_CGROUP_RECLAIM_NOSWAP |
-> -				   MEM_CGROUP_RECLAIM_SHRINK);
-> +		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, false);
-> +
->  		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
->  		/* Usage is reduced ? */
->  		if (curusage >= oldusage)
-> @@ -3976,8 +3924,8 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
->  		if (signal_pending(current))
->  			return -EINTR;
->  
-> -		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
-> -						false);
-> +		progress = try_to_free_mem_cgroup_pages(memcg, 1,
-> +							GFP_KERNEL, true);
->  		if (!progress) {
->  			nr_retries--;
->  			/* maybe some writeback is necessary */
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index b672e2c6becc..97d31ec17d06 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2759,21 +2759,22 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  }
->  
->  unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-> +					   unsigned long nr_pages,
->  					   gfp_t gfp_mask,
-> -					   bool noswap)
-> +					   bool may_swap)
->  {
->  	struct zonelist *zonelist;
->  	unsigned long nr_reclaimed;
->  	int nid;
->  	struct scan_control sc = {
-> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> +		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
->  		.target_mem_cgroup = memcg,
->  		.priority = DEF_PRIORITY,
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
-> -		.may_swap = !noswap,
-> +		.may_swap = may_swap,
->  	};
->  
->  	/*
