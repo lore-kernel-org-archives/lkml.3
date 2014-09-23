@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaIWJZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:25:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32816 "EHLO mx2.suse.de"
+	id S1755045AbaIWJ1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25750 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753479AbaIWJZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:25:53 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] mm, debug: mm-introduce-vm_bug_on_mm-fix.patch
-Date: Tue, 23 Sep 2014 11:24:39 +0200
-Message-Id: <1411464279-20158-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
-References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
+	id S1753883AbaIWJ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:27:31 -0400
+Date: Tue, 23 Sep 2014 11:26:45 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf pollfd v3
+Message-ID: <20140923092645.GB2979@krava.brq.redhat.com>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <20140911113336.GB13634@krava.brq.redhat.com>
+ <20140911114825.GC13634@krava.brq.redhat.com>
+ <20140911133029.GC10158@kernel.org>
+ <20140911213638.GC1801@kernel.org>
+ <20140918160455.GI2770@kernel.org>
+ <20140922133526.GB18187@krava.brq.redhat.com>
+ <20140922144949.GE32694@kernel.org>
+ <20140922145133.GA18809@krava.brq.redhat.com>
+ <20140922211027.GA23362@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922211027.GA23362@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dump_mm wants to dump mm->owner even when CONFIG_MEMCG is not defined
-which leads to a compilation error:
-mm/debug.c: In function ‘dump_mm’:
-mm/debug.c:212:5: error: ‘const struct mm_struct’ has no member named ‘owner’
-   mm->owner, mm->exe_file,
+On Mon, Sep 22, 2014 at 06:10:27PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Sep 22, 2014 at 04:51:33PM +0200, Jiri Olsa escreveu:
+> > On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
+> > > > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
+> 
+> > > > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
+> > > > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
+> > > > > mmap_read loop to consume what is left after all fds for a mmap are
+> > > > > closed.
+> 
+> > > > > I'll wait a bit before reposting, probably Jiri will not be able to
+> > > > > comment this week, but I would like to at least post the URL for this
+> > > > > latest v4 kit.
+> 
+> > > > > Adrian, if you could take a look at it, would be really great :-)
+> 
+> > > > I checked the branch.. the last patch brakes the functionality
+> > > > of perf record for me
+> 
+> > > Breaks in what sense?
+> 
+> > perf record -p pid
+> 
+> > and killing the pid won't finish perf record
+> 
+> Should be ok now, after making sure record uses
+> perf_evlist__mmap_consume(), which does what you did in your proposed
+> fix, tried both killing it and letting it exit normally, i.e. a 'sleep 5s'
+> target.
+> 
+> Pushed
+> https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v6
+> after moving the changesets for trace and record to be done last,
+> waiting for all fds to be POLLHUP'ed and doing one last draining
+> mmap_read loop over the mmaps.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/debug.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+One more thing is I noticed the test 34 is segfaulting, because
+perf_evlist__munmap_filtered assumes priv pointer setup, which
+is not done in the test.
 
-diff --git a/mm/debug.c b/mm/debug.c
-index 281abb2edddd..63aba9dcfb4e 100644
---- a/mm/debug.c
-+++ b/mm/debug.c
-@@ -181,7 +181,10 @@ void dump_mm(const struct mm_struct *mm)
- #ifdef CONFIG_AIO
- 		"ioctx_table %p\n"
- #endif
--		"owner %p exe_file %p\n"
-+#ifdef CONFIG_MEMCG
-+		"owner %p "
-+#endif
-+		"exe_file %p\n"
- #ifdef CONFIG_MMU_NOTIFIER
- 		"mmu_notifier_mm %p\n"
- #endif
-@@ -209,7 +212,10 @@ void dump_mm(const struct mm_struct *mm)
- #ifdef CONFIG_AIO
- 		mm->ioctx_table,
- #endif
--		mm->owner, mm->exe_file,
-+#ifdef CONFIG_MEMCG
-+		mm->owner,
-+#endif
-+		mm->exe_file,
- #ifdef CONFIG_MMU_NOTIFIER
- 		mm->mmu_notifier_mm,
- #endif
--- 
-2.1.0
+otherwise it looks gut
 
+jirka
