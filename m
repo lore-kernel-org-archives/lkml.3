@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaIWHan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:30:43 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36243 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaIWHal (ORCPT
+	id S1754577AbaIWHbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:31:22 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:53778 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaIWHbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:30:41 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-00-5421219e6975
-Message-id: <1411457436.8863.3.camel@AMDC1943>
-Subject: Re: [PATCH v6 2/4] amba: Add helper macros for (un)preparing AMBA clock
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Tue, 23 Sep 2014 09:30:36 +0200
-In-reply-to: <CAPDyKFpADBgR90_4s6Dxa8GSQ3F2kQFf6Az-J85D_1ZVD6=A5A@mail.gmail.com>
-References: <1411379189-3017-1-git-send-email-k.kozlowski@samsung.com>
- <1411379189-3017-3-git-send-email-k.kozlowski@samsung.com>
- <CAPDyKFpADBgR90_4s6Dxa8GSQ3F2kQFf6Az-J85D_1ZVD6=A5A@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t/xK7rzFBVDDBYtELbYOGM9q8X0qRcY
-	LVZP/ctqceDPDkaLs01v2C2WTJ7PajFryl4mi4VtS1gsLu+aw2bxufcIo8Xty7wWa4/cZbd4
-	9zLC4u6po2wWb+9MZ7E4c/oSq8WE3xfYLI6vDbd42befxUHYo6W5h81j8wotj8V7XjJ53Lm2
-	h81jyZtDrB5brrazeMy++4PRo2/LKkaPFau/s3t83iTnsffzb5YA7igum5TUnMyy1CJ9uwSu
-	jJYFH5gL2nkqXl/mamA8xtnFyMkhIWAi8f55JxuELSZx4d56IJuLQ0hgKaPEiocvGSGcz4wS
-	byYcYgep4hXQkziybQ1TFyMHh7BAgMTzebwgYTYBY4nNy5eADRIR0JDY8/A8K0gvs8AENomn
-	O+aygiRYBFQljnWcA7M5BYIlPrb2MEMsOMUo8eHoKkaQBLOAusSkeYuYQRZICChLNPa7QewV
-	lPgx+R4LRIm8xOY1b5knMArMQtIxC0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefn
-	bmKEROTXHYxLj1kdYhTgYFTi4fVYoxAixJpYVlyZe4hRgoNZSYR3m4BiiBBvSmJlVWpRfnxR
-	aU5q8SFGJg5OqQZGS4HrwZ3SZsviltlcDV0ddXXau+ht8001/P/vruTpTgvweto98xBnTC97
-	qZ4n5wwhv0bD6/ocSu0PF3z7IL8oRVz/UJFp2IIFu1MvTw5iD8kXmHGmMDP66vH0N5fFTG5u
-	iA1fftGdI23OPqti6aPHf1pIitQ/U558ed1P++kNyk+Nr/2vNzZUYinOSDTUYi4qTgQAyyF3
-	FqYCAAA=
+	Tue, 23 Sep 2014 03:31:21 -0400
+Date: Tue, 23 Sep 2014 11:31:11 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 1/2] memcg: move memcg_{alloc,free}_cache_params to
+ slab_common.c
+Message-ID: <20140923073111.GC3588@esperanza>
+References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
+ <20140922200825.GA5373@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140922200825.GA5373@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-09-22 at 20:56 +0200, Ulf Hansson wrote:
-> On 22 September 2014 11:46, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> > Add amba_pclk_prepare() and amba_pclk_unprepare() macros for handling
-> > the AMBA bus clock by device drivers.
-> >
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  include/linux/amba/bus.h | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> >
-> > diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> > index fdd7e1b61f60..ad52027a9cbf 100644
-> > --- a/include/linux/amba/bus.h
-> > +++ b/include/linux/amba/bus.h
-> > @@ -92,6 +92,12 @@ void amba_release_regions(struct amba_device *);
-> >  #define amba_pclk_disable(d)   \
-> >         do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
-> >
-> > +#define amba_pclk_prepare(d)   \
-> > +       (IS_ERR((d)->pclk) ? 0 : clk_prepare((d)->pclk))
+On Mon, Sep 22, 2014 at 04:08:25PM -0400, Johannes Weiner wrote:
+> On Thu, Sep 18, 2014 at 07:50:19PM +0400, Vladimir Davydov wrote:
+> > The only reason why they live in memcontrol.c is that we get/put css
+> > reference to the owner memory cgroup in them. However, we can do that in
+> > memcg_{un,}register_cache.
+> > 
+> > So let's move them to slab_common.c and make them static.
+> > 
+> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Michal Hocko <mhocko@suse.cz>
+> > Cc: Christoph Lameter <cl@linux.com>
 > 
-> You don't need the IS_ERR, because amba_probe will fail if it won't be
-> able to fetch the clock.
-> 
-> Same comment below.
+> Cool, so you get rid of the back-and-forth between memcg and slab, and
+> thereby also shrink the public memcg interface.
 
-Right, I followed the convention for amba_pclk_enable but this is not
-needed. I'll change it and send new version.
+It should be mentioned that we still call memcg_update_array_size()
+(defined at memcontrol.c) from memcg_update_all_caches()
+(slab_common.c), because we must hold the slab_mutex while updating
+memcg_limited_groups_array_size. However, I'm going to remove this
+requirement and get rid of memcg_update_array_size() too. This is what
+"[PATCH -mm 10/14] memcg: add rwsem to sync against memcg_caches arrays
+relocation", which is a part of my "Per memcg slab shrinkers" patch set,
+does.
 
-Best regards,
-Krzysztof
-
-> 
-> Kind regards
-> Uffe
-> 
-> > +
-> > +#define amba_pclk_unprepare(d) \
-> > +       do { if (!IS_ERR((d)->pclk)) clk_unprepare((d)->pclk); } while (0)
-> > +
-> >  /* Some drivers don't use the struct amba_device */
-> >  #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
-> >  #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
-> > --
-> > 1.9.1
-> >
-
+Thanks,
+Vladimir
