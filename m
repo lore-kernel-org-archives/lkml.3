@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836AbaIWCdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:33:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37331 "EHLO mail.kernel.org"
+	id S1751680AbaIWCeC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:34:02 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37392 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147AbaIWCdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:33:42 -0400
+	id S1750917AbaIWCd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:33:59 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dave Chiluk <chiluk@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 01/45] stable_kernel_rules: Add pointer to netdev-FAQ for network patches
-Date: Tue, 23 Sep 2014 10:31:03 +0800
-Message-Id: <1411439507-30391-1-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Daniel Mack <zonque@gmail.com>,
+        Mark Brown <broonie@linaro.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 02/45] ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
+Date: Tue, 23 Sep 2014 10:31:04 +0800
+Message-Id: <1411439507-30391-2-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
@@ -21,39 +20,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chiluk <chiluk@canonical.com>
+From: Daniel Mack <zonque@gmail.com>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit b76fc285337b6b256e9ba20a40cfd043f70c27af upstream.
+commit 9301503af016eb537ccce76adec0c1bb5c84871e upstream.
 
-Stable_kernel_rules should point submitters of network stable patches to the
-netdev_FAQ.txt as requests for stable network patches should go to netdev
-first.
+This mode is unsupported, as the DMA controller can't do zero-padding
+of samples.
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-by: Johannes Stezenbach <js@sig21.net>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- Documentation/stable_kernel_rules.txt |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/pxa/pxa-ssp.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index b0714d8..8dfb6a5 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -29,6 +29,9 @@ Rules on what kind of patches are accepted, and which ones are not, into the
+diff --git a/sound/soc/pxa/pxa-ssp.c b/sound/soc/pxa/pxa-ssp.c
+index fd04ce1..540e30b 100644
+--- a/sound/soc/pxa/pxa-ssp.c
++++ b/sound/soc/pxa/pxa-ssp.c
+@@ -779,9 +779,7 @@ static int pxa_ssp_remove(struct snd_soc_dai *dai)
+ 			  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_64000 |	\
+ 			  SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000)
  
- Procedure for submitting patches to the -stable tree:
+-#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE |\
+-			    SNDRV_PCM_FMTBIT_S24_LE |	\
+-			    SNDRV_PCM_FMTBIT_S32_LE)
++#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
  
-+ - If the patch covers files in net/ or drivers/net please follow netdev stable
-+   submission guidelines as described in
-+   Documentation/networking/netdev-FAQ.txt
-  - Send the patch, after verifying that it follows the above rules, to
-    stable@vger.kernel.org.  You must note the upstream commit ID in the
-    changelog of your submission, as well as the kernel version you wish
+ static const struct snd_soc_dai_ops pxa_ssp_dai_ops = {
+ 	.startup	= pxa_ssp_startup,
 -- 
 1.7.9.5
 
