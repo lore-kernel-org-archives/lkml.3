@@ -1,139 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072AbaIWDMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 23:12:01 -0400
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:18493
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752333AbaIWDL6 convert rfc822-to-8bit (ORCPT
+	id S1751772AbaIWDgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 23:36:24 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:56411 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaIWDgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 23:11:58 -0400
-From: "chen.fang@freescale.com" <chen.fang@freescale.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>
-CC: Shengchao Guo <Shawn.Guo@freescale.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory()
- with remap_pfn_range().
-Thread-Topic: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory()
- with remap_pfn_range().
-Thread-Index: AQHPzMEDUFYOXamYk0u51V8bS8XVeJv58E4AgAACowCAAAMwgIAAAZlQgBQmTuA=
-Date: Tue, 23 Sep 2014 03:11:52 +0000
-Message-ID: <ba228f83093b46d9a6e594a037236198@BY2PR03MB556.namprd03.prod.outlook.com>
-References: <1410326937-31140-1-git-send-email-chen.fang@freescale.com>
- <540FF70E.9050203@xs4all.nl>
- <566c6b8349ba4c2ead8f76ff04b52e65@BY2PR03MB556.namprd03.prod.outlook.com>
- <540FFBF1.6060702@xs4all.nl> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB345;
-x-forefront-prvs: 0343AC1D30
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(377454003)(51704005)(24454002)(479174003)(189002)(199003)(74662003)(76576001)(64706001)(66066001)(85852003)(31966008)(54356999)(92566001)(106356001)(108616004)(95666004)(120916001)(107046002)(101416001)(99396002)(99286002)(83322001)(46102003)(105586002)(19580395003)(575784001)(19580405001)(93886004)(2201001)(97736003)(83072002)(90102001)(2656002)(74502003)(81542003)(76482002)(76176999)(21056001)(106116001)(50986999)(230783001)(87936001)(86362001)(80022003)(4396001)(85306004)(79102003)(77982003)(33646002)(74316001)(2501002)(20776003)(81342003)(10300001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB345;H:BY2PR03MB556.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Sep 2014 23:36:22 -0400
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: caesar.wang@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <1dec8537f83966342c1b2188b13a38a3>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <5420EAA9.5000508@rock-chips.com>
+Date: Tue, 23 Sep 2014 11:36:09 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        linux-rockchip@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org
+CC: Jack Dai <jack.dai@rock-chips.com>,
+        Wang Caesar <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH 3/3] ARM: dts: add rk3288 power-domain node
+References: <1411440916-6830-1-git-send-email-jinkun.hong@rock-chips.com> <1411440916-6830-4-git-send-email-jinkun.hong@rock-chips.com>
+In-Reply-To: <1411440916-6830-4-git-send-email-jinkun.hong@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans,
-Do you have any more comment on this patch?
 
-Best regards,
-Fancy Fang
-
------Original Message-----
-From: Fang Chen-B47543 
-Sent: Wednesday, September 10, 2014 3:29 PM
-To: 'Hans Verkuil'; m.chehab@samsung.com; viro@ZenIV.linux.org.uk
-Cc: Guo Shawn-R65073; linux-media@vger.kernel.org; linux-kernel@vger.kernel.org; Marek Szyprowski
-Subject: RE: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory() with remap_pfn_range().
-
-On the Freescale imx6 platform which belongs to ARM architecture. The driver is our local v4l2 output driver which is not upstream yet unfortunately.
-
-Best regards,
-Fancy Fang
-
------Original Message-----
-From: Hans Verkuil [mailto:hverkuil@xs4all.nl]
-Sent: Wednesday, September 10, 2014 3:21 PM
-To: Fang Chen-B47543; m.chehab@samsung.com; viro@ZenIV.linux.org.uk
-Cc: Guo Shawn-R65073; linux-media@vger.kernel.org; linux-kernel@vger.kernel.org; Marek Szyprowski
-Subject: Re: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory() with remap_pfn_range().
-
-On 09/10/14 09:14, chen.fang@freescale.com wrote:
-> It is not a theoretically issue, it is a real case that the mapping failed issue happens in 3.14.y kernel but not happens in previous 3.10.y kernel.
-> So I need your confirmation on it.
-
-With which driver does this happen? On which architecture?
-
-Regards,
-
-	Hans
-
-> 
-> Thanks.
-> 
-> Best regards,
-> Fancy Fang
-> 
-> -----Original Message-----
-> From: Hans Verkuil [mailto:hverkuil@xs4all.nl]
-> Sent: Wednesday, September 10, 2014 3:01 PM
-> To: Fang Chen-B47543; m.chehab@samsung.com; viro@ZenIV.linux.org.uk
-> Cc: Guo Shawn-R65073; linux-media@vger.kernel.org; 
-> linux-kernel@vger.kernel.org; Marek Szyprowski
-> Subject: Re: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory() with remap_pfn_range().
-> 
-> On 09/10/14 07:28, Fancy Fang wrote:
->> When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core 
->> will assign the corresponding offset to the 'boff' field of the 
->> videobuf_buffer for each requested buffer sequentially. Later, user 
->> may call mmap() to map one or all of the buffers with the 'offset'
->> parameter which is equal to its 'boff' value. Obviously, the 'offset'
->> value is only used to find the matched buffer instead of to be the 
->> real offset from the buffer's physical start address as used by 
->> vm_iomap_memory(). So, in some case that if the offset is not zero,
->> vm_iomap_memory() will fail.
-> 
-> Is this just a fix for something that can fail theoretically, or do you actually have a case where this happens? I am very reluctant to make any changes to videobuf. Drivers should all migrate to vb2.
-> 
-> I have CC-ed Marek as well since he knows a lot more about this stuff than I do.
-> 
-> Regards,
-> 
-> 	Hans
-> 
->>
->> Signed-off-by: Fancy Fang <chen.fang@freescale.com>
->> ---
->>  drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c
->> b/drivers/media/v4l2-core/videobuf-dma-contig.c
->> index bf80f0f..8bd9889 100644
->> --- a/drivers/media/v4l2-core/videobuf-dma-contig.c
->> +++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
->> @@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
->>  	/* Try to remap memory */
->>  	size = vma->vm_end - vma->vm_start;
->>  	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->> -	retval = vm_iomap_memory(vma, mem->dma_handle, size);
->> +	retval = remap_pfn_range(vma, vma->vm_start,
->> +				 mem->dma_handle >> PAGE_SHIFT,
->> +				 size, vma->vm_page_prot);
->>  	if (retval) {
->>  		dev_err(q->dev, "mmap: remap failed with error %d. ",
->>  			retval);
->>
-> 
+On 09/23/2014 10:55 AM, jinkun.hong wrote:
+> From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Any summary for rk3288 power controller?
+Maybe you can say something about how rk3288 TRM described this module.
+> Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
+> Signed-off-by: Wang Caesar <caesar.wang@rock-chips.com>
+> Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
+>
+> ---
+>
+>   arch/arm/boot/dts/rk3288.dtsi |   45 +++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 45 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 3bb5230..714b9d9 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -15,6 +15,7 @@
+>   #include <dt-bindings/interrupt-controller/arm-gic.h>
+>   #include <dt-bindings/pinctrl/rockchip.h>
+>   #include <dt-bindings/clock/rk3288-cru.h>
+> +#include <dt-bindings/power-domain/rk3288.h>
+>   #include "skeleton.dtsi"
+>   
+>   / {
+> @@ -467,6 +468,50 @@
+>   		compatible = "rockchip,rk3288-pmu", "syscon";
+>   		reg = <0xff730000 0x100>;
+>   	};
+> +	power: power-controller {
+> +		compatible = "rockchip,rk3288-power-controller";
+> +		#power-domain-cells = <1>;
+> +		rockchip,pmu = <&pmu>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		pd_gpu {
+> +			reg = <RK3288_PD_GPU>;
+> +			clocks = <&cru ACLK_GPU>;
+> +		};
+> +
+> +		pd_vio {
+> +			reg = <RK3288_PD_VIO>;
+> +			clocks = <&cru HCLK_RGA>, <&cru HCLK_VOP0>,
+> +				<&cru HCLK_VOP1>, <&cru HCLK_VIO_AHB_ARBI>,
+> +				<&cru HCLK_VIO_NIU>, <&cru HCLK_VIP>,
+> +				<&cru HCLK_IEP>, <&cru HCLK_ISP>,
+> +				<&cru HCLK_VIO2_H2P>, <&cru PCLK_MIPI_DSI0>,
+> +				<&cru PCLK_MIPI_DSI1>, <&cru PCLK_MIPI_CSI>,
+> +				<&cru PCLK_LVDS_PHY>, <&cru PCLK_EDP_CTRL>,
+> +				<&cru PCLK_HDMI_CTRL>, <&cru PCLK_VIO2_H2P>,
+> +				<&cru ACLK_VOP0>, <&cru ACLK_IEP>,
+> +				<&cru ACLK_VIO0_NIU>, <&cru ACLK_VIP>,
+> +				<&cru ACLK_VOP1>, <&cru ACLK_ISP>,
+> +				<&cru ACLK_VIO1_NIU>, <&cru ACLK_RGA>,
+> +				<&cru ACLK_RGA_NIU>,<&cru SCLK_RGA>,
+> +				<&cru DCLK_VOP0>, <&cru DCLK_VOP1>,
+> +				<&cru SCLK_EDP_24M>, <&cru SCLK_EDP>,
+> +				<&cru SCLK_ISP>, <&cru SCLK_ISP_JPE>,
+> +				<&cru SCLK_HDMI_HDCP>, <&cru SCLK_HDMI_CEC>;
+> +		};
+Some of clock id here is not in upstream or list, I will send the patch
+including all these clock IDs later, maybe you should mention it in your
+commit message?
+> +
+> +		pd_video {
+> +			reg = <RK3288_PD_VIDEO>;
+> +			/* FIXME: add clocks */
+> +			};
+> +
+> +		pd_hevc {
+> +			reg = <RK3288_PD_HEVC>;
+> +			clocks = <&cru ACLK_HEVC>, <&cru HCLK_HEVC>,
+> +				<&cru SCLK_HEVC_CABAC>, <&cru SCLK_HEVC_CORE>;
+> +			};
+> +	};
+>   
+>   	sgrf: syscon@ff740000 {
+>   		compatible = "rockchip,rk3288-sgrf", "syscon";
 
