@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaIWCfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:35:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37560 "EHLO mail.kernel.org"
+	id S1753350AbaIWCf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:35:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37604 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133AbaIWCfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:35:05 -0400
+	id S1752039AbaIWCfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:35:23 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 08/45] kvm: iommu: fix the third parameter of kvm_iommu_put_pages (CVE-2014-3601)
-Date: Tue, 23 Sep 2014 10:31:10 +0800
-Message-Id: <1411439507-30391-8-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 10/45] iommu/amd: Fix cleanup_domain for mass device removal
+Date: Tue, 23 Sep 2014 10:31:12 +0800
+Message-Id: <1411439507-30391-10-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
@@ -20,94 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Joerg Roedel <jroedel@suse.de>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit 350b8bdd689cd2ab2c67c8a86a0be86cfa0751a7 upstream.
+commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
 
-The third parameter of kvm_iommu_put_pages is wrong,
-It should be 'gfn - slot->base_gfn'.
+When multiple devices are detached in __detach_device, they
+are also removed from the domains dev_list. This makes it
+unsafe to use list_for_each_entry_safe, as the next pointer
+might also not be in the list anymore after __detach_device
+returns. So just repeatedly remove the first element of the
+list until it is empty.
 
-By making gfn very large, malicious guest or userspace can cause kvm to
-go to this error path, and subsequently to pass a huge value as size.
-Alternatively if gfn is small, then pages would be pinned but never
-unpinned, causing host memory leak and local DOS.
-
-Passing a reasonable but large value could be the most dangerous case,
-because it would unpin a page that should have stayed pinned, and thus
-allow the device to DMA into arbitrary memory.  However, this cannot
-happen because of the condition that can trigger the error:
-
-- out of memory (where you can't allocate even a single page)
-  should not be possible for the attacker to trigger
-
-- when exceeding the iommu's address space, guest pages after gfn
-  will also exceed the iommu's address space, and inside
-  kvm_iommu_put_pages() the iommu_iova_to_phys() will fail.  The
-  page thus would not be unpinned at all.
-
-Reported-by: Jack Morgenstein <jackm@mellanox.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Tested-by: Marti Raudsepp <marti@juffo.org>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- virt/kvm/iommu.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/iommu/amd_iommu.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 53d34f6..defc9ba 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -61,6 +61,14 @@ static pfn_t kvm_pin_pages(struct kvm *kvm, struct kvm_memory_slot *slot,
- 	return pfn;
- }
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index c0536ed..a55353c3 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3028,14 +3028,16 @@ free_domains:
  
-+static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
-+{
-+	unsigned long i;
-+
-+	for (i = 0; i < npages; ++i)
-+		kvm_release_pfn_clean(pfn + i);
-+}
-+
- int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ static void cleanup_domain(struct protection_domain *domain)
  {
- 	gfn_t gfn, end_gfn;
-@@ -121,6 +129,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		if (r) {
- 			printk(KERN_ERR "kvm_iommu_map_address:"
- 			       "iommu failed to map pfn=%llx\n", pfn);
-+			kvm_unpin_pages(kvm, pfn, page_size);
- 			goto unmap_pages;
- 		}
+-	struct iommu_dev_data *dev_data, *next;
++	struct iommu_dev_data *entry;
+ 	unsigned long flags;
  
-@@ -132,7 +141,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 	return 0;
+ 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
  
- unmap_pages:
--	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn);
-+	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn - slot->base_gfn);
- 	return r;
- }
+-	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
+-		__detach_device(dev_data);
+-		atomic_set(&dev_data->bind, 0);
++	while (!list_empty(&domain->dev_list)) {
++		entry = list_first_entry(&domain->dev_list,
++					 struct iommu_dev_data, list);
++		__detach_device(entry);
++		atomic_set(&entry->bind, 0);
+ 	}
  
-@@ -274,14 +283,6 @@ out_unlock:
- 	return r;
- }
- 
--static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
--{
--	unsigned long i;
--
--	for (i = 0; i < npages; ++i)
--		kvm_release_pfn_clean(pfn + i);
--}
--
- static void kvm_iommu_put_pages(struct kvm *kvm,
- 				gfn_t base_gfn, unsigned long npages)
- {
+ 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
 -- 
 1.7.9.5
 
