@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360AbaIWVeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:34:03 -0400
-Received: from resqmta-ch2-09v.sys.comcast.net ([69.252.207.41]:44779 "EHLO
-	resqmta-ch2-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756858AbaIWVdK (ORCPT
+	id S932494AbaIWVev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:34:51 -0400
+Received: from qmta03.westchester.pa.mail.comcast.net ([76.96.62.32]:44742
+	"EHLO qmta03.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756328AbaIWVdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Sep 2014 17:33:10 -0400
 From: Shuah Khan <shuahkh@osg.samsung.com>
@@ -14,9 +14,9 @@ To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
         luto@amacapital.net
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/7] selftests/ptrace: change test to use ksft framework
-Date: Tue, 23 Sep 2014 15:32:59 -0600
-Message-Id: <9c141f93f09224d71feb02e907d87337e0db219b.1411506121.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v2 4/7] selftests/kcmp: change test to use ksft framework
+Date: Tue, 23 Sep 2014 15:32:57 -0600
+Message-Id: <68095df8d89c1779c08aad899d142584b4cfe4c8.1411506121.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
 References: <cover.1411506121.git.shuahkh@osg.samsung.com>
@@ -26,75 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change ptrace test to use kselftest framework to report
-test results.
+Change kcmp test to use kselftest framework to report
+test results and test statistics.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/ptrace/peeksiginfo.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ tools/testing/selftests/kcmp/kcmp_test.c | 27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/tools/testing/selftests/ptrace/peeksiginfo.c b/tools/testing/selftests/ptrace/peeksiginfo.c
-index c34cd8a..d940bfc 100644
---- a/tools/testing/selftests/ptrace/peeksiginfo.c
-+++ b/tools/testing/selftests/ptrace/peeksiginfo.c
-@@ -10,6 +10,7 @@
- #include <sys/mman.h>
+diff --git a/tools/testing/selftests/kcmp/kcmp_test.c b/tools/testing/selftests/kcmp/kcmp_test.c
+index dbba408..a5a4da8 100644
+--- a/tools/testing/selftests/kcmp/kcmp_test.c
++++ b/tools/testing/selftests/kcmp/kcmp_test.c
+@@ -17,6 +17,8 @@
+ #include <sys/stat.h>
+ #include <sys/wait.h>
  
- #include "linux/ptrace.h"
 +#include "../kselftest.h"
- 
- static int sys_rt_sigqueueinfo(pid_t tgid, int sig, siginfo_t *uinfo)
++
+ static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
  {
-@@ -151,7 +152,7 @@ out:
- int main(int argc, char *argv[])
- {
- 	siginfo_t siginfo[SIGNR];
--	int i, exit_code = 1;
-+	int i;
- 	sigset_t blockmask;
- 	pid_t child;
+ 	return syscall(__NR_kcmp, pid1, pid2, type, fd1, fd2);
+@@ -34,13 +36,13 @@ int main(int argc, char **argv)
  
-@@ -162,7 +163,7 @@ int main(int argc, char *argv[])
- 	child = fork();
- 	if (child == -1) {
- 		err("fork() failed: %m");
--		return 1;
-+		return ksft_exit_fail();
- 	} else if (child == 0) {
- 		pid_t ppid = getppid();
- 		while (1) {
-@@ -170,7 +171,7 @@ int main(int argc, char *argv[])
- 				break;
- 			sleep(1);
+ 	if (fd1 < 0) {
+ 		perror("Can't create file");
+-		exit(1);
++		ksft_exit_fail();
+ 	}
+ 
+ 	pid2 = fork();
+ 	if (pid2 < 0) {
+ 		perror("fork failed");
+-		exit(1);
++		ksft_exit_fail();
+ 	}
+ 
+ 	if (!pid2) {
+@@ -50,7 +52,7 @@ int main(int argc, char **argv)
+ 		fd2 = open(kpath, O_RDWR, 0644);
+ 		if (fd2 < 0) {
+ 			perror("Can't open file");
+-			exit(1);
++			ksft_exit_fail();
  		}
--		return 1;
-+		return ksft_exit_fail();
+ 
+ 		/* An example of output and arguments */
+@@ -74,23 +76,34 @@ int main(int argc, char **argv)
+ 		if (ret) {
+ 			printf("FAIL: 0 expected but %d returned (%s)\n",
+ 				ret, strerror(errno));
++			ksft_inc_fail_cnt();
+ 			ret = -1;
+-		} else
++		} else {
+ 			printf("PASS: 0 returned as expected\n");
++			ksft_inc_pass_cnt();
++		}
+ 
+ 		/* Compare with self */
+ 		ret = sys_kcmp(pid1, pid1, KCMP_VM, 0, 0);
+ 		if (ret) {
+ 			printf("FAIL: 0 expected but %d returned (%s)\n",
+ 				ret, strerror(errno));
++			ksft_inc_fail_cnt();
+ 			ret = -1;
+-		} else
++		} else {
+ 			printf("PASS: 0 returned as expected\n");
++			ksft_inc_pass_cnt();
++		}
++
++		ksft_print_cnts();
+ 
+-		exit(ret);
++		if (ret)
++			ksft_exit_fail();
++		else
++			ksft_exit_pass();
  	}
  
- 	/* Send signals in process-wide and per-thread queues */
-@@ -185,7 +186,7 @@ int main(int argc, char *argv[])
- 	}
+ 	waitpid(pid2, &status, P_ALL);
  
- 	if (sys_ptrace(PTRACE_ATTACH, child, NULL, NULL) == -1)
--		return 1;
-+		return ksft_exit_fail();
- 
- 	waitpid(child, NULL, 0);
- 
-@@ -207,12 +208,11 @@ int main(int argc, char *argv[])
- 		goto out;
- 
- 	printf("PASS\n");
--	exit_code = 0;
- out:
- 	if (sys_ptrace(PTRACE_KILL, child, NULL, NULL) == -1)
--		return 1;
-+		return ksft_exit_fail();
- 
- 	waitpid(child, NULL, 0);
- 
--	return exit_code;
+-	return 0;
 +	return ksft_exit_pass();
  }
 -- 
