@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaIWNDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:03:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38415 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307AbaIWNDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:03:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,580,1406617200"; 
-   d="scan'208";a="577531807"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Joe Perches <joe@perches.com>, David Airlie <airlied@linux.ie>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] drm: change drm_err return type to void
-In-Reply-To: <1411403411.2952.36.camel@joe-AO725>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1411403411.2952.36.camel@joe-AO725>
-User-Agent: Notmuch/0.18.1+110~gd9ec63c (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Tue, 23 Sep 2014 16:00:44 +0300
-Message-ID: <87lhpa5w5f.fsf@intel.com>
+	id S1755469AbaIWNDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:03:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49737 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751020AbaIWNDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 09:03:49 -0400
+Date: Tue, 23 Sep 2014 14:03:52 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "dros@primarydata.com" <dros@primarydata.com>,
+        "tao.peng@primarydata.com" <tao.peng@primarydata.com>,
+        "trond.myklebust@primarydata.com" <trond.myklebust@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+Message-ID: <20140923130352.GK26472@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Thread-Topic: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Joe Perches <joe@perches.com> wrote:
-> The return value is not used by callers of this function
-> nor by uses of the DRM_ERROR macro so change the function
-> to return void.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+Hi all,
 
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+I've been running into the following warning on an arm64 system running
+3.17-rc6 with 64k pages. I've been unable to reproduce with a smaller page
+size (4k).
 
+I don't yet have a concrete reproducer, but I've seen it hit a few times
+today just running a machine with an NFS root filesystem and using ssh.
+The warning seems to happen in parallel on the two CPUs, but I'm pretty
+confident that our test_and_clear_bit implementation has the relevant
+atomic instructions and memory barriers.
 
-> ---
-> This change is associated to a desire to eventually
-> change printk to return void.
->
-> No x86 change in output size for drm_drv.o
->
->  drivers/gpu/drm/drm_drv.c | 7 ++-----
->  include/drm/drmP.h        | 2 +-
->  2 files changed, 3 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
-> index 6a11902..8889f8e 100644
-> --- a/drivers/gpu/drm/drm_drv.c
-> +++ b/drivers/gpu/drm/drm_drv.c
-> @@ -56,22 +56,19 @@ static struct idr drm_minors_idr;
->  struct class *drm_class;
->  static struct dentry *drm_debugfs_root;
->  
-> -int drm_err(const char *func, const char *format, ...)
-> +void drm_err(const char *func, const char *format, ...)
->  {
->  	struct va_format vaf;
->  	va_list args;
-> -	int r;
->  
->  	va_start(args, format);
->  
->  	vaf.fmt = format;
->  	vaf.va = &args;
->  
-> -	r = printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
-> +	printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
->  
->  	va_end(args);
-> -
-> -	return r;
->  }
->  EXPORT_SYMBOL(drm_err);
->  
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index 5c60d38..2163ccb 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -124,7 +124,7 @@ extern __printf(2, 3)
->  void drm_ut_debug_printk(const char *function_name,
->  			 const char *format, ...);
->  extern __printf(2, 3)
-> -int drm_err(const char *func, const char *format, ...);
-> +void drm_err(const char *func, const char *format, ...);
->  
->  /***********************************************************************/
->  /** \name DRM template customization defaults */
->
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Any ideas?
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+Will
+
+--->8
+
+------------[ cut here ]------------
+WARNING: CPU: 1 PID: 1023 at fs/nfs/write.c:743 nfs_inode_remove_request+0xe4/0xf0()
+Modules linked in:
+CPU: 1 PID: 1023 Comm: kworker/1:2 Not tainted 3.17.0-rc6 #1
+Workqueue: nfsiod rpc_async_release
+Call trace:
+[<fffffe0000096410>] dump_backtrace+0x0/0x130
+[<fffffe0000096550>] show_stack+0x10/0x1c
+[<fffffe00004cda94>] dump_stack+0x74/0xbc
+[<fffffe00000b4d20>] warn_slowpath_common+0x8c/0xb4
+[<fffffe00000b4e0c>] warn_slowpath_null+0x14/0x20
+[<fffffe000027a6a8>] nfs_inode_remove_request+0xe0/0xf0
+[<fffffe000027b704>] nfs_write_completion+0xb4/0x150
+[<fffffe0000276ef4>] nfs_pgio_release+0x34/0x44
+[<fffffe00004ac2d0>] rpc_free_task+0x24/0x4c
+[<fffffe00004ac5c0>] rpc_async_release+0xc/0x18
+[<fffffe00000c89e8>] process_one_work+0x140/0x32c
+[<fffffe00000c9338>] worker_thread+0x13c/0x470
+[<fffffe00000cd9e4>] kthread+0xd0/0xe8
+---[ end trace 6f044efb83f0811b ]---
+
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 621 at fs/nfs/write.c:743 nfs_inode_remove_request+0xe4/0xf0()
+CPU: 0 PID: 621 Comm: kworker/0:2 Tainted: G        W      3.17.0-rc6 #1
+Workqueue: nfsiod rpc_async_release
+Call trace:
+[<fffffe0000096410>] dump_backtrace+0x0/0x130
+[<fffffe0000096550>] show_stack+0x10/0x1c
+[<fffffe00004cda94>] dump_stack+0x74/0xbc
+[<fffffe00000b4d20>] warn_slowpath_common+0x8c/0xb4
+[<fffffe00000b4e0c>] warn_slowpath_null+0x14/0x20
+[<fffffe000027a6a8>] nfs_inode_remove_request+0xe0/0xf0
+[<fffffe000027b704>] nfs_write_completion+0xb4/0x150
+[<fffffe0000276ef4>] nfs_pgio_release+0x34/0x44
+[<fffffe00004ac2d0>] rpc_free_task+0x24/0x4c
+[<fffffe00004ac5c0>] rpc_async_release+0xc/0x18
+[<fffffe00000c89e8>] process_one_work+0x140/0x32c
+[<fffffe00000c9338>] worker_thread+0x13c/0x470
+[<fffffe00000cd9e4>] kthread+0xd0/0xe8
+---[ end trace 6f044efb83f0811c ]---
