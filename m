@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaIWF7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:59:18 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:54307 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942AbaIWF7Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:59:16 -0400
+	id S1754813AbaIWF73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:59:29 -0400
+Received: from verein.lst.de ([213.95.11.211]:49049 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752942AbaIWF70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:59:26 -0400
+Date: Tue, 23 Sep 2014 07:59:24 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq
+	usage count
+Message-ID: <20140923055924.GA10295@lst.de>
+References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk> <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <32c24277-c815-4ca6-98c5-77bf040c1384@email.android.com>
-References: <20140919104021.GA11552@gmail.com>
-	<CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
-	<20140923053510.GB27825@gmail.com>
-	<20140923053711.GA28704@gmail.com>
-	<32c24277-c815-4ca6-98c5-77bf040c1384@email.android.com>
-Date: Mon, 22 Sep 2014 22:59:15 -0700
-X-Google-Sender-Auth: PSJUhc_wYonjOwxFJbxOKf5ftF4
-Message-ID: <CA+55aFyfhMA58ko_rMMbHYuprif+HGbMfwJ-2L1wxAE6-7cAog@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923055648.GD11740@mtj.dyndns.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yup. It's 9cb0e394234d ("x86/efi: Fixup GOT in all boot code paths")
-according to bisect.
+On Tue, Sep 23, 2014 at 01:56:48AM -0400, Tejun Heo wrote:
+> On Tue, Sep 23, 2014 at 07:55:54AM +0200, Christoph Hellwig wrote:
+> > Jens,
+> > 
+> > can we simply get these commits reverted from now if there's no better
+> > fix?  I'd hate to have this boot stall in the first kernel with blk-mq
+> > support for scsi.
+> 
+> Patches going out right now.
 
-Now building current git with that reverted, just to double-check,
-before pushing the revert out.
+"[PATCHSET percpu/for-3.18] percpu_ref: implement switch_to_atomic/percpu()"
 
-           Linus
-
-On Mon, Sep 22, 2014 at 10:44 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> That would be my guess, too.
->
-> On September 22, 2014 10:37:11 PM PDT, Ingo Molnar <mingo@kernel.org> wrote:
->>
->>Wrong sha1: my guess is on 9cb0e394234d, the GOT fixup.
+looks way to big for 3.17, and the regression was introduced in the 3.17
+merge window.  I'm not sure what was broken before, but it defintively
+survived a lot of testing.
