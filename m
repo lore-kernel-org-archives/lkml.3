@@ -1,130 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719AbaIWScG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:32:06 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52600 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752AbaIWScD (ORCPT
+	id S1755955AbaIWSdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:33:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49408 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaIWSdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:32:03 -0400
-Date: Tue, 23 Sep 2014 11:31:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/2] watchdog: dw_wdt: add restart handler support
-Message-ID: <20140923183159.GB24930@roeck-us.net>
-References: <1411458132-5410-1-git-send-email-jszhang@marvell.com>
- <1411458132-5410-3-git-send-email-jszhang@marvell.com>
+	Tue, 23 Sep 2014 14:33:40 -0400
+Date: Tue, 23 Sep 2014 20:33:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Joonwoo Park <joonwoop@codeaurora.org>
+cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v2 RESEND/RFC] timer: make deferrable cpu unbound timers
+ really not bound to a cpu
+In-Reply-To: <1410836376-27267-1-git-send-email-joonwoop@codeaurora.org>
+Message-ID: <alpine.DEB.2.10.1409231808110.4604@nanos>
+References: <1410836376-27267-1-git-send-email-joonwoop@codeaurora.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411458132-5410-3-git-send-email-jszhang@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 03:42:12PM +0800, Jisheng Zhang wrote:
-> The kernel core now provides an API to trigger a system restart.
-> Register with it to support restarting the system via. watchdog.
-> 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/watchdog/dw_wdt.c | 32 ++++++++++++++++++++++++++++++++
->  1 file changed, 32 insertions(+)
-> 
-> diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-> index 449c885..9e577a6 100644
-> --- a/drivers/watchdog/dw_wdt.c
-> +++ b/drivers/watchdog/dw_wdt.c
-> @@ -21,6 +21,7 @@
->  
->  #include <linux/bitops.h>
->  #include <linux/clk.h>
-> +#include <linux/delay.h>
->  #include <linux/device.h>
->  #include <linux/err.h>
->  #include <linux/fs.h>
-> @@ -29,9 +30,11 @@
->  #include <linux/miscdevice.h>
->  #include <linux/module.h>
->  #include <linux/moduleparam.h>
-> +#include <linux/notifier.h>
->  #include <linux/of.h>
->  #include <linux/pm.h>
->  #include <linux/platform_device.h>
-> +#include <linux/reboot.h>
->  #include <linux/spinlock.h>
->  #include <linux/timer.h>
->  #include <linux/uaccess.h>
-> @@ -63,6 +66,7 @@ static struct {
->  	unsigned long		next_heartbeat;
->  	struct timer_list	timer;
->  	int			expect_close;
-> +	struct notifier_block	restart_handler;
->  } dw_wdt;
->  
->  static inline int dw_wdt_is_enabled(void)
-> @@ -121,6 +125,26 @@ static void dw_wdt_keepalive(void)
->  	       WDOG_COUNTER_RESTART_REG_OFFSET);
->  }
->  
-> +static int dw_wdt_restart_handle(struct notifier_block *this,
-> +				unsigned long mode, void *cmd)
-> +{
-> +	u32 val;
-> +
-> +	writel(0, dw_wdt.regs + WDOG_TIMEOUT_RANGE_REG_OFFSET);
-> +	val = readl(dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
-> +	if (val & WDOG_CONTROL_REG_WDT_EN_MASK)
-> +		writel(WDOG_COUNTER_RESTART_KICK_VALUE, dw_wdt.regs +
-> +			WDOG_COUNTER_RESTART_REG_OFFSET);
-> +	else
-> +		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
-> +		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
-> +
-> +	/* wait for reset to assert... */
-> +	mdelay(500);
-> +
-> +	return NOTIFY_DONE;
-> +}
-> +
->  static void dw_wdt_ping(unsigned long data)
->  {
->  	if (time_before(jiffies, dw_wdt.next_heartbeat) ||
-> @@ -316,6 +340,12 @@ static int dw_wdt_drv_probe(struct platform_device *pdev)
->  	if (ret)
->  		goto out_disable_clk;
->  
-> +	dw_wdt.restart_handler.notifier_call = dw_wdt_restart_handle;
-> +	dw_wdt.restart_handler.priority = 128;
-> +	ret = register_restart_handler(&dw_wdt.restart_handler);
-> +	if (ret)
-> +		pr_warn("cannot register restart handler\n");
+On Mon, 15 Sep 2014, Joonwoo Park wrote:
+> +#ifdef CONFIG_SMP
+> +static struct tvec_base *tvec_base_deferral = &boot_tvec_bases;
+> +#endif
 
-Please use dev_warn(&pdev->dev, ...).
+In principle I like the idea of a deferrable wheel, but this
+implementation is going to go nowhere.
+
+First of all making it SMP only is silly. The deferrable stuff is a
+pain in other places as well.
+
+But whats way worse is:
+
+> +static inline void __run_timers(struct tvec_base *base, bool try)
+>  {
+>  	struct timer_list *timer;
+>  
+> -	spin_lock_irq(&base->lock);
+> +	if (!try)
+> +		spin_lock_irq(&base->lock);
+> +	else if (!spin_trylock_irq(&base->lock))
+> +		return;
+
+Yuck. All cpus fighting about a single spinlock roughly at the same
+time? You just created a proper thundering herd cacheline bouncing
+issue. 
+
+No way. We have already mechanisms in place to deal with such
+problems, you just have to use them.
 
 Thanks,
-Guenter
 
-> +
->  	dw_wdt_set_next_heartbeat();
->  	setup_timer(&dw_wdt.timer, dw_wdt_ping, 0);
->  	mod_timer(&dw_wdt.timer, jiffies + WDT_TIMEOUT);
-> @@ -330,6 +360,8 @@ out_disable_clk:
->  
->  static int dw_wdt_drv_remove(struct platform_device *pdev)
->  {
-> +	unregister_restart_handler(&dw_wdt.restart_handler);
-> +
->  	misc_deregister(&dw_wdt_miscdev);
->  
->  	clk_disable_unprepare(dw_wdt.clk);
-> -- 
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	tglx
