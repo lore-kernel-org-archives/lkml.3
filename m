@@ -1,128 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101AbaIWTYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:24:39 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:65294 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaIWTYg (ORCPT
+	id S1756199AbaIWT0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:26:17 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51674 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaIWT0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:24:36 -0400
-Date: Tue, 23 Sep 2014 15:24:32 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH block/for-3.17-fixes/core] blk-mq, percpu_ref: implement a
- kludge for SCSI blk-mq stall during probe
-Message-ID: <20140923192432.GA24441@mtj.dyndns.org>
-References: <20140919113815.GA10791@lst.de>
- <541C8047.80705@kernel.dk>
- <20140923055554.GA10189@lst.de>
- <20140923055648.GD11740@mtj.dyndns.org>
- <20140923055924.GA10295@lst.de>
- <20140923060141.GF11740@mtj.dyndns.org>
- <20140923060906.GA10547@lst.de>
- <20140923061152.GI11740@mtj.dyndns.org>
- <5421968B.7080309@kernel.dk>
+	Tue, 23 Sep 2014 15:26:15 -0400
+Date: Tue, 23 Sep 2014 14:26:13 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] spi: qup: Fix incorrect block transfers
+Message-ID: <20140923192613.GA5975@qualcomm.com>
+References: <1411360048-3388-1-git-send-email-agross@codeaurora.org>
+ <1411464267.18580.46.camel@iivanov-dev>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5421968B.7080309@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411464267.18580.46.camel@iivanov-dev>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk-mq uses percpu_ref for its usage counter which tracks the number
-of in-flight commands and used to synchronously drain the queue on
-freeze.  percpu_ref shutdown takes measureable wallclock time as it
-involves a sched RCU grace period.  This means that draining a blk-mq
-takes measureable wallclock time.  One would think that this shouldn't
-matter as queue shutdown should be a rare event which takes place
-asynchronously w.r.t. userland.
+On Tue, Sep 23, 2014 at 12:24:27PM +0300, Ivan T. Ivanov wrote:
+> 
+> Hi Andy,
+> 
+> On Sun, 2014-09-21 at 23:27 -0500, Andy Gross wrote:
+> > This patch fixes a number of errors with the QUP block transfer mode.  Errors
+> > manifested themselves as input underruns, output overruns, and timed out
+> > transactions.
+> 
+> At what speeds are you seeing those errors?
 
-Unfortunately, SCSI probing involves synchronously setting up and then
-tearing down a lot of request_queues back-to-back for non-existent
-LUNs.  This means that SCSI probing may take more than ten seconds
-when scsi-mq is used.
+We've tried 25MHz and 50MHz.  Both fail in the same way.  Keep in mind this is
+definitely a timing / race issue and it probably also dependent on the latency
+of the attached device.  I cannot reproduce this at all on my IPQ8064 based
+board, but others can.
 
-This will be properly fixed by implementing a mechanism to keep
-q->mq_usage_counter in atomic mode till genhd registration; however,
-that involves rather big updates to percpu_ref which is difficult to
-apply late in the devel cycle (v3.17-rc6 at the moment).  As a
-stop-gap measure till the proper fix can be implemented in the next
-cycle, this patch introduces __percpu_ref_kill_expedited() and makes
-blk_mq_freeze_queue() use it.  This is heavy-handed but should work
-for testing the experimental SCSI blk-mq implementation.
+This problem manifested itself while using spidev and a usermode flash
+programming application (flashrom).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Christoph Hellwig <hch@infradead.org>
-Link: http://lkml.kernel.org/g/20140919113815.GA10791@lst.de
-Fixes: add703fda981 ("blk-mq: use percpu_ref for mq usage count")
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
----
-Hello, Jens, Christoph.
+> 
+> > 
+> > The block mode does not require the priming that occurs in FIFO mode.  At the
+> > moment that the QUP is placed into the RUN state, the QUP may immediately raise
+> > an interrupt if the request is a write.  Therefore, there is no need to prime
+> > the pump.
+> > 
+> > In addition, the block transfers require that whole blocks of data are
+> > read/written at a time.  The last block of data that completes a transaction may
+> > contain less than a full blocks worth of data.
+> 
+> Does this mean that block transfer will start only if the required
+> bytes from block is written into buffer?
 
-How about this one?  This is kinda ugly but should work fine in most
-cases and easy to apply to v3.17 and take out during v3.18.
+No, a better way of putting this is that immediately on setting RUN state,
+you'll get a service interrupt to fill the FIFO in block mode.  So there is no
+need to prime the FIFO from the non-isr context due to this behavior.
 
-Thanks.
+<snip>
 
- block/blk-mq.c                  |   11 ++++++++++-
- include/linux/percpu-refcount.h |    1 +
- lib/percpu-refcount.c           |   16 ++++++++++++++++
- 3 files changed, 27 insertions(+), 1 deletion(-)
+> 
+> > +static void qup_fill_read_buffer(struct spi_qup *controller,
+> > +	struct spi_transfer *xfer, u32 data)
+> 
+> Please, could prefix this whit spi_ to be consistent with the
+> rest of the code.
 
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -120,7 +120,16 @@ void blk_mq_freeze_queue(struct request_
- 	spin_unlock_irq(q->queue_lock);
- 
- 	if (freeze) {
--		percpu_ref_kill(&q->mq_usage_counter);
-+		/*
-+		 * XXX: Temporary kludge to work around SCSI blk-mq stall.
-+		 * SCSI synchronously creates and destroys many queues
-+		 * back-to-back during probe leading to lengthy stalls.
-+		 * This will be fixed by keeping ->mq_usage_counter in
-+		 * atomic mode until genhd registration, but, for now,
-+		 * let's work around using expedited synchronization.
-+		 */
-+		__percpu_ref_kill_expedited(&q->mq_usage_counter);
-+
- 		blk_mq_run_queues(q, false);
- 	}
- 	wait_event(q->mq_freeze_wq, percpu_ref_is_zero(&q->mq_usage_counter));
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -72,6 +72,7 @@ void percpu_ref_reinit(struct percpu_ref
- void percpu_ref_exit(struct percpu_ref *ref);
- void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
- 				 percpu_ref_func_t *confirm_kill);
-+void __percpu_ref_kill_expedited(struct percpu_ref *ref);
- 
- /**
-  * percpu_ref_kill - drop the initial ref
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -189,3 +189,19 @@ void percpu_ref_kill_and_confirm(struct
- 	call_rcu_sched(&ref->rcu, percpu_ref_kill_rcu);
- }
- EXPORT_SYMBOL_GPL(percpu_ref_kill_and_confirm);
-+
-+/*
-+ * XXX: Temporary kludge to work around SCSI blk-mq stall.  Used only by
-+ * block/blk-mq.c::blk_mq_freeze_queue().  Will be removed during v3.18
-+ * devel cycle.  Do not use anywhere else.
-+ */
-+void __percpu_ref_kill_expedited(struct percpu_ref *ref)
-+{
-+	WARN_ONCE(ref->pcpu_count_ptr & PCPU_REF_DEAD,
-+		  "percpu_ref_kill() called more than once on %pf!",
-+		  ref->release);
-+
-+	ref->pcpu_count_ptr |= PCPU_REF_DEAD;
-+	synchronize_sched_expedited();
-+	percpu_ref_kill_rcu(&ref->rcu);
-+}
+Good point.  I need to be consistent.
+
+> >  {
+> >  	u8 *rx_buf = xfer->rx_buf;
+> > -	u32 word, state;
+> > -	int idx, shift, w_size;
+> > -
+> > -	w_size = controller->w_size;
+> > -
+> > -	while (controller->rx_bytes < xfer->len) {
+> > -
+> > -		state = readl_relaxed(controller->base + QUP_OPERATIONAL);
+> > -		if (0 == (state & QUP_OP_IN_FIFO_NOT_EMPTY))
+> > -			break;
+> > +	int idx, shift;
+> > +	int read_len = min_t(int, xfer->len - controller->rx_bytes,
+> > +				controller->w_size);
+> 
+> You should not need this check here. xfer->len is multiple of controller->w_size
+> and you always read one word at time.
+
+Ah I missed the __spi_validate where this is done.  I'll remove this.  Good
+catch.
+
+<snip>
+
+> >  	const u8 *tx_buf = xfer->tx_buf;
+> > -	u32 word, state, data;
+> > -	int idx, w_size;
+> > +	u32 val;
+> > +	int idx;
+> > +	int write_len = min_t(int, xfer->len - controller->tx_bytes,
+> > +				controller->w_size);
+> >  
+> 
+> Same here.
+
+Agreed.
+
+<snip>
+
+> > -		word = 0;
+> > -		for (idx = 0; idx < w_size; idx++, controller->tx_bytes++) {
+> > +static void spi_qup_service_block(struct spi_qup *controller,
+> > +	struct spi_transfer *xfer, bool is_read)
+> > +{
+> 
+> Please, could you split this function to read and write, so we can use:
+> 
+> spi_qup_fifo_read() and spi_qup_fifo_write() in FIFO modes and 
+> spi_qup_block_read() and spi_qup_block_write() for BLOCK mode.
+
+Well I had it collapsed and the functions are identical except for the
+read/write specific pieces, which amount to 2 lines.  I can resplit it out.  It
+makes it symmetric.
+
+> 
+> > +	u32 data, words_per_blk, num_words, ack_flag, op_flag;
+> > +	int i;
+> > +
+> > +	if (is_read) {
+> > +		op_flag = QUP_OP_IN_BLOCK_READ_REQ;
+> > +		ack_flag = QUP_OP_IN_SERVICE_FLAG;
+> > +		num_words = DIV_ROUND_UP(xfer->len - controller->rx_bytes,
+> > +					controller->w_size);
+> 
+> Same here and below.
+
+Agreed.
+
+> > +		words_per_blk = controller->in_blk_sz >> 2;
+> > +	} else {
+> > +		op_flag = QUP_OP_OUT_BLOCK_WRITE_REQ;
+> > +		ack_flag = QUP_OP_OUT_SERVICE_FLAG;
+> > +		num_words = DIV_ROUND_UP(xfer->len - controller->tx_bytes,
+> > +					controller->w_size);
+> > +		words_per_blk = controller->out_blk_sz >> 2;
+> > +	}
+
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
