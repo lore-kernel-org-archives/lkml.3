@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaIWDBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 23:01:39 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:49579 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbaIWDBV (ORCPT
+	id S1755591AbaIWDB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 23:01:59 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:41372 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959AbaIWDBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 23:01:21 -0400
+	Mon, 22 Sep 2014 23:01:19 -0400
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -14,135 +14,125 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Alex Williamson <alex.williamson@redhat.com>,
         Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org
-Subject: [PATCH v2 12/13] vfio: powerpc/spapr: Use it_page_size
-Date: Tue, 23 Sep 2014 13:01:01 +1000
-Message-Id: <1411441262-11025-13-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH v2 09/13] powerpc/pseries/lpar: Enable VFIO
+Date: Tue, 23 Sep 2014 13:00:58 +1000
+Message-Id: <1411441262-11025-10-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
 References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092303-3568-0000-0000-00000039BED0
+x-cbid: 14092303-1618-0000-0000-000000EEEE1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes use of the it_page_size from the iommu_table struct
-as page size can differ.
+The previous patch introduced iommu_table_ops::exchange() callback
+which effectively disabled VFIO on pseries. This implements exchange()
+for pseries/lpar so VFIO can work in nested guests.
 
-This replaces missing IOMMU_PAGE_SHIFT macro in commented debug code
-as recently introduced IOMMU_PAGE_XXX macros do not include
-IOMMU_PAGE_SHIFT.
+Since exchaange() callback returns an old TCE, it has to call H_GET_TCE
+for every TCE being put to the table so VFIO performance in guests
+running under PR KVM is expected to be slower than in guests running under
+HV KVM or bare metal hosts.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- drivers/vfio/vfio_iommu_spapr_tce.c | 36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ arch/powerpc/platforms/pseries/iommu.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-index c9fac97..0dccbc4 100644
---- a/drivers/vfio/vfio_iommu_spapr_tce.c
-+++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-@@ -36,7 +36,7 @@ static long try_increment_locked_vm(struct iommu_table *tbl)
- 	if (!current || !current->mm)
- 		return -ESRCH; /* process exited */
+diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
+index 9a7364f..ae15b5a 100644
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -138,13 +138,14 @@ static void tce_freemulti_pSeriesLP(struct iommu_table*, long, long);
  
--	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
-+	npages = (tbl->it_size << tbl->it_page_shift) >> PAGE_SHIFT;
+ static int tce_build_pSeriesLP(struct iommu_table *tbl, long tcenum,
+ 				long npages, unsigned long uaddr,
++				unsigned long *old_tces,
+ 				enum dma_data_direction direction,
+ 				struct dma_attrs *attrs)
+ {
+ 	u64 rc = 0;
+ 	u64 proto_tce, tce;
+ 	u64 rpn;
+-	int ret = 0;
++	int ret = 0, i = 0;
+ 	long tcenum_start = tcenum, npages_start = npages;
  
- 	down_write(&current->mm->mmap_sem);
- 	locked = current->mm->locked_vm + npages;
-@@ -60,7 +60,7 @@ static void decrement_locked_vm(struct iommu_table *tbl)
- 	if (!current || !current->mm)
- 		return; /* process exited */
+ 	rpn = __pa(uaddr) >> TCE_SHIFT;
+@@ -154,6 +155,9 @@ static int tce_build_pSeriesLP(struct iommu_table *tbl, long tcenum,
  
--	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
-+	npages = (tbl->it_size << tbl->it_page_shift) >> PAGE_SHIFT;
+ 	while (npages--) {
+ 		tce = proto_tce | (rpn & TCE_RPN_MASK) << TCE_RPN_SHIFT;
++		if (old_tces)
++			plpar_tce_get((u64)tbl->it_index, (u64)tcenum << 12,
++					&old_tces[i++]);
+ 		rc = plpar_tce_put((u64)tbl->it_index, (u64)tcenum << 12, tce);
  
- 	down_write(&current->mm->mmap_sem);
- 	if (npages > current->mm->locked_vm)
-@@ -284,8 +284,8 @@ static long tce_iommu_ioctl(void *iommu_data,
- 		if (info.argsz < minsz)
- 			return -EINVAL;
+ 		if (unlikely(rc == H_NOT_ENOUGH_RESOURCES)) {
+@@ -179,8 +183,9 @@ static int tce_build_pSeriesLP(struct iommu_table *tbl, long tcenum,
  
--		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT_4K;
--		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT_4K;
-+		info.dma32_window_start = tbl->it_offset << tbl->it_page_shift;
-+		info.dma32_window_size = tbl->it_size << tbl->it_page_shift;
- 		info.flags = 0;
+ static DEFINE_PER_CPU(__be64 *, tce_page);
  
- 		if (copy_to_user((void __user *)arg, &info, minsz))
-@@ -318,10 +318,6 @@ static long tce_iommu_ioctl(void *iommu_data,
- 				VFIO_DMA_MAP_FLAG_WRITE))
- 			return -EINVAL;
+-static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
++static int tce_xchg_pSeriesLP(struct iommu_table *tbl, long tcenum,
+ 				     long npages, unsigned long uaddr,
++				     unsigned long *old_tces,
+ 				     enum dma_data_direction direction,
+ 				     struct dma_attrs *attrs)
+ {
+@@ -195,6 +200,7 @@ static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
  
--		if ((param.size & ~IOMMU_PAGE_MASK_4K) ||
--				(param.vaddr & ~IOMMU_PAGE_MASK_4K))
--			return -EINVAL;
--
- 		/* iova is checked by the IOMMU API */
- 		tce = param.vaddr;
- 		if (param.flags & VFIO_DMA_MAP_FLAG_READ)
-@@ -334,21 +330,25 @@ static long tce_iommu_ioctl(void *iommu_data,
- 			return -ENXIO;
- 		BUG_ON(!tbl->it_group);
+ 	if ((npages == 1) || !firmware_has_feature(FW_FEATURE_MULTITCE)) {
+ 		return tce_build_pSeriesLP(tbl, tcenum, npages, uaddr,
++					   old_tces,
+ 		                           direction, attrs);
+ 	}
  
-+		if ((param.size & ~IOMMU_PAGE_MASK(tbl)) ||
-+				(param.vaddr & ~IOMMU_PAGE_MASK(tbl)))
-+			return -EINVAL;
-+
- 		ret = iommu_tce_put_param_check(tbl, param.iova, tce);
- 		if (ret)
- 			return ret;
- 
--		for (i = 0; i < (param.size >> IOMMU_PAGE_SHIFT_4K); ++i) {
-+		for (i = 0; i < (param.size >> tbl->it_page_shift); ++i) {
- 			ret = iommu_put_tce_user_mode(tbl,
--					(param.iova >> IOMMU_PAGE_SHIFT_4K) + i,
-+					(param.iova >> tbl->it_page_shift) + i,
- 					tce);
- 			if (ret)
- 				break;
--			tce += IOMMU_PAGE_SIZE_4K;
-+			tce += IOMMU_PAGE_SIZE(tbl);
+@@ -211,6 +217,7 @@ static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
+ 		if (!tcep) {
+ 			local_irq_restore(flags);
+ 			return tce_build_pSeriesLP(tbl, tcenum, npages, uaddr,
++					    old_tces,
+ 					    direction, attrs);
  		}
- 		if (ret)
- 			iommu_clear_tces_and_put_pages(tbl,
--					param.iova >> IOMMU_PAGE_SHIFT_4K, i);
-+					param.iova >> tbl->it_page_shift, i);
+ 		__get_cpu_var(tce_page) = tcep;
+@@ -232,6 +239,10 @@ static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
+ 		for (l = 0; l < limit; l++) {
+ 			tcep[l] = cpu_to_be64(proto_tce | (rpn & TCE_RPN_MASK) << TCE_RPN_SHIFT);
+ 			rpn++;
++			if (old_tces)
++				plpar_tce_get((u64)tbl->it_index,
++						(u64)(tcenum + l) << 12,
++						&old_tces[tcenum + l]);
+ 		}
  
- 		iommu_flush_tce(tbl);
+ 		rc = plpar_tce_put_indirect((u64)tbl->it_index,
+@@ -262,6 +273,15 @@ static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
+ 	return ret;
+ }
  
-@@ -379,23 +379,23 @@ static long tce_iommu_ioctl(void *iommu_data,
- 		if (param.flags)
- 			return -EINVAL;
- 
--		if (param.size & ~IOMMU_PAGE_MASK_4K)
--			return -EINVAL;
--
- 		tbl = spapr_tce_find_table(container, data, param.iova);
- 		if (!tbl)
- 			return -ENXIO;
- 
-+		if (param.size & ~IOMMU_PAGE_MASK(tbl))
-+			return -EINVAL;
++static int tce_buildmulti_pSeriesLP(struct iommu_table *tbl, long tcenum,
++				     long npages, unsigned long uaddr,
++				     enum dma_data_direction direction,
++				     struct dma_attrs *attrs)
++{
++	return tce_xchg_pSeriesLP(tbl, tcenum, npages, uaddr, NULL,
++			direction, attrs);
++}
 +
- 		BUG_ON(!tbl->it_group);
+ static void tce_free_pSeriesLP(struct iommu_table *tbl, long tcenum, long npages)
+ {
+ 	u64 rc;
+@@ -637,6 +657,7 @@ static void pci_dma_bus_setup_pSeries(struct pci_bus *bus)
  
- 		ret = iommu_tce_clear_param_check(tbl, param.iova, 0,
--				param.size >> IOMMU_PAGE_SHIFT_4K);
-+				param.size >> tbl->it_page_shift);
- 		if (ret)
- 			return ret;
- 
- 		ret = iommu_clear_tces_and_put_pages(tbl,
--				param.iova >> IOMMU_PAGE_SHIFT_4K,
--				param.size >> IOMMU_PAGE_SHIFT_4K);
-+				param.iova >> tbl->it_page_shift,
-+				param.size >> tbl->it_page_shift);
- 		iommu_flush_tce(tbl);
- 
- 		return ret;
+ struct iommu_table_ops iommu_table_lpar_multi_ops = {
+ 	.set = tce_buildmulti_pSeriesLP,
++	.exchange = tce_xchg_pSeriesLP,
+ 	.clear = tce_freemulti_pSeriesLP,
+ 	.get = tce_get_pSeriesLP
+ };
 -- 
 2.0.0
 
