@@ -1,44 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350AbaIWSFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:05:43 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:42401 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbaIWSFm (ORCPT
+	id S1756176AbaIWSJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:09:25 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51134 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977AbaIWSJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:05:42 -0400
-Date: Tue, 23 Sep 2014 19:05:39 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, kernel@stlinux.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Subject: Re: [STLinux Kernel] [PATCH 3/3] media: st-rc: Remove .owner field
- for driver
-Message-ID: <20140923180539.GB3430@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org>
- <1411424568-12803-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Tue, 23 Sep 2014 14:09:24 -0400
+Date: Tue, 23 Sep 2014 20:09:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 3/3] memcg: move memcg_update_cache_size to
+ slab_common.c
+Message-ID: <20140923180920.GC29528@dhcp22.suse.cz>
+References: <cover.1411401021.git.vdavydov@parallels.com>
+ <dd66241915c99132e41f10d0cd0d346be3a4f39c.1411401021.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411424568-12803-1-git-send-email-srinivas.kandagatla@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <dd66241915c99132e41f10d0cd0d346be3a4f39c.1411401021.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Srinivas Kandagatla wrote:
+On Mon 22-09-14 20:00:46, Vladimir Davydov wrote:
+> While growing per memcg caches arrays, we jump between memcontrol.c and
+> slab_common.c in a weird way:
+> 
+>   memcg_alloc_cache_id - memcontrol.c
+>     memcg_update_all_caches - slab_common.c
+>       memcg_update_cache_size - memcontrol.c
+> 
+> There's absolutely no reason why memcg_update_cache_size can't live on
+> the slab's side though. So let's move it there and settle it comfortably
+> amid per-memcg cache allocation functions.
+> 
+> Besides, this patch cleans this function up a bit, removing all the
+> useless comments from it, and renames it to memcg_update_cache_params to
+> conform to memcg_alloc/free_cache_params, which we already have in
+> slab_common.c.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-> There is no need to init .owner field.
-> 
-> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-> "mmc: remove .owner field for drivers using module_platform_driver"
-> 
-> This patch removes the superflous .owner field for drivers which
-> use the module_platform_driver API, as this is overriden in
-> platform_driver_register anyway."
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+I found new_params->memcg_caches[i] = ... style of initialization easier
+to read and understand than memcpy. This is not something to block
+this cleanup but I would be happier to have the array style back ;)
 
-Acked by: 
-    Acked-by: Peter Griffin <peter.griffin@linaro.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/linux/memcontrol.h |    1 -
+>  mm/memcontrol.c            |   49 --------------------------------------------
+>  mm/slab_common.c           |   30 +++++++++++++++++++++++++--
+>  3 files changed, 28 insertions(+), 52 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 4d17242eeff7..19df5d857411 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -440,7 +440,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+>  
+>  int memcg_cache_id(struct mem_cgroup *memcg);
+>  
+> -int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
+>  void memcg_update_array_size(int num_groups);
+>  
+>  struct kmem_cache *
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 55d131645b45..1ec22bf380d0 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2944,55 +2944,6 @@ void memcg_update_array_size(int num)
+>  	memcg_limited_groups_array_size = num;
+>  }
+>  
+> -int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+> -{
+> -	struct memcg_cache_params *cur_params = s->memcg_params;
+> -	struct memcg_cache_params *new_params;
+> -	size_t size;
+> -	int i;
+> -
+> -	VM_BUG_ON(!is_root_cache(s));
+> -
+> -	size = num_groups * sizeof(void *);
+> -	size += offsetof(struct memcg_cache_params, memcg_caches);
+> -
+> -	new_params = kzalloc(size, GFP_KERNEL);
+> -	if (!new_params)
+> -		return -ENOMEM;
+> -
+> -	new_params->is_root_cache = true;
+> -
+> -	/*
+> -	 * There is the chance it will be bigger than
+> -	 * memcg_limited_groups_array_size, if we failed an allocation
+> -	 * in a cache, in which case all caches updated before it, will
+> -	 * have a bigger array.
+> -	 *
+> -	 * But if that is the case, the data after
+> -	 * memcg_limited_groups_array_size is certainly unused
+> -	 */
+> -	for (i = 0; i < memcg_limited_groups_array_size; i++) {
+> -		if (!cur_params->memcg_caches[i])
+> -			continue;
+> -		new_params->memcg_caches[i] =
+> -			cur_params->memcg_caches[i];
+> -	}
+> -
+> -	/*
+> -	 * Ideally, we would wait until all caches succeed, and only
+> -	 * then free the old one. But this is not worth the extra
+> -	 * pointer per-cache we'd have to have for this.
+> -	 *
+> -	 * It is not a big deal if some caches are left with a size
+> -	 * bigger than the others. And all updates will reset this
+> -	 * anyway.
+> -	 */
+> -	rcu_assign_pointer(s->memcg_params, new_params);
+> -	if (cur_params)
+> -		kfree_rcu(cur_params, rcu_head);
+> -	return 0;
+> -}
+> -
+>  static void memcg_register_cache(struct mem_cgroup *memcg,
+>  				 struct kmem_cache *root_cache)
+>  {
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 9c29ba792368..800314e2a075 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -120,6 +120,33 @@ static void memcg_free_cache_params(struct kmem_cache *s)
+>  	kfree(s->memcg_params);
+>  }
+>  
+> +static int memcg_update_cache_params(struct kmem_cache *s, int num_memcgs)
+> +{
+> +	int size;
+> +	struct memcg_cache_params *new_params, *cur_params;
+> +
+> +	BUG_ON(!is_root_cache(s));
+> +
+> +	size = offsetof(struct memcg_cache_params, memcg_caches);
+> +	size += num_memcgs * sizeof(void *);
+> +
+> +	new_params = kzalloc(size, GFP_KERNEL);
+> +	if (!new_params)
+> +		return -ENOMEM;
+> +
+> +	cur_params = s->memcg_params;
+> +	memcpy(new_params->memcg_caches, cur_params->memcg_caches,
+> +	       memcg_limited_groups_array_size * sizeof(void *));
+> +
+> +	new_params->is_root_cache = true;
+> +
+> +	rcu_assign_pointer(s->memcg_params, new_params);
+> +	if (cur_params)
+> +		kfree_rcu(cur_params, rcu_head);
+> +
+> +	return 0;
+> +}
+> +
+>  int memcg_update_all_caches(int num_memcgs)
+>  {
+>  	struct kmem_cache *s;
+> @@ -130,9 +157,8 @@ int memcg_update_all_caches(int num_memcgs)
+>  		if (!is_root_cache(s))
+>  			continue;
+>  
+> -		ret = memcg_update_cache_size(s, num_memcgs);
+> +		ret = memcg_update_cache_params(s, num_memcgs);
+>  		/*
+> -		 * See comment in memcontrol.c, memcg_update_cache_size:
+>  		 * Instead of freeing the memory, we'll just leave the caches
+>  		 * up to this point in an updated state.
+>  		 */
+> -- 
+> 1.7.10.4
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
