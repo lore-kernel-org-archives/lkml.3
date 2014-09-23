@@ -1,130 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971AbaIWOFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:05:38 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48400 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957AbaIWOFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:05:36 -0400
-Date: Tue, 23 Sep 2014 10:05:26 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140923140526.GA15014@cmpxchg.org>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144436.GG336@dhcp22.suse.cz>
- <20140922155049.GA6630@cmpxchg.org>
- <20140922172800.GA4343@dhcp22.suse.cz>
- <20140922195829.GA5197@cmpxchg.org>
- <20140923132553.GB10046@dhcp22.suse.cz>
+	id S1756005AbaIWOFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:05:44 -0400
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:6608 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785AbaIWOFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 10:05:41 -0400
+X-IronPort-AV: E=McAfee;i="5600,1067,7569"; a="74705482"
+X-IronPort-AV: E=Sophos;i="5.04,580,1406617200"; 
+   d="scan'208";a="31370382"
+From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+CC: Kalle Valo <kvalo@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <ath10k@lists.infradead.org>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        wil6210 <wil6210@qca.qualcomm.com>
+Subject: Re: [PATCH] ath: change logging functions to return void
+Date: Tue, 23 Sep 2014 17:05:34 +0300
+Message-ID: <27145768.oo3Xk8YHvr@lx-wigig-72>
+User-Agent: KMail/4.13.3 (Linux/3.13.0-35-generic; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1411407334.2952.46.camel@joe-AO725>
+References: <1411407334.2952.46.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923132553.GB10046@dhcp22.suse.cz>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [10.80.80.8]
+X-ClientProxiedBy: NASANEXM01B.na.qualcomm.com (129.46.53.226) To
+ NASANEXM01E.na.qualcomm.com (10.46.201.191)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 03:25:53PM +0200, Michal Hocko wrote:
-> On Mon 22-09-14 15:58:29, Johannes Weiner wrote:
-> > On Mon, Sep 22, 2014 at 07:28:00PM +0200, Michal Hocko wrote:
-> > > On Mon 22-09-14 11:50:49, Johannes Weiner wrote:
-> > > > On Mon, Sep 22, 2014 at 04:44:36PM +0200, Michal Hocko wrote:
-> > > > > On Fri 19-09-14 09:22:08, Johannes Weiner wrote:
-> > > [...]
-> > > > > Nevertheless I think that the counter should live outside of memcg (it
-> > > > > is ugly and bad in general to make HUGETLB controller depend on MEMCG
-> > > > > just to have a counter). If you made kernel/page_counter.c and led both
-> > > > > containers select CONFIG_PAGE_COUNTER then you do not need a dependency
-> > > > > on MEMCG and I would find it cleaner in general.
-> > > > 
-> > > > The reason I did it this way is because the hugetlb controller simply
-> > > > accounts and limits a certain type of memory and in the future I would
-> > > > like to make it a memcg extension, just like kmem and swap.
-> > > 
-> > > I am not sure this is the right way to go. Hugetlb has always been
-> > > "special" and I do not see any advantage to pull its specialness into
-> > > memcg proper.
-> > >
-> > > It would just make the code more complicated. I can also imagine
-> > > users who simply do not want to pay memcg overhead and use only
-> > > hugetlb controller.
-> > 
-> > We already group user memory, kernel memory, and swap space together,
-> > what makes hugetlb-backed memory special?
+On Monday, September 22, 2014 10:35:34 AM Joe Perches wrote:
+> Other miscellanea:
 > 
-> There is only a little overlap between LRU backed and kmem accounted
-> memory with hugetlb which has always been standing aside from the rest
-> of the memory management code (THP being a successor which fits in much
-> better and which is already covered by memcg). It has basically its own
-> code path for every aspect of its object life cycle and internal data
-> structures which are in many ways not compatible with regular user or
-> kmem memory. Merging the controllers would require to merge hugetlb code
-> closer the MM code. Until then it just doesn't make sense to me.
-
-Just look at the hugetlb controller code and think about what would be
-left if it were simply another page counter in struct mem_cgroup.
-
-There is a glaring memory leak in its css_alloc() method because
-nobody ever looks at this code.  The controller was missed in the
-reparenting removal patches because it's just not on the radar.
-
-This is so painfully obvious if you actually work on this code, I
-don't know why we are even discussing this.
-
-> > It's also better for the user interface to have a single memory
-> > controller.
+> o add __printf verification to wil6210 logging functions
+>   No format/argument mismatches found
 > 
-> I have seen so much confusion coming from hugetlb vs. THP that I think
-> the quite opposite is true. Besides that we would need a separate limit
-> for hugetlb accounted memory anyway so having a small and specialized
-> controller for specialized memory sounds like a proper way to go.
+> Signed-off-by: Joe Perches <joe@perches.com>
 > 
-> Finally, as mentioned in previous email, you might have users interested
-> only in hugetlb controller with memcg disabled.
 
-They use a global spinlock to allocate and charge these pages, I think
-they'll be fine with memcg.
+For wil6210:
 
-> > We're also close to the point where we don't differentiate between the
-> > root group and dedicated groups in terms of performance, Dave's tests
-> > fell apart at fairly high concurrency, and I'm already getting rid of
-> > the lock he saw contended.
-> 
-> Sure but this has nothing to do with it. Hugetlb can safely use the same
-> lockless counter as a replacement for res_counter and benefit from it
-> even though the contention hasn't been seen/reported yet.
+Acked-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
 
-It doesn't even use these counters the right way, just look at what it
-does during reparenting.  And as per above, it should also be included
-in the reparenting removal, but I'm haven't even configured the thing.
 
-> > The downsides of fragmenting our configuration- and testspace, our
-> > user interface, and our code base by far outweigh the benefits of
-> > offering a dedicated hugetlb controller.
-> 
-> Could you be more specific please? Hugetlb has to be configured and
-> tested separately whether it would be in a separate controller or not.
-> 
-> Last but not least, even if this turns out to make some sense in
-> the future please do not mix those things together here. Your
-> res_counter -> page_counter transition makes a lot of sense for both
-> controllers. And it is a huge improvement. I do not see any reason
-> to pull a conceptually nontrivial merging/dependency of two separate
-> controllers into the picture. If you think it makes some sense then
-> bring that up later for a separate discussion.
-
-That's one way to put it.  But the way I see it is that I remove a
-generic resource counter and replace it with a pure memory counter
-which I put where we account and limit memory - with one exception
-that is hardly worth creating a dedicated library file for.
-
-I only explained my plans of merging all memory controllers because I
-assumed we could ever be on the same page when it comes to this code.
-
-But regardless of that, my approach immediately simplifies Kconfig,
-Makefiles, #includes, and you haven't made a good point why the
-hugetlb controller depending on memcg would harm anybody in real life.
