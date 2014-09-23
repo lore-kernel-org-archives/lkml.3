@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443AbaIWQJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:09:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59570 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756380AbaIWQJ1 (ORCPT
+	id S932401AbaIWQMg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:12:36 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:41347 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117AbaIWQMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:09:27 -0400
-Date: Tue, 23 Sep 2014 18:09:23 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/5] video: move mediabus format definition to a more
- standard place
-Message-ID: <20140923180923.287758a7@bbrezillon>
-In-Reply-To: <Pine.LNX.4.64.1409231426220.17074@axis700.grange>
-References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1406031827-12432-2-git-send-email-boris.brezillon@free-electrons.com>
-	<Pine.LNX.4.64.1409231426220.17074@axis700.grange>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 23 Sep 2014 12:12:34 -0400
+Message-ID: <54219BEE.7090309@mvista.com>
+Date: Tue, 23 Sep 2014 11:12:30 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Ralf Baechle <ralf@linux-mips.org>, minyard@acm.org
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mips: Save all registers when saving the frame
+References: <1410903925-10744-1-git-send-email-minyard@acm.org> <20140918095813.GA9804@linux-mips.org> <541AD6E9.2010609@mvista.com>
+In-Reply-To: <541AD6E9.2010609@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+Ping?  I haven't heard anything on this.
 
-On Tue, 23 Sep 2014 14:33:20 +0200 (CEST)
-Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+Thanks,
 
-> Hi Boris,
-> 
-> On Tue, 22 Jul 2014, Boris BREZILLON wrote:
-> 
-> > Rename mediabus formats and move the enum into a separate header file so
-> > that it can be used by DRM/KMS subsystem without any reference to the V4L2
-> > subsystem.
-> > 
-> > Old V4L2_MBUS_FMT_ definitions are now macros that points to VIDEO_BUS_FMT_
-> > definitions.
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> 
-> In principle I find this a good idea, certainly it's good to reuse code. 
-> Just wondering, wouldn't it be better instead of adding those defines to 
-> define a macro like
-> 
-> #define VIDEO_BUS_TO_MBUS(x)	V4L2_MBUS_ ## x = VIDEO_BUS_ ## x
-> 
-> and then do
-> 
-> enum v4l2_mbus_pixelcode {
-> 	VIDEO_BUS_TO_MBUS(FIXED),
-> 	VIDEO_BUS_TO_MBUS(RGB444_2X8_PADHI_BE),
-> 	...
-> };
-> 
-> ? I'm not very strong on this, I just think an enum is nicer than a bunch 
-> of defines and this way copy-paste errors are less likely, but if you or 
-> others strongly disagree - I won't insist :)
+-corey
 
-I'd say it might be a good solution if we enforce new users (including
-user space users) to use video_bus_format enum values instead of
-v4l2_mbus_pixelcode ones. But if we keep adding new values to this enum
-I'd say this approach is less readable than having the full names
-(V4L2_MBUS_XXX) expressed, because users will still have to use those
-full names.
+On 09/18/2014 07:58 AM, Corey Minyard wrote:
+> On 09/18/2014 04:58 AM, Ralf Baechle wrote:
+>> On Tue, Sep 16, 2014 at 04:45:25PM -0500, minyard@acm.org wrote:
+>>
+>>> From: Corey Minyard <cminyard@mvista.com>
+>>>
+>>> The MIPS frame save code was just saving a few registers, enough to
+>>> do a backtrace if every function set up a frame.  However, this is
+>>> not working if you are using DWARF unwinding, because most of the
+>>> registers are wrong.  This was causing kdump backtraces to be short
+>>> or bogus.
+>>>
+>>> So save all the registers.
+>> The stratey of partial and full stack frames was developed in '97 to bring
+>> down the syscall overhead.  It certaily was very effective - it brought
+>> down the syscall latency to the level of Alphas running at much higher
+>> clock.
+>>
+>> That certainly worked well back then for kernel 2.0 / 2.2.  But the syscall
+>> code has become much more complex.  Since then support for 64 bit kernels,
+>> two 32 bit ABIs running on a 64 bit kernels and numerous features that
+>> changed the once simple syscall path have been implemented.  My gut feeling
+>> is it might be worth to yank out the whole optimization to see how much
+>> code complexity we get rid of in exchange for how much extra syscall
+>> latency.
+> I"m not sure I understand.  From what I can tell, this code is only
+> called by
+> things that print stack traces, kdb, and kexec/kdump.  So it shouldn't be in
+> any normal syscall path.
+>
+> This patch will currently only help kdump, but it will be necessary if
+> anyone
+> adds MIPS support for DWARF unwinding for stack traces.  And you'd have
+> to fix some things in context switching, too, I think.
+>
+> From what I can tell the partial save for syscalls is a good idea.  You
+> don't have
+> to save half the registers and it doesn't affect tracebacks, kdump, or
+> anything else
+> like that.
+>
+> -corey
 
-Anyway, I can still replace this macro list by an enum:
-
-enum v4l2_mbus_pixelcode {
-	V4L2_MBUS_FIXED = VIDEO_BUS_FIXED,
-	V4L2_MBUS_RGB444_2X8_PADHI_BE = VIDEO_BUS_RGB444_2X8_PADHI_BE,
-	...
-};
-
-Best Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
