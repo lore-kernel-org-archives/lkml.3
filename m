@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaIWP3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:29:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42908 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316AbaIWP3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:29:35 -0400
-Message-ID: <542191DA.7090403@canonical.com>
-Date: Tue, 23 Sep 2014 10:29:30 -0500
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S932205AbaIWP35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:29:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37145 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755123AbaIWP3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 11:29:55 -0400
+Date: Tue, 23 Sep 2014 10:29:45 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: <balbi@ti.com>, Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
+Message-ID: <20140923152945.GE28592@saruman>
+Reply-To: <balbi@ti.com>
+References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1487657.QLes1WRKBI@vostro.rjw.lan>
+ <20140923145221.GC28592@saruman>
+ <2422219.EN0C5cKd3e@vostro.rjw.lan>
 MIME-Version: 1.0
-To: hch@infradead.org
-CC: bruce.lucas@mongodb.com, adam.radford@avagotech.com,
-        kashyap.desai@avagotech.com,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mptfusion: enable no_write_same for vmware scsi disks
-References: <20140923071154.GB3867@infradead.org> <1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
-In-Reply-To: <1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lteA1dqeVaWQ9QQl"
+Content-Disposition: inline
+In-Reply-To: <2422219.EN0C5cKd3e@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 09:22 AM, Chris J Arges wrote:
-> When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
-> data can be improperly zeroed out using the mptfusion driver. This patch
-> disables write_same for this driver and the vmware subsystem_vendor which
-> ensures that manual zeroing out is used instead.
-> 
+--lteA1dqeVaWQ9QQl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please hold off on applying this, I'm pursuing a different approach to
-solving this bug that may be more optimal than adding this quirk.
-Thanks,
---chris j arges
+On Tue, Sep 23, 2014 at 05:17:03PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, September 23, 2014 09:52:21 AM Felipe Balbi wrote:
+> > On Tue, Sep 23, 2014 at 04:52:01PM +0200, Rafael J. Wysocki wrote:
+> > > On Tuesday, September 23, 2014 03:17:12 PM Heikki Krogerus wrote:
+> > > > On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
+> > > > > Most devices are configured for 32-bit DMA addresses.
+> > > > > Setting the mask to 32-bit here removes the need for the
+> > > > > drivers to do it separately.
+> > > >=20
+> > > > Rafael, is this OK?
+> > >=20
+> > > Fine by me, but it should go in via dwc3 I think.
+> >=20
+> > huh ? Seems like there's no direct dependency.
+>=20
+> Well, it's part of a series where all of the other patches touch dwc3.
+> Doesn't anything in that series depend on this patch?
 
+dunno, I haven't received anything.
 
-> BugLink: http://bugs.launchpad.net/bugs/1371591
-> Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
-> Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-> ---
->  drivers/message/fusion/mptspi.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-> index 787933d..613231c 100644
-> --- a/drivers/message/fusion/mptspi.c
-> +++ b/drivers/message/fusion/mptspi.c
-> @@ -1419,6 +1419,11 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->  		goto out_mptspi_probe;
->          }
->  
-> +	/* VMWare emulation doesn't properly implement WRITE_SAME
-> +	 */
-> +	if (pdev->subsystem_vendor == 0x15AD)
-> +		sh->no_write_same = 1;
-> +
->  	spin_lock_irqsave(&ioc->FreeQlock, flags);
->  
->  	/* Attach the SCSI Host to the IOC structure
-> 
+--=20
+balbi
+
+--lteA1dqeVaWQ9QQl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUIZHpAAoJEIaOsuA1yqREHMIQAKUzy5waHyI72sEal92KklRX
+jsyZPv/qYxo4JJVoOxqtowpXvI1gx95FlFEbtIkM/lHbg3J8Vc+ENacERx2qpqvK
+OAAfQbbmOtg8U7NN4n+DtmMTNt3MbZ4R2SpgrxXg4wLeKmAvehG1UB5emmrk2bwK
+1Ts9yzz7/XIzFXHYBAlowcaVx7KFDoiCpveU3VN+g9Zbp6Xta7un91yxOCFMhS/A
+dCC67ht/6FfgHVLgCus1PXCz2x28SyC4ba5zfyeg0nQsjhcputYCJWHm19ZIKDKA
+9RGDXdDkKvkOB4F2PYlAA/laN/AAu8g//VR9EaHO9de3c28Yi1QhakDenLrzuiQB
+rTo+itXRxLTeW/N0aDC5uMAGMa9+8j0lj+nqpYxnGnBE81xSt/zyJqv/i4gu9mT6
+/qIsZTOigGzA6tUqh6AM/zLq6IGmz0ifvZGNZxcn1bEAkFe0mT2QnmcQDFpMxVHn
+Fsy7gC18ZhZYOSAVlXtqVtEN2MHQ2HwBgb2AOgorjcT00ts4wRBXL31B6J0lZT1a
+IAWESXB3+vgTnbZjHZz/lnBJBWs/8FxnVGIJ6UDvR2NxwHe6IsoH9E3iReIAIBYT
+JgAKvK+lhjGiUOGHePKKf2HNuhRS6s1WU1iFP0ahI2UuTnFiRi+761TcZQK8hB1q
+vqghEGn9RtyMaYlggU36
+=kxSv
+-----END PGP SIGNATURE-----
+
+--lteA1dqeVaWQ9QQl--
