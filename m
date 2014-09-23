@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538AbaIWH6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:58:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:40338 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaIWH6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:58:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
-   d="scan'208";a="479383492"
-Date: Tue, 23 Sep 2014 10:58:17 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: gregkh@linuxfoundation.org, jslaby@suse.cz,
-        andriy.shevchenko@linux.intel.com, kean.ho.chew@intel.com,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v3] serial: 8250: Add Quark X1000 to 8250_pci.c
-Message-ID: <20140923075817.GA18814@xps8300>
-References: <1411431671-26540-1-git-send-email-pure.logic@nexus-software.ie>
+	id S1754580AbaIWH7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:59:54 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55544 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751989AbaIWH7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:59:52 -0400
+Message-ID: <54212840.60508@st.com>
+Date: Tue, 23 Sep 2014 09:58:56 +0200
+From: Gabriel Fernandez <gabriel.fernandez@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411431671-26540-1-git-send-email-pure.logic@nexus-software.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Coquelin <maxime.coquelin@st.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <olof@lixom.net>
+Cc: <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: Re: [RESEND PATCH 1/4] ARM: STi: DT: STiH407: 407 DT Entry for clockgen
+ A0
+References: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org> <1408977888-10473-2-git-send-email-gabriel.fernandez@linaro.org> <542124CB.1080307@st.com>
+In-Reply-To: <542124CB.1080307@st.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.19.41]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 01:21:11AM +0100, Bryan O'Donoghue wrote:
-> Quark X1000 contains two designware derived 8250 serial ports.
-> Each port has a unique PCI configuration space consisting of
-> BAR0:UART BAR1:DMA respectively.
-> 
-> Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
-> The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
-> bitrate of up to about 2.76 megabits per second.
-> 
-> This patch enables standard 8250 mode
-> 
-> Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Thanks Maxime !
 
-Looks good to me. FWIW..
+On 09/23/2014 09:44 AM, Maxime Coquelin wrote:
+>
+>
+> On 08/25/2014 04:44 PM, Gabriel FERNANDEZ wrote:
+>> Patch adds DT entries for clockgen A0
+>>
+>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>> Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
+>> ---
+>>   arch/arm/boot/dts/stih407-clock.dtsi | 32 
+>> ++++++++++++++++++++++++++++++++
+>>   1 file changed, 32 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/stih407-clock.dtsi 
+>> b/arch/arm/boot/dts/stih407-clock.dtsi
+>> index 800f46f..e03e86e 100644
+>> --- a/arch/arm/boot/dts/stih407-clock.dtsi
+>> +++ b/arch/arm/boot/dts/stih407-clock.dtsi
+>> @@ -7,6 +7,10 @@
+>>    */
+>>   / {
+>>       clocks {
+>> +        #address-cells = <1>;
+>> +        #size-cells = <1>;
+>> +        ranges;
+>> +
+>>           /*
+>>            * Fixed 30MHz oscillator inputs to SoC
+>>            */
+>> @@ -35,5 +39,33 @@
+>>               clock-frequency = <200000000>;
+>>               clock-output-names = "clk-s-icn-reg-0";
+>>           };
+>> +
+>> +        /*
+>> +         * ClockGenAs on SASG2
+>> +         */
+> Note that I removed this comment since no SASG2 on STiH407.
+>
+>> +        clockgen-a@090ff000 {
+>> +            compatible = "st,clkgen-c32";
+>> +            reg = <0x90ff000 0x1000>;
+> ...
 
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-
-Thanks,
-
--- 
-heikki
