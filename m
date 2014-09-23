@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaIWRwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:52:01 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:36222 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaIWRv1 (ORCPT
+	id S932518AbaIWRwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:52:43 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:41115 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232AbaIWRvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:51:27 -0400
+	Tue, 23 Sep 2014 13:51:14 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 7/8] x86_64,vdso: Clean up vgetcpu init and merge the vdso initcalls
-Date: Tue, 23 Sep 2014 10:50:57 -0700
-Message-Id: <945c463e2804fedd8b08d63a040cbe85d55195aa.1411494540.git.luto@amacapital.net>
+Subject: [PATCH 3/8] x86,vdso: Change the PER_CPU segment to use struct desc_struct
+Date: Tue, 23 Sep 2014 10:50:53 -0700
+Message-Id: <d492f7b55136cbc60f016adae79160707b2e03b7.1411494540.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1411494540.git.luto@amacapital.net>
 References: <cover.1411494540.git.luto@amacapital.net>
@@ -23,132 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now vdso/vma.c has a single initcall and no references to
-"vsyscall".
+This makes it easier to see what's going on.  It produces exactly
+the same segment descriptor as the old code.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/vdso/vma.c | 54 ++++++++++++++++++-----------------------------------
- 1 file changed, 18 insertions(+), 36 deletions(-)
+ arch/x86/vdso/vma.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 32ca60c8157b..a280b11e2122 100644
+index a155dca5edb5..261b1349acc9 100644
 --- a/arch/x86/vdso/vma.c
 +++ b/arch/x86/vdso/vma.c
-@@ -1,7 +1,8 @@
- /*
-- * Set up the VMAs to tell the VM about the vDSO.
-  * Copyright 2007 Andi Kleen, SUSE Labs.
-  * Subject to the GPL, v.2
-+ *
-+ * This contains most of the x86 vDSO kernel-side code.
+@@ -248,7 +248,7 @@ __setup("vdso=", vdso_setup);
   */
- #include <linux/mm.h>
- #include <linux/err.h>
-@@ -11,18 +12,16 @@
- #include <linux/random.h>
- #include <linux/elf.h>
- #include <linux/cpu.h>
--#include <asm/vsyscall.h>
- #include <asm/vgtod.h>
- #include <asm/proto.h>
- #include <asm/vdso.h>
-+#include <asm/vvar.h>
- #include <asm/page.h>
- #include <asm/hpet.h>
- #include <asm/desc.h>
- 
- #if defined(CONFIG_X86_64)
- unsigned int __read_mostly vdso64_enabled = 1;
--
--extern unsigned short vdso_sync_cpuid;
- #endif
- 
- void __init init_vdso_image(const struct vdso_image *image)
-@@ -40,20 +39,6 @@ void __init init_vdso_image(const struct vdso_image *image)
- 						image->alt_len));
- }
- 
--#if defined(CONFIG_X86_64)
--static int __init init_vdso(void)
--{
--	init_vdso_image(&vdso_image_64);
--
--#ifdef CONFIG_X86_X32_ABI
--	init_vdso_image(&vdso_image_x32);
--#endif
--
--	return 0;
--}
--subsys_initcall(init_vdso);
--#endif
--
- struct linux_binprm;
- 
- /* Put the vdso above the (randomized) stack with another randomized offset.
-@@ -242,12 +227,9 @@ __setup("vdso=", vdso_setup);
- #endif
- 
- #ifdef CONFIG_X86_64
--/*
-- * Assume __initcall executes before all user space. Hopefully kmod
-- * doesn't violate that. We'll find out if it does.
-- */
--static void vsyscall_set_cpu(int cpu)
-+static void vgetcpu_cpu_init(void *arg)
+ static void vsyscall_set_cpu(int cpu)
  {
-+	int cpu = smp_processor_id();
- 	struct desc_struct d;
+-	unsigned long d;
++	struct desc_struct d;
  	unsigned long node = 0;
  #ifdef CONFIG_NUMA
-@@ -274,34 +256,34 @@ static void vsyscall_set_cpu(int cpu)
+ 	node = cpu_to_node(cpu);
+@@ -257,13 +257,18 @@ static void vsyscall_set_cpu(int cpu)
+ 		write_rdtscp_aux((node << 12) | cpu);
+ 
+ 	/*
+-	 * Store cpu number in limit so that it can be loaded quickly
+-	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
++	 * Store cpu number in limit so that it can be loaded
++	 * quickly in user space in vgetcpu. (12 bits for the CPU
++	 * and 8 bits for the node)
+ 	 */
+-	d = 0x0f40000000000ULL;
+-	d |= cpu;
+-	d |= (node & 0xf) << 12;
+-	d |= (node >> 4) << 48;
++	d = (struct desc_struct) {
++		.limit0 = cpu | ((node & 0xf) << 12),
++		.limit = node >> 4,
++		.type = 4,		/* RO data, expand down */
++		.dpl = 3,		/* Visible to user code */
++		.s = 1,			/* Not a system segment */
++		.p = 1,			/* Present */
++	};
+ 
  	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
  }
- 
--static void cpu_vsyscall_init(void *arg)
--{
--	/* preemption should be already off */
--	vsyscall_set_cpu(raw_smp_processor_id());
--}
--
- static int
--cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
-+vgetcpu_cpu_notifier(struct notifier_block *n, unsigned long action, void *arg)
- {
- 	long cpu = (long)arg;
- 
- 	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
--		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
-+		smp_call_function_single(cpu, vgetcpu_cpu_init, NULL, 1);
- 
- 	return NOTIFY_DONE;
- }
- 
--static int __init vsyscall_init(void)
-+static int __init init_vdso(void)
- {
-+	init_vdso_image(&vdso_image_64);
-+
-+#ifdef CONFIG_X86_X32_ABI
-+	init_vdso_image(&vdso_image_x32);
-+#endif
-+
- 	cpu_notifier_register_begin();
- 
--	on_each_cpu(cpu_vsyscall_init, NULL, 1);
-+	on_each_cpu(vgetcpu_cpu_init, NULL, 1);
- 	/* notifier priority > KVM */
--	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
-+	__hotcpu_notifier(vgetcpu_cpu_notifier, 30);
- 
- 	cpu_notifier_register_done();
- 
- 	return 0;
- }
--__initcall(vsyscall_init);
--#endif
-+subsys_initcall(init_vdso);
-+#endif /* CONFIG_X86_64 */
 -- 
 1.9.3
 
