@@ -1,216 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaIWVPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:15:15 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:42915 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971AbaIWVPN (ORCPT
+	id S1756917AbaIWVPk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:15:40 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:45197 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756884AbaIWVPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:15:13 -0400
-Date: Tue, 23 Sep 2014 14:16:53 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH 8/9] percpu_ref: add PERCPU_REF_INIT_* flags
-Message-ID: <20140923211653.GI15142@kmo-pixel>
-References: <1411451718-17807-1-git-send-email-tj@kernel.org>
- <1411451718-17807-9-git-send-email-tj@kernel.org>
+	Tue, 23 Sep 2014 17:15:37 -0400
+X-IronPort-AV: E=Sophos;i="5.04,582,1406617200"; 
+   d="scan'208";a="46573336"
+From: Jonathan Richardson <jonathar@broadcom.com>
+To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>,
+        Jonathan Richardson <jonathar@broadcom.com>
+Subject: [PATCH v2 0/6] Add initial support for Broadcom Cygnus SoC
+Date: Tue, 23 Sep 2014 14:17:31 -0700
+Message-ID: <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Jonathan Richardson <jonathar@broadcom.com>
+References: <Jonathan Richardson <jonathar@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411451718-17807-9-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 01:55:17AM -0400, Tejun Heo wrote:
-> With the recent addition of percpu_ref_reinit(), percpu_ref now can be
-> used as a persistent switch which can be turned on and off repeatedly
-> where turning off maps to killing the ref and waiting for it to drain;
-> however, there currently isn't a way to initialize a percpu_ref in its
-> off (killed and drained) state, which can be inconvenient for certain
-> persistent switch use cases.
-> 
-> Similarly, percpu_ref_switch_to_atomic/percpu() allow dynamic
-> selection of operation mode; however, currently a newly initialized
-> percpu_ref is always in percpu mode making it impossible to avoid the
-> latency overhead of switching to atomic mode.
-> 
-> This patch adds @flags to percpu_ref_init() and implements the
-> following flags.
-> 
-> * PERCPU_REF_INIT_ATOMIC	: start ref in atomic mode
-> * PERCPU_REF_INIT_DEAD		: start ref killed and drained
-> 
-> These flags should be able to serve the above two use cases.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
+Hi,
 
-Reviewed-by: Kent Overstreet <kmo@daterainc.com>
+This patchset contains initial support for Broadcom's Cygnus SoC based on our
+iProc architecture. Initial support is minimal and includes just the mach
+platform code, clock driver, and a basic device tree configuration. Peripheral
+drivers will be submitted soon, as will device tree configurations for other
+Cygnus board variants.
 
-> ---
->  block/blk-mq.c                  |  2 +-
->  fs/aio.c                        |  4 ++--
->  include/linux/percpu-refcount.h | 18 +++++++++++++++++-
->  kernel/cgroup.c                 |  7 ++++---
->  lib/percpu-refcount.c           | 24 +++++++++++++++++++-----
->  5 files changed, 43 insertions(+), 12 deletions(-)
-> 
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index 702df07..3f6e6f5 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -1777,7 +1777,7 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
->  		goto err_hctxs;
->  
->  	if (percpu_ref_init(&q->mq_usage_counter, blk_mq_usage_counter_release,
-> -			    GFP_KERNEL))
-> +			    0, GFP_KERNEL))
->  		goto err_map;
->  
->  	setup_timer(&q->timeout, blk_mq_rq_timer, (unsigned long) q);
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 93fbcc0f..9b6d5d6 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -666,10 +666,10 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
->  
->  	INIT_LIST_HEAD(&ctx->active_reqs);
->  
-> -	if (percpu_ref_init(&ctx->users, free_ioctx_users, GFP_KERNEL))
-> +	if (percpu_ref_init(&ctx->users, free_ioctx_users, 0, GFP_KERNEL))
->  		goto err;
->  
-> -	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs, GFP_KERNEL))
-> +	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs, 0, GFP_KERNEL))
->  		goto err;
->  
->  	ctx->cpu = alloc_percpu(struct kioctx_cpu);
-> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-> index e41ca20..5f84bf0 100644
-> --- a/include/linux/percpu-refcount.h
-> +++ b/include/linux/percpu-refcount.h
-> @@ -61,6 +61,21 @@ enum {
->  	__PERCPU_REF_ATOMIC_DEAD = __PERCPU_REF_ATOMIC | __PERCPU_REF_DEAD,
->  };
->  
-> +/* @flags for percpu_ref_init() */
-> +enum {
-> +	/*
-> +	 * Start w/ ref == 1 in atomic mode.  Can be switched to percpu
-> +	 * operation using percpu_ref_switch_to_percpu().
-> +	 */
-> +	PERCPU_REF_INIT_ATOMIC	= 1 << 0,
-> +
-> +	/*
-> +	 * Start dead w/ ref == 0 in atomic mode.  Must be revived with
-> +	 * percpu_ref_reinit() before used.  Implies INIT_ATOMIC.
-> +	 */
-> +	PERCPU_REF_INIT_DEAD	= 1 << 1,
-> +};
-> +
->  struct percpu_ref {
->  	atomic_long_t		count;
->  	/*
-> @@ -74,7 +89,8 @@ struct percpu_ref {
->  };
->  
->  int __must_check percpu_ref_init(struct percpu_ref *ref,
-> -				 percpu_ref_func_t *release, gfp_t gfp);
-> +				 percpu_ref_func_t *release, unsigned int flags,
-> +				 gfp_t gfp);
->  void percpu_ref_exit(struct percpu_ref *ref);
->  void percpu_ref_switch_to_atomic(struct percpu_ref *ref,
->  				 percpu_ref_func_t *confirm_switch);
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 589b4d8..e2fbcc1 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1628,7 +1628,8 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
->  		goto out;
->  	root_cgrp->id = ret;
->  
-> -	ret = percpu_ref_init(&root_cgrp->self.refcnt, css_release, GFP_KERNEL);
-> +	ret = percpu_ref_init(&root_cgrp->self.refcnt, css_release, 0,
-> +			      GFP_KERNEL);
->  	if (ret)
->  		goto out;
->  
-> @@ -4487,7 +4488,7 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss,
->  
->  	init_and_link_css(css, ss, cgrp);
->  
-> -	err = percpu_ref_init(&css->refcnt, css_release, GFP_KERNEL);
-> +	err = percpu_ref_init(&css->refcnt, css_release, 0, GFP_KERNEL);
->  	if (err)
->  		goto err_free_css;
->  
-> @@ -4555,7 +4556,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
->  		goto out_unlock;
->  	}
->  
-> -	ret = percpu_ref_init(&cgrp->self.refcnt, css_release, GFP_KERNEL);
-> +	ret = percpu_ref_init(&cgrp->self.refcnt, css_release, 0, GFP_KERNEL);
->  	if (ret)
->  		goto out_free_cgrp;
->  
-> diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-> index 548b19e..74ec33e 100644
-> --- a/lib/percpu-refcount.c
-> +++ b/lib/percpu-refcount.c
-> @@ -45,27 +45,41 @@ static unsigned long __percpu *percpu_count_ptr(struct percpu_ref *ref)
->   * percpu_ref_init - initialize a percpu refcount
->   * @ref: percpu_ref to initialize
->   * @release: function which will be called when refcount hits 0
-> + * @flags: PERCPU_REF_INIT_* flags
->   * @gfp: allocation mask to use
->   *
-> - * Initializes the refcount in single atomic counter mode with a refcount of 1;
-> - * analagous to atomic_long_set(ref, 1).
-> + * Initializes @ref.  If @flags is zero, @ref starts in percpu mode with a
-> + * refcount of 1; analagous to atomic_long_set(ref, 1).  See the
-> + * definitions of PERCPU_REF_INIT_* flags for flag behaviors.
->   *
->   * Note that @release must not sleep - it may potentially be called from RCU
->   * callback context by percpu_ref_kill().
->   */
->  int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release,
-> -		    gfp_t gfp)
-> +		    unsigned int flags, gfp_t gfp)
->  {
-> +	unsigned long start_count = 0;
-> +
->  	BUILD_BUG_ON(__PERCPU_REF_ATOMIC_DEAD &
->  		     ~(__alignof__(unsigned long) - 1));
->  
-> -	atomic_long_set(&ref->count, 1 + PERCPU_COUNT_BIAS);
-> -
->  	ref->percpu_count_ptr =
->  		(unsigned long)alloc_percpu_gfp(unsigned long, gfp);
->  	if (!ref->percpu_count_ptr)
->  		return -ENOMEM;
->  
-> +	if (flags & (PERCPU_REF_INIT_ATOMIC | PERCPU_REF_INIT_DEAD))
-> +		ref->percpu_count_ptr |= __PERCPU_REF_ATOMIC;
-> +	else
-> +		start_count += PERCPU_COUNT_BIAS;
-> +
-> +	if (flags & PERCPU_REF_INIT_DEAD)
-> +		ref->percpu_count_ptr |= __PERCPU_REF_DEAD;
-> +	else
-> +		start_count++;
-> +
-> +	atomic_long_set(&ref->count, start_count);
-> +
->  	ref->release = release;
->  	return 0;
->  }
-> -- 
-> 1.9.3
-> 
+Changes from v1:
+ - Address code review comments as per previous responses.
+ - Copyright headers updated to remove Broadcom URL.
+ - mach platform code still contains hard coded adresses. These address are
+   the same for all Cygnus variants. Could you please provide guidance on where
+   they should go if you would still like them changed.
+   
+Thanks,
+Jon
+
+Jonathan Richardson (6):
+  ARM: cygnus: Initial support for Broadcom Cygnus SoC
+  clk: Clock driver support for Broadcom Cygnus SoC
+  dt-bindings: Document Broadcom Cygnus SoC and clock driver
+  ARM: dts: Enable Broadcom Cygnus SoC
+  ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
+  MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock
+    drivers
+
+ Documentation/devicetree/bindings/arm/cygnus.txt   |   12 +
+ .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++
+ .../devicetree/bindings/clock/clk-iproc.txt        |   48 +
+ MAINTAINERS                                        |   21 +
+ arch/arm/boot/dts/Makefile                         |    1 +
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |  349 ++++++
+ arch/arm/boot/dts/bcm911360_entphn.dts             |   22 +
+ arch/arm/configs/bcm_cygnus_defconfig              |  223 ++++
+ arch/arm/mach-bcm/Kconfig                          |   31 +
+ arch/arm/mach-bcm/Makefile                         |    3 +
+ arch/arm/mach-bcm/bcm_cygnus.c                     |  166 +++
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/bcm/Makefile                           |    2 +
+ drivers/clk/bcm/clk-cygnus.c                       | 1186 ++++++++++++++++++++
+ drivers/clk/bcm/clk-iproc.c                        |  451 ++++++++
+ 15 files changed, 2637 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-iproc.txt
+ create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+ create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
+ create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
+ create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+ create mode 100644 drivers/clk/bcm/clk-cygnus.c
+ create mode 100644 drivers/clk/bcm/clk-iproc.c
+
+-- 
+1.7.9.5
+
