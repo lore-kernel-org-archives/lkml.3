@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbaIWMts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:49:48 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:56808 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996AbaIWMtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:49:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140923122437.GE2979@krava.brq.redhat.com>
-References: <1411453828-14832-1-git-send-email-namhyung@kernel.org> <20140923122437.GE2979@krava.brq.redhat.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 23 Sep 2014 21:49:22 +0900
-X-Google-Sender-Auth: RASQM4JICPK4JvZnyS3rfBlPnNw
-Message-ID: <CAM9d7cjY9HwRSKJvuUfbQPmi6se1H7+vONGxDTBdv=xNR-EOUQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf callchain: Create an address space per thread
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755644AbaIWMvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:51:49 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:33335 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412AbaIWMvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:51:48 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Sebastian Reichel <sre@debian.org>,
+        Jonathan Cameron <jic23@kernel.org>, lars@metafoo.de,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH] iio: consumer.h: Fix scale factor in function comment
+Date: Tue, 23 Sep 2014 15:51:42 +0300
+Message-Id: <1411476702-10004-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.9.1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+1 milivolt is equal to 1000000 nanovolts.
 
-On Tue, Sep 23, 2014 at 9:24 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Tue, Sep 23, 2014 at 03:30:27PM +0900, Namhyung Kim wrote:
->> The unw_addr_space_t in libunwind represents an address space to be
->> used for stack unwinding.  It doesn't need to be create/destory
->> everytime to unwind callchain (as in get_entries) and can have a same
->> lifetime as thread (unless exec called).
->>
->> So move the address space construction/destruction logic to the thread
->> lifetime handling functions.  This is a preparation to enable caching
->> in the unwind library.
->>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Jean Pihet <jean.pihet@linaro.org>
->> Cc: Arun Sharma <asharma@fb.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/util/thread.c           |  8 ++++++++
->>  tools/perf/util/unwind-libunwind.c | 30 +++++++++++++++++++++++++-----
->>  tools/perf/util/unwind.h           | 17 +++++++++++++++++
->>  3 files changed, 50 insertions(+), 5 deletions(-)
->>
->> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
->> index a9df7f2c6dc9..c1fa4a3597ea 100644
->> --- a/tools/perf/util/thread.c
->> +++ b/tools/perf/util/thread.c
->> @@ -7,6 +7,7 @@
->>  #include "util.h"
->>  #include "debug.h"
->>  #include "comm.h"
->> +#include "unwind.h"
->>
->>  int thread__init_map_groups(struct thread *thread, struct machine *machine)
->>  {
->> @@ -48,6 +49,12 @@ struct thread *thread__new(pid_t pid, pid_t tid)
->>                       goto err_thread;
->>
->>               list_add(&comm->list, &thread->comm_list);
->> +
->> +             if (unwind__prepare_access(thread) < 0) {
->
-> you could call list_add below this call and thus save
-> the list_del call below in error path
->
-> looks like you dont need comm to be on comm_list within
-> the unwind__prepare_access call
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ include/linux/iio/consumer.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Right.  Will change.
+diff --git a/include/linux/iio/consumer.h b/include/linux/iio/consumer.h
+index 651f9a0..087af10 100644
+--- a/include/linux/iio/consumer.h
++++ b/include/linux/iio/consumer.h
+@@ -191,7 +191,7 @@ int iio_read_channel_scale(struct iio_channel *chan, int *val,
+  * The scale factor allows to increase the precession of the returned value. For
+  * a scale factor of 1 the function will return the result in the normal IIO
+  * unit for the channel type. E.g. millivolt for voltage channels, if you want
+- * nanovolts instead pass 1000 as the scale factor.
++ * nanovolts instead pass 1000000 as the scale factor.
+  */
+ int iio_convert_raw_to_processed(struct iio_channel *chan, int raw,
+ 	int *processed, unsigned int scale);
+-- 
+1.9.1
 
-Thanks,
-Namhyung
-
-
->
->> +                     list_del(&comm->list);
->> +                     free(comm);
->> +                     goto err_thread;
->> +             }
->>       }
->
-> SNIP
->
-> jirka
