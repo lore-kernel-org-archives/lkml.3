@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386AbaIWPom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:44:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41713 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756251AbaIWPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:44:37 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: sfr@canb.auug.org.au, rdunlap@infradead.org, davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: [PATCH 4/5] sh: Set CONFIG_NET=y in defconfigs
-Date: Tue, 23 Sep 2014 17:44:03 +0200
-Message-Id: <1411487044-14071-4-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1411487044-14071-1-git-send-email-mmarek@suse.cz>
-References: <54218AEF.5090200@suse.cz>
- <1411487044-14071-1-git-send-email-mmarek@suse.cz>
+	id S1756431AbaIWPoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:44:46 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:59127 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397AbaIWPoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 11:44:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410961621-15231-1-git-send-email-loic.poulain@intel.com>
+References: <1410961621-15231-1-git-send-email-loic.poulain@intel.com>
+Date: Tue, 23 Sep 2014 17:44:43 +0200
+Message-ID: <CACRpkdYfMNVeK_X_oQFTnDwyZ_ZemUw3SBL0_JJvpToRXgdFSg@mail.gmail.com>
+Subject: Re: [PATCHv2] pinctrl: baytrail: Clear DIRECT_IRQ bit
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Loic Poulain <loic.poulain@intel.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Samuel Ortiz <samuel.ortiz@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5d6be6a5 ("scsi_netlink : Make SCSI_NETLINK dependent on NET
-instead of selecting NET") removed what happened to be the only instance
-of 'select NET'. Defconfigs that were relying on the select now lack
-networking support.
+On Wed, Sep 17, 2014 at 3:47 PM, Loic Poulain <loic.poulain@intel.com> wrote:
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-sh@vger.kernel.org
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- arch/sh/configs/sdk7780_defconfig | 1 +
- arch/sh/configs/sh2007_defconfig  | 1 +
- 2 files changed, 2 insertions(+)
+> Direct Irq En bit can be initialized to a bad value.
+> This bit has to be cleared for io access mode.
+>
+> Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+> ---
+>  v2: Apply over ff998356b644ebe723127bd9eec6040b59a4a4f6 + add Warning
 
-diff --git a/arch/sh/configs/sdk7780_defconfig b/arch/sh/configs/sdk7780_defconfig
-index 6a96b9a..bbd4c22 100644
---- a/arch/sh/configs/sdk7780_defconfig
-+++ b/arch/sh/configs/sdk7780_defconfig
-@@ -30,6 +30,7 @@ CONFIG_PCI_DEBUG=y
- CONFIG_PCCARD=y
- CONFIG_YENTA=y
- CONFIG_HOTPLUG_PCI=y
-+CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
-diff --git a/arch/sh/configs/sh2007_defconfig b/arch/sh/configs/sh2007_defconfig
-index e741b1e..df25ae7 100644
---- a/arch/sh/configs/sh2007_defconfig
-+++ b/arch/sh/configs/sh2007_defconfig
-@@ -25,6 +25,7 @@ CONFIG_CMDLINE_OVERWRITE=y
- CONFIG_CMDLINE="console=ttySC1,115200 ip=dhcp root=/dev/nfs rw nfsroot=/nfs/rootfs,rsize=1024,wsize=1024 earlyprintk=sh-sci.1"
- CONFIG_PCCARD=y
- CONFIG_BINFMT_MISC=y
-+CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_XFRM_USER=y
--- 
-1.8.4.5
+I can't figure out if the maintainers like this patch or not.
 
+If you want it applied, please ACK it explicitly.
+
+Yours,
+Linus Walleij
