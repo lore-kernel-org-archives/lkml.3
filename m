@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaIWEzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:55:54 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:33917 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaIWEzw (ORCPT
+	id S1753929AbaIWE40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:56:26 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:55761 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaIWE4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:55:52 -0400
-Date: Tue, 23 Sep 2014 00:55:49 -0400
-From: Tejun Heo <tj@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernfs: use stack-buf for small writes.
-Message-ID: <20140923045549.GB11740@mtj.dyndns.org>
-References: <20140923140633.35efbe7a@notabene.brown>
- <20140923041817.GA11740@mtj.dyndns.org>
- <20140923144650.2aa71b39@notabene.brown>
+	Tue, 23 Sep 2014 00:56:25 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 23 Sep 2014 13:57:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Subject: Re: [PATCH v1 5/5] zram: add fullness knob to control swap full
+Message-ID: <20140923045701.GD8325@bbox>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+ <1411344191-2842-6-git-send-email-minchan@kernel.org>
+ <20140922141733.023a9ecbc0fe802d7f742d6e@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140923144650.2aa71b39@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140922141733.023a9ecbc0fe802d7f742d6e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Neil.
-
-On Tue, Sep 23, 2014 at 02:46:50PM +1000, NeilBrown wrote:
-> seqfile is only safe for reads.  sysfs via kernfs uses seq_read(), so there
-> is only a single allocation on the first read.
+On Mon, Sep 22, 2014 at 02:17:33PM -0700, Andrew Morton wrote:
+> On Mon, 22 Sep 2014 09:03:11 +0900 Minchan Kim <minchan@kernel.org> wrote:
 > 
-> It doesn't really related to fixing writes, except to point out that only
-> writes need to be "fixed".  Reads already work.
-
-Oh, I meant the buffer seqfile read op writes to, so it depends on the
-fact that the allocation is only on the first read?  That seems
-extremely brittle to me, especially for an issue which tends to be
-difficult to reproduce.
-
-> Separately:
+> > Some zram usecase could want lower fullness than default 80 to
+> > avoid unnecessary swapout-and-fail-recover overhead.
+> > 
+> > A typical example is that mutliple swap with high piroirty
+> > zram-swap and low priority HDD-swap so it could still enough
+> > free swap space although one of swap devices is full(ie, zram).
+> > It would be better to fail over to HDD-swap rather than failing
+> > swap write to zram in this case.
+> > 
+> > This patch exports fullness to user so user can control it
+> > via the knob.
 > 
-> > Ugh... :( If this can't be avoided at all, I'd much prefer it to be
-> > something explicit - a flag marking the file as needing a persistent
-> > write buffer which is allocated on open.  "Small" writes on stack
-> > feels way to implicit to me.
-> 
-> How about if we add seq_getbuf() and seq_putbuf() to seqfile
-> which takes a 'struct seq_file' and a size and returns the ->buf
-> after making sure it is big enough.
-> It also claims and releases the seqfile ->lock.
-> 
-> Then we would be using the same buffer for reads and write.
-> 
-> Does that sound suitable?  It uses existing infrastructure and avoids having
-> to identify in advance which attributes it is important for.
+> Adding new userspace interfaces requires a pretty strong justification
+> and it's unclear to me that this is being met.  In fact the whole
+> patchset reads like "we have some problem, don't know how to fix it so
+> let's add a userspace knob to make it someone else's problem".
 
-I'd much rather keep things direct and make it explicitly allocate r/w
-buffer(s) on open and disallow seq_file operations on such files.
+I explained rationale in 4/5's reply but if it's not enough or wrong,
+please tell me.
 
-Thanks.
+> 
+> > index b13dc993291f..817738d14061 100644
+> > --- a/Documentation/ABI/testing/sysfs-block-zram
+> > +++ b/Documentation/ABI/testing/sysfs-block-zram
+> > @@ -138,3 +138,13 @@ Description:
+> >  		amount of memory ZRAM can use to store the compressed data.  The
+> >  		limit could be changed in run time and "0" means disable the
+> >  		limit.  No limit is the initial state.  Unit: bytes
+> > +
+> > +What:		/sys/block/zram<id>/fullness
+> > +Date:		August 2014
+> > +Contact:	Minchan Kim <minchan@kernel.org>
+> > +Description:
+> > +		The fullness file is read/write and specifies how easily
+> > +		zram become full state so if you set it to lower value,
+> > +		zram can reach full state easily compared to higher value.
+> > +		Curretnly, initial value is 80% but it could be changed.
+> > +		Unit: Percentage
+> 
+> And I don't think that there is sufficient information here for a user
+> to be able to work out what to do with this tunable.
 
+I will put more words.
+
+> 
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -136,6 +136,37 @@ static ssize_t max_comp_streams_show(struct device *dev,
+> >  	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+> >  }
+> >  
+> > +static ssize_t fullness_show(struct device *dev,
+> > +		struct device_attribute *attr, char *buf)
+> > +{
+> > +	int val;
+> > +	struct zram *zram = dev_to_zram(dev);
+> > +
+> > +	down_read(&zram->init_lock);
+> > +	val = zram->fullness;
+> > +	up_read(&zram->init_lock);
+> 
+> Did we really need to take a lock to display a value which became
+> out-of-date as soon as we released that lock?
+> 
+> > +	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+> > +}
+> > +
+> > +static ssize_t fullness_store(struct device *dev,
+> > +		struct device_attribute *attr, const char *buf, size_t len)
+> > +{
+> > +	int err;
+> > +	unsigned long val;
+> > +	struct zram *zram = dev_to_zram(dev);
+> > +
+> > +	err = kstrtoul(buf, 10, &val);
+> > +	if (err || val > 100)
+> > +		return -EINVAL;
+> 
+> This overwrites the kstrtoul() return value.
+
+Will fix.
+
+Thanks for the reivew, Andrew.
 -- 
-tejun
+Kind regards,
+Minchan Kim
