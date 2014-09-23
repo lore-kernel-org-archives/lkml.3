@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116AbaIWDDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 23:03:16 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50049 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796AbaIWDCP (ORCPT
+	id S1755544AbaIWDB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 23:01:58 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:41376 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaIWDBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 23:02:15 -0400
+	Mon, 22 Sep 2014 23:01:21 -0400
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -14,273 +14,269 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Alex Williamson <alex.williamson@redhat.com>,
         Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org
-Subject: [PATCH v2 10/13] powerpc/powernv: Implement Dynamic DMA windows (DDW) for IODA
-Date: Tue, 23 Sep 2014 13:00:59 +1000
-Message-Id: <1411441262-11025-11-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH v2 13/13] vfio: powerpc/spapr: Enable Dynamic DMA windows
+Date: Tue, 23 Sep 2014 13:01:02 +1000
+Message-Id: <1411441262-11025-14-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
 References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092303-0005-0000-0000-000000BC6B28
+x-cbid: 14092303-1618-0000-0000-000000EEEE21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPAPR defines an interface to create additional DMA windows dynamically.
-"Dynamically" means that the window is not allocated before the guest
-even started, the guest can request it later. In practice, existing linux
-guests check for the capability and if it is there, they create and map
-a DMA window as big as the entire guest RAM.
+This defines and implements VFIO IOMMU API which lets the userspace
+create and remove DMA windows.
 
-This adds 4 callbacks to the spapr_tce_iommu_ops struct:
-1. query - ibm,query-pe-dma-window - returns number/size of windows
-which can be created (one, any page size);
+This updates VFIO_IOMMU_SPAPR_TCE_GET_INFO to return the number of
+available windows and page mask.
 
-2. create - ibm,create-pe-dma-window - creates a window;
+This adds VFIO_IOMMU_SPAPR_TCE_CREATE and VFIO_IOMMU_SPAPR_TCE_REMOVE
+to allow the user space to create and remove window(s).
 
-3. remove - ibm,remove-pe-dma-window - removes a window; removing
-the default 32bit window is not allowed by this patch, this will be added
-later if needed;
+The VFIO IOMMU driver does basic sanity checks and calls corresponding
+SPAPR TCE functions. At the moment only IODA2 (POWER8 PCI host bridge)
+implements them.
 
-4. reset -  ibm,reset-pe-dma-window - reset the DMA windows configuration
-to the default state; as the default window cannot be removed, it only
-removes the additional window if it was created.
+This advertises VFIO_IOMMU_SPAPR_TCE_FLAG_DDW capability via
+VFIO_IOMMU_SPAPR_TCE_GET_INFO.
 
-The next patch will add corresponding ioctls to VFIO SPAPR TCE driver to
-provide necessary support to the userspace.
+This calls platform DDW reset() callback when IOMMU is being disabled
+to reset the DMA configuration to its original state.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- arch/powerpc/include/asm/tce.h            |  22 +++++
- arch/powerpc/platforms/powernv/pci-ioda.c | 159 +++++++++++++++++++++++++++++-
- arch/powerpc/platforms/powernv/pci.h      |   1 +
- 3 files changed, 181 insertions(+), 1 deletion(-)
+ drivers/vfio/vfio_iommu_spapr_tce.c | 135 ++++++++++++++++++++++++++++++++++--
+ include/uapi/linux/vfio.h           |  25 ++++++-
+ 2 files changed, 153 insertions(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/tce.h b/arch/powerpc/include/asm/tce.h
-index e6355f9..23b0362 100644
---- a/arch/powerpc/include/asm/tce.h
-+++ b/arch/powerpc/include/asm/tce.h
-@@ -58,6 +58,28 @@ struct spapr_tce_iommu_ops {
- 			int num);
- 	void (*take_ownership)(struct spapr_tce_iommu_group *data,
- 			bool enable);
-+
-+	/* Dynamic DMA window */
-+	/* Page size flags for ibm,query-pe-dma-window */
-+#define DDW_PGSIZE_4K       0x01
-+#define DDW_PGSIZE_64K      0x02
-+#define DDW_PGSIZE_16M      0x04
-+#define DDW_PGSIZE_32M      0x08
-+#define DDW_PGSIZE_64M      0x10
-+#define DDW_PGSIZE_128M     0x20
-+#define DDW_PGSIZE_256M     0x40
-+#define DDW_PGSIZE_16G      0x80
-+	long (*query)(struct spapr_tce_iommu_group *data,
-+			__u32 *current_windows,
-+			__u32 *windows_available,
-+			__u32 *page_size_mask);
-+	long (*create)(struct spapr_tce_iommu_group *data,
-+			__u32 page_shift,
-+			__u32 window_shift,
-+			struct iommu_table **ptbl);
-+	long (*remove)(struct spapr_tce_iommu_group *data,
-+			struct iommu_table *tbl);
-+	long (*reset)(struct spapr_tce_iommu_group *data);
- };
+diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
+index 0dccbc4..b518891 100644
+--- a/drivers/vfio/vfio_iommu_spapr_tce.c
++++ b/drivers/vfio/vfio_iommu_spapr_tce.c
+@@ -190,18 +190,25 @@ static void tce_iommu_disable(struct tce_container *container)
  
- struct spapr_tce_iommu_group {
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index 296f49b..a6318cb 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -1154,6 +1154,26 @@ static void pnv_pci_ioda2_setup_bypass_pe(struct pnv_phb *phb,
- 	pnv_pci_ioda2_set_bypass(pe, true);
+ 	container->enabled = false;
+ 
+-	if (!container->grp || !current->mm)
++	if (!container->grp)
+ 		return;
+ 
+ 	data = iommu_group_get_iommudata(container->grp);
+ 	if (!data || !data->iommu_owner || !data->ops->get_table)
+ 		return;
+ 
+-	tbl = data->ops->get_table(data, 0);
+-	if (!tbl)
+-		return;
++	if (current->mm) {
++		tbl = data->ops->get_table(data, 0);
++		if (tbl)
++			decrement_locked_vm(tbl);
+ 
+-	decrement_locked_vm(tbl);
++		tbl = data->ops->get_table(data, 1);
++		if (tbl)
++			decrement_locked_vm(tbl);
++	}
++
++	if (data->ops->reset)
++		data->ops->reset(data);
  }
  
-+static struct iommu_table *pnv_ioda2_iommu_get_table(
-+		struct spapr_tce_iommu_group *data,
-+		int num)
-+{
-+	struct pnv_ioda_pe *pe = data->iommu_owner;
-+
-+	switch (num) {
-+	case 0:
-+		if (pe->tce32.table.it_size)
-+			return &pe->tce32.table;
-+		return NULL;
-+	case 1:
-+		if (pe->tce64.table.it_size)
-+			return &pe->tce64.table;
-+		return NULL;
-+	default:
-+		return NULL;
-+	}
-+}
-+
- static void pnv_ioda2_take_ownership(struct spapr_tce_iommu_group *data,
- 				     bool enable)
+ static void *tce_iommu_open(unsigned long arg)
+@@ -243,7 +250,7 @@ static long tce_iommu_ioctl(void *iommu_data,
+ 				 unsigned int cmd, unsigned long arg)
  {
-@@ -1162,9 +1182,146 @@ static void pnv_ioda2_take_ownership(struct spapr_tce_iommu_group *data,
- 	pnv_pci_ioda2_set_bypass(pe, !enable);
- }
+ 	struct tce_container *container = iommu_data;
+-	unsigned long minsz;
++	unsigned long minsz, ddwsz;
+ 	long ret;
  
-+static long pnv_pci_ioda2_ddw_query(struct spapr_tce_iommu_group *data,
-+		__u32 *current_windows,
-+		__u32 *windows_available, __u32 *page_size_mask)
-+{
-+	struct pnv_ioda_pe *pe = data->iommu_owner;
+ 	switch (cmd) {
+@@ -288,6 +295,28 @@ static long tce_iommu_ioctl(void *iommu_data,
+ 		info.dma32_window_size = tbl->it_size << tbl->it_page_shift;
+ 		info.flags = 0;
+ 
++		ddwsz = offsetofend(struct vfio_iommu_spapr_tce_info,
++				page_size_mask);
 +
-+	*windows_available = 2;
-+	*current_windows = 0;
-+	if (pe->tce32.table.it_size) {
-+		--*windows_available;
-+		++*current_windows;
++		if (info.argsz == ddwsz) {
++			if (data->ops->query && data->ops->create &&
++					data->ops->remove) {
++				info.flags |= VFIO_IOMMU_SPAPR_TCE_FLAG_DDW;
++
++				ret = data->ops->query(data,
++						&info.current_windows,
++						&info.windows_available,
++						&info.page_size_mask);
++				if (ret)
++					return ret;
++			} else {
++				info.current_windows = 0;
++				info.windows_available = 0;
++				info.page_size_mask = 0;
++			}
++			minsz = ddwsz;
++		}
++
+ 		if (copy_to_user((void __user *)arg, &info, minsz))
+ 			return -EFAULT;
+ 
+@@ -412,12 +441,106 @@ static long tce_iommu_ioctl(void *iommu_data,
+ 		tce_iommu_disable(container);
+ 		mutex_unlock(&container->lock);
+ 		return 0;
++
+ 	case VFIO_EEH_PE_OP:
+ 		if (!container->grp)
+ 			return -ENODEV;
+ 
+ 		return vfio_spapr_iommu_eeh_ioctl(container->grp,
+ 						  cmd, arg);
++
++	case VFIO_IOMMU_SPAPR_TCE_CREATE: {
++		struct vfio_iommu_spapr_tce_create create;
++		struct spapr_tce_iommu_group *data;
++		struct iommu_table *tbl;
++
++		if (WARN_ON(!container->grp))
++			return -ENXIO;
++
++		data = iommu_group_get_iommudata(container->grp);
++
++		minsz = offsetofend(struct vfio_iommu_spapr_tce_create,
++				start_addr);
++
++		if (copy_from_user(&create, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (create.argsz < minsz)
++			return -EINVAL;
++
++		if (create.flags)
++			return -EINVAL;
++
++		if (!data->ops->create || !data->iommu_owner)
++			return -ENOSYS;
++
++		BUG_ON(!data || !data->ops || !data->ops->remove);
++
++		ret = data->ops->create(data, create.page_shift,
++				create.window_shift, &tbl);
++		if (ret)
++			return ret;
++
++		ret = try_increment_locked_vm(tbl);
++		if (ret) {
++			data->ops->remove(data, tbl);
++			return ret;
++		}
++
++		create.start_addr = tbl->it_offset << tbl->it_page_shift;
++
++		if (copy_to_user((void __user *)arg, &create, minsz)) {
++			data->ops->remove(data, tbl);
++			decrement_locked_vm(tbl);
++			return -EFAULT;
++		}
++		mutex_lock(&container->lock);
++		++container->windows_num;
++		mutex_unlock(&container->lock);
++
++		return ret;
 +	}
-+	if (pe->tce64.table.it_size) {
-+		--*windows_available;
-+		++*current_windows;
++	case VFIO_IOMMU_SPAPR_TCE_REMOVE: {
++		struct vfio_iommu_spapr_tce_remove remove;
++		struct spapr_tce_iommu_group *data;
++		struct iommu_table *tbl;
++
++		if (WARN_ON(!container->grp))
++			return -ENXIO;
++
++		data = iommu_group_get_iommudata(container->grp);
++
++		minsz = offsetofend(struct vfio_iommu_spapr_tce_remove,
++				start_addr);
++
++		if (copy_from_user(&remove, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (remove.argsz < minsz)
++			return -EINVAL;
++
++		if (remove.flags)
++			return -EINVAL;
++
++		if (!data->ops->remove || !data->iommu_owner)
++			return -ENOSYS;
++
++		tbl = spapr_tce_find_table(container, data, remove.start_addr);
++		if (!tbl)
++			return -EINVAL;
++
++		ret = data->ops->remove(data, tbl);
++		if (ret)
++			return ret;
++
++		decrement_locked_vm(tbl);
++
++		mutex_lock(&container->lock);
++		--container->windows_num;
++		mutex_unlock(&container->lock);
++
++		return 0;
 +	}
-+	*page_size_mask =
-+		DDW_PGSIZE_4K |
-+		DDW_PGSIZE_64K |
-+		DDW_PGSIZE_16M;
-+
-+	return 0;
-+}
-+
-+static long pnv_pci_ioda2_ddw_create(struct spapr_tce_iommu_group *data,
-+		__u32 page_shift, __u32 window_shift,
-+		struct iommu_table **ptbl)
-+{
-+	struct pnv_ioda_pe *pe = data->iommu_owner;
-+	struct pnv_phb *phb = pe->phb;
-+	struct page *tce_mem = NULL;
-+	void *addr;
-+	long ret;
-+	unsigned long tce_table_size =
-+			(1ULL << (window_shift - page_shift)) * 8;
-+	unsigned order;
-+	struct iommu_table *tbl64 = &pe->tce64.table;
-+
-+	if ((page_shift != 12) && (page_shift != 16) && (page_shift != 24))
-+		return -EINVAL;
-+
-+	if (window_shift > (memory_hotplug_max() >> page_shift))
-+		return -EINVAL;
-+
-+	if (pe->tce64.table.it_size && pe->tce32.table.it_size)
-+		return -EBUSY;
-+
-+	tce_table_size = max(0x1000UL, tce_table_size);
-+	order = get_order(tce_table_size);
-+
-+	pe_info(pe, "Setting up DDW at %llx..%llx ws=0x%x ps=0x%x table_size=0x%lx order=0x%x\n",
-+			pe->tce_bypass_base,
-+			pe->tce_bypass_base + (1ULL << window_shift) - 1,
-+			window_shift, page_shift, tce_table_size, order);
-+
-+	tce_mem = alloc_pages_node(phb->hose->node, GFP_KERNEL, order);
-+	if (!tce_mem) {
-+		pe_err(pe, " Failed to allocate a DDW\n");
-+		return -EFAULT;
-+	}
-+	addr = page_address(tce_mem);
-+	memset(addr, 0, tce_table_size);
-+
-+	/* Configure HW */
-+	ret = opal_pci_map_pe_dma_window(phb->opal_id,
-+			pe->pe_number,
-+			(pe->pe_number << 1) + 1, /* Window number */
-+			1,
-+			__pa(addr),
-+			tce_table_size,
-+			1 << page_shift);
-+	if (ret) {
-+		pe_err(pe, " Failed to configure 32-bit TCE table, err %ld\n",
-+				ret);
-+		return -EFAULT;
-+	}
-+
-+	/* Setup linux iommu table */
-+	pnv_pci_setup_iommu_table(tbl64, addr, tce_table_size,
-+			pe->tce_bypass_base, page_shift);
-+	pe->tce64.pe = pe;
-+	pe->tce64.invalidate_fn = pnv_pci_ioda2_tce_invalidate;
-+
-+	/* Copy "invalidate" register address */
-+	tbl64->it_index = pe->tce32.table.it_index;
-+	tbl64->it_group = pe->tce32.table.it_group;
-+	tbl64->it_type = TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE |
-+			TCE_PCI_SWINV_PAIR;
-+	tbl64->it_map = (void *) 0xDEADBEEF; /* poison */
-+	tbl64->it_ops = pe->tce32.table.it_ops;
-+
-+	*ptbl = tbl64;
-+
-+	return 0;
-+}
-+
-+static long pnv_pci_ioda2_ddw_remove(struct spapr_tce_iommu_group *data,
-+		struct iommu_table *tbl)
-+{
-+	struct pnv_ioda_pe *pe = data->iommu_owner;
-+	struct pnv_phb *phb = pe->phb;
-+	long ret;
-+
-+	/* Only additional 64bit window removal is supported */
-+	if ((tbl != &pe->tce64.table) || !pe->tce64.table.it_size)
-+		return -EFAULT;
-+
-+	pe_info(pe, "Removing huge 64bit DMA window\n");
-+
-+	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
-+
-+	ret = opal_pci_map_pe_dma_window(phb->opal_id,
-+			pe->pe_number,
-+			(pe->pe_number << 1) + 1,
-+			0/* levels */, 0/* table address */,
-+			0/* table size */, 0/* page size */);
-+	if (ret)
-+		pe_warn(pe, "Unmapping failed, ret = %ld\n", ret);
-+
-+	free_pages(tbl->it_base, get_order(tbl->it_size << 3));
-+	memset(&pe->tce64, 0, sizeof(pe->tce64));
-+
-+	return ret;
-+}
-+
-+static long pnv_pci_ioda2_ddw_reset(struct spapr_tce_iommu_group *data)
-+{
-+	struct pnv_ioda_pe *pe = data->iommu_owner;
-+
-+	pe_info(pe, "Reset DMA windows\n");
-+	return pnv_pci_ioda2_ddw_remove(data, &pe->tce64.table);
-+}
-+
- static struct spapr_tce_iommu_ops pnv_pci_ioda2_ops = {
--	.get_table = pnv_ioda1_iommu_get_table,
-+	.get_table = pnv_ioda2_iommu_get_table,
- 	.take_ownership = pnv_ioda2_take_ownership,
-+	.query = pnv_pci_ioda2_ddw_query,
-+	.create = pnv_pci_ioda2_ddw_create,
-+	.remove = pnv_pci_ioda2_ddw_remove,
-+	.reset = pnv_pci_ioda2_ddw_reset
+ 	}
+ 
+ 	return -ENOTTY;
+diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+index 6612974..e71a6ef 100644
+--- a/include/uapi/linux/vfio.h
++++ b/include/uapi/linux/vfio.h
+@@ -451,9 +451,13 @@ struct vfio_iommu_type1_dma_unmap {
+  */
+ struct vfio_iommu_spapr_tce_info {
+ 	__u32 argsz;
+-	__u32 flags;			/* reserved for future use */
++	__u32 flags;
++#define VFIO_IOMMU_SPAPR_TCE_FLAG_DDW	1 /* Support dynamic windows */
+ 	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
+ 	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
++	__u32 current_windows;
++	__u32 windows_available;
++	__u32 page_size_mask;
  };
  
- static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
-diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
-index cf68c4b..9941800 100644
---- a/arch/powerpc/platforms/powernv/pci.h
-+++ b/arch/powerpc/platforms/powernv/pci.h
-@@ -66,6 +66,7 @@ struct pnv_ioda_pe {
- 	int			tce32_segcount;
- 	struct pnv_iommu_table	tce32;
- 	phys_addr_t		tce_inval_reg_phys;
-+	struct pnv_iommu_table	tce64;
+ #define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
+@@ -489,6 +493,25 @@ struct vfio_eeh_pe_op {
  
- 	/* 64-bit TCE bypass region */
- 	bool			tce_bypass_enabled;
+ #define VFIO_EEH_PE_OP			_IO(VFIO_TYPE, VFIO_BASE + 21)
+ 
++struct vfio_iommu_spapr_tce_create {
++	__u32 argsz;
++	__u32 flags;
++	/* in */
++	__u32 page_shift;
++	__u32 window_shift;
++	/* out */
++	__u64 start_addr;
++};
++#define VFIO_IOMMU_SPAPR_TCE_CREATE	_IO(VFIO_TYPE, VFIO_BASE + 18)
++
++struct vfio_iommu_spapr_tce_remove {
++	__u32 argsz;
++	__u32 flags;
++	/* in */
++	__u64 start_addr;
++};
++#define VFIO_IOMMU_SPAPR_TCE_REMOVE	_IO(VFIO_TYPE, VFIO_BASE + 19)
++
+ /* ***************************************************************** */
+ 
+ #endif /* _UAPIVFIO_H */
 -- 
 2.0.0
 
