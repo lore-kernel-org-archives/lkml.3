@@ -1,122 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbaIWOOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:14:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:43471 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390AbaIWOOd (ORCPT
+	id S1756038AbaIWOPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:15:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58184 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753133AbaIWOPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:14:33 -0400
-Date: Tue, 23 Sep 2014 16:14:29 +0200
-From: Robert Richter <rric@kernel.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
-Message-ID: <20140923141429.GH20170@rric.localhost>
-References: <1410544187-15876-1-git-send-email-rric@kernel.org>
- <20140923104122.GE20170@rric.localhost>
- <20140923104641.GF26472@arm.com>
- <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
+	Tue, 23 Sep 2014 10:15:30 -0400
+Date: Tue, 23 Sep 2014 16:15:16 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 3/5] drm: add bus_formats and nbus_formats fields to
+ drm_display_info
+Message-ID: <20140923161516.04262bea@bbrezillon>
+In-Reply-To: <20140923140439.GA5982@ulmo>
+References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1406031827-12432-4-git-send-email-boris.brezillon@free-electrons.com>
+	<20140923140439.GA5982@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof,
+Hi Thierry,
 
-On 23.09.14 12:21:05, Catalin Marinas wrote:
-> On Tue, Sep 23, 2014 at 11:46:41AM +0100, Will Deacon wrote:
-> > On Tue, Sep 23, 2014 at 11:41:22AM +0100, Robert Richter wrote:
-> > > On 12.09.14 19:49:43, Robert Richter wrote:
-> > > > From: Robert Richter <rrichter@cavium.com>
-> > > > 
-> > > > This initial patches enable Cavium Thunder SoC Family. The patches add
-> > > > devicetree and Kconfig support and then add Thunder to the defconfig.
-> > > > 
-> > > > The Thunder system needs more enablement patches for subsystems and
-> > > > devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
-> > > > We will send separate patch sets for these. All of them base on this
-> > > > initial patches.
-> > > > 
-> > > > I sent a separate patch set independently that introduces support for
-> > > > dts vendor subdirs. After both patch sets have been applied I will
-> > > > send a patch in addition that moves the dts file into a subdirectory.
-> > > > 
-> > > > I sent another separate patch that sets NR_CPUS to 64 per default.
-> > > > 
-> > > > The first patch introduces dts files without having a Kconfig option
-> > > > for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
-> > > > added to defconfig in patch 4 as this is my preferred solution. If
-> > > > there is still resistance having an ARCH_THUNDER option, just drop
-> > > > them.
-> > > > 
-> > > > Patches are available here:
-> > > > 
-> > > >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
-> > > 
-> > > it would be good if these patches could be applied.
+On Tue, 23 Sep 2014 16:04:40 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
+
+> On Tue, Jul 22, 2014 at 02:23:45PM +0200, Boris BREZILLON wrote:
+> > Add bus_formats and nbus_formats fields and
+> > drm_display_info_set_bus_formats helper function to specify the bus
+> > formats supported by a given display.
 > > 
-> > Catalin's handling the 3.18 merge window, but this looks like arm-soc
-> > material anyway and should go via Olof/Arnd.
+> > This information can be used by display controller drivers to configure
+> > the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
+> > RGB or LVDS busses).
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/gpu/drm/drm_crtc.c | 28 ++++++++++++++++++++++++++++
+> >  include/drm/drm_crtc.h     |  8 ++++++++
+> >  2 files changed, 36 insertions(+)
+> > 
+> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> > index c808a09..50c8395 100644
+> > --- a/drivers/gpu/drm/drm_crtc.c
+> > +++ b/drivers/gpu/drm/drm_crtc.c
+> > @@ -825,6 +825,34 @@ static void drm_mode_remove(struct drm_connector *connector,
+> >  	drm_mode_destroy(connector->dev, mode);
+> >  }
+> >  
+> > +/*
+> > + * drm_display_info_set_bus_formats - set the supported bus formats
+> > + * @info: display info to store bus formats in
+> > + * @fmts: array containing the supported bus formats
+> > + * @nfmts: the number of entries in the fmts array
+> > + *
+> > + * Store the suppported bus formats in display info structure.
+> > + */
+> > +int drm_display_info_set_bus_formats(struct drm_display_info *info,
+> > +				     const enum video_bus_format *fmts,
+> > +				     int nfmts)
 > 
-> Yes. Olof said he's cherry-picking arm64 SoC patches (or Robert could
-> send him a pull request).
-
-just in case you want to pull, please pull from:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
-
-Thanks,
-
--Robert
+> Can you make nfmts unsigned please?
 
 
+Sure.
 
+> 
+> > +{
+> > +	enum video_bus_format *formats = NULL;
+> > +
+> > +	if (fmts && nfmts) {
+> > +		formats = kmemdup(fmts, sizeof(*fmts) * nfmts, GFP_KERNEL);
+> > +		if (!formats)
+> > +			return -ENOMEM;
+> > +	}
+> > +
+> > +	kfree(info->bus_formats);
+> > +	info->bus_formats = formats;
+> > +	info->nbus_formats = formats ? nfmts : 0;
+> 
+> And perhaps check for formats == NULL && nfmts != 0 since that's not a
+> valid pair of values. Then you can simply assign this directly without
+> relying on the value of formats.
+> 
+> Also other variable names use "num_" as a prefix instead of "n", so if
+> you're going to respin anyway might as well make the names more
+> consistent.
 
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
+I'll rename the field and variable and add the proper check before
+assigning values.
 
-  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
+Thanks for your review.
 
-are available in the git repository at:
+Best Regards,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
+Boris
 
-for you to fetch changes up to 1200e87a26b6b4fe1f473267c83515117e08ee39:
-
-  arm64, defconfig: Enable Cavium Thunder SoC in defconfig (2014-09-23 15:10:55 +0200)
-
-----------------------------------------------------------------
-Enablement patches for Cavium Thunder SoC Family. The patches add
-devicetree and Kconfig support and then add Thunder to the defconfig.
-
-----------------------------------------------------------------
-Radha Mohan Chintakuntla (3):
-      arm64, thunder: Add initial dts for Cavium Thunder SoC
-      arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
-      arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
-
-Robert Richter (1):
-      arm64, defconfig: Enable Cavium Thunder SoC in defconfig
-
- .../devicetree/bindings/arm/cavium-thunder.txt     |  10 +
- Documentation/devicetree/bindings/arm/cpus.txt     |   1 +
- arch/arm64/Kconfig                                 |   5 +
- arch/arm64/boot/dts/Makefile                       |   1 +
- arch/arm64/boot/dts/thunder-88xx.dts               |  67 ++++
- arch/arm64/boot/dts/thunder-88xx.dtsi              | 401 +++++++++++++++++++++
- arch/arm64/configs/defconfig                       |   1 +
- 7 files changed, 486 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
- create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
- create mode 100644 arch/arm64/boot/dts/thunder-88xx.dtsi
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
