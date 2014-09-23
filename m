@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaIWCkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:40:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38484 "EHLO mail.kernel.org"
+	id S1755847AbaIWCkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:40:51 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38528 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754956AbaIWCkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:40:35 -0400
+	id S1754956AbaIWCkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:40:43 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 34/45] USB: serial: fix potential heap buffer overflow
-Date: Tue, 23 Sep 2014 10:31:36 +0800
-Message-Id: <1411439507-30391-34-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 36/45] MIPS: Fix accessing to per-cpu data when flushing the cache
+Date: Tue, 23 Sep 2014 10:31:38 +0800
+Message-Id: <1411439507-30391-36-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
@@ -21,46 +21,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
+From: Ralf Baechle <ralf@linux-mips.org>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit 5654699fb38512bdbfc0f892ce54fce75bdc2bab upstream.
+commit ff522058bd717506b2fa066fa564657f2b86477e upstream.
 
-Make sure to verify the number of ports requested by subdriver to avoid
-writing beyond the end of fixed-size array in interface data.
+This fixes the following issue
 
-The current usb-serial implementation is limited to eight ports per
-interface but failed to verify that the number of ports requested by a
-subdriver (which could have been determined from device descriptors) did
-not exceed this limit.
+BUG: using smp_processor_id() in preemptible [00000000] code: kjournald/1761
+caller is blast_dcache32+0x30/0x254
+Call Trace:
+[<8047f02c>] dump_stack+0x8/0x34
+[<802e7e40>] debug_smp_processor_id+0xe0/0xf0
+[<80114d94>] blast_dcache32+0x30/0x254
+[<80118484>] r4k_dma_cache_wback_inv+0x200/0x288
+[<80110ff0>] mips_dma_map_sg+0x108/0x180
+[<80355098>] ide_dma_prepare+0xf0/0x1b8
+[<8034eaa4>] do_rw_taskfile+0x1e8/0x33c
+[<8035951c>] ide_do_rw_disk+0x298/0x3e4
+[<8034a3c4>] do_ide_request+0x2e0/0x704
+[<802bb0dc>] __blk_run_queue+0x44/0x64
+[<802be000>] queue_unplugged.isra.36+0x1c/0x54
+[<802beb94>] blk_flush_plug_list+0x18c/0x24c
+[<802bec6c>] blk_finish_plug+0x18/0x48
+[<8026554c>] journal_commit_transaction+0x3b8/0x151c
+[<80269648>] kjournald+0xec/0x238
+[<8014ac00>] kthread+0xb8/0xc0
+[<8010268c>] ret_from_kernel_thread+0x14/0x1c
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[lizf: Backported to 3.4: s/ddev/\&interface->dev/]
+Caches in most systems are identical - but not always, so we can't avoid
+the use of smp_call_function() by just looking at the boot CPU's data,
+have to fiddle with preemption instead.
+
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5835
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/usb/serial/usb-serial.c |    5 +++++
+ arch/mips/mm/c-r4k.c |    5 +++++
  1 file changed, 5 insertions(+)
 
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index 815d86d..a08230e 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -889,6 +889,11 @@ int usb_serial_probe(struct usb_interface *interface,
- 			num_ports = type->num_ports;
- 	}
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index bda8eb2..fdd6042 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -12,6 +12,7 @@
+ #include <linux/highmem.h>
+ #include <linux/kernel.h>
+ #include <linux/linkage.h>
++#include <linux/preempt.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+@@ -598,6 +599,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+ 	/* Catch bad driver code */
+ 	BUG_ON(size == 0);
  
-+	if (num_ports > MAX_NUM_PORTS) {
-+		dev_warn(&interface->dev, "too many ports requested: %d\n", num_ports);
-+		num_ports = MAX_NUM_PORTS;
-+	}
-+
- 	serial->num_ports = num_ports;
- 	serial->num_bulk_in = num_bulk_in;
- 	serial->num_bulk_out = num_bulk_out;
++	preempt_disable();
+ 	if (cpu_has_inclusive_pcaches) {
+ 		if (size >= scache_size)
+ 			r4k_blast_scache();
+@@ -618,6 +620,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+ 		R4600_HIT_CACHEOP_WAR_IMPL;
+ 		blast_dcache_range(addr, addr + size);
+ 	}
++	preempt_enable();
+ 
+ 	bc_wback_inv(addr, size);
+ 	__sync();
+@@ -628,6 +631,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+ 	/* Catch bad driver code */
+ 	BUG_ON(size == 0);
+ 
++	preempt_disable();
+ 	if (cpu_has_inclusive_pcaches) {
+ 		if (size >= scache_size)
+ 			r4k_blast_scache();
+@@ -663,6 +667,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+ 		cache_op(Hit_Writeback_Inv_D, (addr + size - 1)  & almask);
+ 		blast_inv_dcache_range(addr, addr + size);
+ 	}
++	preempt_enable();
+ 
+ 	bc_inv(addr, size);
+ 	__sync();
 -- 
 1.7.9.5
 
