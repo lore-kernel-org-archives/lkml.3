@@ -1,236 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbaIWP0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:26:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59216 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932198AbaIWP0C (ORCPT
+	id S932254AbaIWP0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:26:53 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:49137 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129AbaIWP0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:26:02 -0400
-Date: Tue, 23 Sep 2014 17:25:58 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v3 1/3] mtd: nand: gpmi: add gpmi_move_bits function
-Message-ID: <20140923172558.3f6a161c@bbrezillon>
-In-Reply-To: <1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 23 Sep 2014 11:26:51 -0400
+Date: Tue, 23 Sep 2014 11:26:46 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Olof Johansson <olof@lixom.net>, Florian Fainelli <f.fainelli@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de, arm@kernel.org,
+        bcm@fixthebug.org, jonathar@broadcom.com, rjui@broadcom.com,
+        linux-kernel@vger.kernel.org, bcm-kernel-feedback-list@broadcom.com,
+        hauke@hauke-m.de, swarren@wwwdotorg.org, computersforpeace@gmail.com,
+        marc.ceeeee@gmail.com, cernekee@gmail.com, gregory.0xf0@gmail.com
+Subject: Re: [PATCH] ARM: mach-bcm: offer a new maintainer and process
+Message-ID: <20140923152646.GC17710@beef>
+References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
+ <20140923050339.GF7487@localhost>
+ <20140923125423.GC12283@beef>
+ <54218B19.8070208@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54218B19.8070208@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang,
+On Tue, Sep 23, 2014 at 08:00:41AM -0700, Scott Branden wrote:
+> On 14-09-23 05:54 AM, Matt Porter wrote:
+> >On Mon, Sep 22, 2014 at 10:03:39PM -0700, Olof Johansson wrote:
+> >>On Fri, Sep 19, 2014 at 11:17:11AM -0700, Florian Fainelli wrote:
+> >>>Hi all,
+> >>>
+> >>>As some of you may have seen in the news, Broadcom has recently stopped
+> >>>its mobile SoC activities. Upstream support for Broadcom's Mobile SoCs
+> >>>was an effort initially started by Christian Daudt and his team, and then
+> >>>continued by Alex Eleder and Matter Porter assigned to a particular landing
+> >>>team within Linaro to help Broadcom doing so.
+> >>>
+> >>>As part of this effort, Christian and Matt volunteered for centralizing pull
+> >>>requests coming from the arch/arm/mach-bcm/* directory and as of today, they
+> >>>are still responsible for merging mach-bcm pull requests coming from brcmstb,
+> >>>bcm5301x, bcm2835 and bcm63xx, creating an intermediate layer to the arm-soc
+> >>>tree.
+> >>>
+> >>>Following the mobile group shut down, our group (in which Brian, Gregory, Marc,
+> >>>Kevin and myself are) inherited these mobile SoC platforms, although at this
+> >>>point we cannot comment on the future of mobile platforms, we know that our
+> >>>Linaro activities have been stopped.
+> >>>
+> >>>We have not heard much from Christian and Matt in a while, and some of our pull
+> >>>requests have been stalling as a result. We would like to offer both a new
+> >>>maintainer for the mobile platforms as well as reworking the pull request
+> >>>process:
+> >>>
+> >>>- our group has now full access to these platforms, putting us in the best
+> >>>   position to support Mobile SoCs questions
+> >>
+> >>So, one question I have is whether it makes sense to keep the mobile
+> >>platforms in the kernel if the line of business is ending?
+> I guess one problem is that BCM_MOBILE is quite misnamed.  It should
+> really be called BCM_KONA.  bcm281xx was a successful product in the
+> mobile space.  But mobile products have short lifespans as new
+> versions become available every year.  In fact - there have already
+> been more products made with this chipset that are not mobile based
+> nor in the consumer space.  The happen to be based on an older
+> kernel version but we are planning on moving to a newer kernel
+> version in the future. Variants of this chipset will continue to be
+> used in many non-mobile products for many years going forward.  We
+> could also rename it BCM_IMMOBILE going forward if that helps
+> clarify things.
+> >>
+> >>While I truly do appreciate the work done by Matt and others, there's
+> >>also little chance that it'll see substantial use by anyone. The Capri
+> >>boards aren't common out in the wild and I'm not aware of any dev
+> >>boards or consumer products with these SoCs that might want to run
+> >>mainline? Critical things such as power management and graphics are
+> >>missing from the current platform support in the kernel, so nobody is
+> >>likely to want it on their Android phone, etc.
+> Yes, thanks for all the hard work in upstreaming this code.  It will
+> be built upon and highly leveraged for other purposes beyond Android
+> phones and power management.
+> >>
+> >>Maybe the answer to this is "keep it for now, revisit sometime later",
+> >>which is perfectly sane -- it has practically no cost to keep it around
+> >>the way it's looking now.
+> >
+> >It won't hurt my feelings if it's decided that it has no value being in
+> >the kernel. :) All I can offer is that *maybe* somebody will have a root
+> >exploit for the bcm281xx Roku platforms (that lasts) and/or some of the
+> >capri and hawaii handsets out there and find it useful as a starting
+> >point to work from an Android vendor tree. I don't know if anybody cares
+> >about hacking those platforms or not.
+> >
+> >As mentioned in a followup, the VoIP parts (or some of them, at least)
+> >are part of the bcm281xx family and we were expecting them to submit an
+> >ethernet driver for the past year. There were repeated reminders that
+> >they really care about mainline so I would expect it would be premature
+> >to remove that support until we hear from them.
+> >
+> >-Matt
+> >
+> Yes, variants of this chipset will be developed in new products.
+> bcm281xx was also a poor choice of naming as well. Capri or Kona
+> family would have been much more appropriate.  This product is used
+> in VoIP and other non-mobile markets.
 
-I've added some code comments inline (and I'll squash them in my next
-version).
+Understood, for some reason Broadcom chose that naming when first
+upstreaming the base code. We did manage to name the drivers with "kona"
+after that point. Be aware that bcm281xx/capri aren't the only parts in the
+kernel stuck with terrible legacy names. There's a ton of Davinci/OMAP
+code that suffers the same curse of initial naming not matching up to
+later or even current uses of the same IP.
 
-On Tue, 23 Sep 2014 16:07:34 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
-
-> Add a new function to move bits (not bytes) from a memory region to
-> another one.
-> This function is similar to memmove except it acts at bit level.
-> This function is needed to implement GPMI raw access functions, given the
-> fact that ECC engine does not pad ECC bits to the next byte boundary.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 88 ++++++++++++++++++++++++++++++++++
->  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |  4 ++
->  2 files changed, 92 insertions(+)
-> 
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> index 87e658c..e2f706a 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> @@ -1353,3 +1353,91 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
->  	return start_dma_with_bch_irq(this, desc);
->  }
-> +
-> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> +		    const u8 *src, size_t src_bit_off,
-> +		    size_t nbits)
-> +{
-> +	size_t i;
-> +	size_t nbytes;
-> +	u32 src_byte = 0;
-> +
-
-
-	/*
-	 * Move src and dst pointers to the closest byte pointer and
-	 * store bit offsets within a byte.
-	 */
-
-> +	src += src_bit_off / 8;
-> +	src_bit_off %= 8;
-> +
-> +	dst += dst_bit_off / 8;
-> +	dst_bit_off %= 8;
-> +
-	/*
-	 * Initialize the src_byte value with bits available in the
-	 * first byte of data so that we end up with a byte aligned
-	 * src pointer.
-	 */
-> +	if (src_bit_off) {
-> +		src_byte = src[0] >> src_bit_off;
-> +		nbits -= 8 - src_bit_off;
-> +		src++;
-> +	}
-> +
-	/*
-	 * Calculate the number of bytes that can be copied from src to
-	 * dst.
-	 */
-> +	nbytes = nbits / 8;
-> +
-
-	/*
-	 * Try to align dst to a byte boundary by peeking some bits
-	 * from the source.
-	 */
-
-> +	if (dst_bit_off) {
-> +		if (src_bit_off <= dst_bit_off) {
-> +			dst[0] &= GENMASK(dst_bit_off - 1, 0);
-> +			dst[0] |= src_byte << dst_bit_off;
-> +			src_bit_off += (8 - dst_bit_off);
-> +			src_byte >>= (8 - dst_bit_off);
-> +			dst_bit_off = 0;
-> +			dst++;
-> +		} else if (nbytes) {
-> +			src_byte |= src[0] << (8 - src_bit_off);
-> +			dst[0] &= GENMASK(dst_bit_off - 1, 0);
-> +			dst[0] |= src_byte << dst_bit_off;
-> +			src_bit_off += dst_bit_off;
-> +			src_byte >>= (8 - dst_bit_off);
-> +			dst_bit_off = 0;
-> +			dst++;
-> +			nbytes--;
-> +			src++;
-> +			if (src_bit_off > 7) {
-> +				src_bit_off -= 8;
-> +				dst[0] = src_byte;
-> +				dst++;
-> +				src_byte >>= 8;
-> +			}
-> +		}
-> +	}
-> +
-> +	if (!src_bit_off && !dst_bit_off) {
-		/*
-		 * Both src and dst pointers are byte aligned, thus we
-		 * can just use the optimized memcpy function
-		 */
-> +		if (nbytes)
-> +			memcpy(dst, src, nbytes);
-> +	} else {
-
-		/*
-		 * src buffer is not byte aligned, hence we have to copy
-		 * each src byte to the src_byte variable (after
-		 * applying the appropriate shift depending on the
-		 * src bit offset).
-		 * We still try to work on bytes until there's not
-		 * enough available data in the src buffer.
-		 */
-
-> +		for (i = 0; i < nbytes; i++) {
-> +			src_byte |= src[i] << (8 - src_bit_off);
-> +			dst[i] = src_byte;
-> +			src_byte >>= 8;
-> +		}
-> +	}
-> +
-	/* move dst and src buffers */
-> +	dst += nbytes;
-> +	src += nbytes;
-
-	/*
-	 * nbits is the number of remaining bits. It should not exceed
-	 * 8 as we've already worked on bytes as much as possible.
-	 */
-
-
-> +	nbits %= 8;
-> +
-
-	/*
-	 * if there's no more bits to copy to the destination and src
-	 * buffer was already byte aligned, then we're done.
-	 */
-> +	if (!nbits && !src_bit_off)
-> +		return;
-> +
-	/* Copy the remaining bits to the src_byte variable */
-> +	if (nbits)
-> +		src_byte |= (*src & GENMASK(nbits - 1, 0)) <<
-> +			    ((8 - src_bit_off) % 8);
-> +	nbits += (8 - src_bit_off) % 8;
-> +
-
-	/*
-	 * There were not enough bits to copy from src to dst to get a
-	 * byte aligned dst buffer. In this case prepare the src_byte
-	 * variable to match the dst organization (just shift src_byte
-	 * by dst bit offset and retrieve least significant bits from
-	 * dst).
-	 */
-
-> +	if (dst_bit_off)
-> +		src_byte = (src_byte << dst_bit_off) |
-> +			   (*dst & GENMASK(dst_bit_off - 1, 0));
-> +	nbits += dst_bit_off;
-> +
-
-	/*
-	 * Keep most significant bits from dst if we end up with an
-	 * unaligned number bits.
-	 */
-
-> +	if (nbits % 8)
-> +		src_byte |= (dst[nbits / 8] & GENMASK(7, nbits % 8)) <<
-> +			    (nbits / 8);
-> +
-
-	/* Copy the remaining bytes to the destination */
-
-> +	nbytes = DIV_ROUND_UP(nbits, 8);
-> +	for (i = 0; i < nbytes; i++) {
-> +		dst[i] = src_byte;
-> +		src_byte >>= 8;
-> +	}
-> +}
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> index 32c6ba4..17d0736 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> @@ -290,6 +290,10 @@ extern int gpmi_send_page(struct gpmi_nand_data *,
->  extern int gpmi_read_page(struct gpmi_nand_data *,
->  			dma_addr_t payload, dma_addr_t auxiliary);
->  
-> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> +		    const u8 *src, size_t src_bit_off,
-> +		    size_t nbits);
-> +
->  /* BCH : Status Block Completion Codes */
->  #define STATUS_GOOD		0x00
->  #define STATUS_ERASED		0xff
-
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+-Matt
