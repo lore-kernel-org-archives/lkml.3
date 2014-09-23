@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaIWFhS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:37:18 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:45612 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783AbaIWFhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:37:16 -0400
-Date: Tue, 23 Sep 2014 07:37:11 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20140923053711.GA28704@gmail.com>
-References: <20140919104021.GA11552@gmail.com>
- <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
- <20140923053510.GB27825@gmail.com>
+	id S1754019AbaIWFj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:39:58 -0400
+Received: from sauhun.de ([89.238.76.85]:56227 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713AbaIWFj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:39:56 -0400
+Date: Tue, 23 Sep 2014 07:39:51 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH] i2c: move acpi code back into the core
+Message-ID: <20140923053951.GA1411@katana>
+References: <1411420006-4713-1-git-send-email-wsa@the-dreams.de>
+ <5420CEC9.1030400@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
 Content-Disposition: inline
-In-Reply-To: <20140923053510.GB27825@gmail.com>
+In-Reply-To: <5420CEC9.1030400@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > On Fri, Sep 19, 2014 at 3:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >
-> > > Please pull the latest x86-urgent-for-linus git tree from:
-> > 
-> > I only just noticed, but this pull request causes my Sony Vaio 
-> > laptop to immediately reboot at startup.
-> > 
-> > I'm assuming it's one of the efi changes, but I'm bisecting now 
-> > to say exactly where it happens. It will get reverted.
-> 
-> I've Cc:-ed Matt.
-> 
-> My guess would be one of these two EFI commits:
-> 
->       * Fix early boot regression affecting x86 EFI boot stub when loading
->         initrds above 4GB - Yinghai Lu
->     
-> 47226ad4f4cf x86/efi: Only load initrd above 4g on second try
-> 
->       * Relocate GOT entries in the x86 EFI boot stub now that we have
->         symbols with global visibility - Matt Fleming
-> 
-> 9cb0e394234d x86/efi: Fixup GOT in all boot code paths
-> 
-> If it's 9cb0e394234d - then it's perhaps a build quirk, or a bug 
-> in the assembly code. If so then we'd have to revert this, and 
-> reintroduce another regression, caused by EFI commit 
-> f23cf8bd5c1f49 in this merge window. The most recent commit is 
-> easy to revert, the older one not.
-> 
-> If it's 47226ad4f4cf then we'd reintroduce the regression caused 
-> by 4bf7111f501 in the previous merge window. They both revert 
-> cleanly after each other - but it might be safer to just revert 
-> the most recent one.
->
-> My guess is that your regression is caused by 47226ad4f4cf.
 
-Wrong sha1: my guess is on 9cb0e394234d, the GOT fixup.
+> Sorry for later response due to sickness. I can't write this patch in
+> time. Sorry again. I will test it soon.
 
-Thanks,
+Oh, get well soon! Please say so next time, so I know.
 
-	Ingo
+
+--SLDf9lqlvOQaIe6s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUIQenAAoJEBQN5MwUoCm2PrQP/R/ey8euYxERDo7R1wmGbfde
+PrjP3AktjsHRBetoCGDt+KSbQEcS+G6WTUftaypIrCWly/0MSQD9OXmvi5qR91AV
+BDaFEDjR1+T/VhrgbFCMJPHwlAxY65KL0TC8reYax+0a/Y2DdtUYff0wN7J5VsjN
+W7aCniUiVn/8Fo54mpR01uWL/3joIAYKwPynyQzJbkjwZE8VZ8HxACosuTC4q25m
+eyt+OxEZkSI2NNsqcrm/xJET0FJ0rwVTpZBBDaoa6ceDoVdOzJBG4imwPhSnf1Gp
+kg5Qm3YDXYUaFJXhahXTYiX3VwEt32OzqJisULkNMlkhnv5JKsUKsSdwGLAeQifO
+zrJiuahatN4oclFchsNdp1gDp99hKg23naUOtjjpC1/UXoyqkf8mZdkLoWpEo9+B
+NGTftIKtnyKlhWVTwAWivC3xRdrc0zwxZrt65k7u8FDczU7+gHhVQlhpbF69RWBx
+Sx3VhEJTZASh++bi9MAxXN5kX99E/C72BqUYopoYEPN3t1ZpbKYZbVyPUXKGeEAY
+EmLXMB1j6ANzWDUFN3PqT0X3jqdHpihSZ4s1sPHIpUTBTq/bnYJERh4cvUKTswHm
+4bGuT23sAFvX4uijATlLVBE+ic0VNbtRcmn6u6ETuCk4/Q7hclzUIOpLKgIfptbT
+HSmPgDKklZf4jraLuOOE
+=OFvv
+-----END PGP SIGNATURE-----
+
+--SLDf9lqlvOQaIe6s--
