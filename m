@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833AbaIWUC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:02:57 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54803 "EHLO
+	id S1756577AbaIWUD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:03:59 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50091 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756577AbaIWUCx (ORCPT
+	by vger.kernel.org with ESMTP id S1754747AbaIWUD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:02:53 -0400
+	Tue, 23 Sep 2014 16:03:57 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
         Rob Herring <robh+dt@kernel.org>,
@@ -25,10 +25,11 @@ Cc: Tanmay Inamdar <tinamdar@apm.com>,
         linux-arch <linux-arch@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v12 11/12] PCI: Introduce pci_remap_iospace() for remapping PCI I/O bus resources into CPU space
-Date: Tue, 23 Sep 2014 20:01:13 +0100
-Message-Id: <1411498874-9864-12-git-send-email-Liviu.Dudau@arm.com>
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: [PATCH v12 07/12] PCI: Introduce generic domain handling for PCI busses.
+Date: Tue, 23 Sep 2014 20:01:09 +0100
+Message-Id: <1411498874-9864-8-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
 References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
@@ -36,98 +37,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a default implementation for remapping PCI bus I/O resources
-onto the CPU address space. Architectures with special needs may
-provide their own version, but most should be able to use this one.
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-This function is useful for PCI host bridge drivers that need to map
-the PCI I/O resources into virtual memory space.
+The handling of PCI domains (or PCI segments in ACPI speak) is
+usually a straightforward affair but its implementation is
+currently left to the architectural code, with pci_domain_nr(b)
+querying the value of the domain associated with bus b.
+
+This patch introduces CONFIG_PCI_DOMAINS_GENERIC as an
+option that can be selected if an architecture want a
+simple implementation where the value of the domain
+associated with a bus is stored in struct pci_bus.
+
+The architectures that select CONFIG_PCI_DOMAINS_GENERIC will
+then have to implement pci_bus_assign_domain_nr() as a way
+of setting the domain number associated with a root bus.
+All child busses except the root bus will inherit the domain_nr
+value from their parent.
 
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Rob Herring <robh@kernel.org>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Catalin Marinas <Catalin.Marinas@arm.com>
+[Renamed pci_set_domain_nr() to pci_bus_assign_domain_nr()]
 Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 ---
- drivers/pci/pci.c             | 34 ++++++++++++++++++++++++++++++++++
- include/asm-generic/pgtable.h |  4 ++++
- include/linux/pci.h           |  3 +++
- 3 files changed, 41 insertions(+)
+ drivers/pci/probe.c | 11 ++++++++---
+ include/linux/pci.h | 21 +++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index d36f35f..ad046a2 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2704,6 +2704,40 @@ int pci_request_regions_exclusive(struct pci_dev *pdev, const char *res_name)
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 5ff72ec..ef891d2 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -485,7 +485,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
+ 	}
  }
- EXPORT_SYMBOL(pci_request_regions_exclusive);
  
-+/**
-+ *	pci_remap_iospace - Remap the memory mapped I/O space
-+ *	@res: Resource describing the I/O space
-+ *	@phys_addr: physical address where the range will be mapped.
-+ *
-+ *	Remap the memory mapped I/O space described by the @res
-+ *	and the CPU physical address @phys_addr into virtual address space.
-+ *	Only architectures that have memory mapped IO functions defined
-+ *	(and the PCI_IOBASE value defined) should call this function.
-+ */
-+int __weak pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr)
-+{
-+	int err = -ENODEV;
-+
-+#if defined(PCI_IOBASE) && defined(CONFIG_MMU)
-+	unsigned long vaddr = (unsigned long)PCI_IOBASE + res->start;
-+
-+	if (!(res->flags & IORESOURCE_IO))
-+		return -EINVAL;
-+
-+	if (res->end > IO_SPACE_LIMIT)
-+		return -EINVAL;
-+
-+	err = ioremap_page_range(vaddr, vaddr + resource_size(res),
-+				phys_addr, pgprot_device(PAGE_KERNEL));
-+#else
-+	/* this architecture does not have memory mapped I/O space,
-+	   so this function should never be called */
-+	WARN_ONCE(1, "This architecture does not support memory mapped I/O\n");
-+#endif
-+
-+	return err;
-+}
-+
- static void __pci_set_master(struct pci_dev *dev, bool enable)
+-static struct pci_bus *pci_alloc_bus(void)
++static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
  {
- 	u16 old_cmd, cmd;
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 53b2acc..977e545 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -249,6 +249,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
- #define pgprot_writecombine pgprot_noncached
- #endif
+ 	struct pci_bus *b;
  
-+#ifndef pgprot_device
-+#define pgprot_device pgprot_noncached
+@@ -500,6 +500,10 @@ static struct pci_bus *pci_alloc_bus(void)
+ 	INIT_LIST_HEAD(&b->resources);
+ 	b->max_bus_speed = PCI_SPEED_UNKNOWN;
+ 	b->cur_bus_speed = PCI_SPEED_UNKNOWN;
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++	if (parent)
++		b->domain_nr = parent->domain_nr;
 +#endif
-+
- /*
-  * When walking page tables, get the address of the next boundary,
-  * or the end address of the range if that comes earlier.  Although no
+ 	return b;
+ }
+ 
+@@ -672,7 +676,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	/*
+ 	 * Allocate a new bus, and inherit stuff from the parent..
+ 	 */
+-	child = pci_alloc_bus();
++	child = pci_alloc_bus(parent);
+ 	if (!child)
+ 		return NULL;
+ 
+@@ -1768,13 +1772,14 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 
+ 	bridge->dev.parent = parent;
+ 
+-	b = pci_alloc_bus();
++	b = pci_alloc_bus(NULL);
+ 	if (!b)
+ 		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+ 	b->number = b->busn_res.start = bus;
++	pci_bus_assign_domain_nr(b, parent);
+ 	b2 = pci_find_bus(pci_domain_nr(b), bus);
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 150da2d..b4995fd 100644
+index 61978a4..a494e5d 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -1100,6 +1100,9 @@ int __must_check pci_bus_alloc_resource(struct pci_bus *bus,
- 						  resource_size_t),
- 			void *alignf_data);
+@@ -456,6 +456,9 @@ struct pci_bus {
+ 	unsigned char	primary;	/* number of primary bridge */
+ 	unsigned char	max_bus_speed;	/* enum pci_bus_speed */
+ 	unsigned char	cur_bus_speed;	/* enum pci_bus_speed */
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++	int		domain_nr;
++#endif
  
+ 	char		name[48];
+ 
+@@ -1288,6 +1291,24 @@ static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
+ static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
+ #endif /* CONFIG_PCI_DOMAINS */
+ 
++/*
++ * Generic implementation for PCI domain support. If your
++ * architecture does not need custom management of PCI
++ * domains then this implementation will be used
++ */
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++static inline int pci_domain_nr(struct pci_bus *bus)
++{
++	return bus->domain_nr;
++}
++void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent);
++#else
++static inline void pci_bus_assign_domain_nr(struct pci_bus *bus,
++					struct device *parent)
++{
++}
++#endif
 +
-+int pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr);
-+
- static inline dma_addr_t pci_bus_address(struct pci_dev *pdev, int bar)
- {
- 	struct pci_bus_region region;
+ /* some architectures require additional setup to direct VGA traffic */
+ typedef int (*arch_set_vga_state_t)(struct pci_dev *pdev, bool decode,
+ 		      unsigned int command_bits, u32 flags);
 -- 
 2.1.0
 
