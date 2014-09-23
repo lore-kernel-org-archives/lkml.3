@@ -1,80 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaIWHsR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:48:17 -0400
-Received: from ozlabs.org ([103.22.144.67]:54422 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957AbaIWHsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:48:13 -0400
-Date: Tue, 23 Sep 2014 17:48:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: linux-next: manual merge of the akpm tree with the tiny tree
-Message-ID: <20140923174803.1c20314b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754909AbaIWHsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:48:42 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36167 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745AbaIWHsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:48:37 -0400
+Date: Tue, 23 Sep 2014 09:48:31 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mark yao <mark.yao@rock-chips.com>
+Cc: Rob Clark <robdclark@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        linux-doc@vger.kernel.org, Kever Yang <kever.yang@rock-chips.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jianqun Xu <xjq@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
+        linux-api@vger.kernel.org, jeff chen <cym@rock-chips.com>,
+        linux-rockchip@lists.infradead.org, kfx@rock-chips.com,
+        Grant Likely <grant.likely@linaro.org>, wxt@rock-chips.com,
+        Tao Huang <huangtao@rock-chips.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, yxj@rock-chips.com,
+        Eddie Cai <cf@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
+        xxm@rock-chips.com, xw@rock-chips.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, dianders@chromium.org,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v3 1/5] drm/rockchip: Add basic drm driver
+Message-ID: <20140923074831.GR15734@phenom.ffwll.local>
+Mail-Followup-To: Mark yao <mark.yao@rock-chips.com>,
+	Rob Clark <robdclark@gmail.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+	linux-doc@vger.kernel.org, Kever Yang <kever.yang@rock-chips.com>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Jianqun Xu <xjq@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
+	linux-api@vger.kernel.org, jeff chen <cym@rock-chips.com>,
+	linux-rockchip@lists.infradead.org, kfx@rock-chips.com,
+	Grant Likely <grant.likely@linaro.org>, wxt@rock-chips.com,
+	Tao Huang <huangtao@rock-chips.com>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>, yxj@rock-chips.com,
+	Eddie Cai <cf@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+	=?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
+	xxm@rock-chips.com, xw@rock-chips.com,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>, dianders@chromium.org,
+	Kumar Gala <galak@codeaurora.org>
+References: <1411105668-32722-1-git-send-email-mark.yao@rock-chips.com>
+ <1411105668-32722-2-git-send-email-mark.yao@rock-chips.com>
+ <CAF6AEGsPoj6+PdKCJk5BPPzHS51Tz1FGqS2SjpartaRw7i=Pxg@mail.gmail.com>
+ <541F7C23.8000103@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/.7BX=CEvPP2HJFb2uqOKdkS"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <541F7C23.8000103@rock-chips.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.7BX=CEvPP2HJFb2uqOKdkS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 22, 2014 at 09:32:19AM +0800, Mark yao wrote:
+> On 2014年09月20日 08:03, Rob Clark wrote:
+> >On Fri, Sep 19, 2014 at 1:47 AM, Mark yao <mark.yao@rock-chips.com> wrote:
+> >>diff --git a/include/uapi/drm/rockchip_drm.h b/include/uapi/drm/rockchip_drm.h
+> >>new file mode 100644
+> >>index 0000000..8f8e60e
+> >>--- /dev/null
+> >>+++ b/include/uapi/drm/rockchip_drm.h
+> >>@@ -0,0 +1,97 @@
+> >>+/*
+> >>+ *
+> >>+ * Copyright (c) Fuzhou Rockchip Electronics Co.Ltd
+> >>+ * Authors:
+> >>+ *       Mark Yao <yzq@rock-chips.com>
+> >>+ *
+> >>+ * base on exynos_drm.h
+> >>+ *
+> >>+ * This program is free software; you can redistribute  it and/or modify it
+> >>+ * under  the terms of  the GNU General  Public License as published by the
+> >>+ * Free Software Foundation;  either version 2 of the  License, or (at your
+> >>+ * option) any later version.
+> >>+ */
+> >>+
+> >>+#ifndef _UAPI_ROCKCHIP_DRM_H
+> >>+#define _UAPI_ROCKCHIP_DRM_H
+> >>+
+> >>+#include <drm/drm.h>
+> >>+
+> >>+/**
+> >>+ * User-desired buffer creation information structure.
+> >>+ *
+> >>+ * @size: user-desired memory allocation size.
+> >>+ * @flags: user request for setting memory type or cache attributes.
+> >>+ * @handle: returned a handle to created gem object.
+> >>+ *     - this handle will be set by gem module of kernel side.
+> >>+ */
+> >>+struct drm_rockchip_gem_create {
+> >>+       uint64_t size;
+> >>+       uint32_t flags;
+> >>+       uint32_t handle;
+> >>+};
+> >>+
+> >>+/**
+> >>+ * A structure for getting buffer offset.
+> >>+ *
+> >>+ * @handle: a pointer to gem object created.
+> >>+ * @pad: just padding to be 64-bit aligned.
+> >>+ * @offset: relatived offset value of the memory region allocated.
+> >>+ *     - this value should be set by user.
+> >>+ */
+> >>+struct drm_rockchip_gem_map_off {
+> >>+       uint32_t handle;
+> >>+       uint32_t pad;
+> >>+       uint64_t offset;
+> >>+};
+> >>+
+> >>+/**
+> >>+ * A structure for mapping buffer.
+> >>+ *
+> >>+ * @handle: a handle to gem object created.
+> >>+ * @pad: just padding to be 64-bit aligned.
+> >>+ * @size: memory size to be mapped.
+> >>+ * @mapped: having user virtual address mmaped.
+> >>+ *      - this variable would be filled by rockchip gem module
+> >>+ *      of kernel side with user virtual address which is allocated
+> >>+ *      by do_mmap().
+> >>+ */
+> >>+struct drm_rockchip_gem_mmap {
+> >>+       uint32_t handle;
+> >>+       uint32_t pad;
+> >>+       uint64_t size;
+> >>+       uint64_t mapped;
+> >>+};
+> >Could we do without the mmap ioctl?  It has been a source of problems
+> >in other drivers, and the ioctl to get mmap offset, plus normal mmap()
+> >on drm device file should be sufficient
+> >
+> >BR,
+> >-R
+> OK, I will try to move the special mmap ioctl and use drm generic mmap
+> interface.
 
-Hi Andrew,
+Actually you probably should drop all this and just implement the dummy
+object support for now. Until you have proper hw accel there's no reason
+to expose a driver-private gem create/mmap interface at all.
 
-Today's linux-next merge of the akpm tree got a conflict in mm/Makefile
-between commit d3ac21cacc24 ("mm: Support compiling out madvise and
-fadvise") from the tiny tree and commit "mm: replace remap_file_pages()
-syscall with emulation" from the akpm tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc mm/Makefile
-index f8ed7ab417b1,20ff8c39d064..000000000000
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@@ -3,7 -3,7 +3,7 @@@
-  #
- =20
-  mmu-y			:=3D nommu.o
-- mmu-$(CONFIG_MMU)	:=3D fremap.o gup.o highmem.o memory.o mincore.o \
- -mmu-$(CONFIG_MMU)	:=3D gup.o highmem.o madvise.o memory.o mincore.o \
-++mmu-$(CONFIG_MMU)	:=3D gup.o highmem.o memory.o mincore.o \
-  			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
-  			   vmalloc.o pagewalk.o pgtable-generic.o
- =20
-
---Sig_/.7BX=CEvPP2HJFb2uqOKdkS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUISW7AAoJEMDTa8Ir7ZwVasAQAJX9SfW1P73K48BghOn7eL/r
-4lopmDYcyp20d/VEW3qnOqzEZUfch7kg/Re+itQIzgexvnmNYKaS2kT+d7fB6xRV
-75eBtJD3nG17ToRR3puFxjFbfVim3olKrN8Ia8EqRvdK/xOQIIIjM75PT1MiRvXL
-zkGVPU4pRpi5JZIXOujLdAKwVR29eE3GKbrB+TWXNv2LXZHa2BYnc7xJv3DlI6XW
-7UJAYjJ2YgdjkXHcmKjPQimZDBUPUMUnfWgwaczMnxKgmT52XtNkri6+To2Qng3V
-o16otrROKzvNEuPJ5AHMnsCkoWYzGWv505sxlivNM9KCHwik52938EKHDyVZcny9
-UqR96bmiH7AxYltItTlEIzQ0ylRfKxriNrzkwOT+TLhftK+q1430C2EeErCsp9yk
-D+c/mfA+VoFGI1rOVRRXldjmym38qZpAsTmCK8MpeERx4Nq2nHRWn9XCyvL7f1Qe
-Htthi27yoEJWGRBTiOnCS0tzDcPa1qa4f2deQx0RmXGV5H0mDGB9taUwSX98O3gC
-c4fe7VCw5O4GAIG6EFPlWbuyAwMiAq+3TVsmUcmjyfLY4aJVthC0fY0HaxdmJU1/
-QNQgTOtohbBQ1JMhfHoM7Y/t97Co+J66KpvO1gzmek7s4WfZLmnk/DuDZYMJnvbQ
-O6B4tVLHzBEL7JeT50U7
-=bd76
------END PGP SIGNATURE-----
-
---Sig_/.7BX=CEvPP2HJFb2uqOKdkS--
+A pure kms driver really shouldn't have it's on uapi/foo_drm.h file.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
