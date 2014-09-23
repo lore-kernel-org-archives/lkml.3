@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaIWHoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:44:30 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:5888 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321AbaIWHo1 (ORCPT
+	id S1754283AbaIWHol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:44:41 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:48145 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959AbaIWHoi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:44:27 -0400
-Message-ID: <542124D3.9000007@huawei.com>
-Date: Tue, 23 Sep 2014 15:44:19 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        "Tetsuo Handa" <penguin-kernel@I-love.SAKURA.ne.jp>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v3 1/3] sched: fix confusing PFA_NO_NEW_PRIVS constant
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.542124D9.0043,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: e139820a3a63be35925b22c0bf3a1328
+	Tue, 23 Sep 2014 03:44:38 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCHv3 1/1] bluetooth: Check for SCO type before setting retransmission effort
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1411451964-4025-1-git-send-email-bernhard.thaler@r-it.at>
+Date: Tue, 23 Sep 2014 09:44:33 +0200
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <736161F0-DA1F-4AD4-B74A-22FCAB58B23F@holtmann.org>
+References: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at> <1411451964-4025-1-git-send-email-bernhard.thaler@r-it.at>
+To: Bernhard Thaler <bernhard.thaler@r-it.at>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Hi Bernhard,
 
-Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
-defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
-because it is used as bit number. Redefine it as decimal bit number.
+> SCO connection cannot be setup to devices that do not support retransmission.
+> Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
+> adapted for this kernel version.
+> Code changed to check SCO/eSCO type before setting retransmission effort
+> and max. latency. The purpose of the patch is to support older devices not
+> capable of eSCO.
+> 
+> Tested on Blackberry 655+ headset which does not support retransmission.
+> Credits go to Alexander Sommerhuber.
+> 
+> Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
+> ---
+> net/bluetooth/hci_conn.c |   22 +++++++++++++++++-----
+> 1 file changed, 17 insertions(+), 5 deletions(-)
+> 
+> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+> index faff624..32dcde1 100644
+> --- a/net/bluetooth/hci_conn.c
+> +++ b/net/bluetooth/hci_conn.c
+> @@ -38,7 +38,7 @@ struct sco_param {
+> 	u16 max_latency;
+> };
+> 
+> -static const struct sco_param sco_param_cvsd[] = {
+> +static const struct sco_param esco_param_cvsd[] = {
+> 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000a }, /* S3 */
+> 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x0007 }, /* S2 */
+> 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0007 }, /* S1 */
+> @@ -46,6 +46,11 @@ static const struct sco_param sco_param_cvsd[] = {
+> 	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
+> };
+> 
+> +static const struct sco_param sco_param_cvsd[] = {
+> +	{ EDR_ESCO_MASK | ESCO_HV3,   0xffff }, /* D1 */
+> +	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
+> +};
+> +
+> static const struct sco_param sco_param_wideband[] = {
+> 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000d }, /* T2 */
+> 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0008 }, /* T1 */
+> @@ -194,10 +199,17 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
+> 		param = &sco_param_wideband[conn->attempt - 1];
+> 		break;
+> 	case SCO_AIRMODE_CVSD:
+> -		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
+> -			return false;
+> -		cp.retrans_effort = 0x01;
+> -		param = &sco_param_cvsd[conn->attempt - 1];
+> +		if (!lmp_esco_capable(conn->link)) {
 
-Note this changes the bit position of PFA_NOW_NEW_PRIVS from 1 to 0.
+please change this statement around to check if eSCO support exists and not if it does not exist. The negation is pointless if you have an else branch anyway.
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Kees Cook <keescook@chromium.org>
-[ lizf: slightly modified subject and changelog ]
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- include/linux/sched.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> +			if ((conn->attempt) > ARRAY_SIZE(sco_param_cvsd))
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..4557765 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
- }
- 
- /* Per-process atomic flags. */
--#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
-+#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
- 
- static inline bool task_no_new_privs(struct task_struct *p)
- {
--- 
-1.8.0.2
+The extra (conn->attempt) is not needed. Just do (conn->attempt > ARRAY_SIZE(..))
+
+> +				return false;
+> +			cp.retrans_effort = 0xff;
+> +			param = &sco_param_cvsd[conn->attempt - 1];
+> +		} else {
+> +			if (conn->attempt > ARRAY_SIZE(esco_param_cvsd))
+> +				return false;
+> +			cp.retrans_effort = 0x01;
+> +			param = &esco_param_cvsd[conn->attempt - 1];
+> +		}
+> 		break;
+> 	default:
+> 		return false;
+
+The rest looks fine.
+
+Regards
+
+Marcel
 
