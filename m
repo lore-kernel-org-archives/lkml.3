@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaIWOrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:47:22 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:47312 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657AbaIWOrA (ORCPT
+	id S1756064AbaIWOr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:47:29 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:37452 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657AbaIWOrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:47:00 -0400
+	Tue, 23 Sep 2014 10:47:24 -0400
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
         iommu@lists.linux-foundation.org
@@ -15,11 +15,10 @@ Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
         kim.phillips@freescale.com, eric.auger@linaro.org,
         marc.zyngier@arm.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCHv7 07/26] driver core: amba: add device binding path 'driver_override'
-Date: Tue, 23 Sep 2014 16:46:06 +0200
-Message-Id: <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCHv7 09/26] vfio/platform: initial skeleton of VFIO support for platform devices
+Date: Tue, 23 Sep 2014 16:46:08 +0200
+Message-Id: <1411483586-29304-10-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -27,108 +26,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As already demonstrated with PCI [1] and the platform bus [2], a
-driver_override property in sysfs can be used to bypass the id matching
-of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
-device requested by the user.
+This patch forms the common skeleton code for platform devices support
+with VFIO. This will include the core functionality of VFIO_PLATFORM,
+however binding to the device and discovering the device resources will
+be done with the help of a separate file where any Linux platform bus
+specific code will reside.
 
-[1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
-[2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
+This will allow us to implement support for also discovering AMBA devices
+and their resources, but still reuse a large part of the VFIO_PLATFORM
+implementation.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/amba/bus.c       | 44 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/amba/bus.h |  1 +
- 2 files changed, 45 insertions(+)
+ drivers/vfio/platform/vfio_platform_common.c  | 129 ++++++++++++++++++++++++++
+ drivers/vfio/platform/vfio_platform_private.h |  35 +++++++
+ 2 files changed, 164 insertions(+)
+ create mode 100644 drivers/vfio/platform/vfio_platform_common.c
+ create mode 100644 drivers/vfio/platform/vfio_platform_private.h
 
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 3cf61a1..473177c 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -17,6 +17,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/amba/bus.h>
- #include <linux/sizes.h>
-+#include <linux/limits.h>
- 
- #include <asm/irq.h>
- 
-@@ -42,6 +43,10 @@ static int amba_match(struct device *dev, struct device_driver *drv)
- 	struct amba_device *pcdev = to_amba_device(dev);
- 	struct amba_driver *pcdrv = to_amba_driver(drv);
- 
-+	/* When driver_override is set, only bind to the matching driver */
-+	if (pcdev->driver_override)
-+		return !strcmp(pcdev->driver_override, drv->name);
+diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
+new file mode 100644
+index 0000000..07d02dc
+--- /dev/null
++++ b/drivers/vfio/platform/vfio_platform_common.c
+@@ -0,0 +1,129 @@
++/*
++ * Copyright (C) 2013 - Virtual Open Systems
++ * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
- 	return amba_lookup(pcdrv->id_table, pcdev) != NULL;
- }
- 
-@@ -58,6 +63,44 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
- 	return retval;
- }
- 
-+static ssize_t driver_override_show(struct device *_dev,
-+				    struct device_attribute *attr, char *buf)
++#include <linux/device.h>
++#include <linux/interrupt.h>
++#include <linux/iommu.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
++#include <linux/vfio.h>
++#include <linux/io.h>
++
++#include "vfio_platform_private.h"
++
++static void vfio_platform_release(void *device_data)
 +{
-+	struct amba_device *dev = to_amba_device(_dev);
-+
-+	return sprintf(buf, "%s\n", dev->driver_override);
++	module_put(THIS_MODULE);
 +}
 +
-+static ssize_t driver_override_store(struct device *_dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
++static int vfio_platform_open(void *device_data)
 +{
-+	struct amba_device *dev = to_amba_device(_dev);
-+	char *driver_override, *old = dev->driver_override, *cp;
++	if (!try_module_get(THIS_MODULE))
++		return -ENODEV;
 +
-+	if (count > PATH_MAX)
++	return 0;
++}
++
++static long vfio_platform_ioctl(void *device_data,
++			   unsigned int cmd, unsigned long arg)
++{
++	if (cmd == VFIO_DEVICE_GET_INFO)
 +		return -EINVAL;
 +
-+	driver_override = kstrndup(buf, count, GFP_KERNEL);
-+	if (!driver_override)
-+		return -ENOMEM;
++	else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
++		return -EINVAL;
 +
-+	cp = strchr(driver_override, '\n');
-+	if (cp)
-+		*cp = '\0';
++	else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
++		return -EINVAL;
 +
-+	if (strlen(driver_override)) {
-+		dev->driver_override = driver_override;
-+	} else {
-+	       kfree(driver_override);
-+	       dev->driver_override = NULL;
-+	}
++	else if (cmd == VFIO_DEVICE_SET_IRQS)
++		return -EINVAL;
 +
-+	kfree(old);
++	else if (cmd == VFIO_DEVICE_RESET)
++		return -EINVAL;
 +
-+	return count;
++	return -ENOTTY;
 +}
 +
- #define amba_attr_func(name,fmt,arg...)					\
- static ssize_t name##_show(struct device *_dev,				\
- 			   struct device_attribute *attr, char *buf)	\
-@@ -80,6 +123,7 @@ amba_attr_func(resource, "\t%016llx\t%016llx\t%016lx\n",
- static struct device_attribute amba_dev_attrs[] = {
- 	__ATTR_RO(id),
- 	__ATTR_RO(resource),
-+	__ATTR_RW(driver_override),
- 	__ATTR_NULL,
- };
- 
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index fdd7e1b..7c011e7 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -32,6 +32,7 @@ struct amba_device {
- 	struct clk		*pclk;
- 	unsigned int		periphid;
- 	unsigned int		irq[AMBA_NR_IRQS];
-+	char			*driver_override;
- };
- 
- struct amba_driver {
++static ssize_t vfio_platform_read(void *device_data, char __user *buf,
++			     size_t count, loff_t *ppos)
++{
++	return -EINVAL;
++}
++
++static ssize_t vfio_platform_write(void *device_data, const char __user *buf,
++			      size_t count, loff_t *ppos)
++{
++	return -EINVAL;
++}
++
++static int vfio_platform_mmap(void *device_data, struct vm_area_struct *vma)
++{
++	return -EINVAL;
++}
++
++static const struct vfio_device_ops vfio_platform_ops = {
++	.name		= "vfio-platform",
++	.open		= vfio_platform_open,
++	.release	= vfio_platform_release,
++	.ioctl		= vfio_platform_ioctl,
++	.read		= vfio_platform_read,
++	.write		= vfio_platform_write,
++	.mmap		= vfio_platform_mmap,
++};
++
++int vfio_platform_probe_common(struct vfio_platform_device *vdev,
++			       struct device *dev)
++{
++	struct iommu_group *group;
++	int ret;
++
++	if (!vdev)
++		return -EINVAL;
++
++	group = iommu_group_get(dev);
++	if (!group) {
++		pr_err("VFIO: No IOMMU group for device %s\n", vdev->name);
++		return -EINVAL;
++	}
++
++	ret = vfio_add_group_dev(dev, &vfio_platform_ops, vdev);
++	if (ret) {
++		iommu_group_put(group);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(vfio_platform_probe_common);
++
++int vfio_platform_remove_common(struct device *dev)
++{
++	struct vfio_platform_device *vdev;
++
++	vdev = vfio_del_group_dev(dev);
++	if (!vdev)
++		return -EINVAL;
++
++	iommu_group_put(dev->iommu_group);
++	kfree(vdev);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(vfio_platform_remove_common);
+diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+new file mode 100644
+index 0000000..ef76737
+--- /dev/null
++++ b/drivers/vfio/platform/vfio_platform_private.h
+@@ -0,0 +1,35 @@
++/*
++ * Copyright (C) 2013 - Virtual Open Systems
++ * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef VFIO_PLATFORM_PRIVATE_H
++#define VFIO_PLATFORM_PRIVATE_H
++
++struct vfio_platform_device {
++	/*
++	 * These fields should be filled by the bus driver at binding time
++	 */
++	void		*opaque;
++	const char	*name;
++	uint32_t	flags;
++	/* callbacks to discover device resources */
++	struct resource*
++		(*get_resource)(struct vfio_platform_device *vdev, int i);
++	int	(*get_irq)(struct vfio_platform_device *vdev, int i);
++};
++
++extern int vfio_platform_probe_common(struct vfio_platform_device *vdev,
++				      struct device *dev);
++extern int vfio_platform_remove_common(struct device *dev);
++
++#endif /* VFIO_PLATFORM_PRIVATE_H */
 -- 
 1.8.3.2
 
