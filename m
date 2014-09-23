@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459AbaIWHE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:04:29 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:44238 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999AbaIWHE1 (ORCPT
+	id S1754550AbaIWHF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:05:56 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:33044 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988AbaIWHFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:04:27 -0400
+	Tue, 23 Sep 2014 03:05:54 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: arnd@arndb.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <831ec51fb919df76779c4f8899d90744>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <54211BC5.8050700@rock-chips.com>
+Date: Tue, 23 Sep 2014 15:05:41 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <10202237.9vbtDF9MIQ@wuerfel>
-References: <1409671320-7604-1-git-send-email-ch.naveen@samsung.com>
-	<3749760.naNt3fHoTI@wuerfel>
-	<CAHfPSqAn5gHjDA75Zf1W5=GH9_W+X6+4oc9rDK7CqeSoF3DURw@mail.gmail.com>
-	<10202237.9vbtDF9MIQ@wuerfel>
-Date: Tue, 23 Sep 2014 12:34:26 +0530
-Message-ID: <CAM4voaky-zin8ikdkLBwpTKy13hz3iON8tmNsd55-kr8po8Qaw@mail.gmail.com>
-Subject: Re: [PATCH] tty/serial: fix config dependencies for samsung serial
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>
-Cc: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-serial@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
+CC: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
+        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@roc.NULL.NULL, k-chips.com@NULL.NULL, wxt@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v4 1/5] drm/rockchip: Add basic drm driver
+References: <1411382820-1615-1-git-send-email-mark.yao@rock-chips.com> <1411382934-1763-1-git-send-email-mark.yao@rock-chips.com> <3036415.u40f3Xnhod@wuerfel>
+In-Reply-To: <3036415.u40f3Xnhod@wuerfel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-I will be taking this forward as Naveen is no longer with Samsung.
-
-On Wed, Sep 3, 2014 at 4:26 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 03 September 2014 13:51:56 Naveen Krishna Ch wrote:
->> On 2 September 2014 21:16, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Tuesday 02 September 2014 20:52:00 Naveen Krishna Chatradhi wrote:
->> >> Make the config symbols SERIAL_SAMSUNG_UARTS_4 and
->> >> SERIAL_SAMSUNG_UARTS depend on SERIAL_SAMSUNG rather than
->> >> PLAT_SAMSUNG.
->> >
->> > Please always describe why you are doing a change. This patch
->> > seems really pointless.
-
-I will re-post the patch with a better commit message once we sort the
-below issue.
-
->>
->> The SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS config options are
->> meaningful only if SERIAL_SAMSUNG is enabled. Hence the dependency
->> rules were changed. I will repost this patch with better description.
+On 2014年09月22日 22:43, Arnd Bergmann wrote:
+> On Monday 22 September 2014 18:48:54 Mark yao wrote:
+>> diff --git a/drivers/gpu/drm/rockchip/Kconfig b/drivers/gpu/drm/rockchip/Kconfig
+>> new file mode 100644
+>> index 0000000..7146c80
+>> --- /dev/null
+>> +++ b/drivers/gpu/drm/rockchip/Kconfig
+>> @@ -0,0 +1,19 @@
+>> +config DRM_ROCKCHIP
+>> +	tristate "DRM Support for Rockchip"
+>> +	depends on DRM && ROCKCHIP_IOMMU
+>> +	select ARM_DMA_USE_IOMMU
+>> +	select IOMMU_API
+>> +	select DRM_KMS_HELPER
+>> +	select DRM_KMS_FB_HELPER
+>> +	select DRM_PANEL
+>> +	select FB_CFB_FILLRECT
+>> +	select FB_CFB_COPYAREA
+>> +	select FB_CFB_IMAGEBLIT
+>> +	select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+>> +	select VIDEOMODE_HELPERS
+> Be careful with 'select', at least some of these should be 'depends on'.
+> In particular IOMMU_API and ARM_DMA_USE_IOMMU, but possibly others
+> as well. Just check how the symbols are used normally, if you get this
+> wrong, we can end up with incorrect dependencies or loops.
 >
-> My point is that the options are used by both the uart driver and
-> the platform code, e.g. for the purpose of PM debugging which can
-> be enabled even when the serial-samsung driver is turned off.
+I see, I will change it.
+>> diff --git a/drivers/gpu/drm/rockchip/Makefile b/drivers/gpu/drm/rockchip/Makefile
+>> new file mode 100644
+>> index 0000000..6e6d468
+>> --- /dev/null
+>> +++ b/drivers/gpu/drm/rockchip/Makefile
+>> @@ -0,0 +1,10 @@
+>> +#
+>> +# Makefile for the drm device driver.  This driver provides support for the
+>> +# Direct Rendering Infrastructure (DRI) in XFree86 4.1.0 and higher.
+>> +
+>> +ccflags-y := -Iinclude/drm -Idrivers/gpu/drm/rockchip
+> The second one should not be required.
+Sure, I will change it.
+>> +static int rockchip_drm_load(struct drm_device *drm_dev, unsigned long flags)
+>> +{
+>> +	struct rockchip_drm_private *private;
+>> +	struct dma_iommu_mapping *mapping;
+>> +	struct device *dev = drm_dev->dev;
+>> +	int ret;
+>> +
+>> +	private = devm_kzalloc(drm_dev->dev, sizeof(*private), GFP_KERNEL);
+>> +	if (!private)
+>> +		return -ENOMEM;
+>> +
+>> +	dev_set_drvdata(drm_dev->dev, dev);
+>> +	drm_dev->dev_private = private;
+>> +
+>> +	drm_mode_config_init(drm_dev);
+>> +
+>> +	rockchip_drm_mode_config_init(drm_dev);
+>> +
+>> +	dev->dma_parms = devm_kzalloc(dev, sizeof(*dev->dma_parms),
+>> +				      GFP_KERNEL);
+>> +	if (!dev->dma_parms) {
+>> +		ret = -ENOMEM;
+>> +		goto err_config_cleanup;
+>> +	}
+>> +
+>> +	/* TODO(djkurtz): fetch the mapping start/size from somewhere */
+>> +	mapping = arm_iommu_create_mapping(&platform_bus_type, 0x10000000,
+>> +					   SZ_1G);
+>> +	if (IS_ERR(mapping)) {
+>> +		ret = PTR_ERR(mapping);
+>> +		goto err_config_cleanup;
+>> +	}
+>> +
+>> +	dma_set_coherent_mask(dev, DMA_BIT_MASK(32));
+> This is the default coherent mask. If you call this function, you
+> should normally check the return value, or call dma_set_mask first,
+> which you apparently don't do here, and in another place in this
+> patch.
+>
+> 	Arnd
+>
+>
+>
 
-I looked through the code and could find two references to these
-symbols in the platform-specific code: arch/arm/plat-samsung/init.c
-and arch/arm/mach-s3c64xx/irq-pm.c. The first one is being used to
-initialize the uart platform device in non-dt way while the second one
-saves and restores the uart irq masks for all channels across a
-suspend/resume cycle. Also, the save/restore will get bypassed in case
-CONFIG_SERIAL_SAMSUNG_UARTS is not defined. It does not look like
-either of these cases would cause any issue with the current patch,
-can you please help me understand the problem ?
 
-Regards,
-Abhilash
->
->> >>  config SERIAL_SAMSUNG_UARTS_4
->> >>         bool
->> >> -       depends on PLAT_SAMSUNG
->> >> +       depends on SERIAL_SAMSUNG
->> >>         default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
->> >>         help
->> >>           Internal node for the common case of 4 Samsung compatible UARTs
->> >>
->> >>  config SERIAL_SAMSUNG_UARTS
->> >>         int
->> >> -       depends on PLAT_SAMSUNG
->> >> +       depends on SERIAL_SAMSUNG
->> >>         default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
->> >>         default 3
->> >>         help
->> >>
->> >
->> > Have you checked that it still builds on all samsung platforms when
->> > SERIAL_SAMSUNG is disabled? We have had build errors in this area
->> > in the past.
->>
->> Yes, it builds for other Samsung platforms.
->
-> Ok.
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
