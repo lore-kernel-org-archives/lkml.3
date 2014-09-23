@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaIWJdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:33:13 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:23321 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754298AbaIWJdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:33:10 -0400
-X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
-   d="scan'208";a="46343685"
-Message-ID: <54213E50.4020207@broadcom.com>
-Date: Tue, 23 Sep 2014 11:33:04 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1754590AbaIWJiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:38:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44596 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718AbaIWJiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:38:00 -0400
+Date: Tue, 23 Sep 2014 11:37:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        x86@kernel.org, Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased
+ during cpu hotplug
+Message-ID: <20140923093753.GA22644@pd.tnic>
+References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com>
 MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: Brett Rudley <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Daniel Kim <dekim@broadcom.com>, <linux-wireless@vger.kernel.org>,
-        <brcm80211-dev-list@broadcom.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: Fix off by one bug in brcmf_count_20mhz_channels()
-References: <1411253932-27973-1-git-send-email-emilgoode@gmail.com> <541FF25B.9000404@broadcom.com> <20140922230833.GB10356@lianli>
-In-Reply-To: <20140922230833.GB10356@lianli>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/14 01:08, Emil Goode wrote:
-> Hello Arend,
->
-> Sorry for the late reply. I have attached a kernel log with brcmfmac
-> debugging enabled (without my patch applied).
->
-> Let me know if I can provide any other useful information.
+On Wed, Sep 17, 2014 at 03:17:52PM +0800, Wanpeng Li wrote:
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+> IP: [..] find_busiest_group
+> PGD 5a9d5067 PUD 13067 PMD 0
+> Oops: 0000 [#3] SMP
+> [...]
+> Call Trace:
+> load_balance
+> ? _raw_spin_unlock_irqrestore
+> idle_balance
+> __schedule
+> schedule
+> schedule_timeout
+> ? lock_timer_base
+> schedule_timeout_uninterruptible
+> msleep
+> lock_device_hotplug_sysfs
+> online_store
+> dev_attr_store
+> sysfs_write_file
+> vfs_write
+> SyS_write
+> system_call_fastpath
+> 
+> This bug can be triggered by hot add and remove large number of xen
+> domain0's vcpus repeatedly.
+> 
+> Last level cache shared map is built during cpu up and build sched domain 
+> routine takes advantage of it to setup sched domain cpu topology, however, 
+> llc shared map is unreleased during cpu disable which lead to invalid sched 
+> domain cpu topology. This patch fix it by release llc shared map correctly
+> during cpu disable.
+> 
+> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Tested-by: Linn Crosetto <linn@hp.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-No problem, Emil
+Reviewed-by: Borislav Petkov <bp@suse.de>
 
-I was wondering what was returned on "chanspecs" query. So 17 channel 
-configs which is expected.
+-- 
+Regards/Gruss,
+    Boris.
 
-Regards,
-Arend
-
-> Best regards,
->
-> Emil
->
-> On Mon, Sep 22, 2014 at 11:56:43AM +0200, Arend van Spriel wrote:
->> On 09/21/14 00:58, Emil Goode wrote:
->>> In the brcmf_count_20mhz_channels function we are looping through a list
->>> of channels received from firmware. Since the index of the first channel
->>> is 0 the condition leads to an off by one bug. This is causing us to hit
->>> the WARN_ON_ONCE(1) calls in the brcmu_d11n_decchspec function, which is
->>> how I discovered the bug.
->>
->> The fix is fine. Would like to know what exactly is going wrong. Can you
->> provide a kernel log with brcmfmac debugging enabled, ie. insmod brcmfmac.ko
->> debug=0x1416
->>
->> Regards,
->> Arend
->>
->>> Introduced by:
->>> commit b48d891676f756d48b4d0ee131e4a7a5d43ca417
->>> ("brcmfmac: rework wiphy structure setup")
->>>
->>> Signed-off-by: Emil Goode<emilgoode@gmail.com>
->>> ---
->>>   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
->>> index 02fe706..93b5dd9 100644
->>> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
->>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
->>> @@ -4918,7 +4918,7 @@ static void brcmf_count_20mhz_channels(struct brcmf_cfg80211_info *cfg,
->>>   	struct brcmu_chan ch;
->>>   	int i;
->>>
->>> -	for (i = 0; i<= total; i++) {
->>> +	for (i = 0; i<   total; i++) {
->>>   		ch.chspec = (u16)le32_to_cpu(chlist->element[i]);
->>>   		cfg->d11inf.decchspec(&ch);
->>>
->>
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
