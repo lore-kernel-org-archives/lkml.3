@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118AbaIWOLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:11:21 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:61740 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaIWOLS (ORCPT
+	id S1755231AbaIWONJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:13:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58147 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751485AbaIWONF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:11:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Joe. C" <srv_yingjoe.chen@mediatek.com>
-Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org,
-        "Hongzhou. Yang" <srv_hongzhou.yang@mediatek.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        srv_heupstream@mediatek.com,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, dandan.he@mediatek.com
-Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
-Date: Tue, 23 Sep 2014 16:10:09 +0200
-Message-ID: <7840459.vtELiqVIOL@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411480694.21299.18.camel@mtksdaap41>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com> <2770365.r419rjIAOU@wuerfel> <1411480694.21299.18.camel@mtksdaap41>
+	Tue, 23 Sep 2014 10:13:05 -0400
+Date: Tue, 23 Sep 2014 16:13:01 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 5/5] drm: panel: simple-panel: add bus format
+ information for foxlink panel
+Message-ID: <20140923161301.54dda63c@bbrezillon>
+In-Reply-To: <20140923140612.GB5982@ulmo>
+References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1406031827-12432-6-git-send-email-boris.brezillon@free-electrons.com>
+	<20140923140612.GB5982@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ljzHxTKvVMHx6TC6lMSG8vL3knsSD93lo4KVoAqXxux
- j3wcolafbenEoReGs7mx2ekgZuiONb6W7r7rHLc8SLQGF2aDNQ
- pYqIx9R/MSJ0faOJf56Bz9CwjtuqK03mEdZrsToNWjG5k/4o4n
- ZDujhFEsT/Eh0tWssMc3YkV3AkRqq8/oZobspAkw0sY2Dq99zA
- vV3jAILHelRqwaNDvDoAXIhzrxUqRpLIzInDK5mllJnVRjWpqm
- fHQE7PRKt74ExQZ9XbPFQMAg9+CW4C//Qg6+WGk1D3phkM8QH8
- M0UHNj8agcot7NniIuZOtvBoz6PrntuusglwWcDWaBnCElNXo7
- AfmsjHzc/XTuMx+mdtUs=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 21:58:14 Joe. C wrote:
-> Thanks for review. 
-> The intend for these macros is helpin pinctrl user to write DT node.
-> With these macro, we could write like this for i2c0:
-> 
-> mediatek,pinfunc = <MT8135_PIN_100_SDA0__FUNC_SDA0 
->                         MT8135_PIN_101_SCL0__FUNC_SCL0>;
-> 
-> We feel this is less error prone and easier to write than this:
-> 
-> mediatek,pinfunc = <MT_PIN_FUNC(100, 1) MT_PIN_FUNC(101, 1)>
+Hi Thierry,
 
-But you don't actually use the same macros in the driver, so in effect
-you just move the definitions from the file they are needed in to another
-file as a macro.
+On Tue, 23 Sep 2014 16:06:13 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
-It is no less error prone to define those macros in mt8135-pinfunc.h
-than in the pinctrl node, just less readable.
+> On Tue, Jul 22, 2014 at 02:23:47PM +0200, Boris BREZILLON wrote:
+> > Foxlink's fl500wvr00-a0t supports RGB888 format.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/gpu/drm/panel/panel-simple.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+> > index 42fd6d1..f1e49fd 100644
+> > --- a/drivers/gpu/drm/panel/panel-simple.c
+> > +++ b/drivers/gpu/drm/panel/panel-simple.c
+> > @@ -428,6 +428,7 @@ static const struct panel_desc foxlink_fl500wvr00_a0t = {
+> >  		.width = 108,
+> >  		.height = 65,
+> >  	},
+> > +	.bus_format = VIDEO_BUS_FMT_RGB888_1X24,
+> 
+> This is really equivalent to .bpc = 8. Didn't you say you had other
+> use-cases where .bpc wasn't sufficient?
 
-	Arnd
+Yes, the HLCDC support RGB565 where you don't have the same number of
+bits for each color (Red and Blue = 5 bits, Green = 6 bits), and thus
+can't be encoded in the bpc field.
+
+> 
+> Thierry
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
