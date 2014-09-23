@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453AbaIWAY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 20:24:26 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:37538 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaIWAYZ (ORCPT
+	id S1753815AbaIWA2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 20:28:10 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:41221 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757AbaIWA2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 20:24:25 -0400
-Date: Tue, 23 Sep 2014 09:22:36 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] staging: dgap: use dgap_release_remap() in
- dgap_cleanup_board()
-Message-ID: <20140923002236.GA20782@devel>
+	Mon, 22 Sep 2014 20:28:09 -0400
+Message-ID: <5420BE92.7050504@mentor.com>
+Date: Mon, 22 Sep 2014 19:28:02 -0500
+From: Nathan Lynch <Nathan_Lynch@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Will Deacon <will.deacon@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code consolidation
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <20140922223022.GO5182@n2100.arm.linux.org.uk>
+In-Reply-To: <20140922223022.GO5182@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just simply use dgap_release_remap() in dgap_cleanup_board() for
-releasing map memory.
+On 09/22/2014 05:30 PM, Russell King - ARM Linux wrote:
+> On Mon, Sep 22, 2014 at 04:39:19PM +0100, Will Deacon wrote:
+>> On Thu, Sep 18, 2014 at 03:59:32PM +0100, Nathan Lynch wrote:
+>>> This series contains the necessary changes to allow architected timer
+>>> access from user-space on 32-bit ARM.  This allows the VDSO to support
+>>> high resolution timestamps for clock_gettime and gettimeofday.  This
+>>> also merges substantially similar code from arm and arm64 into the
+>>> core arm_arch_timer driver.
+>>>
+>>> The functional changes are:
+>>> - When available, CNTVCT is made readable by user space on arm, as it
+>>>   is on arm64.
+>>> - The clocksource name becomes "arch_mem_counter" if CP15 access to
+>>>   the counter is not available.
+>>>
+>>> These changes have been carried as part of the ARM VDSO patch set over
+>>> the last several months, but I am splitting them out here as I assume
+>>> they should go through the clocksource maintainers.
+>>
+>> For the series:
+>>
+>>   Acked-by: Will Deacon <will.deacon@arm.com>
+>>
+>> I'm not sure which tree the arch-timer stuff usually goes through, but
+>> the arm/arm64 bits look fine so I'm happy for them to merged together.
+> 
+> I raised a while back with Will whether there's much point to having
+> this on ARM.  While it's useful for virtualisation, the majority of
+> 32-bit ARM doesn't run virtualised.  So there's little point in having
+> the VDSO on the majority of platforms - it will just add additional
+> unnecessary cycles slowing down the system calls that the VDSO is
+> designed to try to speed up.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/dgap/dgap.c |   25 ++++++++++---------------
- 1 files changed, 10 insertions(+), 15 deletions(-)
+Hmm, this patch set is merely exposing the hardware counter when it is
+present for the VDSO's use; I take it you have no objection to that?
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 637ea8a..d0be1ce 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -683,17 +683,7 @@ static void dgap_cleanup_board(struct board_t *brd)
- 
- 	tasklet_kill(&brd->helper_tasklet);
- 
--	if (brd->re_map_port) {
--		release_mem_region(brd->membase + 0x200000, 0x200000);
--		iounmap(brd->re_map_port);
--		brd->re_map_port = NULL;
--	}
--
--	if (brd->re_map_membase) {
--		release_mem_region(brd->membase, 0x200000);
--		iounmap(brd->re_map_membase);
--		brd->re_map_membase = NULL;
--	}
-+	dgap_release_remap(brd);
- 
- 	/* Free all allocated channels structs */
- 	for (i = 0; i < MAXPORTS ; i++)
-@@ -1023,10 +1013,15 @@ static int dgap_do_remap(struct board_t *brd)
- 
- static void dgap_release_remap(struct board_t *brd)
- {
--	release_mem_region(brd->membase, 0x200000);
--	release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
--	iounmap(brd->re_map_membase);
--	iounmap(brd->re_map_port);
-+	if (brd->re_map_membase) {
-+		release_mem_region(brd->membase, 0x200000);
-+		iounmap(brd->re_map_membase);
-+	}
-+
-+	if (brd->re_map_port) {
-+		release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
-+		iounmap(brd->re_map_port);
-+	}
- }
- /*****************************************************************************
- *
--- 
-1.7.1
+While the 32-bit ARM VDSO I've posted (in a different thread) exploits a
+facility that is required by the virtualization option in the
+architecture, its utility is not limited to guest operating systems.
+
+
+> So, my view is that this VDSO will only be of very limited use for
+> 32-bit ARM, and should not be exposed to userspace unless there is
+> a reason for it to be exposed (iow, the hardware necessary to support
+> it is present.)
+
+My thinking is that it should prove useful in a growing subset of v7
+CPUs.  It is useful today on Cortex-A15 and -A7, and I believe -A12 and
+-A17 implement the generic timer facility as well.
+
+Now if you're saying that we shouldn't slow down gettimeofday on systems
+which lack a hardware counter that can be safely exposed to userspace, I
+can work with that.
 
