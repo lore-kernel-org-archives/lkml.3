@@ -1,434 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaIWMee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:34:34 -0400
-Received: from mout.gmx.net ([212.227.17.22]:51219 "EHLO mout.gmx.net"
+	id S1755465AbaIWMed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:34:33 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60472 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688AbaIWMdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:33:35 -0400
-Date: Tue, 23 Sep 2014 14:33:20 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-cc: Thierry Reding <thierry.reding@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/5] video: move mediabus format definition to a more
- standard place
-In-Reply-To: <1406031827-12432-2-git-send-email-boris.brezillon@free-electrons.com>
-Message-ID: <Pine.LNX.4.64.1409231426220.17074@axis700.grange>
-References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
- <1406031827-12432-2-git-send-email-boris.brezillon@free-electrons.com>
+	id S1751790AbaIWMdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:33:42 -0400
+Message-ID: <542168A1.5000406@mm-sol.com>
+Date: Tue, 23 Sep 2014 15:33:37 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V03:K0:YSeGa9L7qSuulrmD+xunStiDnpXIjrGaM0aIvqRaFxvXKltCp6U
- CKuLIlZ22kZz1FWWKZ4qE8ICjXQaWJxftk9+HOD4jW95YrWwfiZG+UBZrRzPhKSZMnt/NIs
- f2j2wIp2OuK4cRFr3U+EcOA6CSORvcROBN0kbiJyxN/dEpdMSK8bKF6SQvyEKZdrM0/uvdj
- g7fANZqHCz9HmvkIAHWiQ==
-X-UI-Out-Filterresults: notjunk:1;
+To: Lee Jones <lee.jones@linaro.org>
+CC: Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH v4 0/3] Support for Qualcomm QPNP PMIC's
+References: <1406903450-27283-1-git-send-email-svarbanov@mm-sol.com>
+In-Reply-To: <1406903450-27283-1-git-send-email-svarbanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Hi Lee,
 
-On Tue, 22 Jul 2014, Boris BREZILLON wrote:
+There are no comments on this set for more then month,
+could you queue up 1/3 and 2/3 for 3.18 merge window?
 
-> Rename mediabus formats and move the enum into a separate header file so
-> that it can be used by DRM/KMS subsystem without any reference to the V4L2
-> subsystem.
+On 08/01/2014 05:30 PM, Stanimir Varbanov wrote:
+> Hello all,
 > 
-> Old V4L2_MBUS_FMT_ definitions are now macros that points to VIDEO_BUS_FMT_
-> definitions.
+> Changes since v3:
+>  - rename the driver to qcom-spmi-pmic - suggested by David Collins
+>  - spmi regmap config now initialize .fast_io to true
+>  - added generalized comptatible string in DT binding document and driver
+>  - I dropped the pm8921 rename patch for now, it will be subject of another
+>    patchset later on.
 > 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-
-In principle I find this a good idea, certainly it's good to reuse code. 
-Just wondering, wouldn't it be better instead of adding those defines to 
-define a macro like
-
-#define VIDEO_BUS_TO_MBUS(x)	V4L2_MBUS_ ## x = VIDEO_BUS_ ## x
-
-and then do
-
-enum v4l2_mbus_pixelcode {
-	VIDEO_BUS_TO_MBUS(FIXED),
-	VIDEO_BUS_TO_MBUS(RGB444_2X8_PADHI_BE),
-	...
-};
-
-? I'm not very strong on this, I just think an enum is nicer than a bunch 
-of defines and this way copy-paste errors are less likely, but if you or 
-others strongly disagree - I won't insist :)
-
-Whether or not you decide to accept this proposal you have my
-
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-
-Thanks
-Guennadi
-
-> ---
->  include/uapi/linux/Kbuild             |   1 +
->  include/uapi/linux/v4l2-mediabus.h    | 183 ++++++++++++++--------------------
->  include/uapi/linux/video-bus-format.h | 127 +++++++++++++++++++++++
->  3 files changed, 205 insertions(+), 106 deletions(-)
->  create mode 100644 include/uapi/linux/video-bus-format.h
+> regards,
+> Stan
 > 
-> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> index 24e9033..371874b 100644
-> --- a/include/uapi/linux/Kbuild
-> +++ b/include/uapi/linux/Kbuild
-> @@ -408,6 +408,7 @@ header-y += veth.h
->  header-y += vfio.h
->  header-y += vhost.h
->  header-y += videodev2.h
-> +header-y += video-bus-format.h
->  header-y += virtio_9p.h
->  header-y += virtio_balloon.h
->  header-y += virtio_blk.h
-> diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
-> index 1445e85..8c31f11 100644
-> --- a/include/uapi/linux/v4l2-mediabus.h
-> +++ b/include/uapi/linux/v4l2-mediabus.h
-> @@ -13,119 +13,90 @@
->  
->  #include <linux/types.h>
->  #include <linux/videodev2.h>
-> +#include <linux/video-bus-format.h>
->  
-> -/*
-> - * These pixel codes uniquely identify data formats on the media bus. Mostly
-> - * they correspond to similarly named V4L2_PIX_FMT_* formats, format 0 is
-> - * reserved, V4L2_MBUS_FMT_FIXED shall be used by host-client pairs, where the
-> - * data format is fixed. Additionally, "2X8" means that one pixel is transferred
-> - * in two 8-bit samples, "BE" or "LE" specify in which order those samples are
-> - * transferred over the bus: "LE" means that the least significant bits are
-> - * transferred first, "BE" means that the most significant bits are transferred
-> - * first, and "PADHI" and "PADLO" define which bits - low or high, in the
-> - * incomplete high byte, are filled with padding bits.
-> - *
-> - * The pixel codes are grouped by type, bus_width, bits per component, samples
-> - * per pixel and order of subsamples. Numerical values are sorted using generic
-> - * numerical sort order (8 thus comes before 10).
-> - *
-> - * As their value can't change when a new pixel code is inserted in the
-> - * enumeration, the pixel codes are explicitly given a numerical value. The next
-> - * free values for each category are listed below, update them when inserting
-> - * new pixel codes.
-> - */
-> -enum v4l2_mbus_pixelcode {
-> -	V4L2_MBUS_FMT_FIXED = 0x0001,
-> -
-> -	/* RGB - next is 0x100e */
-> -	V4L2_MBUS_FMT_RGB444_2X8_PADHI_BE = 0x1001,
-> -	V4L2_MBUS_FMT_RGB444_2X8_PADHI_LE = 0x1002,
-> -	V4L2_MBUS_FMT_RGB555_2X8_PADHI_BE = 0x1003,
-> -	V4L2_MBUS_FMT_RGB555_2X8_PADHI_LE = 0x1004,
-> -	V4L2_MBUS_FMT_BGR565_2X8_BE = 0x1005,
-> -	V4L2_MBUS_FMT_BGR565_2X8_LE = 0x1006,
-> -	V4L2_MBUS_FMT_RGB565_2X8_BE = 0x1007,
-> -	V4L2_MBUS_FMT_RGB565_2X8_LE = 0x1008,
-> -	V4L2_MBUS_FMT_RGB666_1X18 = 0x1009,
-> -	V4L2_MBUS_FMT_RGB888_1X24 = 0x100a,
-> -	V4L2_MBUS_FMT_RGB888_2X12_BE = 0x100b,
-> -	V4L2_MBUS_FMT_RGB888_2X12_LE = 0x100c,
-> -	V4L2_MBUS_FMT_ARGB8888_1X32 = 0x100d,
-> +#define V4L2_MBUS_FMT_FIXED			VIDEO_BUS_FMT_FIXED
->  
-> -	/* YUV (including grey) - next is 0x2024 */
-> -	V4L2_MBUS_FMT_Y8_1X8 = 0x2001,
-> -	V4L2_MBUS_FMT_UV8_1X8 = 0x2015,
-> -	V4L2_MBUS_FMT_UYVY8_1_5X8 = 0x2002,
-> -	V4L2_MBUS_FMT_VYUY8_1_5X8 = 0x2003,
-> -	V4L2_MBUS_FMT_YUYV8_1_5X8 = 0x2004,
-> -	V4L2_MBUS_FMT_YVYU8_1_5X8 = 0x2005,
-> -	V4L2_MBUS_FMT_UYVY8_2X8 = 0x2006,
-> -	V4L2_MBUS_FMT_VYUY8_2X8 = 0x2007,
-> -	V4L2_MBUS_FMT_YUYV8_2X8 = 0x2008,
-> -	V4L2_MBUS_FMT_YVYU8_2X8 = 0x2009,
-> -	V4L2_MBUS_FMT_Y10_1X10 = 0x200a,
-> -	V4L2_MBUS_FMT_UYVY10_2X10 = 0x2018,
-> -	V4L2_MBUS_FMT_VYUY10_2X10 = 0x2019,
-> -	V4L2_MBUS_FMT_YUYV10_2X10 = 0x200b,
-> -	V4L2_MBUS_FMT_YVYU10_2X10 = 0x200c,
-> -	V4L2_MBUS_FMT_Y12_1X12 = 0x2013,
-> -	V4L2_MBUS_FMT_UYVY8_1X16 = 0x200f,
-> -	V4L2_MBUS_FMT_VYUY8_1X16 = 0x2010,
-> -	V4L2_MBUS_FMT_YUYV8_1X16 = 0x2011,
-> -	V4L2_MBUS_FMT_YVYU8_1X16 = 0x2012,
-> -	V4L2_MBUS_FMT_YDYUYDYV8_1X16 = 0x2014,
-> -	V4L2_MBUS_FMT_UYVY10_1X20 = 0x201a,
-> -	V4L2_MBUS_FMT_VYUY10_1X20 = 0x201b,
-> -	V4L2_MBUS_FMT_YUYV10_1X20 = 0x200d,
-> -	V4L2_MBUS_FMT_YVYU10_1X20 = 0x200e,
-> -	V4L2_MBUS_FMT_YUV10_1X30 = 0x2016,
-> -	V4L2_MBUS_FMT_AYUV8_1X32 = 0x2017,
-> -	V4L2_MBUS_FMT_UYVY12_2X12 = 0x201c,
-> -	V4L2_MBUS_FMT_VYUY12_2X12 = 0x201d,
-> -	V4L2_MBUS_FMT_YUYV12_2X12 = 0x201e,
-> -	V4L2_MBUS_FMT_YVYU12_2X12 = 0x201f,
-> -	V4L2_MBUS_FMT_UYVY12_1X24 = 0x2020,
-> -	V4L2_MBUS_FMT_VYUY12_1X24 = 0x2021,
-> -	V4L2_MBUS_FMT_YUYV12_1X24 = 0x2022,
-> -	V4L2_MBUS_FMT_YVYU12_1X24 = 0x2023,
-> +#define V4L2_MBUS_FMT_RGB444_2X8_PADHI_BE	VIDEO_BUS_FMT_RGB444_2X8_PADHI_BE
-> +#define V4L2_MBUS_FMT_RGB444_2X8_PADHI_LE	VIDEO_BUS_FMT_RGB444_2X8_PADHI_LE
-> +#define V4L2_MBUS_FMT_RGB555_2X8_PADHI_BE	VIDEO_BUS_FMT_RGB555_2X8_PADHI_BE
-> +#define V4L2_MBUS_FMT_RGB555_2X8_PADHI_LE	VIDEO_BUS_FMT_RGB555_2X8_PADHI_LE
-> +#define V4L2_MBUS_FMT_BGR565_2X8_BE		VIDEO_BUS_FMT_BGR565_2X8_BE
-> +#define V4L2_MBUS_FMT_BGR565_2X8_LE		VIDEO_BUS_FMT_BGR565_2X8_LE
-> +#define V4L2_MBUS_FMT_RGB565_2X8_BE		VIDEO_BUS_FMT_RGB565_2X8_BE
-> +#define V4L2_MBUS_FMT_RGB565_2X8_LE		VIDEO_BUS_FMT_RGB565_2X8_LE
-> +#define V4L2_MBUS_FMT_RGB666_1X18		VIDEO_BUS_FMT_RGB666_1X18
-> +#define V4L2_MBUS_FMT_RGB888_1X24		VIDEO_BUS_FMT_RGB888_1X24
-> +#define V4L2_MBUS_FMT_RGB888_2X12_BE		VIDEO_BUS_FMT_RGB888_2X12_BE
-> +#define V4L2_MBUS_FMT_RGB888_2X12_LE		VIDEO_BUS_FMT_RGB888_2X12_LE
-> +#define V4L2_MBUS_FMT_ARGB8888_1X32		VIDEO_BUS_FMT_ARGB8888_1X32
->  
-> -	/* Bayer - next is 0x3019 */
-> -	V4L2_MBUS_FMT_SBGGR8_1X8 = 0x3001,
-> -	V4L2_MBUS_FMT_SGBRG8_1X8 = 0x3013,
-> -	V4L2_MBUS_FMT_SGRBG8_1X8 = 0x3002,
-> -	V4L2_MBUS_FMT_SRGGB8_1X8 = 0x3014,
-> -	V4L2_MBUS_FMT_SBGGR10_ALAW8_1X8 = 0x3015,
-> -	V4L2_MBUS_FMT_SGBRG10_ALAW8_1X8 = 0x3016,
-> -	V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8 = 0x3017,
-> -	V4L2_MBUS_FMT_SRGGB10_ALAW8_1X8 = 0x3018,
-> -	V4L2_MBUS_FMT_SBGGR10_DPCM8_1X8 = 0x300b,
-> -	V4L2_MBUS_FMT_SGBRG10_DPCM8_1X8 = 0x300c,
-> -	V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 = 0x3009,
-> -	V4L2_MBUS_FMT_SRGGB10_DPCM8_1X8 = 0x300d,
-> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_BE = 0x3003,
-> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_LE = 0x3004,
-> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_BE = 0x3005,
-> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_LE = 0x3006,
-> -	V4L2_MBUS_FMT_SBGGR10_1X10 = 0x3007,
-> -	V4L2_MBUS_FMT_SGBRG10_1X10 = 0x300e,
-> -	V4L2_MBUS_FMT_SGRBG10_1X10 = 0x300a,
-> -	V4L2_MBUS_FMT_SRGGB10_1X10 = 0x300f,
-> -	V4L2_MBUS_FMT_SBGGR12_1X12 = 0x3008,
-> -	V4L2_MBUS_FMT_SGBRG12_1X12 = 0x3010,
-> -	V4L2_MBUS_FMT_SGRBG12_1X12 = 0x3011,
-> -	V4L2_MBUS_FMT_SRGGB12_1X12 = 0x3012,
-> +#define V4L2_MBUS_FMT_Y8_1X8			VIDEO_BUS_FMT_Y8_1X8
-> +#define V4L2_MBUS_FMT_UV8_1X8			VIDEO_BUS_FMT_UV8_1X8
-> +#define V4L2_MBUS_FMT_UYVY8_1_5X8		VIDEO_BUS_FMT_UYVY8_1_5X8
-> +#define V4L2_MBUS_FMT_VYUY8_1_5X8		VIDEO_BUS_FMT_VYUY8_1_5X8
-> +#define V4L2_MBUS_FMT_YUYV8_1_5X8		VIDEO_BUS_FMT_YUYV8_1_5X8
-> +#define V4L2_MBUS_FMT_YVYU8_1_5X8		VIDEO_BUS_FMT_YVYU8_1_5X8
-> +#define V4L2_MBUS_FMT_UYVY8_2X8			VIDEO_BUS_FMT_UYVY8_2X8
-> +#define V4L2_MBUS_FMT_VYUY8_2X8			VIDEO_BUS_FMT_VYUY8_2X8
-> +#define V4L2_MBUS_FMT_YUYV8_2X8			VIDEO_BUS_FMT_YUYV8_2X8
-> +#define V4L2_MBUS_FMT_YVYU8_2X8			VIDEO_BUS_FMT_YVYU8_2X8
-> +#define V4L2_MBUS_FMT_Y10_1X10			VIDEO_BUS_FMT_Y10_1X10
-> +#define V4L2_MBUS_FMT_UYVY10_2X10		VIDEO_BUS_FMT_UYVY10_2X10
-> +#define V4L2_MBUS_FMT_VYUY10_2X10		VIDEO_BUS_FMT_VYUY10_2X10
-> +#define V4L2_MBUS_FMT_YUYV10_2X10		VIDEO_BUS_FMT_YUYV10_2X10
-> +#define V4L2_MBUS_FMT_YVYU10_2X10		VIDEO_BUS_FMT_YVYU10_2X10
-> +#define V4L2_MBUS_FMT_Y12_1X12			VIDEO_BUS_FMT_Y12_1X12
-> +#define V4L2_MBUS_FMT_UYVY8_1X16		VIDEO_BUS_FMT_UYVY8_1X16
-> +#define V4L2_MBUS_FMT_VYUY8_1X16		VIDEO_BUS_FMT_VYUY8_1X16
-> +#define V4L2_MBUS_FMT_YUYV8_1X16		VIDEO_BUS_FMT_YUYV8_1X16
-> +#define V4L2_MBUS_FMT_YVYU8_1X16		VIDEO_BUS_FMT_YVYU8_1X16
-> +#define V4L2_MBUS_FMT_YDYUYDYV8_1X16		VIDEO_BUS_FMT_YDYUYDYV8_1X16
-> +#define V4L2_MBUS_FMT_UYVY10_1X20		VIDEO_BUS_FMT_UYVY10_1X20
-> +#define V4L2_MBUS_FMT_VYUY10_1X20		VIDEO_BUS_FMT_VYUY10_1X20
-> +#define V4L2_MBUS_FMT_YUYV10_1X20		VIDEO_BUS_FMT_YUYV10_1X20
-> +#define V4L2_MBUS_FMT_YVYU10_1X20		VIDEO_BUS_FMT_YVYU10_1X20
-> +#define V4L2_MBUS_FMT_YUV10_1X30		VIDEO_BUS_FMT_YUV10_1X30
-> +#define V4L2_MBUS_FMT_AYUV8_1X32		VIDEO_BUS_FMT_AYUV8_1X32
-> +#define V4L2_MBUS_FMT_UYVY12_2X12		VIDEO_BUS_FMT_UYVY12_2X12
-> +#define V4L2_MBUS_FMT_VYUY12_2X12		VIDEO_BUS_FMT_VYUY12_2X12
-> +#define V4L2_MBUS_FMT_YUYV12_2X12		VIDEO_BUS_FMT_YUYV12_2X12
-> +#define V4L2_MBUS_FMT_YVYU12_2X12		VIDEO_BUS_FMT_YVYU12_2X12
-> +#define V4L2_MBUS_FMT_UYVY12_1X24		VIDEO_BUS_FMT_UYVY12_1X24
-> +#define V4L2_MBUS_FMT_VYUY12_1X24		VIDEO_BUS_FMT_VYUY12_1X24
-> +#define V4L2_MBUS_FMT_YUYV12_1X24		VIDEO_BUS_FMT_YUYV12_1X24
-> +#define V4L2_MBUS_FMT_YVYU12_1X24		VIDEO_BUS_FMT_YVYU12_1X24
->  
-> -	/* JPEG compressed formats - next is 0x4002 */
-> -	V4L2_MBUS_FMT_JPEG_1X8 = 0x4001,
-> +#define V4L2_MBUS_FMT_SBGGR8_1X8		VIDEO_BUS_FMT_SBGGR8_1X8
-> +#define V4L2_MBUS_FMT_SGBRG8_1X8		VIDEO_BUS_FMT_SGBRG8_1X8
-> +#define V4L2_MBUS_FMT_SGRBG8_1X8		VIDEO_BUS_FMT_SGRBG8_1X8
-> +#define V4L2_MBUS_FMT_SRGGB8_1X8		VIDEO_BUS_FMT_SRGGB8_1X8
-> +#define V4L2_MBUS_FMT_SBGGR10_ALAW8_1X8		VIDEO_BUS_FMT_SBGGR10_ALAW8_1X8
-> +#define V4L2_MBUS_FMT_SGBRG10_ALAW8_1X8		VIDEO_BUS_FMT_SGBRG10_ALAW8_1X8
-> +#define V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8		VIDEO_BUS_FMT_SGRBG10_ALAW8_1X8
-> +#define V4L2_MBUS_FMT_SRGGB10_ALAW8_1X8		VIDEO_BUS_FMT_SRGGB10_ALAW8_1X8
-> +#define V4L2_MBUS_FMT_SBGGR10_DPCM8_1X8		VIDEO_BUS_FMT_SBGGR10_DPCM8_1X8
-> +#define V4L2_MBUS_FMT_SGBRG10_DPCM8_1X8		VIDEO_BUS_FMT_SGBRG10_DPCM8_1X8
-> +#define V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8		VIDEO_BUS_FMT_SGRBG10_DPCM8_1X8
-> +#define V4L2_MBUS_FMT_SRGGB10_DPCM8_1X8		VIDEO_BUS_FMT_SRGGB10_DPCM8_1X8
-> +#define V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_BE	VIDEO_BUS_FMT_SBGGR10_2X8_PADHI_BE
-> +#define V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_LE	VIDEO_BUS_FMT_SBGGR10_2X8_PADHI_LE
-> +#define V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_BE	VIDEO_BUS_FMT_SBGGR10_2X8_PADLO_BE
-> +#define V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_LE	VIDEO_BUS_FMT_SBGGR10_2X8_PADLO_LE
-> +#define V4L2_MBUS_FMT_SBGGR10_1X10		VIDEO_BUS_FMT_SBGGR10_1X10
-> +#define V4L2_MBUS_FMT_SGBRG10_1X10		VIDEO_BUS_FMT_SGBRG10_1X10
-> +#define V4L2_MBUS_FMT_SGRBG10_1X10		VIDEO_BUS_FMT_SGRBG10_1X10
-> +#define V4L2_MBUS_FMT_SRGGB10_1X10		VIDEO_BUS_FMT_SRGGB10_1X10
-> +#define V4L2_MBUS_FMT_SBGGR12_1X12		VIDEO_BUS_FMT_SBGGR12_1X12
-> +#define V4L2_MBUS_FMT_SGBRG12_1X12		VIDEO_BUS_FMT_SGBRG12_1X12
-> +#define V4L2_MBUS_FMT_SGRBG12_1X12		VIDEO_BUS_FMT_SGRBG12_1X12
-> +#define V4L2_MBUS_FMT_SRGGB12_1X12		VIDEO_BUS_FMT_SRGGB12_1X12
->  
-> -	/* Vendor specific formats - next is 0x5002 */
-> +#define V4L2_MBUS_FMT_JPEG_1X8			VIDEO_BUS_FMT_JPEG_1X8
->  
-> -	/* S5C73M3 sensor specific interleaved UYVY and JPEG */
-> -	V4L2_MBUS_FMT_S5C_UYVY_JPEG_1X8 = 0x5001,
-> +#define V4L2_MBUS_FMT_S5C_UYVY_JPEG_1X8		VIDEO_BUS_FMT_S5C_UYVY_JPEG_1X8
->  
-> -	/* HSV - next is 0x6002 */
-> -	V4L2_MBUS_FMT_AHSV8888_1X32 = 0x6001,
-> -};
-> +#define V4L2_MBUS_FMT_AHSV8888_1X32		VIDEO_BUS_FMT_AHSV8888_1X32
->  
->  /**
->   * struct v4l2_mbus_framefmt - frame format on the media bus
-> diff --git a/include/uapi/linux/video-bus-format.h b/include/uapi/linux/video-bus-format.h
-> new file mode 100644
-> index 0000000..4abbd5d
-> --- /dev/null
-> +++ b/include/uapi/linux/video-bus-format.h
-> @@ -0,0 +1,127 @@
-> +/*
-> + * Video Bus API header
-> + *
-> + * Copyright (C) 2009, Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __LINUX_VIDEO_BUS_FORMAT_H
-> +#define __LINUX_VIDEO_BUS_FORMAT_H
-> +
-> +/*
-> + * These bus formats uniquely identify data formats on the data bus. Mostly
-> + * they correspond to similarly named VIDEO_PIX_FMT_* formats, format 0 is
-> + * reserved, VIDEO_BUS_FMT_FIXED shall be used by host-client pairs, where the
-> + * data format is fixed. Additionally, "2X8" means that one pixel is transferred
-> + * in two 8-bit samples, "BE" or "LE" specify in which order those samples are
-> + * transferred over the bus: "LE" means that the least significant bits are
-> + * transferred first, "BE" means that the most significant bits are transferred
-> + * first, and "PADHI" and "PADLO" define which bits - low or high, in the
-> + * incomplete high byte, are filled with padding bits.
-> + *
-> + * The bus formats are grouped by type, bus_width, bits per component, samples
-> + * per pixel and order of subsamples. Numerical values are sorted using generic
-> + * numerical sort order (8 thus comes before 10).
-> + *
-> + * As their value can't change when a new bus format is inserted in the
-> + * enumeration, the bus formats are explicitly given a numerical value. The next
-> + * free values for each category are listed below, update them when inserting
-> + * new pixel codes.
-> + */
-> +enum video_bus_format {
-> +	VIDEO_BUS_FMT_FIXED = 0x0001,
-> +
-> +	/* RGB - next is 0x100e */
-> +	VIDEO_BUS_FMT_RGB444_2X8_PADHI_BE = 0x1001,
-> +	VIDEO_BUS_FMT_RGB444_2X8_PADHI_LE = 0x1002,
-> +	VIDEO_BUS_FMT_RGB555_2X8_PADHI_BE = 0x1003,
-> +	VIDEO_BUS_FMT_RGB555_2X8_PADHI_LE = 0x1004,
-> +	VIDEO_BUS_FMT_BGR565_2X8_BE = 0x1005,
-> +	VIDEO_BUS_FMT_BGR565_2X8_LE = 0x1006,
-> +	VIDEO_BUS_FMT_RGB565_2X8_BE = 0x1007,
-> +	VIDEO_BUS_FMT_RGB565_2X8_LE = 0x1008,
-> +	VIDEO_BUS_FMT_RGB666_1X18 = 0x1009,
-> +	VIDEO_BUS_FMT_RGB888_1X24 = 0x100a,
-> +	VIDEO_BUS_FMT_RGB888_2X12_BE = 0x100b,
-> +	VIDEO_BUS_FMT_RGB888_2X12_LE = 0x100c,
-> +	VIDEO_BUS_FMT_ARGB8888_1X32 = 0x100d,
-> +
-> +	/* YUV (including grey) - next is 0x2024 */
-> +	VIDEO_BUS_FMT_Y8_1X8 = 0x2001,
-> +	VIDEO_BUS_FMT_UV8_1X8 = 0x2015,
-> +	VIDEO_BUS_FMT_UYVY8_1_5X8 = 0x2002,
-> +	VIDEO_BUS_FMT_VYUY8_1_5X8 = 0x2003,
-> +	VIDEO_BUS_FMT_YUYV8_1_5X8 = 0x2004,
-> +	VIDEO_BUS_FMT_YVYU8_1_5X8 = 0x2005,
-> +	VIDEO_BUS_FMT_UYVY8_2X8 = 0x2006,
-> +	VIDEO_BUS_FMT_VYUY8_2X8 = 0x2007,
-> +	VIDEO_BUS_FMT_YUYV8_2X8 = 0x2008,
-> +	VIDEO_BUS_FMT_YVYU8_2X8 = 0x2009,
-> +	VIDEO_BUS_FMT_Y10_1X10 = 0x200a,
-> +	VIDEO_BUS_FMT_UYVY10_2X10 = 0x2018,
-> +	VIDEO_BUS_FMT_VYUY10_2X10 = 0x2019,
-> +	VIDEO_BUS_FMT_YUYV10_2X10 = 0x200b,
-> +	VIDEO_BUS_FMT_YVYU10_2X10 = 0x200c,
-> +	VIDEO_BUS_FMT_Y12_1X12 = 0x2013,
-> +	VIDEO_BUS_FMT_UYVY8_1X16 = 0x200f,
-> +	VIDEO_BUS_FMT_VYUY8_1X16 = 0x2010,
-> +	VIDEO_BUS_FMT_YUYV8_1X16 = 0x2011,
-> +	VIDEO_BUS_FMT_YVYU8_1X16 = 0x2012,
-> +	VIDEO_BUS_FMT_YDYUYDYV8_1X16 = 0x2014,
-> +	VIDEO_BUS_FMT_UYVY10_1X20 = 0x201a,
-> +	VIDEO_BUS_FMT_VYUY10_1X20 = 0x201b,
-> +	VIDEO_BUS_FMT_YUYV10_1X20 = 0x200d,
-> +	VIDEO_BUS_FMT_YVYU10_1X20 = 0x200e,
-> +	VIDEO_BUS_FMT_YUV10_1X30 = 0x2016,
-> +	VIDEO_BUS_FMT_AYUV8_1X32 = 0x2017,
-> +	VIDEO_BUS_FMT_UYVY12_2X12 = 0x201c,
-> +	VIDEO_BUS_FMT_VYUY12_2X12 = 0x201d,
-> +	VIDEO_BUS_FMT_YUYV12_2X12 = 0x201e,
-> +	VIDEO_BUS_FMT_YVYU12_2X12 = 0x201f,
-> +	VIDEO_BUS_FMT_UYVY12_1X24 = 0x2020,
-> +	VIDEO_BUS_FMT_VYUY12_1X24 = 0x2021,
-> +	VIDEO_BUS_FMT_YUYV12_1X24 = 0x2022,
-> +	VIDEO_BUS_FMT_YVYU12_1X24 = 0x2023,
-> +
-> +	/* Bayer - next is 0x3019 */
-> +	VIDEO_BUS_FMT_SBGGR8_1X8 = 0x3001,
-> +	VIDEO_BUS_FMT_SGBRG8_1X8 = 0x3013,
-> +	VIDEO_BUS_FMT_SGRBG8_1X8 = 0x3002,
-> +	VIDEO_BUS_FMT_SRGGB8_1X8 = 0x3014,
-> +	VIDEO_BUS_FMT_SBGGR10_ALAW8_1X8 = 0x3015,
-> +	VIDEO_BUS_FMT_SGBRG10_ALAW8_1X8 = 0x3016,
-> +	VIDEO_BUS_FMT_SGRBG10_ALAW8_1X8 = 0x3017,
-> +	VIDEO_BUS_FMT_SRGGB10_ALAW8_1X8 = 0x3018,
-> +	VIDEO_BUS_FMT_SBGGR10_DPCM8_1X8 = 0x300b,
-> +	VIDEO_BUS_FMT_SGBRG10_DPCM8_1X8 = 0x300c,
-> +	VIDEO_BUS_FMT_SGRBG10_DPCM8_1X8 = 0x3009,
-> +	VIDEO_BUS_FMT_SRGGB10_DPCM8_1X8 = 0x300d,
-> +	VIDEO_BUS_FMT_SBGGR10_2X8_PADHI_BE = 0x3003,
-> +	VIDEO_BUS_FMT_SBGGR10_2X8_PADHI_LE = 0x3004,
-> +	VIDEO_BUS_FMT_SBGGR10_2X8_PADLO_BE = 0x3005,
-> +	VIDEO_BUS_FMT_SBGGR10_2X8_PADLO_LE = 0x3006,
-> +	VIDEO_BUS_FMT_SBGGR10_1X10 = 0x3007,
-> +	VIDEO_BUS_FMT_SGBRG10_1X10 = 0x300e,
-> +	VIDEO_BUS_FMT_SGRBG10_1X10 = 0x300a,
-> +	VIDEO_BUS_FMT_SRGGB10_1X10 = 0x300f,
-> +	VIDEO_BUS_FMT_SBGGR12_1X12 = 0x3008,
-> +	VIDEO_BUS_FMT_SGBRG12_1X12 = 0x3010,
-> +	VIDEO_BUS_FMT_SGRBG12_1X12 = 0x3011,
-> +	VIDEO_BUS_FMT_SRGGB12_1X12 = 0x3012,
-> +
-> +	/* JPEG compressed formats - next is 0x4002 */
-> +	VIDEO_BUS_FMT_JPEG_1X8 = 0x4001,
-> +
-> +	/* Vendor specific formats - next is 0x5002 */
-> +
-> +	/* S5C73M3 sensor specific interleaved UYVY and JPEG */
-> +	VIDEO_BUS_FMT_S5C_UYVY_JPEG_1X8 = 0x5001,
-> +
-> +	/* HSV - next is 0x6002 */
-> +	VIDEO_BUS_FMT_AHSV8888_1X32 = 0x6001,
-> +};
-> +
-> +#endif /* __LINUX_VIDEO_BUS_FORMAT_H */
-> -- 
-> 1.8.3.2
+> --------------------------------------------------------------------------------
+> 
+> Changes since v2:
+>  - 1/4 - added new line, signed-off-by / acked-by and module_authors.
+>  - 3/4 - the subject has been changed.
+> 
+> The previous v2 can be found at [1].
+> 
+> I'm still waiting Acks for:
+>  - 4/4 from Qualcomm folks.
+>  - 2/4 and 3/4 from DT folks.
+> 
+> The patchset is ready to merge version and also it can be treated as an
+> intermediate step until we find a solution for non-translatable peripheral
+> addresses.
+> 
+> [1] https://lkml.org/lkml/2014/7/17/877
+> 
+> --------------------------------------------------------------------------------
+> 
+> Hello everyone,
+> 
+> Here is the continuation of patch sets sent recently about Qualcomm
+> QPNP SPMI PMICs.
+> 
+> The previous version of the patch set can be found at [1].
+> 
+> Changes since v1:
+>  - removed completely custom *of* parser
+>  - renamed the mfd driver from qpnp-spmi to pm8xxx-spmi
+>  - now MFD_PM8XXX_SPMI Kconfig option depends on SPMI
+> 
+> Removing of the custom *of* parser leads to that that the *reg* devicetree
+> property cannot exist and therefore cannot be parsed to get PMIC peripheral
+> resources. I took this step aside because no one from mfd drivers does this
+> parsing. This will lead to inconvenience in the peripheral drivers to define
+> internally the SPMI base addresses depending on the compatible property
+> i.e. PMIC version. 
+> 
+> Comments are welcome!
+> 
+> [1] https://lkml.org/lkml/2014/7/8/428
+> 
+> --------------------------------------------------------------------------------
+> 
+> Josh Cartwright (1):
+>   mfd: add support for Qualcomm SPMI PMICs
+> 
+> Stanimir Varbanov (2):
+>   mfd: document DT bindings for Qualcomm SPMI PMICs
+>   ARM: dts: qcom: add pm8941 and pm8841 PMICs device nodes
+> 
+>  .../devicetree/bindings/mfd/qcom,spmi-pmic.txt     |   64 +++++++++++++++++++
+>  arch/arm/boot/dts/qcom-msm8974.dtsi                |   37 +++++++++++
+>  drivers/mfd/Kconfig                                |   15 +++++
+>  drivers/mfd/Makefile                               |    1 +
+>  drivers/mfd/qcom-spmi-pmic.c                       |   67 ++++++++++++++++++++
+>  5 files changed, 184 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/qcom,spmi-pmic.txt
+>  create mode 100644 drivers/mfd/qcom-spmi-pmic.c
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
+
+
+-- 
+regards,
+Stan
