@@ -1,140 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaIWH6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:58:09 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50800 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaIWH6H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:58:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <542127AD.6050307@jp.fujitsu.com>
-Date: Tue, 23 Sep 2014 16:56:29 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754538AbaIWH6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:58:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40338 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828AbaIWH6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:58:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
+   d="scan'208";a="479383492"
+Date: Tue, 23 Sep 2014 10:58:17 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz,
+        andriy.shevchenko@linux.intel.com, kean.ho.chew@intel.com,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v3] serial: 8250: Add Quark X1000 to 8250_pci.c
+Message-ID: <20140923075817.GA18814@xps8300>
+References: <1411431671-26540-1-git-send-email-pure.logic@nexus-software.ie>
 MIME-Version: 1.0
-To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, <x86@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased during
- cpu hotplug
-References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com> <5420FB25.8050102@jp.fujitsu.com> <542114D7.3030605@gmail.com>
-In-Reply-To: <542114D7.3030605@gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411431671-26540-1-git-send-email-pure.logic@nexus-software.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/23 15:36), Wanpeng Li wrote:
-> Hi Kamezawa,
-> 于 14-9-23 下午12:46, Kamezawa Hiroyuki 写道:
->> (2014/09/17 16:17), Wanpeng Li wrote:
->>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
->>> IP: [..] find_busiest_group
->>> PGD 5a9d5067 PUD 13067 PMD 0
->>> Oops: 0000 [#3] SMP
->>> [...]
->>> Call Trace:
->>> load_balance
->>> ? _raw_spin_unlock_irqrestore
->>> idle_balance
->>> __schedule
->>> schedule
->>> schedule_timeout
->>> ? lock_timer_base
->>> schedule_timeout_uninterruptible
->>> msleep
->>> lock_device_hotplug_sysfs
->>> online_store
->>> dev_attr_store
->>> sysfs_write_file
->>> vfs_write
->>> SyS_write
->>> system_call_fastpath
->>>
->>> This bug can be triggered by hot add and remove large number of xen
->>> domain0's vcpus repeatedly.
->>>
->>> Last level cache shared map is built during cpu up and build sched domain
->>> routine takes advantage of it to setup sched domain cpu topology, however,
->>> llc shared map is unreleased during cpu disable which lead to invalid sched
->>> domain cpu topology. This patch fix it by release llc shared map correctly
->>> during cpu disable.
->>>
->>> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
->>> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>> Tested-by: Linn Crosetto <linn@hp.com>
->>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> Yasuaki reported this can happen on our real hardware.
->> https://lkml.org/lkml/2014/7/22/1018
->>
->> Our case is here.
->> ==
->> Here is a example on my system.
->> My system has 4 sockets and each socket has 15 cores and HT is enabled.
->> In this case, each core of sockes is numbered as follows:
->>
->>            | CPU#
->> Socket#0 | 0-14 , 60-74
->> Socket#1 | 15-29, 75-89
->> Socket#2 | 30-44, 90-104
->> Socket#3 | 45-59, 105-119
->> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
->> It means that last level cache of Socket#2 is shared with
->> CPU#30-44 and 90-104.
->> When hot-removing socket#2 and #3, each core of sockets is numbered
->> as follows:
->>
->>            | CPU#
->> Socket#0 | 0-14 , 60-74
->> Socket#1 | 15-29, 75-89
->> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
->> having 0x3fff80000001fffc0000000.
->> After that, when hot-adding socket#2 and #3, each core of sockets is
->> numbered as follows:
->>
->>            | CPU#
->> Socket#0 | 0-14 , 60-74
->> Socket#1 | 15-29, 75-89
->> Socket#2 | 30-59
->> Socket#3 | 90-119
->> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
->> It means that last level cache of Socket#2 is shared with CPU#30-59
->> and 90-104. So the mask has wrong value.
->> At first, I cleared hot-removed CPU number's bit from llc_shared_map
->> when hot removing CPU. But Borislav suggested that the problem will
->> disappear if readded CPU is assigned same CPU number. And llc_shared_map
->> must not be changed.
->> ==
->>
->> So, please.
+On Tue, Sep 23, 2014 at 01:21:11AM +0100, Bryan O'Donoghue wrote:
+> Quark X1000 contains two designware derived 8250 serial ports.
+> Each port has a unique PCI configuration space consisting of
+> BAR0:UART BAR1:DMA respectively.
 > 
-> As I mentioned before, we still observe calltrace after Yasuaki's patch
-> applied.
-> https://lkml.org/lkml/2014/7/29/40
+> Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
+> The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
+> bitrate of up to about 2.76 megabits per second.
 > 
-Yes. 
-I just wanted to say we need your patch by showing real hardware case.
-Sorry for confusion I just reused his explanation of the problem.
+> This patch enables standard 8250 mode
+> 
+> Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-I know Yasuaki's original trial was clearing llc_shared map as you do.
+Looks good to me. FWIW..
 
-> Actually I prefer to merge both patches, one for fix llc shared map
-> unreleased during hotplug and the other one for assign same CPU number
-> to readded CPU.
-> 
-I agree. 
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
 Thanks,
--Kame
 
+-- 
+heikki
