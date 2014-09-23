@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783AbaIWEnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:43:10 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:58547 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080AbaIWEmr (ORCPT
+	id S1754199AbaIWEqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:46:32 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:62356 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575AbaIWEnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:42:47 -0400
+	Tue, 23 Sep 2014 00:43:07 -0400
 From: behanw@converseincode.com
 To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
         fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
@@ -20,11 +20,12 @@ Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
         neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
         thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
         torvalds@linux-foundation.org,
-        Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirqus@gmail.com>
-Subject: [PATCH v4 01/12] crypto: LLVMLinux: Add macro to remove use of VLAIS in crypto code
-Date: Mon, 22 Sep 2014 21:42:06 -0700
-Message-Id: <1411447337-22362-2-git-send-email-behanw@converseincode.com>
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu,
+        gmazyland@gmail.com
+Subject: [PATCH v4 08/12] crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
+Date: Mon, 22 Sep 2014 21:42:13 -0700
+Message-Id: <1411447337-22362-9-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411447337-22362-1-git-send-email-behanw@converseincode.com>
 References: <1411447337-22362-1-git-send-email-behanw@converseincode.com>
@@ -35,52 +36,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-Add a macro which replaces the use of a Variable Length Array In Struct (VLAIS)
-with a C99 compliant equivalent. This macro instead allocates the appropriate
-amount of memory using an char array.
+Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+compliant equivalent. This patch allocates the appropriate amount of memory
+using a char array using the SHASH_DESC_ON_STACK macro.
 
 The new code can be compiled with both gcc and clang.
 
-struct shash_desc contains a flexible array member member ctx declared with
-CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-of the array declared after struct shash_desc with long long.
-
-No trailing padding is required because it is not a struct type that can
-be used in an array.
-
-The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-as would be the case for a struct containing a member with
-CRYPTO_MINALIGN_ATTR.
-
-If you want to get to the ctx at the end of the shash_desc as before you can do
-so using shash_desc_ctx(shash)
-
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
 Signed-off-by: Behan Webster <behanw@converseincode.com>
 Reviewed-by: Mark Charlebois <charlebm@gmail.com>
 Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Michał Mirosław <mirqus@gmail.com>
+Cc: pageexec@freemail.hu
+Cc: gmazyland@gmail.com
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- include/crypto/hash.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/md/dm-crypt.c | 34 ++++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 20 deletions(-)
 
-diff --git a/include/crypto/hash.h b/include/crypto/hash.h
-index a391955..74b13ec 100644
---- a/include/crypto/hash.h
-+++ b/include/crypto/hash.h
-@@ -58,6 +58,11 @@ struct shash_desc {
- 	void *__ctx[] CRYPTO_MINALIGN_ATTR;
- };
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index cd15e08..fc93b93 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -526,29 +526,26 @@ static int crypt_iv_lmk_one(struct crypt_config *cc, u8 *iv,
+ 			    u8 *data)
+ {
+ 	struct iv_lmk_private *lmk = &cc->iv_gen_private.lmk;
+-	struct {
+-		struct shash_desc desc;
+-		char ctx[crypto_shash_descsize(lmk->hash_tfm)];
+-	} sdesc;
++	SHASH_DESC_ON_STACK(desc, lmk->hash_tfm);
+ 	struct md5_state md5state;
+ 	__le32 buf[4];
+ 	int i, r;
  
-+#define SHASH_DESC_ON_STACK(shash, ctx)				  \
-+	char __##shash##_desc[sizeof(struct shash_desc) +	  \
-+		crypto_shash_descsize(ctx)] CRYPTO_MINALIGN_ATTR; \
-+	struct shash_desc *shash = (struct shash_desc *)__##shash##_desc
-+
- struct shash_alg {
- 	int (*init)(struct shash_desc *desc);
- 	int (*update)(struct shash_desc *desc, const u8 *data,
+-	sdesc.desc.tfm = lmk->hash_tfm;
+-	sdesc.desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++	desc->tfm = lmk->hash_tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+-	r = crypto_shash_init(&sdesc.desc);
++	r = crypto_shash_init(desc);
+ 	if (r)
+ 		return r;
+ 
+ 	if (lmk->seed) {
+-		r = crypto_shash_update(&sdesc.desc, lmk->seed, LMK_SEED_SIZE);
++		r = crypto_shash_update(desc, lmk->seed, LMK_SEED_SIZE);
+ 		if (r)
+ 			return r;
+ 	}
+ 
+ 	/* Sector is always 512B, block size 16, add data of blocks 1-31 */
+-	r = crypto_shash_update(&sdesc.desc, data + 16, 16 * 31);
++	r = crypto_shash_update(desc, data + 16, 16 * 31);
+ 	if (r)
+ 		return r;
+ 
+@@ -557,12 +554,12 @@ static int crypt_iv_lmk_one(struct crypt_config *cc, u8 *iv,
+ 	buf[1] = cpu_to_le32((((u64)dmreq->iv_sector >> 32) & 0x00FFFFFF) | 0x80000000);
+ 	buf[2] = cpu_to_le32(4024);
+ 	buf[3] = 0;
+-	r = crypto_shash_update(&sdesc.desc, (u8 *)buf, sizeof(buf));
++	r = crypto_shash_update(desc, (u8 *)buf, sizeof(buf));
+ 	if (r)
+ 		return r;
+ 
+ 	/* No MD5 padding here */
+-	r = crypto_shash_export(&sdesc.desc, &md5state);
++	r = crypto_shash_export(desc, &md5state);
+ 	if (r)
+ 		return r;
+ 
+@@ -679,10 +676,7 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
+ 	struct iv_tcw_private *tcw = &cc->iv_gen_private.tcw;
+ 	u64 sector = cpu_to_le64((u64)dmreq->iv_sector);
+ 	u8 buf[TCW_WHITENING_SIZE];
+-	struct {
+-		struct shash_desc desc;
+-		char ctx[crypto_shash_descsize(tcw->crc32_tfm)];
+-	} sdesc;
++	SHASH_DESC_ON_STACK(desc, tcw->crc32_tfm);
+ 	int i, r;
+ 
+ 	/* xor whitening with sector number */
+@@ -691,16 +685,16 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
+ 	crypto_xor(&buf[8], (u8 *)&sector, 8);
+ 
+ 	/* calculate crc32 for every 32bit part and xor it */
+-	sdesc.desc.tfm = tcw->crc32_tfm;
+-	sdesc.desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++	desc->tfm = tcw->crc32_tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+ 	for (i = 0; i < 4; i++) {
+-		r = crypto_shash_init(&sdesc.desc);
++		r = crypto_shash_init(desc);
+ 		if (r)
+ 			goto out;
+-		r = crypto_shash_update(&sdesc.desc, &buf[i * 4], 4);
++		r = crypto_shash_update(desc, &buf[i * 4], 4);
+ 		if (r)
+ 			goto out;
+-		r = crypto_shash_final(&sdesc.desc, &buf[i * 4]);
++		r = crypto_shash_final(desc, &buf[i * 4]);
+ 		if (r)
+ 			goto out;
+ 	}
 -- 
 1.9.1
 
