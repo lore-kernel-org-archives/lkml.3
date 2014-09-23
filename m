@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116AbaIWCey (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:34:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37517 "EHLO mail.kernel.org"
+	id S1753247AbaIWCfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:35:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37560 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013AbaIWCev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:34:51 -0400
+	id S1753133AbaIWCfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:35:05 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@nsn.com>,
-        James Hogan <james.hogan@imgtec.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 07/45] MIPS: OCTEON: make get_system_type() thread-safe
-Date: Tue, 23 Sep 2014 10:31:09 +0800
-Message-Id: <1411439507-30391-7-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 08/45] kvm: iommu: fix the third parameter of kvm_iommu_put_pages (CVE-2014-3601)
+Date: Tue, 23 Sep 2014 10:31:10 +0800
+Message-Id: <1411439507-30391-8-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
@@ -20,73 +20,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaro Koskinen <aaro.koskinen@nsn.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit 608308682addfdc7b8e2aee88f0e028331d88e4d upstream.
+commit 350b8bdd689cd2ab2c67c8a86a0be86cfa0751a7 upstream.
 
-get_system_type() is not thread-safe on OCTEON. It uses static data,
-also more dangerous issue is that it's calling cvmx_fuse_read_byte()
-every time without any synchronization. Currently it's possible to get
-processes stuck looping forever in kernel simply by launching multiple
-readers of /proc/cpuinfo:
+The third parameter of kvm_iommu_put_pages is wrong,
+It should be 'gfn - slot->base_gfn'.
 
-	(while true; do cat /proc/cpuinfo > /dev/null; done) &
-	(while true; do cat /proc/cpuinfo > /dev/null; done) &
-	...
+By making gfn very large, malicious guest or userspace can cause kvm to
+go to this error path, and subsequently to pass a huge value as size.
+Alternatively if gfn is small, then pages would be pinned but never
+unpinned, causing host memory leak and local DOS.
 
-Fix by initializing the system type string only once during the early
-boot.
+Passing a reasonable but large value could be the most dangerous case,
+because it would unpin a page that should have stayed pinned, and thus
+allow the device to DMA into arbitrary memory.  However, this cannot
+happen because of the condition that can trigger the error:
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
-Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
-Patchwork: http://patchwork.linux-mips.org/patch/7437/
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-[lizf: Backport to 3.x: adjust context]
+- out of memory (where you can't allocate even a single page)
+  should not be possible for the attacker to trigger
+
+- when exceeding the iommu's address space, guest pages after gfn
+  will also exceed the iommu's address space, and inside
+  kvm_iommu_put_pages() the iommu_iova_to_phys() will fail.  The
+  page thus would not be unpinned at all.
+
+Reported-by: Jack Morgenstein <jackm@mellanox.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/mips/cavium-octeon/setup.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ virt/kvm/iommu.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index d3a9f012..b6fb650 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -265,6 +265,18 @@ static irqreturn_t octeon_rlm_interrupt(int cpl, void *dev_id)
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 53d34f6..defc9ba 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -61,6 +61,14 @@ static pfn_t kvm_pin_pages(struct kvm *kvm, struct kvm_memory_slot *slot,
+ 	return pfn;
  }
- #endif
  
-+static char __read_mostly octeon_system_type[80];
-+
-+static int __init init_octeon_system_type(void)
++static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
 +{
-+	snprintf(octeon_system_type, sizeof(octeon_system_type), "%s (%s)",
-+		cvmx_board_type_to_string(octeon_bootinfo->board_type),
-+		octeon_model_get_string(read_c0_prid()));
++	unsigned long i;
 +
-+	return 0;
++	for (i = 0; i < npages; ++i)
++		kvm_release_pfn_clean(pfn + i);
 +}
-+early_initcall(init_octeon_system_type);
 +
- /**
-  * Return a string representing the system type
-  *
-@@ -272,11 +284,7 @@ static irqreturn_t octeon_rlm_interrupt(int cpl, void *dev_id)
-  */
- const char *octeon_board_type_string(void)
+ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
  {
--	static char name[80];
--	sprintf(name, "%s (%s)",
--		cvmx_board_type_to_string(octeon_bootinfo->board_type),
--		octeon_model_get_string(read_c0_prid()));
--	return name;
-+	return octeon_system_type;
+ 	gfn_t gfn, end_gfn;
+@@ -121,6 +129,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
++			kvm_unpin_pages(kvm, pfn, page_size);
+ 			goto unmap_pages;
+ 		}
+ 
+@@ -132,7 +141,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 	return 0;
+ 
+ unmap_pages:
+-	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn);
++	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn - slot->base_gfn);
+ 	return r;
  }
  
- const char *get_system_type(void)
+@@ -274,14 +283,6 @@ out_unlock:
+ 	return r;
+ }
+ 
+-static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < npages; ++i)
+-		kvm_release_pfn_clean(pfn + i);
+-}
+-
+ static void kvm_iommu_put_pages(struct kvm *kvm,
+ 				gfn_t base_gfn, unsigned long npages)
+ {
 -- 
 1.7.9.5
 
