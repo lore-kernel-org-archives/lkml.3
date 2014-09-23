@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632AbaIWMRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:17:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56067 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755278AbaIWMRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:17:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,579,1406617200"; 
-   d="scan'208";a="595544977"
-Date: Tue, 23 Sep 2014 15:17:12 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
-Message-ID: <20140923121712.GD18814@xps8300>
-References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1408535728-10518-3-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1755689AbaIWMRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:17:31 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:45977 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646AbaIWMR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:17:28 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 23 Sep 2014 14:14:55 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 08/10] rtc: at91sam9: use clk API instead of relying
+ on AT91_SLOW_CLOCK
+Message-ID: <20140923121455.GC404@localhost>
+References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1411471444-2764-9-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408535728-10518-3-git-send-email-heikki.krogerus@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1411471444-2764-9-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
-> Most devices are configured for 32-bit DMA addresses.
-> Setting the mask to 32-bit here removes the need for the
-> drivers to do it separately.
-
-Rafael, is this OK?
-
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
->  drivers/acpi/acpi_platform.c | 2 ++
->  1 file changed, 2 insertions(+)
+On Tue, Sep 23, 2014 at 01:24:02PM +0200, Boris BREZILLON wrote:
+> The RTT block is using the slow clock which is accessible through the clk
+> API.
+> Use the clk API to retrieve, enable and get the slow clk rate instead of
+> the AT91_SLOW_CLOCK macro (which hardcodes the slow clk rate).
+> Doing this allows us to reference the clk thus preventing the CCF from
+> disabling it during the "disable unused" phase.
 > 
-> diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-> index 2bf9082..8d099e6 100644
-> --- a/drivers/acpi/acpi_platform.c
-> +++ b/drivers/acpi/acpi_platform.c
-> @@ -16,6 +16,7 @@
->  #include <linux/err.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/dma-mapping.h>
->  #include <linux/platform_device.h>
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Acked-by: Johan Hovold <johan@kernel.org>
+> ---
+>  drivers/rtc/rtc-at91sam9.c | 28 ++++++++++++++++++++++++----
+>  1 file changed, 24 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+> index be9c28b..2eca624 100644
+> --- a/drivers/rtc/rtc-at91sam9.c
+> +++ b/drivers/rtc/rtc-at91sam9.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/io.h>
+>  #include <linux/mfd/syscon.h>
+>  #include <linux/regmap.h>
+> +#include <linux/clk.h>
 >  
->  #include "internal.h"
-> @@ -102,6 +103,7 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
->  	pdevinfo.res = resources;
->  	pdevinfo.num_res = count;
->  	pdevinfo.acpi_node.companion = adev;
-> +	pdevinfo.dma_mask = DMA_BIT_MASK(32);
->  	pdev = platform_device_register_full(&pdevinfo);
->  	if (IS_ERR(pdev))
->  		dev_err(&adev->dev, "platform device creation failed: %ld\n",
-> -- 
-> 2.1.0
+>  /*
+>   * This driver uses two configurable hardware resources that live in the
+> @@ -61,8 +62,6 @@
+>  #define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
+>  #define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
+>  
+> -#define AT91_SLOW_CLOCK		32768
+> -
+>  /*
+>   * We store ALARM_DISABLED in ALMV to record that no alarm is set.
+>   * It's also the reset value for that field.
+> @@ -77,6 +76,7 @@ struct sam9_rtc {
+>  	struct regmap		*gpbr;
+>  	unsigned int		gpbr_offset;
+>  	int 			irq;
+> +	struct clk		*sclk;
+>  };
+>  
+>  #define rtt_readl(rtc, field) \
+> @@ -328,6 +328,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
+>  	struct sam9_rtc	*rtc;
+>  	int		ret, irq;
+>  	u32		mr;
+> +	unsigned int	sclk_rate;
+>  
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0) {
+> @@ -385,11 +386,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> +	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(rtc->sclk))
+> +		return PTR_ERR(rtc->sclk);
+> +
+> +	sclk_rate = clk_get_rate(rtc->sclk);
+> +	if (!sclk_rate || sclk_rate > AT91_RTT_RTPRES) {
+> +		dev_err(&pdev->dev, "Invalid slow clock rate");
 
--- 
-heikki
+dev_err message needs a newline.
+
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = clk_prepare_enable(rtc->sclk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not enable slow clock");
+
+Here too.
+
+Johan
