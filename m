@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaIWOat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:30:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58293 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755446AbaIWO3m (ORCPT
+	id S1756095AbaIWObA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:31:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:19071 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753971AbaIWOa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:29:42 -0400
-Date: Tue, 23 Sep 2014 16:29:22 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/9] Documentation: bindings: net: add the Marvell
- PXA168 Ethernet controller
-Message-ID: <20140923142922.GE18924@kwain>
-References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com>
- <1411474536-22626-4-git-send-email-antoine.tenart@free-electrons.com>
- <51745791.Wuu5QiQB2e@wuerfel>
- <20140923140113.GC18924@kwain>
+	Tue, 23 Sep 2014 10:30:58 -0400
+Date: Tue, 23 Sep 2014 10:30:53 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] signal: simplify deadlock-avoidance in
+ lock_task_sighand()
+Message-ID: <20140923103053.7da6b7f8@gandalf.local.home>
+In-Reply-To: <20140923142037.GG3312@worktop.programming.kicks-ass.net>
+References: <20140922164404.GA28910@redhat.com>
+	<20140922164437.GA28939@redhat.com>
+	<20140922145828.4d06108a@gandalf.local.home>
+	<20140922191130.GA4527@redhat.com>
+	<20140922172405.71c4a110@gandalf.local.home>
+	<54215D52.8030201@redhat.com>
+	<20140923142037.GG3312@worktop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140923140113.GC18924@kwain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 04:01:13PM +0200, Antoine Tenart wrote:
-> Arnd,
+On Tue, 23 Sep 2014 16:20:37 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Tue, Sep 23, 2014 at 07:45:22AM -0400, Rik van Riel wrote:
 > 
-> On Tue, Sep 23, 2014 at 02:38:39PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 23 September 2014 14:15:30 Antoine Tenart wrote:
-> > > +Optional properties:
-> > > +- port-id: should be '0','1' or '2'.
-> > > +- phy-addr: MDIO address of the PHY.
-> > > +- local-mac-address: see ethernet.txt file in the same directory.
-> > > +
+> > > I really thing the preempt_disable/enable is not needed.
 > > > 
+> > > Paul, Thomas, care to comment?
 > > 
-> > I believe new bindings should not use "phy-addr" properties, but
-> > instead use a phy-handle property pointing to a phy device instead.
+> > I suspect you are right.  On normal kernels, rcu_read_lock() will
+> > ensure preemption is disabled.
+> > 
+> > On -rt, the locks within are all sleepable mutexes.
+> > 
+> > Either way, things should be ok.
 > 
+> But with CONFIG_PREEMPT we get preemptible RCU but not the
+> spinlock->rt_mutex conversion.
 
-So I had a look on other Ethernet bindings. Would you agree with
-something like the following?
+Right, I was about to say that. That is, rcu_read_lock() in mainline
+does not always disable preemption (See CONFIG_PREEMPT_RCU).
 
-	eth0: ethernet@f7b90000 {
-		...
-		#address-cells = <1>;
-		#size-cells = <0>;
-		phy-handle = <&ethphy0>;
+But I still think this should be safe. I don't see the siglock ever
+being taking in the scheduler or by rt_mutex_unlock().
 
-		ethphy0: ethernet-phy@0 {
-			reg = <0>;
-		};
-	};
-
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+-- Steve
