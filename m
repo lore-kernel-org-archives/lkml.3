@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaIWNZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:25:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38280 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133AbaIWNZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:25:56 -0400
-Date: Tue, 23 Sep 2014 15:25:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140923132553.GB10046@dhcp22.suse.cz>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144436.GG336@dhcp22.suse.cz>
- <20140922155049.GA6630@cmpxchg.org>
- <20140922172800.GA4343@dhcp22.suse.cz>
- <20140922195829.GA5197@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922195829.GA5197@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755979AbaIWN0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:26:46 -0400
+Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:46050 "EHLO
+	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaIWN0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 09:26:40 -0400
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+To: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Cc: davem@davemloft.net, ebiederm@xmission.com, stephen@networkplumber.org,
+        akpm@linux-foundation.org, luto@amacapital.net,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Subject: [RFC PATCH net-next v2 3/5] rtnl: add link netns id to interface messages
+Date: Tue, 23 Sep 2014 15:20:28 +0200
+Message-Id: <1411478430-4989-4-git-send-email-nicolas.dichtel@6wind.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-09-14 15:58:29, Johannes Weiner wrote:
-> On Mon, Sep 22, 2014 at 07:28:00PM +0200, Michal Hocko wrote:
-> > On Mon 22-09-14 11:50:49, Johannes Weiner wrote:
-> > > On Mon, Sep 22, 2014 at 04:44:36PM +0200, Michal Hocko wrote:
-> > > > On Fri 19-09-14 09:22:08, Johannes Weiner wrote:
-> > [...]
-> > > > Nevertheless I think that the counter should live outside of memcg (it
-> > > > is ugly and bad in general to make HUGETLB controller depend on MEMCG
-> > > > just to have a counter). If you made kernel/page_counter.c and led both
-> > > > containers select CONFIG_PAGE_COUNTER then you do not need a dependency
-> > > > on MEMCG and I would find it cleaner in general.
-> > > 
-> > > The reason I did it this way is because the hugetlb controller simply
-> > > accounts and limits a certain type of memory and in the future I would
-> > > like to make it a memcg extension, just like kmem and swap.
-> > 
-> > I am not sure this is the right way to go. Hugetlb has always been
-> > "special" and I do not see any advantage to pull its specialness into
-> > memcg proper.
-> >
-> > It would just make the code more complicated. I can also imagine
-> > users who simply do not want to pay memcg overhead and use only
-> > hugetlb controller.
-> 
-> We already group user memory, kernel memory, and swap space together,
-> what makes hugetlb-backed memory special?
+This patch adds a new attribute (IFLA_LINK_NETNSID) which contains the 'link'
+netns id when this netns is different from the netns where the interface
+stands (for example for x-net interfaces like ip tunnels). When there is no id,
+because user ns of link netns and interface netns is not the same, we put 0
+into this attribute (id 0 is not valid) to indicate to userland that the link
+netns is different from the interface netns. Hence, userland knows that some
+information like IFLA_LINK are not interpretable.
 
-There is only a little overlap between LRU backed and kmem accounted
-memory with hugetlb which has always been standing aside from the rest
-of the memory management code (THP being a successor which fits in much
-better and which is already covered by memcg). It has basically its own
-code path for every aspect of its object life cycle and internal data
-structures which are in many ways not compatible with regular user or
-kmem memory. Merging the controllers would require to merge hugetlb code
-closer the MM code. Until then it just doesn't make sense to me.
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+---
+ include/net/rtnetlink.h      |  2 ++
+ include/uapi/linux/if_link.h |  1 +
+ net/core/rtnetlink.c         | 22 ++++++++++++++++++++++
+ 3 files changed, 25 insertions(+)
 
-> It's much easier to organize the code if all those closely related
-> things are grouped together.
-
-Could you be more specific please? How can pulling hugetlb details would
-help other !hugetlb code paths?
-
-> It's also better for the user interface to have a single memory
-> controller.
-
-I have seen so much confusion coming from hugetlb vs. THP that I think
-the quite opposite is true. Besides that we would need a separate limit
-for hugetlb accounted memory anyway so having a small and specialized
-controller for specialized memory sounds like a proper way to go.
-
-Finally, as mentioned in previous email, you might have users interested
-only in hugetlb controller with memcg disabled.
-
-> We're also close to the point where we don't differentiate between the
-> root group and dedicated groups in terms of performance, Dave's tests
-> fell apart at fairly high concurrency, and I'm already getting rid of
-> the lock he saw contended.
-
-Sure but this has nothing to do with it. Hugetlb can safely use the same
-lockless counter as a replacement for res_counter and benefit from it
-even though the contention hasn't been seen/reported yet.
-
-> The downsides of fragmenting our configuration- and testspace, our
-> user interface, and our code base by far outweigh the benefits of
-> offering a dedicated hugetlb controller.
-
-Could you be more specific please? Hugetlb has to be configured and
-tested separately whether it would be in a separate controller or not.
-
-Last but not least, even if this turns out to make some sense in
-the future please do not mix those things together here. Your
-res_counter -> page_counter transition makes a lot of sense for both
-controllers. And it is a huge improvement. I do not see any reason
-to pull a conceptually nontrivial merging/dependency of two separate
-controllers into the picture. If you think it makes some sense then
-bring that up later for a separate discussion.
-
-Thanks!
+diff --git a/include/net/rtnetlink.h b/include/net/rtnetlink.h
+index e21b9f9653c0..6c6d5393fc34 100644
+--- a/include/net/rtnetlink.h
++++ b/include/net/rtnetlink.h
+@@ -46,6 +46,7 @@ static inline int rtnl_msg_family(const struct nlmsghdr *nlh)
+  *			    to create when creating a new device.
+  *	@get_num_rx_queues: Function to determine number of receive queues
+  *			    to create when creating a new device.
++ *	@get_link_net: Function to get the i/o netns of the device
+  */
+ struct rtnl_link_ops {
+ 	struct list_head	list;
+@@ -93,6 +94,7 @@ struct rtnl_link_ops {
+ 	int			(*fill_slave_info)(struct sk_buff *skb,
+ 						   const struct net_device *dev,
+ 						   const struct net_device *slave_dev);
++	struct net		*(*get_link_net)(const struct net_device *dev);
+ };
+ 
+ int __rtnl_link_register(struct rtnl_link_ops *ops);
+diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+index c80f95f6ee78..21dd2bcb295f 100644
+--- a/include/uapi/linux/if_link.h
++++ b/include/uapi/linux/if_link.h
+@@ -145,6 +145,7 @@ enum {
+ 	IFLA_CARRIER,
+ 	IFLA_PHYS_PORT_ID,
+ 	IFLA_CARRIER_CHANGES,
++	IFLA_LINK_NETNSID,
+ 	__IFLA_MAX
+ };
+ 
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index a6882686ca3a..99ed83c62685 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -862,6 +862,7 @@ static noinline size_t if_nlmsg_size(const struct net_device *dev,
+ 	       + nla_total_size(1) /* IFLA_OPERSTATE */
+ 	       + nla_total_size(1) /* IFLA_LINKMODE */
+ 	       + nla_total_size(4) /* IFLA_CARRIER_CHANGES */
++	       + nla_total_size(4) /* IFLA_LINK_NETNSID */
+ 	       + nla_total_size(ext_filter_mask
+ 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
+ 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
+@@ -1134,6 +1135,27 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 			goto nla_put_failure;
+ 	}
+ 
++	if (dev->rtnl_link_ops &&
++	    dev->rtnl_link_ops->get_link_net) {
++		struct net *link_net = dev->rtnl_link_ops->get_link_net(dev);
++
++		if (!net_eq(dev_net(dev), link_net)) {
++			int id = peernet2id(dev_net(dev), link_net);
++
++			/* If the link netns is not in the same user ns, put id
++			 * 0 in IFLA_LINK_NETNSID to indicate to userland that
++			 * the link netns is not the current netns, but that it
++			 * don't have access to it.
++			 */
++			if (id == -EPERM)
++				id = 0;
++
++			if (id >= 0 &&
++			    nla_put_u32(skb, IFLA_LINK_NETNSID, id))
++				goto nla_put_failure;
++		}
++	}
++
+ 	if (!(af_spec = nla_nest_start(skb, IFLA_AF_SPEC)))
+ 		goto nla_put_failure;
+ 
 -- 
-Michal Hocko
-SUSE Labs
+2.1.0
+
