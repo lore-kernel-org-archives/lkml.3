@@ -1,140 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaIWWpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:45:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231AbaIWWps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:45:48 -0400
-Message-ID: <1411512325.24563.59.camel@ul30vt.home>
-Subject: Re: [PATCHv7 07/26] driver core: amba: add device binding path
- 'driver_override'
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, kvm@vger.kernel.org,
-        christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com, Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Sep 2014 16:45:25 -0600
-In-Reply-To: <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756976AbaIWWsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:48:39 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:61282 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759AbaIWWsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 18:48:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdZJajGr+Y4OTBf0W697G9ipBKH-y67EU69C-6cCiVbSRw@mail.gmail.com>
+References: <1411031032-20649-1-git-send-email-gvormayr@gmail.com>
+	<CACRpkdZJajGr+Y4OTBf0W697G9ipBKH-y67EU69C-6cCiVbSRw@mail.gmail.com>
+Date: Wed, 24 Sep 2014 00:48:36 +0200
+Message-ID: <CAN+KFvYH_QcaUD5sgqYQTrTtWz7Sh+vV=f=X2D1NFgDBLHqgjA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] gpio: Fix ngpio in gpio-xilinx driver
+From: Gernot Vormayr <gvormayr@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
-> As already demonstrated with PCI [1] and the platform bus [2], a
-> driver_override property in sysfs can be used to bypass the id matching
-> of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
-> device requested by the user.
-> 
-> [1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
-> [2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/amba/bus.c       | 44 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/amba/bus.h |  1 +
->  2 files changed, 45 insertions(+)
-
-Why are 7 & 8 being dragged into this series?  Combine them into a
-single patch and post it separately.
-
-> 
-> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-> index 3cf61a1..473177c 100644
-> --- a/drivers/amba/bus.c
-> +++ b/drivers/amba/bus.c
-> @@ -17,6 +17,7 @@
->  #include <linux/pm_runtime.h>
->  #include <linux/amba/bus.h>
->  #include <linux/sizes.h>
-> +#include <linux/limits.h>
->  
->  #include <asm/irq.h>
->  
-> @@ -42,6 +43,10 @@ static int amba_match(struct device *dev, struct device_driver *drv)
->  	struct amba_device *pcdev = to_amba_device(dev);
->  	struct amba_driver *pcdrv = to_amba_driver(drv);
->  
-> +	/* When driver_override is set, only bind to the matching driver */
-> +	if (pcdev->driver_override)
-> +		return !strcmp(pcdev->driver_override, drv->name);
-> +
->  	return amba_lookup(pcdrv->id_table, pcdev) != NULL;
->  }
->  
-> @@ -58,6 +63,44 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
->  	return retval;
->  }
->  
-> +static ssize_t driver_override_show(struct device *_dev,
-> +				    struct device_attribute *attr, char *buf)
-> +{
-> +	struct amba_device *dev = to_amba_device(_dev);
-> +
-> +	return sprintf(buf, "%s\n", dev->driver_override);
-> +}
-> +
-> +static ssize_t driver_override_store(struct device *_dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
-> +{
-> +	struct amba_device *dev = to_amba_device(_dev);
-> +	char *driver_override, *old = dev->driver_override, *cp;
-> +
-> +	if (count > PATH_MAX)
-> +		return -EINVAL;
-> +
-> +	driver_override = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!driver_override)
-> +		return -ENOMEM;
-> +
-> +	cp = strchr(driver_override, '\n');
-> +	if (cp)
-> +		*cp = '\0';
-> +
-> +	if (strlen(driver_override)) {
-> +		dev->driver_override = driver_override;
-> +	} else {
-> +	       kfree(driver_override);
-> +	       dev->driver_override = NULL;
-> +	}
-> +
-> +	kfree(old);
-> +
-> +	return count;
-> +}
-> +
->  #define amba_attr_func(name,fmt,arg...)					\
->  static ssize_t name##_show(struct device *_dev,				\
->  			   struct device_attribute *attr, char *buf)	\
-> @@ -80,6 +123,7 @@ amba_attr_func(resource, "\t%016llx\t%016llx\t%016lx\n",
->  static struct device_attribute amba_dev_attrs[] = {
->  	__ATTR_RO(id),
->  	__ATTR_RO(resource),
-> +	__ATTR_RW(driver_override),
->  	__ATTR_NULL,
->  };
->  
-> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> index fdd7e1b..7c011e7 100644
-> --- a/include/linux/amba/bus.h
-> +++ b/include/linux/amba/bus.h
-> @@ -32,6 +32,7 @@ struct amba_device {
->  	struct clk		*pclk;
->  	unsigned int		periphid;
->  	unsigned int		irq[AMBA_NR_IRQS];
-> +	char			*driver_override;
->  };
->  
->  struct amba_driver {
+On Tue, Sep 23, 2014 at 5:38 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>
+> The fact that the same code appears in two places tells us something
+> is not quite right. Can you look into consolidating this (in a separate
+> patch)?
 
 
+Well, I already thought about that, but since the second time is for the
+second part of a dual gpio, which has different device tree property names,
+the only way of consolidating that I can think of right now would be to
+create a function that takes the property names. If you think that's ok,
+I can try to come up with something.
 
+Cheers,
+Gernot Vormayr
