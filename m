@@ -1,314 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138AbaIWV4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:56:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756846AbaIWV4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:56:21 -0400
-Message-ID: <1411509370.24563.35.camel@ul30vt.home>
-Subject: Re: [PATCH v2 13/13] vfio: powerpc/spapr: Enable Dynamic DMA windows
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Tue, 23 Sep 2014 15:56:10 -0600
-In-Reply-To: <1411441262-11025-14-git-send-email-aik@ozlabs.ru>
-References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
-	 <1411441262-11025-14-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757167AbaIWV5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:57:37 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59776 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757053AbaIWV5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 17:57:36 -0400
+Date: Tue, 23 Sep 2014 14:57:31 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Pramod Gurav <pramod.gurav@smartplayin.com>
+Subject: Re: [PATCH v2] pinctrl: qcom: use restart_notifier mechanism for
+ ps_hold
+Message-ID: <20140923215731.GC15481@roeck-us.net>
+References: <1411505993-8414-1-git-send-email-joshc@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411505993-8414-1-git-send-email-joshc@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 13:01 +1000, Alexey Kardashevskiy wrote:
-> This defines and implements VFIO IOMMU API which lets the userspace
-> create and remove DMA windows.
+On Tue, Sep 23, 2014 at 03:59:53PM -0500, Josh Cartwright wrote:
+> By converting to the restart_notifier mechanism for restart, we allow
+> for other mechanisms, like the watchdog, to be used for restart in the
+> case where PS_HOLD has failed to reset the chip.
 > 
-> This updates VFIO_IOMMU_SPAPR_TCE_GET_INFO to return the number of
-> available windows and page mask.
+> Since this mechanism may be one of several mechanisms registered, change
+> the post-ps_hold write timeout to be a more reasonable 1 second instead
+> of 10 seconds.
 > 
-> This adds VFIO_IOMMU_SPAPR_TCE_CREATE and VFIO_IOMMU_SPAPR_TCE_REMOVE
-> to allow the user space to create and remove window(s).
+> Choose priority 128, as according to documentation, this mechanism "is
+> sufficient to restart the entire system".
 > 
-> The VFIO IOMMU driver does basic sanity checks and calls corresponding
-> SPAPR TCE functions. At the moment only IODA2 (POWER8 PCI host bridge)
-> implements them.
-> 
-> This advertises VFIO_IOMMU_SPAPR_TCE_FLAG_DDW capability via
-> VFIO_IOMMU_SPAPR_TCE_GET_INFO.
-> 
-> This calls platform DDW reset() callback when IOMMU is being disabled
-> to reset the DMA configuration to its original state.
-> 
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Tested-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+
+Looks good to me.
+
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+
 > ---
->  drivers/vfio/vfio_iommu_spapr_tce.c | 135 ++++++++++++++++++++++++++++++++++--
->  include/uapi/linux/vfio.h           |  25 ++++++-
->  2 files changed, 153 insertions(+), 7 deletions(-)
 > 
-> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-> index 0dccbc4..b518891 100644
-> --- a/drivers/vfio/vfio_iommu_spapr_tce.c
-> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-> @@ -190,18 +190,25 @@ static void tce_iommu_disable(struct tce_container *container)
+> Changes since v1:
+>   - Simplified conditional notifier block registration
+>   - Reduced wait time to 1s, which I've found to be sufficient on an IFC6410
+>     board.
+> 
+>  drivers/pinctrl/qcom/pinctrl-msm.c | 31 ++++++++++++++++++-------------
+>  1 file changed, 18 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+> index d5ed127..d30dddd 100644
+> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
+> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+> @@ -27,8 +27,7 @@
+>  #include <linux/gpio.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/spinlock.h>
+> -
+> -#include <asm/system_misc.h>
+> +#include <linux/reboot.h>
 >  
->  	container->enabled = false;
+>  #include "../core.h"
+>  #include "../pinconf.h"
+> @@ -43,6 +42,7 @@
+>   * @dev:            device handle.
+>   * @pctrl:          pinctrl handle.
+>   * @chip:           gpiochip handle.
+> + * @restart_nb:     restart notifier block.
+>   * @irq:            parent irq for the TLMM irq_chip.
+>   * @lock:           Spinlock to protect register resources as well
+>   *                  as msm_pinctrl data structures.
+> @@ -56,6 +56,7 @@ struct msm_pinctrl {
+>  	struct device *dev;
+>  	struct pinctrl_dev *pctrl;
+>  	struct gpio_chip chip;
+> +	struct notifier_block restart_nb;
+>  	int irq;
 >  
-> -	if (!container->grp || !current->mm)
-> +	if (!container->grp)
->  		return;
->  
->  	data = iommu_group_get_iommudata(container->grp);
->  	if (!data || !data->iommu_owner || !data->ops->get_table)
->  		return;
->  
-> -	tbl = data->ops->get_table(data, 0);
-> -	if (!tbl)
-> -		return;
-> +	if (current->mm) {
-> +		tbl = data->ops->get_table(data, 0);
-> +		if (tbl)
-> +			decrement_locked_vm(tbl);
->  
-> -	decrement_locked_vm(tbl);
-> +		tbl = data->ops->get_table(data, 1);
-> +		if (tbl)
-> +			decrement_locked_vm(tbl);
-> +	}
-> +
-> +	if (data->ops->reset)
-> +		data->ops->reset(data);
+>  	spinlock_t lock;
+> @@ -852,13 +853,14 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
+>  	return 0;
 >  }
 >  
->  static void *tce_iommu_open(unsigned long arg)
-> @@ -243,7 +250,7 @@ static long tce_iommu_ioctl(void *iommu_data,
->  				 unsigned int cmd, unsigned long arg)
+> -#ifdef CONFIG_ARM
+> -static void __iomem *msm_ps_hold;
+> -
+> -static void msm_reset(enum reboot_mode reboot_mode, const char *cmd)
+> +static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
+> +			       void *data)
 >  {
->  	struct tce_container *container = iommu_data;
-> -	unsigned long minsz;
-> +	unsigned long minsz, ddwsz;
->  	long ret;
+> -	writel(0, msm_ps_hold);
+> -	mdelay(10000);
+> +	struct msm_pinctrl *pctrl = container_of(nb, struct msm_pinctrl, restart_nb);
+> +
+> +	writel(0, pctrl->regs + PS_HOLD_OFFSET);
+> +	mdelay(1000);
+> +	return NOTIFY_DONE;
+>  }
 >  
->  	switch (cmd) {
-> @@ -288,6 +295,28 @@ static long tce_iommu_ioctl(void *iommu_data,
->  		info.dma32_window_size = tbl->it_size << tbl->it_page_shift;
->  		info.flags = 0;
+>  static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
+> @@ -868,13 +870,14 @@ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
 >  
-> +		ddwsz = offsetofend(struct vfio_iommu_spapr_tce_info,
-> +				page_size_mask);
-> +
-> +		if (info.argsz == ddwsz) {
-
->=
-
-> +			if (data->ops->query && data->ops->create &&
-> +					data->ops->remove) {
-> +				info.flags |= VFIO_IOMMU_SPAPR_TCE_FLAG_DDW;
-
-I think you want to set this flag regardless of whether the user has
-provided space for it.  A valid use model is to call with the minimum
-size and look at the flags to determine if it needs to be called again
-with a larger size.
-
-> +
-> +				ret = data->ops->query(data,
-> +						&info.current_windows,
-> +						&info.windows_available,
-> +						&info.page_size_mask);
-> +				if (ret)
-> +					return ret;
-> +			} else {
-> +				info.current_windows = 0;
-> +				info.windows_available = 0;
-> +				info.page_size_mask = 0;
-> +			}
-> +			minsz = ddwsz;
-
-It's not really any longer the min size, is it?
-
-> +		}
-> +
->  		if (copy_to_user((void __user *)arg, &info, minsz))
->  			return -EFAULT;
+>  	for (; i <= pctrl->soc->nfunctions; i++)
+>  		if (!strcmp(func[i].name, "ps_hold")) {
+> -			msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
+> -			arm_pm_restart = msm_reset;
+> +			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
+> +			pctrl->restart_nb.priority = 128;
+> +			if (register_restart_handler(&pctrl->restart_nb))
+> +				dev_err(pctrl->dev,
+> +					"failed to setup restart handler.\n");
+> +			break;
+>  		}
+>  }
+> -#else
+> -static void msm_pinctrl_setup_pm_reset(const struct msm_pinctrl *pctrl) {}
+> -#endif
 >  
-> @@ -412,12 +441,106 @@ static long tce_iommu_ioctl(void *iommu_data,
->  		tce_iommu_disable(container);
->  		mutex_unlock(&container->lock);
->  		return 0;
-> +
->  	case VFIO_EEH_PE_OP:
->  		if (!container->grp)
->  			return -ENODEV;
+>  int msm_pinctrl_probe(struct platform_device *pdev,
+>  		      const struct msm_pinctrl_soc_data *soc_data)
+> @@ -943,6 +946,8 @@ int msm_pinctrl_remove(struct platform_device *pdev)
 >  
->  		return vfio_spapr_iommu_eeh_ioctl(container->grp,
->  						  cmd, arg);
-> +
-> +	case VFIO_IOMMU_SPAPR_TCE_CREATE: {
-> +		struct vfio_iommu_spapr_tce_create create;
-> +		struct spapr_tce_iommu_group *data;
-> +		struct iommu_table *tbl;
-> +
-> +		if (WARN_ON(!container->grp))
-
-redux previous comment on this warning
-
-> +			return -ENXIO;
-> +
-> +		data = iommu_group_get_iommudata(container->grp);
-> +
-> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_create,
-> +				start_addr);
-> +
-> +		if (copy_from_user(&create, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (create.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if (create.flags)
-> +			return -EINVAL;
-> +
-> +		if (!data->ops->create || !data->iommu_owner)
-> +			return -ENOSYS;
-> +
-> +		BUG_ON(!data || !data->ops || !data->ops->remove);
-
-Little late for this test since we'll oops on the previous test.  Why is
-this a BUG_ON?  A user could exploit this on a system with only a
-partial set of callbacks.
-
-> +
-> +		ret = data->ops->create(data, create.page_shift,
-> +				create.window_shift, &tbl);
-> +		if (ret)
-> +			return ret;
-> +
-> +		ret = try_increment_locked_vm(tbl);
-> +		if (ret) {
-> +			data->ops->remove(data, tbl);
-> +			return ret;
-> +		}
-> +
-> +		create.start_addr = tbl->it_offset << tbl->it_page_shift;
-> +
-> +		if (copy_to_user((void __user *)arg, &create, minsz)) {
-> +			data->ops->remove(data, tbl);
-> +			decrement_locked_vm(tbl);
-> +			return -EFAULT;
-> +		}
-> +		mutex_lock(&container->lock);
-> +		++container->windows_num;
-> +		mutex_unlock(&container->lock);
-> +
-> +		return ret;
-> +	}
-> +	case VFIO_IOMMU_SPAPR_TCE_REMOVE: {
-> +		struct vfio_iommu_spapr_tce_remove remove;
-> +		struct spapr_tce_iommu_group *data;
-> +		struct iommu_table *tbl;
-> +
-> +		if (WARN_ON(!container->grp))
-> +			return -ENXIO;
-> +
-> +		data = iommu_group_get_iommudata(container->grp);
-> +
-> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_remove,
-> +				start_addr);
-> +
-> +		if (copy_from_user(&remove, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (remove.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if (remove.flags)
-> +			return -EINVAL;
-> +
-> +		if (!data->ops->remove || !data->iommu_owner)
-
-On this one we don't both to get data/data->ops.  Is there also an
-exploit where the user can call these CREATE/REMOVE interfaces even
-though INFO doesn't expose them if only a partial set of callbacks are
-present?
-
-> +			return -ENOSYS;
-> +
-> +		tbl = spapr_tce_find_table(container, data, remove.start_addr);
-
-What happens if this returns the 0 index rather than the expected 1
-index table?  Why doesn't this call ops->find_table()?
-
-> +		if (!tbl)
-> +			return -EINVAL;
-> +
-> +		ret = data->ops->remove(data, tbl);
-> +		if (ret)
-> +			return ret;
-> +
-> +		decrement_locked_vm(tbl);
-> +
-> +		mutex_lock(&container->lock);
-> +		--container->windows_num;
-> +		mutex_unlock(&container->lock);
-> +
-> +		return 0;
-> +	}
->  	}
+>  	pinctrl_unregister(pctrl->pctrl);
 >  
->  	return -ENOTTY;
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 6612974..e71a6ef 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -451,9 +451,13 @@ struct vfio_iommu_type1_dma_unmap {
->   */
->  struct vfio_iommu_spapr_tce_info {
->  	__u32 argsz;
-> -	__u32 flags;			/* reserved for future use */
-> +	__u32 flags;
-> +#define VFIO_IOMMU_SPAPR_TCE_FLAG_DDW	1 /* Support dynamic windows */
->  	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
->  	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
-> +	__u32 current_windows;
-> +	__u32 windows_available;
-> +	__u32 page_size_mask;
->  };
->  
->  #define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
-> @@ -489,6 +493,25 @@ struct vfio_eeh_pe_op {
->  
->  #define VFIO_EEH_PE_OP			_IO(VFIO_TYPE, VFIO_BASE + 21)
->  
-> +struct vfio_iommu_spapr_tce_create {
-> +	__u32 argsz;
-> +	__u32 flags;
-> +	/* in */
-> +	__u32 page_shift;
-> +	__u32 window_shift;
-> +	/* out */
-> +	__u64 start_addr;
-> +};
-> +#define VFIO_IOMMU_SPAPR_TCE_CREATE	_IO(VFIO_TYPE, VFIO_BASE + 18)
+> +	unregister_restart_handler(&pctrl->restart_nb);
 > +
-> +struct vfio_iommu_spapr_tce_remove {
-> +	__u32 argsz;
-> +	__u32 flags;
-> +	/* in */
-> +	__u64 start_addr;
-> +};
-> +#define VFIO_IOMMU_SPAPR_TCE_REMOVE	_IO(VFIO_TYPE, VFIO_BASE + 19)
-> +
-
-Zero comments, no good.
-
->  /* ***************************************************************** */
->  
->  #endif /* _UAPIVFIO_H */
-
-
-
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(msm_pinctrl_remove);
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
