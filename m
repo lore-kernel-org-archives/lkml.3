@@ -1,58 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539AbaIWTnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:43:45 -0400
-Received: from mout.gmx.net ([212.227.15.19]:54779 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307AbaIWTnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:43:43 -0400
-Date: Tue, 23 Sep 2014 21:43:34 +0200
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John David Anglin <dave.anglin@bell.net>
-Subject: [GIT PULL] parisc fixes for v3.17
-Message-ID: <20140923194334.GA18179@p100.box>
+	id S1756320AbaIWTqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:46:07 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59276 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090AbaIWTqD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 15:46:03 -0400
+Date: Tue, 23 Sep 2014 12:45:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        oleg@redhat.com, ralf@linux-mips.org, tony.luck@intel.com,
+        linux-mips@linux-mips.org, linux-ia64@vger.kernel.org
+Subject: Re: [RFC][PATCH] sched,mips,ia64: Remove __ARCH_WANT_UNLOCKED_CTXSW
+Message-ID: <20140923194558.GA677@roeck-us.net>
+References: <20140922183612.11015.64200.stgit@localhost>
+ <20140922183618.11015.95007.stgit@localhost>
+ <20140923150641.GH3312@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140923150641.GH3312@worktop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:xdOFN1wQmwZk3v2M8nPgbswx9w67jz9Q+RC5KhEbJanKoYGxVDt
- CpM0KjUWJNRGzcJArgLzs93PKX6Be7mes25iVvehJQAxpehu8RDjsZ9n6rNz9DbSBkv18Wv
- Bi4Ohk4wo5Dc7xc5FvBdKrocBvjPgeoOoB64/kjLulIzYviFkA17FJXJrFX7T+oNeidO3co
- ytE/iG1Jvk9KP5J0rAZKA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Sep 23, 2014 at 05:06:41PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 22, 2014 at 10:36:18PM +0400, Kirill Tkhai wrote:
+> > From: Kirill Tkhai <ktkhai@parallels.com>
+> > 
+> > Architectures, which define __ARCH_WANT_UNLOCKED_CTXSW,
+> > may pull a task when it's in the middle of schedule().
+> > 
+> > CPU1(task1 calls schedule)            CPU2
+> > ...                                   schedule()
+> > ...                                      idle_balance()
+> > ...                                         load_balance()
+> > ...                                            ...
+> > schedule()                                     ...
+> >    prepare_lock_switch()                       ...
+> >       raw_spin_unlock(&rq1->lock)              ...
+> >       ...                                      raw_spin_lock(&rq1->lock)
+> >       ...                                         detach_tasks();
+> >       ...                                            can_migrate_task(task1)
+> >       ...                                         attach_tasks(); <--- move task1 to rq2
+> >       ...                                      raw_spin_unlock(&rq1->lock)
+> >       ...                                context_switch() <--- switch to task1's stack
+> >       ...                                ...
+> >    (using task1's stack)                 (using task1's stack)
+> >    ...                                   ...
+> >    context_switch()                      ...
+> > 
+> > 
+> > Parallel use of a single stack is not a good idea.
+> 
+> Indeed it is, but how about we do this instead?
+> 
+> ---
+> Subject: sched,mips,ia64: Remove __ARCH_WANT_UNLOCKED_CTXSW
+> 
+> Kirill found that there's a subtle race in the
+> __ARCH_WANT_UNLOCKED_CTXSW code, and instead of fixing it, remove the
+> entire exception because neither arch that uses it seems to actually
+> still require it.
+> 
+> Boot tested on mips64el (qemu) only.
+> 
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> ---
+>  arch/ia64/include/asm/processor.h |  1 -
+>  arch/mips/include/asm/processor.h |  6 ------
+>  kernel/sched/core.c               |  6 ------
+>  kernel/sched/sched.h              | 30 ------------------------------
 
-please pull a few late fixes for the parisc architecture for kernel 3.17 from 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.17-7
+You might also want to clean up any references to the define if you remove it.
 
-We avoid using -mfast-indirect-calls for 64bit kernel builds to prevent
-building an unbootable kernel due to latest gcc changes. In the
-pdc_stable/firmware-access driver we fix a few possible stack overflows
-and we now call secure_computing_strict() instead of secure_computing()
-which fixes upcoming SECCOMP patches in the for-next trees.
- 
-Thanks,
-Helge
+Documentation/scheduler/sched-arch.txt:you must `#define __ARCH_WANT_UNLOCKED_CTXSW` in a header file
+arch/blackfin/kernel/entry.S:    * since Blackfin does not define __ARCH_WANT_UNLOCKED_CTXSW, so
 
-----------------------------------------------------------------
-Helge Deller (2):
-      parisc: ptrace: use secure_computing_strict()
-      parisc: pdc_stable.c: Avoid potential stack overflows
+Guenter
 
-John David Anglin (1):
-      parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-
-Rickard Strandqvist (1):
-      parisc: pdc_stable.c: Cleaning up unnecessary use of memset in conjunction with strncpy
-
- arch/parisc/Makefile        |  7 ++++++-
- arch/parisc/kernel/ptrace.c |  6 ++----
- drivers/parisc/pdc_stable.c | 15 +++++++++------
- 3 files changed, 17 insertions(+), 11 deletions(-)
+>  4 files changed, 43 deletions(-)
+> 
+> diff --git a/arch/ia64/include/asm/processor.h b/arch/ia64/include/asm/processor.h
+> index c736713..ce53c50 100644
+> --- a/arch/ia64/include/asm/processor.h
+> +++ b/arch/ia64/include/asm/processor.h
+> @@ -19,7 +19,6 @@
+>  #include <asm/ptrace.h>
+>  #include <asm/ustack.h>
+>  
+> -#define __ARCH_WANT_UNLOCKED_CTXSW
+>  #define ARCH_HAS_PREFETCH_SWITCH_STACK
+>  
+>  #define IA64_NUM_PHYS_STACK_REG	96
+> diff --git a/arch/mips/include/asm/processor.h b/arch/mips/include/asm/processor.h
+> index 05f0843..f1df4cb 100644
+> --- a/arch/mips/include/asm/processor.h
+> +++ b/arch/mips/include/asm/processor.h
+> @@ -397,12 +397,6 @@ unsigned long get_wchan(struct task_struct *p);
+>  #define ARCH_HAS_PREFETCHW
+>  #define prefetchw(x) __builtin_prefetch((x), 1, 1)
+>  
+> -/*
+> - * See Documentation/scheduler/sched-arch.txt; prevents deadlock on SMP
+> - * systems.
+> - */
+> -#define __ARCH_WANT_UNLOCKED_CTXSW
+> -
+>  #endif
+>  
+>  #endif /* _ASM_PROCESSOR_H */
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 2a93b87..ccbafb0 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2304,10 +2304,6 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
+>  	 */
+>  	post_schedule(rq);
+>  
+> -#ifdef __ARCH_WANT_UNLOCKED_CTXSW
+> -	/* In this case, finish_task_switch does not reenable preemption */
+> -	preempt_enable();
+> -#endif
+>  	if (current->set_child_tid)
+>  		put_user(task_pid_vnr(current), current->set_child_tid);
+>  }
+> @@ -2350,9 +2346,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+>  	 * of the scheduler it's an obvious special-case), so we
+>  	 * do an early lockdep release here:
+>  	 */
+> -#ifndef __ARCH_WANT_UNLOCKED_CTXSW
+>  	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
+> -#endif
+>  
+>  	context_tracking_task_switch(prev, next);
+>  	/* Here we just switch the register state and the stack. */
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 1bc6aad..d87f122 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -966,7 +966,6 @@ static inline int task_on_rq_migrating(struct task_struct *p)
+>  # define finish_arch_post_lock_switch()	do { } while (0)
+>  #endif
+>  
+> -#ifndef __ARCH_WANT_UNLOCKED_CTXSW
+>  static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
+>  {
+>  #ifdef CONFIG_SMP
+> @@ -1004,35 +1003,6 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+>  	raw_spin_unlock_irq(&rq->lock);
+>  }
+>  
+> -#else /* __ARCH_WANT_UNLOCKED_CTXSW */
+> -static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
+> -{
+> -#ifdef CONFIG_SMP
+> -	/*
+> -	 * We can optimise this out completely for !SMP, because the
+> -	 * SMP rebalancing from interrupt is the only thing that cares
+> -	 * here.
+> -	 */
+> -	next->on_cpu = 1;
+> -#endif
+> -	raw_spin_unlock(&rq->lock);
+> -}
+> -
+> -static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+> -{
+> -#ifdef CONFIG_SMP
+> -	/*
+> -	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
+> -	 * We must ensure this doesn't happen until the switch is completely
+> -	 * finished.
+> -	 */
+> -	smp_wmb();
+> -	prev->on_cpu = 0;
+> -#endif
+> -	local_irq_enable();
+> -}
+> -#endif /* __ARCH_WANT_UNLOCKED_CTXSW */
+> -
+>  /*
+>   * wake flags
+>   */
