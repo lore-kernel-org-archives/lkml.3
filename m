@@ -1,55 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaIWLGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:06:19 -0400
-Received: from mail-bl2on0094.outbound.protection.outlook.com ([65.55.169.94]:9568
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753694AbaIWLGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:06:18 -0400
-X-Greylist: delayed 889 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 07:06:18 EDT
-Date: Tue, 23 Sep 2014 12:51:08 +0200
-From: Robert Richter <robert.richter@caviumnetworks.com>
-To: Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>
-CC: Robert Richter <rric@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
-Message-ID: <20140923105108.GS31556@rric.localhost>
+	id S1755567AbaIWLGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:06:54 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:53734 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694AbaIWLGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 07:06:52 -0400
+Date: Tue, 23 Sep 2014 15:06:34 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140923110634.GH18526@esperanza>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+ <20140922144158.GC20398@esperanza>
+ <20140922185736.GB6630@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140923104716.GG26472@arm.com>
- <20140923104656.GA24822@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [78.53.83.147]
-X-ClientProxiedBy: AM2PR02CA0017.eurprd02.prod.outlook.com (25.160.28.155) To
- CO2PR0701MB807.namprd07.prod.outlook.com (10.141.246.25)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO2PR0701MB807;
-X-Forefront-PRVS: 0343AC1D30
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6069001)(199003)(51704005)(189002)(24454002)(51914003)(66066001)(54356999)(50986999)(90102001)(101416001)(106356001)(64706001)(33656002)(23726002)(99396002)(85306004)(20776003)(47776003)(87976001)(102836001)(46102003)(97736003)(86362001)(46406003)(77096002)(76482002)(85852003)(74662003)(83072002)(74502003)(4396001)(77982003)(81342003)(31966008)(81542003)(50466002)(42186005)(95666004)(92566001)(97756001)(15975445006)(76506005)(21056001)(107046002)(80022003)(120916001)(92726001)(83506001)(105586002)(19580395003)(79102003)(83322001)(10300001);DIR:OUT;SFP:1101;SCL:1;SRVR:CO2PR0701MB807;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+In-Reply-To: <20140922185736.GB6630@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.09.14 11:46:56, Mark Rutland wrote:
-> On Tue, Sep 23, 2014 at 11:44:31AM +0100, Robert Richter wrote:
-> > On 08.09.14 13:44:48, Robert Richter wrote:
-> > Catalin, Will,
+On Mon, Sep 22, 2014 at 02:57:36PM -0400, Johannes Weiner wrote:
+> On Mon, Sep 22, 2014 at 06:41:58PM +0400, Vladimir Davydov wrote:
+> > On Fri, Sep 19, 2014 at 09:22:08AM -0400, Johannes Weiner wrote:
+> > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > > index 19df5d857411..bf8fb1a05597 100644
+> > > --- a/include/linux/memcontrol.h
+> > > +++ b/include/linux/memcontrol.h
+> > > @@ -54,6 +54,38 @@ struct mem_cgroup_reclaim_cookie {
+> > >  };
+> > >  
+> > >  #ifdef CONFIG_MEMCG
+> > > +
+> > > +struct page_counter {
 > > 
-> > please consider applying this patch.
+> > I'd place it in a separate file, say
+> > 
+> > 	include/linux/page_counter.h
+> > 	mm/page_counter.c
+> > 
+> > just to keep mm/memcontrol.c clean.
 > 
-> This is already in the arm64 for-next/core branch [1].
-> 
-> Mark.
-> 
-> [1] https://git.kernel.org/cgit/linux/kernel/git/arm64/linux.git/commit/?h=for-next/core&id=e3672649faae400e8a598938766a63f395a27ae6
+> The page counters are the very core of the memory controller and, as I
+> said to Michal, I want to integrate the hugetlb controller into memcg
+> as well, at which point there won't be any outside users anymore.  So
+> I think this is the right place for it.
 
-Ah, thanks for the pointer.
+Hmm, there might be memcg users out there that don't want to pay for
+hugetlb accounting. Or is the overhead supposed to be negligible?
 
--Robert
+Anyway, I still don't think it's a good idea to keep all the definitions
+in the same file. memcontrol.c is already huge. Adding more code to it
+is not desirable, especially if it can naturally live in a separate
+file. And since the page_counter is independent of the memcg core and
+*looks* generic, I believe we should keep it separately.
+
+> > > +	atomic_long_t count;
+> > > +	unsigned long limit;
+> > > +	struct page_counter *parent;
+> > > +
+> > > +	/* legacy */
+> > > +	unsigned long watermark;
+> > > +	unsigned long limited;
+> > 
+> > IMHO, failcnt would fit better.
+> 
+> I never liked the failcnt name, but also have to admit that "limited"
+> is crap.  Let's leave it at failcnt for now.
+> 
+> > > +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages);
+> > 
+> > When I first saw this function, I couldn't realize by looking at its
+> > name what it's intended to do. I think
+> > 
+> > 	page_counter_cancel_local_charge()
+> > 
+> > would fit better.
+> 
+> It's a fairly unwieldy name.  How about page_counter_sub()?  local_sub()?
+
+The _sub suffix doesn't match _charge/_uncharge. May be
+page_counter_local_uncharge, or _uncharge_local?
+
+> 
+> > > +int page_counter_charge(struct page_counter *counter, unsigned long nr_pages,
+> > > +			struct page_counter **fail);
+> > > +int page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages);
+> > > +int page_counter_limit(struct page_counter *counter, unsigned long limit);
+> > 
+> > Hmm, why not page_counter_set_limit?
+> 
+> Limit is used as a verb here, "to limit".  Getters and setters are
+> usually wrappers around unusual/complex data structure access,
+
+Not necessarily. Look at percpu_counter_read e.g. It's a one-line
+getter, which we could easily live w/o, but still it's there.
+
+> but this function does a lot more, so I'm not fond of _set_limit().
+
+Nevertheless, everything it does can be perfectly described in one
+sentence "it tries to set the new value of the limit", so it does
+function as a setter. And if there's a setter, there must be a getter
+IMO.
+
+> > > @@ -1218,34 +1217,26 @@ static inline void memcg_memory_allocated_add(struct cg_proto *prot,
+> > >  					      unsigned long amt,
+> > >  					      int *parent_status)
+> > >  {
+> > > -	struct res_counter *fail;
+> > > -	int ret;
+> > > +	page_counter_charge(&prot->memory_allocated, amt, NULL);
+> > >  
+> > > -	ret = res_counter_charge_nofail(&prot->memory_allocated,
+> > > -					amt << PAGE_SHIFT, &fail);
+> > > -	if (ret < 0)
+> > > +	if (atomic_long_read(&prot->memory_allocated.count) >
+> > > +	    prot->memory_allocated.limit)
+> > 
+> > I don't like your equivalent of res_counter_charge_nofail.
+> > 
+> > Passing NULL to page_counter_charge might be useful if one doesn't have
+> > a back-off strategy, but still want to fail on hitting the limit. With
+> > your interface the user must pass something to the function then, which
+> > isn't convenient.
+> > 
+> > Besides, it depends on the internal implementation of the page_counter
+> > struct. I'd encapsulate this.
+> 
+> Thinking about this more, I don't like my version either; not because
+> of how @fail must always be passed, but because of how it changes the
+> behavior.  I changed the API to
+> 
+> void page_counter_charge(struct page_counter *counter, unsigned long nr_pages);
+> int page_counter_try_charge(struct page_counter *counter, unsigned long nr_pages,
+>                             struct page_counter **fail);
+
+That looks good to me. I would also add something like
+
+  bool page_counter_exceeds_limit(struct page_counter *counter);
+
+to use instead of this
+
++	if (atomic_long_read(&prot->memory_allocated.count) >
++	    prot->memory_allocated.limit)
+
+> We could make @fail optional in the try_charge(), but all callsites
+> pass it at this time, so for now I kept it mandatory for simplicity.
+
+It doesn't really matter to me. Both variants are fine.
+
+[...]
+> > > @@ -222,61 +220,73 @@ void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+> > >  	if (unlikely(!h_cg))
+> > >  		return;
+> > >  	set_hugetlb_cgroup(page, NULL);
+> > > -	res_counter_uncharge(&h_cg->hugepage[idx], csize);
+> > > +	page_counter_uncharge(&h_cg->hugepage[idx], nr_pages);
+> > >  	return;
+> > >  }
+> > >  
+> > >  void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+> > >  				    struct hugetlb_cgroup *h_cg)
+> > >  {
+> > > -	unsigned long csize = nr_pages * PAGE_SIZE;
+> > > -
+> > >  	if (hugetlb_cgroup_disabled() || !h_cg)
+> > >  		return;
+> > >  
+> > >  	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
+> > >  		return;
+> > >  
+> > > -	res_counter_uncharge(&h_cg->hugepage[idx], csize);
+> > > +	page_counter_uncharge(&h_cg->hugepage[idx], nr_pages);
+> > >  	return;
+> > >  }
+> > >  
+> > > +enum {
+> > > +	RES_USAGE,
+> > > +	RES_LIMIT,
+> > > +	RES_MAX_USAGE,
+> > > +	RES_FAILCNT,
+> > > +};
+> > > +
+> > >  static u64 hugetlb_cgroup_read_u64(struct cgroup_subsys_state *css,
+> > >  				   struct cftype *cft)
+> > >  {
+> > > -	int idx, name;
+> > > +	struct page_counter *counter;
+> > >  	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(css);
+> > >  
+> > > -	idx = MEMFILE_IDX(cft->private);
+> > > -	name = MEMFILE_ATTR(cft->private);
+> > > +	counter = &h_cg->hugepage[MEMFILE_IDX(cft->private)];
+> > >  
+> > > -	return res_counter_read_u64(&h_cg->hugepage[idx], name);
+> > > +	switch (MEMFILE_ATTR(cft->private)) {
+> > > +	case RES_USAGE:
+> > > +		return (u64)atomic_long_read(&counter->count) * PAGE_SIZE;
+> > 
+> > page_counter_read?
+> > 
+> > > +	case RES_LIMIT:
+> > > +		return (u64)counter->limit * PAGE_SIZE;
+> > 
+> > page_counter_get_limit?
+> > 
+> > > +	case RES_MAX_USAGE:
+> > > +		return (u64)counter->watermark * PAGE_SIZE;
+> > 
+> > page_counter_read_watermark?
+> 
+> I added page_counter_read() to abstract away the fact that we use a
+> signed counter internally, but it still returns the number of pages as
+> unsigned long.
+
+That's exactly what I meant.
+
+> The entire counter API is based on pages now, and only the userspace
+> interface translates back and forth into bytes, so that's where the
+> translation should be located.
+
+Absolutely right.
+
+[...]
+> > > @@ -288,18 +298,18 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
+> > >  static ssize_t hugetlb_cgroup_reset(struct kernfs_open_file *of,
+> > >  				    char *buf, size_t nbytes, loff_t off)
+> > >  {
+> > > -	int idx, name, ret = 0;
+> > > +	int ret = 0;
+> > > +	struct page_counter *counter;
+> > >  	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(of_css(of));
+> > >  
+> > > -	idx = MEMFILE_IDX(of_cft(of)->private);
+> > > -	name = MEMFILE_ATTR(of_cft(of)->private);
+> > > +	counter = &h_cg->hugepage[MEMFILE_IDX(of_cft(of)->private)];
+> > >  
+> > > -	switch (name) {
+> > > +	switch (MEMFILE_ATTR(of_cft(of)->private)) {
+> > >  	case RES_MAX_USAGE:
+> > > -		res_counter_reset_max(&h_cg->hugepage[idx]);
+> > > +		counter->watermark = atomic_long_read(&counter->count);
+> > 
+> > page_counter_reset_watermark?
+> 
+> Yes, that operation deserves a wrapper.
+> 
+> > >  		break;
+> > >  	case RES_FAILCNT:
+> > > -		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
+> > > +		counter->limited = 0;
+> > 
+> > page_counter_reset_failcnt?
+> 
+> That would be more obscure than counter->failcnt = 0, I think.
+
+There's one thing that bothers me about this patch. Before, all the
+functions operating on res_counter were mutually smp-safe, now they
+aren't. E.g. if the failcnt reset races with the falcnt increment from
+page_counter_try_charge, the reset might be skipped. You only use the
+atomic type for the counter, but my guess is that failcnt and watermark
+should be atomic too, at least if we're not going to get rid of them
+soon. Otherwise, it should be clearly stated that failcnt and watermark
+are racy.
+
+Anyway, that's where the usefulness of res_counter_reset_failcnt
+reveals. If one decides to make it race-free one day, they won't have to
+modify code outside the page_counter definition.
+
+> > > @@ -66,6 +65,117 @@
+> > >  
+> > >  #include <trace/events/vmscan.h>
+> > >  
+> > > +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
+> > > +{
+> > > +	long new;
+> > > +
+> > > +	new = atomic_long_sub_return(nr_pages, &counter->count);
+> > > +
+> > > +	if (WARN_ON(unlikely(new < 0)))
+> > 
+> > Max value on 32 bit is ULONG_MAX, right? Then the WARN_ON is incorrect.
+> 
+> Since this is a page counter, this would overflow at 8 petabyte on 32
+> bit.  So even though the maximum is ULONG_MAX, in practice we should
+> never even reach LONG_MAX, and ULONG_MAX was only chosen for backward
+> compatibility with the default unlimited value.
+> 
+> This is actually not the only place that assumes we never go negative;
+> the userspace read functions' u64 cast of a long would sign-extend any
+> negative value and return ludicrous numbers.
+> 
+> But thinking longer about this, it's probably not worth to have these
+> gotchas in the code just to maintain the default unlimited value.  I
+> changed PAGE_COUNTER_MAX to LONG_MAX and LONG_MAX / PAGE_SIZE, resp.
+
+That sounds sane. We only have to maintain the user interface, not the
+internal implementation.
+
+> > > +		atomic_long_set(&counter->count, 0);
+> > > +
+> > > +	return new > 1;
+> > 
+> > Nobody outside page_counter internals uses this retval. Why is it public
+> > then?
+> 
+> kmemcg still uses this for the pinning trick, but I'll update the
+> patch that removes it to also change the interface.
+> 
+> > BTW, why not new > 0?
+> 
+> That's a plain bug - probably a left-over from rephrasing this
+> underflow test several times.  Thanks for catching.
+> 
+> > > +int page_counter_charge(struct page_counter *counter, unsigned long nr_pages,
+> > > +			struct page_counter **fail)
+> > > +{
+> > > +	struct page_counter *c;
+> > > +
+> > > +	for (c = counter; c; c = c->parent) {
+> > > +		for (;;) {
+> > > +			unsigned long count;
+> > > +			unsigned long new;
+> > > +
+> > > +			count = atomic_long_read(&c->count);
+> > > +
+> > > +			new = count + nr_pages;
+> > > +			if (new > c->limit) {
+> > > +				c->limited++;
+> > > +				if (fail) {
+> > 
+> > So we increase 'limited' even if ain't limited. Sounds weird.
+> 
+> The old code actually did that too, but I removed it now in the
+> transition to separate charge and try_charge functions.
+> 
+> > > +int page_counter_limit(struct page_counter *counter, unsigned long limit)
+> > > +{
+> > > +	for (;;) {
+> > > +		unsigned long count;
+> > > +		unsigned long old;
+> > > +
+> > > +		count = atomic_long_read(&counter->count);
+> > > +
+> > > +		old = xchg(&counter->limit, limit);
+> > > +
+> > > +		if (atomic_long_read(&counter->count) != count) {
+> > > +			counter->limit = old;
+> > 
+> > I wonder what can happen if two threads execute this function
+> > concurrently... or may be it's not supposed to be smp-safe?
+> 
+> memcg already holds the set_limit_mutex here.  I updated the tcp and
+> hugetlb controllers accordingly to take limit locks as well.
+
+I would prefer page_counter to handle it internally, because we won't
+need the set_limit_mutex once memsw is converted to plain swap
+accounting. Besides, memcg_update_kmem_limit doesn't take it. Any chance
+to achieve that w/o spinlocks, using only atomic variables?
+
+> > > @@ -1490,12 +1605,23 @@ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
+> > >   */
+> > >  static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
+> > >  {
+> > > -	unsigned long long margin;
+> > 
+> > Why is it still ULL?
+> 
+> Hm?  This is a removal.  Too many longs...
+
+Sorry, I missed the minus sign.
+
+[...]
+> Here is the delta patch:
+[...]
+
+If I were you, I'd separate the patch introducing the page_counter API
+and implementation from the rest. I think it'd ease the review.
+
+A couple of extra notes about the patch:
+
+ - I think having comments to function definitions would be nice.
+
+ - Your implementation of try_charge uses CAS, but this is a really
+   costly operation (the most costly of all atomic primitives). Have
+   you considered using FAA? Something like this:
+
+   try_charge(pc, nr):
+
+     limit = pc->limit;
+     count = atomic_add_return(&pc->count, nr);
+     if (count > limit) {
+         atomic_sub(&pc->count, nr);
+         return -ENOMEM;
+     }
+     return 0;
+
+Thanks,
+Vladimir
