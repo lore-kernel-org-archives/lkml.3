@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930AbaIWHtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:49:12 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:50003 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518AbaIWHtK (ORCPT
+	id S1754536AbaIWHuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:50:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37961 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705AbaIWHuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:49:10 -0400
-Message-ID: <542125F1.3080607@redhat.com>
-Date: Tue, 23 Sep 2014 09:49:05 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 23 Sep 2014 03:50:23 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 23 Sep 2014 09:47:49 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, johan@kernel.org
+Subject: Re: [PATCH v2 1/2] mfd: viperboard: allocate I/O buffer separately
+Message-ID: <20140923074749.GO5237@localhost>
+References: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
+ <1411414759-7056-2-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-To: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@kernel.org>,
-        Radim Krcmar <rkrcmar@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-CC: Andres Lagar-Cavilla <andreslc@gooogle.com>
-Subject: Re: [PATCH v4] kvm: Fix page ageing bugs
-References: <1411410865-3603-1-git-send-email-andreslc@google.com> <1411422882-16245-1-git-send-email-andreslc@google.com>
-In-Reply-To: <1411422882-16245-1-git-send-email-andreslc@google.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411414759-7056-2-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/09/2014 23:54, Andres Lagar-Cavilla ha scritto:
-> @@ -1406,32 +1406,24 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
->  	struct rmap_iterator uninitialized_var(iter);
->  	int young = 0;
->  
-> -	/*
-> -	 * In case of absence of EPT Access and Dirty Bits supports,
-> -	 * emulate the accessed bit for EPT, by checking if this page has
-> -	 * an EPT mapping, and clearing it if it does. On the next access,
-> -	 * a new EPT mapping will be established.
-> -	 * This has some overhead, but not as much as the cost of swapping
-> -	 * out actively used pages or breaking up actively used hugepages.
-> -	 */
-> -	if (!shadow_accessed_mask) {
-> -		young = kvm_unmap_rmapp(kvm, rmapp, slot, data);
-> -		goto out;
-> -	}
-> +	BUG_ON(!shadow_accessed_mask);
->  
->  	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
->  	     sptep = rmap_get_next(&iter)) {
-> +		struct kvm_mmu_page *sp;
-> +		gfn_t gfn;
->  		BUG_ON(!is_shadow_present_pte(*sptep));
-> +		/* From spte to gfn. */
-> +		sp = page_header(__pa(sptep));
-> +		gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
->  
->  		if (*sptep & shadow_accessed_mask) {
->  			young = 1;
->  			clear_bit((ffs(shadow_accessed_mask) - 1),
->  				 (unsigned long *)sptep);
->  		}
-> +		trace_kvm_age_page(gfn, slot, young);
+On Mon, Sep 22, 2014 at 10:39:18PM +0300, Octavian Purdila wrote:
+> Currently the I/O buffer is allocated part of the device status
+> structure, potentially sharing the same cache line with other members
+> in this structure.
+> 
+> Allocate the buffer separately, to avoid the I/O operations corrupting
+> the device status structure due to cache line sharing.
+> 
+> Compiled tested only as I don't have access to hardware.
+> 
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
 
-Yesterday I couldn't think of a way to avoid the
-page_header/kvm_mmu_page_get_gfn on every iteration, but it's actually
-not hard.  Instead of passing hva as datum, you can pass (unsigned long)
-&start.  Then you can add PAGE_SIZE to it at the end of every call to
-kvm_age_rmapp, and keep the old tracing logic.
+Reviewed-by: Johan Hovold <johan@kernel.org>
 
-
-Paolo
+> ---
+>  drivers/mfd/viperboard.c       | 8 ++++++++
+>  include/linux/mfd/viperboard.h | 2 +-
+>  2 files changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+> index e00f534..5f62f4e 100644
+> --- a/drivers/mfd/viperboard.c
+> +++ b/drivers/mfd/viperboard.c
+> @@ -64,6 +64,12 @@ static int vprbrd_probe(struct usb_interface *interface,
+>  		return -ENOMEM;
+>  	}
+>  
+> +	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
+> +	if (vb->buf == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error;
+> +	}
+> +
+>  	mutex_init(&vb->lock);
+>  
+>  	vb->usb_dev = usb_get_dev(interface_to_usbdev(interface));
+> @@ -105,6 +111,7 @@ static int vprbrd_probe(struct usb_interface *interface,
+>  error:
+>  	if (vb) {
+>  		usb_put_dev(vb->usb_dev);
+> +		kfree(vb->buf);
+>  		kfree(vb);
+>  	}
+>  
+> @@ -118,6 +125,7 @@ static void vprbrd_disconnect(struct usb_interface *interface)
+>  	mfd_remove_devices(&interface->dev);
+>  	usb_set_intfdata(interface, NULL);
+>  	usb_put_dev(vb->usb_dev);
+> +	kfree(vb->buf);
+>  	kfree(vb);
+>  
+>  	dev_dbg(&interface->dev, "disconnected\n");
+> diff --git a/include/linux/mfd/viperboard.h b/include/linux/mfd/viperboard.h
+> index 1934528..af928d0 100644
+> --- a/include/linux/mfd/viperboard.h
+> +++ b/include/linux/mfd/viperboard.h
+> @@ -103,7 +103,7 @@ struct vprbrd_i2c_addr_msg {
+>  struct vprbrd {
+>  	struct usb_device *usb_dev; /* the usb device for this device */
+>  	struct mutex lock;
+> -	u8 buf[sizeof(struct vprbrd_i2c_write_msg)];
+> +	u8 *buf;
+>  	struct platform_device pdev;
+>  };
