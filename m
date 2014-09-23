@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045AbaIWJ1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:27:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753883AbaIWJ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:27:31 -0400
-Date: Tue, 23 Sep 2014 11:26:45 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf pollfd v3
-Message-ID: <20140923092645.GB2979@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <20140911113336.GB13634@krava.brq.redhat.com>
- <20140911114825.GC13634@krava.brq.redhat.com>
- <20140911133029.GC10158@kernel.org>
- <20140911213638.GC1801@kernel.org>
- <20140918160455.GI2770@kernel.org>
- <20140922133526.GB18187@krava.brq.redhat.com>
- <20140922144949.GE32694@kernel.org>
- <20140922145133.GA18809@krava.brq.redhat.com>
- <20140922211027.GA23362@kernel.org>
+	id S1755147AbaIWJ2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:28:12 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:46399 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaIWJ2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:28:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922211027.GA23362@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CACRpkdZRcP+ue0qM70mQujiSV=5TqAGs1S=WBNFOZ2HLMzjfQQ@mail.gmail.com>
+References: <cover.1410020458.git.stefan@agner.ch>
+	<CACRpkdZRcP+ue0qM70mQujiSV=5TqAGs1S=WBNFOZ2HLMzjfQQ@mail.gmail.com>
+Date: Tue, 23 Sep 2014 11:28:09 +0200
+Message-ID: <CACRpkdayLPMpcNLKo1wTrvvcnD1DedLTteTqtuGdy3v_AZZ0iQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] vf610: Add GPIO support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stefan Agner <stefan@agner.ch>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 06:10:27PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Sep 22, 2014 at 04:51:33PM +0200, Jiri Olsa escreveu:
-> > On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
-> > > > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
-> 
-> > > > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
-> > > > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
-> > > > > mmap_read loop to consume what is left after all fds for a mmap are
-> > > > > closed.
-> 
-> > > > > I'll wait a bit before reposting, probably Jiri will not be able to
-> > > > > comment this week, but I would like to at least post the URL for this
-> > > > > latest v4 kit.
-> 
-> > > > > Adrian, if you could take a look at it, would be really great :-)
-> 
-> > > > I checked the branch.. the last patch brakes the functionality
-> > > > of perf record for me
-> 
-> > > Breaks in what sense?
-> 
-> > perf record -p pid
-> 
-> > and killing the pid won't finish perf record
-> 
-> Should be ok now, after making sure record uses
-> perf_evlist__mmap_consume(), which does what you did in your proposed
-> fix, tried both killing it and letting it exit normally, i.e. a 'sleep 5s'
-> target.
-> 
-> Pushed
-> https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v6
-> after moving the changesets for trace and record to be done last,
-> waiting for all fds to be POLLHUP'ed and doing one last draining
-> mmap_read loop over the mmaps.
+On Fri, Sep 19, 2014 at 7:36 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sat, Sep 6, 2014 at 9:25 AM, Stefan Agner <stefan@agner.ch> wrote:
+>
+>> This patchset adds GPIO support for Vybrid.
+>
+> Can I get some review from the i.MX driver maintainers for this
+> patchset?
 
-One more thing is I noticed the test 34 is segfaulting, because
-perf_evlist__munmap_filtered assumes priv pointer setup, which
-is not done in the test.
+I will now just apply the patches.
 
-otherwise it looks gut
-
-jirka
+Yours,
+Linus Walleij
