@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915AbaIWClM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:41:12 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38686 "EHLO mail.kernel.org"
+	id S1755918AbaIWClb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:41:31 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38699 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755860AbaIWClI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:41:08 -0400
+	id S1755903AbaIWClL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:41:11 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Wang Nan <wangnan0@huawei.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 44/45] ext2: Fix fs corruption in ext2_get_xip_mem()
-Date: Tue, 23 Sep 2014 10:31:46 +0800
-Message-Id: <1411439507-30391-44-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Michael Cree <mcree@orcon.net.nz>,
+        Matt Turner <mattst88@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 45/45] alpha: add io{read,write}{16,32}be functions
+Date: Tue, 23 Sep 2014 10:31:47 +0800
+Message-Id: <1411439507-30391-45-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Michael Cree <mcree@orcon.net.nz>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit 7ba3ec5749ddb61f79f7be17b5fd7720eebc52de upstream.
+commit 25534eb7707821b796fd84f7115367e02f36aa60 upstream.
 
-Commit 8e3dffc651cb "Ext2: mark inode dirty after the function
-dquot_free_block_nodirty is called" unveiled a bug in __ext2_get_block()
-called from ext2_get_xip_mem(). That function called ext2_get_block()
-mistakenly asking it to map 0 blocks while 1 was intended. Before the
-above mentioned commit things worked out fine by luck but after that commit
-we started returning that we allocated 0 blocks while we in fact
-allocated 1 block and thus allocation was looping until all blocks in
-the filesystem were exhausted.
+These functions are used in some PCI drivers with big-endian
+MMIO space.
 
-Fix the problem by properly asking for one block and also add assertion
-in ext2_get_blocks() to catch similar problems.
+Admittedly it is almost certain that no one this side of the
+Moon would use such a card in an Alpha but it does get us
+closer to being able to build allyesconfig or allmodconfig,
+and it enables the Debian default generic config to build.
 
-Reported-and-tested-by: Andiry Xu <andiry.xu@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Wang Nan <wangnan0@huawei.com>
+Tested-by: Raúl Porcel <armin76@gentoo.org>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Signed-off-by: Matt Turner <mattst88@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ext2/inode.c |    2 ++
- fs/ext2/xip.c   |    1 +
- 2 files changed, 3 insertions(+)
+ arch/alpha/include/asm/io.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 740cad8..6a7c483 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -614,6 +614,8 @@ static int ext2_get_blocks(struct inode *inode,
- 	int count = 0;
- 	ext2_fsblk_t first_block = 0;
+diff --git a/arch/alpha/include/asm/io.h b/arch/alpha/include/asm/io.h
+index 7a3d38d..5ebab58 100644
+--- a/arch/alpha/include/asm/io.h
++++ b/arch/alpha/include/asm/io.h
+@@ -489,6 +489,11 @@ extern inline void writeq(u64 b, volatile void __iomem *addr)
+ }
+ #endif
  
-+	BUG_ON(maxblocks == 0);
++#define ioread16be(p) be16_to_cpu(ioread16(p))
++#define ioread32be(p) be32_to_cpu(ioread32(p))
++#define iowrite16be(v,p) iowrite16(cpu_to_be16(v), (p))
++#define iowrite32be(v,p) iowrite32(cpu_to_be32(v), (p))
 +
- 	depth = ext2_block_to_path(inode,iblock,offsets,&blocks_to_boundary);
- 
- 	if (depth == 0)
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index 1c33128..e98171a 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -35,6 +35,7 @@ __ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
- 	int rc;
- 
- 	memset(&tmp, 0, sizeof(struct buffer_head));
-+	tmp.b_size = 1 << inode->i_blkbits;
- 	rc = ext2_get_block(inode, pgoff, &tmp, create);
- 	*result = tmp.b_blocknr;
- 
+ #define inb_p		inb
+ #define inw_p		inw
+ #define inl_p		inl
 -- 
 1.7.9.5
 
