@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaIWMCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:02:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48508 "EHLO mx1.redhat.com"
+	id S1755450AbaIWMD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:03:28 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:53321 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753896AbaIWMCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:02:42 -0400
-Date: Tue, 23 Sep 2014 14:02:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: taeung <treeze.taeung@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] modify error code when perf_session__new() fail.
-Message-ID: <20140923120231.GD2979@krava.brq.redhat.com>
-References: <1411452737-28188-1-git-send-email-treeze.taeung@gmail.com>
+	id S1751592AbaIWMD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:03:26 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: sre@kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 2/3] power: gpio-charger: add device tree support
+Date: Tue, 23 Sep 2014 14:03:17 +0200
+Message-ID: <1549304.qklrgkYl3q@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAD=FV=W6q7wMDWWDkwdC_KF4EHJt2q8afxSGCpPEC+Nk2Jp2Ag@mail.gmail.com>
+References: <1411329923-15912-1-git-send-email-heiko@sntech.de> <1411329923-15912-3-git-send-email-heiko@sntech.de> <CAD=FV=W6q7wMDWWDkwdC_KF4EHJt2q8afxSGCpPEC+Nk2Jp2Ag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411452737-28188-1-git-send-email-treeze.taeung@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-subject should start with 'perf tools:'
-
-On Tue, Sep 23, 2014 at 03:12:17PM +0900, taeung wrote:
-> 	Because perf_session__new() could fail
-> 	for more reasons than just ENOMEM,
-> 	I modified error code(ENOMEM or EINVAL)
-> 	into -1.
-
-why the indent?
-
+Am Montag, 22. September 2014, 09:48:33 schrieb Doug Anderson:
+> > @@ -196,6 +255,7 @@ static struct platform_driver gpio_charger_driver = {
+> > 
+> >                 .name = "gpio-charger",
+> >                 .owner = THIS_MODULE,
+> >                 .pm = &gpio_charger_pm_ops,
+> > 
+> > +               .of_match_table = of_match_ptr(gpio_charger_match),
 > 
-> Signed-off-by: taeung <treeze.taeung@gmail.com>
+> Given that you don't have any #ifdefs with "CONFIG_OF", I think
+> gpio_charger_match will always exist.  It seems like you should remove
+> the of_match_ptr or add some #ifdefs.  I can't quite keep up with what
+> the currently suggested best practice is here, though.
 
-the log message needs some love, but the patch looks ok
+I've kept the of_match_ptr in v3. The dt parsing functions (of_read_foo,...) 
+define stubs for the !CONFIG_OF case which we use here in this case and 
+of_match_ptr is also defined differently for both OF and !OF, so it feels like 
+it should be there ;-)
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-thanks,
-jirka
+Heiko
