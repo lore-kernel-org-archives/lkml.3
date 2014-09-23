@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaIWKXf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:23:35 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:54242 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244AbaIWKXe (ORCPT
+	id S1755391AbaIWKYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:24:13 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:58319 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625AbaIWKYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:23:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410249952-12456-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1410249952-12456-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Tue, 23 Sep 2014 12:23:33 +0200
-Message-ID: <CACRpkdZNvwjLpjSz6ZMg1TU-e3E0jS4KmpG31PCzXy9AOh7D5g@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: lantiq: Release gpiochip resources in fail case
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Crispin <blogic@openwrt.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 06:24:09 -0400
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-nilfs <linux-nilfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andreas Rohner <andreas.rohner@gmx.net>
+Subject: [PATCH 0/1] nilfs2: improve the performance of fdatasync()
+Date: Tue, 23 Sep 2014 19:18:49 +0900
+Message-Id: <1411467530-5949-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: git-send-email 1.7.9.4
+X-Dispatcher: imput version 20110525(IM151)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 10:05 AM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
+Hi Andrew,
 
-> This patch releases gpiochip resources with of_gpiochip_remove
-> and gpiochip_remove in failure cases.
->
-> CC: John Crispin <blogic@openwrt.org>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
->
-> Changes since v1:
->  Dropped call to of_gpiochip_remove() when ltq_pinctrl_register fails as
->  gpiochip_remove() calls of_gpiochip_remove()
+Please add the following patch to the queue for the next merge window.
 
-Patch applied.
+It fixes a longstanding issue of fdatasync() implementation of NILFS2
+where fdatasync() will fall back to a full sync most of the time.  The
+fallback is only necessary for a change of the file size and not for a
+change of the various timestamps.  Andreas Rohner fixed this issue by
+discerning these situations properly.
 
-Yours,
-Linus Walleij
+Thanks,
+Ryusuke Konishi
+--
+Andreas Rohner (1):
+      nilfs2: improve the performance of fdatasync()
+
+ fs/nilfs2/inode.c   |   13 +++++++------
+ fs/nilfs2/nilfs.h   |   14 +++++++++++---
+ fs/nilfs2/segment.c |    4 ++--
+ 3 files changed, 20 insertions(+), 11 deletions(-)
+
