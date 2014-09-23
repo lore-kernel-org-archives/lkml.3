@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaIWMxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:53:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306AbaIWMxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:53:42 -0400
-Date: Tue, 23 Sep 2014 14:52:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf pollfd v3
-Message-ID: <20140923125258.GI2979@krava.brq.redhat.com>
-References: <20140911114825.GC13634@krava.brq.redhat.com>
- <20140911133029.GC10158@kernel.org>
- <20140911213638.GC1801@kernel.org>
- <20140918160455.GI2770@kernel.org>
- <20140922133526.GB18187@krava.brq.redhat.com>
- <20140922144949.GE32694@kernel.org>
- <20140922145133.GA18809@krava.brq.redhat.com>
- <20140922211027.GA23362@kernel.org>
- <20140923092645.GB2979@krava.brq.redhat.com>
- <20140923124640.GB23362@kernel.org>
+	id S1755873AbaIWMyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:54:12 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:34736 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755009AbaIWMyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:54:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923124640.GB23362@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140923122843.GF2979@krava.brq.redhat.com>
+References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
+ <1411453828-14832-2-git-send-email-namhyung@kernel.org> <20140923122843.GF2979@krava.brq.redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 23 Sep 2014 21:53:43 +0900
+X-Google-Sender-Auth: JOLaOB2zTM2VcGHiPerFthgPkxE
+Message-ID: <CAM9d7cgwSrqLNghb3Vdt-=c9w1iFq0wc-njVP4UxkWD4hXCteg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf callchain: Use global caching provided by libunwind
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 09:46:40AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Sep 23, 2014 at 11:26:45AM +0200, Jiri Olsa escreveu:
-> > On Mon, Sep 22, 2014 at 06:10:27PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Mon, Sep 22, 2014 at 04:51:33PM +0200, Jiri Olsa escreveu:
-> > > > On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > > Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
-> > > > > > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > > > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > > > > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
-> > > 
-> > > > > > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
-> > > > > > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
-> > > > > > > mmap_read loop to consume what is left after all fds for a mmap are
-> > > > > > > closed.
-> > > 
-> > > > > > > I'll wait a bit before reposting, probably Jiri will not be able to
-> > > > > > > comment this week, but I would like to at least post the URL for this
-> > > > > > > latest v4 kit.
-> > > 
-> > > > > > > Adrian, if you could take a look at it, would be really great :-)
-> > > 
-> > > > > > I checked the branch.. the last patch brakes the functionality
-> > > > > > of perf record for me
-> > > 
-> > > > > Breaks in what sense?
-> > > 
-> > > > perf record -p pid
-> > > 
-> > > > and killing the pid won't finish perf record
-> > > 
-> > > Should be ok now, after making sure record uses
-> > > perf_evlist__mmap_consume(), which does what you did in your proposed
-> > > fix, tried both killing it and letting it exit normally, i.e. a 'sleep 5s'
-> > > target.
-> > > 
-> > > Pushed
-> > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v6
-> > > after moving the changesets for trace and record to be done last,
-> > > waiting for all fds to be POLLHUP'ed and doing one last draining
-> > > mmap_read loop over the mmaps.
-> > 
-> > One more thing is I noticed the test 34 is segfaulting, because
-> > perf_evlist__munmap_filtered assumes priv pointer setup, which
-> > is not done in the test.
-> 
-> Yeah, forgot to update it wrt mmap refcounting.
-> 
-> But this brought to my attention the difficulty in debugging perf test
-> entries these days, because we do a fork + exec there, I tried using gdb
-> and I must be missing something, because I couldn't add a breakpoint
-> inside the tests :-\
+On Tue, Sep 23, 2014 at 9:28 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Tue, Sep 23, 2014 at 03:30:28PM +0900, Namhyung Kim wrote:
+>> The libunwind provides two caching policy which are global and
+>> per-thread.  As perf unwinds callchains in a single thread, it'd
+>> sufficient to use global caching.
+>>
+>> This speeds up my perf report from 14s to 7s on a ~260MB data file.
+>> Although the output contains a slight difference (~0.01% in terms of
+>> number of lines printed) on callchains which were not resolved.
+>
+> hum, the speedup is nice, but what was the diff output.. any example?
+> The new version does not print some lines or different ones?
 
-you need to run following gdb command:
+I don't have the result now - will post the diff when I go to the
+office tomorrow.  But IIRC new version only adds new lines..
 
-(gdb) set follow-fork-mode child
-
-jirka
+Thanks,
+Namhyung
