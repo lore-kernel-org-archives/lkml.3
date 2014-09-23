@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaIWOsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:48:16 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:49659 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109AbaIWOsN (ORCPT
+	id S932231AbaIWOs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:48:27 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:46802 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109AbaIWOsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:48:13 -0400
+	Tue, 23 Sep 2014 10:48:22 -0400
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
         iommu@lists.linux-foundation.org
@@ -16,9 +16,9 @@ Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
         marc.zyngier@arm.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCHv7 15/26] vfio/platform: return info for device memory mapped IO regions
-Date: Tue, 23 Sep 2014 16:46:14 +0200
-Message-Id: <1411483586-29304-16-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCHv7 16/26] vfio/platform: read and write support for the device fd
+Date: Tue, 23 Sep 2014 16:46:15 +0200
+Message-Id: <1411483586-29304-17-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -26,167 +26,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the IOCTLs VFIO_DEVICE_GET_REGION_INFO ioctl call,
-which allows the user to learn about the available MMIO resources of
-a device.
+VFIO returns a file descriptor which we can use to manipulate the memory
+regions of the device. Usually, the user will mmap memory regions that are
+addressable on page boundaries, however for memory regions where this is
+not the case we cannot provide mmap functionality due to security concerns.
+For this reason we also need allow to read and write to the memory regions
+via the file descriptor.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/platform/vfio_platform_common.c  | 84 +++++++++++++++++++++++++--
- drivers/vfio/platform/vfio_platform_private.h | 19 ++++++
- 2 files changed, 98 insertions(+), 5 deletions(-)
+ drivers/vfio/platform/vfio_platform_common.c  | 121 +++++++++++++++++++++++++-
+ drivers/vfio/platform/vfio_platform_private.h |   1 +
+ 2 files changed, 119 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
-index ba5edfd..469bdcb 100644
+index 469bdcb..589b226 100644
 --- a/drivers/vfio/platform/vfio_platform_common.c
 +++ b/drivers/vfio/platform/vfio_platform_common.c
-@@ -27,17 +27,73 @@
+@@ -48,7 +48,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
  
- #include "vfio_platform_private.h"
+ 		vdev->regions[i].addr = res->start;
+ 		vdev->regions[i].size = resource_size(res);
+-		vdev->regions[i].flags = 0;
++		vdev->regions[i].flags = VFIO_REGION_INFO_FLAG_READ
++					| VFIO_REGION_INFO_FLAG_WRITE;
+ 	}
  
-+static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
-+{
-+	int cnt = 0, i;
+ 	vdev->num_regions = cnt;
+@@ -61,6 +62,11 @@ err:
+ 
+ static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
+ {
++	int i;
 +
-+	while (vdev->get_resource(vdev, cnt))
-+		cnt++;
++	for (i = 0; i < vdev->num_regions; i++)
++		iounmap(vdev->regions[i].ioaddr);
 +
-+	vdev->regions = kcalloc(cnt, sizeof(struct vfio_platform_region),
-+				GFP_KERNEL);
-+	if (!vdev->regions)
-+		return -ENOMEM;
+ 	vdev->num_regions = 0;
+ 	kfree(vdev->regions);
+ }
+@@ -155,13 +161,122 @@ static long vfio_platform_ioctl(void *device_data,
+ static ssize_t vfio_platform_read(void *device_data, char __user *buf,
+ 			     size_t count, loff_t *ppos)
+ {
+-	return -EINVAL;
++	struct vfio_platform_device *vdev = device_data;
++	unsigned int index = VFIO_PLATFORM_OFFSET_TO_INDEX(*ppos);
++	loff_t off = *ppos & VFIO_PLATFORM_OFFSET_MASK;
++	unsigned int done = 0;
 +
-+	for (i = 0; i < cnt;  i++) {
-+		struct resource *res =
-+			vdev->get_resource(vdev, i);
++	if (index >= vdev->num_regions)
++		return -EINVAL;
 +
-+		if (!res)
-+			goto err;
++	if (!vdev->regions[index].ioaddr) {
++		vdev->regions[index].ioaddr =
++			ioremap_nocache(vdev->regions[index].addr,
++					vdev->regions[index].size);
 +
-+		vdev->regions[i].addr = res->start;
-+		vdev->regions[i].size = resource_size(res);
-+		vdev->regions[i].flags = 0;
++		if (!vdev->regions[index].ioaddr)
++			return -ENOMEM;
 +	}
 +
-+	vdev->num_regions = cnt;
++	while (count) {
++		size_t filled;
 +
-+	return 0;
++		if (count >= 4 && !(off % 4)) {
++			u32 val;
++
++			val = ioread32(vdev->regions[index].ioaddr + off);
++			if (copy_to_user(buf, &val, 4))
++				goto err;
++
++			filled = 4;
++		} else if (count >= 2 && !(off % 2)) {
++			u16 val;
++
++			val = ioread16(vdev->regions[index].ioaddr + off);
++			if (copy_to_user(buf, &val, 2))
++				goto err;
++
++			filled = 2;
++		} else {
++			u8 val;
++
++			val = ioread8(vdev->regions[index].ioaddr + off);
++			if (copy_to_user(buf, &val, 1))
++				goto err;
++
++			filled = 1;
++		}
++
++
++		count -= filled;
++		done += filled;
++		off += filled;
++		buf += filled;
++	}
++
++	return done;
 +err:
-+	kfree(vdev->regions);
-+	return -EINVAL;
-+}
-+
-+static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
-+{
-+	vdev->num_regions = 0;
-+	kfree(vdev->regions);
-+}
-+
- static void vfio_platform_release(void *device_data)
- {
-+	struct vfio_platform_device *vdev = device_data;
-+
-+	if (atomic_dec_and_test(&vdev->refcnt))
-+		vfio_platform_regions_cleanup(vdev);
-+
- 	module_put(THIS_MODULE);
++	return -EFAULT;
  }
  
- static int vfio_platform_open(void *device_data)
+ static ssize_t vfio_platform_write(void *device_data, const char __user *buf,
+ 			      size_t count, loff_t *ppos)
  {
+-	return -EINVAL;
 +	struct vfio_platform_device *vdev = device_data;
-+	int ret;
++	unsigned int index = VFIO_PLATFORM_OFFSET_TO_INDEX(*ppos);
++	loff_t off = *ppos & VFIO_PLATFORM_OFFSET_MASK;
++	unsigned int done = 0;
 +
- 	if (!try_module_get(THIS_MODULE))
- 		return -ENODEV;
- 
-+	if (atomic_inc_return(&vdev->refcnt) == 1) {
-+		ret = vfio_platform_regions_init(vdev);
-+		if (ret)
-+			goto err_reg;
++	if (index >= vdev->num_regions)
++		return -EINVAL;
++
++	if (!vdev->regions[index].ioaddr) {
++		vdev->regions[index].ioaddr =
++			ioremap_nocache(vdev->regions[index].addr,
++					vdev->regions[index].size);
++
++		if (!vdev->regions[index].ioaddr)
++			return -ENOMEM;
 +	}
 +
- 	return 0;
++	while (count) {
++		size_t filled;
 +
-+err_reg:
-+	module_put(THIS_MODULE);
-+	return ret;
++		if (count >= 4 && !(off % 4)) {
++			u32 val;
++
++			if (copy_from_user(&val, buf, 4))
++				goto err;
++			iowrite32(val, vdev->regions[index].ioaddr + off);
++
++			filled = 4;
++		} else if (count >= 2 && !(off % 2)) {
++			u16 val;
++
++			if (copy_from_user(&val, buf, 2))
++				goto err;
++			iowrite16(val, vdev->regions[index].ioaddr + off);
++
++			filled = 2;
++		} else {
++			u8 val;
++
++			if (copy_from_user(&val, buf, 1))
++				goto err;
++			iowrite8(val, vdev->regions[index].ioaddr + off);
++
++			filled = 1;
++		}
++
++		count -= filled;
++		done += filled;
++		off += filled;
++		buf += filled;
++	}
++
++	return done;
++err:
++	return -EFAULT;
  }
  
- static long vfio_platform_ioctl(void *device_data,
-@@ -58,18 +114,36 @@ static long vfio_platform_ioctl(void *device_data,
- 			return -EINVAL;
- 
- 		info.flags = vdev->flags;
--		info.num_regions = 0;
-+		info.num_regions = vdev->num_regions;
- 		info.num_irqs = 0;
- 
- 		return copy_to_user((void __user *)arg, &info, minsz);
- 
--	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
--		return -EINVAL;
-+	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
-+		struct vfio_region_info info;
-+
-+		minsz = offsetofend(struct vfio_region_info, offset);
-+
-+		if (copy_from_user(&info, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (info.argsz < minsz)
-+			return -EINVAL;
-+
-+		if (info.index >= vdev->num_regions)
-+			return -EINVAL;
-+
-+		/* map offset to the physical address  */
-+		info.offset = VFIO_PLATFORM_INDEX_TO_OFFSET(info.index);
-+		info.size = vdev->regions[info.index].size;
-+		info.flags = vdev->regions[info.index].flags;
-+
-+		return copy_to_user((void __user *)arg, &info, minsz);
- 
--	else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
-+	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
- 		return -EINVAL;
- 
--	else if (cmd == VFIO_DEVICE_SET_IRQS)
-+	} else if (cmd == VFIO_DEVICE_SET_IRQS)
- 		return -EINVAL;
- 
- 	else if (cmd == VFIO_DEVICE_RESET)
+ static int vfio_platform_mmap(void *device_data, struct vm_area_struct *vma)
 diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-index ef76737..383164a 100644
+index 383164a..4145fd6 100644
 --- a/drivers/vfio/platform/vfio_platform_private.h
 +++ b/drivers/vfio/platform/vfio_platform_private.h
-@@ -15,7 +15,26 @@
- #ifndef VFIO_PLATFORM_PRIVATE_H
- #define VFIO_PLATFORM_PRIVATE_H
+@@ -28,6 +28,7 @@ struct vfio_platform_region {
+ 	u64			addr;
+ 	resource_size_t		size;
+ 	u32			flags;
++	void __iomem		*ioaddr;
+ };
  
-+#define VFIO_PLATFORM_OFFSET_SHIFT   40
-+#define VFIO_PLATFORM_OFFSET_MASK (((u64)(1) << VFIO_PLATFORM_OFFSET_SHIFT) - 1)
-+
-+#define VFIO_PLATFORM_OFFSET_TO_INDEX(off)	\
-+	(off >> VFIO_PLATFORM_OFFSET_SHIFT)
-+
-+#define VFIO_PLATFORM_INDEX_TO_OFFSET(index)	\
-+	((u64)(index) << VFIO_PLATFORM_OFFSET_SHIFT)
-+
-+struct vfio_platform_region {
-+	u64			addr;
-+	resource_size_t		size;
-+	u32			flags;
-+};
-+
  struct vfio_platform_device {
-+	struct vfio_platform_region	*regions;
-+	u32				num_regions;
-+	atomic_t			refcnt;
-+
- 	/*
- 	 * These fields should be filled by the bus driver at binding time
- 	 */
 -- 
 1.8.3.2
 
