@@ -1,99 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033AbaIWVyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:54:05 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:42863 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593AbaIWVyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:54:01 -0400
-Date: Tue, 23 Sep 2014 14:53:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        David Miller <davem@davemloft.net>
-Subject: Re: mmotm 2014-09-22-16-57 uploaded
-Message-ID: <20140923215356.GA15481@roeck-us.net>
-References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
- <20140923190222.GA4662@roeck-us.net>
- <5421D8B1.1030504@infradead.org>
- <20140923205707.GA14428@roeck-us.net>
- <5421E7E1.80203@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5421E7E1.80203@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757056AbaIWVyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:54:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15509 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756646AbaIWVya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 17:54:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="390601678"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Disallow flags for most Core2/Atom/Nehalem/Westmere events
+Date: Tue, 23 Sep 2014 14:54:24 -0700
+Message-Id: <1411509264-18135-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:36:33PM -0700, Randy Dunlap wrote:
-> On 09/23/14 13:57, Guenter Roeck wrote:
-> > On Tue, Sep 23, 2014 at 01:31:45PM -0700, Randy Dunlap wrote:
-> >> On 09/23/14 12:02, Guenter Roeck wrote:
-> >>> On Mon, Sep 22, 2014 at 05:02:56PM -0700, akpm@linux-foundation.org wrote:
-> >>>> The mm-of-the-moment snapshot 2014-09-22-16-57 has been uploaded to
-> >>>>
-> >>>>    http://www.ozlabs.org/~akpm/mmotm/
-> >>>>
-> >>>> mmotm-readme.txt says
-> >>>>
-> >>>> README for mm-of-the-moment:
-> >>>>
-> >>>> http://www.ozlabs.org/~akpm/mmotm/
-> >>>>
-> >>>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> >>>> more than once a week.
-> >>>>
-> >>> Sine I started testing this branch, I figure I might as well share the results.
-> >>>
-> >>> i386:allyesconfig
-> >>>
-> >>> drivers/built-in.o: In function `_scsih_qcmd':
-> >>> mpt2sas_scsih.c:(.text+0xf5327d): undefined reference to `__udivdi3'
-> >>> mpt2sas_scsih.c:(.text+0xf532b0): undefined reference to `__umoddi3'
-> >>>
-> >>> i386:allmodconfig
-> >>>
-> >>> ERROR: "__udivdi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
-> >>> ERROR: "__umoddi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
-> >>
-> >> A patch has been posted for that and I believe that Christoph Hellwig has
-> >> merged it.
-> >>
-> >>> mips:nlm_xlp_defconfig
-> >>>
-> >>> ERROR: "scsi_is_fc_rport" [drivers/scsi/libfc/libfc.ko] undefined!
-> >>> ERROR: "fc_get_event_number" [drivers/scsi/libfc/libfc.ko] undefined!
-> >>> ERROR: "skb_trim" [drivers/scsi/libfc/libfc.ko] undefined!
-> >>> ERROR: "fc_host_post_event" [drivers/scsi/libfc/libfc.ko] undefined!
-> >>>
-> >>> [and many more]
-> >>
-> >> I have posted a patch for these build errors.
-> >>
-> > mips:nlm_xlp_defconfig builds in next-20140923, but it doesn't configure
-> > CONFIG_NET. I don't see a patch which would address that problem.
-> > In case I am missing it, can you point me to your patch ?
-> 
-> I was referring to this one:
-> http://marc.info/?l=linux-scsi&m=141117068414761&w=2
-> 
-> although I think that Dave is also working on a patch that is a little
-> different from mine.
-> 
-His patch is in next-20140923.
+From: Andi Kleen <ak@linux.intel.com>
 
-> Neither of these patches enables CONFIG_NET.  They just add dependencies.
-> 
-This means CONFIG_NET is now disabled in at least 31 configurations where
-it used to be enabled before (per my count), and there may be additional
-impact due to the additional changes of "select X" to "depends on X".
+Disallow setting inv/cmask/etc. flags for all PEBS events
+on these CPUs, except for the UOPS_RETIRED.* events on Nehalem/Westmere,
+which are needed for cycles:p. This avoids an undefined situation
+strongly discouraged by the Intle SDM. The PLD_* events were already
+covered. This follows the earlier changes for Sandy Bridge and alter.
 
-3.18 is going to be interesting.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 52 +++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 26 deletions(-)
 
-Guenter
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index e578c66..8058b30 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -552,18 +552,18 @@ int intel_pmu_drain_bts_buffer(void)
+  * PEBS
+  */
+ struct event_constraint intel_core2_pebs_event_constraints[] = {
+-	INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
+-	INTEL_UEVENT_CONSTRAINT(0xfec1, 0x1), /* X87_OPS_RETIRED.ANY */
+-	INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+-	INTEL_UEVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
+-	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0xfec1, 0x1), /* X87_OPS_RETIRED.ANY */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+ struct event_constraint intel_atom_pebs_event_constraints[] = {
+-	INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
+-	INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* MISPREDICTED_BRANCH_RETIRED */
+-	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x00c5, 0x1), /* MISPREDICTED_BRANCH_RETIRED */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xcb, 0x1),    /* MEM_LOAD_RETIRED.* */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -577,31 +577,31 @@ struct event_constraint intel_slm_pebs_event_constraints[] = {
+ 
+ struct event_constraint intel_nehalem_pebs_event_constraints[] = {
+ 	INTEL_PLD_CONSTRAINT(0x100b, 0xf),      /* MEM_INST_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
+-	INTEL_UEVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
+-	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),    /* INST_RETIRED.ANY */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc0, 0xf),    /* INST_RETIRED.ANY */
+ 	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),    /* UOPS_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+-	INTEL_UEVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
+-	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),    /* SSEX_UOPS_RETIRED.* */
+-	INTEL_UEVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
+-	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),    /* MEM_LOAD_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xf7, 0xf),    /* FP_ASSIST.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc7, 0xf),    /* SSEX_UOPS_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xcb, 0xf),    /* MEM_LOAD_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xf7, 0xf),    /* FP_ASSIST.* */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+ struct event_constraint intel_westmere_pebs_event_constraints[] = {
+ 	INTEL_PLD_CONSTRAINT(0x100b, 0xf),      /* MEM_INST_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
+-	INTEL_UEVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
+-	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),    /* INSTR_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc0, 0xf),    /* INSTR_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),    /* UOPS_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),    /* SSEX_UOPS_RETIRED.* */
+-	INTEL_UEVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
+-	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),    /* MEM_LOAD_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xf7, 0xf),    /* FP_ASSIST.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xc7, 0xf),    /* SSEX_UOPS_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xcb, 0xf),    /* MEM_LOAD_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0xf7, 0xf),    /* FP_ASSIST.* */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+-- 
+1.9.3
+
