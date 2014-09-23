@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbaIWCy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:54:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:50462 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604AbaIWCy6 (ORCPT
+	id S1754747AbaIWC4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:56:04 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:56005 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaIWC4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:54:58 -0400
-Message-ID: <5420E0FD.60308@huawei.com>
-Date: Tue, 23 Sep 2014 10:54:53 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Zefan Li <lizf@kernel.org>, <stable@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <satoru.takeuchi@gmail.com>
-Subject: Re: [PATCH 3.4 00/45] 3.4.104-rc1 review
-References: <1411439259-30224-1-git-send-email-lizf@kernel.org> <5420DE11.5080305@roeck-us.net>
-In-Reply-To: <5420DE11.5080305@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	Mon, 22 Sep 2014 22:56:01 -0400
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+To: linux-rockchip@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org
+Cc: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Subject: [PATCH 0/3] ARM: rk3288 : Add PM Domain support
+Date: Mon, 22 Sep 2014 19:55:13 -0700
+Message-Id: <1411440916-6830-1-git-send-email-jinkun.hong@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/23 10:42, Guenter Roeck wrote:
-> On 09/22/2014 07:27 PM, Zefan Li wrote:
->> From: Zefan Li <lizefan@huawei.com>
->>
->> This is the start of the stable review cycle for the 3.4.104 release.
->> There are 45 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
->>
->> Responses should be made by Thu Sep 25 02:03:31 UTC 2014.
->> Anything received after that time might be too late.
->>
->> A combined patch relative to 3.4.103 will be posted as an additional
->> response to this.  A shortlog and diffstat can be found below.
->>
->> thanks,
->>
->> Zefan Li
-> 
-> Hi,
-> 
-> did you push the latest patch ? I only see 43 patches in the queue.
-> 
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
-I just did. :)
+Use PM Domain framework to manage the clock.
+It depends on the patch:
+http://www.spinics.net/lists/arm-kernel/msg360672.html
+
+
+jinkun.hong (3):
+  power-domain: add power domain drivers for Rockchip platform
+  dt-bindings: add document of Rockchip power domain
+  ARM: dts: add rk3288 power-domain node
+
+ .../bindings/arm/rockchip/power_domain.txt         |   48 +++
+ arch/arm/boot/dts/rk3288.dtsi                      |   45 +++
+ arch/arm/mach-rockchip/Kconfig                     |    1 +
+ arch/arm/mach-rockchip/Makefile                    |    1 +
+ arch/arm/mach-rockchip/pm_domains.c                |  372 ++++++++++++++++++++
+ include/dt-bindings/power-domain/rk3288.h          |   11 +
+ 6 files changed, 478 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+ create mode 100644 include/dt-bindings/power-domain/rk3288.h
+
+-- 
+1.7.9.5
 
