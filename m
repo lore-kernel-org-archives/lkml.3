@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756AbaIWKd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:33:28 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55872 "EHLO
+	id S1755791AbaIWKd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:33:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55859 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755326AbaIWK2q (ORCPT
+	with ESMTP id S1754913AbaIWK2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:28:46 -0400
+	Tue, 23 Sep 2014 06:28:43 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
@@ -16,63 +16,103 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v6 04/12] ARM: dts: berlin: add a required reset property in the chip controller node
-Date: Tue, 23 Sep 2014 12:28:00 +0200
-Message-Id: <1411468088-5702-5-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v6 00/12] ARM: berlin: USB support
+Date: Tue, 23 Sep 2014 12:27:56 +0200
+Message-Id: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The chip controller node now also describes the Marvell Berlin reset
-controller. Add the required 'reset-cells' property.
+This series adds the support for ChipIdea USB2 (ci13xxx) controllers,
+the USB PHYs of the Marvell Berlin SoCs and also adds a reset
+controller for these SoCs.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- arch/arm/boot/dts/berlin2.dtsi   | 1 +
- arch/arm/boot/dts/berlin2cd.dtsi | 1 +
- arch/arm/boot/dts/berlin2q.dtsi  | 1 +
- 3 files changed, 3 insertions(+)
+The reset controller is used by the PHY driver and shares the
+existing chip controller node with the clocks and one pin controller.
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index 9d7c810ebd0b..d7e81e124de0 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -249,6 +249,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index cc1df65da504..68f7032b4686 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -231,6 +231,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2cd-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 400c40fceccc..ffba5c3bdab8 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -332,6 +332,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2q-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>, <0xdd0170 0x10>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
+The Marvell Berlin USB controllers are host only on the BG2Q and are
+compatible with USB ChipIdea. We here add a glue to use the available
+common functions for this kind of controllers, and add a generic USB2
+ChipIdea driver. A PHY driver is also added to control the USB PHY.
+
+This series applies on top of the generic PHY support in the USB
+framework[1].
+
+Patches 1-4 have already been taken by Sebastian.
+
+Changes since v5:
+	- added a missing header in ci_hdrc_usb2
+
+Changes since v4:
+        - fixed the error handling of ci_hdrc_usb2_probe()
+
+Changes since v3:
+        - removed the DMA mask property
+        - moved the clock handling in the common probe function
+        - fixed the documentation for the USB2 ChipIdea USB PHY binding
+        - made sure the reset bit is 0-31 in the reset driver
+
+Changes since v2:
+        - moved the PHY driver to the generic PHY framework
+        - changed the compatible to 'chipidea,usb2'
+        - added a property to set the DMA mask in the USB2 CI driver
+        - separated dt specific calls in the CI probing function
+        - rebased on top of the generic PHY support for CI[1]
+
+Changes since v1:
+        - made the Berlin CI USB driver a generic one
+        - added support to custom offset for the reset register
+        - added fixed regulators to support supply the VBUS
+        - modified the PHY driver to support the one one the BG2CD as
+          well
+        - documented the reset properties
+        - added bindings for the BG2CD
+        - cosmetic fixes
+
+[1] git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+
+Antoine Tenart (10):
+  reset: add the Berlin reset controller driver
+  Documentation: bindings: add reset bindings docs for Marvell Berlin
+    SoCs
+  ARM: Berlin: select the reset controller
+  ARM: dts: berlin: add a required reset property in the chip controller
+    node
+  phy: add the Berlin USB PHY driver
+  Documentation: bindings: add doc for the Berlin USB PHY
+  usb: chipidea: add a usb2 driver for ci13xxx
+  Documentation: bindings: add doc for the USB2 ChipIdea USB driver
+  ARM: dts: berlin: add BG2Q nodes for USB support
+  ARM: dts: Berlin: enable USB on the BG2Q DMP
+
+Sebastian Hesselbarth (2):
+  ARM: dts: berlin: add BG2CD nodes for USB support
+  ARM: dts: berlin: enable USB on the Google Chromecast
+
+ .../devicetree/bindings/arm/marvell,berlin.txt     |  10 +
+ .../devicetree/bindings/phy/berlin-usb-phy.txt     |  16 ++
+ .../devicetree/bindings/usb/ci-hdrc-usb2.txt       |  22 ++
+ arch/arm/boot/dts/berlin2.dtsi                     |   1 +
+ arch/arm/boot/dts/berlin2cd-google-chromecast.dts  |   4 +
+ arch/arm/boot/dts/berlin2cd.dtsi                   |  35 ++++
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |  53 +++++
+ arch/arm/boot/dts/berlin2q.dtsi                    |  53 +++++
+ arch/arm/mach-berlin/Kconfig                       |   2 +
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-berlin-usb.c                       | 224 +++++++++++++++++++++
+ drivers/reset/Makefile                             |   1 +
+ drivers/reset/reset-berlin.c                       | 131 ++++++++++++
+ drivers/usb/chipidea/Makefile                      |   1 +
+ drivers/usb/chipidea/ci_hdrc_usb2.c                | 138 +++++++++++++
+ 16 files changed, 699 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+ create mode 100644 drivers/phy/phy-berlin-usb.c
+ create mode 100644 drivers/reset/reset-berlin.c
+ create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+
 -- 
 1.9.1
 
