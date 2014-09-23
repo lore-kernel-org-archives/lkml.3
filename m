@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288AbaIWTkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:40:25 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57538 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714AbaIWTkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:40:24 -0400
-Date: Tue, 23 Sep 2014 21:40:21 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kbuild test robot <fengguang.wu@intel.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, kbuild-all@01.org,
-        pavel@ucw.cz, rtc-linux@googlegroups.com, dan.carpenter@oracle.com
-Subject: [patch] drivers/rtc/rtc-bq32k.c fix warnings I introduced
-Message-ID: <20140923194021.GA15840@amd>
-References: <542131f8.FeDGKH/9671AZbCt%fengguang.wu@intel.com>
+	id S1756450AbaIWTlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:41:00 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:37250 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753292AbaIWTk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 15:40:59 -0400
+Message-ID: <5421CCC9.7080701@osg.samsung.com>
+Date: Tue, 23 Sep 2014 13:40:57 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542131f8.FeDGKH/9671AZbCt%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Feiner <pfeiner@google.com>
+CC: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickens <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH 2/3] tools: fix warning in memfd_test
+References: <1411499027-17801-1-git-send-email-pfeiner@google.com> <1411499123-18050-1-git-send-email-pfeiner@google.com> <1411499123-18050-2-git-send-email-pfeiner@google.com>
+In-Reply-To: <1411499123-18050-2-git-send-email-pfeiner@google.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry about that, I somehow failed to notice rather severe warnings.
+On 09/23/2014 01:05 PM, Peter Feiner wrote:
+> No arguments given after printf format string with "%s" conversion.
+> 
+> Signed-off-by: Peter Feiner <pfeiner@google.com>
+> 
+> ---
 
-Signed-off-by: Pavel Machek <pavel@denx.de>
+Please drop this one from the series. It is merged into linux-next
+(in linux-kselfest fixes branch) queued for next merge window.
 
-diff --git a/drivers/rtc/rtc-bq32k.c b/drivers/rtc/rtc-bq32k.c
-index 4c24fb0..c02e246 100644
---- a/drivers/rtc/rtc-bq32k.c
-+++ b/drivers/rtc/rtc-bq32k.c
-@@ -132,9 +132,7 @@ static const struct rtc_class_ops bq32k_rtc_ops = {
- 
- static int trickle_charger_of_init(struct device *dev, struct device_node *node)
- {
--	int plen = 0;
--	const uint32_t *setup;
--	const uint32_t *reg;
-+	unsigned char reg;
- 	int error;
- 	u32 ohms = 0;
- 
-@@ -166,7 +164,7 @@ static int trickle_charger_of_init(struct device *dev, struct device_node *node)
- 		break;
- 
- 	default:
--		dev_err(dev, "invalid resistor value (%d)\n", *setup);
-+		dev_err(dev, "invalid resistor value (%d)\n", ohms);
- 		return -EINVAL;
- 	}
- 
+thanks,
+-- Shuah
 
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
