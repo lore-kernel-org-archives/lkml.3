@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330AbaIWReI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:34:08 -0400
-Received: from mail-by2on0128.outbound.protection.outlook.com ([207.46.100.128]:3200
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932168AbaIWReF convert rfc822-to-8bit (ORCPT
+	id S932380AbaIWRfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:35:37 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50898 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149AbaIWRfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:34:05 -0400
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dmaengine: fsl-edma: fixup reg offset and hw S/G support
- in big-endian model
-Thread-Topic: [PATCH] dmaengine: fsl-edma: fixup reg offset and hw S/G support
- in big-endian model
-Thread-Index: AQHP1xZXLAOdFf74/ECppYBeIJz7V5wOpiYAgABOjnQ=
-Date: Tue, 23 Sep 2014 17:18:43 +0000
-Message-ID: <1411492720444.3205@freescale.com>
-References: <1411463719-7728-1-git-send-email-jingchang.lu@freescale.com>,<45444544.Xl4NeUiTm0@wuerfel>
-In-Reply-To: <45444544.Xl4NeUiTm0@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.125.191.37]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB468;
-x-forefront-prvs: 0343AC1D30
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(377454003)(189002)(24454002)(51704005)(83322001)(90102001)(117636001)(81342003)(87936001)(81542003)(77982003)(83072002)(20776003)(85852003)(85306004)(86362001)(46102003)(74662003)(74502003)(19580405001)(79102003)(4396001)(80022003)(2656002)(19580395003)(76482002)(107046002)(21056001)(76176999)(50986999)(54356999)(92726001)(106356001)(92566001)(101416001)(97736003)(31966008)(66066001)(64706001)(105586002)(106116001)(95666004)(36756003)(99286002)(120916001)(99396002)(10300001)(586874001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 23 Sep 2014 13:35:34 -0400
+Message-ID: <5421AF5D.7090606@samsung.com>
+Date: Wed, 24 Sep 2014 02:35:25 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sachin Kamat <sachin.kamat@samsung.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v2 2/3] ARM: mm: Fix ifdef around cpu_*_do_[suspend, resume]
+ ops
+References: <1407856317-2457-1-git-send-email-b.zolnierkie@samsung.com> <1407856317-2457-3-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1407856317-2457-3-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-________________________________________
-From: Arnd Bergmann <arnd@arndb.de>
-Sent: Tuesday, September 23, 2014 8:30 PM
-To: linux-arm-kernel@lists.infradead.org
-Cc: Lu Jingchang-B35083; vinod.koul@intel.com; dmaengine@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: fsl-edma: fixup reg offset and hw S/G support in big-endian model
-
-On Tuesday 23 September 2014 17:15:19 Jingchang Lu wrote:
-> @@ -459,20 +480,27 @@ static void fill_tcd_params(struct fsl_edma_engine *edma,
->         u16 csr = 0;
+On 08/13/14 00:11, Bartlomiej Zolnierkiewicz wrote:
+> Ifdef around cpu_\name\()_do_suspend and cpu_\name\()_do_resume
+> ops in proc-macros.S should check for CONFIG_ARM_CPU_SUSPEND and
+> not CONFIG_PM_SLEEP.  Fix it.
 >
->         /*
-> -        * eDMA hardware SGs require the TCD parameters stored in memory
-> -        * the same endian as the eDMA module so that they can be loaded
-> -        * automatically by the engine
-> +        * eDMA hardware SGs requires the TCDs to be auto loaded
-> +        * in the same endian as the core whenver the eDAM engine's
-> +        * register endian. So we don't swap the value, waitting
-> +        * for fsl_set_tcd_params doing the swap.
->          */
+> [ Please note that cpu_v7_do_[suspend,resume] code in proc-v7.S
+>    already correctly checks for CONFIG_ARM_CPU_SUSPEND, same is
+>    true for functions for other architectures. ]
+>
+> This fix is needed for decoupling suspend/resume and advanced
+> cpuidle support on Exynos platform (next patch fixes build for
+> config with CONFIG_PM_SLEEP=n and CONFIG_ARM_EXYNOS_CPUIDLE=y).
+>
+> If this fix is not present then the following OOPS happens on
+> the first attempt to go into advanced cpuidle mode (AFTR):
+>
+> [   22.244143] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> [   22.250759] pgd = c0004000
+> [   22.253445] [00000000] *pgd=00000000
+> [   22.257012] Internal error: Oops: 80000007 [#1] PREEMPT SMP ARM
+> [   22.262906] Modules linked in:
+> [   22.265949] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-next-20140811-dirty #730
+> [   22.273757] task: c05dce68 ti: c05d2000 task.ti: c05d2000
+> [   22.279139] PC is at 0x0
+> [   22.281661] LR is at __cpu_suspend_save+0x4c/0xa8
+> [   22.286344] pc : [<00000000>]    lr : [<c00125e0>]    psr: a0000093
+> [   22.286344] sp : c05d3ef4  ip : c05da414  fp : 00000001
+> [   22.297799] r10: c05da414  r9 : c0609cb0  r8 : 0000000f
+> [   22.303008] r7 : c05da444  r6 : 00000038  r5 : ea802c00  r4 : c05d3f14
+> [   22.309517] r3 : 00000000  r2 : c05d3f4c  r1 : 00000038  r0 : c05d3f20
+> [   22.316029] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> [   22.323406] Control: 10c5387d  Table: 69d5404a  DAC: 00000015
+> [   22.329135] Process swapper/0 (pid: 0, stack limit = 0xc05d2240)
+> [   22.335124] Stack: (0xc05d3ef4 to 0xc05d4000)
+> [   22.339466] 3ee0:                                              ea802c00 00000038 c05d3f4c
+> [   22.347626] 3f00: 00000000 00000007 c00123bc 00000000 c001d468 6a888000 c05d3f4c 80000000
+> [   22.355785] 3f20: 00000007 c003d3a0 0000193d eaf9dde4 eaf9dde4 c02ef0c8 c000969c fffffffe
+> [   22.363944] 3f40: 00000000 c0037b54 eaf9dbb8 e9d1a380 00000000 c001d468 c0609cb0 00000000
+> [   22.372103] 3f60: c0609cb0 c061649e 00000001 c001250c eaf9dbb8 00000001 c0609cb0 c001d618
+> [   22.380262] 3f80: c001d5d0 c02ef56c 2d9d2e1e 00000005 eaf9dbb8 c02edcc4 2d9d2e1e 00000005
+> [   22.388421] 3fa0: c040446c c05da4ec c040446c eaf9dbb8 c05cfbb0 c004c580 c05dce68 c05b3ae8
+> [   22.396580] 3fc0: 00000000 c058bb24 ffffffff ffffffff c058b5e4 00000000 00000000 c05b3ae8
+> [   22.404740] 3fe0: c0616994 c05da47c c05b3ae4 c05ddeec 4000406a 40008074 00000000 00000000
+> [   22.412909] [<c00125e0>] (__cpu_suspend_save) from [<c00123bc>] (__cpu_suspend+0x5c/0x70)
+> [   22.421074] [<c00123bc>] (__cpu_suspend) from [<c05d3f4c>] (init_thread_union+0x1f4c/0x2000)
+> [   22.429479] Code: bad PC value
+> [   22.432518] ---[ end trace fb90ebf4217d0ad9 ]---
+> [   22.437116] Kernel panic - not syncing: Attempted to kill the idle task!
+> [   22.443800] Rebooting in 5 seconds..
+>
+> This patch has been tested on Exynos4210 based Origen board.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
+> ---
+>   arch/arm/mm/proc-macros.S | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
+> index ee1d805..ba1196c 100644
+> --- a/arch/arm/mm/proc-macros.S
+> +++ b/arch/arm/mm/proc-macros.S
+> @@ -279,7 +279,7 @@ ENTRY(\name\()_processor_functions)
+>
+>   	.if \suspend
+>   	.word	cpu_\name\()_suspend_size
+> -#ifdef CONFIG_PM_SLEEP
+> +#ifdef CONFIG_ARM_CPU_SUSPEND
+>   	.word	cpu_\name\()_do_suspend
+>   	.word	cpu_\name\()_do_resume
+>   #else
 
-This makes no sense: how would the eDMA hardware know what endianess
-the CPU is using to write this data? Have you tried this running on
-the same hardware with both big-endian and little-endian kernels?
+I'm fine on this but need to get ack from Russell.
 
-Also, you access this as little-endian data unconditionally rather
-than cpu-endian as the comment suggests, maybe that is what you meant
-here?
+Russell, how do you think about this?
 
-I will rewrite this comment, thanks.
+Note, I already applied this into samsung tree but if you mind, I'll 
+revert it.
 
-> -       edma_writel(edma, src, &(tcd->saddr));
-> -       edma_writel(edma, dst, &(tcd->daddr));
-> -       edma_writew(edma, attr, &(tcd->attr));
-> -       edma_writew(edma, EDMA_TCD_SOFF_SOFF(soff), &(tcd->soff));
-> -       edma_writel(edma, EDMA_TCD_NBYTES_NBYTES(nbytes), &(tcd->nbytes));
-> -       edma_writel(edma, EDMA_TCD_SLAST_SLAST(slast), &(tcd->slast));
-> -       edma_writew(edma, EDMA_TCD_CITER_CITER(citer), &(tcd->citer));
-> -       edma_writew(edma, EDMA_TCD_DOFF_DOFF(doff), &(tcd->doff));
-> -       edma_writel(edma, EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga), &(tcd->dlast_sga));
-> -       edma_writew(edma, EDMA_TCD_BITER_BITER(biter), &(tcd->biter));
-> +       writel(src, &(tcd->saddr));
-> +       writel(dst, &(tcd->daddr));
-> +
-> +       writew(attr, &(tcd->attr));
-
-You seem to have another preexisting bug: The tcd pointer actually does not
-point to mmio registers here at all, but instead points to memory that
-has been returned from dma_pool_alloc. It is not valid to use writel()
-on such memory, that is only meant to work on real MMIO registers.
-
-You should use regular assignments to the registers here, e.g.
-
-        tcd->saddr = cpu_to_le32(src);
-        tcd->daddr = cpu_to_le32(dst);
-        ...
-
-        Arnd
-
-I will reconsider this setting. BTW, why writel() can't be used for memory location since it's still mapped and registers space is
-also memory mapped? Thanks.
-
-Best Regards,
-Jingchang
+- Kukjin
