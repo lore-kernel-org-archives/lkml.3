@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899AbaIWVdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:33:12 -0400
-Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:39798
-	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751735AbaIWVdH (ORCPT
+	id S932242AbaIWVdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:33:42 -0400
+Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:52780 "EHLO
+	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756127AbaIWVdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:33:07 -0400
+	Tue, 23 Sep 2014 17:33:12 -0400
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
         colin.king@canonical.com, dbueso@suse.de, ebiederm@xmission.com,
@@ -14,41 +14,70 @@ To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
         luto@amacapital.net
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/7] kselftest framework and test changes to use it
-Date: Tue, 23 Sep 2014 15:32:53 -0600
-Message-Id: <cover.1411506121.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v2 7/7] selftests/timers: change test to use ksft framework
+Date: Tue, 23 Sep 2014 15:33:00 -0600
+Message-Id: <d9a4d72ce50d6389aa8ce4d8458daf9a3ab8f090.1411506121.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
+References: <cover.1411506121.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1411506121.git.shuahkh@osg.samsung.com>
+References: <cover.1411506121.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch v2 series: (revised to address v1 comments)
+Change timers test to use kselftest framework to report
+test results.
 
-Add kselftest framework for tests to use. This is a light
-weight framework provides a set of interfaces to report test
-results and test statistics on number of tests passed and failed.
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ tools/testing/selftests/timers/posix_timers.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-Several tests are changed to use the framework to report results.
-
-Shuah Khan (7):
-  selftests: add kselftest framework for uniform test reporting
-  selftests/breakpoints: change test to use ksft framework
-  selftests/ipc: change test to use ksft framework
-  selftests/kcmp: change test to use ksft framework
-  selftests/mount: change test to use ksft framework
-  selftests/ptrace: change test to use ksft framework
-  selftests/timers: change test to use ksft framework
-
- .../selftests/breakpoints/breakpoint_test.c        | 10 +++---
- tools/testing/selftests/ipc/msgque.c               | 26 +++++++-------
- tools/testing/selftests/kcmp/kcmp_test.c           | 27 ++++++++++----
- tools/testing/selftests/kselftest.h                | 41 ++++++++++++++++++++++
- .../selftests/mount/unprivileged-remount-test.c    |  8 +++--
- tools/testing/selftests/ptrace/peeksiginfo.c       | 14 ++++----
- tools/testing/selftests/timers/posix_timers.c      | 14 ++++----
- 7 files changed, 101 insertions(+), 39 deletions(-)
- create mode 100644 tools/testing/selftests/kselftest.h
-
+diff --git a/tools/testing/selftests/timers/posix_timers.c b/tools/testing/selftests/timers/posix_timers.c
+index 41bd855..f87d970 100644
+--- a/tools/testing/selftests/timers/posix_timers.c
++++ b/tools/testing/selftests/timers/posix_timers.c
+@@ -15,6 +15,8 @@
+ #include <time.h>
+ #include <pthread.h>
+ 
++#include "../kselftest.h"
++
+ #define DELAY 2
+ #define USECS_PER_SEC 1000000
+ 
+@@ -194,16 +196,16 @@ int main(int argc, char **argv)
+ 	printf("based timers if other threads run on the CPU...\n");
+ 
+ 	if (check_itimer(ITIMER_VIRTUAL) < 0)
+-		return -1;
++		return ksft_exit_fail();
+ 
+ 	if (check_itimer(ITIMER_PROF) < 0)
+-		return -1;
++		return ksft_exit_fail();
+ 
+ 	if (check_itimer(ITIMER_REAL) < 0)
+-		return -1;
++		return ksft_exit_fail();
+ 
+ 	if (check_timer_create(CLOCK_THREAD_CPUTIME_ID) < 0)
+-		return -1;
++		return ksft_exit_fail();
+ 
+ 	/*
+ 	 * It's unfortunately hard to reliably test a timer expiration
+@@ -215,7 +217,7 @@ int main(int argc, char **argv)
+ 	 * find a better solution.
+ 	 */
+ 	if (check_timer_create(CLOCK_PROCESS_CPUTIME_ID) < 0)
+-		return -1;
++		return ksft_exit_fail();
+ 
+-	return 0;
++	return ksft_exit_pass();
+ }
 -- 
 1.9.1
 
