@@ -1,90 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051AbaIWKDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:03:38 -0400
-Received: from mail-bn1bon0115.outbound.protection.outlook.com ([157.56.111.115]:23264
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1755006AbaIWKIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:08:39 -0400
+Received: from mail-bl2on0108.outbound.protection.outlook.com ([65.55.169.108]:25136
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754283AbaIWKDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:03:36 -0400
-X-Greylist: delayed 891 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 06:03:36 EDT
-From: Thomas Shao <huishao@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "KY Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Drivers: hv: util: Implement Time Synchronization using
- host time sample
-Thread-Topic: [PATCH] Drivers: hv: util: Implement Time Synchronization
- using host time sample
-Thread-Index: AQHP1vKMtDPVAvlpRESa+FlYjIeumZwOWccAgAAXQzA=
-Date: Tue, 23 Sep 2014 09:47:59 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD8401415408E2A9@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
- <20140923075610.GA10933@aepfle.de>
-In-Reply-To: <20140923075610.GA10933@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.4]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754502AbaIWKIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 06:08:38 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: <vinod.koul@intel.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: [PATCH] dmaengine: fsl-edma: fixup reg offset and hw S/G support in big-endian model
+Date: Tue, 23 Sep 2014 17:15:19 +0800
+Message-ID: <1411463719-7728-1-git-send-email-jingchang.lu@freescale.com>
+X-Mailer: git-send-email 1.8.0
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(189002)(13464003)(377454003)(199003)(24454002)(51704005)(64706001)(84676001)(77096002)(50986999)(85852003)(90102001)(4396001)(95666004)(76176999)(86362001)(20776003)(21056001)(47776003)(66066001)(99396002)(86612001)(54356999)(33656002)(87936001)(50466002)(86146001)(81156004)(106466001)(2656002)(81342003)(74502003)(46102003)(6806004)(77982003)(76482002)(80022003)(107046002)(79102003)(81542003)(74662003)(19580395003)(68736004)(55846006)(69596002)(83322001)(19580405001)(44976005)(110136001)(31966008)(83072002)(106116001)(92566001)(92726001)(23676002)(85306004)(120916001)(16796002)(10300001)(97736003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1209;H:mail.microsoft.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(87286001)(87936001)(84676001)(89996001)(50466002)(105606002)(31966008)(106466001)(50226001)(48376002)(77156001)(21056001)(85306004)(97736003)(88136002)(10300001)(4396001)(68736004)(95666004)(83322001)(6806004)(44976005)(19580395003)(85852003)(19580405001)(104016003)(90102001)(46102003)(81542003)(80022003)(81342003)(33646002)(79102003)(74502003)(74662003)(62966002)(110136001)(99396002)(50986999)(229853001)(107046002)(2351001)(102836001)(77982003)(92726001)(76482002)(92566001)(104166001)(36756003)(120916001)(83072002)(86362001)(20776003)(47776003)(93916002)(64706001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB480;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1209;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB480;
 X-Forefront-PRVS: 0343AC1D30
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8NA3hnx003177
 
+The offset of all 8-/16-bit register in big-endian eDMA model are
+swapped in a 32-bit size opposite those in the little-endian model.
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Tuesday, September 23, 2014 3:56 PM
-> To: Thomas Shao
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> driverdev-devel@linuxdriverproject.org; apw@canonical.com;
-> jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
-> Subject: Re: [PATCH] Drivers: hv: util: Implement Time Synchronization using
-> host time sample
-> 
-> On Tue, Sep 23, Thomas Shao wrote:
-> 
-> > In current hyper-v time sync service,it only gets the initial clock
-> > time from the host. It didn't process the following time samples. This
-> > change introduced a module parameter called host_time_sync. If it is
-> > set to true, the guest will periodically sychronize it's time with the
-> > host clock using host time sample. By default it is disabled, because
-> > we still recommend user to configure NTP for time synchronization.
-> 
-> Is that new knob a temporary thing to aid testing and development?
-> Because once it sneaks in it becomes some sort of ABIT.
-> So if the outcome of all that is that 'sync with host every once in a while' will be
-> the default, the new knob is not required.
-> 
+The hardware Scatter/Gather requires the subsequent TCDs in memory
+to be auto loaded should retain the same endian as the core independent
+of the register endian model, the dma engine will do the swap if need.
 
-Hi Olaf, 
-If the guest is configured with other time sync source, like NTP, we don't want the 
-guest to periodically sync with host. This feature is useful when the guest didn't have
-Internet connection to setup NTP. So the new knob is to allow users to only turn on the
-host-guest sync when they need.
+Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+---
+ drivers/dma/fsl-edma.c | 104 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 66 insertions(+), 38 deletions(-)
 
-Regards
-Thomas
+diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
+index 3c5711d..499af8f 100644
+--- a/drivers/dma/fsl-edma.c
++++ b/drivers/dma/fsl-edma.c
+@@ -177,14 +177,20 @@ struct fsl_edma_engine {
+ /*
+  * R/W functions for big- or little-endian registers
+  * the eDMA controller's endian is independent of the CPU core's endian.
++ * for the big-endian IP module, the offset for 8-bit or 16-bit register
++ * should also be swapped oposite to that in little-endian IP.
+  */
+ 
+ static u16 edma_readw(struct fsl_edma_engine *edma, void __iomem *addr)
+ {
+-	if (edma->big_endian)
+-		return ioread16be(addr);
+-	else
++	u32 dst;
++	/* swap the reg offset for these in big-endian mode */
++	if (edma->big_endian) {
++		dst = ((u32)addr & ~0x3) | (((u32)addr & 0x3) ^ 0x2);
++		return ioread16be((void __iomem *)dst);
++	} else {
+ 		return ioread16(addr);
++	}
+ }
+ 
+ static u32 edma_readl(struct fsl_edma_engine *edma, void __iomem *addr)
+@@ -197,15 +203,26 @@ static u32 edma_readl(struct fsl_edma_engine *edma, void __iomem *addr)
+ 
+ static void edma_writeb(struct fsl_edma_engine *edma, u8 val, void __iomem *addr)
+ {
+-	iowrite8(val, addr);
++	u32 dst;
++	/* swap the reg offset for these in big-endian mode */
++	if (edma->big_endian) {
++		dst = ((u32)addr & ~0x3) | (((u32)addr & 0x3) ^ 0x3);
++		iowrite8(val, (void __iomem *)dst);
++	} else {
++		iowrite8(val, addr);
++	}
+ }
+ 
+ static void edma_writew(struct fsl_edma_engine *edma, u16 val, void __iomem *addr)
+ {
+-	if (edma->big_endian)
+-		iowrite16be(val, addr);
+-	else
++	u32 dst;
++	/* swap the reg offset for these in big-endian mode */
++	if (edma->big_endian) {
++		dst = ((u32)addr & ~0x3) | (((u32)addr & 0x3) ^ 0x2);
++		iowrite16be(val, (void __iomem *)dst);
++	} else {
+ 		iowrite16(val, addr);
++	}
+ }
+ 
+ static void edma_writel(struct fsl_edma_engine *edma, u32 val, void __iomem *addr)
+@@ -256,11 +273,10 @@ static void fsl_edma_chan_mux(struct fsl_edma_chan *fsl_chan,
+ 	muxaddr = fsl_chan->edma->muxbase[ch / chans_per_mux];
+ 
+ 	if (enable)
+-		edma_writeb(fsl_chan->edma,
+-				EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(slot),
++		writeb(EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(slot),
+ 				muxaddr + ch_off);
+ 	else
+-		edma_writeb(fsl_chan->edma, EDMAMUX_CHCFG_DIS, muxaddr + ch_off);
++		writeb(EDMAMUX_CHCFG_DIS, muxaddr + ch_off);
+ }
+ 
+ static unsigned int fsl_edma_get_tcd_attr(enum dma_slave_buswidth addr_width)
+@@ -433,21 +449,26 @@ static void fsl_edma_set_tcd_params(struct fsl_edma_chan *fsl_chan,
+ 	u32 ch = fsl_chan->vchan.chan.chan_id;
+ 
+ 	/*
+-	 * TCD parameters have been swapped in fill_tcd_params(),
+-	 * so just write them to registers in the cpu endian here
++	 * TCD parameters should be swapped according the eDMA
++	 * engine requirement.
+ 	 */
+-	writew(0, addr + EDMA_TCD_CSR(ch));
+-	writel(src, addr + EDMA_TCD_SADDR(ch));
+-	writel(dst, addr + EDMA_TCD_DADDR(ch));
+-	writew(attr, addr + EDMA_TCD_ATTR(ch));
+-	writew(soff, addr + EDMA_TCD_SOFF(ch));
+-	writel(nbytes, addr + EDMA_TCD_NBYTES(ch));
+-	writel(slast, addr + EDMA_TCD_SLAST(ch));
+-	writew(citer, addr + EDMA_TCD_CITER(ch));
+-	writew(biter, addr + EDMA_TCD_BITER(ch));
+-	writew(doff, addr + EDMA_TCD_DOFF(ch));
+-	writel(dlast_sga, addr + EDMA_TCD_DLAST_SGA(ch));
+-	writew(csr, addr + EDMA_TCD_CSR(ch));
++	edma_writew(fsl_chan->edma, 0, addr + EDMA_TCD_CSR(ch));
++	edma_writel(fsl_chan->edma, src, addr + EDMA_TCD_SADDR(ch));
++	edma_writel(fsl_chan->edma, dst, addr + EDMA_TCD_DADDR(ch));
++
++	edma_writew(fsl_chan->edma, attr, addr + EDMA_TCD_ATTR(ch));
++	edma_writew(fsl_chan->edma, soff, addr + EDMA_TCD_SOFF(ch));
++
++	edma_writel(fsl_chan->edma, nbytes, addr + EDMA_TCD_NBYTES(ch));
++	edma_writel(fsl_chan->edma, slast, addr + EDMA_TCD_SLAST(ch));
++
++	edma_writew(fsl_chan->edma, citer, addr + EDMA_TCD_CITER(ch));
++	edma_writew(fsl_chan->edma, biter, addr + EDMA_TCD_BITER(ch));
++	edma_writew(fsl_chan->edma, doff, addr + EDMA_TCD_DOFF(ch));
++
++	edma_writel(fsl_chan->edma, dlast_sga, addr + EDMA_TCD_DLAST_SGA(ch));
++
++	edma_writew(fsl_chan->edma, csr, addr + EDMA_TCD_CSR(ch));
+ }
+ 
+ static void fill_tcd_params(struct fsl_edma_engine *edma,
+@@ -459,20 +480,27 @@ static void fill_tcd_params(struct fsl_edma_engine *edma,
+ 	u16 csr = 0;
+ 
+ 	/*
+-	 * eDMA hardware SGs require the TCD parameters stored in memory
+-	 * the same endian as the eDMA module so that they can be loaded
+-	 * automatically by the engine
++	 * eDMA hardware SGs requires the TCDs to be auto loaded
++	 * in the same endian as the core whenver the eDAM engine's
++	 * register endian. So we don't swap the value, waitting
++	 * for fsl_set_tcd_params doing the swap.
+ 	 */
+-	edma_writel(edma, src, &(tcd->saddr));
+-	edma_writel(edma, dst, &(tcd->daddr));
+-	edma_writew(edma, attr, &(tcd->attr));
+-	edma_writew(edma, EDMA_TCD_SOFF_SOFF(soff), &(tcd->soff));
+-	edma_writel(edma, EDMA_TCD_NBYTES_NBYTES(nbytes), &(tcd->nbytes));
+-	edma_writel(edma, EDMA_TCD_SLAST_SLAST(slast), &(tcd->slast));
+-	edma_writew(edma, EDMA_TCD_CITER_CITER(citer), &(tcd->citer));
+-	edma_writew(edma, EDMA_TCD_DOFF_DOFF(doff), &(tcd->doff));
+-	edma_writel(edma, EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga), &(tcd->dlast_sga));
+-	edma_writew(edma, EDMA_TCD_BITER_BITER(biter), &(tcd->biter));
++	writel(src, &(tcd->saddr));
++	writel(dst, &(tcd->daddr));
++
++	writew(attr, &(tcd->attr));
++
++	writew(EDMA_TCD_SOFF_SOFF(soff), &(tcd->soff));
++
++	writel(EDMA_TCD_NBYTES_NBYTES(nbytes), &(tcd->nbytes));
++	writel(EDMA_TCD_SLAST_SLAST(slast), &(tcd->slast));
++
++	writew(EDMA_TCD_CITER_CITER(citer), &(tcd->citer));
++	writew(EDMA_TCD_DOFF_DOFF(doff), &(tcd->doff));
++
++	writel(EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga), &(tcd->dlast_sga));
++
++	writew(EDMA_TCD_BITER_BITER(biter), &(tcd->biter));
+ 	if (major_int)
+ 		csr |= EDMA_TCD_CSR_INT_MAJOR;
+ 
+@@ -482,7 +510,7 @@ static void fill_tcd_params(struct fsl_edma_engine *edma,
+ 	if (enable_sg)
+ 		csr |= EDMA_TCD_CSR_E_SG;
+ 
+-	edma_writew(edma, csr, &(tcd->csr));
++	writew(csr, &(tcd->csr));
+ }
+ 
+ static struct fsl_edma_desc *fsl_edma_alloc_desc(struct fsl_edma_chan *fsl_chan,
+-- 
+1.8.0
 
-> Olaf
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
