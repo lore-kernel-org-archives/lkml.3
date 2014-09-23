@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaIWNgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:36:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:37107 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751860AbaIWNgN (ORCPT
+	id S1756020AbaIWNgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:36:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57725 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751742AbaIWNgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:36:13 -0400
-Date: Tue, 23 Sep 2014 09:36:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/4] ftracetest: Initial commit for ftracetest
-Message-ID: <20140923093610.4f404274@gandalf.local.home>
-In-Reply-To: <20140922234250.23415.68758.stgit@kbuild-f20.novalocal>
-References: <20140922234248.23415.36560.stgit@kbuild-f20.novalocal>
-	<20140922234250.23415.68758.stgit@kbuild-f20.novalocal>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Tue, 23 Sep 2014 09:36:50 -0400
+Date: Tue, 23 Sep 2014 15:36:45 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
+        balbi@ti.com, p.zabel@pengutronix.de,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140923133645.GA18924@kwain>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
+ <2909480.SL9c0XWUbW@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2909480.SL9c0XWUbW@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For future reference:
+Arnd,
 
-On Mon, 22 Sep 2014 23:42:50 +0000
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> ftracetest is a collection of testcase shell-scripts for ftrace.
-> To avoid regressions of ftrace, these testcases check correct
-> ftrace behaviors. If someone would like to add any features on
-> ftrace, the patch series should have at least one testcase for
-> checking the new behavior.
+On Tue, Sep 23, 2014 at 12:39:04PM +0200, Arnd Bergmann wrote:
+> On Tuesday 23 September 2014 12:28:03 Antoine Tenart wrote:
+> > +       if (dev->of_node) {
+> > +               ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
+> > +               if (ret)
+> > +                       goto clk_err;
+> > +       } else {
+> > +               ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+> > +               if (ret)
+> > +                       goto clk_err;
+> > +       }
+> > 
 > 
-> Changes in v5:
->  - Fix a TODO item, since this already integrated to kselftest.
->  - Print the test name at the first line.
+> Why do you care about the non-DT case here? I think it would be nicer to
+> open-code the ci_hdrc_usb2_dt_probe() function in here and remove
+> the dma_set_mask_and_coherent(), which should not even be necessary for
+> the case where you have a hardwired platform device.
 > 
-> Changes in v4:
->  - Move this under selftests. :)
->  - Add a copyright and note of GPLv2.
->  - Fix documents acconding to Steven's comments.
->  - Fix a small bug pointed by Namhyng.
-> 
-> Changes in v3:
->  - Use "." instead of "source".
->  - Don't use -e option for echo since dash doesn't support it.
-> 
-> Changes in v2:
->  - Remove unneeded 'function' keyword.
->  - Add abspath and find_testcases.
->  - Make OPT_TEST_CASES a local var.
->  - Ensure given testcase ended with .tc.
->  - Accept a directory option which has multiple testcases.
->  - Change [PASSED]/[FAILED] to [PASS]/[FAIL]
->  - Change the basic shell to sh (dash).
 
-Place the version changes after the '---'. They are great for patch
-series, but we prefer not to have them in the git logs. The "Link:" tag
-should allow people to find the version history of patches if they are
-interested. By placing the version updates after the '---', git will
-ignore them when pulling them in.
+I thought we agreed to call dma_set_mask_and_coherent():
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/273335.html
 
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
-> ---
+I do not have a strong opinion on this as I only use the dt case for my
+usage.
 
-Also, please have the Signed-off-by be the last tag, otherwise it
-screws up my scripts ;-)
 
--- Steve
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
