@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaIWNJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:09:06 -0400
-Received: from mail.bmw-carit.de ([62.245.222.98]:45232 "EHLO
-	mail.bmw-carit.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbaIWNJD (ORCPT
+	id S1755554AbaIWNK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:10:26 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:47460 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaIWNKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:09:03 -0400
-Message-ID: <542170E4.80304@bmw-carit.de>
-Date: Tue, 23 Sep 2014 15:08:52 +0200
-From: Daniel Wagner <daniel.wagner@bmw-carit.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 23 Sep 2014 09:10:24 -0400
+Date: Tue, 23 Sep 2014 09:10:20 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org
+Subject: [GIT UPDATED PULL] cgroup fixes for v3.17-rc6
+Message-ID: <20140923131020.GB14905@mtj.dyndns.org>
+References: <20140923063353.GK11740@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, Vincent Legout <vincent@legout.info>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "raistlin@linux.it" <raistlin@linux.it>,
-        "michael@amarulasolutions.com" <michael@amarulasolutions.com>,
-        "fchecconi@gmail.com" <fchecconi@gmail.com>,
-        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched/deadline: fix bandwidth check/update when migrating
- tasks between exclusive cpusets
-References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com>	<1411118561-26323-3-git-send-email-juri.lelli@arm.com> <87k34vo3vb.fsf@cecht.legt.fr> <54212AB7.3070406@arm.com>
-In-Reply-To: <54212AB7.3070406@arm.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923063353.GK11740@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello, Linus.
 
-On 09/23/2014 10:09 AM, Juri Lelli wrote:
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728678] ------------[ cut here ]------------
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728699] kernel BUG at kernel/sched/deadline.c:819!
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728719] invalid opcode: 0000 [#1] PREEMPT SMP 
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728744] Modules linked in: nfsv3 rpcsec_gss_krb5 nfsv4 dm_crypt nfsd auth_rpcgss oid_registry exportfs nfs_acl nfs lockd sunrpc bridge stp llc lp coretemp kvm_intel kvm ppdev ioatdma microcode ipmi_si parport_pc lpc_ich dca mfd_core parport ipmi_msghandler joydev serio_raw hid_generic usbhid hid crc32c_intel psmouse e1000e ptp pps_core
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728928] CPU: 5 PID: 0 Comm: swapper/5 Not tainted 3.16.0+ #20
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728950] Hardware name: empty empty/S7002, BIOS 'V1.10.B10   ' 05/03/2011
->> Sep 19 09:54:37 starbuck kernel: [ 1309.728977] task: ffff88023691c920 ti: ffff88023692c000 task.ti: ffff88023692c000
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729003] RIP: 0010:[<ffffffff810a543e>]  [<ffffffff810a543e>] enqueue_task_dl+0x44e/0x450
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729041] RSP: 0018:ffff88043fc23e68  EFLAGS: 00010082
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729060] RAX: 0000000000000000 RBX: ffff880434edb0c0 RCX: ffff880434edb2f8
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729086] RDX: 0000000000000008 RSI: ffff880434edb0c0 RDI: 0000000000000000
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729140] RBP: ffff88043fc23ea8 R08: 0000000000000001 R09: 000002cb4aebb39d
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729193] R10: 13955a8129438cf2 R11: 0000000000000202 R12: 0000000000000008
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729247] R13: ffff88043fc33f00 R14: ffff88043fc2e0e0 R15: ffff880434edb2f8
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729301] FS:  0000000000000000(0000) GS:ffff88043fc20000(0000) knlGS:0000000000000000
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729383] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> Sep 19 09:54:37 starbuck kernel: [ 1309.729436] CR2: 0000000000000000 CR3: 0000000435a07000 CR4: 00000000000027e0
->>
-> 
-> This can be related to the problems Daniel is also experiencing.
+One late fix for cgroup.  I was waiting for another set of fixes for a
+long-standing obscure cpuset bug but am not sure whether they'll be
+ready before v3.17 release.  This one is a simple fix for a mutex
+unlock balance bug in an allocation failure path in
+pidlist_array_load().  The bug was introduced in v3.14 and the fix is
+tagged for -stable.
 
-I nailed my problem down to mutex with PI inheritance. This will trigger
+Thanks.
 
-  kernel BUG at kernel/sched/deadline.c:819!
+The following changes since commit aa32362f011c6e863132b16c1761487166a4bad2:
 
-reliable.
+  cgroup: check cgroup liveliness before unbreaking kernfs (2014-09-05 01:36:19 +0900)
 
-cheers,
-daniel
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.17-fixes
+
+for you to fetch changes up to eb4aec84d6bdf98d00cedb41c18000f7a31e648a:
+
+  cgroup: fix unbalanced locking (2014-09-18 12:32:52 -0400)
+
+----------------------------------------------------------------
+Zefan Li (1):
+      cgroup: fix unbalanced locking
+
+ kernel/cgroup.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 940aced..3a73f99 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3985,7 +3985,6 @@ static int pidlist_array_load(struct cgroup *cgrp, enum cgroup_filetype type,
+ 
+ 	l = cgroup_pidlist_find_create(cgrp, type);
+ 	if (!l) {
+-		mutex_unlock(&cgrp->pidlist_mutex);
+ 		pidlist_free(array);
+ 		return -ENOMEM;
+ 	}
+
+-- 
+tejun
