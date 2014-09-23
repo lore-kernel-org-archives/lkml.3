@@ -1,40 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296AbaIWGJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:09:12 -0400
-Received: from verein.lst.de ([213.95.11.211]:49093 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237AbaIWGJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:09:09 -0400
-Date: Tue, 23 Sep 2014 08:09:06 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq
-	usage count
-Message-ID: <20140923060906.GA10547@lst.de>
-References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk> <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org> <20140923055924.GA10295@lst.de> <20140923060141.GF11740@mtj.dyndns.org>
+	id S1754353AbaIWGKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:10:36 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:45332 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751299AbaIWGKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 02:10:34 -0400
+Message-ID: <54210EC1.9070507@st.com>
+Date: Tue, 23 Sep 2014 08:10:09 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923060141.GF11740@mtj.dyndns.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        David Miller <davem@davemloft.net>
+Cc: "rayagond@vayavyalabs.com" <rayagond@vayavyalabs.com>,
+        "vbridgers2013@gmail.com" <vbridgers2013@gmail.com>,
+        "wens@csie.org" <wens@csie.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "tobias.johannes.klausmann@mni.thm.de" 
+	<tobias.johannes.klausmann@mni.thm.de>
+Subject: Re: [PATCH] net: stmmac: fix stmmac_pci_probe failed when CONFIG_HAVE_CLK
+ is selected
+References: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com> <20140922.141921.577008114679288180.davem@davemloft.net> <F54AEECA5E2B9541821D670476DAE19C2B7EAE19@PGSMSX102.gar.corp.intel.com>
+In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B7EAE19@PGSMSX102.gar.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.72]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:01:41AM -0400, Tejun Heo wrote:
-> On Tue, Sep 23, 2014 at 07:59:24AM +0200, Christoph Hellwig wrote:
-> > "[PATCHSET percpu/for-3.18] percpu_ref: implement switch_to_atomic/percpu()"
-> > 
-> > looks way to big for 3.17, and the regression was introduced in the 3.17
-> > merge window.  I'm not sure what was broken before, but it defintively
-> > survived a lot of testing.
-> 
-> Do we even care about fixing it for 3.17?  scsi-mq isn't enabled by
-> default even for 3.18.  The open-coded percpu ref thing was subtly
-> broken there.  It'd be difficult to trigger but I'm fairly sure it'd
-> crap out in the wild once in a blue moon.
+On 9/23/2014 3:16 AM, Kweh, Hock Leong wrote:
+>> -----Original Message-----
+>> From: David Miller [mailto:davem@davemloft.net]
+>> Sent: Tuesday, September 23, 2014 2:19 AM
+>> From: Kweh Hock Leong <hock.leong.kweh@intel.com>
+>> Date: Thu, 18 Sep 2014 20:34:10 +0800
+>>
+>> Giuseppe, Kweh, where are we with this patch?
+>
+> We are discussing whether this is the correct fix to the issue. Below is the discussion log:
+>
+>>> Hmm I am not sure this is the right fix. The driver has to fail if the
+>>> main clock is not found. Indeed dev_warn has to be changed in dev_err.
+>>>
+>>> Take a look at Documentation/networking/stmmac.txt but I will post
+>>> some patch to improve the documentation adding further detail for clocks too.
+>>>
+>>> The the logic behind the code is that the CSR clock will be set at
+>>> runtime if in case of priv->plat->clk_csr ==0 or it will be forced to
+>>> a fixed value if passed from the platform instead of.
+>>> IIRC This was required on some platforms time ago.
+>>> For sure the driver is designed to fail in case of no main clock is found.
+>>>
+>>> Peppe
+>>
+>> Hi Peppe,
+>>
+>> I understand your point from the code below (at file stmmac_main.c line 2784):
+>>
+>> /* If a specific clk_csr value is passed from the platform
+>>    * this means that the CSR Clock Range selection cannot be
+>>    * changed at run-time and it is fixed. Viceversa the driver'll try to
+>>    * set the MDC clock dynamically according to the csr actual
+>>    * clock input.
+>>    */
+>> if (!priv->plat->clk_csr)
+>>          stmmac_clk_csr_set(priv);
+>> else
+>>          priv->clk_csr = priv->plat->clk_csr;
+>>
+>>
+>> I did search through the whole stmmac_main.c file and found that only stmmac_clk_csr_set()
+>> function is leveraging the priv->stmmac_clk params for it calculation. By the logic point of view,
+>> I do not need priv->stmmac_clk when I got priv->plat->clk_csr. With this thinking, I propose this
+>> fix as when the probe get priv->plat->clk_csr, it shouldn't fail if priv->stmmac_clk has the error value.
+>
+> Hi Peppe,
+>
+> Are you trying to tell that if there is a fix CSR clock value, but driver cannot obtain the clk from devm_clk_get()
+> (even it is not in use), the driver should fail the probe?
+>
+> You have a case with this condition:
+> HW allow SW to discover the STMMAC controller but HW/SW configures not to supply the CLOCK to STMMAC controller?
+>
+> My understanding to these priv->plat->clk_csr and priv->stmmac_clk is that 1st one is fixed and 2nd one is dynamic.
+> When fixed value occurs, dynamic one would not be use. Do I understand this correctly?
 
-It's compiled in by default, and people are extremly eager to test it.
+the logic is: the priv->stmmac_clk must be always provided from the
+platform then we have two cases:
+
+1) if priv->plat->clk_csr is also passed then it will be adopt in the
+    mdio functions to program the Reg4[5:2]
+    This was required in the past IIRC on SPEAr platforms.
+
+2) if priv->plat->clk_csr is not passed from the platform then the
+    priv->clk_csr will be set according to the priv->stmmac_clk
+    and always used in the mdio part.
+
+So IIUC now you are asking for not passing the priv->stmmac_clk
+and warning this event w/o failing. Why you cannot pass this clock?
+
+peppe
+
+
+>
+> Thanks.
+>
+>
+> Regards,
+> Wilson
+>
+
