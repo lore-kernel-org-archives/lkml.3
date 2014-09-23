@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaIWFfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:35:16 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:58849 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379AbaIWFfP (ORCPT
+	id S1753933AbaIWFhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:37:18 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:45612 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783AbaIWFhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:35:15 -0400
-Date: Tue, 23 Sep 2014 07:35:10 +0200
+	Tue, 23 Sep 2014 01:37:16 -0400
+Date: Tue, 23 Sep 2014 07:37:11 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Matt Fleming <matt.fleming@intel.com>
@@ -15,59 +15,63 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20140923053510.GB27825@gmail.com>
+Message-ID: <20140923053711.GA28704@gmail.com>
 References: <20140919104021.GA11552@gmail.com>
  <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+ <20140923053510.GB27825@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+In-Reply-To: <20140923053510.GB27825@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-> On Fri, Sep 19, 2014 at 3:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Please pull the latest x86-urgent-for-linus git tree from:
 > 
-> I only just noticed, but this pull request causes my Sony Vaio 
-> laptop to immediately reboot at startup.
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
 > 
-> I'm assuming it's one of the efi changes, but I'm bisecting now 
-> to say exactly where it happens. It will get reverted.
+> > On Fri, Sep 19, 2014 at 3:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > >
+> > > Please pull the latest x86-urgent-for-linus git tree from:
+> > 
+> > I only just noticed, but this pull request causes my Sony Vaio 
+> > laptop to immediately reboot at startup.
+> > 
+> > I'm assuming it's one of the efi changes, but I'm bisecting now 
+> > to say exactly where it happens. It will get reverted.
+> 
+> I've Cc:-ed Matt.
+> 
+> My guess would be one of these two EFI commits:
+> 
+>       * Fix early boot regression affecting x86 EFI boot stub when loading
+>         initrds above 4GB - Yinghai Lu
+>     
+> 47226ad4f4cf x86/efi: Only load initrd above 4g on second try
+> 
+>       * Relocate GOT entries in the x86 EFI boot stub now that we have
+>         symbols with global visibility - Matt Fleming
+> 
+> 9cb0e394234d x86/efi: Fixup GOT in all boot code paths
+> 
+> If it's 9cb0e394234d - then it's perhaps a build quirk, or a bug 
+> in the assembly code. If so then we'd have to revert this, and 
+> reintroduce another regression, caused by EFI commit 
+> f23cf8bd5c1f49 in this merge window. The most recent commit is 
+> easy to revert, the older one not.
+> 
+> If it's 47226ad4f4cf then we'd reintroduce the regression caused 
+> by 4bf7111f501 in the previous merge window. They both revert 
+> cleanly after each other - but it might be safer to just revert 
+> the most recent one.
+>
+> My guess is that your regression is caused by 47226ad4f4cf.
 
-I've Cc:-ed Matt.
-
-My guess would be one of these two EFI commits:
-
-      * Fix early boot regression affecting x86 EFI boot stub when loading
-        initrds above 4GB - Yinghai Lu
-    
-47226ad4f4cf x86/efi: Only load initrd above 4g on second try
-
-      * Relocate GOT entries in the x86 EFI boot stub now that we have
-        symbols with global visibility - Matt Fleming
-
-9cb0e394234d x86/efi: Fixup GOT in all boot code paths
-
-If it's 9cb0e394234d - then it's perhaps a build quirk, or a bug 
-in the assembly code. If so then we'd have to revert this, and 
-reintroduce another regression, caused by EFI commit 
-f23cf8bd5c1f49 in this merge window. The most recent commit is 
-easy to revert, the older one not.
-
-If it's 47226ad4f4cf then we'd reintroduce the regression caused 
-by 4bf7111f501 in the previous merge window. They both revert 
-cleanly after each other - but it might be safer to just revert 
-the most recent one.
-
-My guess is that your regression is caused by 47226ad4f4cf.
-
-Sorry about this, the timing is unfortunate.
+Wrong sha1: my guess is on 9cb0e394234d, the GOT fixup.
 
 Thanks,
 
