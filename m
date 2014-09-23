@@ -1,54 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861AbaIWUn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:43:56 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:57373 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756593AbaIWUmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:42:40 -0400
-From: Heiko Stuebner <heiko@sntech.de>
-To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, dianders@chromium.org, heiko@sntech.de,
-        Heiko Stuebner <heiko.stuebner@bq.com>
-Subject: [PATCH v4 3/3] power: gpio-charger: do not use gpio value directly
-Date: Tue, 23 Sep 2014 22:42:16 +0200
-Message-Id: <1411504936-21026-4-git-send-email-heiko@sntech.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411504936-21026-1-git-send-email-heiko@sntech.de>
-References: <1411504936-21026-1-git-send-email-heiko@sntech.de>
+	id S1756877AbaIWUoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:44:25 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:41457 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090AbaIWUoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:44:23 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude E6440
+Date: Tue, 23 Sep 2014 22:44:19 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.13.2; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+References: <201409232206.02819@pali> <5421D8A3.3090502@redhat.com>
+In-Reply-To: <5421D8A3.3090502@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart5788656.ixqAptM7nV";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409232244.19104@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bq.com>
+--nextPart5788656.ixqAptM7nV
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Some gpio implementations return interesting values for gpio_get_value when
-the value is not 0 - as seen on a imx6sl board. Therefore do not use the
-value returned from gpio_get_value directly but simply check for 0 or not 0.
+On Tuesday 23 September 2014 22:31:31 you wrote:
+> Hi,
+>=20
+> On 09/23/2014 10:06 PM, Pali Roh=C3=A1r wrote:
+> > Hello,
+> >=20
+> > after big changes in acpi video/i915 code I cannot change
+> > display brightness on my Dell Latitude E6440 with kernel
+> > 3.17-rc6. With kernel 3.13 everything worked fine.
+> >=20
+> > More information about this problem:
+> >=20
+> > For configuring brightness on Dell laptops there are 4 ways:
+> > 1) via acpi video driver
+> > 2) via dell-laptop driver
+> > 3) via i915 drm driver
+> > 4) from userspace with special dell SMI call
+> >=20
+> >     (e.g with program dellLcdBrightness from libsmbios
+> >     package)
+> >=20
+> > Methods 2) and 4) are same, both making special SMI call and
+> > Bios handing this request (just 2 is from kernel and 4 from
+> > userspace)
+> >=20
+> > Method 1) via acpi video driver working, but is not perfect.
+> > Driver can be used to change brightness (but only some
+> > levels, probably this depends on acpi/DSDT tables), but
+> > cannot be used to retrieve current brightness (when
+> > BIOS/SMI change brightness acpi driver report old incorrect
+> > value). So I prefer dell-laptop driver instead acpi video.
+> >=20
+> > Method 3) working even with 3.17-rc6 kernel but because that
+> > backlight device exported by i915 is marked as raw, desktop
+> > programs prefer to use other devices.
+> >=20
+> > Moreover it looks like that methods 1) 2) and 4) just
+> > forward request to method 3). So in any cased brightness is
+> > changed by i915 drm driver.
+> >=20
+> > I'm not sure (correct me if I'm wrong!) but I think that
+> > intel i915 drm driver accept changes (file
+> > intel_opregion.c) only if acpi function
+> > acpi_video_verify_backlight_support() returns true.
+> >=20
+> > Function acpi_video_verify_backlight_support() returns true
+> > iff: function acpi_video_backlight_support() returns true
+> > AND at least one of these functions returns false:
+> > acpi_osi_is_win8()
+> > acpi_video_use_native_backlight()
+> > backlight_device_registered(BACKLIGHT_RAW)
+> >=20
+> > On my notebook acpi_osi_is_win8() returns true (as is win8
+> > compliant), backlight_device_registered(BACKLIGHT_RAW)
+> > returns true as I'm using intel i915 drm driver with raw
+> > backlight device and acpi_video_use_native_backlight()
+> > returns true/false depending on
+> > "video.use_native_backlight" kernel param. Default is true.
+> >=20
+> > So if I want to have working acpi video driver with display
+> > brightness support I need to boot kernel with param:
+> > "video.use_native_backlight=3D0". I tested it with kernel
+> > 3.17-rc6 and this param really enabled display brightness
+> > support via acpi video driver -- which is good.
+> >=20
+> > Driver dell-laptop creating backligh device for brightness
+> > control only if acpi_video_backlight_support() returns
+> > false. There is complicated condition for it and when
+> > kernel is booted with "video.use_native_backlight=3D0" that
+> > function returns true.
+> >=20
+> > So conclusion is: With current code in kernel 3.17-rc6 it is
+> > not possible to control brightness of display with native
+> > driver dell-laptop on Dell Latitude E6440 (and probably on
+> > others too)!!!
+> >=20
+> > And Because laptop is win8 compliant and you create decision
+> > to use native driver (instead acpi one) it is not possible
+> > to control display brightness without tweeks in kernel
+> > cmdline.
+> >=20
+> > As I wrote I would rather to use native dell-laptop driver
+> > for controlling brightness, but it is not possible.
+> >=20
+> > So how to solve this problem?
+> >=20
+> > Quick solution would be to set use_native_backlight false
+> > for some Dell laptops which means, that acpi video will be
+> > used and in this case intel i915 driver will *not* drop
+> > backlight change request.
+> >=20
+> > Another solution could be to disable check in dell_laptop
+> > driver and add use_native_backlight=3D0 to hooks. But this
+> > create two backlight interfaces (which is not good), but
+> > only way (for now) how to make dell_laptop working again.
+> >=20
+> > Better and maybe only one proper solution would be to teach
+> > intel drm i915 driver to not drop backlight change request
+> > for Dell laptops (or all??). (This allows to work both acpi
+> > video and dell_laptop drivers without any change and with
+> > *any* value in param use_native_backlight). I think that
+> > problematic code is in function asle_set_backlight() in
+> > file intel_opregion.c (but I'm not sure). My idea is that
+> > "drop" event function it is caused by this commit
+> > 0b9f7d93ca6109048a4eb06332b666b6e29df4fe (but I'm not
+> > sure).
+> >=20
+> > At least something must be done as I think that I'm not only
+> > one who has Dell laptop and brightness configuration is
+> > really important...
+>=20
+> I don't understand your problem, the kernel is selecting the
+> i915 backlight driver, making that the only one available to
+> userspace, so the one problem you state with the i915 driver,
+> that it is "raw" is not an issue, as userspace will pick it
+> when it is the only one.
+>=20
 
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
----
- drivers/power/gpio-charger.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It is not only one. Also dell-laptop (or acpi video) backlight=20
+interface is created (depends on use_native_backlight param). And=20
+userspace will pick dell-laptop (or acpi video) to use (which=20
+cannot change brightness).
 
-diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-index 22f084a..7d4eab2 100644
---- a/drivers/power/gpio-charger.c
-+++ b/drivers/power/gpio-charger.c
-@@ -57,7 +57,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
- 
- 	switch (psp) {
- 	case POWER_SUPPLY_PROP_ONLINE:
--		val->intval = gpio_get_value_cansleep(pdata->gpio);
-+		val->intval = !!gpio_get_value_cansleep(pdata->gpio);
- 		val->intval ^= pdata->gpio_active_low;
- 		break;
- 	default:
--- 
-2.1.0
+> Why would you want to use dell-laptop despite the i915 driver
+> working fine ?
+>=20
 
+i915 working only if I compile kernel without acpi video dell-
+laptop support (distributions compile kernel with these drivers)=20
+and i915 is not good for usage. First it provides more then=20
+thousand brightness levels and lot of (with low numbers)=20
+completely turn display off. And if userspace map these thousand=20
+levels into 5-10 levels (as nobody want to press brightness key=20
+up/down 1000x) two lowest levels cause display off. With acpi=20
+video and dell-laptop driver levels are mapped into small level=20
+space in perfect way. So this is reason I want to use dell-laptop=20
+for controlling brightness.
+
+> Regards,
+>=20
+> Hans
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart5788656.ixqAptM7nV
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlQh26MACgkQi/DJPQPkQ1I2PwCgkXRHe1bu1q8Jh+86vKLgJw10
+1RoAoMOHzSHXA+nduz2+fcO4fygLKMJ2
+=76Es
+-----END PGP SIGNATURE-----
+
+--nextPart5788656.ixqAptM7nV--
