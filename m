@@ -1,136 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaIWGFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:05:37 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11413 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016AbaIWGFf (ORCPT
+	id S1753781AbaIWGHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:07:06 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:35378 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641AbaIWGHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:05:35 -0400
-Message-ID: <54210DA5.4040606@huawei.com>
-Date: Tue, 23 Sep 2014 14:05:25 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 23 Sep 2014 02:07:04 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Miao Xie <miaox@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Kees Cook <keescook@chromium.org>
-Subject: [PATCH v2 3/3] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should be
- atomic flags
-References: <54210D3F.2090409@huawei.com>
-In-Reply-To: <54210D3F.2090409@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CA+55aFyfhMA58ko_rMMbHYuprif+HGbMfwJ-2L1wxAE6-7cAog@mail.gmail.com>
+References: <20140919104021.GA11552@gmail.com>
+	<CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+	<20140923053510.GB27825@gmail.com>
+	<20140923053711.GA28704@gmail.com>
+	<32c24277-c815-4ca6-98c5-77bf040c1384@email.android.com>
+	<CA+55aFyfhMA58ko_rMMbHYuprif+HGbMfwJ-2L1wxAE6-7cAog@mail.gmail.com>
+Date: Mon, 22 Sep 2014 23:07:02 -0700
+X-Google-Sender-Auth: _KBCdBLmLc3dsemksjXhSpzV7Go
+Message-ID: <CA+55aFzjvfdsV39dojvFzb3LYr7wSMmPG80v9xwQcux603VeTQ@mail.gmail.com>
+Subject: Re: [GIT PULL] x86 fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we change cpuset.memory_spread_{page,slab}, cpuset will flip
-PF_SPREAD_{PAGE,SLAB} bit of tsk->flags for each task in that cpuset.
-This should be done using atomic bitops, but currently we don't,
-which is broken.
+On Mon, Sep 22, 2014 at 10:59 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Now building current git with that reverted, just to double-check,
+> before pushing the revert out.
 
-Tetsuo reported a hard-to-reproduce kernel crash on RHEL6, which happend
-when one thread tried to clear PF_USED_MATH while at the same time another
-thread tried to flip PF_SPREAD_PAGE/PF_SPREAD_SLAB. They both operate on
-the same task.
+Double-checked and verified. Revert pushed out,
 
-Here's the full report:
-https://lkml.org/lkml/2014/9/19/230
-
-To fix this, we make PF_SPREAD_PAGE and PF_SPARED_SLAB atomic flags.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Kees Cook <keescook@chromium.org>
-Fixes: 950592f7b991 ("cpusets: update tasks' page/slab spread flags in time")
-Cc: <stable@vger.kernel.org> # 2.6.31+
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- include/linux/cpuset.h | 4 ++--
- include/linux/sched.h  | 6 ++++--
- kernel/cpuset.c        | 9 +++++----
- 3 files changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index 0d4e067..2f073db 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -94,12 +94,12 @@ extern int cpuset_slab_spread_node(void);
- 
- static inline int cpuset_do_page_mem_spread(void)
- {
--	return current->flags & PF_SPREAD_PAGE;
-+	return task_spread_page(current);
- }
- 
- static inline int cpuset_do_slab_mem_spread(void)
- {
--	return current->flags & PF_SPREAD_SLAB;
-+	return task_spread_slab(current);
- }
- 
- extern int current_cpuset_is_being_rebound(void);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 04a2ae2..ee634d1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1903,8 +1903,6 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
- #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
- #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
- #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
--#define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
--#define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
- #define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
- #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
- #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
-@@ -1958,6 +1956,8 @@ static inline void memalloc_noio_restore(unsigned int flags)
- 
- /* Per-process atomic flags. */
- #define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
-+#define PFA_SPREAD_PAGE  1      /* Spread page cache over cpuset */
-+#define PFA_SPREAD_SLAB  2      /* Spread some slab caches over cpuset */
- 
- #define TASK_PFA_BITOPS(name, func)				\
- static inline bool task_##func(struct task_struct *p)		\
-@@ -1970,6 +1970,8 @@ static inline void task_clear_##func(struct task_struct *p)	\
- { clear_bit(PFA_##name, &p->atomic_flags); }
- 
- TASK_PFA_BITOPS(NO_NEW_PRIVS, no_new_privs)
-+TASK_PFA_BITOPS(SPREAD_PAGE, spread_page)
-+TASK_PFA_BITOPS(SPREAD_SLAB, spread_slab)
- 
- /*
-  * task->jobctl flags
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index a37f4ed..1f107c7 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -365,13 +365,14 @@ static void cpuset_update_task_spread_flag(struct cpuset *cs,
- 					struct task_struct *tsk)
- {
- 	if (is_spread_page(cs))
--		tsk->flags |= PF_SPREAD_PAGE;
-+		task_set_spread_page(tsk);
- 	else
--		tsk->flags &= ~PF_SPREAD_PAGE;
-+		task_clear_spread_page(tsk);
-+
- 	if (is_spread_slab(cs))
--		tsk->flags |= PF_SPREAD_SLAB;
-+		task_set_spread_slab(tsk);
- 	else
--		tsk->flags &= ~PF_SPREAD_SLAB;
-+		task_clear_spread_slab(tsk);
- }
- 
- /*
--- 
-1.8.0.2
-
+           Linus
