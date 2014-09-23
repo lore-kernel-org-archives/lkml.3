@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248AbaIWQGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:06:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42214 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756160AbaIWQGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:06:07 -0400
-Message-ID: <54219A6C.7000407@suse.cz>
-Date: Tue, 23 Sep 2014 18:06:04 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1756284AbaIWQGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:06:39 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:38199 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719AbaIWQGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 12:06:35 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: sfr@canb.auug.org.au, rdunlap@infradead.org, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH 1/5] mips: Set CONFIG_NET=y in defconfigs
-References: <54218AEF.5090200@suse.cz>	<1411487044-14071-1-git-send-email-mmarek@suse.cz> <20140923.120237.1788295912902036193.davem@davemloft.net>
-In-Reply-To: <20140923.120237.1788295912902036193.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411473545-3290-4-git-send-email-heiko@sntech.de>
+References: <1411473545-3290-1-git-send-email-heiko@sntech.de>
+	<1411473545-3290-4-git-send-email-heiko@sntech.de>
+Date: Tue, 23 Sep 2014 09:06:34 -0700
+X-Google-Sender-Auth: uhtjOFGslbTrUCyp0gygjtMr_qo
+Message-ID: <CAD=FV=UNK4oGP9Vj7TeKMDqAPmEvbqRfVE8uu9ZtO4pfDbE=cQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] power: gpio-charger: do not use gpio value directly
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: sre@kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Heiko Stuebner <heiko.stuebner@bq.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-23 18:02, David Miller wrote:
-> From: Michal Marek <mmarek@suse.cz>
-> Date: Tue, 23 Sep 2014 17:44:00 +0200
-> 
->> Commit 5d6be6a5 ("scsi_netlink : Make SCSI_NETLINK dependent on NET
->> instead of selecting NET") removed what happened to be the only instance
->> of 'select NET'. Defconfigs that were relying on the select now lack
->> networking support.
->>
->> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> Cc: linux-mips@linux-mips.org
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> 
-> On the contrary, since NET was being selected for them indirectly
-> previously, weren't they depending instead upon NET being enabled?
-> 
-> Likewise for SCSI_NETLINK, SCSI_FC_ATTRS, and whatever was triggering
-> the select upon them?
+Heiko,
 
-They have SCSI_FC_ATTRS=y/m and were relying on the select statements
-turning this into SCSI_NETLINK=y and CONFIG_NET=y.
+On Tue, Sep 23, 2014 at 4:59 AM, Heiko Stuebner <heiko@sntech.de> wrote:
+> From: Heiko Stuebner <heiko.stuebner@bq.com>
+>
+> Some gpio implementations return interesting values for gpio_get_value when
+> the value is not 0 - as seen on a imx6sl board. Therefore do not use the
+> value returned from gpio_get_value directly but simply check for 0 or not 0.
+>
+> Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
+> ---
+>  drivers/power/gpio-charger.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+> index 22f084a..7d4eab2 100644
+> --- a/drivers/power/gpio-charger.c
+> +++ b/drivers/power/gpio-charger.c
+> @@ -57,7 +57,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
+>
+>         switch (psp) {
+>         case POWER_SUPPLY_PROP_ONLINE:
+> -               val->intval = gpio_get_value_cansleep(pdata->gpio);
+> +               val->intval = !!gpio_get_value_cansleep(pdata->gpio);
+>                 val->intval ^= pdata->gpio_active_low;
 
-Michal
+...so I guess the interface is that gpio_active_low must be exactly 1
+or 0.  Oh, and that's actually defined in gpio-charger.h!  I should
+have checked that before.
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
