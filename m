@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaIWQnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:43:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48859 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222AbaIWQnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:43:09 -0400
-Message-ID: <5421A305.1050509@ti.com>
-Date: Tue, 23 Sep 2014 11:42:45 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1756214AbaIWQpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:45:16 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:54035 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaIWQpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 12:45:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, sebastian.hesselbarth@gmail.com,
+        Peter.Chen@freescale.com, balbi@ti.com, p.zabel@pengutronix.de,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Date: Tue, 23 Sep 2014 18:44:40 +0200
+Message-ID: <5140494.LzvyOiyY3U@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140923133645.GA18924@kwain>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <2909480.SL9c0XWUbW@wuerfel> <20140923133645.GA18924@kwain>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Robert Tivy <rtivy@ti.com>
-Subject: Re: [PATCH 2/2] remoteproc: add support to handle internal memories
-References: <1404836521-59637-1-git-send-email-s-anna@ti.com> <1404836521-59637-3-git-send-email-s-anna@ti.com> <CAK=WgbY-WmcJdnLHDf1CSkJqNBUeUMPTLcEZyLGKnECbxH1OAQ@mail.gmail.com> <53D7F6F3.9020804@ti.com> <CAK=WgbZ+NhA5AAhURUOojwnCbi2wYkJ11i-C5e7-kpZL5vD_3g@mail.gmail.com> <54174082.4010008@ti.com> <CAK=WgbZanJYN7-vXW=wo0H40piauHGQHYPPppcCpc+6VapXmeg@mail.gmail.com>
-In-Reply-To: <CAK=WgbZanJYN7-vXW=wo0H40piauHGQHYPPppcCpc+6VapXmeg@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:y/sdfMYigUK36Mh74gJmA+m/NnQcmwLNqqzZ/OPY5Tz
+ Wv9rfAS5qQZLhmdXOn3tLRpJ8yI5ut34qRjLK3sg8yDdvV9pyq
+ APGUAbun/XL+FSrZ/6SPJ7cYN5f4v2Lr7Yfq+FYgSkYUeL2RKH
+ Gks4G7dbDKJB5sGjNIaNoaAtYYQ5SWntbGS2RaXvYAOgmfRXSa
+ tGt2iAOJy3LeWNYOMPbLLAQ1Tvm19umS7J+HmoJ8bRWO1MyRy8
+ jGFQ1GaKE3NbA0E/B6C9SMopOu9bV73N4x5pas9+Q2XT67rJ1/
+ C3O+TB80LaLh14wou/FFPJMJseDxD9IFpk2lmJdi6v0unrSQY6
+ JkUak2spAP4BqRGQb0wc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
-
-On 09/23/2014 09:16 AM, Ohad Ben-Cohen wrote:
-> Hi Suman,
+On Tuesday 23 September 2014 15:36:45 Antoine Tenart wrote:
+> On Tue, Sep 23, 2014 at 12:39:04PM +0200, Arnd Bergmann wrote:
+> > On Tuesday 23 September 2014 12:28:03 Antoine Tenart wrote:
+> > > +       if (dev->of_node) {
+> > > +               ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
+> > > +               if (ret)
+> > > +                       goto clk_err;
+> > > +       } else {
+> > > +               ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+> > > +               if (ret)
+> > > +                       goto clk_err;
+> > > +       }
+> > > 
+> > 
+> > Why do you care about the non-DT case here? I think it would be nicer to
+> > open-code the ci_hdrc_usb2_dt_probe() function in here and remove
+> > the dma_set_mask_and_coherent(), which should not even be necessary for
+> > the case where you have a hardwired platform device.
+> > 
 > 
-> On Mon, Sep 15, 2014 at 10:39 PM, Suman Anna <s-anna@ti.com> wrote:
->> These processors need to use their internal RAM for loading, which is
->> not for generic usage by the kernel, so defining a CMA block for this
->> memory doesn't make sense.
+> I thought we agreed to call dma_set_mask_and_coherent():
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/273335.html
 > 
-> Ok - so just to make sure I understand, this is physical memory you
-> want to use, which belongs to the remote processor, and which isn't
-> mapped normally by the kernel?
+> I do not have a strong opinion on this as I only use the dt case for my
+> usage.
 
-Yes, this is not the regular DDR that is mapped into kernel normally,
-but is a RAM internal to the remote processor subsystem. The MPU can
-access it through a bus address/
+The question is more about who actually wants the non-DT case.
 
-> 
->> Will it suffice to replace the memcpy() with memcpy_toio()?
-> 
-> Yes, memcpy_toio should be fine (and then you don't need to cast the
-> cookie returned by ioremap).
+Since this is a new driver, I suspect that the answer is "nobody",
+as the existing board files are all for legacy platforms that we
+are not going to adapt for this driver.
 
-I have posted v2, and have not modified for this. The memcpy portion is
-actually present in the remoteproc_elf_loader.c, and looks like I need
-to export some flags from rproc_va_to_da if I were to differentiate
-this. Is that ok with you?
+I see in the thread that at least Peter Chen was assuming the non-DT
+case was still needed, but I can't find a reason for this in the code.
+If we no longer care about that, the call to dev_get_platdata()
+can also get removed.
 
-regards
-Suman
+Looking through the code some more, I also notice that it's using
+a strange way of doing the abstraction: ci_hdrc_add_device()
+actually creates a child device node, while the preferred way would
+be to just call into ci_hdrc_probe(), or a generalized version of
+that.
+That should probably be changed, but can be done as a later cleanup.
+
+
+	Arnd
