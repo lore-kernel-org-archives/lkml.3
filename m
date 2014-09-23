@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378AbaIWC4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:56:22 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:38513 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaIWC4S (ORCPT
+	id S1755436AbaIWC4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:56:31 -0400
+Received: from mail-pd0-f193.google.com ([209.85.192.193]:59010 "EHLO
+	mail-pd0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386AbaIWC41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:56:18 -0400
+	Mon, 22 Sep 2014 22:56:27 -0400
 From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 To: linux-rockchip@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
         Russell King <linux@arm.linux.org.uk>,
@@ -20,10 +20,10 @@ To: linux-rockchip@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
         linux-doc@vger.kernel.org
 Cc: "jinkun.hong" <jinkun.hong@rock-chips.com>,
         Jack Dai <jack.dai@rock-chips.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH 2/3] dt-bindings: add document of Rockchip power domain
-Date: Mon, 22 Sep 2014 19:55:15 -0700
-Message-Id: <1411440916-6830-3-git-send-email-jinkun.hong@rock-chips.com>
+        Wang Caesar <caesar.wang@rock-chips.com>
+Subject: [PATCH 3/3] ARM: dts: add rk3288 power-domain node
+Date: Mon, 22 Sep 2014 19:55:16 -0700
+Message-Id: <1411440916-6830-4-git-send-email-jinkun.hong@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411440916-6830-1-git-send-email-jinkun.hong@rock-chips.com>
 References: <1411440916-6830-1-git-send-email-jinkun.hong@rock-chips.com>
@@ -34,68 +34,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
 Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+Signed-off-by: Wang Caesar <caesar.wang@rock-chips.com>
 Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
+
 ---
 
- .../bindings/arm/rockchip/power_domain.txt         |   48 ++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ arch/arm/boot/dts/rk3288.dtsi |   45 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt b/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-new file mode 100644
-index 0000000..2a80d3f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-@@ -0,0 +1,48 @@
-+* Rockchip Power Domains
-+
-+Rockchip processors include support for multiple power domains which can be
-+powered up/down by software based on different application scenes to save power.
-+
-+Required properties for power domain controller:
-+- compatible: should be one of the following.
-+    * rockchip,rk3288-power-controller - for rk3288 type power domain.
-+- #power-domain-cells: Number of cells in a power-domain specifier.
-+		       should be 1.
-+- rockchip,pmu: phandle referencing a syscon providing the pmu registers
-+- #address-cells: should be 1.
-+- #size-cells: should be 0.
-+
-+Required properties for power domain sub nodes:
-+- reg: index of the power domain, should use macros in:
-+    *  include/dt-bindings/power-domain/rk3288.h - for rk3288 type power domain.
-+- clocks: phandles to clocks which need to be enabled while power domain
-+          switches state.
-+
-+Example:
-+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 3bb5230..714b9d9 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -15,6 +15,7 @@
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/pinctrl/rockchip.h>
+ #include <dt-bindings/clock/rk3288-cru.h>
++#include <dt-bindings/power-domain/rk3288.h>
+ #include "skeleton.dtsi"
+ 
+ / {
+@@ -467,6 +468,50 @@
+ 		compatible = "rockchip,rk3288-pmu", "syscon";
+ 		reg = <0xff730000 0x100>;
+ 	};
 +	power: power-controller {
-+	       compatible = "rockchip,rk3288-power-controller";
-+	       #power-domain-cells = <1>;
-+	       rockchip,pmu = <&pmu>;
-+               #address-cells = <1>;
-+               #size-cells = <0>;
++		compatible = "rockchip,rk3288-power-controller";
++		#power-domain-cells = <1>;
++		rockchip,pmu = <&pmu>;
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+	       pd_gpu {
-+	               reg = <RK3288_PD_GPU>;
-+	               clocks = <&cru ACLK_GPU>;
-+	       };
++		pd_gpu {
++			reg = <RK3288_PD_GPU>;
++			clocks = <&cru ACLK_GPU>;
++		};
++
++		pd_vio {
++			reg = <RK3288_PD_VIO>;
++			clocks = <&cru HCLK_RGA>, <&cru HCLK_VOP0>,
++				<&cru HCLK_VOP1>, <&cru HCLK_VIO_AHB_ARBI>,
++				<&cru HCLK_VIO_NIU>, <&cru HCLK_VIP>,
++				<&cru HCLK_IEP>, <&cru HCLK_ISP>,
++				<&cru HCLK_VIO2_H2P>, <&cru PCLK_MIPI_DSI0>,
++				<&cru PCLK_MIPI_DSI1>, <&cru PCLK_MIPI_CSI>,
++				<&cru PCLK_LVDS_PHY>, <&cru PCLK_EDP_CTRL>,
++				<&cru PCLK_HDMI_CTRL>, <&cru PCLK_VIO2_H2P>,
++				<&cru ACLK_VOP0>, <&cru ACLK_IEP>,
++				<&cru ACLK_VIO0_NIU>, <&cru ACLK_VIP>,
++				<&cru ACLK_VOP1>, <&cru ACLK_ISP>,
++				<&cru ACLK_VIO1_NIU>, <&cru ACLK_RGA>,
++				<&cru ACLK_RGA_NIU>,<&cru SCLK_RGA>,
++				<&cru DCLK_VOP0>, <&cru DCLK_VOP1>,
++				<&cru SCLK_EDP_24M>, <&cru SCLK_EDP>,
++				<&cru SCLK_ISP>, <&cru SCLK_ISP_JPE>,
++				<&cru SCLK_HDMI_HDCP>, <&cru SCLK_HDMI_CEC>;
++		};
++
++		pd_video {
++			reg = <RK3288_PD_VIDEO>;
++			/* FIXME: add clocks */
++			};
++
++		pd_hevc {
++			reg = <RK3288_PD_HEVC>;
++			clocks = <&cru ACLK_HEVC>, <&cru HCLK_HEVC>,
++				<&cru SCLK_HEVC_CABAC>, <&cru SCLK_HEVC_CORE>;
++			};
 +	};
-+
-+Node of a device using power domains must have a power-domains property,
-+containing a phandle to the power device node and an index specifying which
-+power domain to use.
-+The index should use macros in:
-+   * include/dt-bindings/power-domain/rk3288.h - for rk3288 type power domain.
-+
-+Example of the node using power domain:
-+
-+	node {
-+		/* ... */
-+		power-domains = <&power RK3288_PD_GPU>;
-+		/* ... */
-+	};
+ 
+ 	sgrf: syscon@ff740000 {
+ 		compatible = "rockchip,rk3288-sgrf", "syscon";
 -- 
 1.7.9.5
 
