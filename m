@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582AbaIWTFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:05:50 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:64182 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138AbaIWTFr (ORCPT
+	id S1756615AbaIWTFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:05:54 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:42737 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138AbaIWTFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:05:47 -0400
+	Tue, 23 Sep 2014 15:05:51 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,69 +15,259 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 0/5] pinctrl: samsung: Data structure clean-up
-Date: Tue, 23 Sep 2014 21:05:36 +0200
-Message-Id: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
+Subject: [PATCH 2/5] pinctrl: samsung: Drop unused label field in samsung_pin_ctrl struct
+Date: Tue, 23 Sep 2014 21:05:38 +0200
+Message-Id: <1411499141-26551-3-git-send-email-tomasz.figa@gmail.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
+References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series intends to clean up data structures used by pinctrl-samsung driver.
-More specifically, it separates initial compile time constants from data used
-at runtime, allowing unused variant data to be dropped and selected structures
-constified to improve safety.
+There is no code using it and in fact there are pin controller variants
+that do not even have this field initialized in their init data. This
+patch removes it completely.
 
-As a side effect, size of vmlinux built from multi_v7_defconfig was reduced
-from:
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+ drivers/pinctrl/samsung/pinctrl-exynos.c  | 22 ----------------------
+ drivers/pinctrl/samsung/pinctrl-s3c24xx.c |  4 ----
+ drivers/pinctrl/samsung/pinctrl-s3c64xx.c |  1 -
+ drivers/pinctrl/samsung/pinctrl-samsung.h |  3 ---
+ 4 files changed, 30 deletions(-)
 
- text     data    bss    dec      hex    filename
- 10296708 1227100 313544 11837352 b49fa8 vmlinux
-
-to:
-
- text     data    bss    dec      hex    filename
- 10296740 1176860 313544 11787144 b3db88 vmlinux
-
-and quite a bit of data were moved from normal data sections to .init.data:
-
-pre:
-
-Idx Name          Size      VMA       LMA       File off  Algn
-  3 .rodata       0026c080  c0881000  c0881000  00681000  2**6
- 23 .init.data    0003ff7c  c0bdb830  c0bdb830  009e3830  2**3
- 24 .data..percpu 00002100  c0c1c000  c0c1c000  00a24000  2**6
- 25 .data         000e98e0  c0c20000  c0c20000  00a28000  2**6
-
-post:
-
-Idx Name          Size      VMA       LMA       File off  Algn
-  3 .rodata       0026bf20  c0881000  c0881000  00681000  2**6
- 23 .init.data    00041bbc  c0bdb830  c0bdb830  009e3830  2**3
- 24 .data..percpu 00002100  c0c1e000  c0c1e000  00a26000  2**6
- 25 .data         000db860  c0c22000  c0c22000  00a2a000  2**6
-
-This series should not introduce any functional changes.
-
-Tested on S3C6410-based Mini6410 board, booting with device tree.
-
-Marek, Bart, could you do some testing on Exynos-based boards,
-just to make sure?
-
-Tomasz Figa (5):
-  pinctrl: samsung: Make samsung_pinctrl_get_soc_data use ERR_PTR()
-  pinctrl: samsung: Drop unused label field in samsung_pin_ctrl struct
-  pinctrl: samsung: Constify samsung_pin_bank_type struct
-  pinctrl: samsung: Constify samsung_pin_ctrl struct
-  pinctrl: samsung: Separate per-bank init and runtime data
-
- drivers/pinctrl/samsung/pinctrl-exynos.c  | 113 +++++++++++----------------
- drivers/pinctrl/samsung/pinctrl-s3c24xx.c |  30 +++----
- drivers/pinctrl/samsung/pinctrl-s3c64xx.c |  31 ++++----
- drivers/pinctrl/samsung/pinctrl-samsung.c | 126 ++++++++++++++++--------------
- drivers/pinctrl/samsung/pinctrl-samsung.h |  78 ++++++++++++------
- 5 files changed, 193 insertions(+), 185 deletions(-)
-
+diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+index d7154ed0b0eb..7e6463f970ff 100644
+--- a/drivers/pinctrl/samsung/pinctrl-exynos.c
++++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+@@ -682,7 +682,6 @@ struct samsung_pin_ctrl s5pv210_pin_ctrl[] = {
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "s5pv210-gpio-ctrl0",
+ 	},
+ };
+ 
+@@ -729,7 +728,6 @@ struct samsung_pin_ctrl exynos3250_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos3250-gpio-ctrl0",
+ 	}, {
+ 		/* pin-controller instance 1 data */
+ 		.pin_banks	= exynos3250_pin_banks1,
+@@ -738,7 +736,6 @@ struct samsung_pin_ctrl exynos3250_pin_ctrl[] = {
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos3250-gpio-ctrl1",
+ 	},
+ };
+ 
+@@ -803,7 +800,6 @@ struct samsung_pin_ctrl exynos4210_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos4210-gpio-ctrl0",
+ 	}, {
+ 		/* pin-controller instance 1 data */
+ 		.pin_banks	= exynos4210_pin_banks1,
+@@ -812,12 +808,10 @@ struct samsung_pin_ctrl exynos4210_pin_ctrl[] = {
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos4210-gpio-ctrl1",
+ 	}, {
+ 		/* pin-controller instance 2 data */
+ 		.pin_banks	= exynos4210_pin_banks2,
+ 		.nr_banks	= ARRAY_SIZE(exynos4210_pin_banks2),
+-		.label		= "exynos4210-gpio-ctrl2",
+ 	},
+ };
+ 
+@@ -891,7 +885,6 @@ struct samsung_pin_ctrl exynos4x12_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos4x12-gpio-ctrl0",
+ 	}, {
+ 		/* pin-controller instance 1 data */
+ 		.pin_banks	= exynos4x12_pin_banks1,
+@@ -900,7 +893,6 @@ struct samsung_pin_ctrl exynos4x12_pin_ctrl[] = {
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos4x12-gpio-ctrl1",
+ 	}, {
+ 		/* pin-controller instance 2 data */
+ 		.pin_banks	= exynos4x12_pin_banks2,
+@@ -908,7 +900,6 @@ struct samsung_pin_ctrl exynos4x12_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos4x12-gpio-ctrl2",
+ 	}, {
+ 		/* pin-controller instance 3 data */
+ 		.pin_banks	= exynos4x12_pin_banks3,
+@@ -916,7 +907,6 @@ struct samsung_pin_ctrl exynos4x12_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos4x12-gpio-ctrl3",
+ 	},
+ };
+ 
+@@ -989,7 +979,6 @@ struct samsung_pin_ctrl exynos5250_pin_ctrl[] = {
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos5250-gpio-ctrl0",
+ 	}, {
+ 		/* pin-controller instance 1 data */
+ 		.pin_banks	= exynos5250_pin_banks1,
+@@ -997,7 +986,6 @@ struct samsung_pin_ctrl exynos5250_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos5250-gpio-ctrl1",
+ 	}, {
+ 		/* pin-controller instance 2 data */
+ 		.pin_banks	= exynos5250_pin_banks2,
+@@ -1005,7 +993,6 @@ struct samsung_pin_ctrl exynos5250_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos5250-gpio-ctrl2",
+ 	}, {
+ 		/* pin-controller instance 3 data */
+ 		.pin_banks	= exynos5250_pin_banks3,
+@@ -1013,7 +1000,6 @@ struct samsung_pin_ctrl exynos5250_pin_ctrl[] = {
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.suspend	= exynos_pinctrl_suspend,
+ 		.resume		= exynos_pinctrl_resume,
+-		.label		= "exynos5250-gpio-ctrl3",
+ 	},
+ };
+ 
+@@ -1068,19 +1054,16 @@ struct samsung_pin_ctrl exynos5260_pin_ctrl[] = {
+ 		.nr_banks	= ARRAY_SIZE(exynos5260_pin_banks0),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+-		.label		= "exynos5260-gpio-ctrl0",
+ 	}, {
+ 		/* pin-controller instance 1 data */
+ 		.pin_banks	= exynos5260_pin_banks1,
+ 		.nr_banks	= ARRAY_SIZE(exynos5260_pin_banks1),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+-		.label		= "exynos5260-gpio-ctrl1",
+ 	}, {
+ 		/* pin-controller instance 2 data */
+ 		.pin_banks	= exynos5260_pin_banks2,
+ 		.nr_banks	= ARRAY_SIZE(exynos5260_pin_banks2),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+-		.label		= "exynos5260-gpio-ctrl2",
+ 	},
+ };
+ 
+@@ -1151,30 +1134,25 @@ struct samsung_pin_ctrl exynos5420_pin_ctrl[] = {
+ 		.nr_banks	= ARRAY_SIZE(exynos5420_pin_banks0),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+ 		.eint_wkup_init = exynos_eint_wkup_init,
+-		.label		= "exynos5420-gpio-ctrl0",
+ 	}, {
+ 		/* pin-controller instance 1 data */
+ 		.pin_banks	= exynos5420_pin_banks1,
+ 		.nr_banks	= ARRAY_SIZE(exynos5420_pin_banks1),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+-		.label		= "exynos5420-gpio-ctrl1",
+ 	}, {
+ 		/* pin-controller instance 2 data */
+ 		.pin_banks	= exynos5420_pin_banks2,
+ 		.nr_banks	= ARRAY_SIZE(exynos5420_pin_banks2),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+-		.label		= "exynos5420-gpio-ctrl2",
+ 	}, {
+ 		/* pin-controller instance 3 data */
+ 		.pin_banks	= exynos5420_pin_banks3,
+ 		.nr_banks	= ARRAY_SIZE(exynos5420_pin_banks3),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+-		.label		= "exynos5420-gpio-ctrl3",
+ 	}, {
+ 		/* pin-controller instance 4 data */
+ 		.pin_banks	= exynos5420_pin_banks4,
+ 		.nr_banks	= ARRAY_SIZE(exynos5420_pin_banks4),
+ 		.eint_gpio_init = exynos_eint_gpio_init,
+-		.label		= "exynos5420-gpio-ctrl4",
+ 	},
+ };
+diff --git a/drivers/pinctrl/samsung/pinctrl-s3c24xx.c b/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
+index ad3eaad17001..e38925906bd3 100644
+--- a/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
++++ b/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
+@@ -578,7 +578,6 @@ struct samsung_pin_ctrl s3c2412_pin_ctrl[] = {
+ 		.pin_banks	= s3c2412_pin_banks,
+ 		.nr_banks	= ARRAY_SIZE(s3c2412_pin_banks),
+ 		.eint_wkup_init = s3c24xx_eint_init,
+-		.label		= "S3C2412-GPIO",
+ 	},
+ };
+ 
+@@ -601,7 +600,6 @@ struct samsung_pin_ctrl s3c2416_pin_ctrl[] = {
+ 		.pin_banks	= s3c2416_pin_banks,
+ 		.nr_banks	= ARRAY_SIZE(s3c2416_pin_banks),
+ 		.eint_wkup_init = s3c24xx_eint_init,
+-		.label		= "S3C2416-GPIO",
+ 	},
+ };
+ 
+@@ -622,7 +620,6 @@ struct samsung_pin_ctrl s3c2440_pin_ctrl[] = {
+ 		.pin_banks	= s3c2440_pin_banks,
+ 		.nr_banks	= ARRAY_SIZE(s3c2440_pin_banks),
+ 		.eint_wkup_init = s3c24xx_eint_init,
+-		.label		= "S3C2440-GPIO",
+ 	},
+ };
+ 
+@@ -646,6 +643,5 @@ struct samsung_pin_ctrl s3c2450_pin_ctrl[] = {
+ 		.pin_banks	= s3c2450_pin_banks,
+ 		.nr_banks	= ARRAY_SIZE(s3c2450_pin_banks),
+ 		.eint_wkup_init = s3c24xx_eint_init,
+-		.label		= "S3C2450-GPIO",
+ 	},
+ };
+diff --git a/drivers/pinctrl/samsung/pinctrl-s3c64xx.c b/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
+index 89143c903000..fcf8c36e727e 100644
+--- a/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
++++ b/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
+@@ -811,6 +811,5 @@ struct samsung_pin_ctrl s3c64xx_pin_ctrl[] = {
+ 		.nr_banks	= ARRAY_SIZE(s3c64xx_pin_banks0),
+ 		.eint_gpio_init = s3c64xx_eint_gpio_init,
+ 		.eint_wkup_init = s3c64xx_eint_eint0_init,
+-		.label		= "S3C64xx-GPIO",
+ 	},
+ };
+diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.h b/drivers/pinctrl/samsung/pinctrl-samsung.h
+index 5cedc9d26390..da527b390513 100644
+--- a/drivers/pinctrl/samsung/pinctrl-samsung.h
++++ b/drivers/pinctrl/samsung/pinctrl-samsung.h
+@@ -161,7 +161,6 @@ struct samsung_pin_bank {
+  *	interrupts for the controller.
+  * @eint_wkup_init: platform specific callback to setup the external wakeup
+  *	interrupts for the controller.
+- * @label: for debug information.
+  */
+ struct samsung_pin_ctrl {
+ 	struct samsung_pin_bank	*pin_banks;
+@@ -174,8 +173,6 @@ struct samsung_pin_ctrl {
+ 	int		(*eint_wkup_init)(struct samsung_pinctrl_drv_data *);
+ 	void		(*suspend)(struct samsung_pinctrl_drv_data *);
+ 	void		(*resume)(struct samsung_pinctrl_drv_data *);
+-
+-	char		*label;
+ };
+ 
+ /**
 -- 
 2.1.0
 
