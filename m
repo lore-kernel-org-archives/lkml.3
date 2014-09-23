@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248AbaIWOxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:53:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58646 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932319AbaIWOs7 (ORCPT
+	id S1756373AbaIWOyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:54:36 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60481 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbaIWOyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:48:59 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v9 09/10] rtc: at91sam9: add DT bindings documentation
-Date: Tue, 23 Sep 2014 16:48:44 +0200
-Message-Id: <1411483725-31532-10-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 10:54:32 -0400
+Date: Tue, 23 Sep 2014 22:54:15 +0800
+From: Huang Shijie <shijie8@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v3 1/3] mtd: nand: gpmi: add gpmi_move_bits function
+Message-ID: <20140923145413.GA1633@localhost.localdomain>
+References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add RTT bindings documentation.
+On Tue, Sep 23, 2014 at 04:07:34PM +0200, Boris BREZILLON wrote:
+> Add a new function to move bits (not bytes) from a memory region to
+> another one.
+> This function is similar to memmove except it acts at bit level.
+> This function is needed to implement GPMI raw access functions, given the
+> fact that ECC engine does not pad ECC bits to the next byte boundary.
+sorry for not comment your v2 patch set.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Johan Hovold <johan@kernel.org>
----
- .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+>  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 88 ++++++++++++++++++++++++++++++++++
+>  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |  4 ++
+>  2 files changed, 92 insertions(+)
+> 
+> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> index 87e658c..e2f706a 100644
+> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> @@ -1353,3 +1353,91 @@ int gpmi_read_page(struct gpmi_nand_data *this,
+>  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
+>  	return start_dma_with_bch_irq(this, desc);
+>  }
+> +
+> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
+> +		    const u8 *src, size_t src_bit_off,
+> +		    size_t nbits)
+we can simplify the code.
 
-diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-new file mode 100644
-index 0000000..6ae79d1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-@@ -0,0 +1,23 @@
-+Atmel AT91SAM9260 Real Time Timer
-+
-+Required properties:
-+- compatible: should be: "atmel,at91sam9260-rtt"
-+- reg: should encode the memory region of the RTT controller
-+- interrupts: rtt alarm/event interrupt
-+- clocks: should contain the 32 KHz slow clk that will drive the RTT block.
-+- atmel,rtt-rtc-time-reg: should encode the GPBR register used to store
-+	the time base when the RTT is used as an RTC.
-+	The first cell should point to the GPBR node and the second one
-+	encode the offset within the GPBR block (or in other words, the
-+	GPBR register used to store the time base).
-+
-+
-+Example:
-+
-+rtt@fffffd20 {
-+	compatible = "atmel,at91sam9260-rtt";
-+	reg = <0xfffffd20 0x10>;
-+	interrupts = <1 4 7>;
-+	clocks = <&clk32k>;
-+	atmel,rtt-rtc-time-reg = <&gpbr 0x0>;
-+};
--- 
-1.9.1
+We could use the bytes to replace the @nbits.
+
+The chunk data is always byte aligned.
+
+
+Btw: please add more comments in this function.
+
+thanks
+Huang Shijie
 
