@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874AbaIWWLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:11:43 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:49447 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756790AbaIWWLk (ORCPT
+	id S1756921AbaIWWLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:11:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44825 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756790AbaIWWLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:11:40 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] lib: string.c:  Added a funktion function strzcpy
-Date: Wed, 24 Sep 2014 00:13:36 +0200
-Message-Id: <1411510416-16655-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411510416-16655-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1411510416-16655-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Tue, 23 Sep 2014 18:11:45 -0400
+Message-ID: <5421F020.1030309@canonical.com>
+Date: Tue, 23 Sep 2014 17:11:44 -0500
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: hch@infradead.org
+CC: bruce.lucas@mongodb.com, adam.radford@avagotech.com,
+        kashyap.desai@avagotech.com,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mptfusion: enable no_write_same for vmware scsi disks
+References: <20140923071154.GB3867@infradead.org> <1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
+In-Reply-To: <1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a function strzcpy which works the same as strncpy,
-but guaranteed to produce the trailing null character.
+On 09/23/2014 09:22 AM, Chris J Arges wrote:
+> When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
+> data can be improperly zeroed out using the mptfusion driver. This patch
+> disables write_same for this driver and the vmware subsystem_vendor which
+> ensures that manual zeroing out is used instead.
+> 
+> BugLink: http://bugs.launchpad.net/bugs/1371591
+> Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
+> Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+> ---
+>  drivers/message/fusion/mptspi.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
+> index 787933d..613231c 100644
+> --- a/drivers/message/fusion/mptspi.c
+> +++ b/drivers/message/fusion/mptspi.c
+> @@ -1419,6 +1419,11 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  		goto out_mptspi_probe;
+>          }
+>  
+> +	/* VMWare emulation doesn't properly implement WRITE_SAME
+> +	 */
+> +	if (pdev->subsystem_vendor == 0x15AD)
+> +		sh->no_write_same = 1;
+> +
+>  	spin_lock_irqsave(&ioc->FreeQlock, flags);
+>  
+>  	/* Attach the SCSI Host to the IOC structure
+> 
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- include/linux/string.h |    1 +
- lib/string.c           |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
+As a workaround one can do the following:
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index d36977e..d789ee5e 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -22,6 +22,7 @@ extern char * strcpy(char *,const char *);
- #ifndef __HAVE_ARCH_STRNCPY
- extern char * strncpy(char *,const char *, __kernel_size_t);
- #endif
-+extern char *strzcpy(char *, const char *, __kernel_size_t);
- #ifndef __HAVE_ARCH_STRLCPY
- size_t strlcpy(char *, const char *, size_t);
- #endif
-diff --git a/lib/string.c b/lib/string.c
-index f3c6ff5..582a832 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -134,6 +134,37 @@ char *strncpy(char *dest, const char *src, size_t count)
- EXPORT_SYMBOL(strncpy);
- #endif
- 
-+/**
-+ * strzcpy - Copy a length-limited, C-string
-+ * @dest: Where to copy the string to
-+ * @src: Where to copy the string from
-+ * @count: The maximum number of bytes to copy
-+ *
-+ * The result is %NUL-terminated,
-+ * as long as count is greater than zero.
-+ *
-+ * In the case where the length of @src is less than  that  of
-+ * count, the remainder of @dest will be padded with %NUL.
-+ *
-+ */
-+char *strzcpy(char *dest, const char *src, size_t count)
-+{
-+	char *tmp = dest;
-+
-+	while (count) {
-+		if ((*tmp = *src) != 0)
-+			src++;
-+		tmp++;
-+		count--;
-+	}
-+
-+	if (dest != tmp)
-+		*--tmp = '\0';
-+
-+	return dest;
-+}
-+EXPORT_SYMBOL(strzcpy);
-+
- #ifndef __HAVE_ARCH_STRLCPY
- /**
-  * strlcpy - Copy a C-string into a sized buffer
--- 
-1.7.10.4
+# Set the scsi disk max_write_same_blocks to 0 to disable write_same.
+(Your paths may vary...)
+echo 0 >
+/sys/devices/pci0000:00/0000:00:10.0/host32/target32:0:0/32:0:0:0/scsi_disk/32:0:0:0/max_write_same_blocks
+
+# Force the dm device to reload (thus calling dm_table_set_restrictions
+and checking for the new max_write_same_blocks value)
+dmsetup table /dev/dm-0 save
+dmsetup suspend /dev/dm-0; dmsetup reload /dev/dm-0 save; dmsetup resume
+/dev/dm-0
+
+# Now the dm device shows write_same_max_bytes as 0
+cat /sys/block/dm-0/queue/write_same_max_bytes
+
+# Run the test case in the original bug, it now passes.
+
+So a few questions:
+1) Does this workaround make sense? Perhaps there is an easier way?
+2) Do we expect changing max_write_same_blocks at the scsi_disk level to
+propagate the right write_same flags to other layers such as dm?
+3) In light of this workaround, does this patch still make sense? Would
+there be a better layer to fix this?
+
+Thanks,
+--chris j arges
+
+
 
