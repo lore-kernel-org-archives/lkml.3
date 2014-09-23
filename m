@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450AbaIWPIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:08:43 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:57586 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393AbaIWPIj convert rfc822-to-8bit (ORCPT
+	id S1756712AbaIWPJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:09:05 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53043 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930AbaIWOq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:08:39 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
-From: Weston Andros Adamson <dros@primarydata.com>
-In-Reply-To: <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
-Date: Tue, 23 Sep 2014 11:08:36 -0400
-Cc: Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com>
-References: <20140923130352.GK26472@arm.com> <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com> <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com> <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
-To: Will Deacon <will.deacon@arm.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 23 Sep 2014 10:46:56 -0400
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org
+Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
+        christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, eric.auger@linaro.org,
+        marc.zyngier@arm.com,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCHv7 05/26] vfio: introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag
+Date: Tue, 23 Sep 2014 16:46:04 +0200
+Message-Id: <1411483586-29304-6-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 23, 2014, at 11:02 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
+We introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag to the VFIO dma map call,
+and expose its availability via the capability VFIO_IOMMU_PROT_NOEXEC.
+This way the user can control whether the XN flag will be set on the
+requested mappings. The IOMMU_NOEXEC flag needs to be available for all
+the IOMMUs of the container used.
 
-> On Sep 23, 2014, at 10:59 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
-> 
->> On Sep 23, 2014, at 10:53 AM, Will Deacon <will.deacon@arm.com> wrote:
->> 
->>> On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
->>>> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
->>>>> Any more info on how to reproduce this would be really great. Unfortunately I don’t
->>>>> have access to an arm64 system.
->>>> 
->>>> I've not spotted a pattern other than using 64k pages, yet. If I manage to
->>>> get a reproducer, I'll let you know.
->>>> 
->>>>> If it’s possible, could we get a packet trace around when this happens? This is pure
->>>>> speculation, but this might have something to do the resend path - a commit fails
->>>>> and all the requests on the commit list have to be resent.
->>>> 
->>>> Sure, once I can reproduce it reliably, then I'll try to do that.
->>> 
->>> Right, a bunch of DDing from /dev/zero over an ssh session triggers this
->>> very quickly. I've put a binary tcpdump here:
->>> 
->>> http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
->>> 
->>> You may want to filter out the ssh packets. The only `interesting' thing to
->>> me is a retransmission about half way through, but I don't know what I'm
->>> looking for.
->>> 
->>> The NFS server is 10.1.203.204 and the client is 10.1.203.24.
->> 
->> Thanks! You are using NFSv2, so there are no commits - that rules out my hunch.
-> 
-> Wait a second - the whole point of this extra reference (that the WARN_ON_ONCE is
-> related to) is to handle the pass off to commit lists.
-> 
-> Maybe I’m just doing the wrong thing here with NFSv2!
-> 
-> More soon.
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+---
+ include/uapi/linux/vfio.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Actually, can you see if this is reproducible with NFSv3?
-
-Thanks,
-
--dros
+diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+index 6612974..30f630c 100644
+--- a/include/uapi/linux/vfio.h
++++ b/include/uapi/linux/vfio.h
+@@ -29,6 +29,7 @@
+  * capability is subject to change as groups are added or removed.
+  */
+ #define VFIO_DMA_CC_IOMMU		4
++#define VFIO_IOMMU_PROT_NOEXEC		5
+ 
+ /* Check if EEH is supported */
+ #define VFIO_EEH			5
+@@ -401,6 +402,7 @@ struct vfio_iommu_type1_dma_map {
+ 	__u32	flags;
+ #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
+ #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
++#define VFIO_DMA_MAP_FLAG_NOEXEC (1 << 2)	/* not executable from device */
+ 	__u64	vaddr;				/* Process virtual address */
+ 	__u64	iova;				/* IO virtual address */
+ 	__u64	size;				/* Size of mapping (bytes) */
+-- 
+1.8.3.2
 
