@@ -1,44 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaIWHNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:13:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43103 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626AbaIWHND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:13:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
-   d="scan'208";a="479375683"
-Message-ID: <54211C96.3030608@intel.com>
-Date: Tue, 23 Sep 2014 15:09:10 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754552AbaIWHOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:14:43 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:60933 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999AbaIWHOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:14:41 -0400
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean Delvare <jdelvare@suse.de>
-Subject: Re: [PATCH] i2c: move acpi code back into the core
-References: <1411420006-4713-1-git-send-email-wsa@the-dreams.de> <5420CEC9.1030400@intel.com> <20140923053951.GA1411@katana>
-In-Reply-To: <20140923053951.GA1411@katana>
+In-Reply-To: <1411413970-17480-1-git-send-email-sboyd@codeaurora.org>
+References: <1411413970-17480-1-git-send-email-sboyd@codeaurora.org>
+Date: Tue, 23 Sep 2014 09:14:40 +0200
+Message-ID: <CAPDyKFrtTSgWx1NRUaEY7+xrfFXB7zcLqkoRx6MP5j9PpUi66Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: sdhci-msm: Make tuning block table endian agnostic
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        Georgi Djakov <gdjakov@mm-sol.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年09月23日 13:39, Wolfram Sang wrote:
-> 
->> Sorry for later response due to sickness. I can't write this patch in
->> time. Sorry again. I will test it soon.
-> 
-> Oh, get well soon! Please say so next time, so I know.
-> 
+On 22 September 2014 21:26, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> If we're tuning on a big-endian CPU we'll never determine we properly
+> tuned the device because we compare the data we received from the
+> controller with a table that assumes the CPU is little-endian.
+> Change the table to be an array of bytes instead of 32-bit words
+> so we can use memcmp() without needing to byte-swap every word
+> depending on the endianess of the CPU.
+>
+> Cc: Asutosh Das <asutoshd@codeaurora.org>
+> Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+> Reviewed-by: Georgi Djakov <gdjakov@mm-sol.com>
+> Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Thanks. OK.
-I have put the patch into test system and need to wait some time.
+Thanks! Applied for next.
 
--- 
-Best regards
-Tianyu Lan
+Kind regards
+Uffe
+
+> ---
+>  drivers/mmc/host/sdhci-msm.c | 42 +++++++++++++++++++++++++++---------------
+>  1 file changed, 27 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+> index 40573a58486a..5aabffc15ae8 100644
+> --- a/drivers/mmc/host/sdhci-msm.c
+> +++ b/drivers/mmc/host/sdhci-msm.c
+> @@ -47,22 +47,34 @@
+>  #define CMUX_SHIFT_PHASE_SHIFT 24
+>  #define CMUX_SHIFT_PHASE_MASK  (7 << CMUX_SHIFT_PHASE_SHIFT)
+>
+> -static const u32 tuning_block_64[] = {
+> -       0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
+> -       0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
+> -       0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
+> -       0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
+> +static const u8 tuning_block_64[] = {
+> +       0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+> +       0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+> +       0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+> +       0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+> +       0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+> +       0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+> +       0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+> +       0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+>  };
+>
+> -static const u32 tuning_block_128[] = {
+> -       0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
+> -       0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
+> -       0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
+> -       0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
+> -       0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
+> -       0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
+> -       0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
+> -       0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
+> +static const u8 tuning_block_128[] = {
+> +       0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+> +       0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+> +       0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+> +       0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+> +       0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+> +       0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+> +       0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+> +       0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+> +       0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+> +       0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+> +       0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+> +       0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+> +       0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+> +       0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+> +       0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+> +       0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+>  };
+>
+>  struct sdhci_msm_host {
+> @@ -359,7 +371,7 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+>  {
+>         int tuning_seq_cnt = 3;
+>         u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
+> -       const u32 *tuning_block_pattern = tuning_block_64;
+> +       const u8 *tuning_block_pattern = tuning_block_64;
+>         int size = sizeof(tuning_block_64);     /* Pattern size in bytes */
+>         int rc;
+>         struct mmc_host *mmc = host->mmc;
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
