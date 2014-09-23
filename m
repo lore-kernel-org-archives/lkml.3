@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543AbaIWO63 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:58:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58882 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756526AbaIWO6Z (ORCPT
+	id S1756552AbaIWO6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:58:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58690 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196AbaIWO6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:58:25 -0400
-Date: Tue, 23 Sep 2014 16:58:22 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v3 1/3] mtd: nand: gpmi: add gpmi_move_bits function
-Message-ID: <20140923165822.27cfde69@bbrezillon>
-In-Reply-To: <20140923145413.GA1633@localhost.localdomain>
-References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1411481256-29141-2-git-send-email-boris.brezillon@free-electrons.com>
-	<20140923145413.GA1633@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 10:58:31 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, cebbert.lkml@gmail.com
+Subject: [PATCH v6 2/6] perf/x86: add support for sampling PEBS machine state registers
+Date: Tue, 23 Sep 2014 16:57:45 +0200
+Message-Id: <1411484269-32311-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411484269-32311-1-git-send-email-eranian@google.com>
+References: <1411484269-32311-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 22:54:15 +0800
-Huang Shijie <shijie8@gmail.com> wrote:
+PEBS can capture machine state regs at retiremnt of the sampled
+instructions. When precise sampling is enabled on an event, PEBS
+is used, so substitute the interrupted state with the PEBS state.
+Note that not all registers are captured by PEBS. Those missing
+are replaced by the interrupt state counter-parts.
 
-> On Tue, Sep 23, 2014 at 04:07:34PM +0200, Boris BREZILLON wrote:
-> > Add a new function to move bits (not bytes) from a memory region to
-> > another one.
-> > This function is similar to memmove except it acts at bit level.
-> > This function is needed to implement GPMI raw access functions, given the
-> > fact that ECC engine does not pad ECC bits to the next byte boundary.
-> sorry for not comment your v2 patch set.
-> 
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 88 ++++++++++++++++++++++++++++++++++
-> >  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |  4 ++
-> >  2 files changed, 92 insertions(+)
-> > 
-> > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> > index 87e658c..e2f706a 100644
-> > --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> > @@ -1353,3 +1353,91 @@ int gpmi_read_page(struct gpmi_nand_data *this,
-> >  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
-> >  	return start_dma_with_bch_irq(this, desc);
-> >  }
-> > +
-> > +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> > +		    const u8 *src, size_t src_bit_off,
-> > +		    size_t nbits)
-> we can simplify the code.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-Any suggestions ?
-
-> 
-> We could use the bytes to replace the @nbits.
-> 
-> The chunk data is always byte aligned.
-
-This function is also used to store ECC bits in the OOB buffer and
-these chunk of data are not byte aligned :-).
-
-> 
-> 
-> Btw: please add more comments in this function.
-
-Yep, I should definitely comment it, and I'll do.
-
-Best Regards,
-
-Boris
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index b1553d0..0318023 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -886,6 +886,28 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
+ 
++	if (sample_type & PERF_SAMPLE_REGS_INTR) {
++		regs.ax = pebs->ax;
++		regs.bx = pebs->bx;
++		regs.cx = pebs->cx;
++		regs.dx = pebs->dx;
++		regs.si = pebs->si;
++		regs.di = pebs->di;
++		regs.sp = pebs->sp;
++		regs.bp = pebs->bp;
++
++		regs.eflags = pebs->flags;
++
++		regs.r8 = pebs->r8;
++		regs.r9 = pebs->r9;
++		regs.r10 = pebs->r10;
++		regs.r11 = pebs->r11;
++		regs.r12 = pebs->r12;
++		regs.r13 = pebs->r13;
++		regs.r14 = pebs->r14;
++		regs.r15 = pebs->r15;
++	}
++
+ 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+ 		regs.ip = pebs->real_ip;
+ 		regs.flags |= PERF_EFLAGS_EXACT;
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.7.9.5
+
