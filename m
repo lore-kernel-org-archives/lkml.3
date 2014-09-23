@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115AbaIWTE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:04:29 -0400
-Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:59022 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753337AbaIWTE2 (ORCPT
+	id S1756273AbaIWTFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:05:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:32782 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753287AbaIWTFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:04:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3352:3622:3865:3866:3867:3870:3871:3872:4321:5007:7652:7808:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bean87_99676d46812a
-X-Filterd-Recvd-Size: 2059
-Message-ID: <1411499064.29268.6.camel@joe-AO725>
-Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Rustad, Mark D" <mark.d.rustad@intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Sep 2014 12:04:24 -0700
-In-Reply-To: <20140923184456.GA16467@pd.tnic>
-References: <20140922184049.GB4709@pd.tnic>
-	 <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
-	 <20140922192152.GD4709@pd.tnic>
-	 <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
-	 <20140922195737.GE4709@pd.tnic>
-	 <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
-	 <20140922203336.GF4709@pd.tnic>
-	 <A05C31E6-7AD2-482A-B590-A5ED57D028B3@intel.com>
-	 <20140923082209.GB22072@pd.tnic>
-	 <029E2CFB-C001-4E16-B1F7-A3FB193E3138@intel.com>
-	 <20140923184456.GA16467@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 15:05:05 -0400
+Date: Tue, 23 Sep 2014 21:00:57 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        chiau.ee.chew@intel.com, christian.ruppert@abilis.com,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V2] i2c-designware: Add Intel Baytrail PMIC I2C bus
+ support
+Message-ID: <20140923190057.GN15315@lukather>
+References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
+ <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zbynv6TNPa9FrOf6"
+Content-Disposition: inline
+In-Reply-To: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 20:44 +0200, Borislav Petkov wrote:
-> On Tue, Sep 23, 2014 at 05:24:22PM +0000, Rustad, Mark D wrote:
-> > Perhaps checkpatch would be a better gatekeeper for new code. OTOH,
-> > some of those nested externs have already been eliminated, so at
-> > least for now the warning is serving a purpose since it is scrubbing
-> > existing code.
-> 
-> Yep, eliminating would be optimal. If it is in checkpatch, it is much
-> easier to manage.
 
-checkpatch is simply a regex tester, so it's only appropriate
-if the false-positive false-negative rate is acceptable.
+--Zbynv6TNPa9FrOf6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Coccinelle may be better at whatever test is being considered.
+Hi David,
 
+On Tue, Sep 23, 2014 at 11:40:26AM -0700, David E. Box wrote:
+> This patch implements an I2C bus sharing mechanism between the host and p=
+latform
+> hardware on select Intel BayTrail SoC platforms using the X-Powers AXP288=
+ PMIC.
+>=20
+> On these platforms access to the PMIC must be shared with platform hardwa=
+re. The
+> hardware unit assumes full control of the I2C bus and the host must reque=
+st
+> access through a special semaphore. Hardware control of the bus also make=
+s it
+> necessary to disable runtime pm to avoid interfering with hardware transa=
+ctions.
+>=20
+> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
 
+Sorry for stepping in like this without really knowing your platform,
+but wouldn't using the hwspinlock framework make more sense than
+hardcoding your own internal functions here?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Zbynv6TNPa9FrOf6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUIcNpAAoJEBx+YmzsjxAgmswP/37hLAseGbTf5X4Q6vIh2CmL
+KxVdN52qzQ0uLGvR+DjMmT1kf1vObh+tpRWlmZ7bCr2IalimE1Miy27z0I+scr9z
++JF4N0q1hXClABPdmu98ddO9WwLXgxWSKRE/I1oW9YK8DpaiMZ0TCnUrArUZ4RlG
+L1for5ITmDAXzvcEhp/4i0fz9amR6J6zwhQUkLrOLY8lJWTr3DCPyR8vhmkmO2oo
+x9RVAJS7A2cPrEMXxIi3PSznXMEsqGz0PY4cizFyz07yvwcJWrB2PuoY/Mnmp/vo
+SX3pWbWwRN7cK/tGubG1O7INPTg9FBMsrjJzdRyYZGxs+Gi99L32/baG5zgkwvrJ
+xt+glQQrx2R6zL9VHi8EX7o7p09tPzKSLBDB5UdGv17FnIZtGOOUAZxkpOhr+OtP
+OPoWrN4YDM5ayJmt0gdnFf/A0dRIvTlIU4jlxk7jVJzNZRDEV77/E/k7mIJITwvU
+OHZDkMsJAXByvIAnlZvXnNtRq7m3uohHLsWBeaNnz3ScdaJu4xY0w1gWJwokSlDe
+3qBMMgDFIIqLgbtRpPhNw1v1mRncAzITPqd6KoEF8lrOdzoL2n75eWBeJeI7DOm9
+b0RzI266Yw1d5WNGDG67UFRvULLJLwnntVsV3Xcd7SlT91yzQZrh75YBBr72AAEx
+Gbo3jDcOReBMDYyzgxAQ
+=qdoH
+-----END PGP SIGNATURE-----
+
+--Zbynv6TNPa9FrOf6--
