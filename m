@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759AbaIWMxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:53:14 -0400
-Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:57509 "EHLO
-	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755232AbaIWMxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:53:13 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH] dma: cppi41: Switch to using managed resource in probe
-Date: Tue, 23 Sep 2014 18:20:46 +0530
-Message-Id: <1411476646-16902-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755847AbaIWMxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:53:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755306AbaIWMxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:53:42 -0400
+Date: Tue, 23 Sep 2014 14:52:58 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf pollfd v3
+Message-ID: <20140923125258.GI2979@krava.brq.redhat.com>
+References: <20140911114825.GC13634@krava.brq.redhat.com>
+ <20140911133029.GC10158@kernel.org>
+ <20140911213638.GC1801@kernel.org>
+ <20140918160455.GI2770@kernel.org>
+ <20140922133526.GB18187@krava.brq.redhat.com>
+ <20140922144949.GE32694@kernel.org>
+ <20140922145133.GA18809@krava.brq.redhat.com>
+ <20140922211027.GA23362@kernel.org>
+ <20140923092645.GB2979@krava.brq.redhat.com>
+ <20140923124640.GB23362@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923124640.GB23362@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change uses managed resource APIs to allocate resources such as,
-mem, irq in order to simplify the driver unload or failure cases.
+On Tue, Sep 23, 2014 at 09:46:40AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Sep 23, 2014 at 11:26:45AM +0200, Jiri Olsa escreveu:
+> > On Mon, Sep 22, 2014 at 06:10:27PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Mon, Sep 22, 2014 at 04:51:33PM +0200, Jiri Olsa escreveu:
+> > > > On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
+> > > > > > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > > > > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
+> > > 
+> > > > > > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
+> > > > > > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
+> > > > > > > mmap_read loop to consume what is left after all fds for a mmap are
+> > > > > > > closed.
+> > > 
+> > > > > > > I'll wait a bit before reposting, probably Jiri will not be able to
+> > > > > > > comment this week, but I would like to at least post the URL for this
+> > > > > > > latest v4 kit.
+> > > 
+> > > > > > > Adrian, if you could take a look at it, would be really great :-)
+> > > 
+> > > > > > I checked the branch.. the last patch brakes the functionality
+> > > > > > of perf record for me
+> > > 
+> > > > > Breaks in what sense?
+> > > 
+> > > > perf record -p pid
+> > > 
+> > > > and killing the pid won't finish perf record
+> > > 
+> > > Should be ok now, after making sure record uses
+> > > perf_evlist__mmap_consume(), which does what you did in your proposed
+> > > fix, tried both killing it and letting it exit normally, i.e. a 'sleep 5s'
+> > > target.
+> > > 
+> > > Pushed
+> > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v6
+> > > after moving the changesets for trace and record to be done last,
+> > > waiting for all fds to be POLLHUP'ed and doing one last draining
+> > > mmap_read loop over the mmaps.
+> > 
+> > One more thing is I noticed the test 34 is segfaulting, because
+> > perf_evlist__munmap_filtered assumes priv pointer setup, which
+> > is not done in the test.
+> 
+> Yeah, forgot to update it wrt mmap refcounting.
+> 
+> But this brought to my attention the difficulty in debugging perf test
+> entries these days, because we do a fork + exec there, I tried using gdb
+> and I must be missing something, because I couldn't add a breakpoint
+> inside the tests :-\
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
- drivers/dma/cppi41.c |   15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+you need to run following gdb command:
 
-diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-index 5921ce3..d3700fb 100644
---- a/drivers/dma/cppi41.c
-+++ b/drivers/dma/cppi41.c
-@@ -938,7 +938,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
- 	if (!glue_info)
- 		return -EINVAL;
- 
--	cdd = kzalloc(sizeof(*cdd), GFP_KERNEL);
-+	cdd = devm_kzalloc(&pdev->dev, sizeof(*cdd), GFP_KERNEL);
- 	if (!cdd)
- 		return -ENOMEM;
- 
-@@ -959,10 +959,8 @@ static int cppi41_dma_probe(struct platform_device *pdev)
- 	cdd->qmgr_mem = of_iomap(dev->of_node, 3);
- 
- 	if (!cdd->usbss_mem || !cdd->ctrl_mem || !cdd->sched_mem ||
--			!cdd->qmgr_mem) {
--		ret = -ENXIO;
--		goto err_remap;
--	}
-+			!cdd->qmgr_mem)
-+		return -ENXIO;
- 
- 	pm_runtime_enable(dev);
- 	ret = pm_runtime_get_sync(dev);
-@@ -989,7 +987,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
- 
- 	cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
- 
--	ret = request_irq(irq, glue_info->isr, IRQF_SHARED,
-+	ret = devm_request_irq(&pdev->dev, irq, glue_info->isr, IRQF_SHARED,
- 			dev_name(dev), cdd);
- 	if (ret)
- 		goto err_irq;
-@@ -1009,7 +1007,6 @@ static int cppi41_dma_probe(struct platform_device *pdev)
- err_of:
- 	dma_async_device_unregister(&cdd->ddev);
- err_dma_reg:
--	free_irq(irq, cdd);
- err_irq:
- 	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
- 	cleanup_chans(cdd);
-@@ -1023,8 +1020,6 @@ err_get_sync:
- 	iounmap(cdd->ctrl_mem);
- 	iounmap(cdd->sched_mem);
- 	iounmap(cdd->qmgr_mem);
--err_remap:
--	kfree(cdd);
- 	return ret;
- }
- 
-@@ -1036,7 +1031,6 @@ static int cppi41_dma_remove(struct platform_device *pdev)
- 	dma_async_device_unregister(&cdd->ddev);
- 
- 	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
--	free_irq(cdd->irq, cdd);
- 	cleanup_chans(cdd);
- 	deinit_cppi41(&pdev->dev, cdd);
- 	iounmap(cdd->usbss_mem);
-@@ -1045,7 +1039,6 @@ static int cppi41_dma_remove(struct platform_device *pdev)
- 	iounmap(cdd->qmgr_mem);
- 	pm_runtime_put(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
--	kfree(cdd);
- 	return 0;
- }
- 
--- 
-1.7.9.5
+(gdb) set follow-fork-mode child
 
+jirka
