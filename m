@@ -1,218 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533AbaIWSou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:44:50 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:37843 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756007AbaIWSos (ORCPT
+	id S1755744AbaIWSv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:51:28 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:47967 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaIWSv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:44:48 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, tomasz.figa@gmail.com,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v13 5/9] clk: Add floor and ceiling constraints to clock rates
-Date: Tue, 23 Sep 2014 20:44:13 +0200
-Message-Id: <1411497857-24726-3-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411497857-24726-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1411497613-24049-1-git-send-email-tomeu.vizoso@collabora.com>
- <1411497857-24726-1-git-send-email-tomeu.vizoso@collabora.com>
+	Tue, 23 Sep 2014 14:51:26 -0400
+Message-ID: <5421C187.2070407@googlemail.com>
+Date: Tue, 23 Sep 2014 20:52:55 +0200
+From: =?windows-1252?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Luca Olivetti <luca@ventoso.org>, Fengguang Wu <fengguang.wu@intel.com>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
+        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, crope@iki.fi
+Subject: Re: [media/dvb_usb_af9005] BUG: unable to handle kernel paging request
+ (WAS: [media/em28xx] BUG: unable to handle kernel)
+References: <20140919014124.GA8326@localhost> <541C7D9D.30908@googlemail.com> <541C826D.7060702@googlemail.com> <541C8A26.6050207@ventoso.org>
+In-Reply-To: <541C8A26.6050207@ventoso.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a way for clock consumers to set maximum and minimum rates. This can be
-used for thermal drivers to set ceiling rates, or by misc. drivers to set
-floor rates to assure a minimum performance level.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Tested-by: Heiko Stuebner <heiko@sntech.de>
+Am 19.09.2014 um 21:55 schrieb Luca Olivetti:
+> El 19/09/14 21:22, Frank Schäfer ha escrit:
+>
+>>> So symbol_request() returns pointers.!= NULL
+>>>
+>>> A closer look at the definition of symbol_request() shows, that it does
+>>> nothing if CONFIG_MODULES is disabled (it just returns its argument).
+>>>
+>>>
+>>> One possibility to fix this bug would be to embrace these three lines with
+>>>
+>>> #ifdef CONFIG_DVB_USB_AF9005_REMOTE
+>>> ...
+>>> #endif
+>> Luca, what do you think ?
+>>
+>> This seems to be an ancient bug, which is known at least since 5 1/2 years:
+>> https://lkml.org/lkml/2009/2/4/350
+> Well, it's been a while so I don't remember the details, but I think the
+> same now as then ;-)
+> The idea behind CONFIG_DVB_USB_AF9005_REMOTE was to provide an
+> alternative implementation (based on lirc, at the time it wasn't in the
+> kernel), since this adapter doesn't decode the IR pulses by itself.
+> In theory you could leave it undefined but still provide an
+> implementation in a different module. Just adding
+>
+> #ifdef CONFIG_DVB_USB_AF9005_REMOTE
+>
+> would nuke the (futile?) effort.
+>
+> Now, since the problem seems to be with CONFIG_MODULES disabled, maybe
+> you could combine both conditions
+>
+> #if defined(CONFIG_MODULE) || defined(CONFIG_DVB_USB_AF9005_REMOTE)
+What happens, if CONFIG_MODULES is enabled, but neither module
+af9005-remote nor any other IR module is available ?
+Has this ever been tested ?
 
----
-
-v9: * Apply first all the floor constraints, then the ceiling constraints.
-    * WARN on ceiling constraints below the current floor, for a given user clk
-
-v5: * Move the storage of constraints to the per-user clk struct, as suggested
-      by Stephen Warren.
----
- drivers/clk/clk.c           | 43 +++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/clk.h           |  1 +
- drivers/clk/clkdev.c        |  2 +-
- include/linux/clk-private.h |  5 +++++
- include/linux/clk.h         | 18 ++++++++++++++++++
- 5 files changed, 68 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index b34922e..11ab923 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -560,6 +560,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 	clk->dev_id = dev;
- 	clk->con_id = con;
- 
-+	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
-+
- 	return clk;
- }
- 
-@@ -1669,6 +1671,7 @@ static void clk_change_rate(struct clk_core *clk)
- int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- {
- 	struct clk_core *top, *fail_clk;
-+	struct clk *clk_user;
- 	int ret = 0;
- 
- 	if (!clk)
-@@ -1677,6 +1680,15 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
-+	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-+		rate = max(rate, clk_user->floor_constraint);
-+	}
-+
-+	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-+		if (clk_user->ceiling_constraint > 0)
-+			rate = min(rate, clk_user->ceiling_constraint);
-+	}
-+
- 	/* bail early if nothing to do */
- 	if (rate == clk_provider_get_rate(clk))
- 		goto out;
-@@ -1743,6 +1755,29 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
- 
-+int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->floor_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_floor_rate);
-+
-+int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	WARN(rate > 0 && rate < clk_user->floor_constraint,
-+	     "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
-+	     __clk_get_name(clk), clk_user->dev_id, clk_user->con_id, rate,
-+	     clk_user->floor_constraint);
-+
-+	clk_user->ceiling_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
-+
- struct clk_core *clk_provider_get_parent(struct clk_core *clk)
- {
- 	struct clk_core *parent;
-@@ -2094,6 +2129,8 @@ int __clk_init(struct device *dev, struct clk_core *clk)
- 			}
- 	 }
- 
-+	INIT_HLIST_HEAD(&clk->per_user_clks);
-+
- 	/*
- 	 * optional platform-specific magic
- 	 *
-@@ -2500,6 +2537,12 @@ int clk_notifier_unregister(struct clk *clk_user, struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(clk_notifier_unregister);
- 
-+void __clk_free_clk(struct clk *clk_user)
-+{
-+	hlist_del(&clk_user->child_node);
-+	kfree(clk_user);
-+}
-+
- #ifdef CONFIG_OF
- /**
-  * struct of_clk_provider - Clock provider registration structure
-diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index 49eff38..005deb3 100644
---- a/drivers/clk/clk.h
-+++ b/drivers/clk/clk.h
-@@ -21,4 +21,5 @@ void of_clk_unlock(void);
- #if defined(CONFIG_COMMON_CLK)
- struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 			     const char *con);
-+void __clk_free_clk(struct clk *clk_user);
- #endif
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 8699a9b..a555e58 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -292,7 +292,7 @@ void clk_put(struct clk *clk)
- #if defined(CONFIG_COMMON_CLK)
- 	struct clk_core *core = clk_to_clk_core(clk);
- 
--	kfree(clk);
-+	__clk_free_clk(clk);
- 	clk_provider_put(core);
- #else
- 	__clk_put(clk);
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index ce6a528..8126046 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -48,6 +48,7 @@ struct clk_core {
- 	unsigned long		accuracy;
- 	struct hlist_head	children;
- 	struct hlist_node	child_node;
-+	struct hlist_head	per_user_clks;
- 	unsigned int		notifier_count;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry		*dentry;
-@@ -62,6 +63,10 @@ struct clk {
- 
- 	unsigned int	enable_count;
- 	void		*last_disable;
-+
-+	unsigned long	floor_constraint;
-+	unsigned long	ceiling_constraint;
-+	struct hlist_node child_node;
- };
- 
- /*
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index f46a2eb..066b100 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -275,6 +275,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
- int clk_set_rate(struct clk *clk, unsigned long rate);
- 
- /**
-+ * clk_set_floor_rate - set a minimum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired minimum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_floor_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-+ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired maximum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-  * clk_set_parent - set the parent clock source for this clock
-  * @clk: clock source
-  * @parent: parent clock source
--- 
-1.9.3
+Regards,
+Frank
 
