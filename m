@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617AbaIWO73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:59:29 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35221 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114AbaIWO7Y (ORCPT
+	id S1756632AbaIWO7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:59:41 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:45825 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756606AbaIWO72 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:59:24 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        acme@redhat.com, cebbert.lkml@gmail.com
-Subject: [PATCH v6 6/6] perf: improve perf_sample_data struct layout
-Date: Tue, 23 Sep 2014 16:57:49 +0200
-Message-Id: <1411484269-32311-7-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411484269-32311-1-git-send-email-eranian@google.com>
-References: <1411484269-32311-1-git-send-email-eranian@google.com>
+	Tue, 23 Sep 2014 10:59:28 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+From: Weston Andros Adamson <dros@primarydata.com>
+In-Reply-To: <20140923145356.GD28608@arm.com>
+Date: Tue, 23 Sep 2014 10:59:25 -0400
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
+References: <20140923130352.GK26472@arm.com> <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com> <20140923135938.GB28608@arm.com> <20140923145356.GD28608@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+On Sep 23, 2014, at 10:53 AM, Will Deacon <will.deacon@arm.com> wrote:
 
-This patch reorders fields in the perf_sample_data
-struct in order to minimize the number of cachelines
-touched in perf_sample_data_init(). It also removes
-some intializations which are redundant with the
-code in kernel/events/core.c
+> On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
+>> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
+>>> Any more info on how to reproduce this would be really great. Unfortunately I don’t
+>>> have access to an arm64 system.
+>> 
+>> I've not spotted a pattern other than using 64k pages, yet. If I manage to
+>> get a reproducer, I'll let you know.
+>> 
+>>> If it’s possible, could we get a packet trace around when this happens? This is pure
+>>> speculation, but this might have something to do the resend path - a commit fails
+>>> and all the requests on the commit list have to be resent.
+>> 
+>> Sure, once I can reproduce it reliably, then I'll try to do that.
+> 
+> Right, a bunch of DDing from /dev/zero over an ssh session triggers this
+> very quickly. I've put a binary tcpdump here:
+> 
+>  http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
+> 
+> You may want to filter out the ssh packets. The only `interesting' thing to
+> me is a retransmission about half way through, but I don't know what I'm
+> looking for.
+> 
+> The NFS server is 10.1.203.204 and the client is 10.1.203.24.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/perf_event.h |   34 +++++++++++++++++-----------------
- kernel/events/core.c       |    5 ++++-
- 2 files changed, 21 insertions(+), 18 deletions(-)
+Thanks! You are using NFSv2, so there are no commits - that rules out my hunch.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 68d46d5..486e84c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -580,35 +580,40 @@ extern u64 perf_event_read_value(struct perf_event *event,
- 
- 
- struct perf_sample_data {
--	u64				type;
-+	/*
-+	 * Fields set by perf_sample_data_init(), group so as to
-+	 * minimize the cachelines touched.
-+	 */
-+	u64				addr;
-+	struct perf_raw_record		*raw;
-+	struct perf_branch_stack	*br_stack;
-+	u64				period;
-+	u64				weight;
-+	u64				txn;
-+	union  perf_mem_data_src	data_src;
- 
-+	/*
-+	 * The other fields, optionally {set,used} by
-+	 * perf_{prepare,output}_sample().
-+	 */
-+	u64				type;
- 	u64				ip;
- 	struct {
- 		u32	pid;
- 		u32	tid;
- 	}				tid_entry;
- 	u64				time;
--	u64				addr;
- 	u64				id;
- 	u64				stream_id;
- 	struct {
- 		u32	cpu;
- 		u32	reserved;
- 	}				cpu_entry;
--	u64				period;
--	union  perf_mem_data_src	data_src;
- 	struct perf_callchain_entry	*callchain;
--	struct perf_raw_record		*raw;
--	struct perf_branch_stack	*br_stack;
- 	struct perf_regs		regs_user;
- 	struct perf_regs		regs_intr;
- 	u64				stack_user_size;
--	u64				weight;
--	/*
--	 * Transaction flags for abort events:
--	 */
--	u64				txn;
--};
-+} ____cacheline_aligned;
- 
- /* default value for data source */
- #define PERF_MEM_NA (PERF_MEM_S(OP, NA)   |\
-@@ -625,14 +630,9 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->raw  = NULL;
- 	data->br_stack = NULL;
- 	data->period = period;
--	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
--	data->regs_user.regs = NULL;
--	data->stack_user_size = 0;
- 	data->weight = 0;
- 	data->data_src.val = PERF_MEM_NA;
- 	data->txn = 0;
--	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
--	data->regs_intr.regs = NULL;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index fb6f0a5..40eb07d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4441,8 +4441,11 @@ static void perf_sample_regs_user(struct perf_regs *regs_user,
- 	}
- 
- 	if (regs) {
--		regs_user->regs = regs;
- 		regs_user->abi  = perf_reg_abi(current);
-+		regs_user->regs = regs;
-+	} else {
-+		regs_user->abi = PERF_SAMPLE_REGS_ABI_NONE;
-+		regs_user->regs = NULL;
- 	}
- }
- 
--- 
-1.7.9.5
+-dros
 
