@@ -1,23 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaIWHqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:46:50 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:4949 "EHLO
+	id S1754783AbaIWHrz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:47:55 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:19218 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754315AbaIWHoz (ORCPT
+	by vger.kernel.org with ESMTP id S1752738AbaIWHry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:44:55 -0400
+	Tue, 23 Sep 2014 03:47:54 -0400
+Date: Tue, 23 Sep 2014 15:45:01 +0800
 From: Jisheng Zhang <jszhang@marvell.com>
-To: <wim@iguana.be>, <linux@roeck-us.net>
-CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH v2 0/2] watchdog: dw_wdt: one bug fix and restart handler support
-Date: Tue, 23 Sep 2014 15:42:10 +0800
-Message-ID: <1411458132-5410-1-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] watchdog: dw_wdt: restart the counter immediately
+ after enabling WDT
+Message-ID: <20140923154501.50dc8111@xhacker>
+In-Reply-To: <541D867C.6080407@roeck-us.net>
+References: <1411108199-1280-1-git-send-email-jszhang@marvell.com>
+	<1411108199-1280-2-git-send-email-jszhang@marvell.com>
+	<541D867C.6080407@roeck-us.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
  definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
 X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
@@ -27,30 +35,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are intend to improve dw_wdt in the following two aspects:
+Dear Guenter,
 
-Firstly, the TOP_INIT, ie bit 4-7 of the WDOG_TIMEOUT_RANGE_REG_OFFSET register
-may be zero at reset on some HW, so the timeout period may be very short, thus
-we will see immediate system reset after openning the watchdog. Fix this
-problem by also initialising the TOP_INIT when setting TOP.
+On Sat, 20 Sep 2014 06:51:56 -0700
+Guenter Roeck <linux@roeck-us.net> wrote:
 
-Secondly, the WDT can also be used to reboot the system with the help of
-recently introduced restart handler.
+> On 09/18/2014 11:29 PM, Jisheng Zhang wrote:
+> > The TOP_INIT may be zero, so the timeout period may be very short after
+> > initialization is done, thus the system may be reset soon after enabling.
+> > We fix this problem by restarting the counter immediately after enabling
+> > WDT.
+> >
+> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> > ---
+> >   drivers/watchdog/dw_wdt.c | 1 +
+> >   1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+> > index 9f21029..ad0619d 100644
+> > --- a/drivers/watchdog/dw_wdt.c
+> > +++ b/drivers/watchdog/dw_wdt.c
+> > @@ -146,6 +146,7 @@ static int dw_wdt_open(struct inode *inode, struct
+> > file *filp) dw_wdt_set_top(DW_WDT_MAX_TOP);
+> >   		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
+> >   		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
+> > +		dw_wdt_keepalive();
+> >   	}
+> >
+> >   	dw_wdt_set_next_heartbeat();
+> >
+> After getting access to the datasheet, I concluded that this fix is wrong
+> or at least more risky than necessary. The datasheet states that top_init,
+> ie bit 4-7 of the wdt_torr register, needs to be initialized with the
+> desired timeout period prior to enabling the watchdog. dw_wdt_set_top()
+> sets it to 0 instead, ie to the lowest possible timeout period.
+> 
 
-Tested on Marvell BG2Q DMP board.
+In patch V2, 
+I initialize the TOP_INIT when setting TOP in function dw_wdt_set_top(), this
+also can fix the "reboot soon" problem. Could you please have a review again?
 
-Changes since v1:
-  - add some wait to let the reset catch, suggested by Guenter Roeck
-  - setting TOP_INIT as well when setting TOP in function dw_wdt_set_top to
-    fix the reboot soon issue.
-
-Jisheng Zhang (2):
-  watchdog: dw_wdt: initialise TOP_INIT in dw_wdt_set_top()
-  watchdog: dw_wdt: add restart handler support
-
- drivers/watchdog/dw_wdt.c | 36 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 35 insertions(+), 1 deletion(-)
-
--- 
-2.1.0
-
+Thanks,
+Jisheng
