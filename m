@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543AbaIWXDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:03:03 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23846 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171AbaIWXDA (ORCPT
+	id S1757001AbaIWXFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:05:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39056 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbaIWXFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:03:00 -0400
-Message-ID: <5421FC12.2020706@oracle.com>
-Date: Tue, 23 Sep 2014 19:02:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Yalin.Wang@sonymobile.com, Minchan Kim <minchan@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Boot failure caused by "mm/cma.c: free the reserved memblock when
- free cma pages"
-Content-Type: text/plain; charset=utf-8
+	Tue, 23 Sep 2014 19:05:52 -0400
+Date: Tue, 23 Sep 2014 16:05:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>, Martin Milata <mmilata@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] coredump: add %i/%I in core_pattern to report the
+ tid of the crashed thread
+Message-Id: <20140923160551.8e93a39f10a818684a514cf2@linux-foundation.org>
+In-Reply-To: <20140922171525.GA32171@redhat.com>
+References: <20140921175349.GA21585@redhat.com>
+	<20140922171525.GA32171@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yalin,
+On Mon, 22 Sep 2014 19:15:25 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
 
-I'm seeing the following BUG when booting the latest -next kernel. I've bisected it down
-to "mm/cma.c: free the reserved memblock when free cma pages".
+> format_corename() can only pass the leader's pid to the core handler, but
+> there is no simple way to figure out which thread originated the coredump.
+> 
+> As Jan explains, this also means that there is no simple way to create the
+> backtrace of the crashed process:
+> 
+> As programs are mostly compiled with implicit gcc -fomit-frame-pointer one
+> needs program's .eh_frame section (equivalently PT_GNU_EH_FRAME segment) or
+> .debug_frame section. .debug_frame usually is present only in separate debug
+> info files usually not even installed on the system.  While .eh_frame is a
+> part of the executable/library (and it is even always mapped for C++
+> exceptions unwinding) it no longer has to be present anywhere on the disk
+> as the program could be upgraded in the meantime and the running instance
+> has its executable file already unlinked from disk.
+> 
+> One possibility is to echo 0x3f >/proc/*/coredump_filter and dump all the
+> file-backed memory including the executable's .eh_frame section. But that
+> can create huge core files, for example even due to mmapped data files.
+> 
+> Other possibility would be to read .eh_frame from /proc/PID/mem at the
+> core_pattern handler time of the core dump.  For the backtrace one needs to
+> read the register state first which can be done from core_pattern handler:
+> 
+> 	ptrace(PTRACE_SEIZE, tid, 0, PTRACE_O_TRACEEXIT)
+> 	close(0);    // close pipe fd to resume the sleeping dumper
+> 	waitpid();   // should report EXIT
+> 	PTRACE_GETREGS or other requests
+> 
+> The remaining problem is how to get the 'tid' value of the crashed thread.
+> It could be read from the first NT_PRSTATUS note of the core file but that
+> makes the core_pattern handler complicated.
+> 
+> Unfortunately %t is already used so this patch uses %i/%I.
 
-[    2.438701] BUG: unable to handle kernel paging request at ffff880972493000
-[    2.438701] IP: memblock_isolate_range (mm/memblock.c:624)
-[    2.438701] PGD 34b51067 PUD 34b54067 PMD 976c56067 PTE 8000000972493060
-[    2.438701] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[    2.438701] Dumping ftrace buffer:
-[    2.438701]    (ftrace buffer empty)
-[    2.438701] Modules linked in:
-[    2.438701] CPU: 17 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-next-20140923-sasha-00037-gc40eca4 #1213
-[    2.438701] task: ffff88076d7d0000 ti: ffff880048d40000 task.ti: ffff880048d40000
-[    2.438701] RIP: memblock_isolate_range (mm/memblock.c:624)
-[    2.438701] RSP: 0000:ffff880048d43cf8  EFLAGS: 00010286
-[    2.438828] RAX: ffff880972493000 RBX: 0000000962600000 RCX: ffff880048d43d50
-[    2.439590] RDX: 0000000000200000 RSI: 0000000962400000 RDI: ffffffffb2fcaa30
-[    2.440000] RBP: ffff880048d43d38 R08: ffff880048d43d54 R09: 0000000000000001
-[    2.440000] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880048d43d54
-[    2.440000] R13: 0000000962400000 R14: 0000000000000000 R15: ffffffffb2fcaa30
-[    2.440000] FS:  0000000000000000(0000) GS:ffff880567c00000(0000) knlGS:0000000000000000
-[    2.440000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    2.440000] CR2: ffff880972493000 CR3: 0000000031e2f000 CR4: 00000000000006a0
-[    2.440000] Stack:
-[    2.440000]  ffffffffad29cda2 ffff880048d43d50 ffffea002eeb4000 0000000962400000
-[    2.440000]  ffffffffb2fcaa30 0000000000000000 000000000000a000 ffffea002eeb4008
-[    2.440000]  ffff880048d43d68 ffffffffb049e64a 0000000962400000 0000000000000000
-[    2.440000] Call Trace:
-[    2.440000] ? adjust_managed_page_count (mm/page_alloc.c:5430)
-[    2.440000] memblock_remove_range (mm/memblock.c:672)
-[    2.440000] memblock_free (mm/memblock.c:695)
-[    2.440000] init_cma_reserved_pageblock (mm/page_alloc.c:840)
-[    2.440000] cma_init_reserved_areas (mm/cma.c:118 mm/cma.c:133)
-[    2.440000] ? kfree (mm/slub.c:2674 mm/slub.c:3339)
-[    2.440000] ? early_memunmap (mm/cma.c:129)
-[    2.440000] do_one_initcall (init/main.c:792)
-[    2.440000] kernel_init_freeable (init/main.c:857 init/main.c:865 init/main.c:884 init/main.c:1005)
-[    2.440000] ? rest_init (init/main.c:932)
-[    2.440000] kernel_init (init/main.c:937)
-[    2.440000] ret_from_fork (arch/x86/kernel/entry_64.S:348)
-[    2.440000] ? rest_init (init/main.c:932)
-[ 2.440000] Code: 89 ff e8 ec fa ff ff 85 c0 79 e1 b8 f4 ff ff ff e9 c0 00 00 00 4c 01 eb 45 31 f6 49 63 c6 49 3b 07 73 b9 48 c1 e0 05 49 03 47 18 <48> 8b 10 48 8b 48 08 48 8d 34 11 48 39 d3 76 a1 49 39 f5 0f 83
-All code
-========
-   0:	89 ff                	mov    %edi,%edi
-   2:	e8 ec fa ff ff       	callq  0xfffffffffffffaf3
-   7:	85 c0                	test   %eax,%eax
-   9:	79 e1                	jns    0xffffffffffffffec
-   b:	b8 f4 ff ff ff       	mov    $0xfffffff4,%eax
-  10:	e9 c0 00 00 00       	jmpq   0xd5
-  15:	4c 01 eb             	add    %r13,%rbx
-  18:	45 31 f6             	xor    %r14d,%r14d
-  1b:	49 63 c6             	movslq %r14d,%rax
-  1e:	49 3b 07             	cmp    (%r15),%rax
-  21:	73 b9                	jae    0xffffffffffffffdc
-  23:	48 c1 e0 05          	shl    $0x5,%rax
-  27:	49 03 47 18          	add    0x18(%r15),%rax
-  2b:*	48 8b 10             	mov    (%rax),%rdx		<-- trapping instruction
-  2e:	48 8b 48 08          	mov    0x8(%rax),%rcx
-  32:	48 8d 34 11          	lea    (%rcx,%rdx,1),%rsi
-  36:	48 39 d3             	cmp    %rdx,%rbx
-  39:	76 a1                	jbe    0xffffffffffffffdc
-  3b:	49 39 f5             	cmp    %rsi,%r13
-  3e:	0f                   	.byte 0xf
-  3f:	83                   	.byte 0x83
-	...
+Is any userspace actually going to use this?  If so, details?
 
-Code starting with the faulting instruction
-===========================================
-   0:	48 8b 10             	mov    (%rax),%rdx
-   3:	48 8b 48 08          	mov    0x8(%rax),%rcx
-   7:	48 8d 34 11          	lea    (%rcx,%rdx,1),%rsi
-   b:	48 39 d3             	cmp    %rdx,%rbx
-   e:	76 a1                	jbe    0xffffffffffffffb1
-  10:	49 39 f5             	cmp    %rsi,%r13
-  13:	0f                   	.byte 0xf
-  14:	83                   	.byte 0x83
-	...
-[    2.440000] RIP memblock_isolate_range (mm/memblock.c:624)
-[    2.440000]  RSP <ffff880048d43cf8>
-[    2.440000] CR2: ffff880972493000
+Am wondering what is driving this change...
 
-
-Thanks,
-Sasha
