@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386AbaIWFxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:53:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46861 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270AbaIWFxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:53:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390164832"
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tj@kernel.org, rjw@rjwysocki.net
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mister.freeman@laposte.net, rui.zhang@intel.com,
-        chuansheng.liu@intel.com
-Subject: [PATCH] ata: Disabling the async PM for JMicron chips
-Date: Tue, 23 Sep 2014 13:37:51 +0800
-Message-Id: <1411450671-2367-1-git-send-email-chuansheng.liu@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754446AbaIWFzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:55:23 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:36918 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587AbaIWFzV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:55:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: kmo@daterainc.com, axboe@kernel.dk, hch@infradead.org, hannes@cmpxchg.org
+Subject: [PATCHSET percpu/for-3.18] percpu_ref: implement switch_to_atomic/percpu()
+Date: Tue, 23 Sep 2014 01:55:09 -0400
+Message-Id: <1411451718-17807-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Be similar with commit (ata: Disabling the async PM for JMicron chip 363/361),
-Barto found the similar issue for JMicron chip 368, that 363/368 has no
-parent-children relationship, but they have the power dependency.
+Hello,
 
-So here we can exclude the JMicron chips out of pm_async method directly,
-to avoid further similar issues.
+Over the past several months, percpu_ref grew use cases where it's
+used as a persistent on/off switch which may be cycled multiple times
+using percpu_ref_reinit().  One of such use cases is blk-mq's
+mq_usage_counter which tracks the number of in-flight commands and is
+used to drain them.  Unfortunately, SCSI device probing involves
+synchronously creating and destroying request_queues for non-existent
+devices and the sched RCU grace period involved in percpu_ref killing
+adds upto a significant amount of latency.
 
-Details in:
-https://bugzilla.kernel.org/show_bug.cgi?id=84861
+Block layer already experienced the same issue in other areas and
+works around it by starting the queue in a degraded mode which is
+faster to shut down and making it fully functional only after it's
+known that the queue isn't a temporary one for probing.
 
-Reported-and-tested-by: Barto <mister.freeman@laposte.net>
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
----
- drivers/ata/ahci.c         |    6 +++---
- drivers/ata/pata_jmicron.c |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+This patchset implements percpu_ref mechanisms to manually switch
+between atomic and percpu operation modes so that blk-mq can implement
+a similar degraded operation mode.  This will also allow implementing
+debug mode for percpu_ref so that underflow can be detected sooner.
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index a0cc0ed..c096d49 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1345,10 +1345,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 * follow the sequence one by one, otherwise one of them can not be
- 	 * powered on successfully, so here we disable the async suspend
- 	 * method for these chips.
-+	 * Jmicron chip 368 has been found has the similar issue, here we can
-+	 * exclude the Jmicron family directly to avoid other similar issues.
- 	 */
--	if (pdev->vendor == PCI_VENDOR_ID_JMICRON &&
--		(pdev->device == PCI_DEVICE_ID_JMICRON_JMB363 ||
--		pdev->device == PCI_DEVICE_ID_JMICRON_JMB361))
-+	if (pdev->vendor == PCI_VENDOR_ID_JMICRON)
- 		device_disable_async_suspend(&pdev->dev);
- 
- 	/* acquire resources */
-diff --git a/drivers/ata/pata_jmicron.c b/drivers/ata/pata_jmicron.c
-index 47e418b..48c993b 100644
---- a/drivers/ata/pata_jmicron.c
-+++ b/drivers/ata/pata_jmicron.c
-@@ -149,10 +149,10 @@ static int jmicron_init_one (struct pci_dev *pdev, const struct pci_device_id *i
- 	 * follow the sequence one by one, otherwise one of them can not be
- 	 * powered on successfully, so here we disable the async suspend
- 	 * method for these chips.
-+	 * Jmicron chip 368 has been found has the similar issue, here we can
-+	 * exclude the Jmicron family directly to avoid other similar issues.
- 	 */
--	if (pdev->vendor == PCI_VENDOR_ID_JMICRON &&
--		(pdev->device == PCI_DEVICE_ID_JMICRON_JMB363 ||
--		pdev->device == PCI_DEVICE_ID_JMICRON_JMB361))
-+	if (pdev->vendor == PCI_VENDOR_ID_JMICRON)
- 		device_disable_async_suspend(&pdev->dev);
- 
- 	return ata_pci_bmdma_init_one(pdev, ppi, &jmicron_sht, NULL, 0);
--- 
-1.7.9.5
+This patchset contains the following nine patches.
 
+ 0001-percpu_ref-relocate-percpu_ref_reinit.patch
+ 0002-percpu_ref-minor-code-and-comment-updates.patch
+ 0003-percpu_ref-replace-pcpu_-prefix-with-percpu_.patch
+ 0004-percpu_ref-rename-things-to-prepare-for-decoupling-p.patch
+ 0005-percpu_ref-add-PCPU_REF_DEAD.patch
+ 0006-percpu_ref-decouple-switching-to-atomic-mode-and-kil.patch
+ 0007-percpu_ref-decouple-switching-to-percpu-mode-and-rei.patch
+ 0008-percpu_ref-add-PERCPU_REF_INIT_-flags.patch
+ 0009-percpu_ref-make-INIT_ATOMIC-and-switch_to_atomic-sti.patch
+
+0001-0005 are prep patches.
+
+0006-0007 implement percpu_ref_switch_to_atomic/percpu().
+
+0008 extends percpu_ref_init() so that a percpu_ref can be initialized
+in different states including atomic mode.
+
+0009 makes atomic mode sticky so that it survives through reinits.
+
+This patchset is on top of percpu/for-3.18 and available in the
+following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git review-percpu_ref-switch
+
+diffstat follows.
+
+ block/blk-mq.c                  |    2 
+ fs/aio.c                        |    4 
+ include/linux/percpu-refcount.h |  108 +++++++++-----
+ kernel/cgroup.c                 |    7 
+ lib/percpu-refcount.c           |  291 +++++++++++++++++++++++++++++-----------
+ 5 files changed, 295 insertions(+), 117 deletions(-)
+
+Thanks.
+
+--
+tejun
