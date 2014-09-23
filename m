@@ -1,296 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992AbaIWN2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:28:13 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48391 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755682AbaIWN2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:28:10 -0400
-Date: Tue, 23 Sep 2014 09:28:01 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140923132801.GA14302@cmpxchg.org>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144158.GC20398@esperanza>
- <20140922185736.GB6630@cmpxchg.org>
- <20140923110634.GH18526@esperanza>
+	id S1755572AbaIWNac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:30:32 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:60599 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaIWNaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 09:30:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923110634.GH18526@esperanza>
+In-Reply-To: <8687285.EH4RPBeOB5@wuerfel>
+References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140922093228.GA20256@rric.localhost> <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
+ <8687285.EH4RPBeOB5@wuerfel>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 23 Sep 2014 08:30:08 -0500
+Message-ID: <CAL_JsqK3yH-uf++haBovWdX6er1PtzeiZ-2-yT1TRfYPxAjFow@mail.gmail.com>
+Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Robert Richter <rric@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Sinan Kaya <okaya@codeaurora.org>,
+        Sunil Goutham <sunil.goutham@caviumnetworks.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 03:06:34PM +0400, Vladimir Davydov wrote:
-> On Mon, Sep 22, 2014 at 02:57:36PM -0400, Johannes Weiner wrote:
-> > On Mon, Sep 22, 2014 at 06:41:58PM +0400, Vladimir Davydov wrote:
-> > > On Fri, Sep 19, 2014 at 09:22:08AM -0400, Johannes Weiner wrote:
-> > > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > > > index 19df5d857411..bf8fb1a05597 100644
-> > > > --- a/include/linux/memcontrol.h
-> > > > +++ b/include/linux/memcontrol.h
-> > > > @@ -54,6 +54,38 @@ struct mem_cgroup_reclaim_cookie {
-> > > >  };
-> > > >  
-> > > >  #ifdef CONFIG_MEMCG
-> > > > +
-> > > > +struct page_counter {
-> > > 
-> > > I'd place it in a separate file, say
-> > > 
-> > > 	include/linux/page_counter.h
-> > > 	mm/page_counter.c
-> > > 
-> > > just to keep mm/memcontrol.c clean.
-> > 
-> > The page counters are the very core of the memory controller and, as I
-> > said to Michal, I want to integrate the hugetlb controller into memcg
-> > as well, at which point there won't be any outside users anymore.  So
-> > I think this is the right place for it.
-> 
-> Hmm, there might be memcg users out there that don't want to pay for
-> hugetlb accounting. Or is the overhead supposed to be negligible?
-
-Yes.  But if it gets in the way, it creates pressure to optimize it.
-That's the same reason why I've been trying to integrate memcg into
-the rest of the VM for over two years now - aside from resulting in
-much more unified code, it forces us to compete, and it increases our
-testing exposure by several orders of magnitude.
-
-The only reason we are discussing lockless page counters right now is
-because we got rid of "memcg specialness" and exposed res_counters to
-the rest of the world; and boy did that instantly raise the bar on us.
-
-> Anyway, I still don't think it's a good idea to keep all the definitions
-> in the same file. memcontrol.c is already huge. Adding more code to it
-> is not desirable, especially if it can naturally live in a separate
-> file. And since the page_counter is independent of the memcg core and
-> *looks* generic, I believe we should keep it separately.
-
-It's less code than what I just deleted, and half of it seems
-redundant when integrated into memcg.  This code would benefit a lot
-from being part of memcg, and memcg could reduce its public API.
-
-There are tangible costs associated with having a separate pile of
-bitrot depend on our public interface.  Over 90% of the recent changes
-to the hugetlb controller were done by Tejun as part of changing the
-cgroup interfaces.  And I went through several WTFs switching that
-code to the new page counter API.  The cost of maintaining a unified
-codebase is negligible in comparison.
-
-> > > > +	atomic_long_t count;
-> > > > +	unsigned long limit;
-> > > > +	struct page_counter *parent;
-> > > > +
-> > > > +	/* legacy */
-> > > > +	unsigned long watermark;
-> > > > +	unsigned long limited;
-> > > 
-> > > IMHO, failcnt would fit better.
-> > 
-> > I never liked the failcnt name, but also have to admit that "limited"
-> > is crap.  Let's leave it at failcnt for now.
-> > 
-> > > > +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages);
-> > > 
-> > > When I first saw this function, I couldn't realize by looking at its
-> > > name what it's intended to do. I think
-> > > 
-> > > 	page_counter_cancel_local_charge()
-> > > 
-> > > would fit better.
-> > 
-> > It's a fairly unwieldy name.  How about page_counter_sub()?  local_sub()?
-> 
-> The _sub suffix doesn't match _charge/_uncharge. May be
-> page_counter_local_uncharge, or _uncharge_local?
-
-I always think of a charge as the full hierarchical quantity, but this
-function only clips that one counter and so anything "uncharge" sounds
-terribly wrong to me.  But I can't think of anything great, either.
-
-Any more ideas? :)
-
-> > > > +int page_counter_charge(struct page_counter *counter, unsigned long nr_pages,
-> > > > +			struct page_counter **fail);
-> > > > +int page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages);
-> > > > +int page_counter_limit(struct page_counter *counter, unsigned long limit);
-> > > 
-> > > Hmm, why not page_counter_set_limit?
-> > 
-> > Limit is used as a verb here, "to limit".  Getters and setters are
-> > usually wrappers around unusual/complex data structure access,
-> 
-> Not necessarily. Look at percpu_counter_read e.g. It's a one-line
-> getter, which we could easily live w/o, but still it's there.
-
-It abstracts an unusual and error-prone access to a counter value,
-i.e. reading an unsigned quantity out of a signed variable.
-
-> > but this function does a lot more, so I'm not fond of _set_limit().
-> 
-> Nevertheless, everything it does can be perfectly described in one
-> sentence "it tries to set the new value of the limit", so it does
-> function as a setter. And if there's a setter, there must be a getter
-> IMO.
-
-That's oversimplifying things.  Setting a limit requires enforcing a
-whole bunch of rules and synchronization, whereas reading a limit is
-accessing an unsigned long.
-
-In general I agree that we should strive for symmetry and follow the
-principle of least surprise, but in terms of complexity these two
-operations are very different, and providing a getter on principle
-would not actually improve readability in this case.
-
-> > > > @@ -1218,34 +1217,26 @@ static inline void memcg_memory_allocated_add(struct cg_proto *prot,
-> > > >  					      unsigned long amt,
-> > > >  					      int *parent_status)
-> > > >  {
-> > > > -	struct res_counter *fail;
-> > > > -	int ret;
-> > > > +	page_counter_charge(&prot->memory_allocated, amt, NULL);
-> > > >  
-> > > > -	ret = res_counter_charge_nofail(&prot->memory_allocated,
-> > > > -					amt << PAGE_SHIFT, &fail);
-> > > > -	if (ret < 0)
-> > > > +	if (atomic_long_read(&prot->memory_allocated.count) >
-> > > > +	    prot->memory_allocated.limit)
-> > > 
-> > > I don't like your equivalent of res_counter_charge_nofail.
-> > > 
-> > > Passing NULL to page_counter_charge might be useful if one doesn't have
-> > > a back-off strategy, but still want to fail on hitting the limit. With
-> > > your interface the user must pass something to the function then, which
-> > > isn't convenient.
-> > > 
-> > > Besides, it depends on the internal implementation of the page_counter
-> > > struct. I'd encapsulate this.
-> > 
-> > Thinking about this more, I don't like my version either; not because
-> > of how @fail must always be passed, but because of how it changes the
-> > behavior.  I changed the API to
-> > 
-> > void page_counter_charge(struct page_counter *counter, unsigned long nr_pages);
-> > int page_counter_try_charge(struct page_counter *counter, unsigned long nr_pages,
-> >                             struct page_counter **fail);
-> 
-> That looks good to me. I would also add something like
-> 
->   bool page_counter_exceeds_limit(struct page_counter *counter);
-> 
-> to use instead of this
-> 
-> +	if (atomic_long_read(&prot->memory_allocated.count) >
-> +	    prot->memory_allocated.limit)
-
-I really don't see the point in obscuring a simple '<' behind a
-function call.  What follows this is that somebody adds it for the
-soft limit, and later for any other type of relational comparison.
-
-> > > >  		break;
-> > > >  	case RES_FAILCNT:
-> > > > -		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
-> > > > +		counter->limited = 0;
-> > > 
-> > > page_counter_reset_failcnt?
-> > 
-> > That would be more obscure than counter->failcnt = 0, I think.
-> 
-> There's one thing that bothers me about this patch. Before, all the
-> functions operating on res_counter were mutually smp-safe, now they
-> aren't. E.g. if the failcnt reset races with the falcnt increment from
-> page_counter_try_charge, the reset might be skipped. You only use the
-> atomic type for the counter, but my guess is that failcnt and watermark
-> should be atomic too, at least if we're not going to get rid of them
-> soon. Otherwise, it should be clearly stated that failcnt and watermark
-> are racy.
-
-It's fair enough that the raciness should be documented, but both
-counters are such roundabout metrics to begin with that it really
-doesn't matter.  What's the difference between a failcnt of 590 and
-600 in practical terms?  And what does it matter if the counter
-watermark is off by a few pages when there are per-cpu caches on top
-of the counters, and the majority of workloads peg the watermark to
-the limit during startup anyway?
-
-> Anyway, that's where the usefulness of res_counter_reset_failcnt
-> reveals. If one decides to make it race-free one day, they won't have to
-> modify code outside the page_counter definition.
-
-A major problem with cgroups overall was that it was designed for a
-lot of hypotheticals that are irrelevant in practice but incur very
-high costs.  Multiple orthogonal hierarchies is the best example, but
-using locked byte counters that can be used to account all manner of
-resources, with accurate watermarks and limit failures, when all we
-need to count is pages and nobody cares about accurate watermarks and
-limit failures, is another one.
-
-It's very unlikely that failcnt and watermark will have to me atomic
-ever again, so there is very little hypothetical upside to wrapping a
-'= 0' in a function.  But such indirection comes at a real cost.
-
-> > > > +int page_counter_limit(struct page_counter *counter, unsigned long limit)
-> > > > +{
-> > > > +	for (;;) {
-> > > > +		unsigned long count;
-> > > > +		unsigned long old;
-> > > > +
-> > > > +		count = atomic_long_read(&counter->count);
-> > > > +
-> > > > +		old = xchg(&counter->limit, limit);
-> > > > +
-> > > > +		if (atomic_long_read(&counter->count) != count) {
-> > > > +			counter->limit = old;
-> > > 
-> > > I wonder what can happen if two threads execute this function
-> > > concurrently... or may be it's not supposed to be smp-safe?
-> > 
-> > memcg already holds the set_limit_mutex here.  I updated the tcp and
-> > hugetlb controllers accordingly to take limit locks as well.
-> 
-> I would prefer page_counter to handle it internally, because we won't
-> need the set_limit_mutex once memsw is converted to plain swap
-> accounting.
+On Tue, Sep 23, 2014 at 2:56 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 22 September 2014 12:43:17 Liviu Dudau wrote:
+>> >
+>> > From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
+>> > From: Robert Richter <rrichter@cavium.com>
+>> > Date: Mon, 22 Sep 2014 10:46:01 +0200
+>> > Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
+>> >
+>> > The pci host bridge was not created if io_base was not set when
+>> > calling of_pci_get_host_bridge_resources(). This is esp. the case for
+>> > mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
+>> > parameter io_base is optional now.
+>>
+>> I think the message is misleading. What you want to do is make io_base
+>> optional for the case where the PCI host bridge only expects to have only
+>> IORESOURCE_MEM ranges and doesn't care about IORESOURCE_IO ones.
+>>
+>> As I'm going to touch this area again to address a comment from Bjorn,
+>> do you mind if I roll this patch into mine with your Signed-off-by and
+>> the mention that you have made io_base optional?
 >
-> Besides, memcg_update_kmem_limit doesn't take it. Any chance to
-> achieve that w/o spinlocks, using only atomic variables?
+> I think the best way to deal with this is to move the check for
+> io_base down into the place where it is used: As long as the DT only
+> specifies IORESOURCE_MEM windows, we don't need to look at io_base,
+> but if the host controller driver does not support IORESOURCE_IO
+> while the DT specifies it, I guess it would be nice to return an
+> error.
 
-We still need it to serialize concurrent access to the memory limit,
-and I updated the patch to have kmem take it as well.  It's such a
-cold path that using a lockless scheme and worrying about coherency
-between updates is not worth it, I think.
+The DT may specify it, but the h/w could be broken in some way so the
+host driver chooses to ignore it. I don't think we should force the
+host driver to provide a pointer in that case. Also, would we want it
+added to the resource list if it is not going to be used?
 
-> If I were you, I'd separate the patch introducing the page_counter API
-> and implementation from the rest. I think it'd ease the review.
-> 
-> A couple of extra notes about the patch:
-> 
->  - I think having comments to function definitions would be nice.
-> 
->  - Your implementation of try_charge uses CAS, but this is a really
->    costly operation (the most costly of all atomic primitives). Have
->    you considered using FAA? Something like this:
-> 
->    try_charge(pc, nr):
-> 
->      limit = pc->limit;
->      count = atomic_add_return(&pc->count, nr);
->      if (count > limit) {
->          atomic_sub(&pc->count, nr);
->          return -ENOMEM;
->      }
->      return 0;
-
-The thing I was worried about there is when you have varying charge
-sizes, and a failing big-charge can lock out a small-charge that would
-otherwise succeed and force it into early reclaim.  But thinking more
-about it, the error is limited to the biggest charge size, which is
-THP in our case, and it doesn't matter if we reclaim 2MB too early.
-
-I'll reconsider, thanks for your input!
+Rob
