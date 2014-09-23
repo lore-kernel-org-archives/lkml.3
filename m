@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396AbaIWC61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:58:27 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33246 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaIWC6Z (ORCPT
+	id S1754352AbaIWDBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 23:01:17 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58697 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743AbaIWDBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:58:25 -0400
-Message-ID: <5420E0EF.30502@roeck-us.net>
-Date: Mon, 22 Sep 2014 19:54:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Zefan Li <lizf@kernel.org>, stable@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, satoru.takeuchi@gmail.com,
-        Zefan Li <lizefan@huawei.com>
-Subject: Re: [PATCH 3.4 00/45] 3.4.104-rc1 review
-References: <1411439259-30224-1-git-send-email-lizf@kernel.org> <5420DE11.5080305@roeck-us.net>
-In-Reply-To: <5420DE11.5080305@roeck-us.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.5420E1D1.0059,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 22 Sep 2014 23:01:14 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: [PATCH v2 05/13] powerpc/iommu: Fix IOMMU ownership control functions
+Date: Tue, 23 Sep 2014 13:00:54 +1000
+Message-Id: <1411441262-11025-6-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
+References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092303-0009-0000-0000-00000054F40A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 07:42 PM, Guenter Roeck wrote:
-> On 09/22/2014 07:27 PM, Zefan Li wrote:
->> From: Zefan Li <lizefan@huawei.com>
->>
->> This is the start of the stable review cycle for the 3.4.104 release.
->> There are 45 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
->>
->> Responses should be made by Thu Sep 25 02:03:31 UTC 2014.
->> Anything received after that time might be too late.
->>
->> A combined patch relative to 3.4.103 will be posted as an additional
->> response to this.  A shortlog and diffstat can be found below.
->>
->> thanks,
->>
->> Zefan Li
->
-> Hi,
->
-> did you push the latest patch ? I only see 43 patches in the queue.
->
+This adds missing locks in iommu_take_ownership()/
+iommu_release_ownership().
 
-Never mind, got it now.
+This marks all pages busy in iommu_table::it_map in order to catch
+errors if there is an attempt to use this table while ownership over it
+is taken.
 
-Guenter
+This only clears TCE content if there is no page marked busy in it_map.
+Clearing must be done outside of the table locks as iommu_clear_tce()
+called from iommu_clear_tces_and_put_pages() does this.
 
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ arch/powerpc/kernel/iommu.c | 36 +++++++++++++++++++++++++++++-------
+ 1 file changed, 29 insertions(+), 7 deletions(-)
+
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index c2c8d9d..cd80867 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -1126,33 +1126,55 @@ EXPORT_SYMBOL_GPL(iommu_put_tce_user_mode);
+ 
+ int iommu_take_ownership(struct iommu_table *tbl)
+ {
+-	unsigned long sz = (tbl->it_size + 7) >> 3;
++	unsigned long flags, i, sz = (tbl->it_size + 7) >> 3;
++	int ret = 0, bit0 = 0;
++
++	spin_lock_irqsave(&tbl->large_pool.lock, flags);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_lock(&tbl->pools[i].lock);
+ 
+ 	if (tbl->it_offset == 0)
+-		clear_bit(0, tbl->it_map);
++		bit0 = test_and_clear_bit(0, tbl->it_map);
+ 
+ 	if (!bitmap_empty(tbl->it_map, tbl->it_size)) {
+ 		pr_err("iommu_tce: it_map is not empty");
+-		return -EBUSY;
++		ret = -EBUSY;
++		if (bit0)
++			set_bit(0, tbl->it_map);
++	} else {
++		memset(tbl->it_map, 0xff, sz);
+ 	}
+ 
+-	memset(tbl->it_map, 0xff, sz);
+-	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_unlock(&tbl->pools[i].lock);
++	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
+ 
+-	return 0;
++	if (!ret)
++		iommu_clear_tces_and_put_pages(tbl, tbl->it_offset,
++				tbl->it_size);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(iommu_take_ownership);
+ 
+ void iommu_release_ownership(struct iommu_table *tbl)
+ {
+-	unsigned long sz = (tbl->it_size + 7) >> 3;
++	unsigned long flags, i, sz = (tbl->it_size + 7) >> 3;
+ 
+ 	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
++
++	spin_lock_irqsave(&tbl->large_pool.lock, flags);
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_lock(&tbl->pools[i].lock);
++
+ 	memset(tbl->it_map, 0, sz);
+ 
+ 	/* Restore bit#0 set by iommu_init_table() */
+ 	if (tbl->it_offset == 0)
+ 		set_bit(0, tbl->it_map);
++
++	for (i = 0; i < tbl->nr_pools; i++)
++		spin_unlock(&tbl->pools[i].lock);
++	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(iommu_release_ownership);
+ 
+-- 
+2.0.0
 
