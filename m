@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaIWSY0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:24:26 -0400
-Received: from flmx07.ccur.com ([173.221.59.12]:1327 "EHLO flmx07.ccur.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932307AbaIWSYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:24:24 -0400
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 14:24:23 EDT
-Message-ID: <5421B992.6050500@ccur.com>
-Date: Tue, 23 Sep 2014 13:18:58 -0500
-From: John Blackwood <john.blackwood@ccur.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: Andi Kleen <ak@linux.intel.com>
-Subject: [ PATCH ] Remove numa_balancing sysctl dependence on CONFIG_SCHED_DEBUG
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753947AbaIWS1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:27:09 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:57252 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaIWS1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 14:27:07 -0400
+Message-ID: <1411496822.31476.1.camel@nebuchadnezzar>
+Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
+From: Valentin Rothberg <valentinrothberg@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        pebolle@tiscali.nl
+Date: Tue, 23 Sep 2014 20:27:02 +0200
+In-Reply-To: <5421A9D5.8020503@infradead.org>
+References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>
+		 <5421A4B4.1040604@infradead.org>
+	 <1411492210.30136.15.camel@nebuchadnezzar> <5421A9D5.8020503@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On mar., 2014-09-23 at 10:11 -0700, Randy Dunlap wrote:
+> On 09/23/14 10:10, Valentin Rothberg wrote:
+> > On mar., 2014-09-23 at 09:49 -0700, Randy Dunlap wrote:
+> >> On 09/22/14 23:58, Valentin Rothberg wrote:
+> >>> The "_MODULE" suffix is reserved for tristates compiled as
+> >>> loadable kernel modules (LKM). The "TEST_MODULE" feature thereby
+> >>
+> >> Is that documented anywhere?
+> > 
+> > Sadly this is not made explicit, but the Kconfig code documents it. The
+> > following code (./scripts/kconfig/confdata.c) is used to generate the
+> > autoconf.h header file during the build process. When a feature is
+> > selected as a kernel module ('m'), it is suffixed with "_MODULE" to
+> > indicate it. 
+> > 
+> > »   »   switch (*value) {
+> > »   »   case 'n':
+> > »   »   »   break;
+> > »   »   case 'm':
+> > »   »   »   suffix = "_MODULE";
+> > »   »   »   /* fall through */
+> > 
+> >> Was this causing some kind of problem or error?  Please tell us what that was if so.
+> > 
+> > It causes problems for static code analysis, which assumes a consistent
+> > use of the "_MODULE" suffix. 
+> > 
+> > Another possible change would be to rename the reference in the Makefile
+> > to "TEST_MODULE_MODULE". Personally, I prefer my proposed patch.
+> 
+> Sure, your patch is fine, but we need to know *why* the patch is needed.
 
-numa: numa_balancing sysctl scope change
+Thank you for pointing that out. I will take care to give more
+information in future patches.
 
-Make the 'numa_balancing' sysctl parameter no longer dependent upon
-CONFIG_SCHED_DEBUG so it can be used in non-debug kernels.
+Thanks,
+ Valentin
 
-Signed-off-by: John Blackwood <john.blackwood@ccur.com>
+> Thanks.
+> 
+> >>
+> >>
+> >>> violates this convention. The feature is used to compile the
+> >>> lib/test_module.c kernel module.
+> >>>
+> >>> This patch renames the feature and its reference in a Makefile
+> >>> to "TEST_LKM", which still expresses the test of a LKM.
+> >>>
+> >>> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
+> >>> ---
+> >>>  lib/Kconfig.debug | 2 +-
+> >>>  lib/Makefile      | 2 +-
+> >>>  2 files changed, 2 insertions(+), 2 deletions(-)
+> >>>
+> >>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> >>> index 07c2832..db91c97 100644
+> >>> --- a/lib/Kconfig.debug
+> >>> +++ b/lib/Kconfig.debug
+> >>> @@ -1627,7 +1627,7 @@ config DMA_API_DEBUG
+> >>>  
+> >>>  	  If unsure, say N.
+> >>>  
+> >>> -config TEST_MODULE
+> >>> +config TEST_LKM
+> >>>  	tristate "Test module loading with 'hello world' module"
+> >>>  	default n
+> >>>  	depends on m
+> >>> diff --git a/lib/Makefile b/lib/Makefile
+> >>> index d6b4bc4..382437a 100644
+> >>> --- a/lib/Makefile
+> >>> +++ b/lib/Makefile
+> >>> @@ -31,7 +31,7 @@ obj-y += string_helpers.o
+> >>>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+> >>>  obj-y += kstrtox.o
+> >>>  obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
+> >>> -obj-$(CONFIG_TEST_MODULE) += test_module.o
+> >>> +obj-$(CONFIG_TEST_LKM) += test_module.o
+> >>>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
+> >>>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
+> >>>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
+> 
+> 
 
-Index: b/kernel/sysctl.c
-===================================================================
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -389,6 +389,9 @@ static struct ctl_table kern_table[] = {
-  		.mode		= 0644,
-  		.proc_handler	= proc_dointvec,
-  	},
-+#endif /* CONFIG_NUMA_BALANCING */
-+#endif /* CONFIG_SCHED_DEBUG */
-+#ifdef CONFIG_NUMA_BALANCING
-  	{
-  		.procname	= "numa_balancing",
-  		.data		= NULL, /* filled in by handler */
-@@ -399,7 +402,6 @@ static struct ctl_table kern_table[] = {
-  		.extra2		= &one,
-  	},
-  #endif /* CONFIG_NUMA_BALANCING */
--#endif /* CONFIG_SCHED_DEBUG */
-  	{
-  		.procname	= "sched_rt_period_us",
-  		.data		= &sysctl_sched_rt_period,
+
