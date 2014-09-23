@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262AbaIWXLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756050AbaIWXLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:11:36 -0400
-Message-ID: <1411513877.24563.62.camel@ul30vt.home>
-Subject: Re: [PATCHv7 13/26] vfio: amba: add the VFIO for AMBA devices
- module to Kconfig
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, kvm@vger.kernel.org,
-        christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com, open list <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Sep 2014 17:11:17 -0600
-In-Reply-To: <1411483586-29304-14-git-send-email-a.motakis@virtualopensystems.com>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1411483586-29304-14-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757273AbaIWXMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:12:13 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:62469 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaIWXML (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 19:12:11 -0400
+Date: Tue, 23 Sep 2014 19:12:09 -0400
+From: Elshad Mustafayev <elshadimo@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH] driver: staging: android: binder.c: Fixed line over 80
+ characters warning.
+Message-ID: <20140923231209.GA3785@emustafa>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
-> Enable building the VFIO AMBA driver. VFIO_AMBA depends on VFIO_PLATFORM,
-> since it is sharing a portion of the code, and it is essentially implemented
-> as a platform device whose resources are discovered via AMBA specific APIs
-> in the kernel.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/Kconfig  | 10 ++++++++++
->  drivers/vfio/platform/Makefile |  4 ++++
->  2 files changed, 14 insertions(+)
-> 
-> diff --git a/drivers/vfio/platform/Kconfig b/drivers/vfio/platform/Kconfig
-> index c51af17..8b97786 100644
-> --- a/drivers/vfio/platform/Kconfig
-> +++ b/drivers/vfio/platform/Kconfig
-> @@ -7,3 +7,13 @@ config VFIO_PLATFORM
->  	  framework.
->  
->  	  If you don't know what to do here, say N.
-> +
-> +config VFIO_AMBA
-> +	tristate "VFIO support for AMBA devices"
-> +	depends on VFIO && VFIO_PLATFORM && EVENTFD && ARM_AMBA
+Fixed a coding style issue.
 
-nit, VFIO_PLATFORM already depends on VFIO && EVENTFD
+Signed-off-by: Elshad Mustafayev <elshadimo@gmail.com>
+---
+ drivers/staging/android/binder.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-> +	help
-> +	  Support for ARM AMBA devices with VFIO. This is required to make
-> +	  use of ARM AMBA devices present on the system using the VFIO
-> +	  framework.
-> +
-> +	  If you don't know what to do here, say N.
-> diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
-> index 279862b..1957170 100644
-> --- a/drivers/vfio/platform/Makefile
-> +++ b/drivers/vfio/platform/Makefile
-> @@ -2,3 +2,7 @@
->  vfio-platform-y := vfio_platform.o vfio_platform_common.o
->  
->  obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
-> +
-> +vfio-amba-y := vfio_amba.o
-> +
-> +obj-$(CONFIG_VFIO_AMBA) += vfio-amba.o
-
-
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index c69c40d..71424bf 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -664,8 +664,9 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
+ 		ALIGN(offsets_size, sizeof(void *));
+ 
+ 	if (size < data_size || size < offsets_size) {
+-		binder_user_error("%d: got transaction with invalid size %zd-%zd\n",
+-				proc->pid, data_size, offsets_size);
++		binder_user_error(
++			"%d: got transaction with invalid size %zd-%zd\n",
++			proc->pid, data_size, offsets_size);
+ 		return NULL;
+ 	}
+ 
+-- 
+1.9.1
 
