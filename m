@@ -1,83 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaIWMY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:24:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39541 "EHLO mx1.redhat.com"
+	id S1755334AbaIWM1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:27:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55480 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753199AbaIWMYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:24:55 -0400
-Date: Tue, 23 Sep 2014 14:24:37 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH 1/2] perf callchain: Create an address space per thread
-Message-ID: <20140923122437.GE2979@krava.brq.redhat.com>
-References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
+	id S1751412AbaIWM1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:27:10 -0400
+Message-ID: <5421670D.10200@ti.com>
+Date: Tue, 23 Sep 2014 15:26:53 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?B?TG90aGFyIFdhw59tYQ==?= =?UTF-8?B?bm4=?= 
+	<LW@karo-electronics.de>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH] gpio: pca953x: Fix warning when HW interrupts are rescheduled
+ by the softirq tasklet
+References: <1410251533-4990-1-git-send-email-LW@KARO-electronics.de> <CACRpkdbTXtx+EU4Dw1fxeThRUG4s5XvcJnAJ9PJd8i4KKGC65A@mail.gmail.com>
+In-Reply-To: <CACRpkdbTXtx+EU4Dw1fxeThRUG4s5XvcJnAJ9PJd8i4KKGC65A@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 03:30:27PM +0900, Namhyung Kim wrote:
-> The unw_addr_space_t in libunwind represents an address space to be
-> used for stack unwinding.  It doesn't need to be create/destory
-> everytime to unwind callchain (as in get_entries) and can have a same
-> lifetime as thread (unless exec called).
+On 09/23/2014 03:04 PM, Linus Walleij wrote:
+> On Tue, Sep 9, 2014 at 10:32 AM, Lothar Waßmann <LW@karo-electronics.de> wrote:
 > 
-> So move the address space construction/destruction logic to the thread
-> lifetime handling functions.  This is a preparation to enable caching
-> in the unwind library.
+>> When using e.g. the matrix_keymap driver with the gpio-pca953x driver,
+>> the following warning may be issued when a keypress is detected:
+>> WARNING: CPU: 0 PID: 3 at kernel/irq/manage.c:677 irq_nested_primary_handler+0x18/0x2c()
+>> Primary handler called for nested irq 245
+>> Modules linked in: evbug ci_hdrc_imx usbmisc_imx ci_hdrc udc_core ehci_hcd phy_mxs_usb
+>> CPU: 0 PID: 3 Comm: ksoftirqd/0 Tainted: G        W     3.16.0-karo+ #118
+>> [<c00142cc>] (unwind_backtrace) from [<c00118f8>] (show_stack+0x10/0x14)
+>> [<c00118f8>] (show_stack) from [<c001bf10>] (warn_slowpath_common+0x64/0x84)
+>> [<c001bf10>] (warn_slowpath_common) from [<c001bfc4>] (warn_slowpath_fmt+0x30/0x40)
+>> [<c001bfc4>] (warn_slowpath_fmt) from [<c004ce08>] (irq_nested_primary_handler+0x18/0x2c)
+>> [<c004ce08>] (irq_nested_primary_handler) from [<c004cb80>] (handle_irq_event_percpu+0x50/0x168)
+>> [<c004cb80>] (handle_irq_event_percpu) from [<c004ccf8>] (handle_irq_event+0x60/0x7c)
+>> [<c004ccf8>] (handle_irq_event) from [<c004f02c>] (handle_simple_irq+0x78/0xdc)
+>> [<c004f02c>] (handle_simple_irq) from [<c004ed14>] (resend_irqs+0x4c/0x78)
+>> [<c004ed14>] (resend_irqs) from [<c001f3ec>] (tasklet_action+0x74/0xd8)
+>> [<c001f3ec>] (tasklet_action) from [<c001f760>] (__do_softirq+0xd0/0x1f4)
+>> [<c001f760>] (__do_softirq) from [<c001f8c4>] (run_ksoftirqd+0x40/0x64)
+>> [<c001f8c4>] (run_ksoftirqd) from [<c003d464>] (smpboot_thread_fn+0x174/0x234)
+>> [<c003d464>] (smpboot_thread_fn) from [<c0036dd4>] (kthread+0xb4/0xd0)
+>> [<c0036dd4>] (kthread) from [<c000f0f0>] (ret_from_fork+0x14/0x24)
+>> ---[ end trace a68cf7bc5348c4f7 ]---
+>>
+>> This happens when an IRQ is detected by the GPIO driver while the GPIO
+>> client driver (matrix_keypad in this case) has disabled the irq for
+>> the GPIO it has acquired. When the HW IRQ is being rescheduled by the
+>> softirq thread, the primary IRQ handler is called for the nested IRQ
+>> registered by the client driver rather than for the parent IRQ from
+>> the GPIO driver.
+>>
+>> This patch makes sure, that the parent_irq (gpio-pca953x) is
+>> rescheduled rather than the nested irq registered by the matrix_keypad
+>> driver.
+>> Similar patches are most probably required for a bunch of other
+>> drivers too.
+>>
+>> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+>> ---
+>>   drivers/gpio/gpio-pca953x.c |   12 ++++++++++++
+>>   1 file changed, 12 insertions(+)
+>>
+>> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+>> index e2da64a..770ef6b 100644
+>> --- a/drivers/gpio/gpio-pca953x.c
+>> +++ b/drivers/gpio/gpio-pca953x.c
+>> @@ -518,6 +518,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+>>                               int irq_base)
+>>   {
+>>          struct i2c_client *client = chip->client;
+>> +       struct gpio_chip *gpio_chip = &chip->gpio_chip;
+>>          int ret, i, offset = 0;
+>>
+>>          if (client->irq && irq_base != -1
+>> @@ -567,6 +568,17 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+>>                                  "could not connect irqchip to gpiochip\n");
+>>                          return ret;
+>>                  }
+>> +
+>> +               for (i = 0; i < NBANK(chip); i++) {
+>> +                       int j;
+>> +
+>> +                       for (j = 0; j < BANK_SZ; j++) {
+>> +                               int gpio = gpio_chip->base + i * BANK_SZ + j;
+>> +                               int irq = gpio_to_irq(gpio);
+>> +
+>> +                               irq_set_parent(irq, client->irq);
+>> +                       }
+>> +               }
 > 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Arun Sharma <asharma@fb.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/thread.c           |  8 ++++++++
->  tools/perf/util/unwind-libunwind.c | 30 +++++++++++++++++++++++++-----
->  tools/perf/util/unwind.h           | 17 +++++++++++++++++
->  3 files changed, 50 insertions(+), 5 deletions(-)
+> While this is fixing the problem, but isn't the right fix to patch
+> the function gpiochip_irq_map() in gpiolib.c to call
+> irq_set_parent() for each IRQ as it gets mapped?
 > 
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index a9df7f2c6dc9..c1fa4a3597ea 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -7,6 +7,7 @@
->  #include "util.h"
->  #include "debug.h"
->  #include "comm.h"
-> +#include "unwind.h"
->  
->  int thread__init_map_groups(struct thread *thread, struct machine *machine)
->  {
-> @@ -48,6 +49,12 @@ struct thread *thread__new(pid_t pid, pid_t tid)
->  			goto err_thread;
->  
->  		list_add(&comm->list, &thread->comm_list);
-> +
-> +		if (unwind__prepare_access(thread) < 0) {
+> This driver is using the gpiolib irqchip helpers...
+> 
+> Then you fix not just this driver but all drivers, plus the complex
+> loop and calls to gpio_to_irq() etc goes away.
 
-you could call list_add below this call and thus save
-the list_del call below in error path
+The problem here is that:
+- we don't know parent IRQ number inside gpiolib irqchip;
+- there can be more then one Parent IRQ per GPIO chip
 
-looks like you dont need comm to be on comm_list within
-the unwind__prepare_access call
+in other words, the knowledge about Parent IRQs is specific to drivers :(
 
-> +			list_del(&comm->list);
-> +			free(comm);
-> +			goto err_thread;
-> +		}
->  	}
+Might be custom .irq_map() callback can be used to fix this issue? 
 
-SNIP
+Regards,
+-grygorii
 
-jirka
