@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248AbaIWQ0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:26:48 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34638 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785AbaIWQ0p (ORCPT
+	id S932213AbaIWQ3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:29:22 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:44196 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771AbaIWQ3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:26:45 -0400
-Date: Tue, 23 Sep 2014 09:26:23 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Jiri Olsa <jolsa@redhat.com>, Michael Ellerman <michaele@au1.ibm.com>,
-        linuxppc-dev@ozlabs.org, Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, ulrich.weigand@de.ibm.com,
-        Maynard Johnson <mpjohn@us.ibm.com>
-Subject: Re: [PATCH v5 1/1] powerpc/perf: Adjust callchain based on DWARF
- debug info
-Message-ID: <20140923162623.GA1698@us.ibm.com>
-References: <20140625000052.GA4484@us.ibm.com>
- <20140625074248.GC1153@krava.brq.redhat.com>
- <20140625154903.GA29607@us.ibm.com>
- <20140922213345.GB666@drone.musicnaut.iki.fi>
+	Tue, 23 Sep 2014 12:29:19 -0400
+Message-ID: <54219FD5.4030601@samsung.com>
+Date: Wed, 24 Sep 2014 01:29:09 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922213345.GB666@drone.musicnaut.iki.fi>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092316-9332-0000-0000-0000021BBD73
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH v2] ARM: dts: Add Maxim 77693 PMIC to the Trats2 board
+References: <1410793564-30445-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1410793564-30445-1-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaro Koskinen [aaro.koskinen@iki.fi] wrote:
-| Hi,
-| 
-| On Wed, Jun 25, 2014 at 08:49:03AM -0700, Sukadev Bhattiprolu wrote:
-| > powerpc/perf: Adjust callchain based on DWARF debug info
-| > 
-| > When saving the callchain on Power, the kernel conservatively saves excess
-| > entries in the callchain. A few of these entries are needed in some cases
-| > but not others. We should use the DWARF debug information to determine
-| > when the entries are  needed.
-| 
-| This patch breaks perf compilation if DWARF support is not present.
-| DWARF support is auto-detected early in the build, so IMHO either user
-| should be informed to install the needed stuff, or the build should
-| succeed with limited functionality.
-| 
-| arch/powerpc/util/skip-callchain-idx.c:13:19: fatal error: dwarf.h: No such file or directory #include <dwarf.h>
-|                    ^
-| compilation terminated.
+On 09/16/14 00:06, Krzysztof Kozlowski wrote:
+> The MAX77693 is a companion power management IC for smart phones and tablets.
+>
+> The MAX77693 contains input over-voltage protection (OVP),
+> a fully-integrated 2.5A switching charger for Lithium Ion battery with
+> integrated battery disconnect, OTG/accessory 5V output power,
+> a high-current white LED driver for camera flash, two safeout LDOs,
+> a haptic motor driver, Model Gauge m3 battery fuel gauge and MicroUSB
+> Interface Controller (MUIC). I2C serial interface is used for
+> communicating.
+>
+> Add MAX77693 node to the Trats2 board. This allows using:
+>   - charger regulator,
+>   - 2 safeout LDO regulators (for USB OTG),
+>   - extcon.
+>
+> Signed-off-by: Krzysztof Kozlowski<k.kozlowski@samsung.com>
+> Reviewed-by: Javier Martinez Canillas<javier.martinez@collabora.co.uk>
+>
+> ---
+>
+> Changes since v1:
+> ==================
+> 1. Use GPIO_ACTIVE_HIGH for gpio flags (suggested by Javier Martinez
+>     Canillas).
+> 2. Use regulator node name instead of deprecated regulator-compatible
+>     property (suggested by Javier Martinez Canillas).
+> 3. Add Javier Martinez Canillas' reviewed-by tag.
+> ---
+>   arch/arm/boot/dts/exynos4412-trats2.dts | 32 ++++++++++++++++++++++++++++++++
+>   1 file changed, 32 insertions(+)
+>
 
-Yes. Sorry. Anton fixed this recently:
+Looks good to me, applied.
 
-	https://lkml.org/lkml/2014/9/19/29
-
-Sukadev
-
+Thanks,
+Kukjin
