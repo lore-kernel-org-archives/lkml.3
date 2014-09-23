@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915AbaIWM6R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:58:17 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:54560 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755793AbaIWM6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:58:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v8 00/10] rtc: at91sam9: add DT support
-Date: Tue, 23 Sep 2014 14:57:37 +0200
-Message-ID: <2804695.hx0ZOj3D5K@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1754681AbaIWNBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:01:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37856 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171AbaIWNBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 09:01:47 -0400
+Message-ID: <54216F39.9030902@suse.cz>
+Date: Tue, 23 Sep 2014 15:01:45 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cQH3JpLfzyKoeUPfAYWS6NLaVx/fF1XbCJlTf+EjU86
- vmL6QppP84a12plPp6INv7kSd6q6bS+HIEsIQXfI+2zENt50Aq
- ikpZ7Olv95Dhn0h4RL/ov7JwbatJS+f+aDmaxBimLD9ttoRciu
- 2QKeHzzojXN41vnfl9MxzcDMpvtbmcfUxqLqQu5e1FkAfEd4Ec
- LYP8GDY4knNMBOt5ZL3Q21BDyzozgUju+4FySz7hEifV1AYau5
- jXfO1Gn0PPKTQU0jQKAYnFuiFniYgSpTTMIXUEsdmQ9OMJ3ptz
- BJptsBScIXiAp/KuemBw1rdm6ZlnrMVL7unRGXywZG8wDa/w8j
- jrJ8CmFUVoNnNorsZxdA=
-X-UI-Out-Filterresults: notjunk:1;
+To: Alexis Berlemont <alexis.berlemont@gmail.com>
+CC: linux-kernel@vger.kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        mingo@kernel.org, sam@ravnborg.org, namhyung@kernel.org
+Subject: Re: [PATCH 01/15] kbuild: add support of custom paths for "auto.conf*"
+ files
+References: <1411422796-27049-1-git-send-email-alexis.berlemont@gmail.com> <1411422796-27049-2-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <1411422796-27049-2-git-send-email-alexis.berlemont@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 13:23:54 Boris BREZILLON wrote:
+On 2014-09-22 23:53, Alexis Berlemont wrote:
+> In the scripts/Makefile.build, use KCONFIG_AUTOCONFIG to include a
+> custom path for the "auto.conf" file.
 > 
-> This patch series adds DT support to the atmel at91sam9 RTC driver.
+> The "*conf" programs were modified so as to work with the environment
+> variable KCONFIG_AUTOCONFIG.
+> ---
+>  scripts/Makefile.build     |  3 ++-
+>  scripts/kconfig/confdata.c | 27 ++++++++++++++++++++++++++-
+>  scripts/kconfig/lkc.h      |  1 +
+>  3 files changed, 29 insertions(+), 2 deletions(-)
 > 
-> It also removes any machine specific inclusions to prepare the migration
-> to multi platform kernel support, and retain the slow clock to prevent
-> the CCF from disabling it at the end of boot.
->   
-> 
+> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> index bf3e677..ef60769 100644
+> --- a/scripts/Makefile.build
+> +++ b/scripts/Makefile.build
+> @@ -31,7 +31,8 @@ subdir-asflags-y :=
+>  subdir-ccflags-y :=
+>  
+>  # Read auto.conf if it exists, otherwise ignore
+> --include include/config/auto.conf
+> +kconfig-autoconfig := $(if $(KCONFIG_AUTOCONFIG),$(KCONFIG_AUTOCONFIG),include/config/auto.conf)
+> +-include $(kconfig-autoconfig)
+>  
+>  include scripts/Kbuild.include
+>  
+> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+> index f88d90f..d4d8920 100644
+> --- a/scripts/kconfig/confdata.c
+> +++ b/scripts/kconfig/confdata.c
+> @@ -75,6 +75,27 @@ const char *conf_get_autoconfig_name(void)
+>  	return name ? name : "include/config/auto.conf";
+>  }
+>  
+> +#define PATH_MAXLENGTH 4096
+> +const char *conf_get_autoconfigdep_name(void)
+> +{
+> +	static char res_value[PATH_MAXLENGTH];
+> +
+> +	char *name = getenv("KCONFIG_AUTOCONFIG");
+> +
+> +	if (name == NULL)
+> +		name = "include/config/auto.conf.cmd";
 
-Looks good to me, please add
+This will result in "include/config/auto.conf.cmd.cmd". Better simplify
+it to name = conf_get_autoconfig_name().
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-once you have addressed the remaining comments from Johan and me.
+> +	if (strlen(name) > PATH_MAXLENGTH - 5)
+> +		name = NULL;
+> +	else {
+> +		res_value[0] = 0;
 
-	Arnd
+This assignment is superfluous.
+
+
+> +		strncpy(res_value, name, PATH_MAXLENGTH);
+> +		strcat(res_value, ".cmd");
+> +		name = res_value;
+
+Michal
+
