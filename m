@@ -1,94 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaIWSko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:40:44 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:42021 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaIWSkl (ORCPT
+	id S1756192AbaIWSkz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:40:55 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:43308 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735AbaIWSkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:40:41 -0400
-Date: Tue, 23 Sep 2014 19:39:55 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140923193955.2fb9cb14@alan.etchedpixels.co.uk>
-In-Reply-To: <5421B9A6.5020408@hurleysoftware.com>
-References: <20140712181328.GA8738@redhat.com>
-	<54079B70.4050200@hurleysoftware.com>
-	<1409785893.30640.118.camel@pasglop>
-	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
-	<1409824374.4246.62.camel@pasglop>
-	<5408E458.3@zytor.com>
-	<54090AF4.7060406@hurleysoftware.com>
-	<54091B30.7080100@zytor.com>
-	<5409D76D.2070203@hurleysoftware.com>
-	<5409D9C0.7030403@zytor.com>
-	<20140908185240.21f52ca0@alan.etchedpixels.co.uk>
-	<540DEE6C.2060904@zytor.com>
-	<540E3207.7090007@hurleysoftware.com>
-	<20140911110411.2de01944@alan.etchedpixels.co.uk>
-	<5411FFB6.2080702@hurleysoftware.com>
-	<20140915002427.6ce18965@alan.etchedpixels.co.uk>
-	<5421B9A6.5020408@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 14:40:53 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, tomasz.figa@gmail.com,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [PATCH v13 1/9] clk: Add temporary mapping to the existing API
+Date: Tue, 23 Sep 2014 20:40:13 +0200
+Message-Id: <1411497613-24049-2-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1411497613-24049-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1411497613-24049-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Yes - because if you think about it that tells you that nobody is hitting
-> > it with the old code and it probably doesn't matter.
-> 
-> I don't understand this reply.
+To preserve git-bisectability, add aliases from the future provider API to the
+existing public API.
 
-It's a matter of priorities. There are hundreds of potential security
-holes turned up by scanners, 2,500+ filed bugs in kernel bugzilla alone.
+Also includes clk-provider.h and clk-dev.h in a few places so the right
+functions are defined.
 
-Which matters more - fixing the bugs people hit or the ones that they
-don't and which have a very high cost impact on other users ?
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Heiko Stuebner <heiko@sntech.de>
 
-> Likewise, I'm pointing that byte-sized circular buffers will also be 
-> corrupted under certain circumstances (when the head comes near the tail).
+---
+v13: * Add mapping for clk_provider_put
 
-Yes. I believe the classic wording is "this problem has not been observed
-in the field"
+v9: * Add mapping for clk_get_name
+
+v7: * Add mappings for clk_notifier_[un]register
+    * Add more clk-provider.h includes to clk implementations
+
+v4: * Add more clk-provider.h includes to clk implementations
+    * Add mapping for clk_provider_round_rate
+---
+ arch/arm/mach-omap2/display.c                 |  1 +
+ arch/arm/mach-omap2/omap_device.c             |  1 +
+ arch/arm/mach-shmobile/clock.c                |  1 +
+ arch/arm/plat-orion/common.c                  |  1 +
+ drivers/clk/berlin/bg2.c                      |  1 +
+ drivers/clk/berlin/bg2q.c                     |  1 +
+ drivers/clk/clk-conf.c                        |  1 +
+ drivers/clk/clkdev.c                          |  1 +
+ drivers/media/platform/exynos4-is/media-dev.c |  1 +
+ include/linux/clk-provider.h                  | 28 +++++++++++++++++++++++++++
+ include/linux/clk/zynq.h                      |  1 +
+ 11 files changed, 38 insertions(+)
+
+diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
+index bf852d7..0f9e479 100644
+--- a/arch/arm/mach-omap2/display.c
++++ b/arch/arm/mach-omap2/display.c
+@@ -21,6 +21,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/err.h>
+ #include <linux/delay.h>
+ #include <linux/of.h>
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index d22c30d..f138a62 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -32,6 +32,7 @@
+ #include <linux/io.h>
+ #include <linux/clk.h>
+ #include <linux/clkdev.h>
++#include <linux/clk-provider.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/of.h>
+ #include <linux/notifier.h>
+diff --git a/arch/arm/mach-shmobile/clock.c b/arch/arm/mach-shmobile/clock.c
+index 806f940..ed415dc 100644
+--- a/arch/arm/mach-shmobile/clock.c
++++ b/arch/arm/mach-shmobile/clock.c
+@@ -24,6 +24,7 @@
  
-> 2. I'm not sure where you arrived at the conclusion that set_bit() et.al. is
-> fast on x86. Besides the heavy-duty instructions (lgdt, mov cr0, etc), the
-> bus-locked bit instructions are among the most expensive instructions in the
-> kernel.
+ #ifdef CONFIG_COMMON_CLK
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include "clock.h"
+ 
+diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
+index 3ec6e8e..961b593 100644
+--- a/arch/arm/plat-orion/common.c
++++ b/arch/arm/plat-orion/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/serial_8250.h>
+ #include <linux/ata_platform.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include <linux/mv643xx_eth.h>
+ #include <linux/mv643xx_i2c.h>
+diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
+index 515fb13..4c81e09 100644
+--- a/drivers/clk/berlin/bg2.c
++++ b/drivers/clk/berlin/bg2.c
+@@ -19,6 +19,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+index 21784e4..748da9b 100644
+--- a/drivers/clk/berlin/bg2q.c
++++ b/drivers/clk/berlin/bg2q.c
+@@ -19,6 +19,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
+index aad4796..d36a7b3 100644
+--- a/drivers/clk/clk-conf.c
++++ b/drivers/clk/clk-conf.c
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include <linux/clk.h>
++#include <linux/clkdev.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clk/clk-conf.h>
+ #include <linux/device.h>
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index da4bda8..c751d0c 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -18,6 +18,7 @@
+ #include <linux/string.h>
+ #include <linux/mutex.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include <linux/of.h>
+ 
+diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
+index 344718d..2620c48 100644
+--- a/drivers/media/platform/exynos4-is/media-dev.c
++++ b/drivers/media/platform/exynos4-is/media-dev.c
+@@ -13,6 +13,7 @@
+ #include <linux/bug.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 411dd7e..03ad843 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -16,6 +16,34 @@
+ 
+ #ifdef CONFIG_COMMON_CLK
+ 
++/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
++#define clk_core			clk
++
++#define __clk_create_clk
++
++#define clk_provider_get			clk_get
++#define clk_provider_put			clk_put
++#define clk_provider_get_sys			clk_get_sys
++#define devm_clk_provider_get			devm_clk_get
++#define of_clk_provider_get			of_clk_get
++#define of_clk_provider_get_by_name		of_clk_get_by_name
++
++#define clk_provider_set_rate			clk_set_rate
++#define clk_provider_get_rate			clk_get_rate
++#define clk_provider_round_rate			clk_round_rate
++#define clk_provider_set_parent			clk_set_parent
++#define clk_provider_get_parent			clk_get_parent
++#define clk_provider_prepare			clk_prepare
++#define clk_provider_unprepare			clk_unprepare
++#define clk_provider_enable			clk_enable
++#define clk_provider_disable			clk_disable
++#define clk_provider_prepare_enable		clk_prepare_enable
++#define clk_provider_disable_unprepare		clk_unprepare
++#define clk_provider_notifier_register		clk_notifier_register
++#define clk_provider_notifier_unregister	clk_notifier_unregister
++
++#define clk_get_name				__clk_get_name
++
+ /*
+  * flags used across common struct clk.  these flags should only affect the
+  * top-level framework.  custom flags for dealing with hardware specifics
+diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
+index 7a5633b..a990a59 100644
+--- a/include/linux/clk/zynq.h
++++ b/include/linux/clk/zynq.h
+@@ -21,6 +21,7 @@
+ #define __LINUX_CLK_ZYNQ_H_
+ 
+ #include <linux/spinlock.h>
++#include <linux/clk-provider.h>
+ 
+ void zynq_clock_init(void);
+ 
+-- 
+1.9.3
 
-> I've attached a smoke test I use for lightweight validation of pty slave reads.
-> If you run this smoke test under perf, almost every high-value hit is a
-> bus-locked bit instruction. Check out canon_copy_from_read_buf() which performs
-> the actual copy of data from the line discipline input buffer to the __user
-> buffer; the clear_bit() is the performance hit. Check out cpu_idle_loop()...
-
-And then go and instrument whether its the bit instructions or the cache
-misses ?
-
-
-If there is a significant performance improvement by spacing the fields
-carefully, and you don't have other ordering problems as a result
-(remembering that the compiler has a lot of re-ordering options provided
-the re-ordering cannot be observed)
-
-If that's the case then fine - submit a patch with numbers and the fields
-spaced and quote the performance data.
-
-Alan
