@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051AbaIWWdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 18:33:50 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:52243 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731AbaIWWds (ORCPT
+	id S1756856AbaIWWks (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 18:40:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38659 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231AbaIWWkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 18:33:48 -0400
-Date: Tue, 23 Sep 2014 15:33:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-In-Reply-To: <20140923142816.GC10046@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1409231527040.22630@chino.kir.corp.google.com>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org> <20140922144436.GG336@dhcp22.suse.cz> <20140922155049.GA6630@cmpxchg.org> <20140922172800.GA4343@dhcp22.suse.cz> <20140922195829.GA5197@cmpxchg.org> <20140923132553.GB10046@dhcp22.suse.cz>
- <20140923140526.GA15014@cmpxchg.org> <20140923142816.GC10046@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 23 Sep 2014 18:40:47 -0400
+Date: Tue, 23 Sep 2014 15:40:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Grant Likely <grant.likely@linaro.org>, Andi Kleen <ak@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: string.c:  Added a funktion function strzcpy
+Message-Id: <20140923154046.1e57134bdb7e3143c0a5b6c9@linux-foundation.org>
+In-Reply-To: <1411510416-16655-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1411510416-16655-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<1411510416-16655-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014, Michal Hocko wrote:
+On Wed, 24 Sep 2014 00:13:36 +0200 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
 
-> On Tue 23-09-14 10:05:26, Johannes Weiner wrote:
-> [...]
-> > That's one way to put it.  But the way I see it is that I remove a
-> > generic resource counter and replace it with a pure memory counter
-> > which I put where we account and limit memory - with one exception
-> > that is hardly worth creating a dedicated library file for.
-> 
-> So you completely seem to ignore people doing CONFIG_CGROUP_HUGETLB &&
-> !CONFIG_MEMCG without any justification and hiding it behind performance
-> improvement which those users even didn't ask for yet.
-> 
-> All that just to not have one additional header and c file hidden by
-> CONFIG_PAGE_COUNTER selected by both controllers. No special
-> configuration option is really needed for CONFIG_PAGE_COUNTER.
-> 
+> +/**
+> + * strzcpy - Copy a length-limited, C-string
+> + * @dest: Where to copy the string to
+> + * @src: Where to copy the string from
+> + * @count: The maximum number of bytes to copy
+> + *
+> + * The result is %NUL-terminated,
+> + * as long as count is greater than zero.
+> + *
+> + * In the case where the length of @src is less than  that  of
+> + * count, the remainder of @dest will be padded with %NUL.
 
-I'm hoping that if there is a merge that there is not an implicit reliance 
-on struct page_cgroup for the hugetlb cgroup.  We boot a lot of our 
-machines with very large numbers of hugetlb pages on the kernel command 
-line (>95% of memory) and can save hundreds of megabytes (meaning more 
-overcommit hugepages!) by freeing unneeded and unused struct page_cgroup 
-for CONFIG_SPARSEMEM.
+As far as I can tell, this sentence describes the only difference
+between strzcpy() and strlcpy().  Only the sentence is wrong - the
+implementation doesn't actually do that.
 
-> > I only explained my plans of merging all memory controllers because I
-> > assumed we could ever be on the same page when it comes to this code.
-> 
-> I doubt this is a good plan but I might be wrong here. The main thing
-> stays there is no good reason to make hugetlb depend on memcg right now
-> and such a change _shouldn't_ be hidden behind an unrelated change. From
-> hugetlb container point of view this is just a different counter which
-> doesn't depend on memcg. I am really surprised you are pushing for this
-> so hard right now because it only distracts from the main motivation of
-> your patch.
-> 
-
-I could very easily imagine a user who would like to use hugetlb cgroup 
-without memcg if hugetlb cgroup would charge reserved but unmapped hugetlb 
-pages to its cgroup as well.  It's quite disappointing that the hugetlb 
-cgroup allows a user to map 100% of a machine's hugetlb pages from the 
-reserved pool while its hugetlb cgroup limit is much smaller since this 
-prevents anybody else from using the global resource simply because 
-someone has reserved but not faulted hugepages.
+> + */
+> +char *strzcpy(char *dest, const char *src, size_t count)
+> +{
+> +	char *tmp = dest;
+> +
+> +	while (count) {
+> +		if ((*tmp = *src) != 0)
+> +			src++;
+> +		tmp++;
+> +		count--;
+> +	}
+> +
+> +	if (dest != tmp)
+> +		*--tmp = '\0';
+> +
+> +	return dest;
+> +}
+> +EXPORT_SYMBOL(strzcpy);
