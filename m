@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbaIWNNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:13:25 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:65101 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572AbaIWNNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:13:23 -0400
-Date: Tue, 23 Sep 2014 09:13:19 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: lizefan@huawei.com, peterz@infradead.org, mingo@kernel.org,
-        miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, keescook@chromium.org
-Subject: Re: [PATCH v2 3/3] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should
- beatomic flags
-Message-ID: <20140923131319.GC14905@mtj.dyndns.org>
-References: <54210D3F.2090409@huawei.com>
- <54210DA5.4040606@huawei.com>
- <201409231955.FDB73406.FOOJLOVQMHFSFt@I-love.SAKURA.ne.jp>
+	id S1755495AbaIWNQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:16:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38073 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754411AbaIWNQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 09:16:09 -0400
+Message-ID: <54217298.1090409@suse.cz>
+Date: Tue, 23 Sep 2014 15:16:08 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201409231955.FDB73406.FOOJLOVQMHFSFt@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Matteo Croce <matteo@openwrt.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86 generated files in gitignore
+References: <CAFnufp3DcbG1DjXjD-sTL=1wYzu9dS5r1UXxGQwQjR11zRSBfg@mail.gmail.com> <20140923124045.GA13913@sepie.suse.cz> <CAFnufp2DQvEywZW0sg-+hLyeDY+L0UwWjEtDwX-PgOJWda-HOw@mail.gmail.com>
+In-Reply-To: <CAFnufp2DQvEywZW0sg-+hLyeDY+L0UwWjEtDwX-PgOJWda-HOw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 07:55:48PM +0900, Tetsuo Handa wrote:
-> Zefan Li wrote:
-> > Tetsuo reported a hard-to-reproduce kernel crash on RHEL6, which happend
-> 
-> s/happend/happened/
-> 
-> > @@ -1972,6 +1973,14 @@ static inline void memalloc_noio_restore(unsigned int flags)
-> >  TASK_PFA_TEST(NO_NEW_PRIVS, no_new_privs)
-> >  TASK_PFA_SET(NO_NEW_PRIVS, no_new_privs)
-> >  
-> > +TASK_PFA_TEST(SPREAD_PAGE, spread_page)
-> > +TASK_PFA_SET(SPREAD_PAGE, spread_page)
-> > +TASK_PFA_CLEAR(SPREAD_PAGE, spread_page)
-> > +
-> > +TASK_PFA_TEST(SPREAD_SLAB, spread_slab)
-> > +TASK_PFA_SET(SPREAD_SLAB, spread_slab)
-> > +TASK_PFA_CLEAR(SPREAD_SLAB, spread_slab)
-> > +
-> 
-> I wonder how adding 3 macro lines differs from 3 inlined functions.
-> Personally, from LXR (source code browser) point of view, inlined functions
-> are more friendly than macros. Also, I wonder about the cost of extracting
-> macros in a file which is likely included by every file but referenced
-> by few files. Speak of SPREAD_PAGE and SPREAD_SLAB, they should be defined
-> as inlined functions in include/linux/cpuset.h rather than as macros in
-> include/linux/sched.h ?
+(please do not top-post)
 
-I think sched.h is fine along w/ inlines for other flags but yeah we
-might be better off just open-coding them.
+On 2014-09-23 14:57, Matteo Croce wrote:
+> Didn't know, thanks.
+> 
+> What about arch/x86/purgatory?
 
-Thanks.
+That part of the patch seems fine, but it should be sent to the x86
+maintainers.
 
--- 
-tejun
+Michal
