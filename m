@@ -1,135 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaIWVQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:16:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5877 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932292AbaIWVP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:15:59 -0400
-X-ExtLoop1: 1
+	id S932492AbaIWVPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:15:50 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:8416 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756901AbaIWVPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 17:15:39 -0400
 X-IronPort-AV: E=Sophos;i="5.04,582,1406617200"; 
-   d="scan'208";a="604270347"
-User-Agent: Microsoft-MacOutlook/14.4.3.140616
-Date: Tue, 23 Sep 2014 14:15:47 -0700
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
- properties interface
-From: Darren Hart <dvhart@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <david.woodhouse@intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
+   d="scan'208";a="46411599"
+From: Jonathan Richardson <jonathar@broadcom.com>
+To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Message-ID: <D04730D8.A9DB0%dvhart@linux.intel.com>
-Thread-Topic: [RFC PATCH v2 07/16] gpio: Add support for unified device
- properties interface
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <12538216.vu4CbU01qP@wuerfel>
- <2895905.coa5UvrkJk@vostro.rjw.lan>
- <2809308.3y5s7TV5Ip@wuerfel>
-In-Reply-To: <2809308.3y5s7TV5Ip@wuerfel>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>,
+        Jonathan Richardson <jonathar@broadcom.com>
+Subject: [PATCH v2 3/6] dt-bindings: Document Broadcom Cygnus SoC and clock driver
+Date: Tue, 23 Sep 2014 14:17:34 -0700
+Message-ID: <1411507057-14771-4-git-send-email-jonathar@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
+References: <Jonathan Richardson <jonathar@broadcom.com>
+ <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/23/14, 9:26, "Arnd Bergmann" <arnd@arndb.de> wrote:
+Reviewed-by: Arun Parameswaran <aparames@broadcom.com>
+Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
+---
+ Documentation/devicetree/bindings/arm/cygnus.txt   |   12 ++
+ .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++++++++++++++++++++
+ .../devicetree/bindings/clock/clk-iproc.txt        |   48 ++++++++
+ 3 files changed, 181 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-iproc.txt
 
->On Tuesday 23 September 2014 18:25:01 Rafael J. Wysocki wrote:
->> The problem is iteration over child nodes of a given one where there
->> may not be struct device objects.
->> 
->> For example (from patch [2/16]):
->> 
->> +int acpi_for_each_child_node(struct acpi_device *adev,
->> +                             int (*fn)(struct fw_dev_node *fdn, void
->>*data),
->> +                             void *data)
->> +{
->> +       struct acpi_device *child;
->> +       int ret = 0;
->> +
->> +       list_for_each_entry(child, &adev->children, node) {
->> +               struct fw_dev_node fdn = { .acpi_node = child, };
->> +
->> +               ret = fn(&fdn, data);
->> +               if (ret)
->> +                       break;
->> +       }
->> +       return ret;
->> +}
->> 
->> and then fn() can be made work for both DTs and ACPI.  Without this we'd
->> need to have two versions of fn(), one for DTs and one for ACPI (and
->>possibly
->> more for some other FW protocols), which isn't necessary in general (and
->> duplicates code etc.).
->> 
->> That actually is used by some patches down in the series (eg. [10/16]).
->> 
->
->Ok, I understand what you are doing now.
->
->Looking at the example you point to
->(http://www.spinics.net/lists/devicetree/msg49502.html), I still feel
->that this is adding more abstraction than what is good for us, and
->I'd be happier with an implementation of gpio_leds_create() that
->has a bit more duplication and less abstraction.
->
->The important part should be that the driver-side interface is
->sensible, other than that an implementation like
->
->static struct gpio_leds_priv *gpio_leds_create(struct platform_device
->*pdev)
->{
->	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
->		return gpio_leds_create_of(pdev);
->	else if (IS_ENABLED(CONFIG_ACPI))
->		return gpio_leds_create_of(acpi);
-
-Arnd, I think you meant:
-
-	Return gpio_leds_create_acpi(pdev) ?
-
-This is what we did early on to prototype this concept, but the problem
-with this approach we duplicate all of the creation code, which leads to
-maintenance errors, and is inconsistent with the goals of the _DSD which
-is to reuse the same schemas for ACPI and FDT. If we have separate pdata
-creation functions anyway, we are leaving much of the advantage of the
-common schema on the table. Namely the ability to reuse drivers relatively
-easily across firmware implementations. We don't want driver authors to
-have to care if it's ACPI or FDT.
-
-We would have preferred to have deprecated the of property interface in
-favor of the new generic device_property interface, but Grant specifically
-requested that we update drivers individually rather than all at once,
-which means we can't just kill the OF interface.
-
-We agreed to that, somewhat reluctantly as it adds more work in updating
-the drivers over time which will slow adoption, but I understand the
-desire not to make large sweeping changes due to the risk of breaking
-things inadvertently as we cannot expect to be able to test all of them.
-That said, I don't want to forget that the goal is to use the common
-interface over time as we convert individual drivers, and using the common
-interface means we need a common iterator function and that we not have fw
-implementation specific pdata create functions.
-
---
-Darren Hart
-Intel Open Source Technology Center
-
-
-
-
+diff --git a/Documentation/devicetree/bindings/arm/cygnus.txt b/Documentation/devicetree/bindings/arm/cygnus.txt
+new file mode 100644
+index 0000000..a210377
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cygnus.txt
+@@ -0,0 +1,12 @@
++Broadcom Cygnus device tree bindings
++------------------------------------
++
++All Cygnus boards shall have the following properties:
++
++Required root node property:
++	- compatible = "brcm,cygnus";
++
++Boards variants shall have the following additional properties:
++
++Required root node property for the BCM911360_ENTPHN board:
++	- compatible = "brcm,bcm911360_entphn";
+diff --git a/Documentation/devicetree/bindings/clock/clk-cygnus.txt b/Documentation/devicetree/bindings/clock/clk-cygnus.txt
+new file mode 100644
+index 0000000..7e03837
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/clk-cygnus.txt
+@@ -0,0 +1,121 @@
++Broadcom Cygnus Clock Controller
++
++This binding uses the common clock binding:
++Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++The Cygnus clock controller manages several PLL's and their channels, found only
++on the Cygnus chip. Clocks that are common to iProc can be found in the iProc
++clock controller. The controllers are split into a parent-child relationship
++where the parent is the PLL and the child controls the PLL's channels.
++
++All PLL's are derived from a 25MHz oscillator. The PLL's controlled are the
++GENPLL, LCPLL, the MIPI PLL. In addition, there are two clocks derived from
++GENPLL channel 0, and three that are derived directly from the oscillator.
++
++Required properties:
++- compatible: Must be one of the following:
++    "brcm,cygnus-lcpll-clk" - Controls LCPLL.
++    "brcm,cygnus-lcpll-ch" -  Controls LCPLL (parent) channels
++    "brcm,cygnus-genpll-clk" - Controls parent GENPLL
++    "brcm,cygnus-genpll-ch" - Controls GENPLL (parent) channels
++    "brcm,cygnus-mipipll-clk" - Controls MIPI PLL
++    "brcm,cygnus-mipipll-ch" - Controls parent MIPI PLL (parent) channels
++    "brcm,cygnus-osc-derived" - Controls oscillator (parent) derived channels
++        not controlled by any PLL.
++    "brcm,cygnus-pll-derived" - Controls clocks derived from GENPLL channel 0.
++	  These clocks have hard wired internal dividers and their clock rates
++	  scale according to the GENPLL channel.
++
++- reg: First register is the base address of the PLL. Register 2 and 3 are
++  required by some clocks. They are the top clock gating control used to
++  enable/disable clocks (ch 1), and the CRMU PLL AON CONTROL register which
++  powers on PLL/LDO's (ch 2).
++
++- clocks: The input parent clock phandle for the clock. This is either a PLL,
++  oscillator, or GENPLL channel 0.
++
++- channel: The PLL channel that the clock belongs to. This is used for
++  "brcm,cygnus-lcpll-ch", "brcm,cygnus-genpll-ch", "brcm,cygnus-mipipll-ch",
++  "brcm,cygnus-osc-derived" only.
++
++- div: Used by "brcm,cygnus-pll-derived" to define the hard coded internal
++  divider value. Used by "brcm,cygnus-osc-derived" to specify the programmable
++  divider.
++
++- #clock-cells: From common clock binding; shall be set to 0.
++
++Examples:
++
++		osc: oscillator {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <25000000>;
++		};
++
++		lcpll: lcpll@0301d02c {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-lcpll-clk";
++			reg = <0x0301d02c 0x1c>;
++			clocks = <&osc>;
++		};
++
++		genpll: genpll@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-clk";
++			reg = <0x0301d000 0x2c>,
++				  <0x180AA024 0x4>,
++				  <0x0301C020 0x4>;
++			clocks = <&osc>;
++		};
++
++		axi21_clk: genpll_ch0@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <0>;
++		};
++
++		pcie_clk: lcpll_ch0@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <0>;
++		};
++
++		axi41_clk: axi41_clk {
++			reg = <0x0301d000 0x2c>;
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-pll-derived";
++			clocks = <&axi21_clk>;
++			div = <2>;
++		};
++
++		keypad_clk: keypad_clk@0301D048 {
++			compatible = "brcm,cygnus-osc-derived";
++			reg = <0x0301D048 0x4>,
++				  <0x180AA024 0x4>;
++			#clock-cells = <0>;
++			clocks = <&osc>;
++			channel = <0>;
++			div = <392>;
++		};
++
++		mipipll: mipipll@180a9800 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-mipipll-clk";
++			reg = <0x180a9800 0x2c>,
++				  top_clk_gating_ctrl: <0x180AA024 0x4>,
++				  crmu_pll_aon_ctrl: <0x0301C020 0x4>;
++			clocks = <&osc>;
++		};
++
++		lcd_clk: mipipll_ch1@180a9800 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-mipipll-ch";
++			reg = <0x180a9800 0x2c>,
++				  <0x180AA024 0x4>;
++			clocks = <&mipipll>;
++			channel = <1>;
++		};
+diff --git a/Documentation/devicetree/bindings/clock/clk-iproc.txt b/Documentation/devicetree/bindings/clock/clk-iproc.txt
+new file mode 100644
+index 0000000..b5d4f08
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/clk-iproc.txt
+@@ -0,0 +1,48 @@
++Broadcom iProc Clock Controller
++
++This binding uses the common clock binding:
++Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++The iProc clock controller manages clocks that are common to iProc chips.
++The controllers are split into a parent-child relationship where the parent is
++the PLL and the child controls the PLL's channels.
++
++The only PLL controlled is the ARM PLL which is derived from a 25MHz crystal.
++
++Required properties:
++- compatible: Must be one of the following:
++    "brcm,iproc-arm-a9pll" - Controls ARM PLL.
++    "brcm,iproc-arm-ch" -  Controls ARM PLL (parent) channels
++
++- reg: The base address of the PLL.
++
++- clocks: The input parent clock phandle for the clock. This is either a PLL,
++  or oscillator.
++
++- channel: The PLL channel that the clock belongs to. This is used for
++  "brcm,iproc-arm-ch" only.
++
++- #clock-cells: From common clock binding; shall be set to 0.
++
++Example:
++
++	osc: oscillator {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <25000000>;
++	};
++
++	a9pll: arm_clk@19000000 {
++		compatible = "brcm,iproc-arm-a9pll";
++		reg = <0x19000000 0x1000>;
++		#clock-cells = <0>;
++		clocks = <&osc>;
++	};
++
++	periph_clk: periph_clk@19000000 {
++		compatible = "brcm,iproc-arm-ch";
++		reg = <0x19000000 0x1000>;
++		#clock-cells = <0>;
++		clocks = <&a9pll>;
++		channel = <3>;
++	};
+-- 
+1.7.9.5
 
