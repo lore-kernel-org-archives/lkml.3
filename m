@@ -1,74 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518AbaIWRwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:52:43 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:41115 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232AbaIWRvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:51:14 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3/8] x86,vdso: Change the PER_CPU segment to use struct desc_struct
-Date: Tue, 23 Sep 2014 10:50:53 -0700
-Message-Id: <d492f7b55136cbc60f016adae79160707b2e03b7.1411494540.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1411494540.git.luto@amacapital.net>
-References: <cover.1411494540.git.luto@amacapital.net>
-In-Reply-To: <cover.1411494540.git.luto@amacapital.net>
-References: <cover.1411494540.git.luto@amacapital.net>
+	id S1756477AbaIWRxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:53:49 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:56275 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754877AbaIWRxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 13:53:47 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Cc: linux-rockchip@lists.infradead.org, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, Jack Dai <jack.dai@rock-chips.com>,
+        Wang Caesar <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH 3/3] ARM: dts: add rk3288 power-domain node
+Date: Tue, 23 Sep 2014 19:52:49 +0200
+Message-ID: <2840362.2VhRfgMh5I@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1411440916-6830-4-git-send-email-jinkun.hong@rock-chips.com>
+References: <1411440916-6830-1-git-send-email-jinkun.hong@rock-chips.com> <1411440916-6830-4-git-send-email-jinkun.hong@rock-chips.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it easier to see what's going on.  It produces exactly
-the same segment descriptor as the old code.
+Am Montag, 22. September 2014, 19:55:16 schrieb jinkun.hong:
+> From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+> 
+> Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
+> Signed-off-by: Wang Caesar <caesar.wang@rock-chips.com>
+> Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
+> 
+> ---
+> 
+>  arch/arm/boot/dts/rk3288.dtsi |   45
+> +++++++++++++++++++++++++++++++++++++++++ 1 file changed, 45 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 3bb5230..714b9d9 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -15,6 +15,7 @@
+>  #include <dt-bindings/interrupt-controller/arm-gic.h>
+>  #include <dt-bindings/pinctrl/rockchip.h>
+>  #include <dt-bindings/clock/rk3288-cru.h>
+> +#include <dt-bindings/power-domain/rk3288.h>
+>  #include "skeleton.dtsi"
+> 
+>  / {
+> @@ -467,6 +468,50 @@
+>  		compatible = "rockchip,rk3288-pmu", "syscon";
+>  		reg = <0xff730000 0x100>;
+>  	};
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vma.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+missing blank line here
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index a155dca5edb5..261b1349acc9 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -248,7 +248,7 @@ __setup("vdso=", vdso_setup);
-  */
- static void vsyscall_set_cpu(int cpu)
- {
--	unsigned long d;
-+	struct desc_struct d;
- 	unsigned long node = 0;
- #ifdef CONFIG_NUMA
- 	node = cpu_to_node(cpu);
-@@ -257,13 +257,18 @@ static void vsyscall_set_cpu(int cpu)
- 		write_rdtscp_aux((node << 12) | cpu);
- 
- 	/*
--	 * Store cpu number in limit so that it can be loaded quickly
--	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
-+	 * Store cpu number in limit so that it can be loaded
-+	 * quickly in user space in vgetcpu. (12 bits for the CPU
-+	 * and 8 bits for the node)
- 	 */
--	d = 0x0f40000000000ULL;
--	d |= cpu;
--	d |= (node & 0xf) << 12;
--	d |= (node >> 4) << 48;
-+	d = (struct desc_struct) {
-+		.limit0 = cpu | ((node & 0xf) << 12),
-+		.limit = node >> 4,
-+		.type = 4,		/* RO data, expand down */
-+		.dpl = 3,		/* Visible to user code */
-+		.s = 1,			/* Not a system segment */
-+		.p = 1,			/* Present */
-+	};
- 
- 	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
- }
--- 
-1.9.3
+Also please mind the ordering. We have the nodes without registers (like the 
+pinctrl) at the bottom, so maybe add the power-controller alphabetically after 
+the pinctrl node.
+
+> +	power: power-controller {
+> +		compatible = "rockchip,rk3288-power-controller";
+> +		#power-domain-cells = <1>;
+> +		rockchip,pmu = <&pmu>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		pd_gpu {
+> +			reg = <RK3288_PD_GPU>;
+> +			clocks = <&cru ACLK_GPU>;
+> +		};
+> +
+> +		pd_vio {
+> +			reg = <RK3288_PD_VIO>;
+> +			clocks = <&cru HCLK_RGA>, <&cru HCLK_VOP0>,
+> +				<&cru HCLK_VOP1>, <&cru HCLK_VIO_AHB_ARBI>,
+> +				<&cru HCLK_VIO_NIU>, <&cru HCLK_VIP>,
+> +				<&cru HCLK_IEP>, <&cru HCLK_ISP>,
+> +				<&cru HCLK_VIO2_H2P>, <&cru PCLK_MIPI_DSI0>,
+> +				<&cru PCLK_MIPI_DSI1>, <&cru PCLK_MIPI_CSI>,
+> +				<&cru PCLK_LVDS_PHY>, <&cru PCLK_EDP_CTRL>,
+> +				<&cru PCLK_HDMI_CTRL>, <&cru PCLK_VIO2_H2P>,
+> +				<&cru ACLK_VOP0>, <&cru ACLK_IEP>,
+> +				<&cru ACLK_VIO0_NIU>, <&cru ACLK_VIP>,
+> +				<&cru ACLK_VOP1>, <&cru ACLK_ISP>,
+> +				<&cru ACLK_VIO1_NIU>, <&cru ACLK_RGA>,
+> +				<&cru ACLK_RGA_NIU>,<&cru SCLK_RGA>,
+> +				<&cru DCLK_VOP0>, <&cru DCLK_VOP1>,
+> +				<&cru SCLK_EDP_24M>, <&cru SCLK_EDP>,
+> +				<&cru SCLK_ISP>, <&cru SCLK_ISP_JPE>,
+> +				<&cru SCLK_HDMI_HDCP>, <&cru SCLK_HDMI_CEC>;
+> +		};
+> +
+> +		pd_video {
+> +			reg = <RK3288_PD_VIDEO>;
+> +			/* FIXME: add clocks */
+
+what is missing for these clocks? If it's just more clock ids, please 
+corrdinate with Kever
+
+> +			};
+> +
+> +		pd_hevc {
+> +			reg = <RK3288_PD_HEVC>;
+> +			clocks = <&cru ACLK_HEVC>, <&cru HCLK_HEVC>,
+> +				<&cru SCLK_HEVC_CABAC>, <&cru SCLK_HEVC_CORE>;
+> +			};
+> +	};
+> 
+>  	sgrf: syscon@ff740000 {
+>  		compatible = "rockchip,rk3288-sgrf", "syscon";
 
