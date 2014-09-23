@@ -1,183 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaIWEEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:04:00 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:33032 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaIWEDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:03:38 -0400
-From: Matt Ranostay <mranostay@gmail.com>
-To: galak@codeaurora.org, dmitry.torokhov@gmail.com, zonque@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org
-Cc: devicetree@vger.kernel.org, Matt Ranostay <mranostay@gmail.com>
-Subject: [PATCH v2 1/2] cap1106: Add support for various cap11xx devices
-Date: Mon, 22 Sep 2014 21:04:16 -0700
-Message-Id: <1411445057-30048-2-git-send-email-mranostay@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411445057-30048-1-git-send-email-mranostay@gmail.com>
-References: <1411445057-30048-1-git-send-email-mranostay@gmail.com>
+	id S1753075AbaIWEGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:06:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53956 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010AbaIWEGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 00:06:43 -0400
+Date: Tue, 23 Sep 2014 14:06:33 +1000
+From: NeilBrown <neilb@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kernfs: use stack-buf for small writes.
+Message-ID: <20140923140633.35efbe7a@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/Nx5OWLvjD19UP+ojLnsHH7O"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several other variants of the cap11xx device exists with a varying
-number of capacitance detection channels. Add support for creating
-the channels dynamically.
+--Sig_/Nx5OWLvjD19UP+ojLnsHH7O
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+
+For a write <=3D 128 characters, don't use kmalloc.
+
+mdmon, part of mdadm, will sometimes need to write
+to a sysfs file in order to allow writes to the array
+to continue.  This is important to support RAID metadata
+types that the kernel doesn't know about.
+
+It is important that this write doesn't block on
+memory allocation.  The safest way to ensure that is to
+use an on-stack buffer.
+
+Writes are always small, typically less than 10 characters.
+
+Note that reads from a sysfs file are already safe due to the use for
+seqfile.  The first read will allocate a buffer (m->buf) which will
+be used for all subsequent reads.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
 ---
- drivers/input/keyboard/cap1106.c | 64 +++++++++++++++++++++++++++-------------
- 1 file changed, 44 insertions(+), 20 deletions(-)
+Hi Tejun,
+ I wonder if you would consider this patch.
+ When mdmon needs to update metadata after a device failure in an array
+ there are two 'kmalloc' sources that can trigger deadlock if memory is tig=
+ht
+ and needs to be written to the array (which cannot be allowed until mdmon
+ updates the metadata).
+ One is in O_DIRECT writes which I have patches for.  The other is when
+ writing to the sysfs file to tell md that it is safe to continue.
+ This simple patch removes the second.
 
-diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
-index d70b65a..07f9e88 100644
---- a/drivers/input/keyboard/cap1106.c
-+++ b/drivers/input/keyboard/cap1106.c
-@@ -55,8 +55,6 @@
- #define CAP1106_REG_MANUFACTURER_ID	0xfe
- #define CAP1106_REG_REVISION		0xff
- 
--#define CAP1106_NUM_CHN 6
--#define CAP1106_PRODUCT_ID	0x55
- #define CAP1106_MANUFACTURER_ID	0x5d
- 
- struct cap1106_priv {
-@@ -64,7 +62,25 @@ struct cap1106_priv {
- 	struct input_dev *idev;
- 
- 	/* config */
--	unsigned short keycodes[CAP1106_NUM_CHN];
-+	u32 *keycodes;
-+	unsigned int num_channels;
-+};
-+
-+struct cap11xx_hw_model {
-+	uint8_t product_id;
-+	unsigned int num_channels;
-+};
-+
-+enum {
-+	CAP1106,
-+	CAP1126,
-+	CAP1188,
-+};
-+
-+struct cap11xx_hw_model cap11xx_devices[] = {
-+	[CAP1106] = { .product_id = 0x55, .num_channels = 6 },
-+	[CAP1126] = { .product_id = 0x53, .num_channels = 6 },
-+	[CAP1188] = { .product_id = 0x50, .num_channels = 8 },
- };
- 
- static const struct reg_default cap1106_reg_defaults[] = {
-@@ -151,7 +167,7 @@ static irqreturn_t cap1106_thread_func(int irq_num, void *data)
- 	if (ret < 0)
- 		goto out;
- 
--	for (i = 0; i < CAP1106_NUM_CHN; i++)
-+	for (i = 0; i < priv->num_channels; i++)
- 		input_report_key(priv->idev, priv->keycodes[i],
- 				 status & (1 << i));
- 
-@@ -188,14 +204,23 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
- 	struct device *dev = &i2c_client->dev;
- 	struct cap1106_priv *priv;
- 	struct device_node *node;
-+	struct cap11xx_hw_model *cap = &cap11xx_devices[id->driver_data];
- 	int i, error, irq, gain = 0;
- 	unsigned int val, rev;
--	u32 gain32, keycodes[CAP1106_NUM_CHN];
-+	u32 gain32;
- 
- 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
- 	if (!priv)
+Thanks,
+NeilBrown
+
+
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index 4429d6d9217f..75b58669ce55 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -269,6 +269,7 @@ static ssize_t kernfs_fop_write(struct file *file, cons=
+t char __user *user_buf,
+ 	const struct kernfs_ops *ops;
+ 	size_t len;
+ 	char *buf;
++	char stackbuf[129];
+=20
+ 	if (of->atomic_write_len) {
+ 		len =3D count;
+@@ -278,7 +279,10 @@ static ssize_t kernfs_fop_write(struct file *file, con=
+st char __user *user_buf,
+ 		len =3D min_t(size_t, count, PAGE_SIZE);
+ 	}
+=20
+-	buf =3D kmalloc(len + 1, GFP_KERNEL);
++	if (len < sizeof(stackbuf))
++		buf =3D stackbuf;
++	else
++		buf =3D kmalloc(len + 1, GFP_KERNEL);
+ 	if (!buf)
  		return -ENOMEM;
- 
-+	BUG_ON(!cap->num_channels);
-+
-+	priv->num_channels = cap->num_channels;
-+	priv->keycodes = devm_kcalloc(dev,
-+		priv->num_channels, sizeof(u32), GFP_KERNEL);
-+	if (!priv->keycodes)
-+		return -ENOMEM;
-+
- 	priv->regmap = devm_regmap_init_i2c(i2c_client, &cap1106_regmap_config);
- 	if (IS_ERR(priv->regmap))
- 		return PTR_ERR(priv->regmap);
-@@ -204,9 +229,9 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
- 	if (error)
- 		return error;
- 
--	if (val != CAP1106_PRODUCT_ID) {
-+	if (val != cap->product_id) {
- 		dev_err(dev, "Product ID: Got 0x%02x, expected 0x%02x\n",
--			val, CAP1106_PRODUCT_ID);
-+			val, cap->product_id);
- 		return -ENODEV;
- 	}
- 
-@@ -235,17 +260,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
- 			dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
- 	}
- 
--	BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
--
- 	/* Provide some useful defaults */
--	for (i = 0; i < ARRAY_SIZE(keycodes); i++)
--		keycodes[i] = KEY_A + i;
-+	for (i = 0; i < priv->num_channels; i++)
-+		priv->keycodes[i] = KEY_A + i;
- 
- 	of_property_read_u32_array(node, "linux,keycodes",
--				   keycodes, ARRAY_SIZE(keycodes));
--
--	for (i = 0; i < ARRAY_SIZE(keycodes); i++)
--		priv->keycodes[i] = keycodes[i];
-+		priv->keycodes, priv->num_channels);
- 
- 	error = regmap_update_bits(priv->regmap, CAP1106_REG_MAIN_CONTROL,
- 				   CAP1106_REG_MAIN_CONTROL_GAIN_MASK,
-@@ -269,17 +289,17 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
- 	if (of_property_read_bool(node, "autorepeat"))
- 		__set_bit(EV_REP, priv->idev->evbit);
- 
--	for (i = 0; i < CAP1106_NUM_CHN; i++)
-+	for (i = 0; i < priv->num_channels; i++)
- 		__set_bit(priv->keycodes[i], priv->idev->keybit);
- 
- 	__clear_bit(KEY_RESERVED, priv->idev->keybit);
- 
- 	priv->idev->keycode = priv->keycodes;
--	priv->idev->keycodesize = sizeof(priv->keycodes[0]);
--	priv->idev->keycodemax = ARRAY_SIZE(priv->keycodes);
-+	priv->idev->keycodesize = sizeof(u32);
-+	priv->idev->keycodemax = priv->num_channels;
- 
- 	priv->idev->id.vendor = CAP1106_MANUFACTURER_ID;
--	priv->idev->id.product = CAP1106_PRODUCT_ID;
-+	priv->idev->id.product = cap->product_id;
- 	priv->idev->id.version = rev;
- 
- 	priv->idev->open = cap1106_input_open;
-@@ -313,12 +333,16 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
- 
- static const struct of_device_id cap1106_dt_ids[] = {
- 	{ .compatible = "microchip,cap1106", },
-+	{ .compatible = "microchip,cap1126", },
-+	{ .compatible = "microchip,cap1188", },
- 	{}
- };
- MODULE_DEVICE_TABLE(of, cap1106_dt_ids);
- 
- static const struct i2c_device_id cap1106_i2c_ids[] = {
--	{ "cap1106", 0 },
-+	{ "cap1106", CAP1106 },
-+	{ "cap1126", CAP1126 },
-+	{ "cap1188", CAP1188 },
- 	{}
- };
- MODULE_DEVICE_TABLE(i2c, cap1106_i2c_ids);
--- 
-1.9.1
+=20
+@@ -311,7 +315,8 @@ static ssize_t kernfs_fop_write(struct file *file, cons=
+t char __user *user_buf,
+ 	if (len > 0)
+ 		*ppos +=3D len;
+ out_free:
+-	kfree(buf);
++	if (buf !=3D stackbuf)
++		kfree(buf);
+ 	return len;
+ }
+=20
 
+--Sig_/Nx5OWLvjD19UP+ojLnsHH7O
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBVCDxyTnsnt1WYoG5AQIpyRAAkZ4QZINcE3zWCEwTWMi9AlyCiRCzW6Ne
+8Okxw90EP/5Mb/JTeibmQhtD4qTuyVlpN/sRzBRT5OLAYP1rHTPj+LGOh1ztL82x
+n1fG7PP5GVVDSV9aDl+SeO8bQ4veCP5iJW1+72Ne2keNx/V5EEpdesqkbI5B6ghy
+bC/tvPl5Z2fgApVaZ5lnxjJ9DdSevaEXUJOMtDu5opGETqeb14hpdWZaJ2dCeH6R
+YbIXKLxOdzHQVAbd5LD5nbyKjaL2bAB9uzCGOq0mSY7rUnO6oN3XsPUkJFok3goC
+lyZvAo9bjtB/XpkvIZRuT098IpW99D2U7iTHkYqgjRqXE+KslXzadftXOsk/K0go
+7eNMoGoaNXvF+kBrq7fx2+Y1xpyhTttdGV2gm9/Os2XMZKrp8KoJDSyWmAkHmro+
+nfQsx5Uv8htZ5UZ3X9wGeiss2MUr7jvMuKEMr/cA/TSxUnC0pkmQopeM+l1lFzsv
+wcIP5kLoVg8hfdkVM/ubr6iFX0fZJGt/+8jlrJintQu2mw7at23i/Doelq0TC34t
+2PdrUUrvG6328D27wIAom5815k4clqENvlme1kKT6uCd4xvc93YM20l1Vvh2m2aJ
+42GFHuZXFHASwwe4DepNqVAa3pYJ5uKKWcB+cEQkJpEjqZncKZMhYUwc4jO4oWbs
+2Ctjl4K4C6Y=
+=ugVS
+-----END PGP SIGNATURE-----
+
+--Sig_/Nx5OWLvjD19UP+ojLnsHH7O--
