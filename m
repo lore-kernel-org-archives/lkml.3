@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867AbaIWNeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:34:44 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36007 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbaIWNem (ORCPT
+	id S1755985AbaIWNgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:36:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:37107 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751860AbaIWNgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:34:42 -0400
-Date: Tue, 23 Sep 2014 14:35:03 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: "bsegall@google.com" <bsegall@google.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] sched: Make sched entity usage tracking
- scale-invariant
-Message-ID: <20140923133503.GT23693@e103034-lin>
-References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
- <1411403047-32010-7-git-send-email-morten.rasmussen@arm.com>
- <xm2638bjlgs5.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	Tue, 23 Sep 2014 09:36:13 -0400
+Date: Tue, 23 Sep 2014 09:36:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/4] ftracetest: Initial commit for ftracetest
+Message-ID: <20140923093610.4f404274@gandalf.local.home>
+In-Reply-To: <20140922234250.23415.68758.stgit@kbuild-f20.novalocal>
+References: <20140922234248.23415.36560.stgit@kbuild-f20.novalocal>
+	<20140922234250.23415.68758.stgit@kbuild-f20.novalocal>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xm2638bjlgs5.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 06:13:46PM +0100, bsegall@google.com wrote:
-> Morten Rasmussen <morten.rasmussen@arm.com> writes:
-> 
-> > Apply scale-invariance correction factor to usage tracking as well.
-> 
-> It seems like it would make more sense to order the patches as first the
-> usage tracking and then all of the scale-invariance together, or perhaps
-> to just fold this into the usage tracking patch.
+For future reference:
 
-Makes sense. I don't mind reordering the patches. Vincent has already
-got some of the usage bits in his patch set, so I will have to rework
-the usage patches anyway if Peter decides to take the rest of Vincent's
-patch set.
+On Mon, 22 Sep 2014 23:42:50 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Morten
+> ftracetest is a collection of testcase shell-scripts for ftrace.
+> To avoid regressions of ftrace, these testcases check correct
+> ftrace behaviors. If someone would like to add any features on
+> ftrace, the patch series should have at least one testcase for
+> checking the new behavior.
+> 
+> Changes in v5:
+>  - Fix a TODO item, since this already integrated to kselftest.
+>  - Print the test name at the first line.
+> 
+> Changes in v4:
+>  - Move this under selftests. :)
+>  - Add a copyright and note of GPLv2.
+>  - Fix documents acconding to Steven's comments.
+>  - Fix a small bug pointed by Namhyng.
+> 
+> Changes in v3:
+>  - Use "." instead of "source".
+>  - Don't use -e option for echo since dash doesn't support it.
+> 
+> Changes in v2:
+>  - Remove unneeded 'function' keyword.
+>  - Add abspath and find_testcases.
+>  - Make OPT_TEST_CASES a local var.
+>  - Ensure given testcase ended with .tc.
+>  - Accept a directory option which has multiple testcases.
+>  - Change [PASSED]/[FAILED] to [PASS]/[FAIL]
+>  - Change the basic shell to sh (dash).
+
+Place the version changes after the '---'. They are great for patch
+series, but we prefer not to have them in the git logs. The "Link:" tag
+should allow people to find the version history of patches if they are
+interested. By placing the version updates after the '---', git will
+ignore them when pulling them in.
+
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
+> ---
+
+Also, please have the Signed-off-by be the last tag, otherwise it
+screws up my scripts ;-)
+
+-- Steve
