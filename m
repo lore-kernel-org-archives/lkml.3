@@ -1,117 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485AbaIWRRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:17:30 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:38372 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756450AbaIWRR2 (ORCPT
+	id S1756175AbaIWRVT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:21:19 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60202 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752126AbaIWRVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:17:28 -0400
-Message-ID: <5421AB20.8040606@hurleysoftware.com>
-Date: Tue, 23 Sep 2014 13:17:20 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 23 Sep 2014 13:21:18 -0400
+Date: Tue, 23 Sep 2014 19:21:14 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Huang Shijie <shijie8@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v3 2/3] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20140923192114.44ea48bd@bbrezillon>
+In-Reply-To: <20140923191619.0c0a667e@bbrezillon>
+References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1411481256-29141-3-git-send-email-boris.brezillon@free-electrons.com>
+	<20140923161041.GA2147@localhost.localdomain>
+	<20140923191619.0c0a667e@bbrezillon>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Frans Klaver <frans.klaver@xsens.com>
-CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Alexey Pelykh <alexey.pelykh@gmail.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, linux-serial@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
-References: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com> <1410789610-23059-4-git-send-email-frans.klaver@xsens.com> <54170823.7040801@hurleysoftware.com> <5417228C.5070503@hurleysoftware.com> <20140916085037.GI28458@ci00147.xsens-tech.local> <54197804.3020302@hurleysoftware.com> <20140917121303.GB20438@ci00147.xsens-tech.local> <20140923082445.GA16218@ci00147.xsens-tech.local>
-In-Reply-To: <20140923082445.GA16218@ci00147.xsens-tech.local>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 04:24 AM, Frans Klaver wrote:
-> On Wed, Sep 17, 2014 at 02:13:03PM +0200, Frans Klaver wrote:
->> On Wed, Sep 17, 2014 at 08:01:08AM -0400, Peter Hurley wrote:
->>> On 09/16/2014 04:50 AM, Frans Klaver wrote:
->>>> On Mon, Sep 15, 2014 at 01:31:56PM -0400, Peter Hurley wrote:
->>>>> On 09/15/2014 11:39 AM, Peter Hurley wrote:
->>>>>> On 09/15/2014 10:00 AM, Frans Klaver wrote:
->>>>>>> At 3.6Mbaud, with slightly over 2Mbit/s data coming in, we see 1600 uart
->>>>>>> rx buffer overflows within 30 seconds. Threading the interrupt handling reduces
->>>>>>> this to about 170 overflows in 10 minutes.
->>>>>>
->>>>>> Why is the threadirqs kernel boot option not sufficient?
->>>>>> Or conversely, shouldn't this be selectable?
->>>>>
->>>>
->>>> I wasn't aware of the threadirqs boot option. I also wouldn't know if
->>>> this should be selectable. What would be a reason to favor the
->>>> non-threaded irq over the threaded irq?
->>>
->>> Not everyone cares enough about serial to dedicate kthreads to it :)
->>
->> Fair enough. In that light, we might not care enough about other
->> subsystems to dedicate kthreads to it :). Selectable seems reasonable in
->> that case.
->>
->>
->>>>> Also, do you see the same performance differential when you implement this
->>>>> in the 8250 driver (that is, on top of Sebastian's omap->8250 conversion)?
->>>>>
->>>>
->>>> I haven't gotten Sebastian's driver to work properly yet on the console.
->>>> There was no reason for me yet to throw my omap changes on top of
->>>> Sebastian's queue.
-> 
-> Doing the threaded interrupt change on the 8250 driver doesn't seem as
-> trivial. Unless I'm mistaken, that version of this patch would mess with
-> all other 8250 based serial drivers, if it's done properly. Incidentally
-> I did try using threadirqs, but that didn't give my any significant
-> results. I mostly noticed a difference in the console.
-> 
-> 
->>>>
->>>>>> PS - To overflow the 64 byte RX FIFO at those data rates means interrupt
->>>>>> latency in excess of 250us?
->>>>
->>>> At 3686400 baud it should take about 174 us to fill a 64 byte buffer. I
->>>> haven't done any measurements on the interrupt latency though. If you
->>>> consider that we're sending about 1kB of data, 240 times a second, we're
->>>> spending a lot of time reading data from the uart. I can imagine the
->>>> system has other work to do as well.
->>>
->>> System work should not keep irqs from being serviced. Even 174us is a long
->>> time not to service an interrupt. Maybe console writes are keeping the isr
->>> from running?
->>
->> That's quite possible. I'll have to redo the test setup I had for this to
->> give you a decent answer. I'll have to do that anyway as Sebastian's
->> 8250 conversion improves.
-> 
-> I haven't had time yet to look into this any further. I'll accept that
-> this patch may fix a case most people aren't the least interested in.
-> I'll also happily accept that I probably need a better argumentation
-> than "this works better for us".Would it make sense to drop this patch
-> and resubmit the other three? As I mentioned in the previous run, I
-> think these are useful in any case.
+On Tue, 23 Sep 2014 19:16:19 +0200
+Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
 
-I would've thought the first 2 patches had already been picked up because
-they fix div-by-zero faults.
+> On Wed, 24 Sep 2014 00:10:44 +0800
+> Huang Shijie <shijie8@gmail.com> wrote:
+> 
+> > On Tue, Sep 23, 2014 at 04:07:35PM +0200, Boris BREZILLON wrote:
+> > > Several MTD users (either in user or kernel space) expect a valid raw
+> > > access support to NAND chip devices.
+> > > This is particularly true for testing tools which are often touching the
+> > > data stored in a NAND chip in raw mode to artificially generate errors.
+> > > 
+> > > The GPMI drivers do not implemenent raw access functions, and thus rely on
+> > > default HW_ECC scheme implementation.
+> > > The default implementation consider the data and OOB area as properly
+> > > separated in their respective NAND section, which is not true for the GPMI
+> > > controller.
+> > > In this driver/controller some OOB data are stored at the beginning of the
+> > > NAND data area (these data are called metadata in the driver), then ECC
+> > > bytes are interleaved with data chunk (which is similar to the
+> > > HW_ECC_SYNDROME scheme), and eventually the remaining bytes are used as
+> > > OOB data.
+> > > 
+> > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > ---
+> > >  drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 126 +++++++++++++++++++++++++++++++++
+> > >  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   2 +
+> > >  2 files changed, 128 insertions(+)
+> > > 
+> > > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> > > index 959cb9b..7921ba7 100644
+> > > --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> > > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> > > @@ -791,6 +791,7 @@ static void gpmi_free_dma_buffer(struct gpmi_nand_data *this)
+> > >  					this->page_buffer_phys);
+> > >  	kfree(this->cmd_buffer);
+> > >  	kfree(this->data_buffer_dma);
+> > > +	kfree(this->raw_buffer);
+> > >  
+> > >  	this->cmd_buffer	= NULL;
+> > >  	this->data_buffer_dma	= NULL;
+> > > @@ -837,6 +838,9 @@ static int gpmi_alloc_dma_buffer(struct gpmi_nand_data *this)
+> > >  	if (!this->page_buffer_virt)
+> > >  		goto error_alloc;
+> > >  
+> > > +	this->raw_buffer = kzalloc(mtd->writesize + mtd->oobsize, GFP_KERNEL);
+> > > +	if (!this->raw_buffer)
+> > > +		goto error_alloc;
+> > >  
+> > >  	/* Slice up the page buffer. */
+> > >  	this->payload_virt = this->page_buffer_virt;
+> > > @@ -1347,6 +1351,126 @@ gpmi_ecc_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
+> > >  	return status & NAND_STATUS_FAIL ? -EIO : 0;
+> > >  }
+> > >  
+> > > +static int gpmi_ecc_read_page_raw(struct mtd_info *mtd,
+> > > +				  struct nand_chip *chip, uint8_t *buf,
+> > > +				  int oob_required, int page)
+> > 
+> > 	In actually, i suggest to call the ecc->read_page() in this
+> > 	hook. And after the ecc->read_page(), copy the relative data to
+> > 	the relative buffers. Is my suggestion right? please correct me.
+> 
+> Unfortunately it's not. The user expect that ECC correction is not
+> involved when accessing the NAND in raw mode, which is not the case in
+> your read_page implementation.
+> This is particularly useful when one want to see the real page status
+> (including bitflips).
+> 
+> Moreover, I like to see the generated ECC bytes/bits when using raw
+> access (but I'm not sure this is a requirement). This will help
+> deducing the BCH algorithm and/or XOR mask applied after producing
+> these bits if someone ever want to spend some time reverse engineering
+> it.
+> 
+> > 
+> > 
+> > 
+> > > +{
+> > > +	struct gpmi_nand_data *this = chip->priv;
+> > > +	struct bch_geometry *nfc_geo = &this->bch_geometry;
+> > > +	int eccsize = nfc_geo->ecc_chunk_size;
+> > > +	int eccbits = nfc_geo->ecc_strength * nfc_geo->gf_len;
+> > > +	u8 *tmp_buf = this->raw_buffer;
+> > > +	size_t src_bit_off;
+> > > +	size_t oob_bit_off;
+> > > +	size_t oob_byte_off;
+> > > +	uint8_t *oob = chip->oob_poi;
+> > > +	int step;
+> > > +
+> > > +	chip->read_buf(mtd, tmp_buf,
+> > > +		       mtd->writesize + mtd->oobsize);
+> > > +
+> > > +	if (this->swap_block_mark) {
+> > > +		u8 swap = tmp_buf[0];
+> > > +
+> > > +		tmp_buf[0] = tmp_buf[mtd->writesize];
+> > > +		tmp_buf[mtd->writesize] = swap;
+> > > +	}
+> > > +
+> > > +	if (oob_required)
+> > > +		memcpy(oob, tmp_buf, nfc_geo->metadata_size);
+> > > +
+> > > +	oob_bit_off = nfc_geo->metadata_size * 8;
+> > > +	src_bit_off = oob_bit_off;
+> > > +
+> > > +	for (step = 0; step < nfc_geo->ecc_chunk_count; step++) {
+> > > +		if (buf)
+> > > +			gpmi_move_bits(buf, step * eccsize * 8,
+> > > +				       tmp_buf, src_bit_off,
+> > > +				       eccsize * 8);
+> > > +		src_bit_off += eccsize * 8;
+> > > +
+> > > +		if (oob_required)
+> > > +			gpmi_move_bits(oob, oob_bit_off,
+> > > +				       tmp_buf, src_bit_off,
+> > > +				       eccbits);
+> > > +
+> > > +		src_bit_off += eccbits;
+> > > +		oob_bit_off += eccbits;
+> > > +	}
+> > > +
+> > > +	if (oob_required && oob_bit_off % 8)
+> > > +		oob[oob_bit_off / 8] &= GENMASK(oob_bit_off - 1, 0);
+> > > +
+> > > +	oob_byte_off = DIV_ROUND_UP(oob_bit_off, 8);
+> > > +
+> > > +	if (oob_required && oob_byte_off  < mtd->oobsize)
+> > > +		memcpy(oob + oob_byte_off,
+> > > +		       tmp_buf + mtd->writesize + oob_byte_off,
+> > > +		       mtd->oobsize - oob_byte_off);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static int gpmi_ecc_write_page_raw(struct mtd_info *mtd,
+> > > +				   struct nand_chip *chip,
+> > > +				   const uint8_t *buf,
+> > > +				   int oob_required)
+> > > +{
+> > 
+> > 
+> > give me more time to think over this hook :(
+> 
+> Sure, no problem.
+> 
+> Actually it's doing the exact same thing read_page_raw is doing expect
+> it's applying on a write access.
+> I copy the provided data (in-band and out-of-band is required) into a
+						    ^ if
 
-I don't really have a problem with the patch (except for it should be
-selectable, even if that's just a CONFIG_ setting). At the same time,
-the performance results don't really make sense; so if there's actually
-an underlying problem, I'd rather that get addressed (and the long
-interrupt latency may be the underlying problem).
+> temporary buffer to match the GPMI controller layout, then write it
+> without involving the BCH block (which means no ECC bits generation).
+> 
+> Best Regards,
+> 
+> Boris
+> 
 
-As far as the 8250 driver and threaded irqs go, I just was hoping for
-another data point with a simple hard-coded test jig, not a full-blown
-patch series for all of them. Sorry for the misunderstanding.
 
-Regards,
-Peter Hurley
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
