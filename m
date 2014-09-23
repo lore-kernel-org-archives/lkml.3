@@ -1,211 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaIWBDP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 21:03:15 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59266 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601AbaIWBCK (ORCPT
+	id S1755647AbaIWBD3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 21:03:29 -0400
+Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:49507 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932142AbaIWBDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 21:02:10 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Milian Wolff <mail@milianw.de>
-Subject: [PATCH 4/5] perf tools: Introduce perf_callchain_config()
-Date: Tue, 23 Sep 2014 10:01:43 +0900
-Message-Id: <1411434104-5307-5-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411434104-5307-1-git-send-email-namhyung@kernel.org>
-References: <1411434104-5307-1-git-send-email-namhyung@kernel.org>
+	Mon, 22 Sep 2014 21:03:14 -0400
+X-Session-Marker: 726F737465647440676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::,RULES_HIT:41:152:355:379:599:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2693:2895:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3871:3872:4184:4250:4605:5007:7652:7875:7903:8531:9040:9149:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12291:12517:12519:12555:12663:12740:13141:13230:13894:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: slave60_1c082c4999c08
+X-Filterd-Recvd-Size: 4475
+User-Agent: K-9 Mail for Android
+In-Reply-To: <87h9zzkwgp.fsf@sejong.aot.lge.com>
+References: <20140922234248.23415.36560.stgit@kbuild-f20.novalocal> <87h9zzkwgp.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v5 0/4] ftrace: Add a ftrace test collection
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 22 Sep 2014 21:03:08 -0400
+To: Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <4243ee73-aff7-43a6-92cf-bd8df9b954b4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for following config options to ~/.perfconfig file.
+Ack fot all?  I can add it.
 
-  [call-graph]
-    record-mode = dwarf
-    dump-size = 8192
-    print-type = fractal
-    order = callee
-    threshold = 0.5
-    print-limit = 128
-    sort-key = function
+-- Steve
 
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/callchain.c | 109 ++++++++++++++++++++++++++++++++++++--------
- tools/perf/util/callchain.h |   1 +
- tools/perf/util/config.c    |   3 ++
- 3 files changed, 94 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index ba7297230143..c84d3f8dcb75 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -109,6 +109,49 @@ int parse_callchain_record_opt(const char *arg)
- 	return ret;
- }
- 
-+static int parse_callchain_mode(const char *value)
-+{
-+	if (!strncmp(value, "graph", strlen(value))) {
-+		callchain_param.mode = CHAIN_GRAPH_ABS;
-+		return 0;
-+	}
-+	if (!strncmp(value, "flat", strlen(value))) {
-+		callchain_param.mode = CHAIN_FLAT;
-+		return 0;
-+	}
-+	if (!strncmp(value, "fractal", strlen(value))) {
-+		callchain_param.mode = CHAIN_GRAPH_REL;
-+		return 0;
-+	}
-+	return -1;
-+}
-+
-+static int parse_callchain_order(const char *value)
-+{
-+	if (!strncmp(value, "caller", strlen(value))) {
-+		callchain_param.order = ORDER_CALLER;
-+		return 0;
-+	}
-+	if (!strncmp(value, "callee", strlen(value))) {
-+		callchain_param.order = ORDER_CALLEE;
-+		return 0;
-+	}
-+	return -1;
-+}
-+
-+static int parse_callchain_sort_key(const char *value)
-+{
-+	if (!strncmp(value, "function", strlen(value))) {
-+		callchain_param.key = CCKEY_FUNCTION;
-+		return 0;
-+	}
-+	if (!strncmp(value, "address", strlen(value))) {
-+		callchain_param.key = CCKEY_ADDRESS;
-+		return 0;
-+	}
-+	return -1;
-+}
-+
- int
- parse_callchain_report_opt(const char *arg)
- {
-@@ -128,25 +171,12 @@ parse_callchain_report_opt(const char *arg)
- 			return 0;
- 		}
- 
--		/* try to get the output mode */
--		if (!strncmp(tok, "graph", strlen(tok)))
--			callchain_param.mode = CHAIN_GRAPH_ABS;
--		else if (!strncmp(tok, "flat", strlen(tok)))
--			callchain_param.mode = CHAIN_FLAT;
--		else if (!strncmp(tok, "fractal", strlen(tok)))
--			callchain_param.mode = CHAIN_GRAPH_REL;
--		/* try to get the call chain order */
--		else if (!strncmp(tok, "caller", strlen(tok)))
--			callchain_param.order = ORDER_CALLER;
--		else if (!strncmp(tok, "callee", strlen(tok)))
--			callchain_param.order = ORDER_CALLEE;
--		/* try to get the sort key */
--		else if (!strncmp(tok, "function", strlen(tok)))
--			callchain_param.key = CCKEY_FUNCTION;
--		else if (!strncmp(tok, "address", strlen(tok)))
--			callchain_param.key = CCKEY_ADDRESS;
--		/* try to get the min percent */
--		else if (!minpcnt_set) {
-+		if (!parse_callchain_mode(tok) ||
-+		    !parse_callchain_order(tok) ||
-+		    !parse_callchain_sort_key(tok)) {
-+			/* parsing ok - move on to the next */
-+		} else if (!minpcnt_set) {
-+			/* try to get the min percent */
- 			callchain_param.min_percent = strtod(tok, &endptr);
- 			if (tok == endptr)
- 				return -1;
-@@ -168,6 +198,47 @@ parse_callchain_report_opt(const char *arg)
- 	return 0;
- }
- 
-+int perf_callchain_config(const char *var, const char *value)
-+{
-+	char *endptr;
-+
-+	if (prefixcmp(var, "call-graph."))
-+		return 0;
-+	var += sizeof("call-graph.") - 1;
-+
-+	if (!strcmp(var, "record-mode"))
-+		return parse_callchain_record_opt(value);
-+#ifdef HAVE_DWARF_UNWIND_SUPPORT
-+	if (!strcmp(var, "dump-size")) {
-+		unsigned long size = 0;
-+		int ret;
-+
-+		ret = get_stack_size(value, &size);
-+		callchain_param.dump_size = size;
-+
-+		return ret;
-+	}
-+#endif
-+	if (!strcmp(var, "print-type"))
-+		return parse_callchain_mode(value);
-+	if (!strcmp(var, "order"))
-+		return parse_callchain_order(value);
-+	if (!strcmp(var, "sort-key"))
-+		return parse_callchain_sort_key(value);
-+	if (!strcmp(var, "threshold")) {
-+		callchain_param.min_percent = strtod(value, &endptr);
-+		if (value == endptr)
-+			return -1;
-+	}
-+	if (!strcmp(var, "print-limit")) {
-+		callchain_param.print_limit = strtod(value, &endptr);
-+		if (value == endptr)
-+			return -1;
-+	}
-+
-+	return 0;
-+}
-+
- static void
- rb_insert_callchain(struct rb_root *root, struct callchain_node *chain,
- 		    enum chain_mode mode)
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 8adfbf0bab5c..2a1f5a46543a 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -170,6 +170,7 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
- extern const char record_callchain_help[];
- int parse_callchain_record_opt(const char *arg);
- int parse_callchain_report_opt(const char *arg);
-+int perf_callchain_config(const char *var, const char *value);
- 
- static inline void callchain_cursor_snapshot(struct callchain_cursor *dest,
- 					     struct callchain_cursor *src)
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index 9970b8b0190b..953512ed72ba 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -396,6 +396,9 @@ int perf_default_config(const char *var, const char *value,
- 	if (!prefixcmp(var, "ui."))
- 		return perf_ui_config(var, value);
- 
-+	if (!prefixcmp(var, "call-graph."))
-+		return perf_callchain_config(var, value);
-+
- 	/* Add other config variables here. */
- 	return 0;
- }
+On September 22, 2014 8:32:38 PM GMT-04:00, Namhyung Kim <namhyung@kernel.org> wrote:
+>On Mon, 22 Sep 2014 23:42:48 +0000, Masami Hiramatsu wrote:
+>> Hi,
+>>
+>> Here is the collection of testcases for ftrace version 5.
+>> This is just a small update.
+>>
+>>   - Fix a TODO item, since this already integrated to kselftest.
+>>   - Print the test name at the first line.
+>>   - Add Shuah's acked-by. (Thanks!)
+>>
+>> ftracetest is a shell(dash) script for testing ftrace features.
+>> It will be required to add a unit test for each new feature
+>> after this is merged, because of preventing regressions.
+>
+>If I'm not too late.. :)
+>
+>Acked-by: Namhyung Kim <namhyung@kernel.org>
+>
+>Thanks,
+>Namhyung
+>
+>
+>>
+>> ---
+>>
+>> Masami Hiramatsu (4):
+>>       ftracetest: Initial commit for ftracetest
+>>       ftracetest: Add ftrace basic testcases
+>>       ftracetest: Add kprobe basic testcases
+>>       ftracetest: Add POSIX.3 standard and XFAIL result codes
+>>
+>>
+>>  MAINTAINERS                                        |    1 
+>>  tools/testing/selftests/Makefile                   |    1 
+>>  tools/testing/selftests/ftrace/Makefile            |    7 +
+>>  tools/testing/selftests/ftrace/README              |   82 +++++++
+>>  tools/testing/selftests/ftrace/ftracetest          |  251
+>++++++++++++++++++++
+>>  tools/testing/selftests/ftrace/samples/fail.tc     |    4 
+>>  tools/testing/selftests/ftrace/samples/pass.tc     |    3 
+>>  .../testing/selftests/ftrace/samples/unresolved.tc |    4 
+>>  .../selftests/ftrace/samples/unsupported.tc        |    3 
+>>  tools/testing/selftests/ftrace/samples/untested.tc |    3 
+>>  tools/testing/selftests/ftrace/samples/xfail.tc    |    3 
+>>  .../selftests/ftrace/test.d/00basic/basic1.tc      |    3 
+>>  .../selftests/ftrace/test.d/00basic/basic2.tc      |    7 +
+>>  .../selftests/ftrace/test.d/00basic/basic3.tc      |    8 +
+>>  .../ftrace/test.d/kprobe/add_and_remove.tc         |   11 +
+>>  .../selftests/ftrace/test.d/kprobe/busy_check.tc   |   13 +
+>>  tools/testing/selftests/ftrace/test.d/template     |    9 +
+>>  17 files changed, 413 insertions(+)
+>>  create mode 100644 tools/testing/selftests/ftrace/Makefile
+>>  create mode 100644 tools/testing/selftests/ftrace/README
+>>  create mode 100755 tools/testing/selftests/ftrace/ftracetest
+>>  create mode 100644 tools/testing/selftests/ftrace/samples/fail.tc
+>>  create mode 100644 tools/testing/selftests/ftrace/samples/pass.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/samples/unresolved.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/samples/unsupported.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/samples/untested.tc
+>>  create mode 100644 tools/testing/selftests/ftrace/samples/xfail.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+>>  create mode 100644
+>tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+>>  create mode 100644 tools/testing/selftests/ftrace/test.d/template
+>>
+>> --
+
 -- 
-2.1.0
-
+Sent from my Android device with K-9 Mail. Please excuse my brevity.
