@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaIWJFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:05:42 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:38212 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133AbaIWJFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:05:39 -0400
-Message-ID: <1411463138.26859.168.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: 3.17 kernel crash while loading IPoIB
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Sharma, Karun" <karun.sharma@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Tue, 23 Sep 2014 02:05:38 -0700
-In-Reply-To: <637AD4DF2E595346BAB0DF8C46F3A2B003291F06@BGSMSX101.gar.corp.intel.com>
-References: <637AD4DF2E595346BAB0DF8C46F3A2B003291F06@BGSMSX101.gar.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754809AbaIWJGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:06:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753337AbaIWJGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:06:10 -0400
+Message-ID: <542137E4.2030808@redhat.com>
+Date: Tue, 23 Sep 2014 11:05:40 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>, Tejun Heo <tj@kernel.org>
+CC: linux-ide@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/2] ahci-platform: Bump max number of clocks to 5
+References: <1411416586-18320-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1411416586-18320-1-git-send-email-galak@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 05:15 +0000, Sharma, Karun wrote:
-> Hello:
-> 
-> I am facing an issue wherein kernel 3.17 crashes while loading IPoIB
-> module. I guess the issue discussed in this thread
-> (https://www.mail-archive.com/linux-rdma@vger.kernel.org/msg20963.html) is similar.
-> 
-> We were able to reproduce the issue with RC6 also. Here are the steps
-> I followed:
-> 
-> I compiled and installed 3.17 kernel on top of RHEL 6.5. 
-> Then I changed rdma.conf to not load IPoIB (If I don't do this, the
-> kernel crashes while booting and starting RDMA service.)
-> After the server comes up, I just did "modprobe ib_ipoib" and kernel
-> crashes.
-> Please see below the kernel back trace.
-> 
-> Seeing the announcement, it looks like RC6 will be the last RC for
-> 3.17 kernel. Will the release happen with this issue? Is there any
-> workaround available for this issue?
-> I am not sure what mechanism/process is used to report issue to kernel
-> community.
-> 
-> Regards
-> Karun
+Hi,
 
-This seems fixed now :
+Thanks, this new set looks good to me, and is:
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=257117862634d89de33fec74858b1a0ba5ab444b
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=b49fe36208b45f76dfbcfcd3afd952a33fa9f5ce
+Regards,
+
+Hans
 
 
+On 09/22/2014 10:09 PM, Kumar Gala wrote:
+> Qualcomm IPQ806x SoCs with SATA controllers need 5 clocks to be enabled.
+> 
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+> v4/v5:
+> * Updated to upstream changes
+> 
+>  drivers/ata/ahci.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+> index 59ae0ee..90156ff 100644
+> --- a/drivers/ata/ahci.h
+> +++ b/drivers/ata/ahci.h
+> @@ -53,7 +53,7 @@
+>  
+>  enum {
+>  	AHCI_MAX_PORTS		= 32,
+> -	AHCI_MAX_CLKS		= 4,
+> +	AHCI_MAX_CLKS		= 5,
+>  	AHCI_MAX_SG		= 168, /* hardware max is 64K */
+>  	AHCI_DMA_BOUNDARY	= 0xffffffff,
+>  	AHCI_MAX_CMDS		= 32,
+> 
