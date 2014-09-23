@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133AbaIWN7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:59:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50739 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932113AbaIWN7e (ORCPT
+	id S1755785AbaIWOBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:01:00 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:57114 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040AbaIWOA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:59:34 -0400
-Date: Tue, 23 Sep 2014 14:59:38 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Weston Andros Adamson <dros@primarydata.com>
-Cc: Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
-Message-ID: <20140923135938.GB28608@arm.com>
-References: <20140923130352.GK26472@arm.com>
- <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com>
+	Tue, 23 Sep 2014 10:00:58 -0400
+Date: Tue, 23 Sep 2014 10:00:53 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: rjw@rjwysocki.net, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mister.freeman@laposte.net, rui.zhang@intel.com
+Subject: Re: [PATCH] ata: Disabling the async PM for JMicron chips
+Message-ID: <20140923140053.GG14905@mtj.dyndns.org>
+References: <1411450671-2367-1-git-send-email-chuansheng.liu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com>
+In-Reply-To: <1411450671-2367-1-git-send-email-chuansheng.liu@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
-> On Sep 23, 2014, at 9:03 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > I've been running into the following warning on an arm64 system running
-> > 3.17-rc6 with 64k pages. I've been unable to reproduce with a smaller page
-> > size (4k).
-> > 
-> > I don't yet have a concrete reproducer, but I've seen it hit a few times
-> > today just running a machine with an NFS root filesystem and using ssh.
-> > The warning seems to happen in parallel on the two CPUs, but I'm pretty
-> > confident that our test_and_clear_bit implementation has the relevant
-> > atomic instructions and memory barriers.
-> > 
-> > Any ideas?
+On Tue, Sep 23, 2014 at 01:37:51PM +0800, Chuansheng Liu wrote:
+> Be similar with commit (ata: Disabling the async PM for JMicron chip 363/361),
+
+Please use 12_DIGIT_SHA1_PREFIX ("SUBJ") format when referring to
+commits.
+
+> Barto found the similar issue for JMicron chip 368, that 363/368 has no
+> parent-children relationship, but they have the power dependency.
 > 
-> So it looks like we’re either calling nfs_inode_remove_request twice on a request,
-> or somehow not grabbing the inode reference for some request that is in the async
-> write path. It’s interesting that these come in pairs - that has to mean something!
+> So here we can exclude the JMicron chips out of pm_async method directly,
+> to avoid further similar issues.
+> 
+> Details in:
+> https://bugzilla.kernel.org/show_bug.cgi?id=84861
+> 
+> Reported-and-tested-by: Barto <mister.freeman@laposte.net>
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> ---
+>  drivers/ata/ahci.c         |    6 +++---
+>  drivers/ata/pata_jmicron.c |    6 +++---
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+> index a0cc0ed..c096d49 100644
+> --- a/drivers/ata/ahci.c
+> +++ b/drivers/ata/ahci.c
+> @@ -1345,10 +1345,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	 * follow the sequence one by one, otherwise one of them can not be
+>  	 * powered on successfully, so here we disable the async suspend
+>  	 * method for these chips.
+> +	 * Jmicron chip 368 has been found has the similar issue, here we can
+> +	 * exclude the Jmicron family directly to avoid other similar issues.
 
-Indeed. I have 6 CPUs on this system too, so it's not a per-cpu thing.
+Let's update the comment as a whole instead of appending to it.
 
-> Any more info on how to reproduce this would be really great. Unfortunately I don’t
-> have access to an arm64 system.
+Thanks.
 
-I've not spotted a pattern other than using 64k pages, yet. If I manage to
-get a reproducer, I'll let you know.
-
-> If it’s possible, could we get a packet trace around when this happens? This is pure
-> speculation, but this might have something to do the resend path - a commit fails
-> and all the requests on the commit list have to be resent.
-
-Sure, once I can reproduce it reliably, then I'll try to do that.
-
-> Have you noticed any side effects from this? That WARN_ON_ONCE was added
-> to sanity test the new page group code and we need to fix this, but I’m wondering
-> if anything “bad” happens…
-
-I've not noticed anything. In fact, this happened during an LTP run and I
-didn't see any regressions in the test results.
-
-Will
+-- 
+tejun
