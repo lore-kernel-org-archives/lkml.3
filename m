@@ -1,45 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906AbaIWVGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:06:21 -0400
-Received: from blu004-omc2s32.hotmail.com ([65.55.111.107]:58117 "EHLO
-	BLU004-OMC2S32.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756328AbaIWVGT (ORCPT
+	id S1756920AbaIWVHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:07:23 -0400
+Received: from smtprelay0210.hostedemail.com ([216.40.44.210]:35441 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756176AbaIWVHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:06:19 -0400
-X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 17:06:19 EDT
-X-TMN: [hK1TjQLOiWeOoNBfEvoNC4P2+j776Jnl]
-X-Originating-Email: [dave.anglin@bell.net]
-Message-ID: <BLU436-SMTP6279A45A0CDDB3AC2C3BDF97B00@phx.gbl>
-Date: Tue, 23 Sep 2014 16:59:20 -0400
-From: John David Anglin <dave.anglin@bell.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Helge Deller <deller@gmx.de>, nick <yocto6@gmail.com>,
-        jejb@parisc-linux.org
-CC: akpm@linux-foundation.org, himangi774@gmail.com, julia.lawall@lip6.fr,
-        mgorman@suse.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: FIX MES in init.c
-References: <54207769.2020105@gmail.com> <5421DC9F.2080504@gmx.de>
-In-Reply-To: <5421DC9F.2080504@gmx.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 23 Sep 2014 17:07:21 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:2:41:69:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2194:2199:2393:2559:2562:2693:2828:2904:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3871:3872:3873:4049:4118:4225:4250:4321:4419:4605:5007:6119:7652:7875:7903:9592:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:12740:13972:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: birds92_3fcf57d6e2459
+X-Filterd-Recvd-Size: 7679
+Message-ID: <1411506437.29268.13.camel@joe-AO725>
+Subject: Re: [PATCH v2] et131x: Promote staging et131x driver to drivers/net
+From: Joe Perches <joe@perches.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: gregkh@linuxfoundation.org, davem@davemloft.net, angus@agibson.me,
+        tklauser@distanz.ch, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, devel@driverdev.osuosl.org
+Date: Tue, 23 Sep 2014 14:07:17 -0700
+In-Reply-To: <1411502723-4628-1-git-send-email-mark.einon@gmail.com>
+References: <1411421283-25073-1-git-send-email-mark.einon@gmail.com>
+	 <1411502723-4628-1-git-send-email-mark.einon@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Sep 2014 20:59:10.0215 (UTC) FILETIME=[38DA7170:01CFD771]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/23/2014 4:48 PM, Helge Deller wrote:
-> The FIXME: is misleading. It should maybe better read "HINT:" or 
-> something like that.
-> Trivially it's basically just casting the symbol so that the compiler
-> will produce the correct code later on.
-> There is nothing you could try to "fix".
-Why not just remove "FIXME: " from these comments?
+On Tue, 2014-09-23 at 21:05 +0100, Mark Einon wrote:
+> This patch moves the et131x gigabit ethernet driver from drivers/staging
+> to drivers/net/ethernet/agere.
 
-Dave
+checkpatch type modification you might consider:
 
--- 
-John David Anglin    dave.anglin@bell.net
+Reduce logging line count by consolidating repeated dev_warn
+Use ether_addr_copy
+Line wrapping for 80 columns
+Remove unnecessary parentheses
+Remove unnecessary OOM message
+
+---
+ drivers/staging/et131x/et131x.c | 51 ++++++++++++++++-------------------------
+ 1 file changed, 20 insertions(+), 31 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index eefa9f1..3aaedc9 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -1294,9 +1294,8 @@ static int et131x_phy_mii_read(struct et131x_adapter *adapter, u8 addr,
+ 	/* If we hit the max delay, we could not read the register */
+ 	if (delay == 50) {
+ 		dev_warn(&adapter->pdev->dev,
+-			 "reg 0x%08x could not be read\n", reg);
+-		dev_warn(&adapter->pdev->dev, "status is  0x%08x\n",
+-			 mii_indicator);
++			 "reg 0x%08x could not be read - status is 0x%08x\n",
++			 reg, mii_indicator);
+ 
+ 		status = -EIO;
+ 		goto out;
+@@ -1371,11 +1370,8 @@ static int et131x_mii_write(struct et131x_adapter *adapter, u8 addr, u8 reg,
+ 		u16 tmp;
+ 
+ 		dev_warn(&adapter->pdev->dev,
+-			 "reg 0x%08x could not be written", reg);
+-		dev_warn(&adapter->pdev->dev, "status is  0x%08x\n",
+-			 mii_indicator);
+-		dev_warn(&adapter->pdev->dev, "command is  0x%08x\n",
+-			 readl(&mac->mii_mgmt_cmd));
++			 "reg 0x%08x could not be written - status is 0x%08x - command is 0x%08x\n",
++			 reg, mii_indicator, readl(&mac->mii_mgmt_cmd));
+ 
+ 		et131x_mii_read(adapter, reg, &tmp);
+ 
+@@ -2444,10 +2440,8 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
+ 	rfd->len = len;
+ 
+ 	skb = dev_alloc_skb(rfd->len + 2);
+-	if (!skb) {
+-		dev_err(&adapter->pdev->dev, "Couldn't alloc an SKB for Rx\n");
++	if (!skb)
+ 		return NULL;
+-	}
+ 
+ 	adapter->netdev->stats.rx_bytes += rfd->len;
+ 
+@@ -2661,7 +2655,7 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+ 				desc[frag].len_vlan = skb_headlen(skb) / 2;
+ 				dma_addr = dma_map_single(&adapter->pdev->dev,
+ 							  skb->data,
+-							  (skb_headlen(skb) / 2),
++							  skb_headlen(skb) / 2,
+ 							  DMA_TO_DEVICE);
+ 				desc[frag].addr_lo = lower_32_bits(dma_addr);
+ 				desc[frag].addr_hi = upper_32_bits(dma_addr);
+@@ -2670,8 +2664,8 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+ 				desc[frag].len_vlan = skb_headlen(skb) / 2;
+ 				dma_addr = dma_map_single(&adapter->pdev->dev,
+ 							  skb->data +
+-							  (skb_headlen(skb) / 2),
+-							  (skb_headlen(skb) / 2),
++							  skb_headlen(skb) / 2,
++							  skb_headlen(skb) / 2,
+ 							  DMA_TO_DEVICE);
+ 				desc[frag].addr_lo = lower_32_bits(dma_addr);
+ 				desc[frag].addr_hi = upper_32_bits(dma_addr);
+@@ -3212,15 +3206,13 @@ static void et131x_hwaddr_init(struct et131x_adapter *adapter)
+ 		 * working with so we need to copy the current
+ 		 * address into the permanent address
+ 		 */
+-		memcpy(adapter->rom_addr,
+-		       adapter->addr, ETH_ALEN);
++		ether_addr_copy(adapter->rom_addr, adapter->addr);
+ 	} else {
+ 		/* We do not have an override address, so set the
+ 		 * current address to the permanent address and add
+ 		 * it to the device
+ 		 */
+-		memcpy(adapter->addr,
+-		       adapter->rom_addr, ETH_ALEN);
++		ether_addr_copy(adapter->addr, adapter->rom_addr);
+ 	}
+ }
+ 
+@@ -3415,7 +3407,8 @@ static void et131x_adjust_link(struct net_device *netdev)
+ 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
+ 					&register18);
+ 			et131x_mii_write(adapter, phydev->addr,
+-					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
++					 PHY_MPHY_CONTROL_REG,
++					 register18 | 0x4);
+ 			et131x_mii_write(adapter, phydev->addr, PHY_INDEX_REG,
+ 					 register18 | 0x8402);
+ 			et131x_mii_write(adapter, phydev->addr, PHY_DATA_REG,
+@@ -3448,7 +3441,8 @@ static void et131x_adjust_link(struct net_device *netdev)
+ 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
+ 					&register18);
+ 			et131x_mii_write(adapter, phydev->addr,
+-					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
++					 PHY_MPHY_CONTROL_REG,
++					 register18 | 0x4);
+ 			et131x_mii_write(adapter, phydev->addr,
+ 					 PHY_INDEX_REG, register18 | 0x8402);
+ 			et131x_mii_write(adapter, phydev->addr,
+@@ -3778,8 +3772,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 		 */
+ 		/* TRAP();*/
+ 
+-		dev_warn(&adapter->pdev->dev,
+-			 "RxDMA_ERR interrupt, error %x\n",
++		dev_warn(&adapter->pdev->dev, "RxDMA_ERR interrupt, error %x\n",
+ 			 readl(&iomem->txmac.tx_test));
+ 	}
+ 
+@@ -3805,8 +3798,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 		 * occur. In a nutshell, the whole Tx path will have to be reset
+ 		 * and re-configured afterwards.
+ 		 */
+-		dev_warn(&adapter->pdev->dev,
+-			 "TXMAC interrupt, error 0x%08x\n",
++		dev_warn(&adapter->pdev->dev, "TXMAC interrupt, error 0x%08x\n",
+ 			 err);
+ 
+ 		/* If we are debugging, we want to see this error, otherwise we
+@@ -3823,11 +3815,8 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 		/* MP_SET_FLAG( adapter, FMP_ADAPTER_HARDWARE_ERROR); */
+ 
+ 		dev_warn(&adapter->pdev->dev,
+-			 "RXMAC interrupt, error 0x%08x.  Requesting reset\n",
++			 "RXMAC interrupt, error 0x%08x - requesting reset - Enable 0x%08x, Diag 0x%08x\n",
+ 			 readl(&iomem->rxmac.err_reg));
+-
+-		dev_warn(&adapter->pdev->dev,
+-			 "Enable 0x%08x, Diag 0x%08x\n",
+ 			 readl(&iomem->rxmac.ctrl),
+ 			 readl(&iomem->rxmac.rxq_diag));
+ 
+@@ -4081,7 +4070,7 @@ static void et131x_multicast(struct net_device *netdev)
+ 	netdev_for_each_mc_addr(ha, netdev) {
+ 		if (i == NIC_MAX_MCAST_LIST)
+ 			break;
+-		memcpy(adapter->multicast_list[i++], ha->addr, ETH_ALEN);
++		ether_addr_copy(adapter->multicast_list[i++], ha->addr);
+ 	}
+ 	adapter->multicast_addr_count = i;
+ 
+@@ -4211,7 +4200,7 @@ static int et131x_change_mtu(struct net_device *netdev, int new_mtu)
+ 	et131x_init_send(adapter);
+ 
+ 	et131x_hwaddr_init(adapter);
+-	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
++	ether_addr_copy(netdev->dev_addr, adapter->addr);
+ 
+ 	/* Init the device with the new settings */
+ 	et131x_adapter_setup(adapter);
+@@ -4329,7 +4318,7 @@ static int et131x_pci_setup(struct pci_dev *pdev,
+ 	netif_napi_add(netdev, &adapter->napi, et131x_poll, 64);
+ 
+ 	/* Copy address into the net_device struct */
+-	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
++	ether_addr_copy(netdev->dev_addr, adapter->addr);
+ 
+ 	rc = -ENOMEM;
+ 
+
 
