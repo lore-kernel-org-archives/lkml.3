@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564AbaIWVSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:18:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37940 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414AbaIWVR5 (ORCPT
+	id S1756853AbaIWVUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:20:49 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53544 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694AbaIWVUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:17:57 -0400
-Date: Tue, 23 Sep 2014 14:17:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Subject: Re: [PATCH v1 4/5] zram: add swap full hint
-Message-Id: <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
-In-Reply-To: <20140923045602.GC8325@bbox>
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
-	<1411344191-2842-5-git-send-email-minchan@kernel.org>
-	<20140922141118.de46ae5e54099cf2b39c8c5b@linux-foundation.org>
-	<20140923045602.GC8325@bbox>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 17:20:47 -0400
+Date: Tue, 23 Sep 2014 17:20:42 -0400
+From: Matt Porter <mporter@linaro.org>
+To: behanw@converseincode.com
+Cc: bcm@fixthebug.org, chris@printf.net, gnurou@gmail.com,
+        linus.walleij@linaro.org, ulf.hansson@linaro.org,
+        bcm-kernel-feedback-list@broadcom.com, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        rjui@broadcom.com
+Subject: Re: [PATCH] gpio, bcm-kona, LLVMLinux: Remove use of __initconst
+Message-ID: <20140923212042.GF12270@beef>
+References: <1411500616-12863-1-git-send-email-behanw@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411500616-12863-1-git-send-email-behanw@converseincode.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 13:56:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
-
-> > 
-> > > +#define ZRAM_FULLNESS_PERCENT 80
-> > 
-> > We've had problems in the past where 1% is just too large an increment
-> > for large systems.
+On Tue, Sep 23, 2014 at 12:30:16PM -0700, behanw@converseincode.com wrote:
+> From: Behan Webster <behanw@converseincode.com>
 > 
-> So, do you want fullness_bytes like dirty_bytes?
-
-Firstly I'd like you to think about whether we're ever likely to have
-similar granularity problems with this tunable.  If not then forget
-about it.
-
-If yes then we should do something.  I don't like the "bytes" thing
-much because it requires that the operator know the pool size
-beforehand, and any time that changes, the "bytes" needs hanging too. 
-Ratios are nice but percent is too coarse.  Maybe kernel should start
-using "ppm" for ratios, parts per million.  hrm.
-
-> > > @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > >  	down_write(&zram->init_lock);
-> > >  
-> > >  	zram->limit_pages = 0;
-> > > +	atomic_set(&zram->alloc_fail, 0);
-> > >  
-> > >  	if (!init_done(zram)) {
-> > >  		up_write(&zram->init_lock);
-> > > @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
-> > >  	return 0;
-> > >  }
-> > >  
-> > > +static int zram_full(struct block_device *bdev, void *arg)
-> > 
-> > This could return a bool.  That implies that zram_swap_hint should
-> > return bool too, but as we haven't been told what the zram_swap_hint
-> > return value does, I'm a bit stumped.
+> The __initconst is in the wrong place, and when moved to the correct place
+> it uncovers an error where the variable is used by non-init data structures.
 > 
-> Hmm, currently, SWAP_FREE doesn't use return and SWAP_FULL uses return
-> as bool so in the end, we can change it as bool but I want to remain it
-> as int for the future. At least, we might use it as propagating error
-> in future. Instead, I will use *arg to return the result instead of
-> return val. But I'm not strong so if you want to remove return val,
-> I will do it. For clarifictaion, please tell me again if you want.
+> Instead merely make them const and put the const in the right spot.
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/gpio/gpio-bcm-kona.c      | 2 +-
+>  drivers/mmc/host/sdhci-bcm-kona.c | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-bcm-kona.c b/drivers/gpio/gpio-bcm-kona.c
+> index 3f6b33c..de0801e 100644
+> --- a/drivers/gpio/gpio-bcm-kona.c
+> +++ b/drivers/gpio/gpio-bcm-kona.c
+> @@ -496,7 +496,7 @@ static struct irq_chip bcm_gpio_irq_chip = {
+>  	.irq_release_resources = bcm_kona_gpio_irq_relres,
+>  };
+>  
+> -static struct __initconst of_device_id bcm_kona_gpio_of_match[] = {
+> +static struct of_device_id const bcm_kona_gpio_of_match[] = {
+>  	{ .compatible = "brcm,kona-gpio" },
+>  	{}
+>  };
+> diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+> index dd780c3..4bb06c8 100644
+> --- a/drivers/mmc/host/sdhci-bcm-kona.c
+> +++ b/drivers/mmc/host/sdhci-bcm-kona.c
+> @@ -225,7 +225,7 @@ static struct sdhci_pltfm_data sdhci_pltfm_data_kona = {
+>  		SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+>  };
+>  
+> -static struct __initconst of_device_id sdhci_bcm_kona_of_match[] = {
+> +static struct of_device_id const sdhci_bcm_kona_of_match[] = {
+>  	{ .compatible = "brcm,kona-sdhci"},
+>  	{ .compatible = "bcm,kona-sdhci"}, /* deprecated name */
+>  	{}
 
-I'm easy, as long as it makes sense, is understandable by people other
-than he-who-wrote-it and doesn't use argument names such as "arg".
+Acked-by: Matt Porter <mporter@linaro.org>
 
-
+-Matt
