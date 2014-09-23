@@ -1,145 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaIWIdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 04:33:33 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:42530 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186AbaIWIda (ORCPT
+	id S1755137AbaIWIgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 04:36:11 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:34709 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090AbaIWIgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 04:33:30 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8N8XR56014830, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8152: fix the carrier off when autoresuming
-Date: Tue, 23 Sep 2014 16:31:47 +0800
-Message-ID: <1394712342-15778-45-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Tue, 23 Sep 2014 04:36:08 -0400
+Date: Tue, 23 Sep 2014 10:36:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
+Message-ID: <20140923083603.GA31876@gmail.com>
+References: <20140923143232.5ffff46e@canb.auug.org.au>
+ <20140923054328.GA28790@gmail.com>
+ <20140923062125.GB6900@thin>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923062125.GB6900@thin>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netif_carrier_off would be called when autoresuming, even though
-the cable is plugged. This causes some applications do relative
-actions when detecting the carrier off. Keep the status of the
-carrier, and let it be modified when the linking change occurs.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 52 +++++++++++++++++++++++++++++++++----------------
- 1 file changed, 35 insertions(+), 17 deletions(-)
+* Josh Triplett <josh@joshtriplett.org> wrote:
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 74760e8..e039442 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1949,10 +1949,34 @@ static void rxdy_gated_en(struct r8152 *tp, bool enable)
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
- }
- 
-+static int rtl_start_rx(struct r8152 *tp)
-+{
-+	int i, ret = 0;
-+
-+	INIT_LIST_HEAD(&tp->rx_done);
-+	for (i = 0; i < RTL8152_MAX_RX; i++) {
-+		INIT_LIST_HEAD(&tp->rx_info[i].list);
-+		ret = r8152_submit_rx(tp, &tp->rx_info[i], GFP_KERNEL);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static int rtl_stop_rx(struct r8152 *tp)
-+{
-+	int i;
-+
-+	for (i = 0; i < RTL8152_MAX_RX; i++)
-+		usb_kill_urb(tp->rx_info[i].urb);
-+
-+	return 0;
-+}
-+
- static int rtl_enable(struct r8152 *tp)
- {
- 	u32 ocp_data;
--	int i, ret;
- 
- 	r8152b_reset_packet_filter(tp);
- 
-@@ -1962,14 +1986,7 @@ static int rtl_enable(struct r8152 *tp)
- 
- 	rxdy_gated_en(tp, false);
- 
--	INIT_LIST_HEAD(&tp->rx_done);
--	ret = 0;
--	for (i = 0; i < RTL8152_MAX_RX; i++) {
--		INIT_LIST_HEAD(&tp->rx_info[i].list);
--		ret |= r8152_submit_rx(tp, &tp->rx_info[i], GFP_KERNEL);
--	}
--
--	return ret;
-+	return rtl_start_rx(tp);
- }
- 
- static int rtl8152_enable(struct r8152 *tp)
-@@ -2053,8 +2070,7 @@ static void rtl_disable(struct r8152 *tp)
- 		mdelay(1);
- 	}
- 
--	for (i = 0; i < RTL8152_MAX_RX; i++)
--		usb_kill_urb(tp->rx_info[i].urb);
-+	rtl_stop_rx(tp);
- 
- 	rtl8152_nic_reset(tp);
- }
-@@ -3083,13 +3099,14 @@ static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
- 		clear_bit(WORK_ENABLE, &tp->flags);
- 		usb_kill_urb(tp->intr_urb);
- 		cancel_delayed_work_sync(&tp->schedule);
-+		tasklet_disable(&tp->tl);
- 		if (test_bit(SELECTIVE_SUSPEND, &tp->flags)) {
-+			rtl_stop_rx(tp);
- 			rtl_runtime_suspend_enable(tp, true);
- 		} else {
--			tasklet_disable(&tp->tl);
- 			tp->rtl_ops.down(tp);
--			tasklet_enable(&tp->tl);
- 		}
-+		tasklet_enable(&tp->tl);
- 	}
- 
- 	return 0;
-@@ -3108,17 +3125,18 @@ static int rtl8152_resume(struct usb_interface *intf)
- 		if (test_bit(SELECTIVE_SUSPEND, &tp->flags)) {
- 			rtl_runtime_suspend_enable(tp, false);
- 			clear_bit(SELECTIVE_SUSPEND, &tp->flags);
-+			set_bit(WORK_ENABLE, &tp->flags);
- 			if (tp->speed & LINK_STATUS)
--				tp->rtl_ops.disable(tp);
-+				rtl_start_rx(tp);
- 		} else {
- 			tp->rtl_ops.up(tp);
- 			rtl8152_set_speed(tp, AUTONEG_ENABLE,
- 				tp->mii.supports_gmii ? SPEED_1000 : SPEED_100,
- 				DUPLEX_FULL);
-+			tp->speed = 0;
-+			netif_carrier_off(tp->netdev);
-+			set_bit(WORK_ENABLE, &tp->flags);
- 		}
--		tp->speed = 0;
--		netif_carrier_off(tp->netdev);
--		set_bit(WORK_ENABLE, &tp->flags);
- 		usb_submit_urb(tp->intr_urb, GFP_KERNEL);
- 	}
- 
--- 
-1.9.3
+> On Tue, Sep 23, 2014 at 07:43:28AM +0200, Ingo Molnar wrote:
+> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > Today's linux-next merge of the tiny tree got conflicts in
+> > > arch/x86/kernel/process_32.c and arch/x86/kernel/process_64.c between
+> > > commits dc56c0f9b870 ("x86, fpu: Shift "fpu_counter = 0" from
+> > > copy_thread() to arch_dup_task_struct()") and 6f46b3aef003 ("x86:
+> > > copy_thread: Don't nullify ->ptrace_bps twice") from the tip tree and
+> > > commits a1cf09f93e66 ("x86: process: Unify 32-bit and 64-bit
+> > > copy_thread I/O bitmap handling") and e4a191d1e05b ("x86: Support
+> > > compiling out userspace I/O (iopl and ioperm)") from the tiny tree.
+> > 
+> > Why are such changes in the 'tiny' tree? These are sensitive 
+> > arch/x86 files, and any unification and compilation-out support 
+> > patches need to go through the proper review channels and be 
+> > merged upstream via the x86 tree if accepted...
+> > 
+> > In particular the graticious sprinking of #ifdef 
+> > CONFIG_X86_IOPORTs around x86 code looks ugly.
+> > 
+> > Josh, don't do that, this route is really unacceptable. Please 
+> > resubmit the latest patches and remove these from linux-next.
+> 
+> I'd previously submitted these patches for review; the last 
+> round of feedback seemed entirely positive (with some explicit 
+> acks) on the 32/64 unification patches, and generally positive 
+> on the last patch of the series (apart from a misunderstanding 
+> about this being configurable but still default y).  I CCed you 
+> on that submission, and hadn't seen any of this feedback from 
+> you at that time (nor a suggestion of which tree this should go 
+> through).  My intention with adding these patches to tiny/next 
+> tree was purely for an integration check with -next, and I'd 
+> planned to resend these by email shortly for an additional 
+> round of review with an explicit question of what route they 
+> should take into the kernel.
 
+That's perfectly fine, thanks!
+
+> I've dropped tiny/no-io from tiny/next; I'll poke at it further 
+> and resubmit for the x86 tree later, likely not for the next 
+> merge window at this point.
+> 
+> Thanks for the feedback on process; this is day 1 of having a 
+> merge-window-bound tree in -next for the first time. :)
+
+Sorry about the harshness of my initial email - I was unsure 
+about the background and we are close to the merge window. I have 
+no objections against the -tiny tree in linux-next, it's a good 
+effort.
+
+I think we could cut down on the #ifdef uglies if we made the 
+ioperm callback pointer unconditional. That's just a tiny amount 
+of extra bloat, but should remove half of the #ifdefs or so? The 
+rest of the patches look fine.
+
+Usually hpa handles the x86 ioperm area, but he's swamped right 
+now, so I'll look at picking them up once you have submitted the 
+latest version. If you send it in the next day or two then they 
+could make the v3.18 merge window.
+
+Thanks,
+
+	Ingo
