@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401AbaIWRst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:48:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43041 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755575AbaIWRsr convert rfc822-to-8bit (ORCPT
+	id S1756428AbaIWRvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:51:08 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:65485 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056AbaIWRvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:48:47 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v3] power: reset: use restart_notifier mechanism for msm-poweroff
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <542112FD.7080302@smartplayin.com>
-Date: Tue, 23 Sep 2014 12:48:42 -0500
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2C40727B-BF1E-46AC-9189-6B35E358220E@codeaurora.org>
-References: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com> <542112FD.7080302@smartplayin.com>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 23 Sep 2014 13:51:05 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/8] x86: Disentangle the vdso and clean it up
+Date: Tue, 23 Sep 2014 10:50:50 -0700
+Message-Id: <cover.1411494540.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo and Thomas,
 
-On Sep 23, 2014, at 1:28 AM, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
+This should all be straightforward.  It's primarily a cleanup, but it
+fixes what is arguably a bug in the PER_CPU mechanism.
 
-> +linux-arm-msm
-> On Tuesday 23 September 2014 11:38 AM, Pramod Gurav wrote:
->> This change replaces use of arm_pm_restart with recently introduced
->> reset mechanism in Linux kernel called restart_notifier.
+The first two patches just rearrange code to disentangle the vdso from
+the vsyscall emulation code.
 
-Can you update the commit message to include details about the priority level we are setting it to.
+The next three patches are tiny.  Patch 3 rewrites the PER_CPU setup
+code to make it comprehensible; it has no effect other than clarify.
+Patches 4 and 5 fix two problems with the PER_CPU segment that are
+apparent after the code has been cleaned up.  (Patch 5 fixes a glitch
+that that is almost, but not quote, a security bug.)
 
-Probably something like Josh had:
+Patches 6 and 7 are just cleanups.  Patch 6 removes the "jiffies" vvar,
+which has been unused for years.  Patch 7 cleans up some initialization
+code.
 
-Choose priority 128, as according to documentation, this mechanism "is
-sufficient to restart the entire system”.
+Patch 8 removes the vvar that selects the getcpu mode.  That vvar
+has been unnecessary for a couple of years, ever since alternative
+patching has worked in the vdso.
 
-Hmm, what happens if we have ps_hold restart and msm-poweroff enabled.  Which one should have priority?
+There is a small but non quote zero chance that I will want to revert
+patch 8 at some point.  Reverting it will be needed to be able to
+disable the TSC (in the CR4.TSC sense) without breaking the vdso, unless
+we patch the vdso text.  That being said, I think it'll be a lot less
+messy to just patch the vdso text if we do that.
 
->> 
->> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> Cc: Josh Cartwright <joshc@codeaurora.org>
->> Cc: Sebastian Reichel <sre@kernel.org>
->> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
->> Cc: David Woodhouse <dwmw2@infradead.org>
->> Cc: Stephen Boyd <sboyd@codeaurora.org>
->> Cc: linux-pm@vger.kernel.org
->> 
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
->> Tested on Dragonboard APQ8074
->> 
->> Changes since v2:
->> - Removed unwanted header file and added linux/pm.h
->> 
->> Changes since v1:
->> - Initialized restart_nb with its declaration
->> - Removed return check for register_restart_handler as it always
->>  returns 0 as per Guenter's suggestion to Josh's similar patch.
->>  This takes care of Guenter's comments on error logs and NULL
->>  initialization of restart_nb.notifier_call.
->> ---
->> drivers/power/reset/msm-poweroff.c |   20 ++++++++++++++------
->> 1 file changed, 14 insertions(+), 6 deletions(-)
->> 
->> diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
->> index 774f9a3..4702efd 100644
->> --- a/drivers/power/reset/msm-poweroff.c
->> +++ b/drivers/power/reset/msm-poweroff.c
->> @@ -20,21 +20,27 @@
->> #include <linux/platform_device.h>
->> #include <linux/module.h>
->> #include <linux/reboot.h>
->> -
->> -#include <asm/system_misc.h>
->> +#include <linux/pm.h>
->> 
->> static void __iomem *msm_ps_hold;
->> -
->> -static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
->> +static int do_msm_restart(struct notifier_block *nb, unsigned long action,
->> +			   void *data)
->> {
->> 	writel(0, msm_ps_hold);
->> 	mdelay(10000);
->> +
->> +	return NOTIFY_DONE;
->> }
->> 
->> +static struct notifier_block restart_nb = {
->> +	.notifier_call = do_msm_restart,
->> +	.priority = 128,
->> +};
->> +
->> static void do_msm_poweroff(void)
->> {
->> 	/* TODO: Add poweroff capability */
->> -	do_msm_restart(REBOOT_HARD, NULL);
->> +	do_msm_restart(&restart_nb, 0, NULL);
->> }
->> 
->> static int msm_restart_probe(struct platform_device *pdev)
->> @@ -47,8 +53,10 @@ static int msm_restart_probe(struct platform_device *pdev)
->> 	if (IS_ERR(msm_ps_hold))
->> 		return PTR_ERR(msm_ps_hold);
->> 
->> +	register_restart_handler(&restart_nb);
->> +
->> 	pm_power_off = do_msm_poweroff;
->> -	arm_pm_restart = do_msm_restart;
->> +
->> 	return 0;
->> }
->> 
->> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please consider applying these, or at least applying patches 1-7,
+to tip/x86/vdso for 3.18.
+
+Thanks,
+Andy
+
+
+Changes from way back when: This has been floating around since June in
+some form. See:
+http://lkml.kernel.org/g/cover.1404164803.git.luto@amacapital.net
+
+This version just disentangles the vdso and vsyscall code and does the
+vdso cleanups/fixes.  It does *not* contain the PER_CPU removal on
+RDTSCP systems, since hpa mentioned that this is potentially
+problematic, and, if we were to try it, it should soak in -next for a
+*long* time.  It is also heavily cleaned up since last time.
+
+
+Andy Lutomirski (8):
+  x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
+  x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
+  x86,vdso: Change the PER_CPU segment to use struct desc_struct
+  x86,vdso: Make the PER_CPU segment start out accessed
+  x86,vdso: Make the PER_CPU segment 32 bits
+  x86_64,vdso: Remove jiffies from the vvar page
+  x86_64,vdso: Clean up vgetcpu init and merge the vdso initcalls
+  x86,vdso: Replace vgetcpu_mode with static_cpu_has
+
+ arch/x86/include/asm/vgtod.h    | 21 ++++++++++
+ arch/x86/include/asm/vsyscall.h | 29 --------------
+ arch/x86/include/asm/vvar.h     |  2 -
+ arch/x86/kernel/cpu/common.c    | 10 -----
+ arch/x86/kernel/time.c          |  2 +-
+ arch/x86/kernel/vsyscall_64.c   | 84 ++++++++++++++++++----------------------
+ arch/x86/mm/init_64.c           | 49 ------------------------
+ arch/x86/vdso/vclock_gettime.c  |  3 ++
+ arch/x86/vdso/vgetcpu.c         |  5 ++-
+ arch/x86/vdso/vma.c             | 85 ++++++++++++++++++++++++++++++++---------
+ 10 files changed, 132 insertions(+), 158 deletions(-)
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.9.3
 
