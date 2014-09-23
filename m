@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaIWJCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:02:07 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:47675 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908AbaIWJCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:02:04 -0400
-Message-ID: <54213708.7050605@mm-sol.com>
-Date: Tue, 23 Sep 2014 12:02:00 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [PATCH] rtc: pm8xxx: rework to support pm8941 rtc
-References: <1410515044-31689-1-git-send-email-svarbanov@mm-sol.com> <20140919160347.eaa72f4b715338e4210790df@linux-foundation.org>
-In-Reply-To: <20140919160347.eaa72f4b715338e4210790df@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754391AbaIWJFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:05:42 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:38212 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133AbaIWJFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:05:39 -0400
+Message-ID: <1411463138.26859.168.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: 3.17 kernel crash while loading IPoIB
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Sharma, Karun" <karun.sharma@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Tue, 23 Sep 2014 02:05:38 -0700
+In-Reply-To: <637AD4DF2E595346BAB0DF8C46F3A2B003291F06@BGSMSX101.gar.corp.intel.com>
+References: <637AD4DF2E595346BAB0DF8C46F3A2B003291F06@BGSMSX101.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2014 02:03 AM, Andrew Morton wrote:
-> On Fri, 12 Sep 2014 12:44:04 +0300 Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+On Tue, 2014-09-23 at 05:15 +0000, Sharma, Karun wrote:
+> Hello:
 > 
->> Adds support for RTC device inside PM8941 PMIC. The RTC
->> in this PMIC have two register spaces. Thus the rtc-pm8xxx
->> is slightly reworked to reflect these differences.
->>
->> The register set for different PMIC chips are selected
->> on DT compatible string base.
+> I am facing an issue wherein kernel 3.17 crashes while loading IPoIB
+> module. I guess the issue discussed in this thread
+> (https://www.mail-archive.com/linux-rdma@vger.kernel.org/msg20963.html) is similar.
 > 
-> checkpatch (which you obviously didn't use!) says
+> We were able to reproduce the issue with RC6 also. Here are the steps
+> I followed:
 > 
-> WARNING: DT compatible string "qcom,pm8941-rtc" appears un-documented -- check ./Documentation/devicetree/bindings/
-> #414: FILE: drivers/rtc/rtc-pm8xxx.c:435:
-> +       { .compatible = "qcom,pm8941-rtc", .data = &pm8941_regs },
+> I compiled and installed 3.17 kernel on top of RHEL 6.5. 
+> Then I changed rdma.conf to not load IPoIB (If I don't do this, the
+> kernel crashes while booting and starting RDMA service.)
+> After the server comes up, I just did "modprobe ib_ipoib" and kernel
+> crashes.
+> Please see below the kernel back trace.
+> 
+> Seeing the announcement, it looks like RC6 will be the last RC for
+> 3.17 kernel. Will the release happen with this issue? Is there any
+> workaround available for this issue?
+> I am not sure what mechanism/process is used to report issue to kernel
+> community.
+> 
+> Regards
+> Karun
 
-Ahh, sorry for inconvenience I forgot to run checkpatch over this patch.
+This seems fixed now :
 
-I will send follow-up patch which will add the compatible string in the
-pm8xxx binding document.
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=257117862634d89de33fec74858b1a0ba5ab444b
 
--- 
-regards,
-Stan
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=b49fe36208b45f76dfbcfcd3afd952a33fa9f5ce
+
+
