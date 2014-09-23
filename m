@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaIWM4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:56:53 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59723 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551AbaIWM4v (ORCPT
+	id S1755704AbaIWM5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:57:50 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:62987 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaIWM5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:56:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v8 09/10] rtc: at91sam9: add DT bindings documentation
-Date: Tue, 23 Sep 2014 14:56:37 +0200
-Message-ID: <3728270.N2tTcyeJmL@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411471444-2764-10-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com> <1411471444-2764-10-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 08:57:49 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:G6e8vDpepOP6miZbpXIU4nk87mbgvhXZiCneTUmkFrg
- pZpyt9APoFHySpoeUmrrgrWCYXO0t80rWW7e9QuYUHTpVJ88eS
- JurYCZU6aXgt1J8J8gqvjs5k9xY71SnqhoyJO+YVBV6RZEp6/H
- lpBQI6f63Q/VASVCkNtD2ewVJkXsEmCfMb44DvX7nGh79whXS+
- Tk+wNgoYYTre5m/Q1WTDTmdzKUxu9K7gaZkor2tQuZLAdkIHLZ
- M6lFbGe2o8qju/iw0j+Qu+QwwEe2vW5bhhFV4n4zKY3zlKdEyo
- zpy5Dva6ILHhkOQ73ADlA0Ch/gHg+URPwFy24bDH1n8nmcwmp1
- NmFzk9CafstZRfR/b+mk=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20140923124045.GA13913@sepie.suse.cz>
+References: <CAFnufp3DcbG1DjXjD-sTL=1wYzu9dS5r1UXxGQwQjR11zRSBfg@mail.gmail.com>
+ <20140923124045.GA13913@sepie.suse.cz>
+From: Matteo Croce <matteo@openwrt.org>
+Date: Tue, 23 Sep 2014 14:57:07 +0200
+X-Google-Sender-Auth: FS0XC35F3-Ylje7K5-yvOAniRKE
+Message-ID: <CAFnufp2DQvEywZW0sg-+hLyeDY+L0UwWjEtDwX-PgOJWda-HOw@mail.gmail.com>
+Subject: Re: [PATCH] x86 generated files in gitignore
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 13:24:03 Boris BREZILLON wrote:
-> Add RTT bindings documentation.
+Didn't know, thanks.
 
-Two minor comments here:
+What about arch/x86/purgatory?
 
-> +Atmel AT91SAM9260 Real Time Timer
-> +
-> +Required properties:
-> +- compatible: should be: "atmel,at91sam9260-rtt"
-> +- reg: should encode the memory region of the RTT controller
-> +- interrupts: rtt alarm/event interrupt
-> +- clocks: should contain one clock pointing to the slow clk
+Cheers,
 
-This should document what the clock is used for, not where it's
-connected.
+2014-09-23 14:40 GMT+02:00 Michal Marek <mmarek@suse.cz>:
+> On Wed, Sep 03, 2014 at 10:42:04AM +0200, Matteo Croce wrote:
+>> @@ -10,3 +10,4 @@ recordmcount
+>>  docproc
+>>  sortextable
+>>  asn1_compiler
+>> +bin2c
+>
+> bin2c has been moved to scripts/basic, what you see is probably a
+> leftover from building an older kernel.
+>
+> Michal
 
-> +
-> +rtt@fffffe00 {
-> +       compatible = "atmel,at91sam9260-rtt";
-> +       reg = <0xfffffd20 0x10>;
-> +       interrupts = <1 4 7>;
-> +       clocks = <&clk32k>;
-> +       atmel,rtt-rtc-time-reg = <&gpbr 0x0>;
-> +};
-> 
 
-The register address fffffd20 does not match the name fffffe00
 
-	Arnd
-
+-- 
+Matteo Croce
+OpenWrt Developer
+  _______                     ________        __
+ |       |.-----.-----.-----.|  |  |  |.----.|  |_
+ |   -   ||  _  |  -__|     ||  |  |  ||   _||   _|
+ |_______||   __|_____|__|__||________||__|  |____|
+          |__| W I R E L E S S   F R E E D O M
+ -----------------------------------------------------
+ BARRIER BREAKER
+ -----------------------------------------------------
+  * 1/2 oz Galliano         Pour all ingredients into
+  * 4 oz cold Coffee        an irish coffee mug filled
+  * 1 1/2 oz Dark Rum       with crushed ice. Stir.
+  * 2 tsp. Creme de Cacao
+ -----------------------------------------------------
