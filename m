@@ -1,131 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbaIWVF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:05:28 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57930 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744AbaIWVF0 (ORCPT
+	id S1756892AbaIWVGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:06:15 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:58269 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756328AbaIWVGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:05:26 -0400
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2] pinctrl: qcom: use restart_notifier mechanism for ps_hold
-Date: Tue, 23 Sep 2014 15:59:53 -0500
-Message-Id: <1411505993-8414-1-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 2.1.0
+	Tue, 23 Sep 2014 17:06:14 -0400
+Date: Tue, 23 Sep 2014 14:07:53 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH 1/9] percpu_ref: relocate percpu_ref_reinit()
+Message-ID: <20140923210753.GB15142@kmo-pixel>
+References: <1411451718-17807-1-git-send-email-tj@kernel.org>
+ <1411451718-17807-2-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411451718-17807-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By converting to the restart_notifier mechanism for restart, we allow
-for other mechanisms, like the watchdog, to be used for restart in the
-case where PS_HOLD has failed to reset the chip.
+On Tue, Sep 23, 2014 at 01:55:10AM -0400, Tejun Heo wrote:
+> percpu_ref is gonna go through restructuring.  Move
+> percpu_ref_reinit() after percpu_ref_kill_and_confirm().  This will
+> make later changes easier to follow and result in cleaner
+> organization.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Kent Overstreet <kmo@daterainc.com>
 
-Since this mechanism may be one of several mechanisms registered, change
-the post-ps_hold write timeout to be a more reasonable 1 second instead
-of 10 seconds.
+Reviewed-by: Kent Overstreet <kmo@daterainc.com>
 
-Choose priority 128, as according to documentation, this mechanism "is
-sufficient to restart the entire system".
-
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
-
-Changes since v1:
-  - Simplified conditional notifier block registration
-  - Reduced wait time to 1s, which I've found to be sufficient on an IFC6410
-    board.
-
- drivers/pinctrl/qcom/pinctrl-msm.c | 31 ++++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index d5ed127..d30dddd 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-@@ -27,8 +27,7 @@
- #include <linux/gpio.h>
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
--
--#include <asm/system_misc.h>
-+#include <linux/reboot.h>
- 
- #include "../core.h"
- #include "../pinconf.h"
-@@ -43,6 +42,7 @@
-  * @dev:            device handle.
-  * @pctrl:          pinctrl handle.
-  * @chip:           gpiochip handle.
-+ * @restart_nb:     restart notifier block.
-  * @irq:            parent irq for the TLMM irq_chip.
-  * @lock:           Spinlock to protect register resources as well
-  *                  as msm_pinctrl data structures.
-@@ -56,6 +56,7 @@ struct msm_pinctrl {
- 	struct device *dev;
- 	struct pinctrl_dev *pctrl;
- 	struct gpio_chip chip;
-+	struct notifier_block restart_nb;
- 	int irq;
- 
- 	spinlock_t lock;
-@@ -852,13 +853,14 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
- 	return 0;
- }
- 
--#ifdef CONFIG_ARM
--static void __iomem *msm_ps_hold;
--
--static void msm_reset(enum reboot_mode reboot_mode, const char *cmd)
-+static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
-+			       void *data)
- {
--	writel(0, msm_ps_hold);
--	mdelay(10000);
-+	struct msm_pinctrl *pctrl = container_of(nb, struct msm_pinctrl, restart_nb);
-+
-+	writel(0, pctrl->regs + PS_HOLD_OFFSET);
-+	mdelay(1000);
-+	return NOTIFY_DONE;
- }
- 
- static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
-@@ -868,13 +870,14 @@ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
- 
- 	for (; i <= pctrl->soc->nfunctions; i++)
- 		if (!strcmp(func[i].name, "ps_hold")) {
--			msm_ps_hold = pctrl->regs + PS_HOLD_OFFSET;
--			arm_pm_restart = msm_reset;
-+			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
-+			pctrl->restart_nb.priority = 128;
-+			if (register_restart_handler(&pctrl->restart_nb))
-+				dev_err(pctrl->dev,
-+					"failed to setup restart handler.\n");
-+			break;
- 		}
- }
--#else
--static void msm_pinctrl_setup_pm_reset(const struct msm_pinctrl *pctrl) {}
--#endif
- 
- int msm_pinctrl_probe(struct platform_device *pdev,
- 		      const struct msm_pinctrl_soc_data *soc_data)
-@@ -943,6 +946,8 @@ int msm_pinctrl_remove(struct platform_device *pdev)
- 
- 	pinctrl_unregister(pctrl->pctrl);
- 
-+	unregister_restart_handler(&pctrl->restart_nb);
-+
- 	return 0;
- }
- EXPORT_SYMBOL(msm_pinctrl_remove);
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+> ---
+>  include/linux/percpu-refcount.h |  2 +-
+>  lib/percpu-refcount.c           | 70 ++++++++++++++++++++---------------------
+>  2 files changed, 36 insertions(+), 36 deletions(-)
+> 
+> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+> index 5df6784..f015f13 100644
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -68,10 +68,10 @@ struct percpu_ref {
+>  
+>  int __must_check percpu_ref_init(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *release, gfp_t gfp);
+> -void percpu_ref_reinit(struct percpu_ref *ref);
+>  void percpu_ref_exit(struct percpu_ref *ref);
+>  void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *confirm_kill);
+> +void percpu_ref_reinit(struct percpu_ref *ref);
+>  
+>  /**
+>   * percpu_ref_kill - drop the initial ref
+> diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+> index 559ee0b..070dab5 100644
+> --- a/lib/percpu-refcount.c
+> +++ b/lib/percpu-refcount.c
+> @@ -63,41 +63,6 @@ int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release,
+>  EXPORT_SYMBOL_GPL(percpu_ref_init);
+>  
+>  /**
+> - * percpu_ref_reinit - re-initialize a percpu refcount
+> - * @ref: perpcu_ref to re-initialize
+> - *
+> - * Re-initialize @ref so that it's in the same state as when it finished
+> - * percpu_ref_init().  @ref must have been initialized successfully, killed
+> - * and reached 0 but not exited.
+> - *
+> - * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
+> - * this function is in progress.
+> - */
+> -void percpu_ref_reinit(struct percpu_ref *ref)
+> -{
+> -	unsigned long __percpu *pcpu_count = pcpu_count_ptr(ref);
+> -	int cpu;
+> -
+> -	BUG_ON(!pcpu_count);
+> -	WARN_ON(!percpu_ref_is_zero(ref));
+> -
+> -	atomic_long_set(&ref->count, 1 + PCPU_COUNT_BIAS);
+> -
+> -	/*
+> -	 * Restore per-cpu operation.  smp_store_release() is paired with
+> -	 * smp_read_barrier_depends() in __pcpu_ref_alive() and guarantees
+> -	 * that the zeroing is visible to all percpu accesses which can see
+> -	 * the following PCPU_REF_DEAD clearing.
+> -	 */
+> -	for_each_possible_cpu(cpu)
+> -		*per_cpu_ptr(pcpu_count, cpu) = 0;
+> -
+> -	smp_store_release(&ref->pcpu_count_ptr,
+> -			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
+> -}
+> -EXPORT_SYMBOL_GPL(percpu_ref_reinit);
+> -
+> -/**
+>   * percpu_ref_exit - undo percpu_ref_init()
+>   * @ref: percpu_ref to exit
+>   *
+> @@ -189,3 +154,38 @@ void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+>  	call_rcu_sched(&ref->rcu, percpu_ref_kill_rcu);
+>  }
+>  EXPORT_SYMBOL_GPL(percpu_ref_kill_and_confirm);
+> +
+> +/**
+> + * percpu_ref_reinit - re-initialize a percpu refcount
+> + * @ref: perpcu_ref to re-initialize
+> + *
+> + * Re-initialize @ref so that it's in the same state as when it finished
+> + * percpu_ref_init().  @ref must have been initialized successfully, killed
+> + * and reached 0 but not exited.
+> + *
+> + * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
+> + * this function is in progress.
+> + */
+> +void percpu_ref_reinit(struct percpu_ref *ref)
+> +{
+> +	unsigned long __percpu *pcpu_count = pcpu_count_ptr(ref);
+> +	int cpu;
+> +
+> +	BUG_ON(!pcpu_count);
+> +	WARN_ON(!percpu_ref_is_zero(ref));
+> +
+> +	atomic_long_set(&ref->count, 1 + PCPU_COUNT_BIAS);
+> +
+> +	/*
+> +	 * Restore per-cpu operation.  smp_store_release() is paired with
+> +	 * smp_read_barrier_depends() in __pcpu_ref_alive() and guarantees
+> +	 * that the zeroing is visible to all percpu accesses which can see
+> +	 * the following PCPU_REF_DEAD clearing.
+> +	 */
+> +	for_each_possible_cpu(cpu)
+> +		*per_cpu_ptr(pcpu_count, cpu) = 0;
+> +
+> +	smp_store_release(&ref->pcpu_count_ptr,
+> +			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
+> +}
+> +EXPORT_SYMBOL_GPL(percpu_ref_reinit);
+> -- 
+> 1.9.3
+> 
