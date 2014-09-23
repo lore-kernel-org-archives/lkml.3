@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaIWJBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:01:48 -0400
-Received: from mx1.dnsc.at ([62.212.162.144]:37451 "EHLO mx1.dnsc.at"
+	id S1754797AbaIWJCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:02:07 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:47675 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752333AbaIWJBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:01:46 -0400
-From: Bernhard Thaler <bernhard.thaler@r-it.at>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        davem@davemloft.net
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Bernhard Thaler <bernhard.thaler@r-it.at>
-Subject: [PATCHv4 1/1] bluetooth: Check for SCO type before setting retransmission effort
-Date: Tue, 23 Sep 2014 11:01:07 +0200
-Message-Id: <1411462867-4010-1-git-send-email-bernhard.thaler@r-it.at>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
-References: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
+	id S1752908AbaIWJCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:02:04 -0400
+Message-ID: <54213708.7050605@mm-sol.com>
+Date: Tue, 23 Sep 2014 12:02:00 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH] rtc: pm8xxx: rework to support pm8941 rtc
+References: <1410515044-31689-1-git-send-email-svarbanov@mm-sol.com> <20140919160347.eaa72f4b715338e4210790df@linux-foundation.org>
+In-Reply-To: <20140919160347.eaa72f4b715338e4210790df@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCO connection cannot be setup to devices that do not support retransmission.
-Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
-adapted for this kernel version.
-Code changed to check SCO/eSCO type before setting retransmission effort
-and max. latency. The purpose of the patch is to support older devices not
- capable of eSCO.
+On 09/20/2014 02:03 AM, Andrew Morton wrote:
+> On Fri, 12 Sep 2014 12:44:04 +0300 Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+> 
+>> Adds support for RTC device inside PM8941 PMIC. The RTC
+>> in this PMIC have two register spaces. Thus the rtc-pm8xxx
+>> is slightly reworked to reflect these differences.
+>>
+>> The register set for different PMIC chips are selected
+>> on DT compatible string base.
+> 
+> checkpatch (which you obviously didn't use!) says
+> 
+> WARNING: DT compatible string "qcom,pm8941-rtc" appears un-documented -- check ./Documentation/devicetree/bindings/
+> #414: FILE: drivers/rtc/rtc-pm8xxx.c:435:
+> +       { .compatible = "qcom,pm8941-rtc", .data = &pm8941_regs },
 
-Tested on Blackberry 655+ headset which does not support retransmission.
-Credits go to Alexander Sommerhuber.
+Ahh, sorry for inconvenience I forgot to run checkpatch over this patch.
 
-Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
----
- net/bluetooth/hci_conn.c |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+I will send follow-up patch which will add the compatible string in the
+pm8xxx binding document.
 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index faff624..afa325b 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -38,7 +38,7 @@ struct sco_param {
- 	u16 max_latency;
- };
- 
--static const struct sco_param sco_param_cvsd[] = {
-+static const struct sco_param esco_param_cvsd[] = {
- 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000a }, /* S3 */
- 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x0007 }, /* S2 */
- 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0007 }, /* S1 */
-@@ -46,6 +46,11 @@ static const struct sco_param sco_param_cvsd[] = {
- 	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
- };
- 
-+static const struct sco_param sco_param_cvsd[] = {
-+	{ EDR_ESCO_MASK | ESCO_HV3,   0xffff }, /* D1 */
-+	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
-+};
-+
- static const struct sco_param sco_param_wideband[] = {
- 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000d }, /* T2 */
- 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0008 }, /* T1 */
-@@ -194,10 +199,17 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
- 		param = &sco_param_wideband[conn->attempt - 1];
- 		break;
- 	case SCO_AIRMODE_CVSD:
--		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
--			return false;
--		cp.retrans_effort = 0x01;
--		param = &sco_param_cvsd[conn->attempt - 1];
-+		if (lmp_esco_capable(conn->link)) {
-+			if (conn->attempt > ARRAY_SIZE(esco_param_cvsd))
-+				return false;
-+			cp.retrans_effort = 0x01;
-+			param = &esco_param_cvsd[conn->attempt - 1];
-+		} else {
-+			if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
-+				return false;
-+			cp.retrans_effort = 0xff;
-+			param = &sco_param_cvsd[conn->attempt - 1];
-+		}
- 		break;
- 	default:
- 		return false;
 -- 
-1.7.10.4
-
+regards,
+Stan
