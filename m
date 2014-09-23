@@ -1,54 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371AbaIWQLX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:11:23 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:56103 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325AbaIWQLU (ORCPT
+	id S932385AbaIWQLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:11:47 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42199 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404AbaIWQJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:11:20 -0400
-Date: Tue, 23 Sep 2014 17:11:17 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20140923161117.GJ18635@console-pimps.org>
-References: <20140919104021.GA11552@gmail.com>
- <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
- <20140923053510.GB27825@gmail.com>
- <20140923053711.GA28704@gmail.com>
- <20140923055802.GA29052@gmail.com>
- <1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
- <CAKv+Gu_xqnkVKuoWY=PRoAVYE_qOH8dwM+ZxG+ysC7Xvs82ZNw@mail.gmail.com>
- <20140923131805.GH18635@console-pimps.org>
- <CA+55aFyLrvrc2mv0oVPggQjXDVqA2ejZEufEPdMfbW=f_dOqmQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyLrvrc2mv0oVPggQjXDVqA2ejZEufEPdMfbW=f_dOqmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Sep 2014 12:09:33 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com, pjt@google.com,
+        bsegall@google.com, Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v6 2/6] sched: move cfs task on a CPU with higher capacity
+Date: Tue, 23 Sep 2014 18:08:01 +0200
+Message-Id: <1411488485-10025-3-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep, at 09:05:41AM, Linus Torvalds wrote:
-> 
-> Well, it boots on my Vaio, fwiw. I'm assume that isn't all that
-> interesting, since presumably it's the macbooks that you expected to
-> still have problems.
+If the CPU is used for handling lot of IRQs, trig a load balance to check if
+it's worth moving its tasks on another CPU that has more capacity.
 
-Yeah, though I'm still interested in hearing success stories since it
-indicates I didn't screw anything else up while doing the revert.
+As a sidenote, this will note generate more spurious ilb because we already
+trig an ilb if there is more than 1 busy cpu. If this cpu is the only one that
+has a task, we will trig the ilb once for migrating the task.
 
-So, thanks for testing - I feel a bit better about the patch now.
+The nohz_kick_needed function has been cleaned up a bit while adding the new
+test
 
+env.src_cpu and env.src_rq must be set unconditionnaly because they are used
+in need_active_balance which is called even if busiest->nr_running equals 1
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c | 70 ++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 50 insertions(+), 20 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 622f8b0..7422044 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5885,6 +5885,18 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+ }
+ 
+ /*
++ * Check whether the capacity of the rq has been noticeably reduced by side
++ * activity. The imbalance_pct is used for the threshold.
++ * Return true is the capacity is reduced
++ */
++static inline int
++check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
++{
++	return ((rq->cpu_capacity * sd->imbalance_pct) <
++				(rq->cpu_capacity_orig * 100));
++}
++
++/*
+  * Group imbalance indicates (and tries to solve) the problem where balancing
+  * groups is inadequate due to tsk_cpus_allowed() constraints.
+  *
+@@ -6555,6 +6567,14 @@ static int need_active_balance(struct lb_env *env)
+ 		 */
+ 		if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
+ 			return 1;
++
++		/*
++		 * The src_cpu's capacity is reduced because of other
++		 * sched_class or IRQs, we trig an active balance to move the
++		 * task
++		 */
++		if (check_cpu_capacity(env->src_rq, sd))
++			return 1;
+ 	}
+ 
+ 	return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
+@@ -6656,6 +6676,9 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 
+ 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+ 
++	env.src_cpu = busiest->cpu;
++	env.src_rq = busiest;
++
+ 	ld_moved = 0;
+ 	if (busiest->nr_running > 1) {
+ 		/*
+@@ -6665,8 +6688,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		 * correctly treated as an imbalance.
+ 		 */
+ 		env.flags |= LBF_ALL_PINNED;
+-		env.src_cpu   = busiest->cpu;
+-		env.src_rq    = busiest;
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
+ more_balance:
+@@ -7372,10 +7393,12 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+ 
+ /*
+  * Current heuristic for kicking the idle load balancer in the presence
+- * of an idle cpu is the system.
++ * of an idle cpu in the system.
+  *   - This rq has more than one task.
+- *   - At any scheduler domain level, this cpu's scheduler group has multiple
+- *     busy cpu's exceeding the group's capacity.
++ *   - This rq has at least one CFS task and the capacity of the CPU is
++ *     significantly reduced because of RT tasks or IRQs.
++ *   - At parent of LLC scheduler domain level, this cpu's scheduler group has
++ *     multiple busy cpu.
+  *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+  *     domain span are idle.
+  */
+@@ -7385,9 +7408,10 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	struct sched_domain *sd;
+ 	struct sched_group_capacity *sgc;
+ 	int nr_busy, cpu = rq->cpu;
++	bool kick = false;
+ 
+ 	if (unlikely(rq->idle_balance))
+-		return 0;
++		return false;
+ 
+        /*
+ 	* We may be recently in ticked or tickless idle mode. At the first
+@@ -7401,38 +7425,44 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	 * balancing.
+ 	 */
+ 	if (likely(!atomic_read(&nohz.nr_cpus)))
+-		return 0;
++		return false;
+ 
+ 	if (time_before(now, nohz.next_balance))
+-		return 0;
++		return false;
+ 
+ 	if (rq->nr_running >= 2)
+-		goto need_kick;
++		return true;
+ 
+ 	rcu_read_lock();
+ 	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+-
+ 	if (sd) {
+ 		sgc = sd->groups->sgc;
+ 		nr_busy = atomic_read(&sgc->nr_busy_cpus);
+ 
+-		if (nr_busy > 1)
+-			goto need_kick_unlock;
++		if (nr_busy > 1) {
++			kick = true;
++			goto unlock;
++		}
++
+ 	}
+ 
+-	sd = rcu_dereference(per_cpu(sd_asym, cpu));
++	sd = rcu_dereference(rq->sd);
++	if (sd) {
++		if ((rq->cfs.h_nr_running >= 1) &&
++				check_cpu_capacity(rq, sd)) {
++			kick = true;
++			goto unlock;
++		}
++	}
+ 
++	sd = rcu_dereference(per_cpu(sd_asym, cpu));
+ 	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
+ 				  sched_domain_span(sd)) < cpu))
+-		goto need_kick_unlock;
+-
+-	rcu_read_unlock();
+-	return 0;
++		kick = true;
+ 
+-need_kick_unlock:
++unlock:
+ 	rcu_read_unlock();
+-need_kick:
+-	return 1;
++	return kick;
+ }
+ #else
+ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle) { }
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.9.1
+
