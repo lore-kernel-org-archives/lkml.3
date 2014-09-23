@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaIWHL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:11:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60039 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518AbaIWHL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:11:57 -0400
-Date: Tue, 23 Sep 2014 00:11:54 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Chris J Arges <chris.j.arges@canonical.com>
-Cc: hch@infradead.org, bruce.lucas@mongodb.com,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mptfusion: enable no_write_same for vmware scsi disks
-Message-ID: <20140923071154.GB3867@infradead.org>
-References: <20140922181929.GA11319@infradead.org>
- <1411418701-25025-1-git-send-email-chris.j.arges@canonical.com>
+	id S1754496AbaIWHNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:13:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43103 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752626AbaIWHND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:13:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
+   d="scan'208";a="479375683"
+Message-ID: <54211C96.3030608@intel.com>
+Date: Tue, 23 Sep 2014 15:09:10 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411418701-25025-1-git-send-email-chris.j.arges@canonical.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH] i2c: move acpi code back into the core
+References: <1411420006-4713-1-git-send-email-wsa@the-dreams.de> <5420CEC9.1030400@intel.com> <20140923053951.GA1411@katana>
+In-Reply-To: <20140923053951.GA1411@katana>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On 2014年09月23日 13:39, Wolfram Sang wrote:
+> 
+>> Sorry for later response due to sickness. I can't write this patch in
+>> time. Sorry again. I will test it soon.
+> 
+> Oh, get well soon! Please say so next time, so I know.
+> 
 
-thanks for updating it, althugh it would need a few more updates.
+Thanks. OK.
+I have put the patch into test system and need to wait some time.
 
-> +	/* Fix for vmware guests that do not implement write_same
-> +         */
-> +	if (pdev->subsystem_vendor == 0x15AD) {
-> +		mptspi_driver_template.no_write_same = 1;
-> +	}
-> +
-
-We should set it only on th host that matches, not the whole template
-for this case.  The host is allocated just below your statement in
-the same function, so this should be easy.
-
-Also no need for braces here, and try to follow the Linux comment style:
-
-	/* The VMWare emulation doesn't properly impement WRITE SAME */
-	if (pdev->subsystem_vendor == 0x15AD)
-		sh->no_write_same = 1;
-		
-
-(and yes, it would be good to have PCI_VENDOR_ID_VMWARE in pci_ids.h,
- but that shouldn't be done in this bug fix patch)
+-- 
+Best regards
+Tianyu Lan
