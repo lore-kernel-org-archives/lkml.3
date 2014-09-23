@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139AbaIWPix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:38:53 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:48085 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992AbaIWPiv (ORCPT
+	id S1756229AbaIWPjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:39:46 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:38760 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594AbaIWPjl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:38:51 -0400
+	Tue, 23 Sep 2014 11:39:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1411031032-20649-1-git-send-email-gvormayr@gmail.com>
-References: <1411031032-20649-1-git-send-email-gvormayr@gmail.com>
-Date: Tue, 23 Sep 2014 17:38:51 +0200
-Message-ID: <CACRpkdZJajGr+Y4OTBf0W697G9ipBKH-y67EU69C-6cCiVbSRw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] gpio: Fix ngpio in gpio-xilinx driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Gernot Vormayr <gvormayr@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
+In-Reply-To: <1411034996.23919.9.camel@AMDC1943>
+References: <1410857494-15936-1-git-send-email-k.kozlowski@samsung.com>
+	<1410857494-15936-5-git-send-email-k.kozlowski@samsung.com>
+	<CAPDyKFqoLQh=FYg33LTSp-HTs-oJDT4y_K6hGRoiu9zDxOX9sw@mail.gmail.com>
+	<1411034996.23919.9.camel@AMDC1943>
+Date: Tue, 23 Sep 2014 17:39:39 +0200
+Message-ID: <CAPDyKFoaP74t7ZWM66=jDgRcY-9FBM1OxMiZKL++HAO1m19DWg@mail.gmail.com>
+Subject: Re: [PATCH v4 4/4] dma: pl330: add Power Management support
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
         Michal Simek <michal.simek@xilinx.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 11:03 AM, Gernot Vormayr <gvormayr@gmail.com> wrote:
-
-> If one adds 'gpio-controller;' to the chip in the devicetree, then
-> initialization fails with 'gpiochip_find_base: cannot find free range',
-> because ngpio is 0. This patch fixes the bug.
+On 18 September 2014 12:09, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> On śro, 2014-09-17 at 20:42 +0200, Ulf Hansson wrote:
+>> On 16 September 2014 10:51, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
 >
-> Tested on ml507 board.
+> [...]
 >
-> Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
-> ---
->  drivers/gpio/gpio-xilinx.c | 11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
+>> >
+>> > @@ -2585,6 +2620,34 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
+>> >         return 0;
+>> >  }
+>> >
+>> > +/*
+>> > + * Assume that IRQ safe runtime PM is chosen in probe and amba bus driver
+>> > + * will only disable/enable the clock in runtime PM suspend/resume.
+>> > + */
+>> > +static int __maybe_unused pl330_suspend(struct device *dev)
+>> > +{
+>> > +       struct amba_device *pcdev = to_amba_device(dev);
+>> > +
+>> > +       if (!pm_runtime_suspended(dev))
+>> > +               amba_pclk_disable(pcdev);
+>>
+>> I would suggest to use pm_runtime_force_suspend() instead of the above.
 >
-> diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-> index 1248186..4606ad2 100644
-> --- a/drivers/gpio/gpio-xilinx.c
-> +++ b/drivers/gpio/gpio-xilinx.c
-> @@ -197,6 +197,7 @@ static int xgpio_of_probe(struct device_node *np)
->         struct xgpio_instance *chip;
->         int status = 0;
->         const u32 *tree_info;
-> +       u32 ngpio;
+> Sure, I can change it but... (see below)
 >
->         chip = kzalloc(sizeof(*chip), GFP_KERNEL);
->         if (!chip)
-> @@ -215,8 +216,9 @@ static int xgpio_of_probe(struct device_node *np)
->         chip->mmchip.gc.ngpio = 32;
+>>
+>> > +       amba_pclk_unprepare(pcdev);
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +
+>> > +static int __maybe_unused pl330_resume(struct device *dev)
+>> > +{
+>> > +       struct amba_device *pcdev = to_amba_device(dev);
+>> > +
+>> > +       amba_pclk_prepare(pcdev);
+>> > +       if (!pm_runtime_suspended(dev))
+>> > +               return amba_pclk_enable(pcdev);
+>>
+>> The above if statement could be replaced with pm_runtime_force_resume().
+>
+> But that would lead to runtime resuming the device even when it is not
+> needed. We don't have to fully wakeup the device during resume operation
+> when the device was runtime suspended before suspend.
 
-Delete that line ^
+That's true - but that's not a big issue I believe. I think the below
+problems are worse. :-)
+
+1) You don't disable runtime PM, thus not preventing the runtime PM
+callbacks from being invoked.
+2) You don't update the runtime PM status, thus not reflecting the
+actual state of the device.
+
+Both the above may cause unbalanced clk_enable|disable calls.
+
+Don't get me wrong, I certainly think the "don't do runtime PM resume
+during system PM resume" is interesting to solve. But that it's a
+common problem and should be supported by the runtime PM API somehow
+instead. I have been thinking of extending the
+pm_runtime_force_resume() API to support this, let's see when that
+happens. :-)
 
 >
->         /* Check device node and parent device node for device width */
-> -       of_property_read_u32(np, "xlnx,gpio-width",
-> -                             (u32 *)&chip->mmchip.gc.ngpio);
-> +       status = of_property_read_u32(np, "xlnx,gpio-width", &ngpio);
-> +       if (status == 0)
-> +               chip->mmchip.gc.ngpio = (u16)ngpio;
+>>
+>> Doing that, means the amba_pclk_enable|disable() don't need to be
+>> exported from the AMBA bus header, but entirely handled by the AMBA
+>> bus itself.
+>>
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +
+>> > +static SIMPLE_DEV_PM_OPS(pl330_pm, pl330_suspend, pl330_resume);
+>> > +
+>> >  static int
+>> >  pl330_probe(struct amba_device *adev, const struct amba_id *id)
+>> >  {
+>> > @@ -2738,6 +2801,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+>> >                 pcfg->data_buf_dep, pcfg->data_bus_width / 8, pcfg->num_chan,
+>> >                 pcfg->num_peri, pcfg->num_events);
+>> >
+>>
+>> You need pm_runtime_set_active() here as well.
+>
+> This is done by amba/bus.c. Do I have to do it again?
 
-Rewrite like this:
-
-if (of_property_read_u32(np, "xlnx,gpio-width", &ngpio))
-    ngpio = 32;
-chip->mmchip.gc.ngpio = (u16)ngpio;
+Ohh, you are right! No need to add it!
 
 >
->         spin_lock_init(&chip->gpio_lock);
+>>
+>> > +       pm_runtime_irq_safe(&adev->dev);
+>> > +       pm_runtime_put_noidle(&adev->dev);
+>>
+>> Why pm_runtime_put_noidle(), that seems like you might end up leaving
+>> the device in active state - unless you get some request. Likely not
+>> what you want?
 >
-> @@ -262,8 +264,9 @@ static int xgpio_of_probe(struct device_node *np)
->                 chip->mmchip.gc.ngpio = 32;
->
->                 /* Check device node and parent device node for device width */
-> -               of_property_read_u32(np, "xlnx,gpio2-width",
-> -                                    (u32 *)&chip->mmchip.gc.ngpio);
-> +               status = of_property_read_u32(np, "xlnx,gpio2-width", &ngpio);
-> +               if (status == 0)
-> +                       chip->mmchip.gc.ngpio = (u16)ngpio;
+> Hmmm... I am sorry but I do not get the point here. It could be
+> pm_runtime_put() as well because initially we start with counter
+> incremented by amba/bus.c.
 
-Same comment.
+The "no_idle" version will prevent the device from going inactive,
+unless a new cycle of pm_runtime_get() to pm_runtime_put() happens,
+which there are no guarantees of.
 
-The fact that the same code appears in two places tells us something
-is not quite right. Can you look into consolidating this (in a separate
-patch)?
-
-Yours,
-Linus Walleij
+Kind regards
+Uffe
