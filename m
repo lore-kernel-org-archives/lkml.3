@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbaIWP7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:59:47 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:36581 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245AbaIWP7o convert rfc822-to-8bit (ORCPT
+	id S1755637AbaIWQA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:00:57 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:43519 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaIWQAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:59:44 -0400
+	Tue, 23 Sep 2014 12:00:55 -0400
+Message-ID: <5421992F.6070908@samsung.com>
+Date: Wed, 24 Sep 2014 01:00:47 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <1549304.qklrgkYl3q@phil>
-References: <1411329923-15912-1-git-send-email-heiko@sntech.de>
-	<1411329923-15912-3-git-send-email-heiko@sntech.de>
-	<CAD=FV=W6q7wMDWWDkwdC_KF4EHJt2q8afxSGCpPEC+Nk2Jp2Ag@mail.gmail.com>
-	<1549304.qklrgkYl3q@phil>
-Date: Tue, 23 Sep 2014 08:59:43 -0700
-X-Google-Sender-Auth: O5Ios21BdVfQQahJspOPkEn_wP0
-Message-ID: <CAD=FV=Wc-V6nYTSTPJe4mtyCvGH2CpOhOY37XDFQTP97hXOi_g@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] power: gpio-charger: add device tree support
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: sre@kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Kukjin Kim <kgene@kernel.org>
+CC: =?UTF-8?B?J0FuZHJlYXMgRsOkcmJlcic=?= <afaerber@suse.de>,
+        "'Doug Anderson'" <dianders@chromium.org>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, "'Daniel Drake'" <drake@endlessm.com>,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow
+References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk> <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com> <5419ADF9.3010509@suse.de> <00f801cfd6f6$07e10500$17a30f00$@kernel.org>
+In-Reply-To: <00f801cfd6f6$07e10500$17a30f00$@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko,
-
-On Tue, Sep 23, 2014 at 5:03 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Montag, 22. September 2014, 09:48:33 schrieb Doug Anderson:
->> > @@ -196,6 +255,7 @@ static struct platform_driver gpio_charger_driver = {
->> >
->> >                 .name = "gpio-charger",
->> >                 .owner = THIS_MODULE,
->> >                 .pm = &gpio_charger_pm_ops,
->> >
->> > +               .of_match_table = of_match_ptr(gpio_charger_match),
->>
->> Given that you don't have any #ifdefs with "CONFIG_OF", I think
->> gpio_charger_match will always exist.  It seems like you should remove
->> the of_match_ptr or add some #ifdefs.  I can't quite keep up with what
->> the currently suggested best practice is here, though.
+On 09/23/14 15:17, Kukjin Kim wrote:
+> Kukjin Kim wrote:
+>>>
+>> Andreas Färber wrote:
 >
-> I've kept the of_match_ptr in v3. The dt parsing functions (of_read_foo,...)
-> define stubs for the !CONFIG_OF case which we use here in this case and
-> of_match_ptr is also defined differently for both OF and !OF, so it feels like
-> it should be there ;-)
+> [...]
+>
+>>>> Kukjin: Andreas's patch series was Reviewed long ago I think and by
+>>>> now I'd imagine it's got some conflicts due to it not having been
+>>>> applied in a timely fashion.  Perhaps you could fix it up for Andreas
+>>>> (since he's already rebased it several times) and land it?
+>>>>
+>>>> If I had to guess, outstanding from Andreas's series (patchwork IDs listed):
+>>>>
+>>>> 4751131 New          [v7] ARM: dts: Prepare node labels for exynos5250
+>>>> 4664801 New          [v6,04/10] ARM: dts: Clean up exynos5250-snow
+>>>> 4664771 New          [v6,05/10] ARM: dts: Fill in bootargs for exynos5250-snow
+>>>> 4664731 New          [v6,06/10] ARM: dts: Clean up exynos5250-smdk5250
+>>>> 4664751 New          [v6,07/10] ARM: dts: Clean up exynos5250-arndale
+>>>> 4664711 New          [v6,08/10] ARM: dts: Fix apparent GPIO typo in
+>>>> exynos5250-arndale
+>>>> 4664681 New          [v6,09/10] ARM: dts: Simplify USB3503 on exynos5250-arndale
+>>>> 4664691 New          [v6,10/10] ARM: dts: Add exynos5250-spring device tree
+>>>
+>>> Yes, Kukjin told me not to resend anything, and I haven't heard back
+>>> from him since his Kernel Summit trip.
+>>>
+>> Sorry about that and I thought I took them :( I'll sort them out tonight
+>> including this series together.
+>>
+> Hmm...since some conflicts with dp and mmc_slot related patches, I couldn't,
+> but Andreas' patches will be handled by tonight :(
+>
+> - Kukjin
 
-...I was thinking you'd get a compile-time warning about
-gpio_charger_match not being used.  ...but I can't seem to trigger it
-with my compiler settings.  In any case, I'm fairly certain that in
-the !CONFIG_OF case (plus non-module case) that "gpio_charger_match"
-will be defined but not used in your code.
+I've applied above and this series and please double-check the commits 
+in my tree. If no problems, I will send the branch out for v3.18 soon...
 
-I was under the impression that of_match_ptr was defined differently
-for OF and !OF so that you could use it in the case where the
-structure itself (gpio_charger_match) had #ifdefs around it...
+Thanks,
+Kukjin
