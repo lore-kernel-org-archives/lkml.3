@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489AbaIWKaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:30:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755466AbaIWK3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:29:04 -0400
-Date: Tue, 23 Sep 2014 13:32:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH RFC] virtio_pci: fix virtio spec compliance on restore
-Message-ID: <1411468217-18130-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+	id S1755710AbaIWKcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:32:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55875 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754797AbaIWK2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 06:28:53 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 08/12] Documentation: bindings: add doc for the USB2 ChipIdea USB driver
+Date: Tue, 23 Sep 2014 12:28:04 +0200
+Message-Id: <1411468088-5702-9-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On restore, virtio pci does the following:
-+ set features
-+ init vqs etc - device can be used at this point!
-+ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
+Document the USB2 ChipIdea driver (ci13xxx) bindings.
 
-This is in violation of the virtio spec, which
-requires the following order:
-- ACKNOWLEDGE
-- DRIVER
-- init vqs
-- DRIVER_OK
-
-Cc: stable@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
+ .../devicetree/bindings/usb/ci-hdrc-usb2.txt       | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
 
-Lightly tested.
-Will repost as non-RFC once testing is done, sending
-out now for early flames/comments.
-
-Thanks!
-
- drivers/virtio/virtio_pci.c | 36 ++++++++++++++++++++++++++++++++----
- 1 file changed, 32 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 58f7e45..58cbf6e 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -785,6 +785,7 @@ static int virtio_pci_restore(struct device *dev)
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
- 	struct virtio_driver *drv;
-+	unsigned status = 0;
- 	int ret;
- 
- 	drv = container_of(vp_dev->vdev.dev.driver,
-@@ -795,14 +796,41 @@ static int virtio_pci_restore(struct device *dev)
- 		return ret;
- 
- 	pci_set_master(pci_dev);
-+	/* We always start by resetting the device, in case a previous
-+	 * driver messed it up. */
-+	vp_reset(&vp_dev->vdev);
+diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+new file mode 100644
+index 000000000000..8dd6d8285dab
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+@@ -0,0 +1,22 @@
++* USB2 ChipIdea USB controller for ci13xxx
 +
-+	/* Acknowledge that we've seen the device. */
-+	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
-+	vp_set_status(&vp_dev->vdev, status);
++Required properties:
++- compatible: should be "chipidea,usb2"
++- reg: base address and length of the registers
++- interrupts: interrupt for the USB controller
 +
-+	/* Maybe driver failed before freeze.
-+	 * Restore the failed status, for debugging. */
-+	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
-+	vp_set_status(&vp_dev->vdev, status);
++Optional properties:
++- clocks: reference to the USB clock
++- phys: reference to the USB PHY
++- vbus-supply: reference to the VBUS regulator
 +
-+	if (!drv)
-+		return 0;
++Example:
 +
-+	/* We have a driver! */
-+	status |= VIRTIO_CONFIG_S_DRIVER;
-+	vp_set_status(&vp_dev->vdev, status);
-+
- 	vp_finalize_features(&vp_dev->vdev);
- 
--	if (drv && drv->restore)
--		ret = drv->restore(&vp_dev->vdev);
-+	if (!drv->restore)
-+		return 0;
-+
-+	ret = drv->restore(&vp_dev->vdev);
-+	if (ret) {
-+		status |= VIRTIO_CONFIG_S_FAILED;
-+		vp_set_status(&vp_dev->vdev, status);
-+		return ret;
-+	}
- 
- 	/* Finally, tell the device we're all set */
--	if (!ret)
--		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
-+	status |= VIRTIO_CONFIG_S_DRIVER_OK;
-+	vp_set_status(&vp_dev->vdev, status);
- 
- 	return ret;
- }
++	usb@f7ed0000 {
++		compatible = "chipidea,usb2";
++		reg = <0xf7ed0000 0x10000>;
++		interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&chip CLKID_USB0>;
++		phys = <&usb_phy0>;
++		vbus-supply = <&reg_usb0_vbus>;
++	};
 -- 
-MST
+1.9.1
+
