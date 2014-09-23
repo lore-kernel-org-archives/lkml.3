@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037AbaIWCp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:45:26 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:52371 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaIWCpX (ORCPT
+	id S1756011AbaIWCpD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:45:03 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:47113 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239AbaIWCpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:45:23 -0400
-Date: Tue, 23 Sep 2014 02:44:51 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-cc: Michael Mullin <masmullin@gmail.com>, Peter Huewe <peterhuewe@gmx.de>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v8] tpm_tis: verify interrupt during init
-In-Reply-To: <20140922171338.GB28082@obsidianresearch.com>
-Message-ID: <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain>
-References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com> <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com>
- <alpine.LNX.2.11.1408302229001.579@localhost.localdomain> <20140902172015.GD13956@obsidianresearch.com> <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain> <20140908220238.GB6204@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
- <20140922171338.GB28082@obsidianresearch.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Mon, 22 Sep 2014 22:45:00 -0400
+From: Chen Yucong <slaoub@gmail.com>
+To: gleb@kernel.org
+Cc: pbonzini@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH] x86, kvm: use macros to compute bank MSRs
+Date: Tue, 23 Sep 2014 10:44:35 +0800
+Message-Id: <1411440275-24631-1-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Jason Gunthorpe wrote:
+Avoid open coded calculations for bank MSRs by using well-defined
+macros that hide the index of higher bank MSRs.
 
-> On Thu, Sep 11, 2014 at 12:50:00AM +0000, Scot Doyle wrote:
->> +	if (!priv->irq_tested) {
->
-> I think the sleep and check is still needed here, the IRQ delivery
-> could race relative to the MMIO read of completion, a sleep is the
-> only way we could attempt to synchronize them..
->
->> +		disable_interrupts(chip);
->> +		dev_err(chip->dev,
->> +			FW_BUG "TPM interrupt not working, polling instead\n");
->> +	}
->> +	priv->irq_tested = true;
->> +	return rc;
->> +}
+No semantic changes.
 
-We re-tested this v9 patch. It has the msleep(1) added just above this 
-section for better formatting, as well as a devm_kzalloc check in 
-tpm_tis_init. Thanks!
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ arch/x86/kvm/x86.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 31e55ae..e8c1e3b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1825,7 +1825,7 @@ static int set_msr_mce(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		break;
+ 	default:
+ 		if (msr >= MSR_IA32_MC0_CTL &&
+-		    msr < MSR_IA32_MC0_CTL + 4 * bank_num) {
++		    msr < MSR_IA32_MCx_CTL(bank_num)) {
+ 			u32 offset = msr - MSR_IA32_MC0_CTL;
+ 			/* only 0 or all 1s can be written to IA32_MCi_CTL
+ 			 * some Linux kernels though clear bit 10 in bank 4 to
+@@ -2184,7 +2184,7 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 
+ 	case MSR_IA32_MCG_CTL:
+ 	case MSR_IA32_MCG_STATUS:
+-	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
++	case MSR_IA32_MC0_CTL ... MSR_IA32_MCx_CTL(KVM_MAX_MCE_BANKS) - 1:
+ 		return set_msr_mce(vcpu, msr, data);
+ 
+ 	/* Performance counters are not protected by a CPUID bit,
+@@ -2350,7 +2350,7 @@ static int get_msr_mce(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 		break;
+ 	default:
+ 		if (msr >= MSR_IA32_MC0_CTL &&
+-		    msr < MSR_IA32_MC0_CTL + 4 * bank_num) {
++		    msr < MSR_IA32_MCx_CTL(bank_num)) {
+ 			u32 offset = msr - MSR_IA32_MC0_CTL;
+ 			data = vcpu->arch.mce_banks[offset];
+ 			break;
+@@ -2531,7 +2531,7 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 	case MSR_IA32_MCG_CAP:
+ 	case MSR_IA32_MCG_CTL:
+ 	case MSR_IA32_MCG_STATUS:
+-	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
++	case MSR_IA32_MC0_CTL ... MSR_IA32_MCx_CTL(KVM_MAX_MCE_BANKS) - 1:
+ 		return get_msr_mce(vcpu, msr, pdata);
+ 	case MSR_K7_CLK_CTL:
+ 		/*
+-- 
+1.7.10.4
+
