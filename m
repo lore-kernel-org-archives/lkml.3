@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862AbaIWUsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:48:45 -0400
-Received: from mout.gmx.net ([212.227.15.18]:58926 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756188AbaIWUso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:48:44 -0400
-Message-ID: <5421DC9F.2080504@gmx.de>
-Date: Tue, 23 Sep 2014 22:48:31 +0200
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: nick <yocto6@gmail.com>, jejb@parisc-linux.org
-CC: akpm@linux-foundation.org, himangi774@gmail.com, julia.lawall@lip6.fr,
-        mgorman@suse.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: FIX MES in init.c
-References: <54207769.2020105@gmail.com>
-In-Reply-To: <54207769.2020105@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756807AbaIWUxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:53:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37741 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaIWUxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:53:00 -0400
+Date: Tue, 23 Sep 2014 13:52:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Michal Hocko <mhocko@suse.cz>, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH] mm, debug: mm-introduce-vm_bug_on_mm-fix-fix.patch
+Message-Id: <20140923135258.faf628403a58701da5a981df@linux-foundation.org>
+In-Reply-To: <83907.1411489189@turing-police.cc.vt.edu>
+References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
+	<1411464279-20158-1-git-send-email-mhocko@suse.cz>
+	<20140923112848.GA10046@dhcp22.suse.cz>
+	<83907.1411489189@turing-police.cc.vt.edu>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:l+ZLCrs8DcuvxUhyf5+6J5tNUNbDb5UgINHDzfmKFhUpZF9v85x
- sTdtFlTTvL3uDCvvvRHBJgoRjk2GZyVfVl0PYiSp8VLHg/2RH8m7NvsFpAtWGM4mpQZI/ZO
- 986IJzVqjEu+QQMfnDyHjud6kCxw+hECs3Wbev2un6PhSlPLAG0qKYpnwhvxlzvf2HWuW9B
- 5sz37i6IFT0/NKCUf+wEQ==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+On Tue, 23 Sep 2014 12:19:49 -0400 Valdis.Kletnieks@vt.edu wrote:
 
-On 09/22/2014 09:24 PM, nick wrote:
-> Greetings James and Other Maintainers of the Parisc Architecture,
-> I am wondering about two fix mes in init.c and how to fix them
-> for being const declared into actual variables.
-> ...
-> 	/* FIXME: This is 'const' in order to trick the compiler
-> 	   into not treating it as DP-relative data. */
-> 	extern void * const linux_gateway_page;
+> On Tue, 23 Sep 2014 13:28:48 +0200, Michal Hocko said:
+> > And there is another one hitting during randconfig. The patch makes my
+> > eyes bleed
+> 
+> Amen.  But I'm not seeing a better fix either.
+> 
+> >  #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+> > -		"tlb_flush_pending %d\n",
+> > +		"tlb_flush_pending %d\n"
+> >  #endif
+> > -		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
+> > +		, mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
+> 
+> I'm surprised that checkpatch doesn't explode on this.  And I'm starting
+> a pool on how soon somebody submits a patch to "fix" this. :)
 
-The FIXME: is misleading. It should maybe better read "HINT:" or something like that.
-Trivially it's basically just casting the symbol so that the compiler
-will produce the correct code later on.
-There is nothing you could try to "fix".
+It is all pretty godawful.  We can eliminate the tricks with the comma
+separators by adding an always-there, does-nothing argument:
 
-Helge
+
+--- a/mm/debug.c~mm-debug-mm-introduce-vm_bug_on_mm-fix-fixpatch-fix
++++ a/mm/debug.c
+@@ -197,7 +197,9 @@ void dump_mm(const struct mm_struct *mm)
+ #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+ 		"tlb_flush_pending %d\n"
+ #endif
+-		, mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
++		"%s",	/* This is here to hold the comma */
++
++		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
+ #ifdef CONFIG_MMU
+ 		mm->get_unmapped_area,
+ #endif
+@@ -218,16 +220,17 @@ void dump_mm(const struct mm_struct *mm)
+ #ifdef CONFIG_MEMCG
+ 		mm->owner,
+ #endif
+-		mm->exe_file
++		mm->exe_file,
+ #ifdef CONFIG_MMU_NOTIFIER
+-		, mm->mmu_notifier_mm
++		mm->mmu_notifier_mm,
+ #endif
+ #ifdef CONFIG_NUMA_BALANCING
+-		, mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq
++		mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq,
+ #endif
+ #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+-		, mm->tlb_flush_pending
++		mm->tlb_flush_pending,
+ #endif
++		""		/* This is here to not have a comma! */
+ 		);
+ 
+ 		dump_flags(mm->def_flags, vmaflags_names,
+_
+
