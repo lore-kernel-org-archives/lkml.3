@@ -1,69 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaIWR7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:59:31 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57194 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755687AbaIWR7a (ORCPT
+	id S1756291AbaIWSA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:00:28 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:61848 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755742AbaIWSA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:59:30 -0400
-Message-ID: <1411495166.24045.7.camel@x220>
-Subject: Re: randconfig build error with next-20140923, in
- drivers/media/mmc/siano/smssdio.c
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        "m.chehab" <m.chehab@samsung.com>
-Date: Tue, 23 Sep 2014 19:59:26 +0200
-In-Reply-To: <CA+r1ZhhmizMMUkAABL9xT=XstAwhP1O-bs=7YBLBvi_=8TZ9Ng@mail.gmail.com>
-References: <CA+r1ZhhmizMMUkAABL9xT=XstAwhP1O-bs=7YBLBvi_=8TZ9Ng@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Sep 2014 17:59:26.0105 (UTC) FILETIME=[1D05D890:01CFD758]
-X-RcptDomain: vger.kernel.org
+	Tue, 23 Sep 2014 14:00:27 -0400
+Date: Tue, 23 Sep 2014 20:00:23 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 2/3] memcg: don't call memcg_update_all_caches if new
+ cache id fits
+Message-ID: <20140923180023.GB29528@dhcp22.suse.cz>
+References: <cover.1411401021.git.vdavydov@parallels.com>
+ <3a44c70517de91297bd82c944da4c95468ddd91d.1411401021.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3a44c70517de91297bd82c944da4c95468ddd91d.1411401021.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 09:38 -0700, Jim Davis wrote:
-> Building with the attached random configuration file,
+On Mon 22-09-14 20:00:45, Vladimir Davydov wrote:
+> memcg_update_all_caches grows arrays of per-memcg caches, so we only
+> need to call it when memcg_limited_groups_array_size is increased.
+> However, currently we invoke it each time a new kmem-active memory
+> cgroup is created. Then it just iterates over all slab_caches and does
+> nothinng (memcg_update_cache_size returns immediately).
 > 
-> drivers/built-in.o: In function `smssdio_remove':
-> smssdio.c:(.text+0x14751c): undefined reference to `smscore_putbuffer'
-> smssdio.c:(.text+0x147526): undefined reference to `smscore_unregister_device'
-> drivers/built-in.o: In function `smssdio_interrupt':
-> smssdio.c:(.text+0x1475aa): undefined reference to `smscore_getbuffer'
-> smssdio.c:(.text+0x147695): undefined reference to `smscore_putbuffer'
-> smssdio.c:(.text+0x1476f3): undefined reference to `smscore_putbuffer'
-> smssdio.c:(.text+0x14772a): undefined reference to `smsendian_handle_rx_message'
-> smssdio.c:(.text+0x147737): undefined reference to `smscore_onresponse'
-> drivers/built-in.o: In function `smssdio_sendrequest':
-> smssdio.c:(.text+0x14776c): undefined reference to `smsendian_handle_tx_message'
-> drivers/built-in.o: In function `smssdio_probe':
-> smssdio.c:(.text+0x14786c): undefined reference to `sms_get_board'
-> smssdio.c:(.text+0x14788a): undefined reference to `smscore_register_device'
-> smssdio.c:(.text+0x1478a1): undefined reference to `smscore_set_board_id'
-> smssdio.c:(.text+0x1478fa): undefined reference to `smscore_start_device'
-> smssdio.c:(.text+0x14792d): undefined reference to `smscore_unregister_device'
-> make: *** [vmlinux] Error 1
+> This patch fixes this insanity. In the meantime it moves the code
+> dealing with id allocations to separate functions, memcg_alloc_cache_id
+> and memcg_free_cache_id.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-#
-# Automatically generated file; DO NOT EDIT.
-# Linux/x86 3.17.0-rc6 Kernel Configuration
-#
-[...]
-CONFIG_SMS_SDIO_DRV=y
-[...]
-CONFIG_SMS_SIANO_MDTV=m
-[...]
+OK, looks good to me
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Should SMS_SDIO_DRV depend on SMS_SIANO_MDTV?
+Thanks!
+> ---
+>  mm/memcontrol.c |  136 +++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 72 insertions(+), 64 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b6bbb1e3e2ab..55d131645b45 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -646,11 +646,13 @@ int memcg_limited_groups_array_size;
+>  struct static_key memcg_kmem_enabled_key;
+>  EXPORT_SYMBOL(memcg_kmem_enabled_key);
+>  
+> +static void memcg_free_cache_id(int id);
+> +
+>  static void disarm_kmem_keys(struct mem_cgroup *memcg)
+>  {
+>  	if (memcg_kmem_is_active(memcg)) {
+>  		static_key_slow_dec(&memcg_kmem_enabled_key);
+> -		ida_simple_remove(&kmem_limited_groups, memcg->kmemcg_id);
+> +		memcg_free_cache_id(memcg->kmemcg_id);
+>  	}
+>  	/*
+>  	 * This check can't live in kmem destruction function,
+> @@ -2892,19 +2894,44 @@ int memcg_cache_id(struct mem_cgroup *memcg)
+>  	return memcg ? memcg->kmemcg_id : -1;
+>  }
+>  
+> -static size_t memcg_caches_array_size(int num_groups)
+> +static int memcg_alloc_cache_id(void)
+>  {
+> -	ssize_t size;
+> -	if (num_groups <= 0)
+> -		return 0;
+> +	int id, size;
+> +	int err;
+> +
+> +	id = ida_simple_get(&kmem_limited_groups,
+> +			    0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
+> +	if (id < 0)
+> +		return id;
+>  
+> -	size = 2 * num_groups;
+> +	if (id < memcg_limited_groups_array_size)
+> +		return id;
+> +
+> +	/*
+> +	 * There's no space for the new id in memcg_caches arrays,
+> +	 * so we have to grow them.
+> +	 */
+> +
+> +	size = 2 * (id + 1);
+>  	if (size < MEMCG_CACHES_MIN_SIZE)
+>  		size = MEMCG_CACHES_MIN_SIZE;
+>  	else if (size > MEMCG_CACHES_MAX_SIZE)
+>  		size = MEMCG_CACHES_MAX_SIZE;
+>  
+> -	return size;
+> +	mutex_lock(&memcg_slab_mutex);
+> +	err = memcg_update_all_caches(size);
+> +	mutex_unlock(&memcg_slab_mutex);
+> +
+> +	if (err) {
+> +		ida_simple_remove(&kmem_limited_groups, id);
+> +		return err;
+> +	}
+> +	return id;
+> +}
+> +
+> +static void memcg_free_cache_id(int id)
+> +{
+> +	ida_simple_remove(&kmem_limited_groups, id);
+>  }
+>  
+>  /*
+> @@ -2914,59 +2941,55 @@ static size_t memcg_caches_array_size(int num_groups)
+>   */
+>  void memcg_update_array_size(int num)
+>  {
+> -	if (num > memcg_limited_groups_array_size)
+> -		memcg_limited_groups_array_size = memcg_caches_array_size(num);
+> +	memcg_limited_groups_array_size = num;
+>  }
+>  
+>  int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>  {
+>  	struct memcg_cache_params *cur_params = s->memcg_params;
+> +	struct memcg_cache_params *new_params;
+> +	size_t size;
+> +	int i;
+>  
+>  	VM_BUG_ON(!is_root_cache(s));
+>  
+> -	if (num_groups > memcg_limited_groups_array_size) {
+> -		int i;
+> -		struct memcg_cache_params *new_params;
+> -		ssize_t size = memcg_caches_array_size(num_groups);
+> +	size = num_groups * sizeof(void *);
+> +	size += offsetof(struct memcg_cache_params, memcg_caches);
+>  
+> -		size *= sizeof(void *);
+> -		size += offsetof(struct memcg_cache_params, memcg_caches);
+> -
+> -		new_params = kzalloc(size, GFP_KERNEL);
+> -		if (!new_params)
+> -			return -ENOMEM;
+> -
+> -		new_params->is_root_cache = true;
+> +	new_params = kzalloc(size, GFP_KERNEL);
+> +	if (!new_params)
+> +		return -ENOMEM;
+>  
+> -		/*
+> -		 * There is the chance it will be bigger than
+> -		 * memcg_limited_groups_array_size, if we failed an allocation
+> -		 * in a cache, in which case all caches updated before it, will
+> -		 * have a bigger array.
+> -		 *
+> -		 * But if that is the case, the data after
+> -		 * memcg_limited_groups_array_size is certainly unused
+> -		 */
+> -		for (i = 0; i < memcg_limited_groups_array_size; i++) {
+> -			if (!cur_params->memcg_caches[i])
+> -				continue;
+> -			new_params->memcg_caches[i] =
+> -						cur_params->memcg_caches[i];
+> -		}
+> +	new_params->is_root_cache = true;
+>  
+> -		/*
+> -		 * Ideally, we would wait until all caches succeed, and only
+> -		 * then free the old one. But this is not worth the extra
+> -		 * pointer per-cache we'd have to have for this.
+> -		 *
+> -		 * It is not a big deal if some caches are left with a size
+> -		 * bigger than the others. And all updates will reset this
+> -		 * anyway.
+> -		 */
+> -		rcu_assign_pointer(s->memcg_params, new_params);
+> -		if (cur_params)
+> -			kfree_rcu(cur_params, rcu_head);
+> +	/*
+> +	 * There is the chance it will be bigger than
+> +	 * memcg_limited_groups_array_size, if we failed an allocation
+> +	 * in a cache, in which case all caches updated before it, will
+> +	 * have a bigger array.
+> +	 *
+> +	 * But if that is the case, the data after
+> +	 * memcg_limited_groups_array_size is certainly unused
+> +	 */
+> +	for (i = 0; i < memcg_limited_groups_array_size; i++) {
+> +		if (!cur_params->memcg_caches[i])
+> +			continue;
+> +		new_params->memcg_caches[i] =
+> +			cur_params->memcg_caches[i];
+>  	}
+> +
+> +	/*
+> +	 * Ideally, we would wait until all caches succeed, and only
+> +	 * then free the old one. But this is not worth the extra
+> +	 * pointer per-cache we'd have to have for this.
+> +	 *
+> +	 * It is not a big deal if some caches are left with a size
+> +	 * bigger than the others. And all updates will reset this
+> +	 * anyway.
+> +	 */
+> +	rcu_assign_pointer(s->memcg_params, new_params);
+> +	if (cur_params)
+> +		kfree_rcu(cur_params, rcu_head);
+>  	return 0;
+>  }
+>  
+> @@ -4167,23 +4190,12 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
+>  	if (err)
+>  		goto out;
+>  
+> -	memcg_id = ida_simple_get(&kmem_limited_groups,
+> -				  0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
+> +	memcg_id = memcg_alloc_cache_id();
+>  	if (memcg_id < 0) {
+>  		err = memcg_id;
+>  		goto out;
+>  	}
+>  
+> -	/*
+> -	 * Make sure we have enough space for this cgroup in each root cache's
+> -	 * memcg_params.
+> -	 */
+> -	mutex_lock(&memcg_slab_mutex);
+> -	err = memcg_update_all_caches(memcg_id + 1);
+> -	mutex_unlock(&memcg_slab_mutex);
+> -	if (err)
+> -		goto out_rmid;
+> -
+>  	memcg->kmemcg_id = memcg_id;
+>  	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
+>  
+> @@ -4204,10 +4216,6 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
+>  out:
+>  	memcg_resume_kmem_account();
+>  	return err;
+> -
+> -out_rmid:
+> -	ida_simple_remove(&kmem_limited_groups, memcg_id);
+> -	goto out;
+>  }
+>  
+>  static int memcg_activate_kmem(struct mem_cgroup *memcg,
+> -- 
+> 1.7.10.4
+> 
 
-
-Paul Bolle
-
+-- 
+Michal Hocko
+SUSE Labs
