@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbaIWBoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 21:44:05 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29715 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaIWBoD (ORCPT
+	id S1755109AbaIWBus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 21:50:48 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43946 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379AbaIWBur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 21:44:03 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: akpm@linuxfoundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] mm: fix build breakage in dump_mm if CONFIG_MEMCG is not set
-Date: Mon, 22 Sep 2014 21:43:49 -0400
-Message-Id: <1411436629-12764-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 22 Sep 2014 21:50:47 -0400
+Message-ID: <5420D341.9060301@gmail.com>
+Date: Tue, 23 Sep 2014 09:56:17 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3 v2] xen/xenbus: Improve failure processing
+ code for __xenbus_switch_state()
+References: <541AE4E9.2040904@gmail.com> <541AE5C4.2070409@gmail.com> <54203A73.8030103@citrix.com> <5420456C.4010103@gmail.com> <542047EA.6090202@citrix.com>
+In-Reply-To: <542047EA.6090202@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mm_struct->owner is only available if CONFIG_MEMCG is set, fix build
-by taking that into account.
+On 9/23/14 0:01, David Vrabel wrote:
+> On 22/09/14 16:51, Chen Gang wrote:
+>> On 09/22/2014 11:04 PM, David Vrabel wrote:
+>>> On 18/09/14 15:01, Chen Gang wrote:
+>>>> When failure occurs, need return failure code instead of 0, or some of
+>>>> indirect upper callers may misunderstand.
+>>>>
+>>>> e.g. in "block/xen-blkback/xenbus.c":
+>>>>
+>>>>     connect() -> xenbus_switch_state() -> __xenbus_switch_state().
+>>>
+>>> Can you make xenbus_switch_state() void?  The callers don't need to do
+>>> any error handling.
+>>>
+>>
+>> After "grep rn xenbus_switch_state *" under "drivers/", it is not one
+>> place to check the return value of xenbus_switch_state(), and also it
+>> is export to outside for individual modules.
+>>
+>> So we need change many subsystems for it, and also need face the rick
+>> for incompatible with the old individual modules which source code are
+>> not in upstream.
+> 
+> Having to update 9 callers doesn't seem like much work.
+> 
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- mm/debug.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+OK, thanks, and I guess, we need not care about the individual modules
+which source code are not in upstream.
 
-diff --git a/mm/debug.c b/mm/debug.c
-index 281abb2..544d8f6 100644
---- a/mm/debug.c
-+++ b/mm/debug.c
-@@ -181,7 +181,10 @@ void dump_mm(const struct mm_struct *mm)
- #ifdef CONFIG_AIO
- 		"ioctx_table %p\n"
- #endif
--		"owner %p exe_file %p\n"
-+#ifdef CONFIG_MEMCG
-+		"owner %p\n"
-+#endif
-+		"exe_file %p\n"
- #ifdef CONFIG_MMU_NOTIFIER
- 		"mmu_notifier_mm %p\n"
- #endif
-@@ -209,7 +212,10 @@ void dump_mm(const struct mm_struct *mm)
- #ifdef CONFIG_AIO
- 		mm->ioctx_table,
- #endif
--		mm->owner, mm->exe_file,
-+#ifdef CONFIG_MEMCG
-+		mm->owner,
-+#endif
-+		mm->exe_file,
- #ifdef CONFIG_MMU_NOTIFIER
- 		mm->mmu_notifier_mm,
- #endif
+>> And are you sure the caller need not notice about it, when it really
+>> fails? (for me, I guess they need notice about it)
+> 
+> Yes.  xenbus_switch_state() already signals the fatal error to the
+> toolstack with xenbus_dev_fatal().
+> 
+
+OK, what you said sound reasonable to me, I shall send patch v3 for it
+within this week (do not consider about the individual modules which
+source code are not in upstream).
+
+
+Thanks.
 -- 
-1.7.10.4
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
