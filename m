@@ -1,144 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaIWGgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:36:36 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46876 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaIWGge (ORCPT
+	id S1753883AbaIWGhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:37:21 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:51635 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745AbaIWGhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:36:34 -0400
-Message-ID: <542114D7.3030605@gmail.com>
-Date: Tue, 23 Sep 2014 14:36:07 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 23 Sep 2014 02:37:18 -0400
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased during
- cpu hotplug
-References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com> <5420FB25.8050102@jp.fujitsu.com>
-In-Reply-To: <5420FB25.8050102@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54210D7B.8030103@huawei.com>
+References: <54210D3F.2090409@huawei.com>
+	<54210D7B.8030103@huawei.com>
+Date: Mon, 22 Sep 2014 23:37:17 -0700
+X-Google-Sender-Auth: UGDVD6_hkKmsLXk3jtCIJr96_sk
+Message-ID: <CAGXu5jJKNJ=PsTtkPaoMyCNf2fK07szP-hv4NdaiDVx4tHacQw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] sched: add a macro to define bitops for task
+ atomic flags
+From: Kees Cook <keescook@chromium.org>
+To: Zefan Li <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Miao Xie <miaox@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kamezawa,
-于 14-9-23 下午12:46, Kamezawa Hiroyuki 写道:
-> (2014/09/17 16:17), Wanpeng Li wrote:
->> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
->> IP: [..] find_busiest_group
->> PGD 5a9d5067 PUD 13067 PMD 0
->> Oops: 0000 [#3] SMP
->> [...]
->> Call Trace:
->> load_balance
->> ? _raw_spin_unlock_irqrestore
->> idle_balance
->> __schedule
->> schedule
->> schedule_timeout
->> ? lock_timer_base
->> schedule_timeout_uninterruptible
->> msleep
->> lock_device_hotplug_sysfs
->> online_store
->> dev_attr_store
->> sysfs_write_file
->> vfs_write
->> SyS_write
->> system_call_fastpath
->>
->> This bug can be triggered by hot add and remove large number of xen
->> domain0's vcpus repeatedly.
->>
->> Last level cache shared map is built during cpu up and build sched domain
->> routine takes advantage of it to setup sched domain cpu topology, however,
->> llc shared map is unreleased during cpu disable which lead to invalid sched
->> domain cpu topology. This patch fix it by release llc shared map correctly
->> during cpu disable.
->>
->> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
->> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Tested-by: Linn Crosetto <linn@hp.com>
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> Yasuaki reported this can happen on our real hardware. 
-> https://lkml.org/lkml/2014/7/22/1018
+On Mon, Sep 22, 2014 at 11:04 PM, Zefan Li <lizefan@huawei.com> wrote:
+> This will simplify code when we add new flags.
 >
-> Our case is here.
-> ==
-> Here is a example on my system.
-> My system has 4 sockets and each socket has 15 cores and HT is enabled.
-> In this case, each core of sockes is numbered as follows:
+> v2:
+> - updated scripts/tags.sh, suggested by Peter
 >
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-44, 90-104
-> Socket#3 | 45-59, 105-119
-> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-> It means that last level cache of Socket#2 is shared with
-> CPU#30-44 and 90-104.
-> When hot-removing socket#2 and #3, each core of sockets is numbered
-> as follows:
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Miao Xie <miaox@cn.fujitsu.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
+> ---
+>  include/linux/sched.h | 20 +++++++++++---------
+>  scripts/tags.sh       |  6 ++++++
+>  2 files changed, 17 insertions(+), 9 deletions(-)
 >
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-> having 0x3fff80000001fffc0000000.
-> After that, when hot-adding socket#2 and #3, each core of sockets is
-> numbered as follows:
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 4557765..04a2ae2 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1959,15 +1959,17 @@ static inline void memalloc_noio_restore(unsigned int flags)
+>  /* Per-process atomic flags. */
+>  #define PFA_NO_NEW_PRIVS 0     /* May not gain new privileges. */
 >
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-59
-> Socket#3 | 90-119
-> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-> It means that last level cache of Socket#2 is shared with CPU#30-59
-> and 90-104. So the mask has wrong value.
-> At first, I cleared hot-removed CPU number's bit from llc_shared_map
-> when hot removing CPU. But Borislav suggested that the problem will
-> disappear if readded CPU is assigned same CPU number. And llc_shared_map
-> must not be changed.
-> ==
->
-> So, please.
+> -static inline bool task_no_new_privs(struct task_struct *p)
+> -{
+> -       return test_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
+> -}
+> -
+> -static inline void task_set_no_new_privs(struct task_struct *p)
+> -{
+> -       set_bit(PFA_NO_NEW_PRIVS, &p->atomic_flags);
+> -}
+> +#define TASK_PFA_BITOPS(name, func)                            \
+> +static inline bool task_##func(struct task_struct *p)          \
+> +{ return test_bit(PFA_##name, &p->atomic_flags); }             \
+> +                                                               \
+> +static inline void task_set_##func(struct task_struct *p)      \
+> +{ set_bit(PFA_##name, &p->atomic_flags); }                     \
+> +                                                               \
+> +static inline void task_clear_##func(struct task_struct *p)    \
+> +{ clear_bit(PFA_##name, &p->atomic_flags); }
+> +
+> +TASK_PFA_BITOPS(NO_NEW_PRIVS, no_new_privs)
 
-As I mentioned before, we still observe calltrace after Yasuaki's patch
-applied.
-https://lkml.org/lkml/2014/7/29/40
+One thing I don't like about this is that task_clear_no_new_privs()
+ends up getting defined, and it should absolutely never be used. NNP
+should never be cleared or there could be security issues. I realize
+this isn't a very useful nit-pick, but I'd rather the function wasn't
+even available for someone to accidentally use. Maybe break up the
+macro with some kind of "write only" version like:
 
-Actually I prefer to merge both patches, one for fix llc shared map
-unreleased during hotplug and the other one for assign same CPU number
-to readded CPU.
+#define TASK_PFA_BITOPS_WO(name, func)                            \
+static inline bool task_##func(struct task_struct *p)          \
+{ return test_bit(PFA_##name, &p->atomic_flags); }             \
+static inline void task_set_##func(struct task_struct *p)      \
+{ set_bit(PFA_##name, &p->atomic_flags); }
 
-Regards,
-Wanpeng Li
+#define TASK_PFA_BITOPS(name, func)                            \
+TASK_PFA_BITOPS_WO(name, func);          \
+static inline void task_clear_##func(struct task_struct *p)    \
+{ clear_bit(PFA_##name, &p->atomic_flags); }
 
-> Thanks,
-> -Kame
+TASK_PFA_BITOPS_WO(NO_NEW_PRIVS, no_new_privs)
+
+And then all the new users can use TASK_PFA_BITOPS() normally since
+they expect to use "clear"?
+
+-Kees
+
 >
->
->
->
->
->
->
+>  /*
+>   * task->jobctl flags
+> diff --git a/scripts/tags.sh b/scripts/tags.sh
+> index cbfd269..8591b57 100755
+> --- a/scripts/tags.sh
+> +++ b/scripts/tags.sh
+> @@ -197,6 +197,9 @@ exuberant()
+>         --regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'          \
+>         --regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'      \
+>         --regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+> +       --regex-c++='/TASK_PFA_BITOPS\([^,]*,\s*([^)]*)\)/task_\1/'     \
+> +       --regex-c++='/TASK_PFA_BITOPS\([^,]*,\s*([^)]*)\)/task_set_\1/' \
+> +       --regex-c++='/TASK_PFA_BITOPS\([^,]*,\s*([^)]*)\)/task_clear_\1/'  \
+>         --regex-c='/PCI_OP_READ\((\w*).*[1-4]\)/pci_bus_read_config_\1/' \
+>         --regex-c='/PCI_OP_WRITE\((\w*).*[1-4]\)/pci_bus_write_config_\1/' \
+>         --regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'     \
+> @@ -260,6 +263,9 @@ emacs()
+>         --regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'      \
+>         --regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'  \
+>         --regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+> +       --regex='/TASK_PFA_BITOPS\([^,]*,\s*([^)]*)\)/task_\1/' \
+> +       --regex='/TASK_PFA_BITOPS\([^,]*,\s*([^)]*)\)/task_set_\1/'     \
+> +       --regex='/TASK_PFA_BITOPS\([^,]*,\s*([^)]*)\)/task_clear_\1/'   \
+>         --regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'           \
+>         --regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
+>         --regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'\
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.8.0.2
+>
 
+
+
+-- 
+Kees Cook
+Chrome OS Security
