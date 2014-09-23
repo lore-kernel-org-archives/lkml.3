@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaIWE6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:58:45 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:46692 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaIWE6n (ORCPT
+	id S1752966AbaIWFD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:03:59 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:36244 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaIWFD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:58:43 -0400
-Message-ID: <5420FDFB.8040203@roeck-us.net>
-Date: Mon, 22 Sep 2014 21:58:35 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 23 Sep 2014 01:03:57 -0400
+Date: Mon, 22 Sep 2014 22:03:39 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, arm@kernel.org,
+        mporter@linaro.org, bcm@fixthebug.org, jonathar@broadcom.com,
+        sbranden@broadcom.com, rjui@broadcom.com, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com, hauke@hauke-m.de,
+        swarren@wwwdotorg.org, computersforpeace@gmail.com,
+        marc.ceeeee@gmail.com, cernekee@gmail.com, gregory.0xf0@gmail.com
+Subject: Re: [PATCH] ARM: mach-bcm: offer a new maintainer and process
+Message-ID: <20140923050339.GF7487@localhost>
+References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
 MIME-Version: 1.0
-To: Zefan Li <lizf@kernel.org>, stable@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, satoru.takeuchi@gmail.com,
-        Zefan Li <lizefan@huawei.com>
-Subject: Re: [PATCH 3.4 00/45] 3.4.104-rc1 review
-References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
-In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 512
-X-CTCH-RefID: str=0001.0A020204.5420FE03.0024,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 2
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 3
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 07:27 PM, Zefan Li wrote:
-> From: Zefan Li <lizefan@huawei.com>
->
-> This is the start of the stable review cycle for the 3.4.104 release.
-> There are 45 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Sep 25 02:03:31 UTC 2014.
-> Anything received after that time might be too late.
->
+On Fri, Sep 19, 2014 at 11:17:11AM -0700, Florian Fainelli wrote:
+> Hi all,
+> 
+> As some of you may have seen in the news, Broadcom has recently stopped
+> its mobile SoC activities. Upstream support for Broadcom's Mobile SoCs
+> was an effort initially started by Christian Daudt and his team, and then
+> continued by Alex Eleder and Matter Porter assigned to a particular landing
+> team within Linaro to help Broadcom doing so.
+> 
+> As part of this effort, Christian and Matt volunteered for centralizing pull
+> requests coming from the arch/arm/mach-bcm/* directory and as of today, they
+> are still responsible for merging mach-bcm pull requests coming from brcmstb,
+> bcm5301x, bcm2835 and bcm63xx, creating an intermediate layer to the arm-soc
+> tree.
+> 
+> Following the mobile group shut down, our group (in which Brian, Gregory, Marc,
+> Kevin and myself are) inherited these mobile SoC platforms, although at this
+> point we cannot comment on the future of mobile platforms, we know that our
+> Linaro activities have been stopped.
+> 
+> We have not heard much from Christian and Matt in a while, and some of our pull
+> requests have been stalling as a result. We would like to offer both a new
+> maintainer for the mobile platforms as well as reworking the pull request
+> process:
+> 
+> - our group has now full access to these platforms, putting us in the best
+>   position to support Mobile SoCs questions
 
-Build results:
-	total: 119 pass: 116 fail: 3
-Failed builds:
-	score:defconfig
-	sparc64:allmodconfig
-	xtensa:allmodconfig
+So, one question I have is whether it makes sense to keep the mobile
+platforms in the kernel if the line of business is ending?
 
-Qemu test results:
-	total: 18 pass: 17 fail: 1
-Failed tests:
-	arm:arm_versatile_defconfig
+While I truly do appreciate the work done by Matt and others, there's
+also little chance that it'll see substantial use by anyone. The Capri
+boards aren't common out in the wild and I'm not aware of any dev
+boards or consumer products with these SoCs that might want to run
+mainline? Critical things such as power management and graphics are
+missing from the current platform support in the kernel, so nobody is
+likely to want it on their Android phone, etc.
 
-This is an improvement over the previous release, where we had six build
-failures. The failing qemu test is a recent addition which is expected
-to fail for the 3.4 kernel. The failure is due to Versatile SCSI driver
-and interrupt handling problems; those were fixed in later kernels but
-would be difficult to back-port.
+Maybe the answer to this is "keep it for now, revisit sometime later",
+which is perfectly sane -- it has practically no cost to keep it around
+the way it's looking now.
 
-Guenter
+
+-Olof
 
