@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546AbaIWRpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:45:30 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42791 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130AbaIWRp2 convert rfc822-to-8bit (ORCPT
+	id S1756596AbaIWRqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:46:10 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:46622 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755687AbaIWRqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:45:28 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] ARM: qcom: Fix SCM interface for big-endian kernels
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <5421B0FF.4060307@codeaurora.org>
-Date: Tue, 23 Sep 2014 12:45:25 -0500
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D8A10276-E912-4268-AAB8-48A0C8C7E62D@codeaurora.org>
-References: <1411425393-5537-1-git-send-email-sboyd@codeaurora.org> <F694D53D-F606-4B35-AED9-9B3927E4E9F1@codeaurora.org> <5421B0FF.4060307@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 23 Sep 2014 13:46:08 -0400
+Message-ID: <1411494387.32579.138.camel@xylophone>
+Subject: Re: [Linux-kernel] [PATCH v2] net/netfilter/x_tables.c: use
+ __seq_open_private()
+From: Ben Hutchings <ben.hutchings@codethink.co.uk>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: davem@davemloft.net, coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@codethink.co.uk, linux-kernel@vger.kernel.org,
+        netfilter@vger.kernel.org, netfilter-devel@vger.kernel.org
+Date: Tue, 23 Sep 2014 18:46:27 +0100
+In-Reply-To: <1411491955-9131-1-git-send-email-rob.jones@codethink.co.uk>
+References: <1411491955-9131-1-git-send-email-rob.jones@codethink.co.uk>
+Organization: Codethink Ltd.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 23, 2014, at 12:42 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-
-> On 09/23/14 09:47, Kumar Gala wrote:
->> On Sep 22, 2014, at 5:36 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> 
->>> The secure environment only runs in little-endian mode, so any
->>> buffers shared with the secure environment should have their
->>> contents converted to little-endian. We also mark such elements
->>> with __le32 to allow sparse to catch such problems.
->>> 
->>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->>> ---
->>> drivers/soc/qcom/scm-boot.c |  8 ++++----
->>> drivers/soc/qcom/scm.c      | 34 ++++++++++++++++++----------------
->>> 2 files changed, 22 insertions(+), 20 deletions(-)
->>> 
->>> diff --git a/drivers/soc/qcom/scm-boot.c b/drivers/soc/qcom/scm-boot.c
->>> index 60ff7b482141..3e4d77b371c6 100644
->>> --- a/drivers/soc/qcom/scm-boot.c
->>> +++ b/drivers/soc/qcom/scm-boot.c
->>> @@ -27,12 +27,12 @@
->>> int scm_set_boot_addr(phys_addr_t addr, int flags)
->>> {
->>> 	struct {
->>> -		unsigned int flags;
->>> -		phys_addr_t  addr;
->>> +		__le32 flags;
->>> +		__le32 addr;
->> Hmm, was phys_addr_t wrong here before?  I ask because don’t we support LPAE on some systems?
+On Tue, 2014-09-23 at 18:05 +0100, Rob Jones wrote:
+> Reduce boilerplate code by using __seq_open_private() instead of seq_open()
+> in xt_match_open() and xt_target_open().
 > 
-> Yes it was wrong. It is exactly 32 bits wide.
+> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+> ---
+> 
+> This patch uses an existing variant of seq_open() to reduce the kernel code
+> size.
+> 
+> The only significant variation from the pre-existing code is the fact that
+> __seq_open_private() calls kzalloc() rather than kmalloc(), which could
+> conceivably have an impact on timing.
+> 
+> This version 2 incorporates a minor initialisation simplification (resulting
+> from kzalloc() being used) requested by netfilter-devel@vger.kernel.org
+[...]
+> --- a/net/netfilter/x_tables.c
+> +++ b/net/netfilter/x_tables.c
+> @@ -1080,7 +1080,6 @@ static void *xt_mttg_seq_start(struct seq_file *seq, loff_t *pos,
+>         struct nf_mttg_trav *trav = seq->private;
+>         unsigned int j;
+>  
+> -       trav->class = MTTG_TRAV_INIT;
+>         for (j = 0; j < *pos; ++j)
+>                 if (xt_mttg_seq_next(seq, NULL, NULL, is_target) == NULL)
+>                         return NULL;
+[...]
 
-So we should probably have a patch to fix the interface scm_set_boot_addr() to take a u32 addr instead of a phys_addr_t
+I'm fairly sure this simplification is wrong, as xt_mttg_seq_start() is
+potentially called multiple times on the same file handle.
 
-- k
+Ben.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
