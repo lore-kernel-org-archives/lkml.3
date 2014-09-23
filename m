@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaIWT0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:26:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:59003 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756444AbaIWT0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:26:44 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org
-Cc: will.deacon@arm.com, catalin.marinas@arm.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] aarch64: filter $x from kallsyms
-In-Reply-To: <20140916213718.GR22012@redacted.bos.redhat.com>
-References: <20140916213718.GR22012@redacted.bos.redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 18 Sep 2014 13:48:57 +0930
-Message-ID: <87r3z9o91q.fsf@rustcorp.com.au>
+	id S1756601AbaIWT1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:27:01 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55154 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545AbaIWT07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 15:26:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 23 Sep 2014 12:26:37 -0700
+Message-ID: <CALCETrWnZtWstBviDxcHpLpjHF3R+sgS48RYf2pbKBYeExZVOQ@mail.gmail.com>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: Network Development <netdev@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyle McMartin <kyle@redhat.com> writes:
-> Similar to ARM, AArch64 is generating $x and $d syms... which isn't
-> terribly helpful when looking at %pF output and the like. Filter those
-> out in kallsyms, modpost and when looking at module symbols.
+On Tue, Sep 23, 2014 at 6:20 AM, Nicolas Dichtel
+<nicolas.dichtel@6wind.com> wrote:
+> The goal of this serie is to be able to multicast netlink messages with an
+> attribute that identify a peer netns.
+> This is needed by the userland to interpret some informations contained in
+> netlink messages (like IFLA_LINK value, but also some other attributes in case
+> of x-netns netdevice (see also
+> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
+> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
 >
-> Seems simplest since none of these check EM_ARM anyway, to just add it
-> to the strchr used, rather than trying to make things overly
-> complicated.
->
-> initcall_debug improves:
-> dmesg_before.txt: initcall $x+0x0/0x154 [sg] returned 0 after 26331 usecs
-> dmesg_after.txt: initcall init_sg+0x0/0x154 [sg] returned 0 after 15461 usecs
->
-> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+> Ids are stored in the parent user namespace. These ids are valid only inside
+> this user namespace. The user can retrieve these ids via a new netlink messages,
+> but only if peer netns are in the same user namespace.
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+What about the parent / ancestors of the owning userns?  Can processes
+in those usernses see any form of netns id?
 
-Thanks,
-Rusty.
+--Andy
