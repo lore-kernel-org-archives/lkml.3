@@ -1,79 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaIWHrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:47:55 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:19218 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752738AbaIWHry (ORCPT
+	id S1754838AbaIWHsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:48:09 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48875 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaIWHsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:47:54 -0400
-Date: Tue, 23 Sep 2014 15:45:01 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] watchdog: dw_wdt: restart the counter immediately
- after enabling WDT
-Message-ID: <20140923154501.50dc8111@xhacker>
-In-Reply-To: <541D867C.6080407@roeck-us.net>
-References: <1411108199-1280-1-git-send-email-jszhang@marvell.com>
-	<1411108199-1280-2-git-send-email-jszhang@marvell.com>
-	<541D867C.6080407@roeck-us.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Tue, 23 Sep 2014 03:48:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <5421256A.8080708@jp.fujitsu.com>
+Date: Tue, 23 Sep 2014 16:46:50 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Johannes Weiner <hannes@cmpxchg.org>, <linux-mm@kvack.org>
+CC: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Dave Hansen <dave@sr71.net>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1409230081
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Guenter,
-
-On Sat, 20 Sep 2014 06:51:56 -0700
-Guenter Roeck <linux@roeck-us.net> wrote:
-
-> On 09/18/2014 11:29 PM, Jisheng Zhang wrote:
-> > The TOP_INIT may be zero, so the timeout period may be very short after
-> > initialization is done, thus the system may be reset soon after enabling.
-> > We fix this problem by restarting the counter immediately after enabling
-> > WDT.
-> >
-> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> > ---
-> >   drivers/watchdog/dw_wdt.c | 1 +
-> >   1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-> > index 9f21029..ad0619d 100644
-> > --- a/drivers/watchdog/dw_wdt.c
-> > +++ b/drivers/watchdog/dw_wdt.c
-> > @@ -146,6 +146,7 @@ static int dw_wdt_open(struct inode *inode, struct
-> > file *filp) dw_wdt_set_top(DW_WDT_MAX_TOP);
-> >   		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
-> >   		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
-> > +		dw_wdt_keepalive();
-> >   	}
-> >
-> >   	dw_wdt_set_next_heartbeat();
-> >
-> After getting access to the datasheet, I concluded that this fix is wrong
-> or at least more risky than necessary. The datasheet states that top_init,
-> ie bit 4-7 of the wdt_torr register, needs to be initialized with the
-> desired timeout period prior to enabling the watchdog. dw_wdt_set_top()
-> sets it to 0 instead, ie to the lowest possible timeout period.
+(2014/09/19 22:22), Johannes Weiner wrote:
+> Memory is internally accounted in bytes, using spinlock-protected
+> 64-bit counters, even though the smallest accounting delta is a page.
+> The counter interface is also convoluted and does too many things.
 > 
+> Introduce a new lockless word-sized page counter API, then change all
+> memory accounting over to it and remove the old one.  The translation
+> from and to bytes then only happens when interfacing with userspace.
+> 
+> Aside from the locking costs, this gets rid of the icky unsigned long
+> long types in the very heart of memcg, which is great for 32 bit and
+> also makes the code a lot more readable.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-In patch V2, 
-I initialize the TOP_INIT when setting TOP in function dw_wdt_set_top(), this
-also can fix the "reboot soon" problem. Could you please have a review again?
+I like this patch because I hate res_counter very much.
+
+a few nitpick comments..
+
+<snip>
+
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 19df5d857411..bf8fb1a05597 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -54,6 +54,38 @@ struct mem_cgroup_reclaim_cookie {
+>   };
+>   
+>   #ifdef CONFIG_MEMCG
+> +
+> +struct page_counter {
+> +	atomic_long_t count;
+> +	unsigned long limit;
+> +	struct page_counter *parent;
+> +
+> +	/* legacy */
+> +	unsigned long watermark;
+> +	unsigned long limited;
+> +};
+
+I guees all attributes should be on the same cache line. How about align this to cache ?
+And legacy values are not very important to be atomic by design, right ?
+
+> +
+> +#if BITS_PER_LONG == 32
+> +#define PAGE_COUNTER_MAX ULONG_MAX
+> +#else
+> +#define PAGE_COUNTER_MAX (ULONG_MAX / PAGE_SIZE)
+> +#endif
+> +
+<snip>
+
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index e2def11f1ec1..dfd3b15a57e8 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -25,7 +25,6 @@
+>    * GNU General Public License for more details.
+>    */
+>   
+> -#include <linux/res_counter.h>
+>   #include <linux/memcontrol.h>
+>   #include <linux/cgroup.h>
+>   #include <linux/mm.h>
+> @@ -66,6 +65,117 @@
+>   
+>   #include <trace/events/vmscan.h>
+>   
+> +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
+> +{
+> +	long new;
+> +
+> +	new = atomic_long_sub_return(nr_pages, &counter->count);
+> +
+> +	if (WARN_ON(unlikely(new < 0)))
+> +		atomic_long_set(&counter->count, 0);
+
+ WARN_ON_ONCE() ?
+ Or I prefer atomic_add(&counter->count, nr_pages) rather than set to 0
+ because if a buggy call's "nr_pages" is enough big, following calls to
+ page_counter_cacnel() will show more logs.
+
+> +
+> +	return new > 1;
+> +}
+> +
+> +int page_counter_charge(struct page_counter *counter, unsigned long nr_pages,
+> +			struct page_counter **fail)
+> +{
+> +	struct page_counter *c;
+> +
+> +	for (c = counter; c; c = c->parent) {
+> +		for (;;) {
+> +			unsigned long count;
+> +			unsigned long new;
+> +
+> +			count = atomic_long_read(&c->count);
+> +
+> +			new = count + nr_pages;
+> +			if (new > c->limit) {
+> +				c->limited++;
+> +				if (fail) {
+> +					*fail = c;
+> +					goto failed;
+> +				}
+  seeing res_counter(), c ret code for this case should be -ENOMEM.
+> +			}
+> +
+> +			if (atomic_long_cmpxchg(&c->count, count, new) != count)
+> +				continue;
+> +
+> +			if (new > c->watermark)
+> +				c->watermark = new;
+> +
+> +			break;
+> +		}
+> +	}
+> +	return 0;
+> +
+> +failed:
+> +	for (c = counter; c != *fail; c = c->parent)
+> +		page_counter_cancel(c, nr_pages);
+> +
+> +	return -ENOMEM;
+> +}
+> +
+> +int page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages)
+> +{
+> +	struct page_counter *c;
+> +	int ret = 1;
+> +
+> +	for (c = counter; c; c = c->parent) {
+> +		int remainder;
+> +
+> +		remainder = page_counter_cancel(c, nr_pages);
+> +		if (c == counter && !remainder)
+> +			ret = 0;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +int page_counter_limit(struct page_counter *counter, unsigned long limit)
+> +{
+> +	for (;;) {
+> +		unsigned long count;
+> +		unsigned long old;
+> +
+> +		count = atomic_long_read(&counter->count);
+> +
+> +		old = xchg(&counter->limit, limit);
+> +
+> +		if (atomic_long_read(&counter->count) != count) {
+> +			counter->limit = old;
+> +			continue;
+> +		}
+> +
+> +		if (count > limit) {
+> +			counter->limit = old;
+> +			return -EBUSY;
+> +		}
+> +
+> +		return 0;
+> +	}
+> +}
+
+I think the whole "updating limit"  ops should be mutual exclusive. It seems
+there will be trouble if multiple updater comes at once.
+So, "xchg" isn't required. calllers should have their own locks.
 
 Thanks,
-Jisheng
+-Kame
+
+
+
+
