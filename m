@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaIWF7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:59:50 -0400
-Received: from mx1.dnsc.at ([62.212.162.144]:37429 "EHLO mx1.dnsc.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752961AbaIWF7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:59:47 -0400
-From: Bernhard Thaler <bernhard.thaler@r-it.at>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        davem@davemloft.net
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Bernhard Thaler <bernhard.thaler@r-it.at>
-Subject: [PATCHv3 1/1] bluetooth: Check for SCO type before setting retransmission effort
-Date: Tue, 23 Sep 2014 07:59:24 +0200
-Message-Id: <1411451964-4025-1-git-send-email-bernhard.thaler@r-it.at>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
-References: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at>
+	id S1754934AbaIWF74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:59:56 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39703 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888AbaIWF7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:59:49 -0400
+Date: Mon, 22 Sep 2014 22:59:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] block: remove artifical max_hw_sectors cap
+Message-ID: <20140923055947.GA26518@infradead.org>
+References: <1410044885-14893-1-git-send-email-hch@lst.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410044885-14893-1-git-send-email-hch@lst.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCO connection cannot be setup to devices that do not support retransmission.
-Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
-adapted for this kernel version.
-Code changed to check SCO/eSCO type before setting retransmission effort
-and max. latency. The purpose of the patch is to support older devices not
- capable of eSCO.
+ping?
 
-Tested on Blackberry 655+ headset which does not support retransmission.
-Credits go to Alexander Sommerhuber.
-
-Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
----
- net/bluetooth/hci_conn.c |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
-
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index faff624..32dcde1 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -38,7 +38,7 @@ struct sco_param {
- 	u16 max_latency;
- };
- 
--static const struct sco_param sco_param_cvsd[] = {
-+static const struct sco_param esco_param_cvsd[] = {
- 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000a }, /* S3 */
- 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x0007 }, /* S2 */
- 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0007 }, /* S1 */
-@@ -46,6 +46,11 @@ static const struct sco_param sco_param_cvsd[] = {
- 	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
- };
- 
-+static const struct sco_param sco_param_cvsd[] = {
-+	{ EDR_ESCO_MASK | ESCO_HV3,   0xffff }, /* D1 */
-+	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
-+};
-+
- static const struct sco_param sco_param_wideband[] = {
- 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000d }, /* T2 */
- 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0008 }, /* T1 */
-@@ -194,10 +199,17 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
- 		param = &sco_param_wideband[conn->attempt - 1];
- 		break;
- 	case SCO_AIRMODE_CVSD:
--		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
--			return false;
--		cp.retrans_effort = 0x01;
--		param = &sco_param_cvsd[conn->attempt - 1];
-+		if (!lmp_esco_capable(conn->link)) {
-+			if ((conn->attempt) > ARRAY_SIZE(sco_param_cvsd))
-+				return false;
-+			cp.retrans_effort = 0xff;
-+			param = &sco_param_cvsd[conn->attempt - 1];
-+		} else {
-+			if (conn->attempt > ARRAY_SIZE(esco_param_cvsd))
-+				return false;
-+			cp.retrans_effort = 0x01;
-+			param = &esco_param_cvsd[conn->attempt - 1];
-+		}
- 		break;
- 	default:
- 		return false;
--- 
-1.7.10.4
-
+On Sat, Sep 06, 2014 at 04:08:05PM -0700, Christoph Hellwig wrote:
+> Set max_sectors to the value the drivers provides as hardware limit by
+> default.  Linux had proper I/O throttling for a long time and doesn't
+> rely on a artifically small maximum I/O size anymore.  By not limiting
+> the I/O size by default we remove an annoying tuning step required for
+> most Linux installation.
+> 
+> Note that both the user, and if absolutely required the driver can still
+> impose a limit for FS requests below max_hw_sectors_kb.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+>  block/blk-settings.c       | 4 +---
+>  drivers/block/aoe/aoeblk.c | 2 +-
+>  include/linux/blkdev.h     | 1 -
+>  3 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/block/blk-settings.c b/block/blk-settings.c
+> index f1a1795..f52c223 100644
+> --- a/block/blk-settings.c
+> +++ b/block/blk-settings.c
+> @@ -257,9 +257,7 @@ void blk_limits_max_hw_sectors(struct queue_limits *limits, unsigned int max_hw_
+>  		       __func__, max_hw_sectors);
+>  	}
+>  
+> -	limits->max_hw_sectors = max_hw_sectors;
+> -	limits->max_sectors = min_t(unsigned int, max_hw_sectors,
+> -				    BLK_DEF_MAX_SECTORS);
+> +	limits->max_sectors = limits->max_hw_sectors = max_hw_sectors;
+>  }
+>  EXPORT_SYMBOL(blk_limits_max_hw_sectors);
+>  
+> diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+> index dd73e1f..46c282f 100644
+> --- a/drivers/block/aoe/aoeblk.c
+> +++ b/drivers/block/aoe/aoeblk.c
+> @@ -395,7 +395,7 @@ aoeblk_gdalloc(void *vp)
+>  	WARN_ON(d->flags & DEVFL_TKILL);
+>  	WARN_ON(d->gd);
+>  	WARN_ON(d->flags & DEVFL_UP);
+> -	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
+> +	blk_queue_max_hw_sectors(q, 1024);
+>  	q->backing_dev_info.name = "aoe";
+>  	q->backing_dev_info.ra_pages = READ_AHEAD / PAGE_CACHE_SIZE;
+>  	d->bufpool = mp;
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 518b465..7e3c172 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -1192,7 +1192,6 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
+>  enum blk_default_limits {
+>  	BLK_MAX_SEGMENTS	= 128,
+>  	BLK_SAFE_MAX_SECTORS	= 255,
+> -	BLK_DEF_MAX_SECTORS	= 1024,
+>  	BLK_MAX_SEGMENT_SIZE	= 65536,
+>  	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
+>  };
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---end quoted text---
