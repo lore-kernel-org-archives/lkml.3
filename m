@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaIWH04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:26:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752988AbaIWH0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:26:54 -0400
-Date: Tue, 23 Sep 2014 15:24:26 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH 7/7] efi_rtc: probe function error out in case no efi
- runtime enabled
-Message-ID: <20140923072426.GB3916@darkstar.nay.redhat.com>
-References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
- <1408007953-15151-1-git-send-email-dyoung@redhat.com>
- <1411403609.25340.55.camel@deneb.redhat.com>
+	id S1754667AbaIWH2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:28:19 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:54820 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752429AbaIWH2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:28:18 -0400
+Message-ID: <542120E4.5030403@st.com>
+Date: Tue, 23 Sep 2014 09:27:32 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411403609.25340.55.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Patrice Chotard <patrice.chotard@st.com>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] media:st-rc: Misc fixes.
+References: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mark
+Hi Srini,
 
-On 09/22/14 at 12:33pm, Mark Salter wrote:
-> On Thu, 2014-08-14 at 17:19 +0800, Dave Young wrote:
-> > efi rtc depends on efi runtime services, so if efi runtime services are not
-> > usable it should error out.
-> > 
-> > Without this patch rtc-efi will panic with 'noefi' boot
-> 
-> Is this still needed after commit da167ad7638759:
-> 
->   rtc: ia64: allow other architectures to use EFI RTC
-> 
-> That should keep efi_rtc_probe from being called if runtime services
-> are not available.
+	Thanks for sending these fixes.
 
-If that's the case then this patch should be unnecessary, I have no machine
-to test it currently though.
+	For the series, you can add my:
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-> 
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  drivers/rtc/rtc-efi.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
-> > index c4c3843..ca2487b 100644
-> > --- a/drivers/rtc/rtc-efi.c
-> > +++ b/drivers/rtc/rtc-efi.c
-> > @@ -191,6 +191,9 @@ static int __init efi_rtc_probe(struct platform_device *dev)
-> >  {
-> >  	struct rtc_device *rtc;
-> >  
-> > +	if (!efi_enabled(EFI_RUNTIME_SERVICES))
-> > +		return -ENODEV;
-> > +
-> >  	rtc = devm_rtc_device_register(&dev->dev, "rtc-efi", &efi_rtc_ops,
-> >  					THIS_MODULE);
-> >  	if (IS_ERR(rtc))
-> 
-> 
+Regards,
+Maxime
+
+On 09/23/2014 12:21 AM, Srinivas Kandagatla wrote:
+> Hi Mauro,
+>
+> Thankyou for the "[media] enable COMPILE_TEST for media drivers" patch
+> which picked up few things in st-rc driver in linux-next testing.
+>
+> Here is a few minor fixes to the driver, could you consider them for
+> the next merge window.
+>
+> Thanks,
+> srini
+>
+> Srinivas Kandagatla (3):
+>    media: st-rc: move to using reset_control_get_optional
+>    media: st-rc: move pm ops setup out of conditional compilation.
+>    media: st-rc: Remove .owner field for driver
+>
+>   drivers/media/rc/st_rc.c | 8 +++-----
+>   1 file changed, 3 insertions(+), 5 deletions(-)
+>
