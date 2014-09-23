@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053AbaIWTJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:09:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43968 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaIWTJi convert rfc822-to-8bit (ORCPT
+	id S1754849AbaIWTNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:13:06 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:47038 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaIWTNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:09:38 -0400
-Message-ID: <5421C563.8070304@canonical.com>
-Date: Tue, 23 Sep 2014 15:09:23 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 23 Sep 2014 15:13:05 -0400
+Date: Tue, 23 Sep 2014 19:12:40 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+cc: Daniel Mack <daniel@caiaq.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] usb: core: downgrade log severity to info when descriptor
+ unavailable
+In-Reply-To: <alpine.DEB.2.11.1409231905460.3223@localhost.localdomain>
+Message-ID: <alpine.DEB.2.11.1409231909590.7196@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1409231021190.1322-100000@iolanthe.rowland.org> <alpine.DEB.2.11.1409231905460.3223@localhost.localdomain>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: jlayton@redhat.com
-CC: sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [Regression]  cifs: sanity check length of data to send before sending
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+According to commit 0cce2eda19923e5e5ccc8b042dec5af87b3ffad0
+    USB: fix LANGID=0 regression
 
-A kernel bug report was opened against Ubuntu [0].  It was found that
-reverting the following commit resolved this bug:
+usb devices are not required to report string descriptors. Since they are
+optional, log an info message instead of an error message.
 
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+---
+ drivers/usb/core/message.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-commit a26054d184763969a411e3939fe243516715ff59
-Author: Jeff Layton <jlayton@redhat.com>
-Date:   Fri Feb 14 07:21:00 2014 -0500
-
-    cifs: sanity check length of data to send before sending
-
-      
-The regression was introduced as of v3.14-rc7.
-
-It appears the patch may be doing what it is supposed to, since the
-send_length != smb_buf_length:
-send_length=72
-and
-smb_buf_length=2164260932
-
-However, without this check and WARN/return of -EIO the samba
-connections still work correctly.
-
-I was hoping to get your feedback, since you are the patch author.  Do
-you think gathering any additional data will help diagnose this issue,
-or would it be best to submit a revert request?
-    
-Thanks,
-    
-Joe
-
-[0] http://pad.lv/1372482
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index 0c8a7fc..da2f1f2 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -780,8 +780,12 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
+ 	 * deal with strings at all. Set string_langid to -1 in order to
+ 	 * prevent any string to be retrieved from the device */
+ 	if (err < 0) {
+-		dev_err(&dev->dev, "string descriptor 0 read error: %d\n",
+-					err);
++		if (err == -EPIPE)
++			dev_info(&dev->dev,
++				 "string descriptor 0 read error: -EPIPE\n");
++		else
++			dev_err(&dev->dev,
++				"string descriptor 0 read error: %d\n", err);
+ 		dev->string_langid = -1;
+ 		return -EPIPE;
+ 	}
+-- 
+2.1.0
 
