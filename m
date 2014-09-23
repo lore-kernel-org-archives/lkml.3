@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaIWCep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:34:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37494 "EHLO mail.kernel.org"
+	id S1753116AbaIWCey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:34:54 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37517 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222AbaIWCen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:34:43 -0400
+	id S1753013AbaIWCev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:34:51 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 06/45] isofs: Fix unbounded recursion when processing relocated directories
-Date: Tue, 23 Sep 2014 10:31:08 +0800
-Message-Id: <1411439507-30391-6-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@nsn.com>,
+        James Hogan <james.hogan@imgtec.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 07/45] MIPS: OCTEON: make get_system_type() thread-safe
+Date: Tue, 23 Sep 2014 10:31:09 +0800
+Message-Id: <1411439507-30391-7-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
@@ -20,212 +20,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Aaro Koskinen <aaro.koskinen@nsn.com>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
+commit 608308682addfdc7b8e2aee88f0e028331d88e4d upstream.
 
-We did not check relocated directory in any way when processing Rock
-Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
-entry pointing to another CL entry leading to possibly unbounded
-recursion in kernel code and thus stack overflow or deadlocks (if there
-is a loop created from CL entries).
+get_system_type() is not thread-safe on OCTEON. It uses static data,
+also more dangerous issue is that it's calling cvmx_fuse_read_byte()
+every time without any synchronization. Currently it's possible to get
+processes stuck looping forever in kernel simply by launching multiple
+readers of /proc/cpuinfo:
 
-Fix the problem by not allowing CL entry to point to a directory entry
-with CL entry (such use makes no good sense anyway) and by checking
-whether CL entry doesn't point to itself.
+	(while true; do cat /proc/cpuinfo > /dev/null; done) &
+	(while true; do cat /proc/cpuinfo > /dev/null; done) &
+	...
 
-Reported-by: Chris Evans <cevans@google.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Fix by initializing the system type string only once during the early
+boot.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
+Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: http://patchwork.linux-mips.org/patch/7437/
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+[lizf: Backport to 3.x: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/isofs/inode.c |   15 ++++++++-------
- fs/isofs/isofs.h |   23 +++++++++++++++++++----
- fs/isofs/rock.c  |   39 ++++++++++++++++++++++++++++-----------
- 3 files changed, 55 insertions(+), 22 deletions(-)
+ arch/mips/cavium-octeon/setup.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index e92a342..e379b87 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -68,7 +68,7 @@ static void isofs_put_super(struct super_block *sb)
- 	return;
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index d3a9f012..b6fb650 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -265,6 +265,18 @@ static irqreturn_t octeon_rlm_interrupt(int cpl, void *dev_id)
  }
+ #endif
  
--static int isofs_read_inode(struct inode *);
-+static int isofs_read_inode(struct inode *, int relocated);
- static int isofs_statfs (struct dentry *, struct kstatfs *);
- 
- static struct kmem_cache *isofs_inode_cachep;
-@@ -1264,7 +1264,7 @@ out_toomany:
- 	goto out;
- }
- 
--static int isofs_read_inode(struct inode *inode)
-+static int isofs_read_inode(struct inode *inode, int relocated)
- {
- 	struct super_block *sb = inode->i_sb;
- 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
-@@ -1409,7 +1409,7 @@ static int isofs_read_inode(struct inode *inode)
- 	 */
- 
- 	if (!high_sierra) {
--		parse_rock_ridge_inode(de, inode);
-+		parse_rock_ridge_inode(de, inode, relocated);
- 		/* if we want uid/gid set, override the rock ridge setting */
- 		if (sbi->s_uid_set)
- 			inode->i_uid = sbi->s_uid;
-@@ -1488,9 +1488,10 @@ static int isofs_iget5_set(struct inode *ino, void *data)
-  * offset that point to the underlying meta-data for the inode.  The
-  * code below is otherwise similar to the iget() code in
-  * include/linux/fs.h */
--struct inode *isofs_iget(struct super_block *sb,
--			 unsigned long block,
--			 unsigned long offset)
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated)
- {
- 	unsigned long hashval;
- 	struct inode *inode;
-@@ -1512,7 +1513,7 @@ struct inode *isofs_iget(struct super_block *sb,
- 		return ERR_PTR(-ENOMEM);
- 
- 	if (inode->i_state & I_NEW) {
--		ret = isofs_read_inode(inode);
-+		ret = isofs_read_inode(inode, relocated);
- 		if (ret < 0) {
- 			iget_failed(inode);
- 			inode = ERR_PTR(ret);
-diff --git a/fs/isofs/isofs.h b/fs/isofs/isofs.h
-index 0e73f63..50cd583 100644
---- a/fs/isofs/isofs.h
-+++ b/fs/isofs/isofs.h
-@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
- 
- struct inode;		/* To make gcc happy */
- 
--extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
-+extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
- extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
- extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
- 
-@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struct inode *, struct dentry *, struct namei
- extern struct buffer_head *isofs_bread(struct inode *, sector_t);
- extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
- 
--extern struct inode *isofs_iget(struct super_block *sb,
--                                unsigned long block,
--                                unsigned long offset);
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated);
++static char __read_mostly octeon_system_type[80];
 +
-+static inline struct inode *isofs_iget(struct super_block *sb,
-+				       unsigned long block,
-+				       unsigned long offset)
++static int __init init_octeon_system_type(void)
 +{
-+	return __isofs_iget(sb, block, offset, 0);
-+}
++	snprintf(octeon_system_type, sizeof(octeon_system_type), "%s (%s)",
++		cvmx_board_type_to_string(octeon_bootinfo->board_type),
++		octeon_model_get_string(read_c0_prid()));
 +
-+static inline struct inode *isofs_iget_reloc(struct super_block *sb,
-+					     unsigned long block,
-+					     unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 1);
++	return 0;
 +}
- 
- /* Because the inode number is no longer relevant to finding the
-  * underlying meta-data for an inode, we are free to choose a more
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index 70e79d0..ee62cc0 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -288,12 +288,16 @@ eio:
- 	goto out;
- }
- 
-+#define RR_REGARD_XA 1
-+#define RR_RELOC_DE 2
++early_initcall(init_octeon_system_type);
 +
- static int
- parse_rock_ridge_inode_internal(struct iso_directory_record *de,
--				struct inode *inode, int regard_xa)
-+				struct inode *inode, int flags)
+ /**
+  * Return a string representing the system type
+  *
+@@ -272,11 +284,7 @@ static irqreturn_t octeon_rlm_interrupt(int cpl, void *dev_id)
+  */
+ const char *octeon_board_type_string(void)
  {
- 	int symlink_len = 0;
- 	int cnt, sig;
-+	unsigned int reloc_block;
- 	struct inode *reloc;
- 	struct rock_ridge *rr;
- 	int rootflag;
-@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
- 
- 	init_rock_state(&rs, inode);
- 	setup_rock_ridge(de, inode, &rs);
--	if (regard_xa) {
-+	if (flags & RR_REGARD_XA) {
- 		rs.chr += 14;
- 		rs.len -= 14;
- 		if (rs.len < 0)
-@@ -485,12 +489,22 @@ repeat:
- 					"relocated directory\n");
- 			goto out;
- 		case SIG('C', 'L'):
--			ISOFS_I(inode)->i_first_extent =
--			    isonum_733(rr->u.CL.location);
--			reloc =
--			    isofs_iget(inode->i_sb,
--				       ISOFS_I(inode)->i_first_extent,
--				       0);
-+			if (flags & RR_RELOC_DE) {
-+				printk(KERN_ERR
-+				       "ISOFS: Recursive directory relocation "
-+				       "is not supported\n");
-+				goto eio;
-+			}
-+			reloc_block = isonum_733(rr->u.CL.location);
-+			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
-+			    ISOFS_I(inode)->i_iget5_offset == 0) {
-+				printk(KERN_ERR
-+				       "ISOFS: Directory relocation points to "
-+				       "itself\n");
-+				goto eio;
-+			}
-+			ISOFS_I(inode)->i_first_extent = reloc_block;
-+			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
- 			if (IS_ERR(reloc)) {
- 				ret = PTR_ERR(reloc);
- 				goto out;
-@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpnt, struct rock_ridge *rr, char *plimit)
- 	return rpnt;
+-	static char name[80];
+-	sprintf(name, "%s (%s)",
+-		cvmx_board_type_to_string(octeon_bootinfo->board_type),
+-		octeon_model_get_string(read_c0_prid()));
+-	return name;
++	return octeon_system_type;
  }
  
--int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
-+int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
-+			   int relocated)
- {
--	int result = parse_rock_ridge_inode_internal(de, inode, 0);
-+	int flags = relocated ? RR_RELOC_DE : 0;
-+	int result = parse_rock_ridge_inode_internal(de, inode, flags);
- 
- 	/*
- 	 * if rockridge flag was reset and we didn't look for attributes
-@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
- 	 */
- 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
- 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
--		result = parse_rock_ridge_inode_internal(de, inode, 14);
-+		result = parse_rock_ridge_inode_internal(de, inode,
-+							 flags | RR_REGARD_XA);
- 	}
- 	return result;
- }
+ const char *get_system_type(void)
 -- 
 1.7.9.5
 
