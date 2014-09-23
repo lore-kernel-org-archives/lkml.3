@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaIWKxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:53:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46634 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967AbaIWKxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:53:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,579,1406617200"; 
-   d="scan'208";a="577469684"
-Date: Tue, 23 Sep 2014 13:53:11 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/6] phy: improved lookup method
-Message-ID: <20140923105311.GB18814@xps8300>
-References: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1408620803-10464-3-git-send-email-heikki.krogerus@linux.intel.com>
- <5411C0B2.3060505@ti.com>
- <20140912140720.GC30816@xps8300>
- <54130729.5010206@ti.com>
- <20140915123508.GA16653@xps8300>
- <20140918102505.GB8567@xps8300>
- <54200A13.6050201@ti.com>
+	id S1755515AbaIWKxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:53:40 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:30887 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755343AbaIWKxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 06:53:36 -0400
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-9.tower-180.messagelabs.com!1411469611!35834636!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.2; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <b71815ff49a1cabe2c7907a96cc1be34f924648e.1411396719.git.Adam.Thomson.Opensource@diasemi.com>
+In-Reply-To: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
+References: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Date: Tue, 23 Sep 2014 11:53:29 +0100
+Subject: [PATCH 2/8] mfd: da9150: Add DT binding documentation for core
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, <linux-api@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <support.opensource@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54200A13.6050201@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 05:07:55PM +0530, Kishon Vijay Abraham I wrote:
-> On Thursday 18 September 2014 03:55 PM, Heikki Krogerus wrote:
-> > On Mon, Sep 15, 2014 at 03:35:08PM +0300, Heikki Krogerus wrote:
-> >> On Fri, Sep 12, 2014 at 08:16:01PM +0530, Kishon Vijay Abraham I wrote:
-> >>> Assume you have 2 phys in your system..
-> >>> static struct phy_lookup usb_lookup = {
-> >>> 	.phy_name	= "phy-usb.0",
-> >>> 	.dev_id		= "usb.0",
-> >>> 	.con_id		= "usb",
-> >>> };
-> >>>
-> >>> static struct phy_lookup sata_lookup = {
-> >>> 	.phy_name	= "sata-usb.1",
-> >>> 	.dev_id		= "sata.0",
-> >>> 	.con_id		= "sata",
-> >>> };
-> >>>
-> >>> First you do modprobe phy-usb, the probe of USB PHY driver gets invoked and it
-> >>> creates the PHY. The phy-core will find a free id (now it will be 0) and then
-> >>> name the phy as phy-usb.0.
-> >>> Then with modprobe phy-sata, the phy-core will create phy-sata.1.
-> >>>
-> >>> This is an ideal case where the .phy_name in phy_lookup matches.
-> >>>
-> >>> Consider if the order is flipped and the user does modprobe phy-sata first. The
-> >>> phy_names won't match anymore (the sata phy device name would be "sata-usb.0").
-> > 
-> > Actually, I don't think there would be this problem if we used the
-> > name of the actual device which is the parent of phy devices, right?
-> 
-> hmm.. but if the parent is a multi-phy phy provider (like pipe3 PHY driver), we
-> might end up with the same problem.
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+---
+ Documentation/devicetree/bindings/mfd/da9150.txt | 41 ++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/da9150.txt
 
-I'm not completely sure what you mean? If you are talking about
-platforms with multiple instances of a single phy, I don't see how
-there could ever be a scenario where we did not know the order in
-which they were enumerated. Can you give an example again?
+diff --git a/Documentation/devicetree/bindings/mfd/da9150.txt b/Documentation/devicetree/bindings/mfd/da9150.txt
+new file mode 100644
+index 0000000..d7de150
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/da9150.txt
+@@ -0,0 +1,41 @@
++Dialog Semiconductor DA9150 Combined Charger/Fuel-Gauge MFD bindings
++
++DA9150 consists of a group of sub-devices (I2C Only):
++
++Device			 Description
++------			 -----------
++da9150-gpadc		: IIO - GPADC
++da9150-charger		: Power Supply (Charger)
++
++======
++
++Required properties:
++- compatible : Should be "dlg,da9150"
++- reg: Specifies the I2C slave address
++- interrupt-parent: Specifies the phandle of the interrupt controller to which
++  the IRQs from da9150 are delivered to.
++- interrupts: IRQ line info for da9150 chip.
++- interrupt-controller: da9150 has internal IRQs (own IRQ domain).
++
++Sub-devices:
++- da9150-gpadc: See Documentation/devicetree/bindings/iio/adc/da9150-gpadc.txt
++- da9150-charger: See Documentation/devicetree/bindings/power/da9150-charger.txt
++
++
++Example:
++
++	charger_fg: da9150@58 {
++		compatible = "dlg,da9150";
++		reg = <0x58>;
++		interrupt-parent = <&gpio6>;
++		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++
++		gpadc: da9150-gpadc {
++			...
++		};
++
++		da9150-charger {
++			...
++		};
++	};
+--
+1.9.3
 
-
-Thanks,
-
--- 
-heikki
