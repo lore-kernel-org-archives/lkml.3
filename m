@@ -1,100 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaIWN2K (ORCPT <rfc822;w@1wt.eu>);
+	id S1755992AbaIWN2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:28:13 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48391 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755682AbaIWN2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Sep 2014 09:28:10 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:55555 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaIWN2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:28:08 -0400
-Message-ID: <54217560.20803@gmail.com>
-Date: Tue, 23 Sep 2014 15:28:00 +0200
-From: Matthias Brugger <matthias.bgg@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+Date: Tue, 23 Sep 2014 09:28:01 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140923132801.GA14302@cmpxchg.org>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+ <20140922144158.GC20398@esperanza>
+ <20140922185736.GB6630@cmpxchg.org>
+ <20140923110634.GH18526@esperanza>
 MIME-Version: 1.0
-To: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: srv_heupstream@mediatek.com, Sascha Hauer <kernel@pengutronix.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dandan.he@mediatek.com
-Subject: Re: [PATCH v2 0/4] Add Mediatek SoC Pinctrl/GPIO driver for MT8135.
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-In-Reply-To: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923110634.GH18526@esperanza>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 23, 2014 at 03:06:34PM +0400, Vladimir Davydov wrote:
+> On Mon, Sep 22, 2014 at 02:57:36PM -0400, Johannes Weiner wrote:
+> > On Mon, Sep 22, 2014 at 06:41:58PM +0400, Vladimir Davydov wrote:
+> > > On Fri, Sep 19, 2014 at 09:22:08AM -0400, Johannes Weiner wrote:
+> > > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > > > index 19df5d857411..bf8fb1a05597 100644
+> > > > --- a/include/linux/memcontrol.h
+> > > > +++ b/include/linux/memcontrol.h
+> > > > @@ -54,6 +54,38 @@ struct mem_cgroup_reclaim_cookie {
+> > > >  };
+> > > >  
+> > > >  #ifdef CONFIG_MEMCG
+> > > > +
+> > > > +struct page_counter {
+> > > 
+> > > I'd place it in a separate file, say
+> > > 
+> > > 	include/linux/page_counter.h
+> > > 	mm/page_counter.c
+> > > 
+> > > just to keep mm/memcontrol.c clean.
+> > 
+> > The page counters are the very core of the memory controller and, as I
+> > said to Michal, I want to integrate the hugetlb controller into memcg
+> > as well, at which point there won't be any outside users anymore.  So
+> > I think this is the right place for it.
+> 
+> Hmm, there might be memcg users out there that don't want to pay for
+> hugetlb accounting. Or is the overhead supposed to be negligible?
 
+Yes.  But if it gets in the way, it creates pressure to optimize it.
+That's the same reason why I've been trying to integrate memcg into
+the rest of the VM for over two years now - aside from resulting in
+much more unified code, it forces us to compete, and it increases our
+testing exposure by several orders of magnitude.
 
-On 23/09/14 05:39, Hongzhou.Yang wrote:
-> This is v2 of add Mediatek SoC Pinctrl/GPIO drvier for MT8135.
-> It is based on Joe.C' basic device tree support.
-> See http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/288582.html
-> 
-> This driver include common and MT8135 part, other Mediatek SoCs will share the common part,
-> and MT8135 part only support MT8135. MT8135 has GPIO controller, it includes 203 pins.
-> 
-> Changes in v2:
-> - According to Heiko Stubner' suggestion, use generic pinconfig.
+The only reason we are discussing lockless page counters right now is
+because we got rid of "memcg specialness" and exposed res_counters to
+the rest of the world; and boy did that instantly raise the bar on us.
 
-Please always add people that made comments on your former versions in
-CC. This way it is easier for them to follow the debate about your patches.
+> Anyway, I still don't think it's a good idea to keep all the definitions
+> in the same file. memcontrol.c is already huge. Adding more code to it
+> is not desirable, especially if it can naturally live in a separate
+> file. And since the page_counter is independent of the memcg core and
+> *looks* generic, I believe we should keep it separately.
 
-Thanks,
-Matthias
+It's less code than what I just deleted, and half of it seems
+redundant when integrated into memcg.  This code would benefit a lot
+from being part of memcg, and memcg could reduce its public API.
 
-> - Remove pinmux_ops.disable implement.
-> - Due to limit of message body, move mt8135-pinfunc.h to '[PATCH 3/4] add pinctrl node for MT8135'.
+There are tangible costs associated with having a separate pile of
+bitrot depend on our public interface.  Over 90% of the recent changes
+to the hugetlb controller were done by Tejun as part of changing the
+cgroup interfaces.  And I went through several WTFs switching that
+code to the new page counter API.  The cost of maintaining a unified
+codebase is negligible in comparison.
+
+> > > > +	atomic_long_t count;
+> > > > +	unsigned long limit;
+> > > > +	struct page_counter *parent;
+> > > > +
+> > > > +	/* legacy */
+> > > > +	unsigned long watermark;
+> > > > +	unsigned long limited;
+> > > 
+> > > IMHO, failcnt would fit better.
+> > 
+> > I never liked the failcnt name, but also have to admit that "limited"
+> > is crap.  Let's leave it at failcnt for now.
+> > 
+> > > > +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages);
+> > > 
+> > > When I first saw this function, I couldn't realize by looking at its
+> > > name what it's intended to do. I think
+> > > 
+> > > 	page_counter_cancel_local_charge()
+> > > 
+> > > would fit better.
+> > 
+> > It's a fairly unwieldy name.  How about page_counter_sub()?  local_sub()?
 > 
+> The _sub suffix doesn't match _charge/_uncharge. May be
+> page_counter_local_uncharge, or _uncharge_local?
+
+I always think of a charge as the full hierarchical quantity, but this
+function only clips that one counter and so anything "uncharge" sounds
+terribly wrong to me.  But I can't think of anything great, either.
+
+Any more ideas? :)
+
+> > > > +int page_counter_charge(struct page_counter *counter, unsigned long nr_pages,
+> > > > +			struct page_counter **fail);
+> > > > +int page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages);
+> > > > +int page_counter_limit(struct page_counter *counter, unsigned long limit);
+> > > 
+> > > Hmm, why not page_counter_set_limit?
+> > 
+> > Limit is used as a verb here, "to limit".  Getters and setters are
+> > usually wrappers around unusual/complex data structure access,
 > 
-> Hongzhou Yang (3):
-> ARM: mediatek: Add Pinctrl/GPIO driver for mt8135.
-> dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
-> ARM: dts: mt8135: Add pinctrl node for mt8135.
+> Not necessarily. Look at percpu_counter_read e.g. It's a one-line
+> getter, which we could easily live w/o, but still it's there.
+
+It abstracts an unusual and error-prone access to a counter value,
+i.e. reading an unsigned quantity out of a signed variable.
+
+> > but this function does a lot more, so I'm not fond of _set_limit().
 > 
-> Joe.C (1):
-> arm: mediatek: Add config option for mediatek SoCs.
+> Nevertheless, everything it does can be perfectly described in one
+> sentence "it tries to set the new value of the limit", so it does
+> function as a setter. And if there's a setter, there must be a getter
+> IMO.
+
+That's oversimplifying things.  Setting a limit requires enforcing a
+whole bunch of rules and synchronization, whereas reading a limit is
+accessing an unsigned long.
+
+In general I agree that we should strive for symmetry and follow the
+principle of least surprise, but in terms of complexity these two
+operations are very different, and providing a getter on principle
+would not actually improve readability in this case.
+
+> > > > @@ -1218,34 +1217,26 @@ static inline void memcg_memory_allocated_add(struct cg_proto *prot,
+> > > >  					      unsigned long amt,
+> > > >  					      int *parent_status)
+> > > >  {
+> > > > -	struct res_counter *fail;
+> > > > -	int ret;
+> > > > +	page_counter_charge(&prot->memory_allocated, amt, NULL);
+> > > >  
+> > > > -	ret = res_counter_charge_nofail(&prot->memory_allocated,
+> > > > -					amt << PAGE_SHIFT, &fail);
+> > > > -	if (ret < 0)
+> > > > +	if (atomic_long_read(&prot->memory_allocated.count) >
+> > > > +	    prot->memory_allocated.limit)
+> > > 
+> > > I don't like your equivalent of res_counter_charge_nofail.
+> > > 
+> > > Passing NULL to page_counter_charge might be useful if one doesn't have
+> > > a back-off strategy, but still want to fail on hitting the limit. With
+> > > your interface the user must pass something to the function then, which
+> > > isn't convenient.
+> > > 
+> > > Besides, it depends on the internal implementation of the page_counter
+> > > struct. I'd encapsulate this.
+> > 
+> > Thinking about this more, I don't like my version either; not because
+> > of how @fail must always be passed, but because of how it changes the
+> > behavior.  I changed the API to
+> > 
+> > void page_counter_charge(struct page_counter *counter, unsigned long nr_pages);
+> > int page_counter_try_charge(struct page_counter *counter, unsigned long nr_pages,
+> >                             struct page_counter **fail);
 > 
-> .../devicetree/bindings/pinctrl/pinctrl-mt65xx.txt |   98 +
-> arch/arm/boot/dts/mt8135-pinfunc.h                 | 1304 +++++++++++
-> arch/arm/boot/dts/mt8135.dtsi                      |   11 +
-> arch/arm/mach-mediatek/Kconfig                     |   23 +-
-> drivers/pinctrl/Kconfig                            |    1 +
-> drivers/pinctrl/Makefile                           |    1 +
-> drivers/pinctrl/mediatek/Kconfig                   |   12 +
-> drivers/pinctrl/mediatek/Makefile                  |    5 +
-> drivers/pinctrl/mediatek/pinctrl-mt8135.c          |   82 +
-> drivers/pinctrl/mediatek/pinctrl-mtk-common.c      |  792 +++++++
-> drivers/pinctrl/mediatek/pinctrl-mtk-common.h      |   95 +
-> drivers/pinctrl/mediatek/pinctrl-mtk-mt8135.h      | 2460 ++++++++++++++++++++
-> include/dt-bindings/pinctrl/mt65xx.h               |   23 +
-> 13 files changed, 4904 insertions(+), 3 deletions(-)
-> create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
-> create mode 100644 arch/arm/boot/dts/mt8135-pinfunc.h
-> create mode 100644 drivers/pinctrl/mediatek/Kconfig
-> create mode 100644 drivers/pinctrl/mediatek/Makefile
-> create mode 100644 drivers/pinctrl/mediatek/pinctrl-mt8135.c
-> create mode 100644 drivers/pinctrl/mediatek/pinctrl-mtk-common.c
-> create mode 100644 drivers/pinctrl/mediatek/pinctrl-mtk-common.h
-> create mode 100644 drivers/pinctrl/mediatek/pinctrl-mtk-mt8135.h
-> create mode 100644 include/dt-bindings/pinctrl/mt65xx.h
+> That looks good to me. I would also add something like
 > 
-> --
-> 1.8.1.1.dirty
+>   bool page_counter_exceeds_limit(struct page_counter *counter);
 > 
+> to use instead of this
 > 
+> +	if (atomic_long_read(&prot->memory_allocated.count) >
+> +	    prot->memory_allocated.limit)
+
+I really don't see the point in obscuring a simple '<' behind a
+function call.  What follows this is that somebody adds it for the
+soft limit, and later for any other type of relational comparison.
+
+> > > >  		break;
+> > > >  	case RES_FAILCNT:
+> > > > -		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
+> > > > +		counter->limited = 0;
+> > > 
+> > > page_counter_reset_failcnt?
+> > 
+> > That would be more obscure than counter->failcnt = 0, I think.
 > 
+> There's one thing that bothers me about this patch. Before, all the
+> functions operating on res_counter were mutually smp-safe, now they
+> aren't. E.g. if the failcnt reset races with the falcnt increment from
+> page_counter_try_charge, the reset might be skipped. You only use the
+> atomic type for the counter, but my guess is that failcnt and watermark
+> should be atomic too, at least if we're not going to get rid of them
+> soon. Otherwise, it should be clearly stated that failcnt and watermark
+> are racy.
+
+It's fair enough that the raciness should be documented, but both
+counters are such roundabout metrics to begin with that it really
+doesn't matter.  What's the difference between a failcnt of 590 and
+600 in practical terms?  And what does it matter if the counter
+watermark is off by a few pages when there are per-cpu caches on top
+of the counters, and the majority of workloads peg the watermark to
+the limit during startup anyway?
+
+> Anyway, that's where the usefulness of res_counter_reset_failcnt
+> reveals. If one decides to make it race-free one day, they won't have to
+> modify code outside the page_counter definition.
+
+A major problem with cgroups overall was that it was designed for a
+lot of hypotheticals that are irrelevant in practice but incur very
+high costs.  Multiple orthogonal hierarchies is the best example, but
+using locked byte counters that can be used to account all manner of
+resources, with accurate watermarks and limit failures, when all we
+need to count is pages and nobody cares about accurate watermarks and
+limit failures, is another one.
+
+It's very unlikely that failcnt and watermark will have to me atomic
+ever again, so there is very little hypothetical upside to wrapping a
+'= 0' in a function.  But such indirection comes at a real cost.
+
+> > > > +int page_counter_limit(struct page_counter *counter, unsigned long limit)
+> > > > +{
+> > > > +	for (;;) {
+> > > > +		unsigned long count;
+> > > > +		unsigned long old;
+> > > > +
+> > > > +		count = atomic_long_read(&counter->count);
+> > > > +
+> > > > +		old = xchg(&counter->limit, limit);
+> > > > +
+> > > > +		if (atomic_long_read(&counter->count) != count) {
+> > > > +			counter->limit = old;
+> > > 
+> > > I wonder what can happen if two threads execute this function
+> > > concurrently... or may be it's not supposed to be smp-safe?
+> > 
+> > memcg already holds the set_limit_mutex here.  I updated the tcp and
+> > hugetlb controllers accordingly to take limit locks as well.
 > 
+> I would prefer page_counter to handle it internally, because we won't
+> need the set_limit_mutex once memsw is converted to plain swap
+> accounting.
+>
+> Besides, memcg_update_kmem_limit doesn't take it. Any chance to
+> achieve that w/o spinlocks, using only atomic variables?
+
+We still need it to serialize concurrent access to the memory limit,
+and I updated the patch to have kmem take it as well.  It's such a
+cold path that using a lockless scheme and worrying about coherency
+between updates is not worth it, I think.
+
+> If I were you, I'd separate the patch introducing the page_counter API
+> and implementation from the rest. I think it'd ease the review.
+> 
+> A couple of extra notes about the patch:
+> 
+>  - I think having comments to function definitions would be nice.
+> 
+>  - Your implementation of try_charge uses CAS, but this is a really
+>    costly operation (the most costly of all atomic primitives). Have
+>    you considered using FAA? Something like this:
+> 
+>    try_charge(pc, nr):
+> 
+>      limit = pc->limit;
+>      count = atomic_add_return(&pc->count, nr);
+>      if (count > limit) {
+>          atomic_sub(&pc->count, nr);
+>          return -ENOMEM;
+>      }
+>      return 0;
+
+The thing I was worried about there is when you have varying charge
+sizes, and a failing big-charge can lock out a small-charge that would
+otherwise succeed and force it into early reclaim.  But thinking more
+about it, the error is limited to the biggest charge size, which is
+THP in our case, and it doesn't matter if we reclaim 2MB too early.
+
+I'll reconsider, thanks for your input!
