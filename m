@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaIWI1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 04:27:42 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:63497 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980AbaIWI1j (ORCPT
+	id S1754693AbaIWI3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 04:29:39 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:35129 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071AbaIWI3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 04:27:39 -0400
+	Tue, 23 Sep 2014 04:29:37 -0400
+Date: Tue, 23 Sep 2014 12:29:27 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Greg Thelen <gthelen@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
+        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@sr71.net>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] mm: memcontrol: support transparent huge pages under
+ pressure
+Message-ID: <20140923082927.GG18526@esperanza>
+References: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
+ <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1411459730.20236.6.camel@x220>
-References: <1406551632.5397.17.camel@x220>
-	<1410511111.31130.4.camel@x220>
-	<20140916000916.GD9847@verge.net.au>
-	<20140916002333.GI9847@verge.net.au>
-	<1411459730.20236.6.camel@x220>
-Date: Tue, 23 Sep 2014 10:27:37 +0200
-X-Google-Sender-Auth: yasYbeO7YkfwzjwlB6yGlVpBfkM
-Message-ID: <CAMuHMdUP_SUjAgjhC3hFXjsSzpR=jCP0iaD5AXLWSUkg0V6hig@mail.gmail.com>
-Subject: Re: [PATCH] ARM: shmobile: Remove ARCH_HAS_OPP completely
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 10:08 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
-> 049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
-> removed the only dependency that used it. Setting it had no effect
-> anymore.
->
-> So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
-> some reason that commit did not remove all select statements for that
-> symbol. These statements are now useless. Remove one from shmobile too.
+[sorry for butting in, but I think I can answer your question]
 
-The explanation for "some reason" is very simple: new selects were introduced
-in parallel with the removal of the existing ones.
+On Mon, Sep 22, 2014 at 10:52:50PM -0700, Greg Thelen wrote:
+> 
+> On Fri, Sep 19 2014, Johannes Weiner wrote:
+> 
+> > In a memcg with even just moderate cache pressure, success rates for
+> > transparent huge page allocations drop to zero, wasting a lot of
+> > effort that the allocator puts into assembling these pages.
+> >
+> > The reason for this is that the memcg reclaim code was never designed
+> > for higher-order charges.  It reclaims in small batches until there is
+> > room for at least one page.  Huge pages charges only succeed when
+> > these batches add up over a series of huge faults, which is unlikely
+> > under any significant load involving order-0 allocations in the group.
+> >
+> > Remove that loop on the memcg side in favor of passing the actual
+> > reclaim goal to direct reclaim, which is already set up and optimized
+> > to meet higher-order goals efficiently.
+> >
+> > This brings memcg's THP policy in line with the system policy: if the
+> > allocator painstakingly assembles a hugepage, memcg will at least make
+> > an honest effort to charge it.  As a result, transparent hugepage
+> > allocation rates amid cache activity are drastically improved:
+> >
+> >                                       vanilla                 patched
+> > pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
+> > pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
+> > pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
+> > thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
+> > thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
+> >
+> > [ Note: this may in turn increase memory consumption from internal
+> >   fragmentation, which is an inherent risk of transparent hugepages.
+> >   Some setups may have to adjust the memcg limits accordingly to
+> >   accomodate this - or, if the machine is already packed to capacity,
+> >   disable the transparent huge page feature. ]
+> 
+> We're using an earlier version of this patch, so I approve of the
+> general direction.  But I have some feedback.
+> 
+> The memsw aspect of this change seems somewhat separate.  Can it be
+> split into a different patch?
+> 
+> The memsw aspect of this patch seems to change behavior.  Is this
+> intended?  If so, a mention of it in the commit log would assuage the
+> reader.  I'll explain...  Assume a machine with swap enabled and
+> res.limit==memsw.limit, thus memsw_is_minimum is true.  My understanding
+> is that memsw.usage represents sum(ram_usage, swap_usage).  So when
+> memsw_is_minimum=true, then both swap_usage=0 and
+> memsw.usage==res.usage. 
 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Not necessarily, we can have memsw.usage > res.usage due to global
+pressure. The point is (memsw.limit-res.limit) is not the swap usage
+limit. This is really confusing. As Johannes pointed out, we should drop
+memsw.limit in favor of separate mem.limit and swap.limit.
 
-Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> In this condition, if res usage is at limit then there's no point in
+> swapping because memsw.usage is already maximal.  Prior to this patch
+> I think the kernel did the right thing, but not afterwards.
+> 
+> Before this patch:
+>   if res.usage == res.limit, try_charge() indirectly calls
+>   try_to_free_mem_cgroup_pages(noswap=true)
 
-Gr{oetje,eeting}s,
+But this is wrong. If we fail to charge res, we should try to do swap
+out along with page cache reclaim. Swap out won't affect memsw.usage,
+but will diminish res.usage so that the allocation may succeed.
 
-                        Geert
+AFAIU we should only disable swap-out if we succeeded to charge res, but
+failed with memsw. And this is the rule that this patch follows.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Anyway, I agree with you that this is far not obvious and deserves a
+separate patch.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Vladimir
+
+> 
+> After this patch:
+>   if res.usage == res.limit, try_charge() calls
+>   try_to_free_mem_cgroup_pages(may_swap=true)
+> 
+> Notice the inverted swap-is-allowed value.
+> 
+> I haven't had time to look at your other outstanding memcg patches.
+> These comments were made with this patch in isolation.
+[...]
