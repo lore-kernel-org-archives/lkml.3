@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447AbaIWOt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:49:56 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:53559 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396AbaIWOtw (ORCPT
+	id S932461AbaIWOul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:50:41 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:46400 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421AbaIWOtt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:49:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingchang Lu <jingchang.lu@freescale.com>
-Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] serial: of-serial: add PM suspend/resume support
-Date: Tue, 23 Sep 2014 16:49:20 +0200
-Message-ID: <2797100.gg6LuU6gNo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411461252-8730-1-git-send-email-jingchang.lu@freescale.com>
-References: <1411461252-8730-1-git-send-email-jingchang.lu@freescale.com>
+	Tue, 23 Sep 2014 10:49:49 -0400
+X-Originating-IP: 50.43.15.134
+Date: Tue, 23 Sep 2014 07:49:36 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Message-ID: <20140923144936.GA9844@thin>
+References: <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
+ <20140922184049.GB4709@pd.tnic>
+ <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+ <20140922192152.GD4709@pd.tnic>
+ <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922195737.GE4709@pd.tnic>
+ <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922203336.GF4709@pd.tnic>
+ <1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
+ <20140923080120.GA22072@pd.tnic>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:qnPuEVLdag4oifs8ACrhTgwfVKpLaHYlYhCBUZrCwR1
- AG5DpvBILlHyLDzCaAuwEToZ9yi5hOedDGN5Sr1+h5Q6Gr1g6y
- BPy7p0vwf42XExBzu4dua4LWdnr7M6Hd95CJLaUmVLG1X7gM6r
- HzYA3FhKUbp6LG5jk/cWv6wDIhO5qK0xioBhwb0Lzb9y4BZvxD
- h8Fyj1eAJzpfkJoIKBFSxPqXBqGtTQGF8bi/oXym+2AM5ONl22
- E7VD9T3ZiEov9ky0wocogPClhZ81rjeGvgzIoZUbC0klMy7+YH
- iqNuUriJnNwtRjt7j9tl3LSi2nr6KTMl2Vup4PID+qll10i7an
- 6LmkYJun3EHUn88wqVZk=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140923080120.GA22072@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 16:34:12 Jingchang Lu wrote:
-> This adds PM suspend/resume support for the of-serial driver
-> to provide power management support on devices attatched to it.
+On Tue, Sep 23, 2014 at 10:01:20AM +0200, Borislav Petkov wrote:
+> ./arch/x86/include/asm/io_apic.h: In function ‘io_apic_modify’:
+> ./arch/x86/include/asm/io_apic.h:223:48: warning: declaration of ‘apic’ shadows a global declaration [-Wshadow]
+>  static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
+>                                                 ^
+> In file included from ./arch/x86/include/asm/smp.h:12:0,
+>                  from include/linux/smp.h:59,
+>                  from include/linux/topology.h:33,
+>                  from include/linux/gfp.h:8,
+>                  from include/linux/kmod.h:22,
+>                  from include/linux/module.h:13,
+>                  from drivers/edac/amd64_edac.h:65,
+>                  from drivers/edac/amd64_edac.c:1:
+> ./arch/x86/include/asm/apic.h:366:21: warning: shadowed declaration is here [-Wshadow]
+>  extern struct apic *apic;
+>                      ^
 > 
-> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
-> 
+> So gcc complains that an unsigned int shadows a struct apic pointer.
 
-Looks good to me,
+Here, I think the right fix involves picking a more descriptive name
+than "apic" for the global varible.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+- Josh Triplett
