@@ -1,197 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175AbaIWRVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:21:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60202 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752126AbaIWRVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:21:18 -0400
-Date: Tue, 23 Sep 2014 19:21:14 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Huang Shijie <shijie8@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v3 2/3] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20140923192114.44ea48bd@bbrezillon>
-In-Reply-To: <20140923191619.0c0a667e@bbrezillon>
-References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1411481256-29141-3-git-send-email-boris.brezillon@free-electrons.com>
-	<20140923161041.GA2147@localhost.localdomain>
-	<20140923191619.0c0a667e@bbrezillon>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1756493AbaIWRVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:21:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27179 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756165AbaIWRVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 13:21:36 -0400
+Date: Tue, 23 Sep 2014 13:21:13 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Roy Franz <roy.franz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20140923172113.GC7858@hansolo.jdub.homelinux.org>
+References: <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+ <20140923053510.GB27825@gmail.com>
+ <20140923053711.GA28704@gmail.com>
+ <20140923055802.GA29052@gmail.com>
+ <1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CAKv+Gu_xqnkVKuoWY=PRoAVYE_qOH8dwM+ZxG+ysC7Xvs82ZNw@mail.gmail.com>
+ <20140923131805.GH18635@console-pimps.org>
+ <CA+55aFyLrvrc2mv0oVPggQjXDVqA2ejZEufEPdMfbW=f_dOqmQ@mail.gmail.com>
+ <20140923161117.GJ18635@console-pimps.org>
+ <20140923161751.GB7858@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923161751.GB7858@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 19:16:19 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
-
-> On Wed, 24 Sep 2014 00:10:44 +0800
-> Huang Shijie <shijie8@gmail.com> wrote:
-> 
-> > On Tue, Sep 23, 2014 at 04:07:35PM +0200, Boris BREZILLON wrote:
-> > > Several MTD users (either in user or kernel space) expect a valid raw
-> > > access support to NAND chip devices.
-> > > This is particularly true for testing tools which are often touching the
-> > > data stored in a NAND chip in raw mode to artificially generate errors.
+On Tue, Sep 23, 2014 at 12:17:51PM -0400, Josh Boyer wrote:
+> On Tue, Sep 23, 2014 at 05:11:17PM +0100, Matt Fleming wrote:
+> > On Tue, 23 Sep, at 09:05:41AM, Linus Torvalds wrote:
 > > > 
-> > > The GPMI drivers do not implemenent raw access functions, and thus rely on
-> > > default HW_ECC scheme implementation.
-> > > The default implementation consider the data and OOB area as properly
-> > > separated in their respective NAND section, which is not true for the GPMI
-> > > controller.
-> > > In this driver/controller some OOB data are stored at the beginning of the
-> > > NAND data area (these data are called metadata in the driver), then ECC
-> > > bytes are interleaved with data chunk (which is similar to the
-> > > HW_ECC_SYNDROME scheme), and eventually the remaining bytes are used as
-> > > OOB data.
-> > > 
-> > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > > ---
-> > >  drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 126 +++++++++++++++++++++++++++++++++
-> > >  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   2 +
-> > >  2 files changed, 128 insertions(+)
-> > > 
-> > > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> > > index 959cb9b..7921ba7 100644
-> > > --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> > > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> > > @@ -791,6 +791,7 @@ static void gpmi_free_dma_buffer(struct gpmi_nand_data *this)
-> > >  					this->page_buffer_phys);
-> > >  	kfree(this->cmd_buffer);
-> > >  	kfree(this->data_buffer_dma);
-> > > +	kfree(this->raw_buffer);
-> > >  
-> > >  	this->cmd_buffer	= NULL;
-> > >  	this->data_buffer_dma	= NULL;
-> > > @@ -837,6 +838,9 @@ static int gpmi_alloc_dma_buffer(struct gpmi_nand_data *this)
-> > >  	if (!this->page_buffer_virt)
-> > >  		goto error_alloc;
-> > >  
-> > > +	this->raw_buffer = kzalloc(mtd->writesize + mtd->oobsize, GFP_KERNEL);
-> > > +	if (!this->raw_buffer)
-> > > +		goto error_alloc;
-> > >  
-> > >  	/* Slice up the page buffer. */
-> > >  	this->payload_virt = this->page_buffer_virt;
-> > > @@ -1347,6 +1351,126 @@ gpmi_ecc_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
-> > >  	return status & NAND_STATUS_FAIL ? -EIO : 0;
-> > >  }
-> > >  
-> > > +static int gpmi_ecc_read_page_raw(struct mtd_info *mtd,
-> > > +				  struct nand_chip *chip, uint8_t *buf,
-> > > +				  int oob_required, int page)
+> > > Well, it boots on my Vaio, fwiw. I'm assume that isn't all that
+> > > interesting, since presumably it's the macbooks that you expected to
+> > > still have problems.
 > > 
-> > 	In actually, i suggest to call the ecc->read_page() in this
-> > 	hook. And after the ecc->read_page(), copy the relative data to
-> > 	the relative buffers. Is my suggestion right? please correct me.
+> > Yeah, though I'm still interested in hearing success stories since it
+> > indicates I didn't screw anything else up while doing the revert.
 > 
-> Unfortunately it's not. The user expect that ECC correction is not
-> involved when accessing the NAND in raw mode, which is not the case in
-> your read_page implementation.
-> This is particularly useful when one want to see the real page status
-> (including bitflips).
-> 
-> Moreover, I like to see the generated ECC bytes/bits when using raw
-> access (but I'm not sure this is a requirement). This will help
-> deducing the BCH algorithm and/or XOR mask applied after producing
-> these bits if someone ever want to spend some time reverse engineering
-> it.
-> 
-> > 
-> > 
-> > 
-> > > +{
-> > > +	struct gpmi_nand_data *this = chip->priv;
-> > > +	struct bch_geometry *nfc_geo = &this->bch_geometry;
-> > > +	int eccsize = nfc_geo->ecc_chunk_size;
-> > > +	int eccbits = nfc_geo->ecc_strength * nfc_geo->gf_len;
-> > > +	u8 *tmp_buf = this->raw_buffer;
-> > > +	size_t src_bit_off;
-> > > +	size_t oob_bit_off;
-> > > +	size_t oob_byte_off;
-> > > +	uint8_t *oob = chip->oob_poi;
-> > > +	int step;
-> > > +
-> > > +	chip->read_buf(mtd, tmp_buf,
-> > > +		       mtd->writesize + mtd->oobsize);
-> > > +
-> > > +	if (this->swap_block_mark) {
-> > > +		u8 swap = tmp_buf[0];
-> > > +
-> > > +		tmp_buf[0] = tmp_buf[mtd->writesize];
-> > > +		tmp_buf[mtd->writesize] = swap;
-> > > +	}
-> > > +
-> > > +	if (oob_required)
-> > > +		memcpy(oob, tmp_buf, nfc_geo->metadata_size);
-> > > +
-> > > +	oob_bit_off = nfc_geo->metadata_size * 8;
-> > > +	src_bit_off = oob_bit_off;
-> > > +
-> > > +	for (step = 0; step < nfc_geo->ecc_chunk_count; step++) {
-> > > +		if (buf)
-> > > +			gpmi_move_bits(buf, step * eccsize * 8,
-> > > +				       tmp_buf, src_bit_off,
-> > > +				       eccsize * 8);
-> > > +		src_bit_off += eccsize * 8;
-> > > +
-> > > +		if (oob_required)
-> > > +			gpmi_move_bits(oob, oob_bit_off,
-> > > +				       tmp_buf, src_bit_off,
-> > > +				       eccbits);
-> > > +
-> > > +		src_bit_off += eccbits;
-> > > +		oob_bit_off += eccbits;
-> > > +	}
-> > > +
-> > > +	if (oob_required && oob_bit_off % 8)
-> > > +		oob[oob_bit_off / 8] &= GENMASK(oob_bit_off - 1, 0);
-> > > +
-> > > +	oob_byte_off = DIV_ROUND_UP(oob_bit_off, 8);
-> > > +
-> > > +	if (oob_required && oob_byte_off  < mtd->oobsize)
-> > > +		memcpy(oob + oob_byte_off,
-> > > +		       tmp_buf + mtd->writesize + oob_byte_off,
-> > > +		       mtd->oobsize - oob_byte_off);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int gpmi_ecc_write_page_raw(struct mtd_info *mtd,
-> > > +				   struct nand_chip *chip,
-> > > +				   const uint8_t *buf,
-> > > +				   int oob_required)
-> > > +{
-> > 
-> > 
-> > give me more time to think over this hook :(
-> 
-> Sure, no problem.
-> 
-> Actually it's doing the exact same thing read_page_raw is doing expect
-> it's applying on a write access.
-> I copy the provided data (in-band and out-of-band is required) into a
-						    ^ if
+> I have it building right now.  I'll test it on both my SB machine, and
+> my macbook using shim/grub2.
 
-> temporary buffer to match the GPMI controller layout, then write it
-> without involving the BCH block (which means no ECC bits generation).
-> 
-> Best Regards,
-> 
-> Boris
-> 
+All of the machines that were broken and subsequently fixed by reverting
+the EFI GOT change still boot fine with this patch.  That includes the
+macbook and SB enabled machines.
 
+So results as expected.  Thanks.
 
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+josh
