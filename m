@@ -1,39 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaIWTGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:06:41 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:33026 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908AbaIWTGj (ORCPT
+	id S932199AbaIWTHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:07:06 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:48678 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090AbaIWTFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:06:39 -0400
-Date: Tue, 23 Sep 2014 19:06:14 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Daniel Mack <daniel@caiaq.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: core: downgrade log severity to info when descriptor
- missing
-In-Reply-To: <Pine.LNX.4.44L0.1409231021190.1322-100000@iolanthe.rowland.org>
-Message-ID: <alpine.DEB.2.11.1409231905460.3223@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1409231021190.1322-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 23 Sep 2014 15:05:53 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH 3/5] pinctrl: samsung: Constify samsung_pin_bank_type struct
+Date: Tue, 23 Sep 2014 21:05:39 +0200
+Message-Id: <1411499141-26551-4-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
+References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014, Alan Stern wrote:
-> -ENODATA doesn't mean the string was unavailable.  It means that the
-> second byte of the reply was different from USB_DT_STRING, i.e., the
-> reply was malformed.
+This structure is not intended to be modified at runtime and functions
+as constant data shared between multiple pin banks. This patch makes all
+instances of it constant across the driver.
 
-Thank you for the correction!
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+ drivers/pinctrl/samsung/pinctrl-exynos.c  |  8 ++++----
+ drivers/pinctrl/samsung/pinctrl-s3c24xx.c |  6 +++---
+ drivers/pinctrl/samsung/pinctrl-s3c64xx.c | 14 +++++++-------
+ drivers/pinctrl/samsung/pinctrl-samsung.c | 20 +++++++++-----------
+ drivers/pinctrl/samsung/pinctrl-samsung.h |  2 +-
+ 5 files changed, 24 insertions(+), 26 deletions(-)
 
-> And down here is where you should call either dev_info() or dev_err(),
-> depending on whether err is equal to -EPIPE or something else.
+diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+index 7e6463f970ff..0202e0016233 100644
+--- a/drivers/pinctrl/samsung/pinctrl-exynos.c
++++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+@@ -46,12 +46,12 @@ static inline struct exynos_irq_chip *to_exynos_irq_chip(struct irq_chip *chip)
+ 	return container_of(chip, struct exynos_irq_chip, chip);
+ }
+ 
+-static struct samsung_pin_bank_type bank_type_off = {
++static const struct samsung_pin_bank_type bank_type_off = {
+ 	.fld_width = { 4, 1, 2, 2, 2, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, 0x0c, 0x10, 0x14, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_alive = {
++static const struct samsung_pin_bank_type bank_type_alive = {
+ 	.fld_width = { 4, 1, 2, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, 0x0c, },
+ };
+@@ -171,7 +171,7 @@ static int exynos_irq_request_resources(struct irq_data *irqd)
+ 	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
+ 	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
+ 	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
+-	struct samsung_pin_bank_type *bank_type = bank->type;
++	const struct samsung_pin_bank_type *bank_type = bank->type;
+ 	struct samsung_pinctrl_drv_data *d = bank->drvdata;
+ 	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
+ 	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
+@@ -210,7 +210,7 @@ static void exynos_irq_release_resources(struct irq_data *irqd)
+ 	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
+ 	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
+ 	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
+-	struct samsung_pin_bank_type *bank_type = bank->type;
++	const struct samsung_pin_bank_type *bank_type = bank->type;
+ 	struct samsung_pinctrl_drv_data *d = bank->drvdata;
+ 	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
+ 	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
+diff --git a/drivers/pinctrl/samsung/pinctrl-s3c24xx.c b/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
+index e38925906bd3..9db6cf5c8823 100644
+--- a/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
++++ b/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
+@@ -44,12 +44,12 @@
+ #define EINT_EDGE_BOTH		6
+ #define EINT_MASK		0xf
+ 
+-static struct samsung_pin_bank_type bank_type_1bit = {
++static const struct samsung_pin_bank_type bank_type_1bit = {
+ 	.fld_width = { 1, 1, },
+ 	.reg_offset = { 0x00, 0x04, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_2bit = {
++static const struct samsung_pin_bank_type bank_type_2bit = {
+ 	.fld_width = { 2, 1, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, },
+ };
+@@ -143,7 +143,7 @@ static void s3c24xx_eint_set_handler(unsigned int irq, unsigned int type)
+ static void s3c24xx_eint_set_function(struct samsung_pinctrl_drv_data *d,
+ 					struct samsung_pin_bank *bank, int pin)
+ {
+-	struct samsung_pin_bank_type *bank_type = bank->type;
++	const struct samsung_pin_bank_type *bank_type = bank->type;
+ 	unsigned long flags;
+ 	void __iomem *reg;
+ 	u8 shift;
+diff --git a/drivers/pinctrl/samsung/pinctrl-s3c64xx.c b/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
+index fcf8c36e727e..2a14db2826d8 100644
+--- a/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
++++ b/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
+@@ -68,32 +68,32 @@
+ #define EINT_CON_MASK		0xF
+ #define EINT_CON_LEN		4
+ 
+-static struct samsung_pin_bank_type bank_type_4bit_off = {
++static const struct samsung_pin_bank_type bank_type_4bit_off = {
+ 	.fld_width = { 4, 1, 2, 0, 2, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, 0, 0x0c, 0x10, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_4bit_alive = {
++static const struct samsung_pin_bank_type bank_type_4bit_alive = {
+ 	.fld_width = { 4, 1, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_4bit2_off = {
++static const struct samsung_pin_bank_type bank_type_4bit2_off = {
+ 	.fld_width = { 4, 1, 2, 0, 2, 2, },
+ 	.reg_offset = { 0x00, 0x08, 0x0c, 0, 0x10, 0x14, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_4bit2_alive = {
++static const struct samsung_pin_bank_type bank_type_4bit2_alive = {
+ 	.fld_width = { 4, 1, 2, },
+ 	.reg_offset = { 0x00, 0x08, 0x0c, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_2bit_off = {
++static const struct samsung_pin_bank_type bank_type_2bit_off = {
+ 	.fld_width = { 2, 1, 2, 0, 2, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, 0, 0x0c, 0x10, },
+ };
+ 
+-static struct samsung_pin_bank_type bank_type_2bit_alive = {
++static const struct samsung_pin_bank_type bank_type_2bit_alive = {
+ 	.fld_width = { 2, 1, 2, },
+ 	.reg_offset = { 0x00, 0x04, 0x08, },
+ };
+@@ -272,7 +272,7 @@ static void s3c64xx_irq_set_handler(unsigned int irq, unsigned int type)
+ static void s3c64xx_irq_set_function(struct samsung_pinctrl_drv_data *d,
+ 					struct samsung_pin_bank *bank, int pin)
+ {
+-	struct samsung_pin_bank_type *bank_type = bank->type;
++	const struct samsung_pin_bank_type *bank_type = bank->type;
+ 	unsigned long flags;
+ 	void __iomem *reg;
+ 	u8 shift;
+diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.c b/drivers/pinctrl/samsung/pinctrl-samsung.c
+index 0504f0b75de8..b8edc901fe08 100644
+--- a/drivers/pinctrl/samsung/pinctrl-samsung.c
++++ b/drivers/pinctrl/samsung/pinctrl-samsung.c
+@@ -366,7 +366,7 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
+ 					unsigned group, bool enable)
+ {
+ 	struct samsung_pinctrl_drv_data *drvdata;
+-	struct samsung_pin_bank_type *type;
++	const struct samsung_pin_bank_type *type;
+ 	struct samsung_pin_bank *bank;
+ 	void __iomem *reg;
+ 	u32 mask, shift, data, pin_offset;
+@@ -422,7 +422,7 @@ static int samsung_pinconf_rw(struct pinctrl_dev *pctldev, unsigned int pin,
+ 				unsigned long *config, bool set)
+ {
+ 	struct samsung_pinctrl_drv_data *drvdata;
+-	struct samsung_pin_bank_type *type;
++	const struct samsung_pin_bank_type *type;
+ 	struct samsung_pin_bank *bank;
+ 	void __iomem *reg_base;
+ 	enum pincfg_type cfg_type = PINCFG_UNPACK_TYPE(*config);
+@@ -528,7 +528,7 @@ static const struct pinconf_ops samsung_pinconf_ops = {
+ static void samsung_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
+ {
+ 	struct samsung_pin_bank *bank = gc_to_pin_bank(gc);
+-	struct samsung_pin_bank_type *type = bank->type;
++	const struct samsung_pin_bank_type *type = bank->type;
+ 	unsigned long flags;
+ 	void __iomem *reg;
+ 	u32 data;
+@@ -552,7 +552,7 @@ static int samsung_gpio_get(struct gpio_chip *gc, unsigned offset)
+ 	void __iomem *reg;
+ 	u32 data;
+ 	struct samsung_pin_bank *bank = gc_to_pin_bank(gc);
+-	struct samsung_pin_bank_type *type = bank->type;
++	const struct samsung_pin_bank_type *type = bank->type;
+ 
+ 	reg = bank->drvdata->virt_base + bank->pctl_offset;
+ 
+@@ -569,7 +569,7 @@ static int samsung_gpio_get(struct gpio_chip *gc, unsigned offset)
+ static int samsung_gpio_set_direction(struct gpio_chip *gc,
+ 					     unsigned offset, bool input)
+ {
+-	struct samsung_pin_bank_type *type;
++	const struct samsung_pin_bank_type *type;
+ 	struct samsung_pin_bank *bank;
+ 	struct samsung_pinctrl_drv_data *drvdata;
+ 	void __iomem *reg;
+@@ -1096,9 +1096,8 @@ static void samsung_pinctrl_suspend_dev(
+ 	for (i = 0; i < ctrl->nr_banks; i++) {
+ 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+ 		void __iomem *reg = virt_base + bank->pctl_offset;
+-
+-		u8 *offs = bank->type->reg_offset;
+-		u8 *widths = bank->type->fld_width;
++		const u8 *offs = bank->type->reg_offset;
++		const u8 *widths = bank->type->fld_width;
+ 		enum pincfg_type type;
+ 
+ 		/* Registers without a powerdown config aren't lost */
+@@ -1147,9 +1146,8 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
+ 	for (i = 0; i < ctrl->nr_banks; i++) {
+ 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+ 		void __iomem *reg = virt_base + bank->pctl_offset;
+-
+-		u8 *offs = bank->type->reg_offset;
+-		u8 *widths = bank->type->fld_width;
++		const u8 *offs = bank->type->reg_offset;
++		const u8 *widths = bank->type->fld_width;
+ 		enum pincfg_type type;
+ 
+ 		/* Registers without a powerdown config aren't lost */
+diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.h b/drivers/pinctrl/samsung/pinctrl-samsung.h
+index da527b390513..c67738597d2a 100644
+--- a/drivers/pinctrl/samsung/pinctrl-samsung.h
++++ b/drivers/pinctrl/samsung/pinctrl-samsung.h
+@@ -131,7 +131,7 @@ struct samsung_pin_bank_type {
+  * @pm_save: saved register values during suspend
+  */
+ struct samsung_pin_bank {
+-	struct samsung_pin_bank_type *type;
++	const struct samsung_pin_bank_type *type;
+ 	u32		pctl_offset;
+ 	u32		pin_base;
+ 	u8		nr_pins;
+-- 
+2.1.0
 
-I hope to send it shortly.
