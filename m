@@ -1,246 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaIWTHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:07:06 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:48678 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaIWTFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:05:53 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 3/5] pinctrl: samsung: Constify samsung_pin_bank_type struct
-Date: Tue, 23 Sep 2014 21:05:39 +0200
-Message-Id: <1411499141-26551-4-git-send-email-tomasz.figa@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
-References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
+	id S1756670AbaIWTHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:07:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754196AbaIWTHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 15:07:01 -0400
+Date: Tue, 23 Sep 2014 21:03:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] signal: simplify deadlock-avoidance in
+	lock_task_sighand()
+Message-ID: <20140923190348.GA13976@redhat.com>
+References: <20140922164404.GA28910@redhat.com> <20140922164437.GA28939@redhat.com> <20140922145828.4d06108a@gandalf.local.home> <20140922191130.GA4527@redhat.com> <20140922172405.71c4a110@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922172405.71c4a110@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This structure is not intended to be modified at runtime and functions
-as constant data shared between multiple pin banks. This patch makes all
-instances of it constant across the driver.
+On 09/22, Steven Rostedt wrote:
+>
+> On Mon, 22 Sep 2014 21:11:30 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > > > @@ -1261,30 +1261,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+> > > >  					   unsigned long *flags)
+> > > >  {
+> > > >  	struct sighand_struct *sighand;
+> > > > -
+> > > > +	/*
+> > > > +	 * We are going to do rcu_read_unlock() under spin_lock_irqsave().
+> > > > +	 * Make sure we can not be preempted after rcu_read_lock(), see
+> > > > +	 * rcu_read_unlock() comment header for details.
+> > > > +	 */
+> > > > +	preempt_disable();
+> > >
+> > > The sad part is, this is going to break -rt.
+> >
+> > Hmm, why??
+>
+> Because in -rt, siglock is a mutex.
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
----
- drivers/pinctrl/samsung/pinctrl-exynos.c  |  8 ++++----
- drivers/pinctrl/samsung/pinctrl-s3c24xx.c |  6 +++---
- drivers/pinctrl/samsung/pinctrl-s3c64xx.c | 14 +++++++-------
- drivers/pinctrl/samsung/pinctrl-samsung.c | 20 +++++++++-----------
- drivers/pinctrl/samsung/pinctrl-samsung.h |  2 +-
- 5 files changed, 24 insertions(+), 26 deletions(-)
+Yes, thanks... I thougt that -rt should handle this somehow, we have
+more examples of preempt_disable() + spin_lock().
 
-diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
-index 7e6463f970ff..0202e0016233 100644
---- a/drivers/pinctrl/samsung/pinctrl-exynos.c
-+++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
-@@ -46,12 +46,12 @@ static inline struct exynos_irq_chip *to_exynos_irq_chip(struct irq_chip *chip)
- 	return container_of(chip, struct exynos_irq_chip, chip);
- }
- 
--static struct samsung_pin_bank_type bank_type_off = {
-+static const struct samsung_pin_bank_type bank_type_off = {
- 	.fld_width = { 4, 1, 2, 2, 2, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, 0x0c, 0x10, 0x14, },
- };
- 
--static struct samsung_pin_bank_type bank_type_alive = {
-+static const struct samsung_pin_bank_type bank_type_alive = {
- 	.fld_width = { 4, 1, 2, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, 0x0c, },
- };
-@@ -171,7 +171,7 @@ static int exynos_irq_request_resources(struct irq_data *irqd)
- 	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
- 	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
- 	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
--	struct samsung_pin_bank_type *bank_type = bank->type;
-+	const struct samsung_pin_bank_type *bank_type = bank->type;
- 	struct samsung_pinctrl_drv_data *d = bank->drvdata;
- 	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
- 	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
-@@ -210,7 +210,7 @@ static void exynos_irq_release_resources(struct irq_data *irqd)
- 	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
- 	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
- 	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
--	struct samsung_pin_bank_type *bank_type = bank->type;
-+	const struct samsung_pin_bank_type *bank_type = bank->type;
- 	struct samsung_pinctrl_drv_data *d = bank->drvdata;
- 	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
- 	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
-diff --git a/drivers/pinctrl/samsung/pinctrl-s3c24xx.c b/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
-index e38925906bd3..9db6cf5c8823 100644
---- a/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
-+++ b/drivers/pinctrl/samsung/pinctrl-s3c24xx.c
-@@ -44,12 +44,12 @@
- #define EINT_EDGE_BOTH		6
- #define EINT_MASK		0xf
- 
--static struct samsung_pin_bank_type bank_type_1bit = {
-+static const struct samsung_pin_bank_type bank_type_1bit = {
- 	.fld_width = { 1, 1, },
- 	.reg_offset = { 0x00, 0x04, },
- };
- 
--static struct samsung_pin_bank_type bank_type_2bit = {
-+static const struct samsung_pin_bank_type bank_type_2bit = {
- 	.fld_width = { 2, 1, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, },
- };
-@@ -143,7 +143,7 @@ static void s3c24xx_eint_set_handler(unsigned int irq, unsigned int type)
- static void s3c24xx_eint_set_function(struct samsung_pinctrl_drv_data *d,
- 					struct samsung_pin_bank *bank, int pin)
- {
--	struct samsung_pin_bank_type *bank_type = bank->type;
-+	const struct samsung_pin_bank_type *bank_type = bank->type;
- 	unsigned long flags;
- 	void __iomem *reg;
- 	u8 shift;
-diff --git a/drivers/pinctrl/samsung/pinctrl-s3c64xx.c b/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
-index fcf8c36e727e..2a14db2826d8 100644
---- a/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
-+++ b/drivers/pinctrl/samsung/pinctrl-s3c64xx.c
-@@ -68,32 +68,32 @@
- #define EINT_CON_MASK		0xF
- #define EINT_CON_LEN		4
- 
--static struct samsung_pin_bank_type bank_type_4bit_off = {
-+static const struct samsung_pin_bank_type bank_type_4bit_off = {
- 	.fld_width = { 4, 1, 2, 0, 2, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, 0, 0x0c, 0x10, },
- };
- 
--static struct samsung_pin_bank_type bank_type_4bit_alive = {
-+static const struct samsung_pin_bank_type bank_type_4bit_alive = {
- 	.fld_width = { 4, 1, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, },
- };
- 
--static struct samsung_pin_bank_type bank_type_4bit2_off = {
-+static const struct samsung_pin_bank_type bank_type_4bit2_off = {
- 	.fld_width = { 4, 1, 2, 0, 2, 2, },
- 	.reg_offset = { 0x00, 0x08, 0x0c, 0, 0x10, 0x14, },
- };
- 
--static struct samsung_pin_bank_type bank_type_4bit2_alive = {
-+static const struct samsung_pin_bank_type bank_type_4bit2_alive = {
- 	.fld_width = { 4, 1, 2, },
- 	.reg_offset = { 0x00, 0x08, 0x0c, },
- };
- 
--static struct samsung_pin_bank_type bank_type_2bit_off = {
-+static const struct samsung_pin_bank_type bank_type_2bit_off = {
- 	.fld_width = { 2, 1, 2, 0, 2, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, 0, 0x0c, 0x10, },
- };
- 
--static struct samsung_pin_bank_type bank_type_2bit_alive = {
-+static const struct samsung_pin_bank_type bank_type_2bit_alive = {
- 	.fld_width = { 2, 1, 2, },
- 	.reg_offset = { 0x00, 0x04, 0x08, },
- };
-@@ -272,7 +272,7 @@ static void s3c64xx_irq_set_handler(unsigned int irq, unsigned int type)
- static void s3c64xx_irq_set_function(struct samsung_pinctrl_drv_data *d,
- 					struct samsung_pin_bank *bank, int pin)
- {
--	struct samsung_pin_bank_type *bank_type = bank->type;
-+	const struct samsung_pin_bank_type *bank_type = bank->type;
- 	unsigned long flags;
- 	void __iomem *reg;
- 	u8 shift;
-diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.c b/drivers/pinctrl/samsung/pinctrl-samsung.c
-index 0504f0b75de8..b8edc901fe08 100644
---- a/drivers/pinctrl/samsung/pinctrl-samsung.c
-+++ b/drivers/pinctrl/samsung/pinctrl-samsung.c
-@@ -366,7 +366,7 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
- 					unsigned group, bool enable)
- {
- 	struct samsung_pinctrl_drv_data *drvdata;
--	struct samsung_pin_bank_type *type;
-+	const struct samsung_pin_bank_type *type;
- 	struct samsung_pin_bank *bank;
- 	void __iomem *reg;
- 	u32 mask, shift, data, pin_offset;
-@@ -422,7 +422,7 @@ static int samsung_pinconf_rw(struct pinctrl_dev *pctldev, unsigned int pin,
- 				unsigned long *config, bool set)
- {
- 	struct samsung_pinctrl_drv_data *drvdata;
--	struct samsung_pin_bank_type *type;
-+	const struct samsung_pin_bank_type *type;
- 	struct samsung_pin_bank *bank;
- 	void __iomem *reg_base;
- 	enum pincfg_type cfg_type = PINCFG_UNPACK_TYPE(*config);
-@@ -528,7 +528,7 @@ static const struct pinconf_ops samsung_pinconf_ops = {
- static void samsung_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
- {
- 	struct samsung_pin_bank *bank = gc_to_pin_bank(gc);
--	struct samsung_pin_bank_type *type = bank->type;
-+	const struct samsung_pin_bank_type *type = bank->type;
- 	unsigned long flags;
- 	void __iomem *reg;
- 	u32 data;
-@@ -552,7 +552,7 @@ static int samsung_gpio_get(struct gpio_chip *gc, unsigned offset)
- 	void __iomem *reg;
- 	u32 data;
- 	struct samsung_pin_bank *bank = gc_to_pin_bank(gc);
--	struct samsung_pin_bank_type *type = bank->type;
-+	const struct samsung_pin_bank_type *type = bank->type;
- 
- 	reg = bank->drvdata->virt_base + bank->pctl_offset;
- 
-@@ -569,7 +569,7 @@ static int samsung_gpio_get(struct gpio_chip *gc, unsigned offset)
- static int samsung_gpio_set_direction(struct gpio_chip *gc,
- 					     unsigned offset, bool input)
- {
--	struct samsung_pin_bank_type *type;
-+	const struct samsung_pin_bank_type *type;
- 	struct samsung_pin_bank *bank;
- 	struct samsung_pinctrl_drv_data *drvdata;
- 	void __iomem *reg;
-@@ -1096,9 +1096,8 @@ static void samsung_pinctrl_suspend_dev(
- 	for (i = 0; i < ctrl->nr_banks; i++) {
- 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
- 		void __iomem *reg = virt_base + bank->pctl_offset;
--
--		u8 *offs = bank->type->reg_offset;
--		u8 *widths = bank->type->fld_width;
-+		const u8 *offs = bank->type->reg_offset;
-+		const u8 *widths = bank->type->fld_width;
- 		enum pincfg_type type;
- 
- 		/* Registers without a powerdown config aren't lost */
-@@ -1147,9 +1146,8 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
- 	for (i = 0; i < ctrl->nr_banks; i++) {
- 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
- 		void __iomem *reg = virt_base + bank->pctl_offset;
--
--		u8 *offs = bank->type->reg_offset;
--		u8 *widths = bank->type->fld_width;
-+		const u8 *offs = bank->type->reg_offset;
-+		const u8 *widths = bank->type->fld_width;
- 		enum pincfg_type type;
- 
- 		/* Registers without a powerdown config aren't lost */
-diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.h b/drivers/pinctrl/samsung/pinctrl-samsung.h
-index da527b390513..c67738597d2a 100644
---- a/drivers/pinctrl/samsung/pinctrl-samsung.h
-+++ b/drivers/pinctrl/samsung/pinctrl-samsung.h
-@@ -131,7 +131,7 @@ struct samsung_pin_bank_type {
-  * @pm_save: saved register values during suspend
-  */
- struct samsung_pin_bank {
--	struct samsung_pin_bank_type *type;
-+	const struct samsung_pin_bank_type *type;
- 	u32		pctl_offset;
- 	u32		pin_base;
- 	u8		nr_pins;
--- 
-2.1.0
+OK, let's forger this patch. It was supposed to be a cleanup, it should
+not disturb -rt.
+
+> > In fact this deadlock is not really possible in any case, scheduler locks
+> > should be fine under ->siglock (for example, signal_wake_up() is called
+> > under this lock).
+> >
+> > But, the comment above rcu_read_unlock() says:
+> >
+> > 	Given that the set of locks acquired by rt_mutex_unlock() might change
+> > 	at any time, a somewhat more future-proofed approach is to make sure
+> > 	that that preemption never happens ...
+>
+> Hmm, I'm not sure we need to worry about this. As in -rt siglock is a
+> mutex, which is rt_mutex() itself, I highly doubt we will have
+> rt_mutex_unlock() grab siglock, otherwise that would cause havoc in -rt.
+
+Yes. And, the changelog in a841796f "signal: align __lock_task_sighand() irq
+disabling and RCU" says:
+
+	It is therefore possible that this RCU read-side critical
+	section will be preempted and later RCU priority boosted, which means
+	that rcu_read_unlock() will call rt_mutex_unlock() in order to deboost
+	itself, but with interrupts disabled. This results in lockdep splats
+	...
+	It is quite possible that a better long-term fix is to make rt_mutex_unlock()
+	disable irqs when acquiring the rt_mutex structure's ->wait_lock.
+
+but this doesn't look right, raw_spin_lock(&lock->wait_lock) should be
+fine with irqs disabled or I am totally confused. rt_mutex_adjust_prio()
+does _irqsave/irqrestore, so this can't enable interrupts.
+
+Paul, will you agree if we turn it into
+
+struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+					   unsigned long *flags)
+{
+	struct sighand_struct *sighand;
+
+	rcu_read_lock();
+	for (;;) {
+		sighand = rcu_dereference(tsk->sighand);
+		if (unlikely(sighand == NULL))
+			break;
+
+		spin_lock_irqsave(&sighand->siglock, *flags);
+		if (likely(sighand == tsk->sighand))
+			break;
+		spin_unlock_irqrestore(&sighand->siglock, *flags);
+	}
+	/*
+	 * On the succesfull return we hold ->siglock. According to comment
+	 * above rcu_read_unlock() this is against the rules, but scheduler
+	 * locks are fine under this lock, signal_wake_up() takes them too.
+	 */
+	rcu_read_unlock();
+
+	return sighand;
+}
+
+?
+
+Or I can leave this code alone, this is the minor cleanup. Just to me this
+sequence
+
+	local_irq_save();
+	rcu_read_lock();
+	spin_lock();
+
+looks a bit confusing/annoying even with the comment.
+
+Oleg.
 
