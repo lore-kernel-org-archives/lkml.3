@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050AbaIWO2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:28:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39531 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957AbaIWO2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:28:19 -0400
-Date: Tue, 23 Sep 2014 16:28:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140923142816.GC10046@dhcp22.suse.cz>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144436.GG336@dhcp22.suse.cz>
- <20140922155049.GA6630@cmpxchg.org>
- <20140922172800.GA4343@dhcp22.suse.cz>
- <20140922195829.GA5197@cmpxchg.org>
- <20140923132553.GB10046@dhcp22.suse.cz>
- <20140923140526.GA15014@cmpxchg.org>
+	id S1756023AbaIWO2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:28:21 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50850 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830AbaIWO2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 10:28:18 -0400
+Date: Tue, 23 Sep 2014 09:28:07 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] fuse: Add support for mounts from pid/user
+ namespaces
+Message-ID: <20140923142807.GB19016@ubuntu-hedt>
+Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Serge Hallyn <serge.hallyn@ubuntu.com>,
+	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <1410532905-114262-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140923140526.GA15014@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410532905-114262-1-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-09-14 10:05:26, Johannes Weiner wrote:
-[...]
-> That's one way to put it.  But the way I see it is that I remove a
-> generic resource counter and replace it with a pure memory counter
-> which I put where we account and limit memory - with one exception
-> that is hardly worth creating a dedicated library file for.
+On Fri, Sep 12, 2014 at 09:41:41AM -0500, Seth Forshee wrote:
+> Third round of patches for making it possible to mount with fuse from
+> within user namespaces. The only change since v2 is the addition of a
+> patch to ensure real root is capable towards inodes whose uid/gid is
+> invalid.
 
-So you completely seem to ignore people doing CONFIG_CGROUP_HUGETLB &&
-!CONFIG_MEMCG without any justification and hiding it behind performance
-improvement which those users even didn't ask for yet.
+It's been nearly two weeks (three from the v2 patches) without any
+feedback besides Serge's acks. Any other comments or objections? Anyone
+planning to pick these up?
 
-All that just to not have one additional header and c file hidden by
-CONFIG_PAGE_COUNTER selected by both controllers. No special
-configuration option is really needed for CONFIG_PAGE_COUNTER.
+Thanks,
+Seth
 
-> I only explained my plans of merging all memory controllers because I
-> assumed we could ever be on the same page when it comes to this code.
-
-I doubt this is a good plan but I might be wrong here. The main thing
-stays there is no good reason to make hugetlb depend on memcg right now
-and such a change _shouldn't_ be hidden behind an unrelated change. From
-hugetlb container point of view this is just a different counter which
-doesn't depend on memcg. I am really surprised you are pushing for this
-so hard right now because it only distracts from the main motivation of
-your patch.
-
-> But regardless of that, my approach immediately simplifies Kconfig,
-> Makefiles, #includes, and you haven't made a good point why the
-> hugetlb controller depending on memcg would harm anybody in real life.
-
-Usecases for hugetlb and memcg controllers have basically zero overlap
-they simply manage different resources and so it is natural to use one
-without the other.
--- 
-Michal Hocko
-SUSE Labs
