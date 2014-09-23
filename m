@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaIWUCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:02:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20457 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755977AbaIWUCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:02:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,582,1406617200"; 
-   d="scan'208";a="607373731"
-Date: Tue, 23 Sep 2014 12:58:54 -0700
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
-        u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
-        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
-        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, christian.ruppert@abilis.com,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V2] i2c-designware: Add Intel Baytrail PMIC I2C bus
- support
-Message-ID: <20140923195854.GA9921@pathfinder>
-References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
- <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
- <20140923190057.GN15315@lukather>
+	id S1756815AbaIWUCs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:02:48 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:60830 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626AbaIWUCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:02:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923190057.GN15315@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140923183838.GA3122@atomide.com>
+References: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com>
+	<1410789610-23059-4-git-send-email-frans.klaver@xsens.com>
+	<54170823.7040801@hurleysoftware.com>
+	<5417228C.5070503@hurleysoftware.com>
+	<20140916085037.GI28458@ci00147.xsens-tech.local>
+	<54197804.3020302@hurleysoftware.com>
+	<20140917121303.GB20438@ci00147.xsens-tech.local>
+	<20140923082445.GA16218@ci00147.xsens-tech.local>
+	<5421AB20.8040606@hurleysoftware.com>
+	<88924386-79bc-44c7-9a07-249900cbd359@email.android.com>
+	<20140923183838.GA3122@atomide.com>
+Date: Tue, 23 Sep 2014 22:02:42 +0200
+Message-ID: <CAH6sp9OLFdFbEa+RA07RWd_EzTbCz7p0HApSoTeSp28yA8FLrA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+From: Frans Klaver <fransklaver@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Frans Klaver <frans.klaver@xsens.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Alexey Pelykh <alexey.pelykh@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+On Tue, Sep 23, 2014 at 8:38 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Frans Klaver <fransklaver@gmail.com> [140923 11:12]:
+>> On 23 September 2014 19:17:20 CEST, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> >
+>> >I would've thought the first 2 patches had already been picked up
+>> >because
+>> >they fix div-by-zero faults.
+>>
+>> I've had no confirmation of that happening so far. I also don't
+>> know if I should expect one. Who'd take these patches? Tony?
+>
+> $ scripts/get_maintainer.pl -f drivers/tty/serial/omap-serial.c
+>
+> Shows they should be sent to Greg and linux-serial. Please also Cc
+> linux-omap. And if it's a fix, please make sure the subject has the
+> magic word fix :)
 
-On Tue, Sep 23, 2014 at 09:00:57PM +0200, Maxime Ripard wrote:
-> Hi David,
-> 
-> On Tue, Sep 23, 2014 at 11:40:26AM -0700, David E. Box wrote:
-> > This patch implements an I2C bus sharing mechanism between the host and platform
-> > hardware on select Intel BayTrail SoC platforms using the X-Powers AXP288 PMIC.
-> > 
-> > On these platforms access to the PMIC must be shared with platform hardware. The
-> > hardware unit assumes full control of the I2C bus and the host must request
-> > access through a special semaphore. Hardware control of the bus also makes it
-> > necessary to disable runtime pm to avoid interfering with hardware transactions.
-> > 
-> > Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-> 
-> Sorry for stepping in like this without really knowing your platform,
-> but wouldn't using the hwspinlock framework make more sense than
-> hardcoding your own internal functions here?
+Done. Thanks.
 
-I looked into this but didn't see a clear way on our platform to identify the
-semaphore seperately from doing it in the designware platform driver. The way
-we can find it now is through evaluating an ACPI _SEM object on every i2c device
-that gets probed by the dw driver since at probe time we can get the acpi handle.
-Without this handle however there isn't a clear way of evaluating the _SEM
-object which would be needed to register a hwspinlock in separate code.
-
-Plus it would still require changes to the designware i2c core, though admittedly
-having a generic hwspinlock pointer added to the struct is cleaner.
-
-Dave
+Frans
