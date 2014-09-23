@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262AbaIWQbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:31:11 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:58488 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836AbaIWQbJ (ORCPT
+	id S1756320AbaIWQbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:31:16 -0400
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:42905 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836AbaIWQbN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:31:09 -0400
-Message-ID: <5421A045.5020804@samsung.com>
-Date: Wed, 24 Sep 2014 01:31:01 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Tue, 23 Sep 2014 12:31:13 -0400
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 12:31:13 EDT
+Date: Tue, 23 Sep 2014 18:25:09 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: C =?UTF-8?B?QmVyZ3N0csO2bQ==?= <cbergstrom@pathscale.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Stupid NVIDIA 3D vgaarb.c patch
+Message-ID: <20140923182509.46decd46@neptune.home>
+In-Reply-To: <CA+55aFwX_nV9oUjh6u5WY=jpLxN-a5GFLmXQWDbHW0Yom9OOVA@mail.gmail.com>
+References: <CAOnawYp7kv7Zjn4j-j4-TUOshE9G1uXWEqXB_=RHePNwNLmwWA@mail.gmail.com>
+	<CA+55aFwX_nV9oUjh6u5WY=jpLxN-a5GFLmXQWDbHW0Yom9OOVA@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i686-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-CC: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>, acourbot@nvidia.com,
-        tomeu@tomeuvizoso.net, Olof Johansson <olof@lixom.net>,
-        swarren@nvidia.com, drake@endlessm.com,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH v3 1/5] ARM: firmware: Introduce suspend and resume operations
-References: <1409062228-14690-1-git-send-email-t.figa@samsung.com> <1409062228-14690-2-git-send-email-t.figa@samsung.com>
-In-Reply-To: <1409062228-14690-2-git-send-email-t.figa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/14 23:10, Tomasz Figa wrote:
-> This patch extends the firmware_ops structure with two new callbacks:
-> .suspend() and .resume(). The former is intended to ask the firmware to
-> save all its volatile state and suspend the system, without returning
-> back to the kernel in between. The latter is to be called early by
-> very low level platform suspend code after waking up to restore low
-> level hardware state, which can't be restored in non-secure mode.
->
-> While at it, outdated version of the structure is removed from the
-> documentation and replaced with a reference to the header file.
->
-> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
-> Acked-by: Alexandre Courbot<acourbot@nvidia.com>
-> ---
->   Documentation/arm/firmware.txt  | 28 +++++-----------------------
->   arch/arm/include/asm/firmware.h |  8 ++++++++
->   2 files changed, 13 insertions(+), 23 deletions(-)
->
-> diff --git a/Documentation/arm/firmware.txt b/Documentation/arm/firmware.txt
-> index c2e468f..da6713a 100644
-> --- a/Documentation/arm/firmware.txt
-> +++ b/Documentation/arm/firmware.txt
-> @@ -7,32 +7,14 @@ world, which changes the way some things have to be initialized. This makes
->   a need to provide an interface for such platforms to specify available firmware
->   operations and call them when needed.
->
-> -Firmware operations can be specified using struct firmware_ops
-> -
-> -	struct firmware_ops {
-> -		/*
-> -		* Enters CPU idle mode
-> -		*/
-> -		int (*do_idle)(void);
-> -		/*
-> -		* Sets boot address of specified physical CPU
-> -		*/
-> -		int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
-> -		/*
-> -		* Boots specified physical CPU
-> -		*/
-> -		int (*cpu_boot)(int cpu);
-> -		/*
-> -		* Initializes L2 cache
-> -		*/
-> -		int (*l2x0_init)(void);
-> -	};
-> -
-> -and then registered with register_firmware_ops function
-> +Firmware operations can be specified by filling in a struct firmware_ops
-> +with appropriate callbacks and then registering it with register_firmware_ops()
-> +function.
->
->   	void register_firmware_ops(const struct firmware_ops *ops)
->
-> -the ops pointer must be non-NULL.
-> +The ops pointer must be non-NULL. More information about struct firmware_ops
-> +and its members can be found in arch/arm/include/asm/firmware.h header.
->
->   There is a default, empty set of operations provided, so there is no need to
->   set anything if platform does not require firmware operations.
-> diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
-> index 2c9f10d..5904f59 100644
-> --- a/arch/arm/include/asm/firmware.h
-> +++ b/arch/arm/include/asm/firmware.h
-> @@ -41,6 +41,14 @@ struct firmware_ops {
->   	 * Initializes L2 cache
->   	 */
->   	int (*l2x0_init)(void);
-> +	/*
-> +	 * Enter system-wide suspend.
-> +	 */
-> +	int (*suspend)(void);
-> +	/*
-> +	 * Restore state of privileged hardware after system-wide suspend.
-> +	 */
-> +	int (*resume)(void);
->   };
->
->   /* Global pointer for current firmware_ops structure, can't be NULL. */
+On Mon, 22 September 2014 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> Adding proper people and mailing lists..
+> 
+> The PCI_CLASS_DISPLAY_VGA test goes back to the very beginning by
+> BenH, and I have no idea if adding PCI_CLASS_DISPLAY_3D is
+> appropriate, but hopefully somebody does. The fact that it makes
+> things work certainly argues fairly convincingly for it, but I want
+> some backup here.
+> 
+> Dave, BenH?
+> 
+> Christopher(?), can you please also specify which laptop etc. And the
+> patch itself seems to have come from somebody else, unless you're
+> Lekensteyn. So we'd want to get the provenance of that too.
 
-Hi Russell,
+More a question to Christopher, but what criteria is preventing the use
+of the NVIDIA GPU under this condition?
 
-I've applied this in samsung tree for exynos stuff, if you have any 
-objection, please kindly let me know.
+As far as I've seen on my (single-GPU) systems X requires the GPU to
+have boot_vga=1 sysfs attribute to accept autoconfiguration (though
+with two GPUs and optimus/switcheroo interaction between the GPUs may
+change the picture).
 
-Thanks,
-Kukjin
+I've been looking at the open, nouveau side of things only. If NVIDIA
+closed driver has some other requirement, I don't know.
+
+But as here the intention seems to be to use exclusively the NVIDIA GPU
+just leaving the IGD along it should require explicit X configuration
+which then does not care about boot_vga.
+
+
+A more detailed description of what prevents operation with GPU not
+being added to vgaarb would certainly help understanding what happens,
+what is expected and where things differ.
+
+Bruno
+
+>                 Linus
+> 
+> On Mon, Sep 22, 2014 at 1:28 PM, C Bergström <cbergstrom@pathscale.com> wrote:
+> > Hi Linus,
+> >
+> > I don't know who the original author is and I can have one of the distro
+> > graphics friends review it, but I need this patch below to get NVIDIA
+> > drivers to work (without using any Intel graphics) on my laptop
+> > http://pastebin.com/wpmFi38k
+> >
+> > Sorry - I know this is not the proper way to submit a patch, but it's
+> > trivial and I'm not a kernel dev.
+> >
+> > Thanks
+> >
+> > ./C
