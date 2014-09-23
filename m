@@ -1,85 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaIWO64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:58:56 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:30966 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756556AbaIWO6u convert rfc822-to-8bit (ORCPT
+	id S1756589AbaIWO7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:59:04 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:47708 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574AbaIWO66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:58:50 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@lst.de>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: boot stall regression due to blk-mq: use percpu_ref for mq
- usage count
-Thread-Topic: boot stall regression due to blk-mq: use percpu_ref for mq
- usage count
-Thread-Index: AQHP1vVZ6AtrV49KnkCk3Df2Q45vT5wOy7XQ
-Date: Tue, 23 Sep 2014 14:57:48 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C94862@G9W0745.americas.hpqcorp.net>
-References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk>
- <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org>
- <20140923055924.GA10295@lst.de> <20140923060141.GF11740@mtj.dyndns.org>
- <20140923060906.GA10547@lst.de> <20140923061152.GI11740@mtj.dyndns.org>
-In-Reply-To: <20140923061152.GI11740@mtj.dyndns.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 23 Sep 2014 10:58:58 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, cebbert.lkml@gmail.com
+Subject: [PATCH v6 4/6] perf/tests: add interrupted state sample parsing test
+Date: Tue, 23 Sep 2014 16:57:47 +0200
+Message-Id: <1411484269-32311-5-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411484269-32311-1-git-send-email-eranian@google.com>
+References: <1411484269-32311-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch updates the sample parsing test with support
+for the sampling of machine interrupted state.
 
+The patch modifies the do_test() code to sahred the sample
+regts bitmask between user and intr regs.
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Tejun Heo
-> Sent: Tuesday, 23 September, 2014 1:12 AM
-> To: Christoph Hellwig
-> Cc: Jens Axboe; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
-> Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq usage
-> count
-> 
-> On Tue, Sep 23, 2014 at 08:09:06AM +0200, Christoph Hellwig wrote:
-> > On Tue, Sep 23, 2014 at 02:01:41AM -0400, Tejun Heo wrote:
-> > > On Tue, Sep 23, 2014 at 07:59:24AM +0200, Christoph Hellwig wrote:
-> > > > "[PATCHSET percpu/for-3.18] percpu_ref: implement
-> switch_to_atomic/percpu()"
-> > > >
-> > > > looks way to big for 3.17, and the regression was introduced in the
-> 3.17
-> > > > merge window.  I'm not sure what was broken before, but it defintively
-> > > > survived a lot of testing.
-> > >
-> > > Do we even care about fixing it for 3.17?  scsi-mq isn't enabled by
-> > > default even for 3.18.  The open-coded percpu ref thing was subtly
-> > > broken there.  It'd be difficult to trigger but I'm fairly sure it'd
-> > > crap out in the wild once in a blue moon.
-> >
-> > It's compiled in by default, and people are extremly eager to test it.
-> 
-> Ugh, I don't know.  It's not like we have a very good baseline we can
-> go back to and reverting it for -stable and then redoing it seems
-> kinda excessive for a yet experimental feature.  Jens?
-
-scsi_mod.use_blk_mq is not listed in 3.17rc6 Documentation/kernel-
-parameters.txt or Documentation/scsi/scsi-parameters.txt (which
-does admit "This document may not be entirely up to date and
-comprehensive.").
-
-Perhaps a description with an "experimental" warning could be 
-slipped into scsi-parameters.txt in 3.17, with plans to remove
-that warning in 3.18.
-
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
-Rob Elliott    HP Server Storage
+ tools/perf/tests/sample-parsing.c |   55 +++++++++++++++++++++++++++----------
+ 1 file changed, 40 insertions(+), 15 deletions(-)
 
-
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index ca292f9..4908c64 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -126,16 +126,28 @@ static bool samples_same(const struct perf_sample *s1,
+ 	if (type & PERF_SAMPLE_TRANSACTION)
+ 		COMP(transaction);
+ 
++	if (type & PERF_SAMPLE_REGS_INTR) {
++		size_t sz = hweight_long(s1->intr_regs.mask) * sizeof(u64);
++
++		COMP(intr_regs.mask);
++		COMP(intr_regs.abi);
++		if (s1->intr_regs.abi &&
++		    (!s1->intr_regs.regs || !s2->intr_regs.regs ||
++		     memcmp(s1->intr_regs.regs, s2->intr_regs.regs, sz))) {
++			pr_debug("Samples differ at 'intr_regs'\n");
++			return false;
++		}
++	}
++
+ 	return true;
+ }
+ 
+-static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
++static int do_test(u64 sample_type, u64 sample_regs, u64 read_format)
+ {
+ 	struct perf_evsel evsel = {
+ 		.needs_swap = false,
+ 		.attr = {
+ 			.sample_type = sample_type,
+-			.sample_regs_user = sample_regs_user,
+ 			.read_format = read_format,
+ 		},
+ 	};
+@@ -154,7 +166,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 		/* 1 branch_entry */
+ 		.data = {1, 211, 212, 213},
+ 	};
+-	u64 user_regs[64];
++	u64 regs[64];
+ 	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
+ 	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
+ 	struct perf_sample sample = {
+@@ -176,8 +188,8 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 		.branch_stack	= &branch_stack.branch_stack,
+ 		.user_regs	= {
+ 			.abi	= PERF_SAMPLE_REGS_ABI_64,
+-			.mask	= sample_regs_user,
+-			.regs	= user_regs,
++			.mask	= sample_regs,
++			.regs	= regs,
+ 		},
+ 		.user_stack	= {
+ 			.size	= sizeof(data),
+@@ -187,14 +199,25 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 			.time_enabled = 0x030a59d664fca7deULL,
+ 			.time_running = 0x011b6ae553eb98edULL,
+ 		},
++		.intr_regs	= {
++			.abi	= PERF_SAMPLE_REGS_ABI_64,
++			.mask	= sample_regs,
++			.regs	= regs,
++		},
+ 	};
+ 	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
+ 	struct perf_sample sample_out;
+ 	size_t i, sz, bufsz;
+ 	int err, ret = -1;
+ 
+-	for (i = 0; i < sizeof(user_regs); i++)
+-		*(i + (u8 *)user_regs) = i & 0xfe;
++	if (sample_type & PERF_SAMPLE_REGS_USER)
++		evsel.attr.sample_regs_user = sample_regs;
++
++	if (sample_type & PERF_SAMPLE_REGS_INTR)
++		evsel.attr.sample_regs_intr = sample_regs;
++
++	for (i = 0; i < sizeof(regs); i++)
++		*(i + (u8 *)regs) = i & 0xfe;
+ 
+ 	if (read_format & PERF_FORMAT_GROUP) {
+ 		sample.read.group.nr     = 4;
+@@ -271,7 +294,7 @@ int test__sample_parsing(void)
+ {
+ 	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
+ 	u64 sample_type;
+-	u64 sample_regs_user;
++	u64 sample_regs;
+ 	size_t i;
+ 	int err;
+ 
+@@ -280,7 +303,7 @@ int test__sample_parsing(void)
+ 	 * were added.  Please actually update the test rather than just change
+ 	 * the condition below.
+ 	 */
+-	if (PERF_SAMPLE_MAX > PERF_SAMPLE_TRANSACTION << 1) {
++	if (PERF_SAMPLE_MAX > PERF_SAMPLE_REGS_INTR << 1) {
+ 		pr_debug("sample format has changed, some new PERF_SAMPLE_ bit was introduced - test needs updating\n");
+ 		return -1;
+ 	}
+@@ -297,22 +320,24 @@ int test__sample_parsing(void)
+ 			}
+ 			continue;
+ 		}
++		sample_regs = 0;
+ 
+ 		if (sample_type == PERF_SAMPLE_REGS_USER)
+-			sample_regs_user = 0x3fff;
+-		else
+-			sample_regs_user = 0;
++			sample_regs = 0x3fff;
++
++		if (sample_type == PERF_SAMPLE_REGS_INTR)
++			sample_regs = 0xff0fff;
+ 
+-		err = do_test(sample_type, sample_regs_user, 0);
++		err = do_test(sample_type, sample_regs, 0);
+ 		if (err)
+ 			return err;
+ 	}
+ 
+ 	/* Test all sample format bits together */
+ 	sample_type = PERF_SAMPLE_MAX - 1;
+-	sample_regs_user = 0x3fff;
++	sample_regs = 0x3fff; /* shared yb intr and user regs */
+ 	for (i = 0; i < ARRAY_SIZE(rf); i++) {
+-		err = do_test(sample_type, sample_regs_user, rf[i]);
++		err = do_test(sample_type, sample_regs, rf[i]);
+ 		if (err)
+ 			return err;
+ 	}
+-- 
+1.7.9.5
 
