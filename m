@@ -1,180 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761AbaIWUBc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:01:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37376 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025AbaIWUB3 (ORCPT
+	id S1756053AbaIWUB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:01:56 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54638 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755830AbaIWUBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:01:29 -0400
-Date: Tue, 23 Sep 2014 13:01:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Anish Bhatt <anish@chelsio.com>,
-        David Miller <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: mmotm 2014-09-22-16-57 uploaded
-Message-Id: <20140923130128.79f5931ac03dbb31f53be805@linux-foundation.org>
-In-Reply-To: <20140923190222.GA4662@roeck-us.net>
-References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
-	<20140923190222.GA4662@roeck-us.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 16:01:53 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v12 06/12] PCI: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+Date: Tue, 23 Sep 2014 20:01:08 +0100
+Message-Id: <1411498874-9864-7-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 12:02:22 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+the creation order has been changed for no good reason. Revert the order of
+creation as we are going to depend on the pci_host_bridge structure to retrieve the
+domain number of the root bus.
 
-> On Mon, Sep 22, 2014 at 05:02:56PM -0700, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2014-09-22-16-57 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > mmotm-readme.txt says
-> > 
-> > README for mm-of-the-moment:
-> > 
-> > http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > more than once a week.
-> > 
-> Sine I started testing this branch, I figure I might as well share the results.
-> 
-> Build results:
-> 	total: 133 pass: 115 fail: 18
-> Failed builds:
-> 	alpha:defconfig
-> 	alpha:allmodconfig
-> 	arm:imx_v6_v7_defconfig
-> 	arm:imx_v4_v5_defconfig
-> 	i386:allyesconfig
-> 	i386:allmodconfig
-> 	m68k:allmodconfig
-> 	mips:nlm_xlp_defconfig
-> 	parisc:a500_defconfig
-> 	powerpc:cell_defconfig
-> 	powerpc:ppc6xx_defconfig
-> 	powerpc:mpc85xx_defconfig
-> 	powerpc:mpc85xx_smp_defconfig
-> 	tile:tilegx_defconfig
-> 
-> Qemu test results:
-> 	total: 24 pass: 23 fail: 1
-> Failed tests:
-> 	alpha:alpha_defconfig
-> 
-> More information is available at http://server.roeck-us.net:8010/builders.
-> Note that powerpc failures are counted twice because they are built twice,
-> once with binutils 2.23 and once with 2.24.
-> 
-> The most scary problem (in my opinion) is the failed mips:nlm_xlp_defconfig
-> build.  It is caused by 'scsi_netlink : Make SCSI_NETLINK dependent on NET
-> instead of selecting NET', which effectively disables CONFIG_NET for around
-> 30 configurations (assuming I found them all). The practical impact is that
-> the affected configurations won't really work anymore, even if they compile. 
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+---
+ drivers/pci/probe.c | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
-cc'ing Anish Bhatt.
-
-> Guenter
-> 
-> ---
-> Details:
-> 
-> alpha (including qemu)
-> 
-> drivers/tty/serial/8250/8250_core.c: In function 'serial8250_ioctl':
-> drivers/tty/serial/8250/8250_core.c:2874:7: error: 'TIOCSRS485' undeclared
-> 
-> arm:imx_v6_v7_defconfig
-> arm:imx_v4_v5_defconfig
-> 
-> drivers/media/platform/coda/coda-bit.c: In function 'coda_fill_bitstream':
-> drivers/media/platform/coda/coda-bit.c:231:4: error: implicit declaration of function 'kmalloc'
-> drivers/media/platform/coda/coda-bit.c: In function 'coda_alloc_framebuffers':
-> drivers/media/platform/coda/coda-bit.c:312:3: error: implicit declaration of function 'kfree'
-
-That's odd - it includes slab.h.  Cc Fabio.
-
-> i386:allyesconfig
-> 
-> drivers/built-in.o: In function `_scsih_qcmd':
-> mpt2sas_scsih.c:(.text+0xf5327d): undefined reference to `__udivdi3'
-> mpt2sas_scsih.c:(.text+0xf532b0): undefined reference to `__umoddi3'
->
-> i386:allmodconfig
-> 
-> ERROR: "__udivdi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
-> ERROR: "__umoddi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
-
-Sigh.
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index e3cf8a2..5ff72ec 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -515,7 +515,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+ 	kfree(bridge);
+ }
  
-> m68k:allmodconfig
-> 
-> drivers/tty/serial/st-asc.c: In function 'asc_in':
-> drivers/tty/serial/st-asc.c:154:2: error: implicit declaration of function 'readl_relaxed'
-> 
-> mips:nlm_xlp_defconfig
-> 
-> ERROR: "scsi_is_fc_rport" [drivers/scsi/libfc/libfc.ko] undefined!
-> ERROR: "fc_get_event_number" [drivers/scsi/libfc/libfc.ko] undefined!
-> ERROR: "skb_trim" [drivers/scsi/libfc/libfc.ko] undefined!
-> ERROR: "fc_host_post_event" [drivers/scsi/libfc/libfc.ko] undefined!
-> 
-> [and many more]
-> 
-> parisc:a500_defconfig
-> 
-> ERROR: "csum_partial" [drivers/scsi/scsi_debug.ko] undefined!
-> 
-> powerpc:cell_defconfig
-> powerpc:mpc85xx_defconfig
-> powerpc:mpc85xx_smp_defconfig
-> 
-> arch/powerpc/mm/hugetlbpage.c:710:1: error: conflicting types for 'follow_huge_pud'
->  follow_huge_pud(struct mm_struct *mm, unsigned long address,
->   ^
-> In file included from arch/powerpc/mm/hugetlbpage.c:14:0: include/linux/hugetlb.h:103:14:
-> 	note: previous declaration of 'follow_huge_pud' was here
->    struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
-                 ^
-
-Naoya, please check:
-
---- a/arch/powerpc/mm/hugetlbpage.c~mm-hugetlb-reduce-arch-dependent-code-around-follow_huge_-fix
-+++ a/arch/powerpc/mm/hugetlbpage.c
-@@ -708,7 +708,7 @@ follow_huge_pmd(struct mm_struct *mm, un
- 
- struct page *
- follow_huge_pud(struct mm_struct *mm, unsigned long address,
--		pmd_t *pmd, int write)
-+		pud_t *pud, int write)
+-static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
++static struct pci_host_bridge *pci_alloc_host_bridge(void)
  {
- 	BUG();
+ 	struct pci_host_bridge *bridge;
+ 
+@@ -524,7 +524,8 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 		return NULL;
+ 
+ 	INIT_LIST_HEAD(&bridge->windows);
+-	bridge->bus = b;
++	bridge->dev.release = pci_release_host_bridge_dev;
++
+ 	return bridge;
+ }
+ 
+@@ -1761,9 +1762,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
++	bridge = pci_alloc_host_bridge();
++	if (!bridge)
++		return NULL;
++
++	bridge->dev.parent = parent;
++
+ 	b = pci_alloc_bus();
+ 	if (!b)
+-		return NULL;
++		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+@@ -1772,26 +1779,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+ 		dev_dbg(&b2->dev, "bus already known\n");
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 
+-	bridge = pci_alloc_host_bridge(b);
+-	if (!bridge)
+-		goto err_out;
+-
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_host_bridge_dev;
++	bridge->bus = b;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+ 	error = pcibios_root_bridge_prepare(bridge);
+-	if (error) {
+-		kfree(bridge);
++	if (error)
+ 		goto err_out;
+-	}
+ 
+ 	error = device_register(&bridge->dev);
+ 	if (error) {
+ 		put_device(&bridge->dev);
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+@@ -1848,8 +1848,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ class_dev_reg_err:
+ 	put_device(&bridge->dev);
+ 	device_unregister(&bridge->dev);
+-err_out:
++err_bus_out:
+ 	kfree(b);
++err_out:
++	kfree(bridge);
  	return NULL;
-_
-
-> powerpc:ppc6xx_defconfig
-> 
-> In file included from include/linux/kernel.h:13:0, from mm/debug.c:8:
-> mm/debug.c: In function 'dump_mm':
-> mm/debug.c:212:5: error: 'const struct mm_struct' has no member named 'owner'
-
-I fixed that.
-
-> tile:tilegx_defconfig
-> 
-> mm/debug.c: In function 'dump_mm':
-> mm/debug.c:169:2: error: expected ')' before 'mm'
-
-Don't have a clue.  In my tree that's
-
-	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
+ }
+ 
+-- 
+2.1.0
 
