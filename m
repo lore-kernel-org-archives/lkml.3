@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaIWJlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:41:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55174 "EHLO
+	id S1755437AbaIWJl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:41:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55157 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754996AbaIWJi5 (ORCPT
+	with ESMTP id S1754713AbaIWJi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:38:57 -0400
+	Tue, 23 Sep 2014 05:38:56 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,9 +21,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v7 03/10] rtc: at91sam9: replace devm_ioremap by devm_ioremap_resource
-Date: Tue, 23 Sep 2014 11:38:43 +0200
-Message-Id: <1411465130-29011-4-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v7 02/10] rtc: at91sam9: use standard readl/writel functions instead of raw versions
+Date: Tue, 23 Sep 2014 11:38:42 +0200
+Message-Id: <1411465130-29011-3-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411465130-29011-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1411465130-29011-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -31,69 +31,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace devm_ioremap calls by devm_ioremap_resource which already check
-resource consistency (resource != NULL) and print an error in case of
-failure.
+Raw versions of writel and writel should not be directly used and should
+be replaced by their relaxed versions (readl/writel_relaxed), which take
+endianness conversion into account.
+
+In this driver we prefer the standard readl/writel function which add the
+appropriate memory barrier around the access (the performance penalty is
+negligible for this kind of application).
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/rtc/rtc-at91sam9.c | 29 ++++++++++-------------------
- 1 file changed, 10 insertions(+), 19 deletions(-)
+ drivers/rtc/rtc-at91sam9.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 74a9ca0..38a2693 100644
+index 51f0038..74a9ca0 100644
 --- a/drivers/rtc/rtc-at91sam9.c
 +++ b/drivers/rtc/rtc-at91sam9.c
-@@ -306,18 +306,11 @@ static const struct rtc_class_ops at91_rtc_ops = {
-  */
- static int at91_rtc_probe(struct platform_device *pdev)
- {
--	struct resource	*r, *r_gpbr;
-+	struct resource	*r;
- 	struct sam9_rtc	*rtc;
- 	int		ret, irq;
- 	u32		mr;
+@@ -77,14 +77,14 @@ struct sam9_rtc {
+ };
  
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	r_gpbr = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	if (!r || !r_gpbr) {
--		dev_err(&pdev->dev, "need 2 ressources\n");
--		return -ENODEV;
--	}
--
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		dev_err(&pdev->dev, "failed to get interrupt resource\n");
-@@ -335,18 +328,16 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 		device_init_wakeup(&pdev->dev, 1);
+ #define rtt_readl(rtc, field) \
+-	__raw_readl((rtc)->rtt + AT91_RTT_ ## field)
++	readl((rtc)->rtt + AT91_RTT_ ## field)
+ #define rtt_writel(rtc, field, val) \
+-	__raw_writel((val), (rtc)->rtt + AT91_RTT_ ## field)
++	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
  
- 	platform_set_drvdata(pdev, rtc);
--	rtc->rtt = devm_ioremap(&pdev->dev, r->start, resource_size(r));
--	if (!rtc->rtt) {
--		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
--		return -ENOMEM;
--	}
+ #define gpbr_readl(rtc) \
+-	__raw_readl((rtc)->gpbr)
++	readl((rtc)->gpbr)
+ #define gpbr_writel(rtc, val) \
+-	__raw_writel((val), (rtc)->gpbr)
++	writel((val), (rtc)->gpbr)
  
--	rtc->gpbr = devm_ioremap(&pdev->dev, r_gpbr->start,
--				resource_size(r_gpbr));
--	if (!rtc->gpbr) {
--		dev_err(&pdev->dev, "failed to map gpbr registers, aborting.\n");
--		return -ENOMEM;
--	}
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	rtc->rtt = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(rtc->rtt))
-+		return PTR_ERR(rtc->rtt);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(rtc->gpbr))
-+		return PTR_ERR(rtc->rtt);
- 
- 	mr = rtt_readl(rtc, MR);
- 
+ /*
+  * Read current time and date in RTC
 -- 
 1.9.1
 
