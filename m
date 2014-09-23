@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482AbaIWO4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:56:31 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:53873 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932193AbaIWO43 convert rfc822-to-8bit (ORCPT
+	id S932475AbaIWO4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:56:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37269 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719AbaIWO4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:56:29 -0400
-X-Greylist: delayed 2036 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 10:56:29 EDT
-From: Peter Wu <peter@lekensteyn.nl>
-To: C =?ISO-8859-1?Q?Bergstr=F6m?= <cbergstrom@pathscale.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Airlie <airlied@linux.ie>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Stupid NVIDIA 3D vgaarb.c patch
-Date: Tue, 23 Sep 2014 16:22:17 +0200
-Message-ID: <20771253.xd3Bmja4Qg@al>
-User-Agent: KMail/4.13.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.0; x86_64; ; )
-In-Reply-To: <CAOnawYrxZA-O7xSges2LmDrmaZ__MnE7LyDfR2VLrdy+i_9VpQ@mail.gmail.com>
-References: <CAOnawYp7kv7Zjn4j-j4-TUOshE9G1uXWEqXB_=RHePNwNLmwWA@mail.gmail.com> <CA+55aFwX_nV9oUjh6u5WY=jpLxN-a5GFLmXQWDbHW0Yom9OOVA@mail.gmail.com> <CAOnawYrxZA-O7xSges2LmDrmaZ__MnE7LyDfR2VLrdy+i_9VpQ@mail.gmail.com>
+	Tue, 23 Sep 2014 10:56:05 -0400
+Date: Tue, 23 Sep 2014 16:55:10 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "Joe. C" <srv_yingjoe.chen@mediatek.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        "Hongzhou. Yang" <srv_hongzhou.yang@mediatek.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        srv_heupstream@mediatek.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, dandan.he@mediatek.com
+Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
+Message-ID: <20140923145510.GX4992@pengutronix.de>
+References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
+ <2770365.r419rjIAOU@wuerfel>
+ <1411480694.21299.18.camel@mtksdaap41>
+ <7840459.vtELiqVIOL@wuerfel>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Spam-Score: 0.0 (/)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7840459.vtELiqVIOL@wuerfel>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:34:55 up 13 days,  7:22, 71 users,  load average: 0.04, 0.08,
+ 0.06
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 03:52:48 C Bergström wrote:
-> Here's where I originally found it
-> https://github.com/Bumblebee-Project/Bumblebee/issues/159
-> (Adding Peter to cc chain)
+On Tue, Sep 23, 2014 at 04:10:09PM +0200, Arnd Bergmann wrote:
+> On Tuesday 23 September 2014 21:58:14 Joe. C wrote:
+> > Thanks for review. 
+> > The intend for these macros is helpin pinctrl user to write DT node.
+> > With these macro, we could write like this for i2c0:
+> > 
+> > mediatek,pinfunc = <MT8135_PIN_100_SDA0__FUNC_SDA0 
+> >                         MT8135_PIN_101_SCL0__FUNC_SCL0>;
+> > 
+> > We feel this is less error prone and easier to write than this:
+> > 
+> > mediatek,pinfunc = <MT_PIN_FUNC(100, 1) MT_PIN_FUNC(101, 1)>
 > 
-> I guess there's already a bug id and some (snarky?) comments
-> https://bugzilla.kernel.org/show_bug.cgi?id=63641
-> -------
-> This is for Aorus X3 laptop with NVIDIA GTX 870m card
+> But you don't actually use the same macros in the driver, so in effect
+> you just move the definitions from the file they are needed in to another
+> file as a macro.
 > 
-> On Tue, Sep 23, 2014 at 3:43 AM, Linus Torvalds <
-> torvalds@linux-foundation.org> wrote:
-> 
-> > Adding proper people and mailing lists..
-> >
-> > The PCI_CLASS_DISPLAY_VGA test goes back to the very beginning by
-> > BenH, and I have no idea if adding PCI_CLASS_DISPLAY_3D is
-> > appropriate, but hopefully somebody does. The fact that it makes
-> > things work certainly argues fairly convincingly for it, but I want
-> > some backup here.
-> >
-> > Dave, BenH?
-> >
-> > Christopher(?), can you please also specify which laptop etc. And the
-> > patch itself seems to have come from somebody else, unless you're
-> > Lekensteyn. So we'd want to get the provenance of that too.
+> It is no less error prone to define those macros in mt8135-pinfunc.h
+> than in the pinctrl node, just less readable.
 
-If I understood this correctly, VGA arbitration is used to deal with multiple
-users of a fixed IO memory address. I don't know whether modern software still
-use it, but if they do, then it probably makes sense to include the 3D
-controller class as some Nvidia graphics card are configured with this class.
+IMO these defines make writing and reviewing dts files much easier. Once
+the macros are used widely and thus are likely correct you can be sure
+that every board has sane and non conflicting pin setups. The pin names
+can often be found in the schematics of a board, so you can verify the
+pinmux settings without looking in the SoC datasheet.
 
-Unfortunately I cannot provide more details than this as I don't know the
-specifics. Feel free to take this patch and make it suitable for inclusion. I
-don't have this kind of hardware, but mr. C is certainly not the only one with
-this.
+If all you have in the dts files is MT_PIN_FUNC(pinx, funcy) then it
+can be quite hard to verify pins. First you have to get an idea how
+the pin numbers match the pins in the datasheet. In the bindings the
+pins are numbered, in the datasheet they usually only have names.
+Afterwards you have to find out which functions this pin has and how
+these match to the function number in the binding. Repeat this for
+dozens of pins.
 
-Kind regards,
-Peter
-
-> >                 Linus
-> >
-> > On Mon, Sep 22, 2014 at 1:28 PM, C Bergström <cbergstrom@pathscale.com>
-> > wrote:
-> > > Hi Linus,
-> > >
-> > > I don't know who the original author is and I can have one of the distro
-> > > graphics friends review it, but I need this patch below to get NVIDIA
-> > > drivers to work (without using any Intel graphics) on my laptop
-> > > http://pastebin.com/wpmFi38k
-> > >
-> > > Sorry - I know this is not the proper way to submit a patch, but it's
-> > > trivial and I'm not a kernel dev.
-> > >
-> > > Thanks
-> > >
-> > > ./C
-> >
+Sascha
 
 -- 
-Kind regards,
-Peter
-https://lekensteyn.nl
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
