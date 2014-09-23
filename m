@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512AbaIWKrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:47:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47407 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754070AbaIWKrj (ORCPT
+	id S1755529AbaIWKrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:47:48 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:4206 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070AbaIWKrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:47:39 -0400
-Date: Tue, 23 Sep 2014 11:47:16 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Robert Richter <rrichter@cavium.com>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
-Message-ID: <20140923104716.GG26472@arm.com>
-References: <1410176689-20020-1-git-send-email-rric@kernel.org>
- <20140923104431.GF20170@rric.localhost>
+	Tue, 23 Sep 2014 06:47:45 -0400
+Message-ID: <54214FCE.6070501@imgtec.com>
+Date: Tue, 23 Sep 2014 11:47:42 +0100
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923104431.GF20170@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] MIPS: mcount: Fix selfpc address for static trace
+References: <1411392779-9554-1-git-send-email-markos.chandras@imgtec.com>	<1411392779-9554-3-git-send-email-markos.chandras@imgtec.com> <20140922142642.7f70fb0f@gandalf.local.home>
+In-Reply-To: <20140922142642.7f70fb0f@gandalf.local.home>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 11:44:31AM +0100, Robert Richter wrote:
-> On 08.09.14 13:44:48, Robert Richter wrote:
-> > From: Robert Richter <rrichter@cavium.com>
-> > 
-> > Raising the current maximum limit to 64. This is needed for Cavium's
-> > Thunder systems that will have at least 48 cores per die.
-> > 
-> > The change keeps the current memory footprint in cpu mask structures.
-> > It does not break existing code. Setting the maximum to 64 cpus still
-> > boots systems with less cpus.
-> > 
-> > Mark's Juno happily booted with a NR_CPUS=64 kernel.
-> > 
-> > Tested on our Thunder system with 48 cores. We could see interrupts to
-> > all cores.
+On 09/22/2014 07:26 PM, Steven Rostedt wrote:
+> On Mon, 22 Sep 2014 14:32:59 +0100
+> Markos Chandras <markos.chandras@imgtec.com> wrote:
 > 
-> Catalin, Will,
+>> According to Documentation/trace/ftrace-design.txt, the selfpc
+>> should be the return address minus the mcount overhead (8 bytes).
+>> This brings static trace in line with the dynamic trace regarding
+>> the selfpc argument to the tracing function.
+>>
+>> This also removes the magic number '8' with the proper
+>> MCOUNT_INSN_SIZE.
 > 
-> please consider applying this patch.
+> I could also update the generic code to handle delay slots.
+> 
+> -- Steve
 
-I thought this was queued already?
+As I said to the other patch, if you want to fix the delay slots in the
+generic code that may be preferred indeed. On the other hand, the static
+tracer still needs fixing so the correct selfpc is used. I will update
+this patch based on the way you choose to handle delay slots in the
+generic code. Thanks
 
-Will
+-- 
+markos
