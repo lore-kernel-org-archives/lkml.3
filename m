@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaIWLnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:43:41 -0400
+	id S1753427AbaIWLns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:43:48 -0400
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:61055 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaIWLnh (ORCPT
+	with ESMTP id S1751883AbaIWLnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:43:37 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-8e-54215ce6474e
+	Tue, 23 Sep 2014 07:43:42 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-a2-54215ce9e5de
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
@@ -25,58 +25,55 @@ Cc: Sebastian Reichel <sre@kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v7 2/8] mfd: max14577: Map charger device to its own of_node
-Date: Tue, 23 Sep 2014 13:43:17 +0200
-Message-id: <1411472603-11821-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v7 6/8] power: max17040: Add ID for MAX77836 Fuel Gauge block
+Date: Tue, 23 Sep 2014 13:43:21 +0200
+Message-id: <1411472603-11821-7-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1411472603-11821-1-git-send-email-k.kozlowski@samsung.com>
 References: <1411472603-11821-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xy7rPYhRDDN484LSYs34Nm8XGGetZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xy7ovYxRDDKY/0LKYs34Nm8XGGetZ
 	LaY+fMJmMenJe2aL+UfOsVpMXDmZ2aL/zUJWi3OvVjJavH5haHG26Q27xf2vRxktvl3pYLLY
 	/L2DzeLyrjlsFp97jzBarD1yl91i6fWLTBYTpq9lsWjde4Td4nQ3q8Xp3SUOoh5r5q1h9Ljc
 	18vksXPWXXaPlcu/sHlsXqHlsWlVJ5vHnWt72DxOzPjN4jHvZKBH35ZVjB6fN8kFcEdx2aSk
-	5mSWpRbp2yVwZXRd38dUcImj4sqCdcwNjPPYuxg5OSQETCRmNi5ghrDFJC7cW8/WxcjFISSw
-	lFFi8/Vl7BBOH5NEY08/G0gVm4CxxOblS8CqRAQWMkrMXLISrIpZYAqrxOPfrawgVcICPhJL
-	H55g6mLk4GARUJVo6QwDCfMKuEuceLYMap2cxMljk1lBSjgFPCQW7nUECQsBlTz61806gZF3
-	ASPDKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQqPi6g3HpMatDjAIcjEo8vB5rFEKEWBPL
-	iitzDzFKcDArifC+C1MMEeJNSaysSi3Kjy8qzUktPsTIxMEp1cA4c9b8yAilv6yKRz99Xegv
-	8nBb+s23Lfsa4+fquabUPXu50l1t1amSnH0nNA5osnu++fxekF/kUlug9Zq+h9f9n9XPL46c
-	84op7YfzXAFBb83oV4m7jbyjjH7PaDc/Ln84vGWG7AP+WTlHMqRL7vpPYeyPrhO543rQ+6HG
-	k93hqaVb71+0Wq+kxFKckWioxVxUnAgAXyJM02gCAAA=
+	5mSWpRbp2yVwZXz40s9YsIej4knLE/YGxlnsXYycHBICJhJrVh5lhLDFJC7cW8/WxcjFISSw
+	lFHi54XtzBBOH5PEt4OfWEGq2ASMJTYvXwJWJSKwkFFi5pKV7CAOs8AUVonHv1vBqoQFfCXu
+	7p/GBmKzCKhKPGr6AxbnFXCX6H42kQ1in5zEyWOTgeIcHJwCHhIL9zqChIWASh7962adwMi7
+	gJFhFaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZIXHzdwbj0mNUhRgEORiUeXo81CiFCrIll
+	xZW5hxglOJiVRHjfhSmGCPGmJFZWpRblxxeV5qQWH2Jk4uCUamCUzPF4IW68s37G/+0GUtoB
+	p14etM7NNzhgUK94/ULo3+j9G6MMb72w6WA0nO6h2Vovc+sMy8nukNKvB8t/zzc+aPJCrtDn
+	nJvvncUTcjQvTlvle/+2t1S2EufHMxoHDynLZphUF8zNk58zf93+p0ez7VgD4owbXGWylk1M
+	qDK3ELhsJ/JyTa4SS3FGoqEWc1FxIgBY1mUGaQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a "maxim,max14577-charger" of_compatible to the mfd_cell so the
-MFD child device (the charger) will have its own of_node set. This will
-be used by the max14577 charger driver in next patches to obtain battery
-configuration from DTS.
+MAX77836 has the same Fuel Gauge as MAX17040/17048. The max17040 driver
+can be safely re-used. The patch adds MAX77836 device to the array of
+i2c_device_id. Additionally it removes the id associated with MAX17040
+device as the value is not used.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
 Acked-by: Andrew Morton <akpm@linux-foundation.org>
 Acked-by: Sebastian Reichel <sre@kernel.org>
 ---
- drivers/mfd/max14577.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/power/max17040_battery.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index 4a5e885383f8..6599407b5624 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -35,7 +35,10 @@ static const struct mfd_cell max14577_devs[] = {
- 		.name = "max14577-regulator",
- 		.of_compatible = "maxim,max14577-regulator",
- 	},
--	{ .name = "max14577-charger", },
-+	{
-+		.name = "max14577-charger",
-+		.of_compatible = "maxim,max14577-charger",
-+	},
- };
+diff --git a/drivers/power/max17040_battery.c b/drivers/power/max17040_battery.c
+index 0fbac861080d..14d44706327b 100644
+--- a/drivers/power/max17040_battery.c
++++ b/drivers/power/max17040_battery.c
+@@ -277,7 +277,8 @@ static SIMPLE_DEV_PM_OPS(max17040_pm_ops, max17040_suspend, max17040_resume);
+ #endif /* CONFIG_PM_SLEEP */
  
- static const struct mfd_cell max77836_devs[] = {
+ static const struct i2c_device_id max17040_id[] = {
+-	{ "max17040", 0 },
++	{ "max17040" },
++	{ "max77836-battery" },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max17040_id);
 -- 
 1.9.1
 
