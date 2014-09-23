@@ -1,162 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaIWXBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:01:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746AbaIWXBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:01:35 -0400
-Message-ID: <1411513277.24563.61.camel@ul30vt.home>
-Subject: Re: [PATCHv7 10/26] vfio: platform: probe to devices on the
- platform bus
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, kvm@vger.kernel.org,
-        christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com, open list <linux-kernel@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>
-Date: Tue, 23 Sep 2014 17:01:17 -0600
-In-Reply-To: <1411483586-29304-11-git-send-email-a.motakis@virtualopensystems.com>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1411483586-29304-11-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S932543AbaIWXDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:03:03 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23846 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171AbaIWXDA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 19:03:00 -0400
+Message-ID: <5421FC12.2020706@oracle.com>
+Date: Tue, 23 Sep 2014 19:02:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Yalin.Wang@sonymobile.com, Minchan Kim <minchan@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Boot failure caused by "mm/cma.c: free the reserved memblock when
+ free cma pages"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
-> Driver to bind to Linux platform devices, and callbacks to discover their
-> resources to be used by the main VFIO PLATFORM code.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform.c | 96 +++++++++++++++++++++++++++++++++++
->  include/uapi/linux/vfio.h             |  1 +
->  2 files changed, 97 insertions(+)
->  create mode 100644 drivers/vfio/platform/vfio_platform.c
-> 
-> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> new file mode 100644
-> index 0000000..024c026
-> --- /dev/null
-> +++ b/drivers/vfio/platform/vfio_platform.c
-> @@ -0,0 +1,96 @@
-> +/*
-> + * Copyright (C) 2013 - Virtual Open Systems
-> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/eventfd.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/iommu.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/notifier.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/vfio.h>
-> +#include <linux/io.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/irq.h>
-> +
-> +#include "vfio_platform_private.h"
-> +
-> +#define DRIVER_VERSION  "0.7"
-> +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
-> +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
-> +
-> +/* probing devices from the linux platform bus */
-> +
-> +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
-> +						int i)
-> +{
-> +	struct platform_device *pdev = (struct platform_device *) vdev->opaque;
-> +
-> +	return platform_get_resource(pdev, IORESOURCE_MEM, i);
+Hi Yalin,
 
-ARM may only support IORESOURCE_MEM, but I don't think platform devices
-are limited to MMIO, right?  vfio-platform shouldn't be either.
+I'm seeing the following BUG when booting the latest -next kernel. I've bisected it down
+to "mm/cma.c: free the reserved memblock when free cma pages".
 
-> +}
-> +
-> +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
-> +{
-> +	struct platform_device *pdev = (struct platform_device *) vdev->opaque;
-> +
-> +	return platform_get_irq(pdev, i);
-> +}
-> +
-> +
-> +static int vfio_platform_probe(struct platform_device *pdev)
-> +{
-> +	struct vfio_platform_device *vdev;
-> +	int ret;
-> +
-> +	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
-> +	if (!vdev)
-> +		return -ENOMEM;
-> +
-> +	vdev->opaque = (void *) pdev;
-> +	vdev->name = pdev->name;
-> +	vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
-> +	vdev->get_resource = get_platform_resource;
-> +	vdev->get_irq = get_platform_irq;
-> +
-> +	ret = vfio_platform_probe_common(vdev, &pdev->dev);
-> +	if (ret)
-> +		kfree(vdev);
-> +
-> +	return ret;
-> +}
-> +
-> +static int vfio_platform_remove(struct platform_device *pdev)
-> +{
-> +	return vfio_platform_remove_common(&pdev->dev);
-> +}
-> +
-> +static struct platform_driver vfio_platform_driver = {
-> +	.probe		= vfio_platform_probe,
-> +	.remove		= vfio_platform_remove,
-> +	.driver	= {
-> +		.name	= "vfio-platform",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(vfio_platform_driver);
-> +
-> +MODULE_VERSION(DRIVER_VERSION);
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR(DRIVER_AUTHOR);
-> +MODULE_DESCRIPTION(DRIVER_DESC);
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 30f630c..b022a25 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -158,6 +158,7 @@ struct vfio_device_info {
->  	__u32	flags;
->  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
->  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
-> +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)	/* vfio-platform device */
->  	__u32	num_regions;	/* Max region index + 1 */
->  	__u32	num_irqs;	/* Max IRQ index + 1 */
->  };
+[    2.438701] BUG: unable to handle kernel paging request at ffff880972493000
+[    2.438701] IP: memblock_isolate_range (mm/memblock.c:624)
+[    2.438701] PGD 34b51067 PUD 34b54067 PMD 976c56067 PTE 8000000972493060
+[    2.438701] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[    2.438701] Dumping ftrace buffer:
+[    2.438701]    (ftrace buffer empty)
+[    2.438701] Modules linked in:
+[    2.438701] CPU: 17 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-next-20140923-sasha-00037-gc40eca4 #1213
+[    2.438701] task: ffff88076d7d0000 ti: ffff880048d40000 task.ti: ffff880048d40000
+[    2.438701] RIP: memblock_isolate_range (mm/memblock.c:624)
+[    2.438701] RSP: 0000:ffff880048d43cf8  EFLAGS: 00010286
+[    2.438828] RAX: ffff880972493000 RBX: 0000000962600000 RCX: ffff880048d43d50
+[    2.439590] RDX: 0000000000200000 RSI: 0000000962400000 RDI: ffffffffb2fcaa30
+[    2.440000] RBP: ffff880048d43d38 R08: ffff880048d43d54 R09: 0000000000000001
+[    2.440000] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880048d43d54
+[    2.440000] R13: 0000000962400000 R14: 0000000000000000 R15: ffffffffb2fcaa30
+[    2.440000] FS:  0000000000000000(0000) GS:ffff880567c00000(0000) knlGS:0000000000000000
+[    2.440000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    2.440000] CR2: ffff880972493000 CR3: 0000000031e2f000 CR4: 00000000000006a0
+[    2.440000] Stack:
+[    2.440000]  ffffffffad29cda2 ffff880048d43d50 ffffea002eeb4000 0000000962400000
+[    2.440000]  ffffffffb2fcaa30 0000000000000000 000000000000a000 ffffea002eeb4008
+[    2.440000]  ffff880048d43d68 ffffffffb049e64a 0000000962400000 0000000000000000
+[    2.440000] Call Trace:
+[    2.440000] ? adjust_managed_page_count (mm/page_alloc.c:5430)
+[    2.440000] memblock_remove_range (mm/memblock.c:672)
+[    2.440000] memblock_free (mm/memblock.c:695)
+[    2.440000] init_cma_reserved_pageblock (mm/page_alloc.c:840)
+[    2.440000] cma_init_reserved_areas (mm/cma.c:118 mm/cma.c:133)
+[    2.440000] ? kfree (mm/slub.c:2674 mm/slub.c:3339)
+[    2.440000] ? early_memunmap (mm/cma.c:129)
+[    2.440000] do_one_initcall (init/main.c:792)
+[    2.440000] kernel_init_freeable (init/main.c:857 init/main.c:865 init/main.c:884 init/main.c:1005)
+[    2.440000] ? rest_init (init/main.c:932)
+[    2.440000] kernel_init (init/main.c:937)
+[    2.440000] ret_from_fork (arch/x86/kernel/entry_64.S:348)
+[    2.440000] ? rest_init (init/main.c:932)
+[ 2.440000] Code: 89 ff e8 ec fa ff ff 85 c0 79 e1 b8 f4 ff ff ff e9 c0 00 00 00 4c 01 eb 45 31 f6 49 63 c6 49 3b 07 73 b9 48 c1 e0 05 49 03 47 18 <48> 8b 10 48 8b 48 08 48 8d 34 11 48 39 d3 76 a1 49 39 f5 0f 83
+All code
+========
+   0:	89 ff                	mov    %edi,%edi
+   2:	e8 ec fa ff ff       	callq  0xfffffffffffffaf3
+   7:	85 c0                	test   %eax,%eax
+   9:	79 e1                	jns    0xffffffffffffffec
+   b:	b8 f4 ff ff ff       	mov    $0xfffffff4,%eax
+  10:	e9 c0 00 00 00       	jmpq   0xd5
+  15:	4c 01 eb             	add    %r13,%rbx
+  18:	45 31 f6             	xor    %r14d,%r14d
+  1b:	49 63 c6             	movslq %r14d,%rax
+  1e:	49 3b 07             	cmp    (%r15),%rax
+  21:	73 b9                	jae    0xffffffffffffffdc
+  23:	48 c1 e0 05          	shl    $0x5,%rax
+  27:	49 03 47 18          	add    0x18(%r15),%rax
+  2b:*	48 8b 10             	mov    (%rax),%rdx		<-- trapping instruction
+  2e:	48 8b 48 08          	mov    0x8(%rax),%rcx
+  32:	48 8d 34 11          	lea    (%rcx,%rdx,1),%rsi
+  36:	48 39 d3             	cmp    %rdx,%rbx
+  39:	76 a1                	jbe    0xffffffffffffffdc
+  3b:	49 39 f5             	cmp    %rsi,%r13
+  3e:	0f                   	.byte 0xf
+  3f:	83                   	.byte 0x83
+	...
+
+Code starting with the faulting instruction
+===========================================
+   0:	48 8b 10             	mov    (%rax),%rdx
+   3:	48 8b 48 08          	mov    0x8(%rax),%rcx
+   7:	48 8d 34 11          	lea    (%rcx,%rdx,1),%rsi
+   b:	48 39 d3             	cmp    %rdx,%rbx
+   e:	76 a1                	jbe    0xffffffffffffffb1
+  10:	49 39 f5             	cmp    %rsi,%r13
+  13:	0f                   	.byte 0xf
+  14:	83                   	.byte 0x83
+	...
+[    2.440000] RIP memblock_isolate_range (mm/memblock.c:624)
+[    2.440000]  RSP <ffff880048d43cf8>
+[    2.440000] CR2: ffff880972493000
 
 
-
+Thanks,
+Sasha
