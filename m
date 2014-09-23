@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaIWHqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:46:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57000 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754667AbaIWHqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:46:31 -0400
-Message-ID: <1411458392.8304.2.camel@linux-t7sj.site>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.18
-From: Davidlohr Bueso <dbueso@suse.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, bobby.prani@gmail.com,
-        oleg@redhat.com, ard.biesheuvel@linaro.org, joe@perches.com,
-        rostedt@goodmis.org
-Date: Tue, 23 Sep 2014 09:46:32 +0200
-In-Reply-To: <20140922214603.GA6356@linux.vnet.ibm.com>
-References: <20140922214603.GA6356@linux.vnet.ibm.com>
-Organization: SUSE Labs
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754763AbaIWHqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:46:50 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:4949 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754315AbaIWHoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:44:55 -0400
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <wim@iguana.be>, <linux@roeck-us.net>
+CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH v2 0/2] watchdog: dw_wdt: one bug fix and restart handler support
+Date: Tue, 23 Sep 2014 15:42:10 +0800
+Message-ID: <1411458132-5410-1-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1409230081
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+These patches are intend to improve dw_wdt in the following two aspects:
 
-On Mon, 2014-09-22 at 14:46 -0700, Paul E. McKenney wrote:
-> 4.	Torture-test updates.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/8/28/546 and at
-> 	https://lkml.org/lkml/2014/9/11/1114.
+Firstly, the TOP_INIT, ie bit 4-7 of the WDOG_TIMEOUT_RANGE_REG_OFFSET register
+may be zero at reset on some HW, so the timeout period may be very short, thus
+we will see immediate system reset after openning the watchdog. Fix this
+problem by also initialising the TOP_INIT when setting TOP.
 
-I was planning on sending you another batch of torture patches. Would
-you rather I hold off until the next merge window, or is it still ok to
-send?
+Secondly, the WDT can also be used to reboot the system with the help of
+recently introduced restart handler.
 
-Thanks,
-Davidlohr
+Tested on Marvell BG2Q DMP board.
+
+Changes since v1:
+  - add some wait to let the reset catch, suggested by Guenter Roeck
+  - setting TOP_INIT as well when setting TOP in function dw_wdt_set_top to
+    fix the reboot soon issue.
+
+Jisheng Zhang (2):
+  watchdog: dw_wdt: initialise TOP_INIT in dw_wdt_set_top()
+  watchdog: dw_wdt: add restart handler support
+
+ drivers/watchdog/dw_wdt.c | 36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+-- 
+2.1.0
 
