@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103AbaIWXGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:06:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40229 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757045AbaIWXGR (ORCPT
+	id S1757157AbaIWXHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:07:52 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:35038 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaIWXHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:06:17 -0400
-Date: Tue, 23 Sep 2014 16:06:16 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] qcom clocks changes for 3.18
-Message-ID: <20140923230616.GI10233@codeaurora.org>
+	Tue, 23 Sep 2014 19:07:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, dbueso@suse.de, serge.hallyn@ubuntu.com,
+        thierry@linux.vnet.ibm.com, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <cover.1411506121.git.shuahkh@osg.samsung.com>
+	<cover.1411506121.git.shuahkh@osg.samsung.com>
+	<969f0780734a04763f2b54063603b93380244d0c.1411506121.git.shuahkh@osg.samsung.com>
+	<87d2am2c4v.fsf@x220.int.ebiederm.org>
+	<5421FA8A.9050209@osg.samsung.com>
+Date: Tue, 23 Sep 2014 16:07:28 -0700
+In-Reply-To: <5421FA8A.9050209@osg.samsung.com> (Shuah Khan's message of "Tue,
+	23 Sep 2014 16:56:10 -0600")
+Message-ID: <8761geylzj.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19ugW+pHBbbVNbbgkIkjN43AIitWWWt3qs=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.4 XM_Superlative01 Best-rated language
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4796]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Shuah Khan <shuahkh@osg.samsung.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2 5/7] selftests/mount: change test to use ksft framework
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Shuah Khan <shuahkh@osg.samsung.com> writes:
 
-A smallish pull request for 3.18. The next batch of stuff is
-going to require more review from your side (cpufreq, nss, etc.)
+> On 09/23/2014 04:41 PM, Eric W. Biederman wrote:
+>> Shuah Khan <shuahkh@osg.samsung.com> writes:
+>> 
+>>> Change mount test to use kselftest framework to report
+>>> test results.
+>> 
+>> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>> 
+>> I am curious did you even run these tests?   I can't possibly see how
+>> the tests would have passed with this change.  At the very least you
+>> have taken this test from linear to exponential time complexity.
+>> 
+>
+> Oops. I meant to drop this commit from the series. Sorry for the
+> noise.
 
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+No problem.  Except for the unnecessary semantic change the rest of the
+change looked fine.  I just wanted to make certain you didn't break my
+test by accident.
 
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-clocks-for-3.18
-
-for you to fetch changes up to 229fd4a505553c3a475b90e9aa8e452f5d78eb3b:
-
-  clk: qcom: Add support for banked MD RCGs (2014-09-22 15:16:54 -0700)
-
-----------------------------------------------------------------
-qcom clock changes for 3.18
-
-Some fixes for the IPQ driver and some code consolidation
-and refactoring.
-
-----------------------------------------------------------------
-Andy Gross (1):
-      clk: qcom: Add IPQ8064 PLL required for USB
-
-Stephen Boyd (3):
-      clk: qcom: Consolidate frequency finding logic
-      clk: qcom: Add support for setting rates on PLLs
-      clk: qcom: Add support for banked MD RCGs
-
- drivers/clk/qcom/clk-pll.c      |  68 +++++++++++++++++++++++-
- drivers/clk/qcom/clk-pll.h      |  20 +++++++
- drivers/clk/qcom/clk-rcg.c      | 115 +++++++++++++++++++---------------------
- drivers/clk/qcom/clk-rcg.h      |   6 ++-
- drivers/clk/qcom/clk-rcg2.c     |  19 ++-----
- drivers/clk/qcom/common.c       |  16 ++++++
- drivers/clk/qcom/common.h       |   4 ++
- drivers/clk/qcom/gcc-ipq806x.c  |  31 ++++++++++-
- drivers/clk/qcom/mmcc-msm8960.c |  28 +++++++---
- 9 files changed, 219 insertions(+), 88 deletions(-)
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Eric
