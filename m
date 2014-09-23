@@ -1,171 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaIWMsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:48:25 -0400
-Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:37529 "EHLO
-	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753830AbaIWMsY (ORCPT
+	id S1755687AbaIWMsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:48:31 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:43105 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587AbaIWMs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:48:24 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-mmc@vger.kernel.org
-Subject: [PATCH v2 1/2] mmc: atmel-mci: Switch to using managed resource in probe
-Date: Tue, 23 Sep 2014 18:21:48 +0530
-Message-Id: <1411476708-13551-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 23 Sep 2014 08:48:28 -0400
+Date: Tue, 23 Sep 2014 08:48:23 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de, olof@lixom.net,
+        arm@kernel.org, bcm@fixthebug.org, jonathar@broadcom.com,
+        sbranden@broadcom.com, rjui@broadcom.com, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com, hauke@hauke-m.de,
+        swarren@wwwdotorg.org, computersforpeace@gmail.com,
+        marc.ceeeee@gmail.com, cernekee@gmail.com, gregory.0xf0@gmail.com
+Subject: Re: [PATCH] MAINTAINERS: add a third maintainer to mach-bcm
+Message-ID: <20140923124823.GB12283@beef>
+References: <1411150632-25695-1-git-send-email-f.fainelli@gmail.com>
+ <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411150632-25695-2-git-send-email-f.fainelli@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change uses managed resource APIs to allocate resources such as,
-clk, gpio, io in order to simplify the driver unload or failure cases.
-Hence does away with release statements of the same resources in error
-labels and remove function.
+On Fri, Sep 19, 2014 at 11:17:12AM -0700, Florian Fainelli wrote:
+> Add myself as a third maintainer to the mach-bcm code to increase the
+> chances the redundancy in the merging/reviewing process.
+> 
+> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Acked-by: Matt Porter <mporter@linaro.org>
 
----
-Changes since v1:
-- Dropped using devm_request_irq as suggested by Ludovic Desroches
-  as it seems there are race conditions seen with them.
-- Added another patch to fix failure path in probe to call atmci_cleanup_slot
-  after dma_alloc_coherent() fails to release mmc_host resources.
-- Fixed typos in commit message
----
- drivers/mmc/host/atmel-mci.c |   41 ++++++++++++++---------------------------
- 1 file changed, 14 insertions(+), 27 deletions(-)
+Thanks for offering to take the lead on this. With my change in role at
+Linaro and lack of access to Broadcom documentation and tribal knowledge
+on Broadcom mobile parts I can't do this justice any longer.
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index bb585d9..36212fb 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -17,6 +17,7 @@
- #include <linux/gpio.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-+#include <linux/io.h>
- #include <linux/ioport.h>
- #include <linux/module.h>
- #include <linux/of.h>
-@@ -2195,7 +2196,8 @@ static int __init atmci_init_slot(struct atmel_mci *host,
- 	/* Assume card is present initially */
- 	set_bit(ATMCI_CARD_PRESENT, &slot->flags);
- 	if (gpio_is_valid(slot->detect_pin)) {
--		if (gpio_request(slot->detect_pin, "mmc_detect")) {
-+		if (devm_gpio_request(&host->pdev->dev, slot->detect_pin,
-+				      "mmc_detect")) {
- 			dev_dbg(&mmc->class_dev, "no detect pin available\n");
- 			slot->detect_pin = -EBUSY;
- 		} else if (gpio_get_value(slot->detect_pin) ^
-@@ -2208,7 +2210,8 @@ static int __init atmci_init_slot(struct atmel_mci *host,
- 		mmc->caps |= MMC_CAP_NEEDS_POLL;
- 
- 	if (gpio_is_valid(slot->wp_pin)) {
--		if (gpio_request(slot->wp_pin, "mmc_wp")) {
-+		if (devm_gpio_request(&host->pdev->dev, slot->wp_pin,
-+				      "mmc_wp")) {
- 			dev_dbg(&mmc->class_dev, "no WP pin available\n");
- 			slot->wp_pin = -EBUSY;
- 		}
-@@ -2232,7 +2235,6 @@ static int __init atmci_init_slot(struct atmel_mci *host,
- 			dev_dbg(&mmc->class_dev,
- 				"could not request IRQ %d for detect pin\n",
- 				gpio_to_irq(slot->detect_pin));
--			gpio_free(slot->detect_pin);
- 			slot->detect_pin = -EBUSY;
- 		}
- 	}
-@@ -2257,10 +2259,7 @@ static void __exit atmci_cleanup_slot(struct atmel_mci_slot *slot,
- 
- 		free_irq(gpio_to_irq(pin), slot);
- 		del_timer_sync(&slot->detect_timer);
--		gpio_free(pin);
- 	}
--	if (gpio_is_valid(slot->wp_pin))
--		gpio_free(slot->wp_pin);
- 
- 	slot->host->slot[id] = NULL;
- 	mmc_free_host(slot->mmc);
-@@ -2395,7 +2394,7 @@ static int __init atmci_probe(struct platform_device *pdev)
- 	if (irq < 0)
- 		return irq;
- 
--	host = kzalloc(sizeof(struct atmel_mci), GFP_KERNEL);
-+	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
- 	if (!host)
- 		return -ENOMEM;
- 
-@@ -2403,20 +2402,18 @@ static int __init atmci_probe(struct platform_device *pdev)
- 	spin_lock_init(&host->lock);
- 	INIT_LIST_HEAD(&host->queue);
- 
--	host->mck = clk_get(&pdev->dev, "mci_clk");
--	if (IS_ERR(host->mck)) {
--		ret = PTR_ERR(host->mck);
--		goto err_clk_get;
--	}
-+	host->mck = devm_clk_get(&pdev->dev, "mci_clk");
-+	if (IS_ERR(host->mck))
-+		return PTR_ERR(host->mck);
- 
--	ret = -ENOMEM;
--	host->regs = ioremap(regs->start, resource_size(regs));
-+	host->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
- 	if (!host->regs)
--		goto err_ioremap;
-+		return -ENOMEM;
- 
- 	ret = clk_prepare_enable(host->mck);
- 	if (ret)
--		goto err_request_irq;
-+		return ret;
-+
- 	atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
- 	host->bus_hz = clk_get_rate(host->mck);
- 	clk_disable_unprepare(host->mck);
-@@ -2427,7 +2424,7 @@ static int __init atmci_probe(struct platform_device *pdev)
- 
- 	ret = request_irq(irq, atmci_interrupt, 0, dev_name(&pdev->dev), host);
- 	if (ret)
--		goto err_request_irq;
-+		return ret;
- 
- 	/* Get MCI capabilities and set operations according to it */
- 	atmci_get_cap(host);
-@@ -2499,12 +2496,6 @@ err_init_slot:
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
- 	free_irq(irq, host);
--err_request_irq:
--	iounmap(host->regs);
--err_ioremap:
--	clk_put(host->mck);
--err_clk_get:
--	kfree(host);
- 	return ret;
- }
- 
-@@ -2532,10 +2523,6 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 		dma_release_channel(host->dma.chan);
- 
- 	free_irq(platform_get_irq(pdev, 0), host);
--	iounmap(host->regs);
--
--	clk_put(host->mck);
--	kfree(host);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+-Matt
 
+> ---
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 809ecd680d88..e0762fea2d02 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2004,6 +2004,7 @@ F:	drivers/net/ethernet/broadcom/bnx2x/
+>  BROADCOM BCM281XX/BCM11XXX/BCM216XX ARM ARCHITECTURE
+>  M:	Christian Daudt <bcm@fixthebug.org>
+>  M:	Matt Porter <mporter@linaro.org>
+> +M:	Florian Fainelli <f.fainelli@gmail.com>
+>  L:	bcm-kernel-feedback-list@broadcom.com
+>  T:	git git://github.com/broadcom/mach-bcm
+>  S:	Maintained
+> -- 
+> 1.9.1
+> 
