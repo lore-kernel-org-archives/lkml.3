@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaIWL02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:26:28 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:38999 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765AbaIWL0Y (ORCPT
+	id S1755850AbaIWL0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:26:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56575 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754164AbaIWLYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:26:24 -0400
-Date: Tue, 23 Sep 2014 13:26:19 +0200
-From: Robert Richter <rric@kernel.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Andrew Bresticker <abrestic@google.com>, Michal Marek <mmarek@suse.cz>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/6] dts, kbuild: Implement support for dtb vendor subdirs
-Message-ID: <20140923112619.GG20170@rric.localhost>
-References: <1409899692-1455-1-git-send-email-rric@kernel.org>
- <CAL1qeaGCeRyeKLo70E264bZcamOfBKoN9Y8_NDCjV5j4DoOw1Q@mail.gmail.com>
- <20140919123056.GC20170@rric.localhost>
- <20140919140856.GG2295@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140919140856.GG2295@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 23 Sep 2014 07:24:22 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v8 04/10] rtc: at91sam9: add DT support
+Date: Tue, 23 Sep 2014 13:23:58 +0200
+Message-Id: <1411471444-2764-5-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.09.14 15:08:56, Catalin Marinas wrote:
-> On Fri, Sep 19, 2014 at 01:30:56PM +0100, Robert Richter wrote:
-> > On 16.09.14 20:49:18, Andrew Bresticker wrote:
-> > > > Robert Richter (6):
-> > > >   dts, arm64: Add dtbs_install make target
-> > > >   dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
-> > > >   dts, arm/arm64: Remove dtbs build rules in sub-makes
-> > > >   dts, kbuild: Implement support for dtb vendor subdirs
-> > > >   dts, arm64: Move dts files to vendor subdirs
-> > > >   dts, arm: Remove $(MACHINE) variable from dtbs make recipes
-> > > 
-> > > I've tested this for arm64 and by adding a vendor sub-directory
-> > > locally for arm.  This series is also the base for my MIPS DT vendor
-> > > sub-directory series
-> > > (http://www.linux-mips.org/archives/linux-mips/2014-09/msg00217.html).
-> > > So, for the entire series,
-> > > 
-> > > Tested-by: Andrew Bresticker <abrestic@chromium.org>
-> > 
-> > Andrew, thanks for testing and great this also works on mips.
-> > 
-> > Anyone willing to take the patches for 3.18? Are any further acks
-> > needed?
-> 
-> For the arm64 bits in this series:
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> 
-> I think the patches can be merged via arm-soc.
+Add of_match_table to the existing driver so that rtt nodes defined in at91
+DTs can be attached to this driver.
 
-Olof,
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/rtc/rtc-at91sam9.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-please apply the patches.
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 38a2693..d72c34d 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -445,6 +445,14 @@ static int at91_rtc_resume(struct device *dev)
+ 
+ static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id at91_rtc_dt_ids[] = {
++	{ .compatible = "atmel,at91sam9260-rtt" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
++#endif
++
+ static struct platform_driver at91_rtc_driver = {
+ 	.probe		= at91_rtc_probe,
+ 	.remove		= at91_rtc_remove,
+@@ -453,6 +461,7 @@ static struct platform_driver at91_rtc_driver = {
+ 		.name	= "rtc-at91sam9",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &at91_rtc_pm_ops,
++		.of_match_table = of_match_ptr(at91_rtc_dt_ids),
+ 	},
+ };
+ 
+-- 
+1.9.1
 
-Thanks,
-
--Robert
