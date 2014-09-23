@@ -1,214 +1,649 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaIWUik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:38:40 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45077 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325AbaIWUih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:38:37 -0400
-Date: Tue, 23 Sep 2014 13:38:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Anish Bhatt <anish@chelsio.com>,
-        David Miller <davem@davemloft.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: mmotm 2014-09-22-16-57 uploaded
-Message-ID: <20140923203832.GA1112@roeck-us.net>
-References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
- <20140923190222.GA4662@roeck-us.net>
- <20140923130128.79f5931ac03dbb31f53be805@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923130128.79f5931ac03dbb31f53be805@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756343AbaIWUmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:42:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753947AbaIWUmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:42:12 -0400
+Message-ID: <1411504921.24563.20.camel@ul30vt.home>
+Subject: Re: [PATCH v2 03/13] powerpc/spapr: vfio: Implement
+ spapr_tce_iommu_ops
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Tue, 23 Sep 2014 14:42:01 -0600
+In-Reply-To: <1411441262-11025-4-git-send-email-aik@ozlabs.ru>
+References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
+	 <1411441262-11025-4-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 01:01:28PM -0700, Andrew Morton wrote:
-> On Tue, 23 Sep 2014 12:02:22 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+On Tue, 2014-09-23 at 13:00 +1000, Alexey Kardashevskiy wrote:
+> Modern IBM POWERPC systems support multiple IOMMU tables per PE
+> so we need a more reliable way (compared to container_of()) to get
+> a PE pointer from the iommu_table struct pointer used in IOMMU functions.
 > 
-> > On Mon, Sep 22, 2014 at 05:02:56PM -0700, akpm@linux-foundation.org wrote:
-> > > The mm-of-the-moment snapshot 2014-09-22-16-57 has been uploaded to
-> > > 
-> > >    http://www.ozlabs.org/~akpm/mmotm/
-> > > 
-> > > mmotm-readme.txt says
-> > > 
-> > > README for mm-of-the-moment:
-> > > 
-> > > http://www.ozlabs.org/~akpm/mmotm/
-> > > 
-> > > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > > more than once a week.
-> > > 
-> > Sine I started testing this branch, I figure I might as well share the results.
-> > 
-> > Build results:
-> > 	total: 133 pass: 115 fail: 18
-> > Failed builds:
-> > 	alpha:defconfig
-> > 	alpha:allmodconfig
-> > 	arm:imx_v6_v7_defconfig
-> > 	arm:imx_v4_v5_defconfig
-> > 	i386:allyesconfig
-> > 	i386:allmodconfig
-> > 	m68k:allmodconfig
-> > 	mips:nlm_xlp_defconfig
-> > 	parisc:a500_defconfig
-> > 	powerpc:cell_defconfig
-> > 	powerpc:ppc6xx_defconfig
-> > 	powerpc:mpc85xx_defconfig
-> > 	powerpc:mpc85xx_smp_defconfig
-> > 	tile:tilegx_defconfig
-> > 
-> > Qemu test results:
-> > 	total: 24 pass: 23 fail: 1
-> > Failed tests:
-> > 	alpha:alpha_defconfig
-> > 
-> > More information is available at http://server.roeck-us.net:8010/builders.
-> > Note that powerpc failures are counted twice because they are built twice,
-> > once with binutils 2.23 and once with 2.24.
-> > 
-> > The most scary problem (in my opinion) is the failed mips:nlm_xlp_defconfig
-> > build.  It is caused by 'scsi_netlink : Make SCSI_NETLINK dependent on NET
-> > instead of selecting NET', which effectively disables CONFIG_NET for around
-> > 30 configurations (assuming I found them all). The practical impact is that
-> > the affected configurations won't really work anymore, even if they compile. 
+> At the moment IOMMU group data points to an iommu_table struct. This
+> introduces a spapr_tce_iommu_group struct which keeps an iommu_owner
+> and a spapr_tce_iommu_ops struct. For IODA, iommu_owner is a pointer to
+> the pnv_ioda_pe struct, for others it is still a pointer to
+> the iommu_table struct. The ops structs correspond to the type which
+> iommu_owner points to.
 > 
-> cc'ing Anish Bhatt.
+> This defines a get_table() callback which returns an iommu_table
+> by its number.
 > 
-He knows about it, as do David Miller and Randy Dunlap (who proposed it) [1].
-There just doesn't seem to be an agreement on how to fix the problem.
-A simple revert doesn't work anymore since there are multiple follow-up
-patches, and if I understand correctly David is opposed to a revert anyway.
-
-I submitted a set of RFC patches in an attempt to fix the problem for MIPS [2],
-but I did not yet get any feedback. Since then I identified 20 more affected
-(non-mips) configurations.
-
-
-> > Guenter
-> > 
-> > ---
-> > Details:
-> > 
-> > alpha (including qemu)
-> > 
-> > drivers/tty/serial/8250/8250_core.c: In function 'serial8250_ioctl':
-> > drivers/tty/serial/8250/8250_core.c:2874:7: error: 'TIOCSRS485' undeclared
-> > 
-> > arm:imx_v6_v7_defconfig
-> > arm:imx_v4_v5_defconfig
-> > 
-> > drivers/media/platform/coda/coda-bit.c: In function 'coda_fill_bitstream':
-> > drivers/media/platform/coda/coda-bit.c:231:4: error: implicit declaration of function 'kmalloc'
-> > drivers/media/platform/coda/coda-bit.c: In function 'coda_alloc_framebuffers':
-> > drivers/media/platform/coda/coda-bit.c:312:3: error: implicit declaration of function 'kfree'
+> As the IOMMU group data pointer points to variable type instead of
+> iommu_table, VFIO SPAPR TCE driver is updated to use the new type.
+> This changes the tce_container struct to store iommu_group instead of
+> iommu_table.
 > 
-> That's odd - it includes slab.h.  Cc Fabio.
+> So, it was:
+> - iommu_table points to iommu_group via iommu_table::it_group;
+> - iommu_group points to iommu_table via iommu_group_get_iommudata();
 > 
-Turns out that include is in next-20149023, and the problem is gone there.
-Maybe your tree just missed the necessary patch.
-
-> > i386:allyesconfig
-> > 
-> > drivers/built-in.o: In function `_scsih_qcmd':
-> > mpt2sas_scsih.c:(.text+0xf5327d): undefined reference to `__udivdi3'
-> > mpt2sas_scsih.c:(.text+0xf532b0): undefined reference to `__umoddi3'
-> >
-> > i386:allmodconfig
-> > 
-> > ERROR: "__udivdi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
-> > ERROR: "__umoddi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
+> now it is:
+> - iommu_table points to iommu_group via iommu_table::it_group;
+> - iommu_group points to spapr_tce_iommu_group via
+> iommu_group_get_iommudata();
+> - spapr_tce_iommu_group points to either (depending on .get_table()):
+> 	- iommu_table;
+> 	- pnv_ioda_pe;
 > 
-> Sigh.
->  
-A patch to fix a problem was submitted. Two times, actually, if I recall
-correctly. Should be somewhere in the queue.
-
-> > m68k:allmodconfig
-> > 
-> > drivers/tty/serial/st-asc.c: In function 'asc_in':
-> > drivers/tty/serial/st-asc.c:154:2: error: implicit declaration of function 'readl_relaxed'
-> > 
-> > mips:nlm_xlp_defconfig
-> > 
-> > ERROR: "scsi_is_fc_rport" [drivers/scsi/libfc/libfc.ko] undefined!
-> > ERROR: "fc_get_event_number" [drivers/scsi/libfc/libfc.ko] undefined!
-> > ERROR: "skb_trim" [drivers/scsi/libfc/libfc.ko] undefined!
-> > ERROR: "fc_host_post_event" [drivers/scsi/libfc/libfc.ko] undefined!
-> > 
-> > [and many more]
-> > 
-> > parisc:a500_defconfig
-> > 
-> > ERROR: "csum_partial" [drivers/scsi/scsi_debug.ko] undefined!
-> > 
-> > powerpc:cell_defconfig
-> > powerpc:mpc85xx_defconfig
-> > powerpc:mpc85xx_smp_defconfig
-> > 
-> > arch/powerpc/mm/hugetlbpage.c:710:1: error: conflicting types for 'follow_huge_pud'
-> >  follow_huge_pud(struct mm_struct *mm, unsigned long address,
-> >   ^
-> > In file included from arch/powerpc/mm/hugetlbpage.c:14:0: include/linux/hugetlb.h:103:14:
-> > 	note: previous declaration of 'follow_huge_pud' was here
-> >    struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
->                  ^
+> This uses pnv_ioda1_iommu_get_table for both IODA1&2 but IODA2 will
+> have own pnv_ioda2_iommu_get_table soon and pnv_ioda1_iommu_get_table
+> will only be used for IODA1.
 > 
-> Naoya, please check:
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  arch/powerpc/include/asm/iommu.h            |   6 ++
+>  arch/powerpc/include/asm/tce.h              |  13 +++
+>  arch/powerpc/kernel/iommu.c                 |  35 ++++++-
+>  arch/powerpc/platforms/powernv/pci-ioda.c   |  31 +++++-
+>  arch/powerpc/platforms/powernv/pci-p5ioc2.c |   1 +
+>  arch/powerpc/platforms/powernv/pci.c        |   2 +-
+>  arch/powerpc/platforms/pseries/iommu.c      |  10 +-
+>  drivers/vfio/vfio_iommu_spapr_tce.c         | 148 ++++++++++++++++++++++------
+>  8 files changed, 208 insertions(+), 38 deletions(-)
 > 
-> --- a/arch/powerpc/mm/hugetlbpage.c~mm-hugetlb-reduce-arch-dependent-code-around-follow_huge_-fix
-> +++ a/arch/powerpc/mm/hugetlbpage.c
-> @@ -708,7 +708,7 @@ follow_huge_pmd(struct mm_struct *mm, un
->  
->  struct page *
->  follow_huge_pud(struct mm_struct *mm, unsigned long address,
-> -		pmd_t *pmd, int write)
-> +		pud_t *pud, int write)
+> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+> index 42632c7..84ee339 100644
+> --- a/arch/powerpc/include/asm/iommu.h
+> +++ b/arch/powerpc/include/asm/iommu.h
+> @@ -108,13 +108,19 @@ extern void iommu_free_table(struct iommu_table *tbl, const char *node_name);
+>   */
+>  extern struct iommu_table *iommu_init_table(struct iommu_table * tbl,
+>  					    int nid);
+> +
+> +struct spapr_tce_iommu_ops;
+>  #ifdef CONFIG_IOMMU_API
+>  extern void iommu_register_group(struct iommu_table *tbl,
+> +				 void *iommu_owner,
+> +				 struct spapr_tce_iommu_ops *ops,
+>  				 int pci_domain_number, unsigned long pe_num);
+>  extern int iommu_add_device(struct device *dev);
+>  extern void iommu_del_device(struct device *dev);
+>  #else
+>  static inline void iommu_register_group(struct iommu_table *tbl,
+> +					void *iommu_owner,
+> +					struct spapr_tce_iommu_ops *ops,
+>  					int pci_domain_number,
+>  					unsigned long pe_num)
 >  {
->  	BUG();
->  	return NULL;
-> _
-> 
-> > powerpc:ppc6xx_defconfig
-> > 
-> > In file included from include/linux/kernel.h:13:0, from mm/debug.c:8:
-> > mm/debug.c: In function 'dump_mm':
-> > mm/debug.c:212:5: error: 'const struct mm_struct' has no member named 'owner'
-> 
-> I fixed that.
-> 
-> > tile:tilegx_defconfig
-> > 
-> > mm/debug.c: In function 'dump_mm':
-> > mm/debug.c:169:2: error: expected ')' before 'mm'
-> 
-> Don't have a clue.  In my tree that's
-> 
-> 	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
-> 
-Culprit is
+> diff --git a/arch/powerpc/include/asm/tce.h b/arch/powerpc/include/asm/tce.h
+> index 743f36b..9f159eb 100644
+> --- a/arch/powerpc/include/asm/tce.h
+> +++ b/arch/powerpc/include/asm/tce.h
+> @@ -50,5 +50,18 @@
+>  #define TCE_PCI_READ		0x1		/* read from PCI allowed */
+>  #define TCE_VB_WRITE		0x1		/* write from VB allowed */
+>  
+> +struct spapr_tce_iommu_group;
+> +
+> +struct spapr_tce_iommu_ops {
+> +	struct iommu_table *(*get_table)(
+> +			struct spapr_tce_iommu_group *data,
+> +			int num);
+> +};
+> +
+> +struct spapr_tce_iommu_group {
+> +	void *iommu_owner;
+> +	struct spapr_tce_iommu_ops *ops;
+> +};
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _ASM_POWERPC_TCE_H */
+> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+> index b378f78..1c5dae7 100644
+> --- a/arch/powerpc/kernel/iommu.c
+> +++ b/arch/powerpc/kernel/iommu.c
+> @@ -878,24 +878,53 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
+>   */
+>  static void group_release(void *iommu_data)
+>  {
+> -	struct iommu_table *tbl = iommu_data;
+> -	tbl->it_group = NULL;
+> +	kfree(iommu_data);
+>  }
+>  
+> +static struct iommu_table *spapr_tce_default_get_table(
+> +		struct spapr_tce_iommu_group *data, int num)
+> +{
+> +	struct iommu_table *tbl = data->iommu_owner;
+> +
+> +	switch (num) {
+> +	case 0:
+> +		if (tbl->it_size)
+> +			return tbl;
+> +		/* fallthru */
+> +	default:
+> +		return NULL;
+> +	}
+> +}
+> +
+> +static struct spapr_tce_iommu_ops spapr_tce_default_ops = {
+> +	.get_table = spapr_tce_default_get_table
+> +};
+> +
+>  void iommu_register_group(struct iommu_table *tbl,
+> +		void *iommu_owner, struct spapr_tce_iommu_ops *ops,
+>  		int pci_domain_number, unsigned long pe_num)
+>  {
+>  	struct iommu_group *grp;
+>  	char *name;
+> +	struct spapr_tce_iommu_group *data;
+> +
+> +	data = kzalloc(sizeof(*data), GFP_KERNEL);
+> +	if (!data)
+> +		return;
+> +
+> +	data->iommu_owner = iommu_owner ? iommu_owner : tbl;
+> +	data->ops = ops ? ops : &spapr_tce_default_ops;
+>  
+>  	grp = iommu_group_alloc();
+>  	if (IS_ERR(grp)) {
+>  		pr_warn("powerpc iommu api: cannot create new group, err=%ld\n",
+>  				PTR_ERR(grp));
+> +		kfree(data);
+>  		return;
+>  	}
+> +
+>  	tbl->it_group = grp;
+> -	iommu_group_set_iommudata(grp, tbl, group_release);
+> +	iommu_group_set_iommudata(grp, data, group_release);
+>  	name = kasprintf(GFP_KERNEL, "domain%d-pe%lx",
+>  			pci_domain_number, pe_num);
+>  	if (!name)
+> diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+> index 136e765..2d32a1c 100644
+> --- a/arch/powerpc/platforms/powernv/pci-ioda.c
+> +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/io.h>
+>  #include <linux/msi.h>
+>  #include <linux/memblock.h>
+> +#include <linux/iommu.h>
+>  
+>  #include <asm/sections.h>
+>  #include <asm/io.h>
+> @@ -988,6 +989,26 @@ static void pnv_pci_ioda2_tce_invalidate(struct pnv_ioda_pe *pe,
+>  	}
+>  }
+>  
+> +static struct iommu_table *pnv_ioda1_iommu_get_table(
+> +		struct spapr_tce_iommu_group *data,
+> +		int num)
+> +{
+> +	struct pnv_ioda_pe *pe = data->iommu_owner;
+> +
+> +	switch (num) {
+> +	case 0:
+> +		if (pe->tce32.table.it_size)
+> +			return &pe->tce32.table;
+> +		/* fallthru */
+> +	default:
+> +		return NULL;
+> +	}
+> +}
+> +
+> +static struct spapr_tce_iommu_ops pnv_pci_ioda1_ops = {
+> +	.get_table = pnv_ioda1_iommu_get_table,
+> +};
+> +
+>  static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
+>  				      struct pnv_ioda_pe *pe, unsigned int base,
+>  				      unsigned int segs)
+> @@ -1067,7 +1088,8 @@ static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
+>  				 TCE_PCI_SWINV_PAIR);
+>  	}
+>  	iommu_init_table(tbl, phb->hose->node);
+> -	iommu_register_group(tbl, phb->hose->global_number, pe->pe_number);
+> +	iommu_register_group(tbl, pe, &pnv_pci_ioda1_ops,
+> +			phb->hose->global_number, pe->pe_number);
+>  
+>  	if (pe->pdev)
+>  		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
+> @@ -1137,6 +1159,10 @@ static void pnv_pci_ioda2_setup_bypass_pe(struct pnv_phb *phb,
+>  	pnv_pci_ioda2_set_bypass(&pe->tce32.table, true);
+>  }
+>  
+> +static struct spapr_tce_iommu_ops pnv_pci_ioda2_ops = {
+> +	.get_table = pnv_ioda1_iommu_get_table,
+> +};
+> +
+>  static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
+>  				       struct pnv_ioda_pe *pe)
+>  {
+> @@ -1202,7 +1228,8 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
+>  		tbl->it_type |= (TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE);
+>  	}
+>  	iommu_init_table(tbl, phb->hose->node);
+> -	iommu_register_group(tbl, phb->hose->global_number, pe->pe_number);
+> +	iommu_register_group(tbl, pe, &pnv_pci_ioda2_ops,
+> +			phb->hose->global_number, pe->pe_number);
+>  
+>  	if (pe->pdev)
+>  		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
+> diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+> index 94ce348..b79066d 100644
+> --- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+> +++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+> @@ -89,6 +89,7 @@ static void pnv_pci_p5ioc2_dma_dev_setup(struct pnv_phb *phb,
+>  	if (phb->p5ioc2.iommu_table.it_map == NULL) {
+>  		iommu_init_table(&phb->p5ioc2.iommu_table, phb->hose->node);
+>  		iommu_register_group(&phb->p5ioc2.iommu_table,
+> +				NULL, NULL,
+>  				pci_domain_nr(phb->hose->bus), phb->opal_id);
+>  	}
+>  
+> diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+> index 97895d4..6ffac79 100644
+> --- a/arch/powerpc/platforms/powernv/pci.c
+> +++ b/arch/powerpc/platforms/powernv/pci.c
+> @@ -723,7 +723,7 @@ static struct iommu_table *pnv_pci_setup_bml_iommu(struct pci_controller *hose)
+>  	pnv_pci_setup_iommu_table(tbl, __va(be64_to_cpup(basep)),
+>  				  be32_to_cpup(sizep), 0, IOMMU_PAGE_SHIFT_4K);
+>  	iommu_init_table(tbl, hose->node);
+> -	iommu_register_group(tbl, pci_domain_nr(hose->bus), 0);
+> +	iommu_register_group(tbl, NULL, NULL, pci_domain_nr(hose->bus), 0);
+>  
+>  	/* Deal with SW invalidated TCEs when needed (BML way) */
+>  	swinvp = of_get_property(hose->dn, "linux,tce-sw-invalidate-info",
+> diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
+> index 4642d6a..b95f8cf 100644
+> --- a/arch/powerpc/platforms/pseries/iommu.c
+> +++ b/arch/powerpc/platforms/pseries/iommu.c
+> @@ -616,7 +616,7 @@ static void pci_dma_bus_setup_pSeries(struct pci_bus *bus)
+>  
+>  	iommu_table_setparms(pci->phb, dn, tbl);
+>  	pci->iommu_table = iommu_init_table(tbl, pci->phb->node);
+> -	iommu_register_group(tbl, pci_domain_nr(bus), 0);
+> +	iommu_register_group(tbl, NULL, NULL, pci_domain_nr(bus), 0);
+>  
+>  	/* Divide the rest (1.75GB) among the children */
+>  	pci->phb->dma_window_size = 0x80000000ul;
+> @@ -661,7 +661,7 @@ static void pci_dma_bus_setup_pSeriesLP(struct pci_bus *bus)
+>  				   ppci->phb->node);
+>  		iommu_table_setparms_lpar(ppci->phb, pdn, tbl, dma_window);
+>  		ppci->iommu_table = iommu_init_table(tbl, ppci->phb->node);
+> -		iommu_register_group(tbl, pci_domain_nr(bus), 0);
+> +		iommu_register_group(tbl, NULL, NULL, pci_domain_nr(bus), 0);
+>  		pr_debug("  created table: %p\n", ppci->iommu_table);
+>  	}
+>  }
+> @@ -688,7 +688,8 @@ static void pci_dma_dev_setup_pSeries(struct pci_dev *dev)
+>  				   phb->node);
+>  		iommu_table_setparms(phb, dn, tbl);
+>  		PCI_DN(dn)->iommu_table = iommu_init_table(tbl, phb->node);
+> -		iommu_register_group(tbl, pci_domain_nr(phb->bus), 0);
+> +		iommu_register_group(tbl, NULL, NULL,
+> +				pci_domain_nr(phb->bus), 0);
+>  		set_iommu_table_base_and_group(&dev->dev,
+>  					       PCI_DN(dn)->iommu_table);
+>  		return;
+> @@ -1105,7 +1106,8 @@ static void pci_dma_dev_setup_pSeriesLP(struct pci_dev *dev)
+>  				   pci->phb->node);
+>  		iommu_table_setparms_lpar(pci->phb, pdn, tbl, dma_window);
+>  		pci->iommu_table = iommu_init_table(tbl, pci->phb->node);
+> -		iommu_register_group(tbl, pci_domain_nr(pci->phb->bus), 0);
+> +		iommu_register_group(tbl, NULL, NULL,
+> +				pci_domain_nr(pci->phb->bus), 0);
+>  		pr_debug("  created table: %p\n", pci->iommu_table);
+>  	} else {
+>  		pr_debug("  found DMA window, table: %p\n", pci->iommu_table);
+> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
+> index 730b4ef..a8adfbd 100644
+> --- a/drivers/vfio/vfio_iommu_spapr_tce.c
+> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
+> @@ -43,17 +43,51 @@ static void tce_iommu_detach_group(void *iommu_data,
+>   */
+>  struct tce_container {
+>  	struct mutex lock;
+> -	struct iommu_table *tbl;
+> +	struct iommu_group *grp;
+> +	long windows_num;
+>  	bool enabled;
+>  };
+>  
+> +static struct iommu_table *spapr_tce_find_table(
+> +		struct tce_container *container,
+> +		struct spapr_tce_iommu_group *data,
+> +		phys_addr_t ioba)
+> +{
+> +	long i;
+> +	struct iommu_table *ret = NULL;
+> +
+> +	mutex_lock(&container->lock);
+> +	for (i = 0; i < container->windows_num; ++i) {
+> +		struct iommu_table *tbl = data->ops->get_table(data, i);
+> +
+> +		if (tbl) {
+> +			unsigned long entry = ioba >> tbl->it_page_shift;
+> +			unsigned long start = tbl->it_offset;
+> +			unsigned long end = start + tbl->it_size;
+> +
+> +			if ((start <= entry) && (entry < end)) {
+> +				ret = tbl;
+> +				break;
+> +			}
+> +		}
+> +	}
+> +	mutex_unlock(&container->lock);
+> +
+> +	return ret;
+> +}
+> +
+>  static int tce_iommu_enable(struct tce_container *container)
+>  {
+>  	int ret = 0;
+>  	unsigned long locked, lock_limit, npages;
+> -	struct iommu_table *tbl = container->tbl;
+> +	struct iommu_table *tbl;
+> +	struct spapr_tce_iommu_group *data;
+>  
+> -	if (!container->tbl)
+> +	if (!container->grp)
+> +		return -ENXIO;
+> +
+> +	data = iommu_group_get_iommudata(container->grp);
+> +	if (!data || !data->iommu_owner || !data->ops->get_table)
+>  		return -ENXIO;
+>  
+>  	if (!current->mm)
+> @@ -80,6 +114,10 @@ static int tce_iommu_enable(struct tce_container *container)
+>  	 * that would effectively kill the guest at random points, much better
+>  	 * enforcing the limit based on the max that the guest can map.
+>  	 */
+> +	tbl = data->ops->get_table(data, 0);
 
-+#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-+               "tlb_flush_pending %d\n",
-+#endif
+Can we define an enum to avoid sprinkling magic zeros in the code?
 
-This is due to Sasha Levin's patch 'mm: introduce VM_BUG_ON_MM'. The above
-doesn't work if neither CONFIG_NUMA_BALANCING nor CONFIG_COMPACTION are
-defined due to the ',' at the end with is missing in that case.
+> +	if (!tbl)
+> +		return -ENXIO;
+> +
+>  	down_write(&current->mm->mmap_sem);
+>  	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
+>  	locked = current->mm->locked_vm + npages;
+> @@ -89,7 +127,6 @@ static int tce_iommu_enable(struct tce_container *container)
+>  				rlimit(RLIMIT_MEMLOCK));
+>  		ret = -ENOMEM;
+>  	} else {
+> -
+>  		current->mm->locked_vm += npages;
+>  		container->enabled = true;
+>  	}
+> @@ -100,16 +137,27 @@ static int tce_iommu_enable(struct tce_container *container)
+>  
+>  static void tce_iommu_disable(struct tce_container *container)
+>  {
+> +	struct spapr_tce_iommu_group *data;
+> +	struct iommu_table *tbl;
+> +
+>  	if (!container->enabled)
+>  		return;
+>  
+>  	container->enabled = false;
+>  
+> -	if (!container->tbl || !current->mm)
+> +	if (!container->grp || !current->mm)
+> +		return;
+> +
+> +	data = iommu_group_get_iommudata(container->grp);
+> +	if (!data || !data->iommu_owner || !data->ops->get_table)
+> +		return;
+> +
+> +	tbl = data->ops->get_table(data, 0);
+> +	if (!tbl)
+>  		return;
+>  
+>  	down_write(&current->mm->mmap_sem);
+> -	current->mm->locked_vm -= (container->tbl->it_size <<
+> +	current->mm->locked_vm -= (tbl->it_size <<
+>  			IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
+>  	up_write(&current->mm->mmap_sem);
+>  }
+> @@ -129,6 +177,8 @@ static void *tce_iommu_open(unsigned long arg)
+>  
+>  	mutex_init(&container->lock);
+>  
+> +	container->windows_num = 1;
+> +
+>  	return container;
+>  }
+>  
+> @@ -136,11 +186,11 @@ static void tce_iommu_release(void *iommu_data)
+>  {
+>  	struct tce_container *container = iommu_data;
+>  
+> -	WARN_ON(container->tbl && !container->tbl->it_group);
+> +	WARN_ON(container->grp);
+>  	tce_iommu_disable(container);
+>  
+> -	if (container->tbl && container->tbl->it_group)
+> -		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
+> +	if (container->grp)
+> +		tce_iommu_detach_group(iommu_data, container->grp);
+>  
+>  	mutex_destroy(&container->lock);
+>  
+> @@ -169,8 +219,17 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  
+>  	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
+>  		struct vfio_iommu_spapr_tce_info info;
+> -		struct iommu_table *tbl = container->tbl;
+> +		struct iommu_table *tbl;
+> +		struct spapr_tce_iommu_group *data;
+>  
+> +		if (WARN_ON(!container->grp))
+> +			return -ENXIO;
+> +
+> +		data = iommu_group_get_iommudata(container->grp);
+> +		if (WARN_ON(!data || !data->iommu_owner || !data->ops))
+> +			return -ENXIO;
+> +
+> +		tbl = data->ops->get_table(data, 0);
+>  		if (WARN_ON(!tbl))
+>  			return -ENXIO;
+>  
+> @@ -194,13 +253,16 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  	}
+>  	case VFIO_IOMMU_MAP_DMA: {
+>  		struct vfio_iommu_type1_dma_map param;
+> -		struct iommu_table *tbl = container->tbl;
+> +		struct iommu_table *tbl;
+> +		struct spapr_tce_iommu_group *data;
+>  		unsigned long tce, i;
+>  
+> -		if (!tbl)
+> +		if (WARN_ON(!container->grp))
 
-Guenter
+If a user can get here by their own mistake, return an error and be
+done, no warning.  If a user can get here via a kernel ordering issue,
+it's a problem in the design.  Which is it?
 
----
-[1] https://lkml.org/lkml/2014/9/19/558
-[2] https://lkml.org/lkml/2014/9/20/215
+>  			return -ENXIO;
+>  
+> -		BUG_ON(!tbl->it_group);
+> +		data = iommu_group_get_iommudata(container->grp);
+> +		if (WARN_ON(!data || !data->iommu_owner || !data->ops))
+> +			return -ENXIO;
+
+Same
+
+>  
+>  		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+>  
+> @@ -225,6 +287,11 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  		if (param.flags & VFIO_DMA_MAP_FLAG_WRITE)
+>  			tce |= TCE_PCI_WRITE;
+>  
+> +		tbl = spapr_tce_find_table(container, data, param.iova);
+
+Why aren't we using ops->find_table() here?
+
+> +		if (!tbl)
+> +			return -ENXIO;
+> +		BUG_ON(!tbl->it_group);
+> +
+>  		ret = iommu_tce_put_param_check(tbl, param.iova, tce);
+>  		if (ret)
+>  			return ret;
+> @@ -247,9 +314,14 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  	}
+>  	case VFIO_IOMMU_UNMAP_DMA: {
+>  		struct vfio_iommu_type1_dma_unmap param;
+> -		struct iommu_table *tbl = container->tbl;
+> +		struct iommu_table *tbl;
+> +		struct spapr_tce_iommu_group *data;
+>  
+> -		if (WARN_ON(!tbl))
+> +		if (WARN_ON(!container->grp))
+> +			return -ENXIO;
+> +
+> +		data = iommu_group_get_iommudata(container->grp);
+> +		if (WARN_ON(!data || !data->iommu_owner || !data->ops))
+>  			return -ENXIO;
+
+Same as above on both of these.
+
+>  
+>  		minsz = offsetofend(struct vfio_iommu_type1_dma_unmap,
+> @@ -268,6 +340,12 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  		if (param.size & ~IOMMU_PAGE_MASK_4K)
+>  			return -EINVAL;
+>  
+> +		tbl = spapr_tce_find_table(container, data, param.iova);
+
+ops->find_table()?
+
+> +		if (!tbl)
+> +			return -ENXIO;
+> +
+> +		BUG_ON(!tbl->it_group);
+> +
+>  		ret = iommu_tce_clear_param_check(tbl, param.iova, 0,
+>  				param.size >> IOMMU_PAGE_SHIFT_4K);
+>  		if (ret)
+> @@ -293,10 +371,10 @@ static long tce_iommu_ioctl(void *iommu_data,
+>  		mutex_unlock(&container->lock);
+>  		return 0;
+>  	case VFIO_EEH_PE_OP:
+> -		if (!container->tbl || !container->tbl->it_group)
+> +		if (!container->grp)
+>  			return -ENODEV;
+>  
+> -		return vfio_spapr_iommu_eeh_ioctl(container->tbl->it_group,
+> +		return vfio_spapr_iommu_eeh_ioctl(container->grp,
+>  						  cmd, arg);
+>  	}
+>  
+> @@ -308,16 +386,16 @@ static int tce_iommu_attach_group(void *iommu_data,
+>  {
+>  	int ret;
+>  	struct tce_container *container = iommu_data;
+> -	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
+> +	struct iommu_table *tbl;
+> +	struct spapr_tce_iommu_group *data;
+>  
+> -	BUG_ON(!tbl);
+>  	mutex_lock(&container->lock);
+>  
+>  	/* pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
+>  			iommu_group_id(iommu_group), iommu_group); */
+> -	if (container->tbl) {
+> +	if (container->grp) {
+>  		pr_warn("tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
+> -				iommu_group_id(container->tbl->it_group),
+> +				iommu_group_id(container->grp),
+>  				iommu_group_id(iommu_group));
+>  		ret = -EBUSY;
+>  	} else if (container->enabled) {
+> @@ -325,9 +403,16 @@ static int tce_iommu_attach_group(void *iommu_data,
+>  				iommu_group_id(iommu_group));
+>  		ret = -EBUSY;
+>  	} else {
+> +		data = iommu_group_get_iommudata(iommu_group);
+> +		if (WARN_ON(!data || !data->iommu_owner || !data->ops))
+> +			return -ENXIO;
+> +
+> +		tbl = data->ops->get_table(data, 0);
+> +		BUG_ON(!tbl);
+
+Why BUG_ON?  A user can attempt to attach any group to any container, do
+you really want to give them the ability to halt the system?
+
+> +
+>  		ret = iommu_take_ownership(tbl);
+>  		if (!ret)
+> -			container->tbl = tbl;
+> +			container->grp = iommu_group;
+>  	}
+>  
+>  	mutex_unlock(&container->lock);
+> @@ -339,24 +424,31 @@ static void tce_iommu_detach_group(void *iommu_data,
+>  		struct iommu_group *iommu_group)
+>  {
+>  	struct tce_container *container = iommu_data;
+> -	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
+> +	struct iommu_table *tbl;
+> +	struct spapr_tce_iommu_group *data;
+>  
+> -	BUG_ON(!tbl);
+>  	mutex_lock(&container->lock);
+> -	if (tbl != container->tbl) {
+> +	if (iommu_group != container->grp) {
+>  		pr_warn("tce_vfio: detaching group #%u, expected group is #%u\n",
+>  				iommu_group_id(iommu_group),
+> -				iommu_group_id(tbl->it_group));
+> +				iommu_group_id(container->grp));
+>  	} else {
+>  		if (container->enabled) {
+>  			pr_warn("tce_vfio: detaching group #%u from enabled container, forcing disable\n",
+> -					iommu_group_id(tbl->it_group));
+> +					iommu_group_id(container->grp));
+>  			tce_iommu_disable(container);
+>  		}
+>  
+>  		/* pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
+>  				iommu_group_id(iommu_group), iommu_group); */
+> -		container->tbl = NULL;
+> +		container->grp = NULL;
+> +
+> +		data = iommu_group_get_iommudata(iommu_group);
+> +		BUG_ON(!data || !data->iommu_owner || !data->ops);
+> +
+> +		tbl = data->ops->get_table(data, 0);
+> +		BUG_ON(!tbl);
+> +
+>  		iommu_release_ownership(tbl);
+>  	}
+>  	mutex_unlock(&container->lock);
+
