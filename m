@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616AbaIWKyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:54:32 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:25143 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755524AbaIWKxt (ORCPT
+	id S1755797AbaIWKzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:55:53 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:24402 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755778AbaIWKzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:53:49 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-7.tower-179.messagelabs.com!1411469626!35483508!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.2; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <e4964cf961b70a6aabef35b23061e5009810c6e0.1411396719.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Tue, 23 Sep 2014 11:53:43 +0100
-Subject: [PATCH 7/8] MAINTAINERS: Include DA9150 files in Dialog Semiconductor
- support list.
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, <linux-api@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <support.opensource@diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 23 Sep 2014 06:55:51 -0400
+To: lizefan@huawei.com, tj@kernel.org
+Cc: peterz@infradead.org, mingo@kernel.org, miaox@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        keescook@chromium.org
+Subject: Re: [PATCH v2 3/3] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should beatomic flags
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <54210D3F.2090409@huawei.com>
+	<54210DA5.4040606@huawei.com>
+In-Reply-To: <54210DA5.4040606@huawei.com>
+Message-Id: <201409231955.FDB73406.FOOJLOVQMHFSFt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 23 Sep 2014 19:55:48 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- MAINTAINERS | 4 ++++
- 1 file changed, 4 insertions(+)
+Zefan Li wrote:
+> Tetsuo reported a hard-to-reproduce kernel crash on RHEL6, which happend
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1ff06de..3c86b30 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2890,12 +2890,15 @@ S:	Supported
- F:	Documentation/hwmon/da90??
- F:	drivers/gpio/gpio-da90??.c
- F:	drivers/hwmon/da90??-hwmon.c
-+F:	drivers/iio/adc/da91??-*.c
- F:	drivers/input/misc/da90??_onkey.c
- F:	drivers/input/touchscreen/da9052_tsi.c
- F:	drivers/leds/leds-da90??.c
- F:	drivers/mfd/da903x.c
- F:	drivers/mfd/da90??-*.c
-+F:	drivers/mfd/da91??-*.c
- F:	drivers/power/da9052-battery.c
-+F:	drivers/power/da91??-*.c
- F:	drivers/regulator/da903x.c
- F:	drivers/regulator/da9???-regulator.[ch]
- F:	drivers/rtc/rtc-da90??.c
-@@ -2905,6 +2908,7 @@ F:	include/linux/mfd/da903x.h
- F:	include/linux/mfd/da9052/
- F:	include/linux/mfd/da9055/
- F:	include/linux/mfd/da9063/
-+F:	include/linux/mfd/da9150/
- F:	include/sound/da[79]*.h
- F:	sound/soc/codecs/da[79]*.[ch]
+s/happend/happened/
 
---
-1.9.3
+> @@ -1972,6 +1973,14 @@ static inline void memalloc_noio_restore(unsigned int flags)
+>  TASK_PFA_TEST(NO_NEW_PRIVS, no_new_privs)
+>  TASK_PFA_SET(NO_NEW_PRIVS, no_new_privs)
+>  
+> +TASK_PFA_TEST(SPREAD_PAGE, spread_page)
+> +TASK_PFA_SET(SPREAD_PAGE, spread_page)
+> +TASK_PFA_CLEAR(SPREAD_PAGE, spread_page)
+> +
+> +TASK_PFA_TEST(SPREAD_SLAB, spread_slab)
+> +TASK_PFA_SET(SPREAD_SLAB, spread_slab)
+> +TASK_PFA_CLEAR(SPREAD_SLAB, spread_slab)
+> +
 
+I wonder how adding 3 macro lines differs from 3 inlined functions.
+Personally, from LXR (source code browser) point of view, inlined functions
+are more friendly than macros. Also, I wonder about the cost of extracting
+macros in a file which is likely included by every file but referenced
+by few files. Speak of SPREAD_PAGE and SPREAD_SLAB, they should be defined
+as inlined functions in include/linux/cpuset.h rather than as macros in
+include/linux/sched.h ?
