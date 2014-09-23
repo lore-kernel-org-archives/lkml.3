@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942AbaIWPwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:52:47 -0400
-Received: from mga14.intel.com ([192.55.52.115]:59776 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbaIWPwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:52:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,580,1406617200"; 
-   d="scan'208";a="595654770"
-Date: Tue, 23 Sep 2014 18:52:02 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+	id S1756172AbaIWPx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:53:58 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44461 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaIWPx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 11:53:56 -0400
+From: Chris Zhong <zyw@rock-chips.com>
+To: dianders@chromium.org, heiko@sntech.de
+Cc: linux-rockchip@lists.infradead.org, lee.jones@linaro.org,
+        broonie@kernel.org, Chris Zhong <zyw@rock-chips.com>,
+        devicetree@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
         Grant Likely <grant.likely@linaro.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
- properties interface
-Message-ID: <20140923155202.GT1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
- <12538216.vu4CbU01qP@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12538216.vu4CbU01qP@wuerfel>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v6 0/2] regulator: get voltage & duty table from dts for st-pwm
+Date: Tue, 23 Sep 2014 23:53:40 +0800
+Message-Id: <1411487622-10881-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 05:45:57PM +0200, Arnd Bergmann wrote:
-> On Tuesday 23 September 2014 17:25:50 Linus Walleij wrote:
-> > On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> > 
-> > > Some drivers need to deal with only firmware representation of its
-> > > GPIOs. An example would be a GPIO button array driver where each button
-> > > is described as a separate firmware node in device tree. Typically these
-> > > child nodes do not have physical representation in the Linux device
-> > > model.
-> > >
-> > > In order to help device drivers to handle such firmware child nodes we
-> > > add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
-> > > parameter, finds the GPIO using whatever is the underlying firmware
-> > > method, and requests the GPIO properly.
-> > >
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > 
-> > I have a hard time figuring out if this is what we want for common
-> > accessors between DT and ACPI.
-> > 
-> > Can I get some input from Grant, Arnd, Mark, Darren...?
-> 
-> I just took a brief look at this. My first impression is that the
-> fw_dev_node structure is weird when all callers just do (in patch 2)
-> 
-> +	struct fw_dev_node fdn = {
-> +		.of_node = dev->of_node,
-> +		.acpi_node = ACPI_COMPANION(dev),
-> +	};
-> 
-> I'd much rather see an interface that passes the 'struct device'
-> pointer down to dev_get_named_gpiod() and all other exported
-> functions, and then internally does the conversion at the point
-> where the access is done.
+get voltage & duty table from device tree might be better, other platforms can also use this
+driver without any modify.
+Tested on a rk3288 sdk board as logic voltage regulator.
 
-Problem is that if you don't have the dev pointer in the first place.
-Please look how leds-gpio.c or gpio_keys_polled.c are using this.
+Changes in v6:
+Adviced by Mark Rutland
+- fix a spelling error
 
-Of course you have the first level device but when you need to iterate
-"leds" or "buttons" below where there is no Linux device available we
-need something like this.
+Changes in v4:
+Adviced by Doug Anderson
+- improve kconfig
+- add const for desc structure
+Adviced by Doug Anderson
+- remove regulator-always-on and regulator-boot-on from the Example
+
+Changes in v3:
+Adviced by Doug Anderson
+- Make Kconfig & Makefile alphabetical
+- remove pwm_reg_period from pwm_regulator_data
+- modify the calculation in pwm_regulator_set_voltage_sel
+- add length validity check
+Adviced by Doug Anderson
+- update the Example
+
+Changes in v2:
+Adviced by Lee Jones
+- rename the file
+- remove all the prefix st_
+- add depend on PWM in Kconfig
+Adviced by Lee Jones
+- rename the documentation
+Adviced by Doug Anderson
+- update the example
+Adviced by Mark Rutland
+- remove pwm-reg-period
+
+Chris Zhong (2):
+  regulator: st-pwm: get voltage and duty table from dts
+  dt-bindings: add devicetree bindings for st-pwm regulator
+
+ .../bindings/regulator/pwm-regulator.txt           |   27 +++
+ drivers/regulator/Kconfig                          |   13 +-
+ drivers/regulator/Makefile                         |    2 +-
+ drivers/regulator/pwm-regulator.c                  |  197 ++++++++++++++++++++
+ drivers/regulator/st-pwm.c                         |  190 -------------------
+ 5 files changed, 232 insertions(+), 197 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
+ create mode 100644 drivers/regulator/pwm-regulator.c
+ delete mode 100644 drivers/regulator/st-pwm.c
+
+-- 
+1.7.9.5
+
