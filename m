@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350AbaIWQUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:20:21 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:55699 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbaIWQTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:19:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140919182221.0d8c2a92@sem.office.altlinux.ru>
-References: <1411037700-28966-1-git-send-email-sem@altlinux.org>
-	<20140918112206.GA26866@mguzik>
-	<20140919182221.0d8c2a92@sem.office.altlinux.ru>
-Date: Tue, 23 Sep 2014 18:19:06 +0200
-Message-ID: <CAELBmZDEEwp1bH9FKBouy+q86u_KLHBth=JvGy_dVLN7bEbmkQ@mail.gmail.com>
-Subject: Re: [PATCH] vfs: Don't exchange filenames unconditionally.
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Mikhail Efremov <sem@altlinux.ru>
-Cc: Mateusz Guzik <mguzik@redhat.com>, Mikhail Efremov <sem@altlinux.org>,
-        LKML <linux-kernel@vger.kernel.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756293AbaIWQUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:20:19 -0400
+Received: from omr2.cc.vt.edu ([198.82.141.100]:48387 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753832AbaIWQUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 12:20:09 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH] mm, debug: mm-introduce-vm_bug_on_mm-fix-fix.patch
+In-Reply-To: Your message of "Tue, 23 Sep 2014 13:28:48 +0200."
+             <20140923112848.GA10046@dhcp22.suse.cz>
+From: Valdis.Kletnieks@vt.edu
+References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org> <1411464279-20158-1-git-send-email-mhocko@suse.cz>
+            <20140923112848.GA10046@dhcp22.suse.cz>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1411489189_2175P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 23 Sep 2014 12:19:49 -0400
+Message-ID: <83907.1411489189@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 4:22 PM, Mikhail Efremov <sem@altlinux.ru> wrote:
-> On Thu, 18 Sep 2014 13:22:07 +0200 Mateusz Guzik wrote:
->> On Thu, Sep 18, 2014 at 02:55:00PM +0400, Mikhail Efremov wrote:
->> > Only exchange source and destination filenames
->> > if flags contain RENAME_EXCHANGE.
+--==_Exmh_1411489189_2175P
+Content-Type: text/plain; charset=us-ascii
 
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+On Tue, 23 Sep 2014 13:28:48 +0200, Michal Hocko said:
+> And there is another one hitting during randconfig. The patch makes my
+> eyes bleed
 
+Amen.  But I'm not seeing a better fix either.
 
->>
->> But names are still exchanged without RENAME_EXCHANGE, provided they are
->> long enough.
->>
->> da1ce0670c14 introduced this behaviour also for short names and this is
->> what you are reverting here.
->>
->> That said, I think the patch is fine as an interim change, but should
->> note facts mentioned above.
->>
->> For more info please see https://lkml.org/lkml/2014/9/7/6
->
-> Thanks for pointing out that thread to me, I didn't read it before
-> sending the patch.
->
->> I'll be posting a RFC patch for actual problem next week.
->
-> I suppose then that no sense to resend this patch right now, I'll just
-> wait the proper solution from you.
-> Yet this patch can be used as a temporary workaround (as you mentioned
-> above) if the proper solution takes longer than expected to implement.
+>  #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+> -		"tlb_flush_pending %d\n",
+> +		"tlb_flush_pending %d\n"
+>  #endif
+> -		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
+> +		, mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
 
-Yes, feel free to resend it to Linus, before 3.17 proper is out.
+I'm surprised that checkpatch doesn't explode on this.  And I'm starting
+a pool on how soon somebody submits a patch to "fix" this. :)
 
-Also please consider adding:
+--==_Exmh_1411489189_2175P
+Content-Type: application/pgp-signature
 
-Cc: stable@vger.kernel.org
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-Thanks,
-Miklos
+iQIVAwUBVCGdpQdmEQWDXROgAQLLKBAAiTSdExIo2aogwb191B7h7hkYPyPVu8ne
+lyHn0dfT7JDVht3nsQBmDHn48qL/h4d+GvU0priCoHlvXG+17p5asW/bcaOttavH
+xPSagNrH7sCUGhZyupe9n5ZFfw4Mer41uA9H4cFqMOVJCoSJyCMvCPB9ilKWDOZl
+dTbzN/XyRVhFR6nHoecXGWlAsHFWi2zstPPYi98fmM9VqZQ/025wpr5Fb0Ffdphr
+csIwovxR2blTVQpGUSZhPRYbGaPPL6S4JJ8waC7IDmAWqdyvj7vY3Z5L5n44vu+d
+QeRUsCD30w0B14QdBO2fFl2LE2LppsEjjmQ2RrGoRpB9MSKhXdK2wF4uL6xzLIWL
+CGYoPkR6mvPmDX5rOJMN7AWx5wTcB6jhp1xnDyhK3IlfzurOmZaqi/YuzHqXUwkV
+DQL1VYz1FTBd1yRyqY6OCRcjaZHopijNiyAvrSwvcpylELDCLqg6Sm+6zQG8Nmw4
+CFLi6fRhYZUr0ypQQwsyk9KHQBWMkOi+gYGalM2ahD/TnfeLx+T2FA79Tb2rTW5w
+jtoPo5nryghgWSeF2oaWE13iJNEjyZUb6PjWcUn+lhbr+6lcCr0FCCXapSAlR80A
+++W/jsSBDNPbNNskbKzuvJxN+hxDzYWxNJLlhCqJeu5yydgS8Is5jXOa7N3dwKS3
+Esg0LBXwHp4=
+=2FOW
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1411489189_2175P--
