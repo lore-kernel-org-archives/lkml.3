@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaIWFng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:43:36 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:62447 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaIWFne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:43:34 -0400
-Date: Tue, 23 Sep 2014 07:43:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-Message-ID: <20140923054328.GA28790@gmail.com>
-References: <20140923143232.5ffff46e@canb.auug.org.au>
+	id S1754186AbaIWFom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:44:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40629 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751272AbaIWFol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:44:41 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140923053711.GA28704@gmail.com>
+References: <20140919104021.GA11552@gmail.com> <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com> <20140923053510.GB27825@gmail.com> <20140923053711.GA28704@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923143232.5ffff46e@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [GIT PULL] x86 fixes
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 22 Sep 2014 22:44:16 -0700
+To: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matt Fleming <matt.fleming@intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <32c24277-c815-4ca6-98c5-77bf040c1384@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+That would be my guess, too.
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On September 22, 2014 10:37:11 PM PDT, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>* Ingo Molnar <mingo@kernel.org> wrote:
+>
+>> 
+>> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>> 
+>> > On Fri, Sep 19, 2014 at 3:40 AM, Ingo Molnar <mingo@kernel.org>
+>wrote:
+>> > >
+>> > > Please pull the latest x86-urgent-for-linus git tree from:
+>> > 
+>> > I only just noticed, but this pull request causes my Sony Vaio 
+>> > laptop to immediately reboot at startup.
+>> > 
+>> > I'm assuming it's one of the efi changes, but I'm bisecting now 
+>> > to say exactly where it happens. It will get reverted.
+>> 
+>> I've Cc:-ed Matt.
+>> 
+>> My guess would be one of these two EFI commits:
+>> 
+>>       * Fix early boot regression affecting x86 EFI boot stub when
+>loading
+>>         initrds above 4GB - Yinghai Lu
+>>     
+>> 47226ad4f4cf x86/efi: Only load initrd above 4g on second try
+>> 
+>>       * Relocate GOT entries in the x86 EFI boot stub now that we
+>have
+>>         symbols with global visibility - Matt Fleming
+>> 
+>> 9cb0e394234d x86/efi: Fixup GOT in all boot code paths
+>> 
+>> If it's 9cb0e394234d - then it's perhaps a build quirk, or a bug 
+>> in the assembly code. If so then we'd have to revert this, and 
+>> reintroduce another regression, caused by EFI commit 
+>> f23cf8bd5c1f49 in this merge window. The most recent commit is 
+>> easy to revert, the older one not.
+>> 
+>> If it's 47226ad4f4cf then we'd reintroduce the regression caused 
+>> by 4bf7111f501 in the previous merge window. They both revert 
+>> cleanly after each other - but it might be safer to just revert 
+>> the most recent one.
+>>
+>> My guess is that your regression is caused by 47226ad4f4cf.
+>
+>Wrong sha1: my guess is on 9cb0e394234d, the GOT fixup.
+>
+>Thanks,
+>
+>	Ingo
 
-> Hi Josh,
-> 
-> Today's linux-next merge of the tiny tree got conflicts in
-> arch/x86/kernel/process_32.c and arch/x86/kernel/process_64.c between
-> commits dc56c0f9b870 ("x86, fpu: Shift "fpu_counter = 0" from
-> copy_thread() to arch_dup_task_struct()") and 6f46b3aef003 ("x86:
-> copy_thread: Don't nullify ->ptrace_bps twice") from the tip tree and
-> commits a1cf09f93e66 ("x86: process: Unify 32-bit and 64-bit
-> copy_thread I/O bitmap handling") and e4a191d1e05b ("x86: Support
-> compiling out userspace I/O (iopl and ioperm)") from the tiny tree.
-
-Why are such changes in the 'tiny' tree? These are sensitive 
-arch/x86 files, and any unification and compilation-out support 
-patches need to go through the proper review channels and be 
-merged upstream via the x86 tree if accepted...
-
-In particular the graticious sprinking of #ifdef 
-CONFIG_X86_IOPORTs around x86 code looks ugly.
-
-Josh, don't do that, this route is really unacceptable. Please 
-resubmit the latest patches and remove these from linux-next.
-
-Thanks,
-
-	Ingo
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
