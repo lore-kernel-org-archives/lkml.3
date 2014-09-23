@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260AbaIWPXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:23:17 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56108 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310AbaIWPXP (ORCPT
+	id S932149AbaIWPZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:25:23 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:54086 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709AbaIWPZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:23:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410790185-31101-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1410790185-31101-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Tue, 23 Sep 2014 17:23:14 +0200
-Message-ID: <CACRpkdZ_-LY=RC48KB1aOGkqjeF1U24ddfvwef4pLarw_oN69w@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] gpio: Increase ARCH_NR_GPIOs to 512
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Alan Cox <alan@linux.intel.com>, Ning Li <ning.li@intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 11:25:20 -0400
+From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+X-Google-Original-From: Marcos Paulo de Souza
+To: linux-kernel@vger.kernel.org
+Cc: Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Tom Gundersen <teg@jklm.no>, Peter Hutterer <peter.hutterer@who-t.net>,
+        linux-input@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] input/serio/i8042-x86ia64io.h: Fix Asus X450LCP touchpad detection
+Date: Tue, 23 Sep 2014 12:24:33 -0300
+Message-Id: <1411485873-4245-1-git-send-email-marcos.souza.org@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 4:09 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
 
-> Some newer Intel SoCs, like Braswell already have more than 256 GPIOs
-> available so the default limit is exceeded. Instead of adding more
-> architecture specific gpio.h files with custom ARCH_NR_GPIOs we increase
-> the gpiolib default limit to be twice the current.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Tom Gundersen <teg@jklm.no>
+Cc: Peter Hutterer <peter.hutterer@who-t.net>
+Cc: linux-input@vger.kernel.org
+Cc: stable@vger.kernel.org
+---
+ drivers/input/serio/i8042-x86ia64io.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Patch applied with the extended blurb in the commit message.
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 136b7b20..ec6cb72 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -465,6 +465,15 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
+ 		},
+ 	},
++	{
++		/* Asus X450LCP */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X450LCP"),
++		},
++	},
++
++
+ 	{ }
+ };
+ 
+-- 
+1.9.3
 
-Yours,
-Linus Walleij
