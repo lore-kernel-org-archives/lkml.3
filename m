@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400AbaIWMbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:31:11 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:65023 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaIWMbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:31:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Jingchang Lu <jingchang.lu@freescale.com>, vinod.koul@intel.com,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: fsl-edma: fixup reg offset and hw S/G support in big-endian model
-Date: Tue, 23 Sep 2014 14:30:30 +0200
-Message-ID: <45444544.Xl4NeUiTm0@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411463719-7728-1-git-send-email-jingchang.lu@freescale.com>
-References: <1411463719-7728-1-git-send-email-jingchang.lu@freescale.com>
+	id S1755446AbaIWMcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:32:24 -0400
+Received: from mail-bn1bon0141.outbound.protection.outlook.com ([157.56.111.141]:57933
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751790AbaIWMcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:32:23 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <linux@roeck-us.net>, <linux-watchdog@vger.kernel.org>
+CC: <wim@iguana.be>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v2] watchdog: imx2_wdt: Add power management support.
+Date: Tue, 23 Sep 2014 20:31:53 +0800
+Message-ID: <1411475513-2576-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(88136002)(77156001)(64706001)(104166001)(47776003)(20776003)(106466001)(90102001)(99396002)(50986999)(89996001)(10300001)(120916001)(229853001)(36756003)(84676001)(107046002)(86362001)(76482002)(68736004)(50226001)(74502003)(85852003)(81542003)(4396001)(46102003)(97736003)(81342003)(31966008)(74662003)(62966002)(77982003)(92566001)(83072002)(19580395003)(85306004)(104016003)(21056001)(87286001)(93916002)(83322001)(92726001)(50466002)(79102003)(6806004)(44976005)(48376002)(105606002)(87936001)(19580405001)(80022003)(95666004)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0619;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:W0su7TT2nHlSeJgJyqi7A9e+7sS7e8PGMIePJnCV6gG
- iT09E/A0W1FeQP1yQ5KMb+XUOEPoSCZbC++2wCm5jr27dmHU0L
- XYP/ZkUgSSpGqNyFfQ7IMvOirG5z9reCk4c1+4xUgjscf8kbJm
- DA5cvtdjVOZWrJ71j5FbyZu0ES2weDsVDrN8R6y6YiwH7Cu+U6
- lSvrb5yP3kVDvGGBZU5ZBroDlP5xxERcwLEyY5ip+Lv3gn7m3E
- IVF0Uz5SDT6XcDbWtODoa/1qqQ6hF68QMDZKz/+Udc5UqAT0Jh
- jiK//dJQ/Pq0L5pHnzf3kRHmn+zf0qqSSW543QQmP+cF5M4BdZ
- Meuhlw+N/ln9xdTn1Q7s=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0619;
+X-Forefront-PRVS: 0343AC1D30
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 17:15:19 Jingchang Lu wrote:
-> @@ -459,20 +480,27 @@ static void fill_tcd_params(struct fsl_edma_engine *edma,
->         u16 csr = 0;
->  
->         /*
-> -        * eDMA hardware SGs require the TCD parameters stored in memory
-> -        * the same endian as the eDMA module so that they can be loaded
-> -        * automatically by the engine
-> +        * eDMA hardware SGs requires the TCDs to be auto loaded
-> +        * in the same endian as the core whenver the eDAM engine's
-> +        * register endian. So we don't swap the value, waitting
-> +        * for fsl_set_tcd_params doing the swap.
->          */
+Add power management operations(suspend and resume) as part of
+dev_pm_ops for IMX2 watchdog driver.
 
-This makes no sense: how would the eDMA hardware know what endianess
-the CPU is using to write this data? Have you tried this running on
-the same hardware with both big-endian and little-endian kernels?
+If PM will be supported, please make sure that the wdev->clk
+could disable the watchdog's counter input clock source or can
+mask watchdog's reset request to the core.
 
-Also, you access this as little-endian data unconditionally rather
-than cpu-endian as the comment suggests, maybe that is what you meant
-here?
+If watchdog is still used by consumers and resumes from deep
+sleep state, we need to restart the watchdog again without
+enabling the timer.
 
-> -       edma_writel(edma, src, &(tcd->saddr));
-> -       edma_writel(edma, dst, &(tcd->daddr));
-> -       edma_writew(edma, attr, &(tcd->attr));
-> -       edma_writew(edma, EDMA_TCD_SOFF_SOFF(soff), &(tcd->soff));
-> -       edma_writel(edma, EDMA_TCD_NBYTES_NBYTES(nbytes), &(tcd->nbytes));
-> -       edma_writel(edma, EDMA_TCD_SLAST_SLAST(slast), &(tcd->slast));
-> -       edma_writew(edma, EDMA_TCD_CITER_CITER(citer), &(tcd->citer));
-> -       edma_writew(edma, EDMA_TCD_DOFF_DOFF(doff), &(tcd->doff));
-> -       edma_writel(edma, EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga), &(tcd->dlast_sga));
-> -       edma_writew(edma, EDMA_TCD_BITER_BITER(biter), &(tcd->biter));
-> +       writel(src, &(tcd->saddr));
-> +       writel(dst, &(tcd->daddr));
-> +
-> +       writew(attr, &(tcd->attr));
+If watchdog been has started --> stopped by the consumers and
+resumes from non-deep sleep state, then start the timer again.
 
-You seem to have another preexisting bug: The tcd pointer actually does not
-point to mmio registers here at all, but instead points to memory that
-has been returned from dma_pool_alloc. It is not valid to use writel()
-on such memory, that is only meant to work on real MMIO registers.
+If watchdog has been started --> stopped by the consumers and
+resumes from deep sleep state, will do nothing. The watchdog
+will be restarted by consumers next time to be used.
 
-You should use regular assignments to the registers here, e.g.
-	
-	tcd->saddr = cpu_to_le32(src);
-	tcd->daddr = cpu_to_le32(dst);
-	...
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
 
-	Arnd
+Hi,
+
+I have pulled all the patches since Linux kernel v3.12 to v3.12, and
+test the PM on my LS1021A QDS board again.
+It works fine for now.
+
+Change in v2:
+- Fix one bug with another small change.
+- Adjust the comments.
+
+
+
+ drivers/watchdog/imx2_wdt.c | 66 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index 68c3d37..b9c81c9 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -295,6 +295,71 @@ static void imx2_wdt_shutdown(struct platform_device *pdev)
+ 	}
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++/* Disable watchdog if it is active or non-active but still running */
++static int imx2_wdt_suspend(struct device *dev)
++{
++	struct watchdog_device *wdog = dev_get_drvdata(dev);
++	struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
++
++	imx2_wdt_set_timeout(wdog, IMX2_WDT_MAX_TIME);
++	imx2_wdt_ping(wdog);
++
++	/* Watchdog has been stopped but IP block is still running */
++	if (!watchdog_active(wdog) && imx2_wdt_is_running(wdev))
++		del_timer_sync(&wdev->timer);
++
++	/* If PM will be supported using imx2_wdt, please
++	 * make sure that the wdev->clk could disable the
++	 * watchdog's counter input clock source or can mask
++	 * watchdog's reset request to the core.
++	 */
++	clk_disable_unprepare(wdev->clk);
++
++	return 0;
++}
++
++/* Enable watchdog and configure it if necessary */
++static int imx2_wdt_resume(struct device *dev)
++{
++	struct watchdog_device *wdog = dev_get_drvdata(dev);
++	struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
++
++	clk_prepare_enable(wdev->clk);
++
++	if (watchdog_active(wdog) && !imx2_wdt_is_running(wdev)) {
++		/* If watchdog is still used by consumers and
++		 * resumes from deep sleep state, need to
++		 * restart the watchdog again.
++		 */
++		imx2_wdt_setup(wdog);
++		imx2_wdt_set_timeout(wdog, wdog->timeout);
++		imx2_wdt_ping(wdog);
++	} else if (imx2_wdt_is_running(wdev)) {
++		imx2_wdt_set_timeout(wdog, wdog->timeout);
++		imx2_wdt_ping(wdog);
++		/* If watchdog has started --> stopped by the
++		 * consumers and resumes from non-deep sleep state,
++		 * then start the timer again.
++		 */
++		if (!watchdog_active(wdog))
++			mod_timer(&wdev->timer,
++				  jiffies + wdog->timeout * HZ / 2);
++	} else {
++		/* If watchdog has been started --> stopped by
++		 * the consumers and resumes from deep sleep state,
++		 * will do nothing. The watchdog will be restarted
++		 * by consumers next time to be used.
++		 */
++	}
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(imx2_wdt_pm_ops, imx2_wdt_suspend,
++			 imx2_wdt_resume);
++
+ static const struct of_device_id imx2_wdt_dt_ids[] = {
+ 	{ .compatible = "fsl,imx21-wdt", },
+ 	{ /* sentinel */ }
+@@ -307,6 +372,7 @@ static struct platform_driver imx2_wdt_driver = {
+ 	.driver		= {
+ 		.name	= DRIVER_NAME,
+ 		.owner	= THIS_MODULE,
++		.pm     = &imx2_wdt_pm_ops,
+ 		.of_match_table = imx2_wdt_dt_ids,
+ 	},
+ };
+-- 
+2.1.0.27.g96db324
+
