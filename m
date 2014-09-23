@@ -1,61 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849AbaIWHVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:21:18 -0400
-Received: from mga14.intel.com ([192.55.52.115]:39833 "EHLO mga14.intel.com"
+	id S1754361AbaIWHWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:22:11 -0400
+Received: from mga14.intel.com ([192.55.52.115]:6828 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957AbaIWHVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:21:17 -0400
+	id S1753951AbaIWHWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:22:08 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390198494"
-Message-ID: <1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [GIT PULL] x86 fixes
-From: Matt Fleming <matt.fleming@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Date: Tue, 23 Sep 2014 08:20:51 +0100
-In-Reply-To: <20140923055802.GA29052@gmail.com>
-References: <20140919104021.GA11552@gmail.com>
-	 <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
-	 <20140923053510.GB27825@gmail.com> <20140923053711.GA28704@gmail.com>
-	 <20140923055802.GA29052@gmail.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
+   d="scan'208";a="479377225"
+Message-ID: <54211EB6.3020306@intel.com>
+Date: Tue, 23 Sep 2014 15:18:14 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [163.33.239.181]
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de,
+        prarit@redhat.com, Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, srostedt@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [Resend PATCH V2] X86/CPU: Avoid 100ms sleep for cpu offline
+  during S3
+References: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 07:58 +0200, Ingo Molnar wrote:
+On 2014年08月26日 15:43, Lan Tianyu wrote:
+> With some bad kernel configures, cpu offline consumes more than 100ms
+> during S3. This because native_cpu_die() would fall into 100ms
+> sleep when cpu idle loop thread marked cpu state to DEAD slower. It's
+> timing related issue. What native_cpu_die() does is that poll cpu
+> state and wait for 100ms if cpu state hasn't been marked to DEAD.
+> The 100ms sleep doesn't make sense. To avoid such long sleep, this
+> patch is to add struct completion to each cpu, wait for the completion
+> in the native_cpu_die() and wakeup the completion when the cpu state is
+> marked to DEAD.
 > 
-> So if it's the GOT fixup then I feel the safest option is to 
-> revert 9cb0e394234d straight away, and then to do a functional 
-> revert of f23cf8bd5c1f49 as a separate step, perhaps via 
-> something really crude like:
+> Tested on the Intel Xeon server with 48 cores, Ivbridge and Haswell laptops.
+> the times of cpu offline on these machines are reduced from more than 100ms
+> to less than 5ms. The system suspend time reduces 2.3s on the servers.
 > 
->    #include "../..../drivers/firmware/efi/libstub/efi-stub-helper.c"
+> Borislav and Prarit also helped to test the patch on an AMD machine and
+> a few systems of various sizes and configurations (multi-socket,
+> single-socket, no hyper threading, etc.). No issues seen.
 > 
-> or so. (Maybe someone else can think of something 
-> cleaner/simpler, because this method is really ugly, as we'd have 
-> to #include the whole libstub library into eboot.c AFAICS...)
+> Acked-by: Borislav Petkov <bp@suse.de>
+> Tested-by: Prarit Bhargava <prarit@redhat.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  arch/x86/kernel/smpboot.c | 23 +++++++++++------------
+>  1 file changed, 11 insertions(+), 12 deletions(-)
+> 
 
-Yeah, I think at this point in the release cycle it would be safest to
-revert back to the original scheme of #including the .c files. I'm not
-sure if we can do any better in a robust way, i.e. without introducing
-more regressions. Then take a look at doing the boot stub unification
-with fresh eyes (and improved testing) after v3.17.
+Hi HPA, Ingo, Thomas & Peter Z:
+	Is this patch ok for you?
 
-What I want to avoid is reverting the arm64 side of things too, so I'm
-gonna take a stab at doing the necessary reverts/partial
-reverts/whatever to get x86 back to the pre-merge window boot stub
-duplicated code scheme.
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 5492798..25a8f17 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -102,6 +102,8 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+>  DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+>  EXPORT_PER_CPU_SYMBOL(cpu_info);
+>  
+> +DEFINE_PER_CPU(struct completion, die_complete);
+> +
+>  atomic_t init_deasserted;
+>  
+>  /*
+> @@ -1331,7 +1333,7 @@ int native_cpu_disable(void)
+>  		return ret;
+>  
+>  	clear_local_APIC();
+> -
+> +	init_completion(&per_cpu(die_complete, smp_processor_id()));
+>  	cpu_disable_common();
+>  	return 0;
+>  }
+> @@ -1339,18 +1341,14 @@ int native_cpu_disable(void)
+>  void native_cpu_die(unsigned int cpu)
+>  {
+>  	/* We don't do anything here: idle task is faking death itself. */
+> -	unsigned int i;
+> +	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
+>  
+> -	for (i = 0; i < 10; i++) {
+> -		/* They ack this in play_dead by setting CPU_DEAD */
+> -		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+> -			if (system_state == SYSTEM_RUNNING)
+> -				pr_info("CPU %u is now offline\n", cpu);
+> -			return;
+> -		}
+> -		msleep(100);
+> -	}
+> -	pr_err("CPU %u didn't die...\n", cpu);
+> +	/* They ack this in play_dead by setting CPU_DEAD */
+> +	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+> +		if (system_state == SYSTEM_RUNNING)
+> +			pr_info("CPU %u is now offline\n", cpu);
+> +	} else
+> +		pr_err("CPU %u didn't die...\n", cpu);
+>  }
+>  
+>  void play_dead_common(void)
+> @@ -1362,6 +1360,7 @@ void play_dead_common(void)
+>  	mb();
+>  	/* Ack it */
+>  	__this_cpu_write(cpu_state, CPU_DEAD);
+> +	complete(&per_cpu(die_complete, smp_processor_id()));
+>  
+>  	/*
+>  	 * With physical CPU hotplug, we should halt the cpu
+> 
 
+
+-- 
+Best regards
+Tianyu Lan
