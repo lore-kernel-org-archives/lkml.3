@@ -1,144 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaIWKVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:21:09 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:56029 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797AbaIWKUK (ORCPT
+	id S1755231AbaIWKXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:23:06 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:55409 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283AbaIWKXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:20:10 -0400
+	Tue, 23 Sep 2014 06:23:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410168160-3624-2-git-send-email-lftan@altera.com>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
-	<1410168160-3624-2-git-send-email-lftan@altera.com>
-Date: Tue, 23 Sep 2014 18:20:08 +0800
-Message-ID: <CAFiDJ5-b_P7aWFXYP4GcgTUb3t_j6dZCsjeGZwVUs+7qo0v-GA@mail.gmail.com>
-Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
-From: "LF.Tan" <lftan.linux@gmail.com>
-To: Linux-Arch <linux-arch@vger.kernel.org>,
+In-Reply-To: <20140923051000.60355643@as>
+References: <1411461080-4061-1-git-send-email-geert@linux-m68k.org>
+	<20140923051000.60355643@as>
+Date: Tue, 23 Sep 2014 12:23:01 +0200
+X-Google-Sender-Auth: EriYFXenKU-PFtTC8N9g72djlaM
+Message-ID: <CAMuHMdVQn=_0Xbwox9dvaG6zxr8eBy9SSZ5p1UMaSzT+wQr2NA@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.17-rc6 (take two)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Ley Foon Tan <lftan@altera.com>, LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
+        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 5:22 PM, Ley Foon Tan <lftan@altera.com> wrote:
-> Follow m68k futex implementation for !CONFIG_SMP.
+On Tue, Sep 23, 2014 at 12:09 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+> On Tue, 23 Sep 2014 10:31:20 +0200
+> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 >
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> ---
->  include/asm-generic/futex.h | 82 +++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 82 insertions(+)
+>> + /scratch/kisskb/src/mm/memcontrol.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 4164:1
 >
-> diff --git a/include/asm-generic/futex.h b/include/asm-generic/futex.h
-> index 01f227e..f5650a5 100644
-> --- a/include/asm-generic/futex.h
-> +++ b/include/asm-generic/futex.h
-> @@ -5,6 +5,87 @@
->  #include <linux/uaccess.h>
->  #include <asm/errno.h>
+> Well, this one was educational. It was caused by:
 >
-> +#ifndef CONFIG_SMP
-> +static inline int
-> +futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
-> +{
-> +       int op = (encoded_op >> 28) & 7;
-> +       int cmp = (encoded_op >> 24) & 15;
-> +       int oparg = (encoded_op << 8) >> 20;
-> +       int cmparg = (encoded_op << 20) >> 20;
-> +       int oldval, ret;
-> +       u32 tmp;
-> +
-> +       if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
-> +               oparg = 1 << oparg;
-> +
-> +       pagefault_disable();    /* implies preempt_disable() */
-> +
-> +       ret = -EFAULT;
-> +       if (unlikely(get_user(oldval, uaddr) != 0))
-> +               goto out_pagefault_enable;
-> +
-> +       ret = 0;
-> +       tmp = oldval;
-> +
-> +       switch (op) {
-> +       case FUTEX_OP_SET:
-> +               tmp = oparg;
-> +               break;
-> +       case FUTEX_OP_ADD:
-> +               tmp += oparg;
-> +               break;
-> +       case FUTEX_OP_OR:
-> +               tmp |= oparg;
-> +               break;
-> +       case FUTEX_OP_ANDN:
-> +               tmp &= ~oparg;
-> +               break;
-> +       case FUTEX_OP_XOR:
-> +               tmp ^= oparg;
-> +               break;
-> +       default:
-> +               ret = -ENOSYS;
-> +       }
-> +
-> +       if (ret == 0 && unlikely(put_user(tmp, uaddr) != 0))
-> +               ret = -EFAULT;
-> +
-> +out_pagefault_enable:
-> +       pagefault_enable();     /* subsumes preempt_enable() */
-> +
-> +       if (ret == 0) {
-> +               switch (cmp) {
-> +               case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
-> +               case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
-> +               case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
-> +               case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
-> +               case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
-> +               case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
-> +               default: ret = -ENOSYS;
-> +               }
-> +       }
-> +       return ret;
-> +}
-> +
-> +static inline int
-> +futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-> +                             u32 oldval, u32 newval)
-> +{
-> +       u32 val;
-> +
-> +       if (unlikely(get_user(val, uaddr) != 0))
-> +               return -EFAULT;
-> +
-> +       if (val == oldval && unlikely(put_user(newval, uaddr) != 0))
-> +               return -EFAULT;
-> +
-> +       *uval = val;
-> +
-> +       return 0;
-> +}
-> +
-> +#else
->  static inline int
->  futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
->  {
-> @@ -54,4 +135,5 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
->         return -ENOSYS;
->  }
+> commit 05b8430123359886ef6a4146fba384e30d771b3f
+> Author: Johannes Weiner <hannes@cmpxchg.org>
+> Date:   Wed Aug 6 16:05:59 2014 -0700
 >
-> +#endif /* CONFIG_SMP */
->  #endif
-> --
-> 1.8.2.1
+>     mm: memcontrol: use root_mem_cgroup res_counter
 >
+> This removed the return statement from mem_cgroup_read_u64(). I think
+> Johannes was assuming that BUG() never returns, but it looks like that
+> is not true on some archs, especially with CONFIG_BUG disabled. (On x86
+> it never returns in any case.) The bug was always there - it would have
+> just returned an uninitialized variable before. Now it returns some
+> different random value.
+>
+> I'm not sure what to do here. I really think BUG() should never return
+> no matter what options are configured. In this case it's no big deal
+> and I'd just return zero to silence the warning, but a bigger problem
+> is that there are probably other places assuming BUG() never
+> returns?
 
-Hi Arnd
+Just ignore it for now.
 
-Are you okay with this generic futex in asm-generic?
+Fixing BUG() to avoid this has been an ongoing project for several years.
+I don't remember what the latest status is...
 
-Regards
-Ley Foon
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
