@@ -1,84 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839AbaIWNbB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:31:01 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:43626 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646AbaIWNa7 (ORCPT
+	id S1755971AbaIWNbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:31:43 -0400
+Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:46058 "EHLO
+	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883AbaIWNbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:30:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140917121820.GR12361@n2100.arm.linux.org.uk>
-References: <1410955036-1956-1-git-send-email-geert+renesas@glider.be>
-	<20140917121820.GR12361@n2100.arm.linux.org.uk>
-Date: Tue, 23 Sep 2014 15:30:57 +0200
-X-Google-Sender-Auth: 9a4Ir_pnzot33wn_yfKs0Fpji2s
-Message-ID: <CAMuHMdU+ztui5N-2p5Va7b7Tp-JRNVtGfNZ6=GPweR2ig_H5wA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: hw_breakpoint: Trap undef instruction exceptions on wake-up
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Will Deacon <will.deacon@arm.com>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 09:31:41 -0400
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+To: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Cc: davem@davemloft.net, ebiederm@xmission.com, stephen@networkplumber.org,
+        akpm@linux-foundation.org, luto@amacapital.net,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Subject: [RFC PATCH net-next v2 1/5] netns: allocate netns ids
+Date: Tue, 23 Sep 2014 15:20:26 +0200
+Message-Id: <1411478430-4989-2-git-send-email-nicolas.dichtel@6wind.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+With this patch, an id is allocated for each netns. Id database is stored in the
+user namespace. It's allowed to get an id of a peer netns only if they share the
+same user ns.
 
-On Wed, Sep 17, 2014 at 2:18 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Sep 17, 2014 at 01:57:16PM +0200, Geert Uytterhoeven wrote:
->> If power area D4, which contains the Coresight-ETM hardware block, is
->> powered down on R-Mobile A1 (r8a7740), the kernel crashes when
->> suspending from s2ram with:
->>
->>     Internal error: Oops - undefined instruction: 0 [#1] ARM
->>
->> This happens because dbg_cpu_pm_notify() calls reset_ctrl_regs(), which
->> can't access the debug registers as the debug module is powered down.
->>
->> Protect the call to reset_ctrl_regs() by an undefined instruction hook,
->> like was done in commit 0d352e3d006c9589 ("ARM: hw_breakpoint: trap
->> undef instruction exceptions in reset_ctrl_regs") for another caller.
->
-> I'd prefer a better solution to this (such as tracking whether the ETM
-> block is powered down).  This feels very much like a hack than a good
-> solution.
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+---
+ include/linux/user_namespace.h |  4 ++++
+ include/net/net_namespace.h    | 11 +++++++++++
+ kernel/user_namespace.c        |  6 ++++++
+ net/core/net_namespace.c       | 20 +++++++++++++++++++-
+ 4 files changed, 40 insertions(+), 1 deletion(-)
 
-That seems to be something to fit into "[PATCH 00/11 v6] Coresight framework
-and drivers" (https://lkml.org/lkml/2014/9/11/733)?
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index e95372654f09..9d122b540422 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -5,6 +5,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/sched.h>
+ #include <linux/err.h>
++#include <linux/idr.h>
+ 
+ #define UID_GID_MAP_MAX_EXTENTS 5
+ 
+@@ -33,6 +34,9 @@ struct user_namespace {
+ 	struct key		*persistent_keyring_register;
+ 	struct rw_semaphore	persistent_keyring_register_sem;
+ #endif
++#ifdef CONFIG_NET_NS
++	struct idr		netns_ids;
++#endif
+ };
+ 
+ extern struct user_namespace init_user_ns;
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 361d26077196..92b5f94e2842 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -59,6 +59,7 @@ struct net {
+ 	struct list_head	exit_list;	/* Use only net_mutex */
+ 
+ 	struct user_namespace   *user_ns;	/* Owning user namespace */
++	int			netnsid;
+ 
+ 	unsigned int		proc_inum;
+ 
+@@ -289,6 +290,16 @@ static inline struct net *read_pnet(struct net * const *pnet)
+ #define __net_initconst	__initconst
+ #endif
+ 
++static inline int peernet2id(struct net *net, struct net *peer)
++{
++	if (net->user_ns != peer->user_ns)
++		return -EPERM;
++
++	return peer->netnsid;
++}
++
++struct net *get_net_from_netnsid(struct net *net, int id);
++
+ struct pernet_operations {
+ 	struct list_head list;
+ 	int (*init)(struct net *net);
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index aa312b0dc3ec..30316a2eed49 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -104,6 +104,9 @@ int create_user_ns(struct cred *new)
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+ 	init_rwsem(&ns->persistent_keyring_register_sem);
+ #endif
++#ifdef CONFIG_NET_NS
++	idr_init(&ns->netns_ids);
++#endif
+ 	return 0;
+ }
+ 
+@@ -133,6 +136,9 @@ void free_user_ns(struct user_namespace *ns)
+ 
+ 	do {
+ 		parent = ns->parent;
++#ifdef CONFIG_NET_NS
++		idr_destroy(&ns->netns_ids);
++#endif
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+ 		key_put(ns->persistent_keyring_register);
+ #endif
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 7f155175bba8..f44378de7831 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -144,6 +144,19 @@ static void ops_free_list(const struct pernet_operations *ops,
+ 	}
+ }
+ 
++struct net *get_net_from_netnsid(struct net *net, int id)
++{
++	struct net *peer;
++
++	rcu_read_lock();
++	peer = idr_find(&net->user_ns->netns_ids, id);
++	if (peer)
++		get_net(peer);
++	rcu_read_unlock();
++
++	return peer;
++}
++
+ /*
+  * setup_net runs the initializers for the network namespace object.
+  */
+@@ -151,13 +164,16 @@ static __net_init int setup_net(struct net *net, struct user_namespace *user_ns)
+ {
+ 	/* Must be called with net_mutex held */
+ 	const struct pernet_operations *ops, *saved_ops;
+-	int error = 0;
++	int error = 0, id;
+ 	LIST_HEAD(net_exit_list);
+ 
+ 	atomic_set(&net->count, 1);
+ 	atomic_set(&net->passive, 1);
+ 	net->dev_base_seq = 1;
+ 	net->user_ns = user_ns;
++	id = idr_alloc_cyclic(&user_ns->netns_ids, net, 1, 0, GFP_KERNEL);
++	if (id > 0)
++		net->netnsid = id;
+ 
+ #ifdef NETNS_REFCNT_DEBUG
+ 	atomic_set(&net->use_count, 0);
+@@ -288,6 +304,8 @@ static void cleanup_net(struct work_struct *work)
+ 	list_for_each_entry(net, &net_kill_list, cleanup_list) {
+ 		list_del_rcu(&net->list);
+ 		list_add_tail(&net->exit_list, &net_exit_list);
++		if (net->netnsid)
++			idr_remove(&net->user_ns->netns_ids, net->netnsid);
+ 	}
+ 	rtnl_unlock();
+ 
+-- 
+2.1.0
 
-However, if I'm not mistaken, while that series introduces extensive handling
-based on the presence of Coresight device nodes in DT, it looks like it doesn't
-affect the current direct accesses to the debug registers in hw_breakpoint.c?
-
-For now, do you consider it acceptable to introduce a global bool (defaulting
-to true) to track whether accessing the debug registers is allowed?
-
-> Also, the undefined instruction hook was not supposed to be used in this
-> way - certainly *not* dynamically like this.  While the lookup of the
-> undef handler is done in a safe atomic way, calling the resulting
-> function is outside of the locks.
-
-Right, that's definitely not optimal.
-I guess this also applies to the existing (ab)users of debug_reg_hook?
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
