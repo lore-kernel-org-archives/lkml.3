@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaIWENE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 00:13:04 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:51215 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaIWENC (ORCPT
+	id S1753213AbaIWESW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 00:18:22 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:57139 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbaIWESU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 00:13:02 -0400
-Date: Tue, 23 Sep 2014 00:12:58 -0400
+	Tue, 23 Sep 2014 00:18:20 -0400
+Date: Tue, 23 Sep 2014 00:18:17 -0400
 From: Tejun Heo <tj@kernel.org>
 To: NeilBrown <neilb@suse.de>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] kernfs: use stack-buf for small writes.
-Message-ID: <20140923041258.GA27067@mtj.dyndns.org>
+Message-ID: <20140923041817.GA11740@mtj.dyndns.org>
 References: <20140923140633.35efbe7a@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,21 +24,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Neil.
-
 On Tue, Sep 23, 2014 at 02:06:33PM +1000, NeilBrown wrote:
->  When mdmon needs to update metadata after a device failure in an array
->  there are two 'kmalloc' sources that can trigger deadlock if memory is tight
->  and needs to be written to the array (which cannot be allowed until mdmon
->  updates the metadata).
->  One is in O_DIRECT writes which I have patches for.  The other is when
->  writing to the sysfs file to tell md that it is safe to continue.
->  This simple patch removes the second.
+...
+> Note that reads from a sysfs file are already safe due to the use for
+> seqfile.  The first read will allocate a buffer (m->buf) which will
+> be used for all subsequent reads.
 
-Ugh... :( If this can't be avoided at all, I'd much prefer it to be
-something explicit - a flag marking the file as needing a persistent
-write buffer which is allocated on open.  "Small" writes on stack
-feels way to implicit to me.
+Hmmm?  How is seqfile safe?  Where would the seq op write to?
 
 Thanks.
 
