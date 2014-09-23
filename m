@@ -1,201 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874AbaIWVNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 17:13:43 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47667 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbaIWVNl (ORCPT
+	id S932438AbaIWVPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 17:15:15 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:42915 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971AbaIWVPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 17:13:41 -0400
-Date: Tue, 23 Sep 2014 14:15:21 -0700
+	Tue, 23 Sep 2014 17:15:13 -0400
+Date: Tue, 23 Sep 2014 14:16:53 -0700
 From: Kent Overstreet <kmo@daterainc.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org,
         hannes@cmpxchg.org
-Subject: Re: [PATCH v2 7/9] percpu_ref: decouple switching to percpu mode and
- reinit
-Message-ID: <20140923211521.GH15142@kmo-pixel>
+Subject: Re: [PATCH 8/9] percpu_ref: add PERCPU_REF_INIT_* flags
+Message-ID: <20140923211653.GI15142@kmo-pixel>
 References: <1411451718-17807-1-git-send-email-tj@kernel.org>
- <1411451718-17807-8-git-send-email-tj@kernel.org>
- <20140923134919.GF14905@mtj.dyndns.org>
+ <1411451718-17807-9-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140923134919.GF14905@mtj.dyndns.org>
+In-Reply-To: <1411451718-17807-9-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 09:49:19AM -0400, Tejun Heo wrote:
-> From c31543be3b12bd3cb3f8c037cefb89504d294f82 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Tue, 23 Sep 2014 09:45:56 -0400
+On Tue, Sep 23, 2014 at 01:55:17AM -0400, Tejun Heo wrote:
+> With the recent addition of percpu_ref_reinit(), percpu_ref now can be
+> used as a persistent switch which can be turned on and off repeatedly
+> where turning off maps to killing the ref and waiting for it to drain;
+> however, there currently isn't a way to initialize a percpu_ref in its
+> off (killed and drained) state, which can be inconvenient for certain
+> persistent switch use cases.
 > 
-> percpu_ref has treated the dropping of the base reference and
-> switching to atomic mode as an integral operation; however, there's
-> nothing inherent tying the two together.
+> Similarly, percpu_ref_switch_to_atomic/percpu() allow dynamic
+> selection of operation mode; however, currently a newly initialized
+> percpu_ref is always in percpu mode making it impossible to avoid the
+> latency overhead of switching to atomic mode.
 > 
-> The use cases for percpu_ref have been expanding continuously.  While
-> the current init/kill/reinit/exit model can cover a lot, the coupling
-> of kill/reinit with atomic/percpu mode switching is turning out to be
-> too restrictive for use cases where many percpu_refs are created and
-> destroyed back-to-back with only some of them reaching extended
-> operation.  The coupling also makes implementing always-atomic debug
-> mode difficult.
+> This patch adds @flags to percpu_ref_init() and implements the
+> following flags.
 > 
-> This patch separates out percpu mode switching into
-> percpu_ref_switch_to_percpu() and reimplements percpu_ref_reinit() on
-> top of it.
+> * PERCPU_REF_INIT_ATOMIC	: start ref in atomic mode
+> * PERCPU_REF_INIT_DEAD		: start ref killed and drained
 > 
-> * DEAD still requires ATOMIC.  A dead ref can't be switched to percpu
->   mode w/o going through reinit.
-> 
-> v2: __percpu_ref_switch_to_percpu() was missing static.  Fixed.
->     Reported by Fengguang aka kbuild test robot.
+> These flags should be able to serve the above two use cases.
 > 
 > Signed-off-by: Tejun Heo <tj@kernel.org>
 > Cc: Kent Overstreet <kmo@daterainc.com>
 > Cc: Jens Axboe <axboe@kernel.dk>
 > Cc: Christoph Hellwig <hch@infradead.org>
 > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: kbuild test robot <fengguang.wu@intel.com>
 
 Reviewed-by: Kent Overstreet <kmo@daterainc.com>
 
 > ---
->  include/linux/percpu-refcount.h |  3 +-
->  lib/percpu-refcount.c           | 73 ++++++++++++++++++++++++++++++-----------
->  2 files changed, 56 insertions(+), 20 deletions(-)
+>  block/blk-mq.c                  |  2 +-
+>  fs/aio.c                        |  4 ++--
+>  include/linux/percpu-refcount.h | 18 +++++++++++++++++-
+>  kernel/cgroup.c                 |  7 ++++---
+>  lib/percpu-refcount.c           | 24 +++++++++++++++++++-----
+>  5 files changed, 43 insertions(+), 12 deletions(-)
 > 
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index 702df07..3f6e6f5 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -1777,7 +1777,7 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
+>  		goto err_hctxs;
+>  
+>  	if (percpu_ref_init(&q->mq_usage_counter, blk_mq_usage_counter_release,
+> -			    GFP_KERNEL))
+> +			    0, GFP_KERNEL))
+>  		goto err_map;
+>  
+>  	setup_timer(&q->timeout, blk_mq_rq_timer, (unsigned long) q);
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 93fbcc0f..9b6d5d6 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -666,10 +666,10 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+>  
+>  	INIT_LIST_HEAD(&ctx->active_reqs);
+>  
+> -	if (percpu_ref_init(&ctx->users, free_ioctx_users, GFP_KERNEL))
+> +	if (percpu_ref_init(&ctx->users, free_ioctx_users, 0, GFP_KERNEL))
+>  		goto err;
+>  
+> -	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs, GFP_KERNEL))
+> +	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs, 0, GFP_KERNEL))
+>  		goto err;
+>  
+>  	ctx->cpu = alloc_percpu(struct kioctx_cpu);
 > diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-> index d1252e1..cd7e20f 100644
+> index e41ca20..5f84bf0 100644
 > --- a/include/linux/percpu-refcount.h
 > +++ b/include/linux/percpu-refcount.h
-> @@ -80,9 +80,10 @@ int __must_check percpu_ref_init(struct percpu_ref *ref,
+> @@ -61,6 +61,21 @@ enum {
+>  	__PERCPU_REF_ATOMIC_DEAD = __PERCPU_REF_ATOMIC | __PERCPU_REF_DEAD,
+>  };
+>  
+> +/* @flags for percpu_ref_init() */
+> +enum {
+> +	/*
+> +	 * Start w/ ref == 1 in atomic mode.  Can be switched to percpu
+> +	 * operation using percpu_ref_switch_to_percpu().
+> +	 */
+> +	PERCPU_REF_INIT_ATOMIC	= 1 << 0,
+> +
+> +	/*
+> +	 * Start dead w/ ref == 0 in atomic mode.  Must be revived with
+> +	 * percpu_ref_reinit() before used.  Implies INIT_ATOMIC.
+> +	 */
+> +	PERCPU_REF_INIT_DEAD	= 1 << 1,
+> +};
+> +
+>  struct percpu_ref {
+>  	atomic_long_t		count;
+>  	/*
+> @@ -74,7 +89,8 @@ struct percpu_ref {
+>  };
+>  
+>  int __must_check percpu_ref_init(struct percpu_ref *ref,
+> -				 percpu_ref_func_t *release, gfp_t gfp);
+> +				 percpu_ref_func_t *release, unsigned int flags,
+> +				 gfp_t gfp);
 >  void percpu_ref_exit(struct percpu_ref *ref);
 >  void percpu_ref_switch_to_atomic(struct percpu_ref *ref,
 >  				 percpu_ref_func_t *confirm_switch);
-> -void percpu_ref_reinit(struct percpu_ref *ref);
-> +void percpu_ref_switch_to_percpu(struct percpu_ref *ref);
->  void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
->  				 percpu_ref_func_t *confirm_kill);
-> +void percpu_ref_reinit(struct percpu_ref *ref);
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 589b4d8..e2fbcc1 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1628,7 +1628,8 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+>  		goto out;
+>  	root_cgrp->id = ret;
 >  
->  /**
->   * percpu_ref_kill - drop the initial ref
+> -	ret = percpu_ref_init(&root_cgrp->self.refcnt, css_release, GFP_KERNEL);
+> +	ret = percpu_ref_init(&root_cgrp->self.refcnt, css_release, 0,
+> +			      GFP_KERNEL);
+>  	if (ret)
+>  		goto out;
+>  
+> @@ -4487,7 +4488,7 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss,
+>  
+>  	init_and_link_css(css, ss, cgrp);
+>  
+> -	err = percpu_ref_init(&css->refcnt, css_release, GFP_KERNEL);
+> +	err = percpu_ref_init(&css->refcnt, css_release, 0, GFP_KERNEL);
+>  	if (err)
+>  		goto err_free_css;
+>  
+> @@ -4555,7 +4556,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+>  		goto out_unlock;
+>  	}
+>  
+> -	ret = percpu_ref_init(&cgrp->self.refcnt, css_release, GFP_KERNEL);
+> +	ret = percpu_ref_init(&cgrp->self.refcnt, css_release, 0, GFP_KERNEL);
+>  	if (ret)
+>  		goto out_free_cgrp;
+>  
 > diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-> index 6e0d143..5a6d43b 100644
+> index 548b19e..74ec33e 100644
 > --- a/lib/percpu-refcount.c
 > +++ b/lib/percpu-refcount.c
-> @@ -206,40 +206,54 @@ void percpu_ref_switch_to_atomic(struct percpu_ref *ref,
->  	__percpu_ref_switch_to_atomic(ref, confirm_switch);
->  }
->  
-> -/**
-> - * percpu_ref_reinit - re-initialize a percpu refcount
-> - * @ref: perpcu_ref to re-initialize
-> - *
-> - * Re-initialize @ref so that it's in the same state as when it finished
-> - * percpu_ref_init().  @ref must have been initialized successfully, killed
-> - * and reached 0 but not exited.
-> - *
-> - * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
-> - * this function is in progress.
-> - */
-> -void percpu_ref_reinit(struct percpu_ref *ref)
-> +static void __percpu_ref_switch_to_percpu(struct percpu_ref *ref)
+> @@ -45,27 +45,41 @@ static unsigned long __percpu *percpu_count_ptr(struct percpu_ref *ref)
+>   * percpu_ref_init - initialize a percpu refcount
+>   * @ref: percpu_ref to initialize
+>   * @release: function which will be called when refcount hits 0
+> + * @flags: PERCPU_REF_INIT_* flags
+>   * @gfp: allocation mask to use
+>   *
+> - * Initializes the refcount in single atomic counter mode with a refcount of 1;
+> - * analagous to atomic_long_set(ref, 1).
+> + * Initializes @ref.  If @flags is zero, @ref starts in percpu mode with a
+> + * refcount of 1; analagous to atomic_long_set(ref, 1).  See the
+> + * definitions of PERCPU_REF_INIT_* flags for flag behaviors.
+>   *
+>   * Note that @release must not sleep - it may potentially be called from RCU
+>   * callback context by percpu_ref_kill().
+>   */
+>  int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release,
+> -		    gfp_t gfp)
+> +		    unsigned int flags, gfp_t gfp)
 >  {
->  	unsigned long __percpu *percpu_count = percpu_count_ptr(ref);
->  	int cpu;
->  
->  	BUG_ON(!percpu_count);
-> -	WARN_ON_ONCE(!percpu_ref_is_zero(ref));
+> +	unsigned long start_count = 0;
+> +
+>  	BUILD_BUG_ON(__PERCPU_REF_ATOMIC_DEAD &
+>  		     ~(__alignof__(unsigned long) - 1));
 >  
 > -	atomic_long_set(&ref->count, 1 + PERCPU_COUNT_BIAS);
-> +	if (!(ref->percpu_count_ptr & __PERCPU_REF_ATOMIC))
-> +		return;
-> +
-> +	wait_event(percpu_ref_switch_waitq, !ref->confirm_switch);
-> +
-> +	atomic_long_add(PERCPU_COUNT_BIAS, &ref->count);
+> -
+>  	ref->percpu_count_ptr =
+>  		(unsigned long)alloc_percpu_gfp(unsigned long, gfp);
+>  	if (!ref->percpu_count_ptr)
+>  		return -ENOMEM;
 >  
->  	/*
->  	 * Restore per-cpu operation.  smp_store_release() is paired with
->  	 * smp_read_barrier_depends() in __ref_is_percpu() and guarantees
->  	 * that the zeroing is visible to all percpu accesses which can see
-> -	 * the following __PERCPU_REF_ATOMIC_DEAD clearing.
-> +	 * the following __PERCPU_REF_ATOMIC clearing.
->  	 */
->  	for_each_possible_cpu(cpu)
->  		*per_cpu_ptr(percpu_count, cpu) = 0;
->  
->  	smp_store_release(&ref->percpu_count_ptr,
-> -			  ref->percpu_count_ptr & ~__PERCPU_REF_ATOMIC_DEAD);
-> +			  ref->percpu_count_ptr & ~__PERCPU_REF_ATOMIC);
-> +}
+> +	if (flags & (PERCPU_REF_INIT_ATOMIC | PERCPU_REF_INIT_DEAD))
+> +		ref->percpu_count_ptr |= __PERCPU_REF_ATOMIC;
+> +	else
+> +		start_count += PERCPU_COUNT_BIAS;
 > +
-> +/**
-> + * percpu_ref_switch_to_percpu - switch a percpu_ref to percpu mode
-> + * @ref: percpu_ref to switch to percpu mode
-> + *
-> + * There's no reason to use this function for the usual reference counting.
-> + * To re-use an expired ref, use percpu_ref_reinit().
-> + *
-> + * Switch @ref to percpu mode.  This function may be invoked concurrently
-> + * with all the get/put operations and can safely be mixed with kill and
-> + * reinit operations.
-> + *
-> + * This function normally doesn't block and can be called from any context
-> + * but it may block if @ref is in the process of switching to atomic mode
-> + * by percpu_ref_switch_atomic().
-> + */
-> +void percpu_ref_switch_to_percpu(struct percpu_ref *ref)
-> +{
-> +	/* a dying or dead ref can't be switched to percpu mode w/o reinit */
-> +	if (!(ref->percpu_count_ptr & __PERCPU_REF_DEAD))
-> +		__percpu_ref_switch_to_percpu(ref);
+> +	if (flags & PERCPU_REF_INIT_DEAD)
+> +		ref->percpu_count_ptr |= __PERCPU_REF_DEAD;
+> +	else
+> +		start_count++;
+> +
+> +	atomic_long_set(&ref->count, start_count);
+> +
+>  	ref->release = release;
+>  	return 0;
 >  }
-> -EXPORT_SYMBOL_GPL(percpu_ref_reinit);
->  
->  /**
->   * percpu_ref_kill_and_confirm - drop the initial ref and schedule confirmation
-> @@ -253,8 +267,8 @@ EXPORT_SYMBOL_GPL(percpu_ref_reinit);
->   * percpu_ref_tryget_live() for details.
->   *
->   * This function normally doesn't block and can be called from any context
-> - * but it may block if @confirm_kill is specified and @ref is already in
-> - * the process of switching to atomic mode by percpu_ref_switch_atomic().
-> + * but it may block if @confirm_kill is specified and @ref is in the
-> + * process of switching to atomic mode by percpu_ref_switch_atomic().
->   *
->   * Due to the way percpu_ref is implemented, @confirm_switch will be called
->   * after at least one full sched RCU grace period has passed but this is an
-> @@ -271,3 +285,24 @@ void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
->  	percpu_ref_put(ref);
->  }
->  EXPORT_SYMBOL_GPL(percpu_ref_kill_and_confirm);
-> +
-> +/**
-> + * percpu_ref_reinit - re-initialize a percpu refcount
-> + * @ref: perpcu_ref to re-initialize
-> + *
-> + * Re-initialize @ref so that it's in the same state as when it finished
-> + * percpu_ref_init().  @ref must have been initialized successfully and
-> + * reached 0 but not exited.
-> + *
-> + * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
-> + * this function is in progress.
-> + */
-> +void percpu_ref_reinit(struct percpu_ref *ref)
-> +{
-> +	WARN_ON_ONCE(!percpu_ref_is_zero(ref));
-> +
-> +	ref->percpu_count_ptr &= ~__PERCPU_REF_DEAD;
-> +	percpu_ref_get(ref);
-> +	__percpu_ref_switch_to_percpu(ref);
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ref_reinit);
 > -- 
 > 1.9.3
 > 
