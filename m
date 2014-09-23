@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaIWQMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:12:36 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:41347 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaIWQMe (ORCPT
+	id S932409AbaIWQMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:12:52 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:62787 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405AbaIWQJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:12:34 -0400
-Message-ID: <54219BEE.7090309@mvista.com>
-Date: Tue, 23 Sep 2014 11:12:30 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>, minyard@acm.org
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mips: Save all registers when saving the frame
-References: <1410903925-10744-1-git-send-email-minyard@acm.org> <20140918095813.GA9804@linux-mips.org> <541AD6E9.2010609@mvista.com>
-In-Reply-To: <541AD6E9.2010609@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 12:09:30 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com, pjt@google.com,
+        bsegall@google.com, Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v6 1/6] sched: add per rq cpu_capacity_orig
+Date: Tue, 23 Sep 2014 18:08:00 +0200
+Message-Id: <1411488485-10025-2-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?  I haven't heard anything on this.
+This new field cpu_capacity_orig reflects the original capacity of a CPU
+before being altered by frequency scaling, rt tasks and/or IRQ
 
-Thanks,
+The cpu_capacity_orig  will be used in several places to detect when the
+capapcity of a CPU has been noticeably reduced so we can trig load balance
+to look for a CPU with better capacity.
+As an example, we can detect when a CPU handles a significant amount of irq
+(with CONFIG_IRQ_TIME_ACCOUNTING) but this CPU is seen as an idle CPU by
+scheduler whereas CPUs, which are really idle, are available
 
--corey
+In addition, this new cpu_capacity_orig will be used to evaluate the usage of
+a the CPU by CFS tasks
 
-On 09/18/2014 07:58 AM, Corey Minyard wrote:
-> On 09/18/2014 04:58 AM, Ralf Baechle wrote:
->> On Tue, Sep 16, 2014 at 04:45:25PM -0500, minyard@acm.org wrote:
->>
->>> From: Corey Minyard <cminyard@mvista.com>
->>>
->>> The MIPS frame save code was just saving a few registers, enough to
->>> do a backtrace if every function set up a frame.  However, this is
->>> not working if you are using DWARF unwinding, because most of the
->>> registers are wrong.  This was causing kdump backtraces to be short
->>> or bogus.
->>>
->>> So save all the registers.
->> The stratey of partial and full stack frames was developed in '97 to bring
->> down the syscall overhead.  It certaily was very effective - it brought
->> down the syscall latency to the level of Alphas running at much higher
->> clock.
->>
->> That certainly worked well back then for kernel 2.0 / 2.2.  But the syscall
->> code has become much more complex.  Since then support for 64 bit kernels,
->> two 32 bit ABIs running on a 64 bit kernels and numerous features that
->> changed the once simple syscall path have been implemented.  My gut feeling
->> is it might be worth to yank out the whole optimization to see how much
->> code complexity we get rid of in exchange for how much extra syscall
->> latency.
-> I"m not sure I understand.  From what I can tell, this code is only
-> called by
-> things that print stack traces, kdb, and kexec/kdump.  So it shouldn't be in
-> any normal syscall path.
->
-> This patch will currently only help kdump, but it will be necessary if
-> anyone
-> adds MIPS support for DWARF unwinding for stack traces.  And you'd have
-> to fix some things in context switching, too, I think.
->
-> From what I can tell the partial save for syscalls is a good idea.  You
-> don't have
-> to save half the registers and it doesn't affect tracebacks, kdump, or
-> anything else
-> like that.
->
-> -corey
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+---
+ kernel/sched/core.c  | 2 +-
+ kernel/sched/fair.c  | 8 +++++++-
+ kernel/sched/sched.h | 1 +
+ 3 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2a93b87..e20f203 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7056,7 +7056,7 @@ void __init sched_init(void)
+ #ifdef CONFIG_SMP
+ 		rq->sd = NULL;
+ 		rq->rd = NULL;
+-		rq->cpu_capacity = SCHED_CAPACITY_SCALE;
++		rq->cpu_capacity = rq->cpu_capacity_orig = SCHED_CAPACITY_SCALE;
+ 		rq->post_schedule = 0;
+ 		rq->active_balance = 0;
+ 		rq->next_balance = jiffies;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2a1e6ac..622f8b0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4092,6 +4092,11 @@ static unsigned long capacity_of(int cpu)
+ 	return cpu_rq(cpu)->cpu_capacity;
+ }
+ 
++static unsigned long capacity_orig_of(int cpu)
++{
++	return cpu_rq(cpu)->cpu_capacity_orig;
++}
++
+ static unsigned long cpu_avg_load_per_task(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+@@ -5765,6 +5770,7 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
+ 
+ 	capacity >>= SCHED_CAPACITY_SHIFT;
+ 
++	cpu_rq(cpu)->cpu_capacity_orig = capacity;
+ 	sdg->sgc->capacity_orig = capacity;
+ 
+ 	if (sched_feat(ARCH_CAPACITY))
+@@ -5826,7 +5832,7 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
+ 			 * Runtime updates will correct capacity_orig.
+ 			 */
+ 			if (unlikely(!rq->sd)) {
+-				capacity_orig += capacity_of(cpu);
++				capacity_orig += capacity_orig_of(cpu);
+ 				capacity += capacity_of(cpu);
+ 				continue;
+ 			}
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1bc6aad..f332e45 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -575,6 +575,7 @@ struct rq {
+ 	struct sched_domain *sd;
+ 
+ 	unsigned long cpu_capacity;
++	unsigned long cpu_capacity_orig;
+ 
+ 	unsigned char idle_balance;
+ 	/* For active balancing */
+-- 
+1.9.1
 
