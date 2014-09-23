@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328AbaIWOyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:54:05 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:45861 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136AbaIWOyA (ORCPT
+	id S1756248AbaIWOxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:53:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58646 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932319AbaIWOs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:54:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410249101-12234-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1410249101-12234-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Tue, 23 Sep 2014 16:53:59 +0200
-Message-ID: <CACRpkdZkQB_zTuvQA-8T=qMK7jgHPJQ3fZV_25haEnkJ8Loo9A@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: st: remove gpiochip in failure cases
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kernel@stlinux.com,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 10:48:59 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v9 09/10] rtc: at91sam9: add DT bindings documentation
+Date: Tue, 23 Sep 2014 16:48:44 +0200
+Message-Id: <1411483725-31532-10-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 9:51 AM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
+Add RTT bindings documentation.
 
-> This patch releases gpiochip related resources by calling
-> gpiochip_remove when gpiochip_irqchip_add fails.
->
-> CC: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-> CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.com>
-> CC: Maxime Coquelin <maxime.coquelin@st.com>
-> CC: Patrice Chotard <patrice.chotard@st.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
-> Changes since v1:
-> Dropped adding remove function as it will never be tested as
-> the driver is bool.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Johan Hovold <johan@kernel.org>
+---
+ .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
 
-Patch applied with Srinivas ACK.
+diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+new file mode 100644
+index 0000000..6ae79d1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+@@ -0,0 +1,23 @@
++Atmel AT91SAM9260 Real Time Timer
++
++Required properties:
++- compatible: should be: "atmel,at91sam9260-rtt"
++- reg: should encode the memory region of the RTT controller
++- interrupts: rtt alarm/event interrupt
++- clocks: should contain the 32 KHz slow clk that will drive the RTT block.
++- atmel,rtt-rtc-time-reg: should encode the GPBR register used to store
++	the time base when the RTT is used as an RTC.
++	The first cell should point to the GPBR node and the second one
++	encode the offset within the GPBR block (or in other words, the
++	GPBR register used to store the time base).
++
++
++Example:
++
++rtt@fffffd20 {
++	compatible = "atmel,at91sam9260-rtt";
++	reg = <0xfffffd20 0x10>;
++	interrupts = <1 4 7>;
++	clocks = <&clk32k>;
++	atmel,rtt-rtc-time-reg = <&gpbr 0x0>;
++};
+-- 
+1.9.1
 
-Yours,
-Linus Walleij
