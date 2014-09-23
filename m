@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364AbaIWRm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:42:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42165 "EHLO
+	id S932483AbaIWRnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:43:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42260 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637AbaIWRmY (ORCPT
+	with ESMTP id S1753654AbaIWRm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:42:24 -0400
-Message-ID: <5421B0FF.4060307@codeaurora.org>
-Date: Tue, 23 Sep 2014 10:42:23 -0700
+	Tue, 23 Sep 2014 13:42:58 -0400
+Message-ID: <5421B120.10106@codeaurora.org>
+Date: Tue, 23 Sep 2014 10:42:56 -0700
 From: Stephen Boyd <sboyd@codeaurora.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: qcom: Fix SCM interface for big-endian kernels
-References: <1411425393-5537-1-git-send-email-sboyd@codeaurora.org> <F694D53D-F606-4B35-AED9-9B3927E4E9F1@codeaurora.org>
-In-Reply-To: <F694D53D-F606-4B35-AED9-9B3927E4E9F1@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v3] power: reset: use restart_notifier mechanism for msm-poweroff
+References: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com> <542112FD.7080302@smartplayin.com>
+In-Reply-To: <542112FD.7080302@smartplayin.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/14 09:47, Kumar Gala wrote:
-> On Sep 22, 2014, at 5:36 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->
->> The secure environment only runs in little-endian mode, so any
->> buffers shared with the secure environment should have their
->> contents converted to little-endian. We also mark such elements
->> with __le32 to allow sparse to catch such problems.
+On 09/22/14 23:28, Pramod Gurav wrote:
+> +linux-arm-msm
+> On Tuesday 23 September 2014 11:38 AM, Pramod Gurav wrote:
+>> This change replaces use of arm_pm_restart with recently introduced
+>> reset mechanism in Linux kernel called restart_notifier.
 >>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>> Cc: Guenter Roeck <linux@roeck-us.net>
+>> Cc: Josh Cartwright <joshc@codeaurora.org>
+>> Cc: Sebastian Reichel <sre@kernel.org>
+>> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> Cc: David Woodhouse <dwmw2@infradead.org>
+>> Cc: Stephen Boyd <sboyd@codeaurora.org>
+>> Cc: linux-pm@vger.kernel.org
+>>
+>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 >> ---
->> drivers/soc/qcom/scm-boot.c |  8 ++++----
->> drivers/soc/qcom/scm.c      | 34 ++++++++++++++++++----------------
->> 2 files changed, 22 insertions(+), 20 deletions(-)
->>
->> diff --git a/drivers/soc/qcom/scm-boot.c b/drivers/soc/qcom/scm-boot.c
->> index 60ff7b482141..3e4d77b371c6 100644
->> --- a/drivers/soc/qcom/scm-boot.c
->> +++ b/drivers/soc/qcom/scm-boot.c
->> @@ -27,12 +27,12 @@
->> int scm_set_boot_addr(phys_addr_t addr, int flags)
->> {
->> 	struct {
->> -		unsigned int flags;
->> -		phys_addr_t  addr;
->> +		__le32 flags;
->> +		__le32 addr;
-> Hmm, was phys_addr_t wrong here before?  I ask because don’t we support LPAE on some systems?
 
-Yes it was wrong. It is exactly 32 bits wide.
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
