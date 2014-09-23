@@ -1,81 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaIWH5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:57:03 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:57925 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaIWH5A (ORCPT
+	id S1754378AbaIWH6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:58:09 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50800 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797AbaIWH6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:57:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Robert Richter <rric@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Sinan Kaya <okaya@codeaurora.org>,
-        Sunil Goutham <sunil.goutham@caviumnetworks.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH v11 08/10] OF: PCI: Add support for parsing PCI host bridge resources from DT
-Date: Tue, 23 Sep 2014 09:56:37 +0200
-Message-ID: <8687285.EH4RPBeOB5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
-References: <1411003825-21521-1-git-send-email-Liviu.Dudau@arm.com> <20140922093228.GA20256@rric.localhost> <20140922114317.GN1994@e106497-lin.cambridge.arm.com>
+	Tue, 23 Sep 2014 03:58:07 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <542127AD.6050307@jp.fujitsu.com>
+Date: Tue, 23 Sep 2014 16:56:29 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:g55Ct4lgQO0B3TAuKTq78jWR6lCyIXKh4W/YzjeKzje
- 2Jkp5HfuycJ7XRUmqDdeR1wVQErg+UItUAuFzfz1PHqfN8w30c
- +1OyzJbykASHO9w3qgQUcR7Th1ge1sUSYjVjekQQ+KxW1bg8t5
- KRzmRvDwY4PkbQ5RqIhL95eH9sWLFz/jM6hpL14Z9RL1NZSvPZ
- 7z+h02ZDL/agvKeKYQs2OJQ2dTb19q30NddAKvoeXjx5mnaUjB
- H21acfUQFT4CiNvJF6SB/97iIdHKbRtDdPOXDJIqbB67Ir4p7B
- uFeI1ALJ68Wk+ib7ZdGNaxX+tQBP6WN0/ZTMYgwUEYayeUjR9Q
- hq6Ec7VBRh0JX4gNghJA=
-X-UI-Out-Filterresults: notjunk:1;
+To: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, <x86@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased during
+ cpu hotplug
+References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com> <5420FB25.8050102@jp.fujitsu.com> <542114D7.3030605@gmail.com>
+In-Reply-To: <542114D7.3030605@gmail.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 September 2014 12:43:17 Liviu Dudau wrote:
-> > 
-> > From e798af4fc2f664d1aff7e863489b8298f90e716e Mon Sep 17 00:00:00 2001
-> > From: Robert Richter <rrichter@cavium.com>
-> > Date: Mon, 22 Sep 2014 10:46:01 +0200
-> > Subject: [PATCH] OF: PCI: Fix creation of mem-mapped pci host bridges
-> > 
-> > The pci host bridge was not created if io_base was not set when
-> > calling of_pci_get_host_bridge_resources(). This is esp. the case for
-> > mem-mapped io (IORESOURCE_MEM). This patch fixes this. Function
-> > parameter io_base is optional now.
+(2014/09/23 15:36), Wanpeng Li wrote:
+> Hi Kamezawa,
+> 于 14-9-23 下午12:46, Kamezawa Hiroyuki 写道:
+>> (2014/09/17 16:17), Wanpeng Li wrote:
+>>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+>>> IP: [..] find_busiest_group
+>>> PGD 5a9d5067 PUD 13067 PMD 0
+>>> Oops: 0000 [#3] SMP
+>>> [...]
+>>> Call Trace:
+>>> load_balance
+>>> ? _raw_spin_unlock_irqrestore
+>>> idle_balance
+>>> __schedule
+>>> schedule
+>>> schedule_timeout
+>>> ? lock_timer_base
+>>> schedule_timeout_uninterruptible
+>>> msleep
+>>> lock_device_hotplug_sysfs
+>>> online_store
+>>> dev_attr_store
+>>> sysfs_write_file
+>>> vfs_write
+>>> SyS_write
+>>> system_call_fastpath
+>>>
+>>> This bug can be triggered by hot add and remove large number of xen
+>>> domain0's vcpus repeatedly.
+>>>
+>>> Last level cache shared map is built during cpu up and build sched domain
+>>> routine takes advantage of it to setup sched domain cpu topology, however,
+>>> llc shared map is unreleased during cpu disable which lead to invalid sched
+>>> domain cpu topology. This patch fix it by release llc shared map correctly
+>>> during cpu disable.
+>>>
+>>> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+>>> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>> Tested-by: Linn Crosetto <linn@hp.com>
+>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> Yasuaki reported this can happen on our real hardware.
+>> https://lkml.org/lkml/2014/7/22/1018
+>>
+>> Our case is here.
+>> ==
+>> Here is a example on my system.
+>> My system has 4 sockets and each socket has 15 cores and HT is enabled.
+>> In this case, each core of sockes is numbered as follows:
+>>
+>>            | CPU#
+>> Socket#0 | 0-14 , 60-74
+>> Socket#1 | 15-29, 75-89
+>> Socket#2 | 30-44, 90-104
+>> Socket#3 | 45-59, 105-119
+>> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+>> It means that last level cache of Socket#2 is shared with
+>> CPU#30-44 and 90-104.
+>> When hot-removing socket#2 and #3, each core of sockets is numbered
+>> as follows:
+>>
+>>            | CPU#
+>> Socket#0 | 0-14 , 60-74
+>> Socket#1 | 15-29, 75-89
+>> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+>> having 0x3fff80000001fffc0000000.
+>> After that, when hot-adding socket#2 and #3, each core of sockets is
+>> numbered as follows:
+>>
+>>            | CPU#
+>> Socket#0 | 0-14 , 60-74
+>> Socket#1 | 15-29, 75-89
+>> Socket#2 | 30-59
+>> Socket#3 | 90-119
+>> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+>> It means that last level cache of Socket#2 is shared with CPU#30-59
+>> and 90-104. So the mask has wrong value.
+>> At first, I cleared hot-removed CPU number's bit from llc_shared_map
+>> when hot removing CPU. But Borislav suggested that the problem will
+>> disappear if readded CPU is assigned same CPU number. And llc_shared_map
+>> must not be changed.
+>> ==
+>>
+>> So, please.
 > 
-> I think the message is misleading. What you want to do is make io_base
-> optional for the case where the PCI host bridge only expects to have only
-> IORESOURCE_MEM ranges and doesn't care about IORESOURCE_IO ones.
+> As I mentioned before, we still observe calltrace after Yasuaki's patch
+> applied.
+> https://lkml.org/lkml/2014/7/29/40
 > 
-> As I'm going to touch this area again to address a comment from Bjorn,
-> do you mind if I roll this patch into mine with your Signed-off-by and
-> the mention that you have made io_base optional?
+Yes. 
+I just wanted to say we need your patch by showing real hardware case.
+Sorry for confusion I just reused his explanation of the problem.
 
-I think the best way to deal with this is to move the check for 
-io_base down into the place where it is used: As long as the DT only
-specifies IORESOURCE_MEM windows, we don't need to look at io_base,
-but if the host controller driver does not support IORESOURCE_IO
-while the DT specifies it, I guess it would be nice to return an
-error.
+I know Yasuaki's original trial was clearing llc_shared map as you do.
 
-	Arnd
+> Actually I prefer to merge both patches, one for fix llc shared map
+> unreleased during hotplug and the other one for assign same CPU number
+> to readded CPU.
+> 
+I agree. 
+
+Thanks,
+-Kame
+
