@@ -1,125 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440AbaIWIUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 04:20:13 -0400
-Received: from ozlabs.org ([103.22.144.67]:59863 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752732AbaIWIUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 04:20:10 -0400
-Date: Tue, 23 Sep 2014 18:20:07 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] powerpc/iommu/ddw: Fix endianness
-Message-ID: <20140923182007.5d682c11@kryten>
-In-Reply-To: <1411437529-6126-1-git-send-email-aik@ozlabs.ru>
-References: <1411437529-6126-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754686AbaIWIVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 04:21:35 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36052 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291AbaIWIVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 04:21:32 -0400
+Message-ID: <54212D87.4060908@atmel.com>
+Date: Tue, 23 Sep 2014 10:21:27 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Johan Hovold <jhovold@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 7/9] rtc: at91sam9: use clk API instead of relying
+ on AT91_SLOW_CLOCK
+References: <1411400563-570-1-git-send-email-boris.brezillon@free-electrons.com> <1411400563-570-8-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1411400563-570-8-git-send-email-boris.brezillon@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22/09/2014 17:42, Boris BREZILLON :
+> The RTT block is using the slow clock which is accessible through the clk
+> API.
+> Use the clk API to retrieve, enable and get the slow clk rate instead of
+> the AT91_SLOW_CLOCK macro (which hardcodes the slow clk rate).
+> Doing this allows us to reference the clk thus preventing the CCF from
+> disabling it during the "disable unused" phase.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Hi Alexey,
+> ---
+>  drivers/rtc/rtc-at91sam9.c | 28 ++++++++++++++++++++++++----
+>  1 file changed, 24 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+> index 902cd01..d20e118 100644
+> --- a/drivers/rtc/rtc-at91sam9.c
+> +++ b/drivers/rtc/rtc-at91sam9.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/io.h>
+>  #include <linux/mfd/syscon.h>
+>  #include <linux/regmap.h>
+> +#include <linux/clk.h>
+>  
+>  /*
+>   * This driver uses two configurable hardware resources that live in the
+> @@ -61,8 +62,6 @@
+>  #define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
+>  #define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
+>  
+> -#define AT91_SLOW_CLOCK		32768
+> -
+>  /*
+>   * We store ALARM_DISABLED in ALMV to record that no alarm is set.
+>   * It's also the reset value for that field.
+> @@ -77,6 +76,7 @@ struct sam9_rtc {
+>  	struct regmap		*gpbr;
+>  	unsigned int		gpbr_offset;
+>  	int 			irq;
+> +	struct clk		*sclk;
+>  };
+>  
+>  #define rtt_readl(rtc, field) \
+> @@ -328,6 +328,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
+>  	struct sam9_rtc	*rtc;
+>  	int		ret, irq;
+>  	u32		mr;
+> +	unsigned int	sclk_rate;
+>  
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0) {
+> @@ -385,11 +386,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> +	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(rtc->sclk))
+> +		return PTR_ERR(rtc->sclk);
+> +
+> +	sclk_rate = clk_get_rate(rtc->sclk);
+> +	if (!sclk_rate || sclk_rate > AT91_RTT_RTTRST) {
+> +		dev_err(&pdev->dev, "Invalid slow clock rate");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = clk_prepare_enable(rtc->sclk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not enable slow clock");
+> +		return ret;
+> +	}
+> +
+>  	mr = rtt_readl(rtc, MR);
+>  
+>  	/* unless RTT is counting at 1 Hz, re-initialize it */
+> -	if ((mr & AT91_RTT_RTPRES) != AT91_SLOW_CLOCK) {
+> -		mr = AT91_RTT_RTTRST | (AT91_SLOW_CLOCK & AT91_RTT_RTPRES);
+> +	if ((mr & AT91_RTT_RTPRES) != sclk_rate) {
+> +		mr = AT91_RTT_RTTRST | (sclk_rate & AT91_RTT_RTPRES);
+>  		gpbr_writel(rtc, 0);
+>  	}
+>  
+> @@ -434,6 +451,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
+>  	/* disable all interrupts */
+>  	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
+>  
+> +	if (!IS_ERR(rtc->sclk))
+> +		clk_disable_unprepare(rtc->sclk);
+> +
+>  	return 0;
+>  }
+>  
+> 
 
-> ddw_avail is a pointer to the "ibm,ddw-applicable" property which
-> contains 3 cells which are big-endian as it is a device tree.
-> rtas_call() accepts a RTAS token in CPU-endian. This converts RTAS
-> tokens from big-endian to CPU-endian. Since every token is used once
-> till guest is rebooted, there is no much sense in caching RTAS tokens
-> in CPU-endian.
 
-I see a few sparse endian warnings with this. This patch (that applies
-on top of yours) uses of_property_read_u32_array to byte swap and avoid
-the need for a number of be32_to_cpu calls.
-
-Can you verify this works and then fold it into yours? Also mark it for
-inclusion in stable v3.13+.
-
-You can add:
-
-Reviewed-by: Anton Blanchard <anton@samba.org>
-
-Thanks!
-Anton
-
-Index: b/arch/powerpc/platforms/pseries/iommu.c
-===================================================================
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -725,16 +725,18 @@ static void remove_ddw(struct device_nod
- {
- 	struct dynamic_dma_window_prop *dwp;
- 	struct property *win64;
--	const u32 *ddw_avail;
-+	u32 ddw_avail[3];
- 	u64 liobn;
--	int len, ret = 0;
-+	int ret = 0;
-+
-+	ret = of_property_read_u32_array(np, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
- 
--	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
- 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
- 	if (!win64)
- 		return;
- 
--	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
-+	if (ret || win64->length < sizeof(*dwp))
- 		goto delprop;
- 
- 	dwp = win64->value;
-@@ -750,7 +752,7 @@ static void remove_ddw(struct device_nod
- 		pr_debug("%s successfully cleared tces in window.\n",
- 			 np->full_name);
- 
--	ret = rtas_call(be32_to_cpu(ddw_avail[2]), 1, 1, NULL, liobn);
-+	ret = rtas_call(ddw_avail[2], 1, 1, NULL, liobn);
- 	if (ret)
- 		pr_warning("%s: failed to remove direct window: rtas returned "
- 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
-@@ -841,7 +843,7 @@ static int query_ddw(struct pci_dev *dev
- 		cfg_addr = edev->pe_config_addr;
- 	buid = edev->phb->buid;
- 
--	ret = rtas_call(be32_to_cpu(ddw_avail[0]), 3, 5, (u32 *)query,
-+	ret = rtas_call(ddw_avail[0], 3, 5, (u32 *)query,
- 		  cfg_addr, BUID_HI(buid), BUID_LO(buid));
- 	dev_info(&dev->dev, "ibm,query-pe-dma-windows(%x) %x %x %x"
- 		" returned %d\n", ddw_avail[0], cfg_addr, BUID_HI(buid),
-@@ -872,7 +874,7 @@ static int create_ddw(struct pci_dev *de
- 
- 	do {
- 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
--		ret = rtas_call(be32_to_cpu(ddw_avail[1]), 5, 4, (u32 *)create,
-+		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create,
- 				cfg_addr, BUID_HI(buid), BUID_LO(buid),
- 				page_shift, window_shift);
- 	} while (rtas_busy_delay(ret));
-@@ -911,7 +913,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	int page_shift;
- 	u64 dma_addr, max_addr;
- 	struct device_node *dn;
--	const u32 *uninitialized_var(ddw_avail);
-+	u32 ddw_avail[3];
- 	struct direct_window *window;
- 	struct property *win64;
- 	struct dynamic_dma_window_prop *ddwprop;
-@@ -943,8 +945,9 @@ static u64 enable_ddw(struct pci_dev *de
- 	 * for the given node in that order.
- 	 * the property is actually in the parent, not the PE
- 	 */
--	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
--	if (!ddw_avail || len < 3 * sizeof(u32))
-+	ret = of_property_read_u32_array(pdn, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
-+	if (ret)
- 		goto out_failed;
- 
-        /*
+-- 
+Nicolas Ferre
