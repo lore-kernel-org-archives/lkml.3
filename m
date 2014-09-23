@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477AbaIWO54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:57:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58560 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932280AbaIWOsy (ORCPT
+	id S1756499AbaIWO6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:58:08 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64368 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483AbaIWO6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:48:54 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v9 04/10] rtc: at91sam9: add DT support
-Date: Tue, 23 Sep 2014 16:48:39 +0200
-Message-Id: <1411483725-31532-5-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 10:58:05 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, cebbert.lkml@gmail.com
+Subject: [PATCH v6 0/6] perf: add ability to sample interrupted machine state
+Date: Tue, 23 Sep 2014 16:57:43 +0200
+Message-Id: <1411484269-32311-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_match_table to the existing driver so that rtt nodes defined in at91
-DTs can be attached to this driver.
+This short patch series add the ability to sample the interrupted
+machine state for each hardware sample. This is useful to analyze
+the state after certain events, for instance for function value
+profiling after a call instruction.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Johan Hovold <johan@kernel.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/rtc/rtc-at91sam9.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+The patch extends the interface with a new PERF_SAMPLE_REGS_INTR 
+smaple_type flag. The register to sample can be named in the
+sample_regs_intr bitmask for each event. The name and bit
+position for each register is architecture dependent and
+provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 38a2693..d72c34d 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -445,6 +445,14 @@ static int at91_rtc_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id at91_rtc_dt_ids[] = {
-+	{ .compatible = "atmel,at91sam9260-rtt" },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
-+#endif
-+
- static struct platform_driver at91_rtc_driver = {
- 	.probe		= at91_rtc_probe,
- 	.remove		= at91_rtc_remove,
-@@ -453,6 +461,7 @@ static struct platform_driver at91_rtc_driver = {
- 		.name	= "rtc-at91sam9",
- 		.owner	= THIS_MODULE,
- 		.pm	= &at91_rtc_pm_ops,
-+		.of_match_table = of_match_ptr(at91_rtc_dt_ids),
- 	},
- };
- 
+The support is similar to PERF_SAMPLE_REGS_USER.
+
+On Intel x86, the series includes support for capturing the
+PEBS state as well. When precise sampling is used, the interrupted
+state is collect from the PEBS records, at least partially.
+The PEBS machine state is a subset of the machine state.
+
+The series provides access to this new feature in perf record
+with the -I option. It is possible to display the sampled
+register values using perf report -D.
+
+This patch series is the fundation for a future series adding
+function value profiling.
+
+In V2, we address the issues raised during reviews:
+ - add sample parsing test
+ - shorten perf record option to --intr-regs
+ - added man page for perf record -I/--intr-regs option
+ - refactor register printf code between user and intr regs
+ - rebase to v3.16-rc3
+
+In V3, we rebase to 3.16.0+ and made the modifications suggested
+by PeterZ. We also integrated his patch to improve the layout
+of perf_sample_data.
+
+In V4, we rebase to 3.17-rc3 and we fix the ABI change issue 
+reported by Namhyung Kim.
+
+In V5, the patch is rebased to 3.17-rc4 and the bugs reported
+on LKML about the PEBS machine state copying code have been fixed
+(a few registers were missing).
+
+In V6, we added the missing copy of the eflags from the PEBS
+mahcine state (reported by Andi). We fixed some formatting
+issues. We rebased to 3.17-rc6.
+
+Peter Zijlstra (1):
+  perf: improve perf_sample_data struct layout
+
+Stephane Eranian (5):
+  perf: add ability to sample machine state on interrupt
+  perf/x86: add support for sampling PEBS machine state registers
+  perf tools: add core support for sampling intr machine state regs
+  perf/tests: add interrupted state sample parsing test
+  perf record: add new -I option to sample interrupted machine state
+
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   22 ++++++++++++
+ include/linux/perf_event.h                |   37 ++++++++++---------
+ include/uapi/linux/perf_event.h           |   15 +++++++-
+ kernel/events/core.c                      |   49 +++++++++++++++++++++++--
+ tools/perf/Documentation/perf-record.txt  |    6 ++++
+ tools/perf/builtin-record.c               |    2 ++
+ tools/perf/perf.h                         |    1 +
+ tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
+ tools/perf/util/event.h                   |    1 +
+ tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
+ tools/perf/util/header.c                  |    1 +
+ tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
+ 12 files changed, 237 insertions(+), 42 deletions(-)
+
 -- 
-1.9.1
+1.7.9.5
 
