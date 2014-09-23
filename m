@@ -1,130 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267AbaIWOxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:53:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58560 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932315AbaIWOs6 (ORCPT
+	id S1756302AbaIWOxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:53:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51646 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756280AbaIWOxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:48:58 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v9 08/10] rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
-Date: Tue, 23 Sep 2014 16:48:43 +0200
-Message-Id: <1411483725-31532-9-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 10:53:52 -0400
+Date: Tue, 23 Sep 2014 15:53:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Weston Andros Adamson <dros@primarydata.com>
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+Message-ID: <20140923145356.GD28608@arm.com>
+References: <20140923130352.GK26472@arm.com>
+ <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com>
+ <20140923135938.GB28608@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140923135938.GB28608@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTT block is using the slow clock which is accessible through the clk
-API.
-Use the clk API to retrieve, enable and get the slow clk rate instead of
-the AT91_SLOW_CLOCK macro (which hardcodes the slow clk rate).
-Doing this allows us to reference the clk thus preventing the CCF from
-disabling it during the "disable unused" phase.
+On Tue, Sep 23, 2014 at 02:59:38PM +0100, Will Deacon wrote:
+> On Tue, Sep 23, 2014 at 02:33:06PM +0100, Weston Andros Adamson wrote:
+> > Any more info on how to reproduce this would be really great. Unfortunately I don’t
+> > have access to an arm64 system.
+> 
+> I've not spotted a pattern other than using 64k pages, yet. If I manage to
+> get a reproducer, I'll let you know.
+> 
+> > If it’s possible, could we get a packet trace around when this happens? This is pure
+> > speculation, but this might have something to do the resend path - a commit fails
+> > and all the requests on the commit list have to be resent.
+> 
+> Sure, once I can reproduce it reliably, then I'll try to do that.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Johan Hovold <johan@kernel.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/rtc/rtc-at91sam9.c | 28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+Right, a bunch of DDing from /dev/zero over an ssh session triggers this
+very quickly. I've put a binary tcpdump here:
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index be9c28b..abac38a 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -23,6 +23,7 @@
- #include <linux/io.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
-+#include <linux/clk.h>
- 
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -61,8 +62,6 @@
- #define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
- #define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
- 
--#define AT91_SLOW_CLOCK		32768
--
- /*
-  * We store ALARM_DISABLED in ALMV to record that no alarm is set.
-  * It's also the reset value for that field.
-@@ -77,6 +76,7 @@ struct sam9_rtc {
- 	struct regmap		*gpbr;
- 	unsigned int		gpbr_offset;
- 	int 			irq;
-+	struct clk		*sclk;
- };
- 
- #define rtt_readl(rtc, field) \
-@@ -328,6 +328,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	struct sam9_rtc	*rtc;
- 	int		ret, irq;
- 	u32		mr;
-+	unsigned int	sclk_rate;
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
-@@ -385,11 +386,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(rtc->sclk))
-+		return PTR_ERR(rtc->sclk);
-+
-+	sclk_rate = clk_get_rate(rtc->sclk);
-+	if (!sclk_rate || sclk_rate > AT91_RTT_RTPRES) {
-+		dev_err(&pdev->dev, "Invalid slow clock rate\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = clk_prepare_enable(rtc->sclk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Could not enable slow clock\n");
-+		return ret;
-+	}
-+
- 	mr = rtt_readl(rtc, MR);
- 
- 	/* unless RTT is counting at 1 Hz, re-initialize it */
--	if ((mr & AT91_RTT_RTPRES) != AT91_SLOW_CLOCK) {
--		mr = AT91_RTT_RTTRST | (AT91_SLOW_CLOCK & AT91_RTT_RTPRES);
-+	if ((mr & AT91_RTT_RTPRES) != sclk_rate) {
-+		mr = AT91_RTT_RTTRST | (sclk_rate & AT91_RTT_RTPRES);
- 		gpbr_writel(rtc, 0);
- 	}
- 
-@@ -434,6 +451,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
- 	/* disable all interrupts */
- 	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
- 
-+	if (!IS_ERR(rtc->sclk))
-+		clk_disable_unprepare(rtc->sclk);
-+
- 	return 0;
- }
- 
--- 
-1.9.1
+  http://www.willdeacon.ukfsn.org/bitbucket/oopsen/nfs/tcpdump.bin
 
+You may want to filter out the ssh packets. The only `interesting' thing to
+me is a retransmission about half way through, but I don't know what I'm
+looking for.
+
+The NFS server is 10.1.203.204 and the client is 10.1.203.24.
+
+Will
