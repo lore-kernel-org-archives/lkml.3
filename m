@@ -1,173 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168AbaIWOtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:49:04 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58577 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932288AbaIWOsy (ORCPT
+	id S932332AbaIWOtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:49:08 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:52465 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756163AbaIWOtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:48:54 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v9 05/10] rtc: at91sam9: make use of syscon/regmap to access GPBR registers
-Date: Tue, 23 Sep 2014 16:48:40 +0200
-Message-Id: <1411483725-31532-6-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 23 Sep 2014 10:49:05 -0400
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org
+Cc: tech@virtualopensystems.com, kvm@vger.kernel.org,
+        christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, eric.auger@linaro.org,
+        marc.zyngier@arm.com,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCHv7 20/26] vfio/platform: trigger an interrupt via eventfd
+Date: Tue, 23 Sep 2014 16:46:19 +0200
+Message-Id: <1411483586-29304-21-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPBR registers are not part of the RTT block and thus should not be
-defined in the reg property of the rtt node.
+This patch allows to set an eventfd for a patform device's interrupt,
+and also to trigger the interrupt eventfd from userspace for testing.
 
-Use syscon to provide a proper DT representation and reference the GPBR
-syscon device in a new "atmel,rtt-rtc-time-reg" property which store both
-the syscon device phandle and the register offset within the GPBR block.
-
-When using non DT boards, we won't be able to retrieve the syscon regmap,
-hence we need to create our own regmap using the memory region defined
-in the 2nd memory resource assigned to the RTT platform device.
-
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Johan Hovold <johan@kernel.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/rtc/Kconfig        |  1 +
- drivers/rtc/rtc-at91sam9.c | 64 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 56 insertions(+), 9 deletions(-)
+ drivers/vfio/platform/vfio_platform_irq.c     | 89 ++++++++++++++++++++++++++-
+ drivers/vfio/platform/vfio_platform_private.h |  2 +
+ 2 files changed, 89 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..7d76da8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
- config RTC_DRV_AT91SAM9
- 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
- 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-+	select MFD_SYSCON
- 	help
- 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
- 	  (Real Time Timer). These timers are powered by the backup power
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index d72c34d..be9c28b 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,8 @@
- #include <linux/slab.h>
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
+diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+index 007b386..25a7825 100644
+--- a/drivers/vfio/platform/vfio_platform_irq.c
++++ b/drivers/vfio/platform/vfio_platform_irq.c
+@@ -45,11 +45,91 @@ static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+ 	return -EINVAL;
+ }
  
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -72,7 +74,8 @@ struct sam9_rtc {
- 	void __iomem		*rtt;
- 	struct rtc_device	*rtcdev;
- 	u32			imr;
--	void __iomem		*gpbr;
-+	struct regmap		*gpbr;
-+	unsigned int		gpbr_offset;
- 	int 			irq;
- };
- 
-@@ -81,10 +84,19 @@ struct sam9_rtc {
- #define rtt_writel(rtc, field, val) \
- 	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
--#define gpbr_readl(rtc) \
--	readl((rtc)->gpbr)
--#define gpbr_writel(rtc, val) \
--	writel((val), (rtc)->gpbr)
-+static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
++static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
 +{
-+	unsigned int val;
++	struct vfio_platform_irq *irq_ctx = dev_id;
 +
-+	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
++	eventfd_signal(irq_ctx->trigger, 1);
 +
-+	return val;
++	return IRQ_HANDLED;
 +}
 +
-+static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
++static int vfio_set_trigger(struct vfio_platform_device *vdev,
++			    int index, int fd)
 +{
-+	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
-+}
- 
- /*
-  * Read current time and date in RTC
-@@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
- 	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
- };
- 
-+static struct regmap_config gpbr_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
++	struct vfio_platform_irq *irq = &vdev->irqs[index];
++	struct eventfd_ctx *trigger;
++	int ret;
 +
- /*
-  * Initialize and install RTC driver
-  */
-@@ -334,10 +352,38 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(rtc->rtt))
- 		return PTR_ERR(rtc->rtt);
- 
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
--	if (IS_ERR(rtc->gpbr))
--		return PTR_ERR(rtc->rtt);
-+	if (!pdev->dev.of_node) {
-+		/*
-+		 * TODO: Remove this code chunk when removing non DT board
-+		 * support. Remember to remove the gpbr_regmap_config
-+		 * variable too.
-+		 */
-+		void __iomem *gpbr;
-+
-+		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		gpbr = devm_ioremap_resource(&pdev->dev, r);
-+		if (IS_ERR(gpbr))
-+			return PTR_ERR(gpbr);
-+
-+		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
-+					     &gpbr_regmap_config);
-+	} else {
-+		struct of_phandle_args args;
-+
-+		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
-+						"atmel,rtt-rtc-time-reg", 1, 0,
-+						&args);
-+		if (ret)
-+			return ret;
-+
-+		rtc->gpbr = syscon_node_to_regmap(args.np);
-+		rtc->gpbr_offset = args.args[0];
++	if (irq->trigger) {
++		free_irq(irq->hwirq, irq);
++		kfree(irq->name);
++		eventfd_ctx_put(irq->trigger);
++		irq->trigger = NULL;
 +	}
 +
-+	if (IS_ERR(rtc->gpbr)) {
-+		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
++	if (fd < 0) /* Disable only */
++		return 0;
++
++	irq->name = kasprintf(GFP_KERNEL, "vfio-irq[%d](%s)",
++						irq->hwirq, vdev->name);
++	if (!irq->name)
 +		return -ENOMEM;
++
++	trigger = eventfd_ctx_fdget(fd);
++	if (IS_ERR(trigger)) {
++		kfree(irq->name);
++		return PTR_ERR(trigger);
 +	}
++
++	irq->trigger = trigger;
++
++	ret = request_irq(irq->hwirq, vfio_irq_handler, 0, irq->name, irq);
++	if (ret) {
++		kfree(irq->name);
++		eventfd_ctx_put(trigger);
++		irq->trigger = NULL;
++		return ret;
++	}
++
++	return 0;
++}
++
+ static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
+ 				     unsigned index, unsigned start,
+ 				     unsigned count, uint32_t flags, void *data)
+ {
+-	return -EINVAL;
++	struct vfio_platform_irq *irq = &vdev->irqs[index];
++	uint8_t irq_bitmap;
++	int32_t fd;
++
++	switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
++	case VFIO_IRQ_SET_DATA_NONE:
++		if (count == 0)
++			return vfio_set_trigger(vdev, index, -1);
++
++		vfio_irq_handler(irq->hwirq, irq);
++		return 0;
++
++	case VFIO_IRQ_SET_DATA_BOOL:
++		if (copy_from_user(&irq_bitmap, data, sizeof(uint8_t)))
++			return -EFAULT;
++
++		if (irq_bitmap == 0x1) {
++			vfio_irq_handler(irq->hwirq, irq);
++			return 0;
++		}
++
++		return -EINVAL;
++
++	case VFIO_IRQ_SET_DATA_EVENTFD:
++		if (copy_from_user(&fd, data, sizeof(int32_t)))
++			return -EFAULT;
++
++		return vfio_set_trigger(vdev, index, fd);
++	}
++
++	return -EFAULT;
+ }
  
- 	mr = rtt_readl(rtc, MR);
+ int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+@@ -95,7 +175,7 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+ 		if (hwirq < 0)
+ 			goto err;
  
+-		vdev->irqs[i].flags = 0;
++		vdev->irqs[i].flags = VFIO_IRQ_INFO_EVENTFD;
+ 		vdev->irqs[i].count = 1;
+ 		vdev->irqs[i].hwirq = hwirq;
+ 	}
+@@ -110,6 +190,11 @@ err:
+ 
+ void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+ {
++	int i;
++
++	for (i = 0; i < vdev->num_irqs; i++)
++		vfio_set_trigger(vdev, i, -1);
++
+ 	vdev->num_irqs = 0;
+ 	kfree(vdev->irqs);
+ }
+diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+index 4201b94..765b371 100644
+--- a/drivers/vfio/platform/vfio_platform_private.h
++++ b/drivers/vfio/platform/vfio_platform_private.h
+@@ -28,6 +28,8 @@ struct vfio_platform_irq {
+ 	u32			flags;
+ 	u32			count;
+ 	int			hwirq;
++	char			*name;
++	struct eventfd_ctx	*trigger;
+ };
+ 
+ struct vfio_platform_region {
 -- 
-1.9.1
+1.8.3.2
 
