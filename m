@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaIWO1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:27:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40650 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751755AbaIWO06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:26:58 -0400
-Date: Tue, 23 Sep 2014 10:26:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Scot Doyle <lkml14@scotdoyle.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Daniel Mack <daniel@caiaq.de>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: core: downgrade log severity to info when descriptor
- missing
-In-Reply-To: <alpine.DEB.2.11.1409222012230.1839@localhost.localdomain>
-Message-ID: <Pine.LNX.4.44L0.1409231021190.1322-100000@iolanthe.rowland.org>
+	id S1756050AbaIWO2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:28:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39531 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957AbaIWO2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 10:28:19 -0400
+Date: Tue, 23 Sep 2014 16:28:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
+        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140923142816.GC10046@dhcp22.suse.cz>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+ <20140922144436.GG336@dhcp22.suse.cz>
+ <20140922155049.GA6630@cmpxchg.org>
+ <20140922172800.GA4343@dhcp22.suse.cz>
+ <20140922195829.GA5197@cmpxchg.org>
+ <20140923132553.GB10046@dhcp22.suse.cz>
+ <20140923140526.GA15014@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923140526.GA15014@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Scot Doyle wrote:
+On Tue 23-09-14 10:05:26, Johannes Weiner wrote:
+[...]
+> That's one way to put it.  But the way I see it is that I remove a
+> generic resource counter and replace it with a pure memory counter
+> which I put where we account and limit memory - with one exception
+> that is hardly worth creating a dedicated library file for.
 
-> According to commit 0cce2eda19923e5e5ccc8b042dec5af87b3ffad0
->     USB: fix LANGID=0 regression
-> 
-> usb devices are not required to report string descriptors. Since they are
-> optional, log an info message instead of an error message. In addition,
-> use a higher level info message while moving the details to a debug message.
-> 
-> Tested with USB device 0930:021c.
+So you completely seem to ignore people doing CONFIG_CGROUP_HUGETLB &&
+!CONFIG_MEMCG without any justification and hiding it behind performance
+improvement which those users even didn't ask for yet.
 
-This is a good description, but it's not what the patch actually does.
+All that just to not have one additional header and c file hidden by
+CONFIG_PAGE_COUNTER selected by both controllers. No special
+configuration option is really needed for CONFIG_PAGE_COUNTER.
 
-> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-> ---
->  drivers/usb/core/message.c | 14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
-> index 0c8a7fc..6b95de7 100644
-> --- a/drivers/usb/core/message.c
-> +++ b/drivers/usb/core/message.c
-> @@ -766,7 +766,7 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
-> 
->  	/* If the string was reported but is malformed, default to english
->  	 * (0x0409) */
-> -	if (err == -ENODATA || (err > 0 && err < 4)) {
-> +	if (err > 0 && err < 4) {
+> I only explained my plans of merging all memory controllers because I
+> assumed we could ever be on the same page when it comes to this code.
 
-Why treat ENODATA as a separate case?  It's just like the others -- the 
-device returned some data, but the data was malformed.
+I doubt this is a good plan but I might be wrong here. The main thing
+stays there is no good reason to make hugetlb depend on memcg right now
+and such a change _shouldn't_ be hidden behind an unrelated change. From
+hugetlb container point of view this is just a different counter which
+doesn't depend on memcg. I am really surprised you are pushing for this
+so hard right now because it only distracts from the main motivation of
+your patch.
 
-If the device really does not support string descriptors at all, err
-would be equal to -EPIPE.
+> But regardless of that, my approach immediately simplifies Kconfig,
+> Makefiles, #includes, and you haven't made a good point why the
+> hugetlb controller depending on memcg would harm anybody in real life.
 
->  		dev->string_langid = 0x0409;
->  		dev->have_langid = 1;
->  		dev_err(&dev->dev,
-> @@ -776,6 +776,18 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
->  		return 0;
->  	}
-> 
-> +	/* If the string was unavailable, default to english (0x0409) */
-
--ENODATA doesn't mean the string was unavailable.  It means that the
-second byte of the reply was different from USB_DT_STRING, i.e., the
-reply was malformed.
-
-> +	if (err == -ENODATA) {
-> +		dev->string_langid = 0x0409;
-> +		dev->have_langid = 1;
-> +		dev_info(&dev->dev,
-> +			"no string descriptor language, defaulting to English");
-> +		dev_dbg(&dev->dev,
-> +			"string descriptor 0 unavailable (err = -ENODATA), "
-> +			"defaulting to 0x%04x\n", dev->string_langid);
-> +		return 0;
-> +	}
-
-Therefore this section is completely unnecessary.
-
-> +
->  	/* In case of all other errors, we assume the device is not able to
->  	 * deal with strings at all. Set string_langid to -1 in order to
->  	 * prevent any string to be retrieved from the device */
-
-And down here is where you should call either dev_info() or dev_err(), 
-depending on whether err is equal to -EPIPE or something else.
-
-Alan Stern
-
+Usecases for hugetlb and memcg controllers have basically zero overlap
+they simply manage different resources and so it is natural to use one
+without the other.
+-- 
+Michal Hocko
+SUSE Labs
