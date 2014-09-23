@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaIWPZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:25:23 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:54086 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709AbaIWPZU (ORCPT
+	id S1756279AbaIWPZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:25:53 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:64996 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942AbaIWPZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:25:20 -0400
-From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-X-Google-Original-From: Marcos Paulo de Souza
-To: linux-kernel@vger.kernel.org
-Cc: Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
+	Tue, 23 Sep 2014 11:25:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
+Date: Tue, 23 Sep 2014 17:25:50 +0200
+Message-ID: <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
+ properties interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Tom Gundersen <teg@jklm.no>, Peter Hutterer <peter.hutterer@who-t.net>,
-        linux-input@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] input/serio/i8042-x86ia64io.h: Fix Asus X450LCP touchpad detection
-Date: Tue, 23 Sep 2014 12:24:33 -0300
-Message-Id: <1411485873-4245-1-git-send-email-marcos.souza.org@gmail.com>
-X-Mailer: git-send-email 1.9.3
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Tom Gundersen <teg@jklm.no>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: linux-input@vger.kernel.org
-Cc: stable@vger.kernel.org
----
- drivers/input/serio/i8042-x86ia64io.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+> Some drivers need to deal with only firmware representation of its
+> GPIOs. An example would be a GPIO button array driver where each button
+> is described as a separate firmware node in device tree. Typically these
+> child nodes do not have physical representation in the Linux device
+> model.
+>
+> In order to help device drivers to handle such firmware child nodes we
+> add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
+> parameter, finds the GPIO using whatever is the underlying firmware
+> method, and requests the GPIO properly.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 136b7b20..ec6cb72 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -465,6 +465,15 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Asus X450LCP */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X450LCP"),
-+		},
-+	},
-+
-+
- 	{ }
- };
- 
--- 
-1.9.3
+I have a hard time figuring out if this is what we want for common
+accessors between DT and ACPI.
 
+Can I get some input from Grant, Arnd, Mark, Darren...?
+
+Yours,
+Linus Walleij
