@@ -1,190 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaIWLzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:55:54 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:38086 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIWLzx (ORCPT
+	id S1753619AbaIWL5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:57:05 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:48744 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaIWL5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:55:53 -0400
-Date: Tue, 23 Sep 2014 11:55:33 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Michael Mullin <masmullin@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9] tpm_tis: verify interrupt during init
-In-Reply-To: <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain>
-Message-ID: <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain>
-References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com> <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com>
- <alpine.LNX.2.11.1408302229001.579@localhost.localdomain> <20140902172015.GD13956@obsidianresearch.com> <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain> <20140908220238.GB6204@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
- <20140922171338.GB28082@obsidianresearch.com> <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain> <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 23 Sep 2014 07:57:03 -0400
+Date: Tue, 23 Sep 2014 15:56:55 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Greg Thelen <gthelen@google.com>, <linux-mm@kvack.org>,
+        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@sr71.net>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] mm: memcontrol: support transparent huge pages under
+ pressure
+Message-ID: <20140923115655.GJ18526@esperanza>
+References: <1411132840-16025-1-git-send-email-hannes@cmpxchg.org>
+ <xr934mvykgiv.fsf@gthelen.mtv.corp.google.com>
+ <20140923082927.GG18526@esperanza>
+ <20140923114827.GB13593@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140923114827.GB13593@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014, Scot Doyle wrote:
+On Tue, Sep 23, 2014 at 07:48:27AM -0400, Johannes Weiner wrote:
+> On Tue, Sep 23, 2014 at 12:29:27PM +0400, Vladimir Davydov wrote:
+> > On Mon, Sep 22, 2014 at 10:52:50PM -0700, Greg Thelen wrote:
+> > > In this condition, if res usage is at limit then there's no point in
+> > > swapping because memsw.usage is already maximal.  Prior to this patch
+> > > I think the kernel did the right thing, but not afterwards.
+> > > 
+> > > Before this patch:
+> > >   if res.usage == res.limit, try_charge() indirectly calls
+> > >   try_to_free_mem_cgroup_pages(noswap=true)
+> > 
+> > But this is wrong. If we fail to charge res, we should try to do swap
+> > out along with page cache reclaim. Swap out won't affect memsw.usage,
+> > but will diminish res.usage so that the allocation may succeed.
+> 
+> But we know that the memsw limit must be hit as well in that case, and
+> swapping only makes progress in the sense that we are then succeeding
+> the memory charge.  But we still fail to charge memsw.
 
-> Some machines, such as the Acer C720 and Toshiba CB35, have TPMs that do
-> not send IRQs while also having an ACPI TPM entry indicating that they
-> will be sent. These machines freeze on resume while the tpm_tis module
-> waits for an IRQ, eventually timing out.
->
-> When in interrupt mode, the tpm_tis module should receive an IRQ during
-> module init. Fall back to polling mode if none is received when expected.
->
-> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-> Tested-by: Michael Mullin <masmullin@gmail.com>
-> Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Yeah, I admit I said nonsense. The problem Greg pointed out does exist.
+I think your second patch (charging memsw before res) should fix it.
 
-Did I prematurely add your Reviewed-by? If so, I apologize.
-
-> ---
-> drivers/char/tpm/tpm_tis.c | 76 +++++++++++++++++++++++++++++++++++++---------
-> 1 file changed, 62 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index 2c46734..bfe1f1a 100644
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -75,6 +75,10 @@ enum tis_defaults {
-> #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
-> #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
->
-> +struct priv_data {
-> +	bool irq_tested;
-> +};
-> +
-> static LIST_HEAD(tis_chips);
-> static DEFINE_MUTEX(tis_lock);
->
-> @@ -338,12 +342,27 @@ out_err:
-> 	return rc;
-> }
->
-> +static void disable_interrupts(struct tpm_chip *chip)
-> +{
-> +	u32 intmask;
-> +	intmask =
-> +	    ioread32(chip->vendor.iobase +
-> +		     TPM_INT_ENABLE(chip->vendor.locality));
-> +	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
-> +		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
-> +	iowrite32(intmask,
-> +		  chip->vendor.iobase +
-> +		  TPM_INT_ENABLE(chip->vendor.locality));
-> +	free_irq(chip->vendor.irq, chip);
-> +	chip->vendor.irq = 0;
-> +}
-> +
-> /*
->  * If interrupts are used (signaled by an irq set in the vendor structure)
->  * tpm.c can skip polling for the data to be available as the interrupt is
->  * waited for here
->  */
-> -static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> +static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
-> {
-> 	int rc;
-> 	u32 ordinal;
-> @@ -373,6 +392,30 @@ out_err:
-> 	return rc;
-> }
->
-> +static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> +{
-> +	int rc, irq;
-> +	struct priv_data *priv = chip->vendor.priv;
-> +
-> +	if (!chip->vendor.irq || priv->irq_tested)
-> +		return tpm_tis_send_main(chip, buf, len);
-> +
-> +	/* Verify receipt of the expected IRQ */
-> +	irq = chip->vendor.irq;
-> +	chip->vendor.irq = 0;
-> +	rc = tpm_tis_send_main(chip, buf, len);
-> +	chip->vendor.irq = irq;
-> +	if (!priv->irq_tested)
-> +		msleep(1);
-> +	if (!priv->irq_tested) {
-> +		disable_interrupts(chip);
-> +		dev_err(chip->dev,
-> +			FW_BUG "TPM interrupt not working, polling instead\n");
-> +	}
-> +	priv->irq_tested = true;
-> +	return rc;
-> +}
-> +
-> struct tis_vendor_timeout_override {
-> 	u32 did_vid;
-> 	unsigned long timeout_us[4];
-> @@ -505,6 +548,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
-> 	if (interrupt == 0)
-> 		return IRQ_NONE;
->
-> +	((struct priv_data*)chip->vendor.priv)->irq_tested = true;
-> 	if (interrupt & TPM_INTF_DATA_AVAIL_INT)
-> 		wake_up_interruptible(&chip->vendor.read_queue);
-> 	if (interrupt & TPM_INTF_LOCALITY_CHANGE_INT)
-> @@ -534,9 +578,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
-> 	u32 vendor, intfcaps, intmask;
-> 	int rc, i, irq_s, irq_e, probe;
-> 	struct tpm_chip *chip;
-> +	struct priv_data *priv;
->
-> +	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
-> +	if (priv == NULL)
-> +		return -ENOMEM;
-> 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
-> 		return -ENODEV;
-> +	chip->vendor.priv = priv;
->
-> 	chip->vendor.iobase = ioremap(start, len);
-> 	if (!chip->vendor.iobase) {
-> @@ -605,19 +654,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
-> 	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
-> 		dev_dbg(dev, "\tData Avail Int Support\n");
->
-> -	/* get the timeouts before testing for irqs */
-> -	if (tpm_get_timeouts(chip)) {
-> -		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-> -
-> -	if (tpm_do_selftest(chip)) {
-> -		dev_err(dev, "TPM self test failed\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-> -
-> 	/* INTERRUPT Setup */
-> 	init_waitqueue_head(&chip->vendor.read_queue);
-> 	init_waitqueue_head(&chip->vendor.int_queue);
-> @@ -719,6 +755,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
-> 		}
-> 	}
->
-> +	if (tpm_get_timeouts(chip)) {
-> +		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
-> +	if (tpm_do_selftest(chip)) {
-> +		dev_err(dev, "TPM self test failed\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
-> 	INIT_LIST_HEAD(&chip->vendor.list);
-> 	mutex_lock(&tis_lock);
-> 	list_add(&chip->vendor.list, &tis_chips);
-> -- 
-> 2.1.0
->
+Thanks,
+Vladimir
