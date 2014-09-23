@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531AbaIWMQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:16:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57123 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755386AbaIWMPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:15:46 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 9/9] ARM: dts: berlin: enable the Ethernet port on the BG2Q DMP
-Date: Tue, 23 Sep 2014 14:15:36 +0200
-Message-Id: <1411474536-22626-10-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1755632AbaIWMRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:17:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56067 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755278AbaIWMRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:17:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,579,1406617200"; 
+   d="scan'208";a="595544977"
+Date: Tue, 23 Sep 2014 15:17:12 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
+Message-ID: <20140923121712.GD18814@xps8300>
+References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1408535728-10518-3-git-send-email-heikki.krogerus@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408535728-10518-3-git-send-email-heikki.krogerus@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the Ethernet port on the Marvell Berlin2Q DMP board.
+On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
+> Most devices are configured for 32-bit DMA addresses.
+> Setting the mask to 32-bit here removes the need for the
+> drivers to do it separately.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 4 ++++
- 1 file changed, 4 insertions(+)
+Rafael, is this OK?
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index a357ce02a64e..ea1f99b8eed6 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -45,3 +45,7 @@
- &uart0 {
- 	status = "okay";
- };
-+
-+&eth0 {
-+	status = "okay";
-+};
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
+>  drivers/acpi/acpi_platform.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> index 2bf9082..8d099e6 100644
+> --- a/drivers/acpi/acpi_platform.c
+> +++ b/drivers/acpi/acpi_platform.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/err.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+> +#include <linux/dma-mapping.h>
+>  #include <linux/platform_device.h>
+>  
+>  #include "internal.h"
+> @@ -102,6 +103,7 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
+>  	pdevinfo.res = resources;
+>  	pdevinfo.num_res = count;
+>  	pdevinfo.acpi_node.companion = adev;
+> +	pdevinfo.dma_mask = DMA_BIT_MASK(32);
+>  	pdev = platform_device_register_full(&pdevinfo);
+>  	if (IS_ERR(pdev))
+>  		dev_err(&adev->dev, "platform device creation failed: %ld\n",
+> -- 
+> 2.1.0
+
 -- 
-1.9.1
-
+heikki
