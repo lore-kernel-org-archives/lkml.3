@@ -1,184 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578AbaIWF2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:28:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44492 "EHLO mail.kernel.org"
+	id S1753852AbaIWFb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:31:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54726 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281AbaIWF2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:28:03 -0400
-Date: Mon, 22 Sep 2014 22:28:00 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 08/10] f2fs: remove redundant operation during
- roll-forward recovery
-Message-ID: <20140923052800.GB38355@jaegeuk-mac02.mot-mobility.com>
-References: <006101cfd646$f53771a0$dfa654e0$@samsung.com>
+	id S1753209AbaIWFbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:31:25 -0400
+Message-ID: <542105A8.3060004@suse.com>
+Date: Tue, 23 Sep 2014 07:31:20 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <006101cfd646$f53771a0$dfa654e0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: stefan.bader@canonical.com, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
+        x86@kernel.org, david.vrabel@citrix.com, jbeulich@suse.com,
+        mingo@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH V3 0/3] x86: Full support of PAT
+References: <1410518112-2625-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1410518112-2625-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+Hi,
 
-I fixed that. :)
+any chance to have this in 3.18?
 
-Thanks,
+Juergen
 
-On Mon, Sep 22, 2014 at 05:22:27PM +0800, Chao Yu wrote:
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Monday, September 15, 2014 6:14 AM
-> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Cc: Jaegeuk Kim
-> > Subject: [f2fs-dev] [PATCH 08/10] f2fs: remove redundant operation during roll-forward recovery
-> > 
-> > If same data is updated multiple times, we don't need to redo whole the
-> > operations.
-> > Let's just update the lastest one.
-> 
-> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-> 
-> And one comment as following.
-> 
-> > 
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > ---
-> >  fs/f2fs/f2fs.h     |  4 +++-
-> >  fs/f2fs/recovery.c | 41 +++++++++++++++++------------------------
-> >  2 files changed, 20 insertions(+), 25 deletions(-)
-> > 
-> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> > index 48d7d46..74dde99 100644
-> > --- a/fs/f2fs/f2fs.h
-> > +++ b/fs/f2fs/f2fs.h
-> > @@ -137,7 +137,9 @@ struct discard_entry {
-> >  struct fsync_inode_entry {
-> >  	struct list_head list;	/* list head */
-> >  	struct inode *inode;	/* vfs inode pointer */
-> > -	block_t blkaddr;	/* block address locating the last inode */
-> > +	block_t blkaddr;	/* block address locating the last fsync */
-> > +	block_t last_dentry;	/* block address locating the last dentry */
-> > +	block_t last_inode;	/* block address locating the last inode */
-> >  };
-> > 
-> >  #define nats_in_cursum(sum)		(le16_to_cpu(sum->n_nats))
-> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> > index 6f7fbfa..95d9dc9 100644
-> > --- a/fs/f2fs/recovery.c
-> > +++ b/fs/f2fs/recovery.c
-> > @@ -66,7 +66,7 @@ static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
-> >  	return NULL;
-> >  }
-> > 
-> > -static int recover_dentry(struct page *ipage, struct inode *inode)
-> > +static int recover_dentry(struct inode *inode, struct page *ipage)
-> >  {
-> >  	struct f2fs_inode *raw_inode = F2FS_INODE(ipage);
-> >  	nid_t pino = le32_to_cpu(raw_inode->i_pino);
-> > @@ -140,7 +140,7 @@ out:
-> >  	return err;
-> >  }
-> > 
-> > -static void __recover_inode(struct inode *inode, struct page *page)
-> > +static void recover_inode(struct inode *inode, struct page *page)
-> >  {
-> >  	struct f2fs_inode *raw = F2FS_INODE(page);
-> > 
-> > @@ -152,21 +152,9 @@ static void __recover_inode(struct inode *inode, struct page *page)
-> >  	inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-> >  	inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
-> >  	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-> > -}
-> > -
-> > -static int recover_inode(struct inode *inode, struct page *node_page)
-> > -{
-> > -	if (!IS_INODE(node_page))
-> > -		return 0;
-> > -
-> > -	__recover_inode(inode, node_page);
-> > -
-> > -	if (is_dent_dnode(node_page))
-> > -		return recover_dentry(node_page, inode);
-> > 
-> >  	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
-> > -			ino_of_node(node_page), F2FS_INODE(node_page)->i_name);
-> > -	return 0;
-> > +			ino_of_node(page), F2FS_INODE(page)->i_name);
-> >  }
-> > 
-> >  static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
-> > @@ -214,12 +202,11 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head
-> > *head)
-> >  			}
-> > 
-> >  			/* add this fsync inode to the list */
-> > -			entry = kmem_cache_alloc(fsync_entry_slab, GFP_NOFS);
-> > +			entry = kmem_cache_alloc(fsync_entry_slab, GFP_F2FS_ZERO);
-> >  			if (!entry) {
-> >  				err = -ENOMEM;
-> >  				break;
-> >  			}
-> > -
-> >  			/*
-> >  			 * CP | dnode(F) | inode(DF)
-> >  			 * For this case, we should not give up now.
-> > @@ -236,9 +223,11 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head
-> > *head)
-> >  		}
-> >  		entry->blkaddr = blkaddr;
-> > 
-> > -		err = recover_inode(entry->inode, page);
-> > -		if (err && err != -ENOENT)
-> > -			break;
-> > +		if (IS_INODE(page)) {
-> > +			entry->last_inode = blkaddr;
-> > +			if (is_dent_dnode(page))
-> > +				entry->last_dentry = blkaddr;
-> > +		}
-> >  next:
-> >  		/* check next segment */
-> >  		blkaddr = next_blkaddr_of_node(page);
-> > @@ -455,11 +444,15 @@ static int recover_data(struct f2fs_sb_info *sbi,
-> >  		/*
-> >  		 * inode(x) | CP | inode(x) | dnode(F)
-> >  		 * In this case, we can lose the latest inode(x).
-> > -		 * So, call __recover_inode for the inode update.
-> > +		 * So, call recover_inode for the inode update.
-> >  		 */
-> > -		if (IS_INODE(page))
-> > -			__recover_inode(entry->inode, page);
-> > -
-> > +		if (entry->last_inode == blkaddr)
-> > +			recover_inode(entry->inode, page);
-> > +		if (entry->last_dentry == blkaddr) {
-> > +			err = recover_dentry(entry->inode, page);
-> > +			if (err)
-> 
-> Need f2fs_put_page(page, 1);
-> 
-> > +				break;
-> > +		}
-> >  		err = do_recover_data(sbi, entry->inode, page, blkaddr);
-> >  		if (err)
-> >  			break;
-> > --
-> > 1.8.5.2 (Apple Git-48)
-> > 
-> > 
-> > ------------------------------------------------------------------------------
-> > Want excitement?
-> > Manually upgrade your production database.
-> > When you want reliability, choose Perforce
-> > Perforce version control. Predictably reliable.
-> > http://pubads.g.doubleclick.net/gampad/clk?id=157508191&iu=/4140/ostg.clktrk
-> > _______________________________________________
-> > Linux-f2fs-devel mailing list
-> > Linux-f2fs-devel@lists.sourceforge.net
-> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+On 09/12/2014 12:35 PM, Juergen Gross wrote:
+> The x86 architecture offers via the PAT (Page Attribute Table) a way to
+> specify different caching modes in page table entries. The PAT MSR contains
+> 8 entries each specifying one of 6 possible cache modes. A pte references one
+> of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
+>
+> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+> top 4 entries in the PAT MSR are the same as the 4 lower entries.
+>
+> This results in the kernel not supporting e.g. write-through mode. Especially
+> this cache mode would speed up drivers of video cards which now have to use
+> uncached accesses.
+>
+> OTOH some old processors (Pentium) don't support PAT correctly and the Xen
+> hypervisor has been using a different PAT MSR configuration for some time now
+> and can't change that as this setting is part of the ABI.
+>
+> This patch set abstracts the cache mode from the pte and introduces tables to
+> translate between cache mode and pte bits (the default cache mode "write back"
+> is hard-wired to PAT entry 0). The tables are statically initialized with
+> values being compatible to old processors and current usage. As soon as the
+> PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+> changed accordingly. Requests of mappings with special cache modes are always
+> possible now, in case they are not supported there will be a fallback to a
+> compatible but slower mode.
+>
+> Summing it up, this patch set adds the following features:
+> - capability to support WT and WP cache modes on processors with full PAT
+>    support
+> - processors with no or uncorrect PAT support are still working as today, even
+>    if WT or WP cache mode are selected by drivers for some pages
+> - reduction of Xen special handling regarding cache mode
+>
+> Changes in V3:
+> - corrected two minor nits (UC_MINUS, again) detected by Toshi Kani
+>
+> Changes in V2:
+> - simplified handling of PAT MSR write under Xen as suggested by David Vrabel
+> - removed resetting of pat_enabled under Xen
+> - two small corrections requested by Toshi Kani (UC_MINUS cache mode in
+>    vermilion driver, fix 32 bit kernel build failure)
+> - correct build error on non-x86 arch by moving definition of
+>    update_cache_mode_entry() to x86 specific header
+>
+> Changes since RFC:
+> - renamed functions and variables as suggested by Toshi Kani
+> - corrected cache mode bits for WT and WP
+> - modified handling of PAT MSR write under Xen as suggested by Jan Beulich
+>
+>
+> Juergen Gross (3):
+>    x86: Make page cache mode a real type
+>    x86: Enable PAT to use cache mode translation tables
+>    Support Xen pv-domains using PAT
+>
+>   arch/x86/include/asm/cacheflush.h         |  38 ++++---
+>   arch/x86/include/asm/fb.h                 |   6 +-
+>   arch/x86/include/asm/io.h                 |   2 +-
+>   arch/x86/include/asm/pat.h                |   7 +-
+>   arch/x86/include/asm/pgtable.h            |  19 ++--
+>   arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
+>   arch/x86/mm/dump_pagetables.c             |  24 ++--
+>   arch/x86/mm/init.c                        |  37 ++++++
+>   arch/x86/mm/init_64.c                     |   9 +-
+>   arch/x86/mm/iomap_32.c                    |  15 ++-
+>   arch/x86/mm/ioremap.c                     |  63 ++++++-----
+>   arch/x86/mm/mm_internal.h                 |   2 +
+>   arch/x86/mm/pageattr.c                    |  84 ++++++++------
+>   arch/x86/mm/pat.c                         | 181 +++++++++++++++++++-----------
+>   arch/x86/mm/pat_internal.h                |  22 ++--
+>   arch/x86/mm/pat_rbtree.c                  |   8 +-
+>   arch/x86/pci/i386.c                       |   4 +-
+>   arch/x86/xen/enlighten.c                  |  25 ++---
+>   arch/x86/xen/mmu.c                        |  48 +-------
+>   arch/x86/xen/xen-ops.h                    |   1 -
+>   drivers/video/fbdev/gbefb.c               |   3 +-
+>   drivers/video/fbdev/vermilion/vermilion.c |   6 +-
+>   22 files changed, 421 insertions(+), 279 deletions(-)
+>
+
