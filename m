@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaIWCgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:36:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37577 "EHLO mail.kernel.org"
+	id S1753915AbaIWCgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:36:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37816 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753164AbaIWCfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:35:09 -0400
+	id S1753164AbaIWCgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:36:43 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Arjun Sreedharan <arjun024@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 09/45] pata_scc: propagate return value of scc_wait_after_reset
-Date: Tue, 23 Sep 2014 10:31:11 +0800
-Message-Id: <1411439507-30391-9-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Max Filippov <jcmvbkbc@gmail.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 14/45] xtensa: replace IOCTL code definitions with constants
+Date: Tue, 23 Sep 2014 10:31:16 +0800
+Message-Id: <1411439507-30391-14-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
@@ -20,71 +20,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arjun Sreedharan <arjun024@gmail.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit 4dc7c76cd500fa78c64adfda4b070b870a2b993c upstream.
+commit f61bf8e7d19e0a3456a7a9ed97c399e4353698dc upstream.
 
-scc_bus_softreset not necessarily should return zero.
-Propagate the error code.
+This fixes userspace code that builds on other architectures but fails
+on xtensa due to references to structures that other architectures don't
+refer to. E.g. this fixes the following issue with python-2.7.8:
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+  python-2.7.8/Modules/termios.c:861:25: error: invalid application
+     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
+     {"TIOCSERGETMULTI", TIOCSERGETMULTI},
+  python-2.7.8/Modules/termios.c:870:25: error: invalid application
+     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
+     {"TIOCSERSETMULTI", TIOCSERSETMULTI},
+  python-2.7.8/Modules/termios.c:900:24: error: invalid application
+     of 'sizeof' to incomplete type 'struct tty_struct'
+     {"TIOCTTYGSTRUCT", TIOCTTYGSTRUCT},
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+[lizf: Backported to 3.4: adjust filename]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/ata/pata_scc.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ arch/xtensa/include/asm/ioctls.h |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/ata/pata_scc.c b/drivers/ata/pata_scc.c
-index e265f83..19759d3 100644
---- a/drivers/ata/pata_scc.c
-+++ b/drivers/ata/pata_scc.c
-@@ -586,7 +586,7 @@ static int scc_wait_after_reset(struct ata_link *link, unsigned int devmask,
-  *	Note: Original code is ata_bus_softreset().
-  */
+diff --git a/arch/xtensa/include/asm/ioctls.h b/arch/xtensa/include/asm/ioctls.h
+index fd1d136..96341aa 100644
+--- a/arch/xtensa/include/asm/ioctls.h
++++ b/arch/xtensa/include/asm/ioctls.h
+@@ -28,17 +28,17 @@
+ #define TCSETSW		0x5403
+ #define TCSETSF		0x5404
  
--static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
-+static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
-                                       unsigned long deadline)
- {
- 	struct ata_ioports *ioaddr = &ap->ioaddr;
-@@ -600,9 +600,7 @@ static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
- 	udelay(20);
- 	out_be32(ioaddr->ctl_addr, ap->ctl);
+-#define TCGETA		_IOR('t', 23, struct termio)
+-#define TCSETA		_IOW('t', 24, struct termio)
+-#define TCSETAW		_IOW('t', 25, struct termio)
+-#define TCSETAF		_IOW('t', 28, struct termio)
++#define TCGETA		0x80127417	/* _IOR('t', 23, struct termio) */
++#define TCSETA		0x40127418	/* _IOW('t', 24, struct termio) */
++#define TCSETAW		0x40127419	/* _IOW('t', 25, struct termio) */
++#define TCSETAF		0x4012741C	/* _IOW('t', 28, struct termio) */
  
--	scc_wait_after_reset(&ap->link, devmask, deadline);
--
--	return 0;
-+	return scc_wait_after_reset(&ap->link, devmask, deadline);
- }
+ #define TCSBRK		_IO('t', 29)
+ #define TCXONC		_IO('t', 30)
+ #define TCFLSH		_IO('t', 31)
  
- /**
-@@ -619,7 +617,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
- {
- 	struct ata_port *ap = link->ap;
- 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
--	unsigned int devmask = 0, err_mask;
-+	unsigned int devmask = 0;
-+	int rc;
- 	u8 err;
+-#define TIOCSWINSZ	_IOW('t', 103, struct winsize)
+-#define TIOCGWINSZ	_IOR('t', 104, struct winsize)
++#define TIOCSWINSZ	0x40087467	/* _IOW('t', 103, struct winsize) */
++#define TIOCGWINSZ	0x80087468	/* _IOR('t', 104, struct winsize) */
+ #define	TIOCSTART	_IO('t', 110)		/* start output, like ^Q */
+ #define	TIOCSTOP	_IO('t', 111)		/* stop output, like ^S */
+ #define TIOCOUTQ        _IOR('t', 115, int)     /* output queue size */
+@@ -88,7 +88,6 @@
+ #define TIOCSETD	_IOW('T', 35, int)
+ #define TIOCGETD	_IOR('T', 36, int)
+ #define TCSBRKP		_IOW('T', 37, int)   /* Needed for POSIX tcsendbreak()*/
+-#define TIOCTTYGSTRUCT	_IOR('T', 38, struct tty_struct) /* For debugging only*/
+ #define TIOCSBRK	_IO('T', 39) 	     /* BSD compatibility */
+ #define TIOCCBRK	_IO('T', 40)	     /* BSD compatibility */
+ #define TIOCGSID	_IOR('T', 41, pid_t) /* Return the session ID of FD*/
+@@ -111,8 +110,10 @@
+ #define TIOCSERGETLSR   _IOR('T', 89, unsigned int) /* Get line status reg. */
+   /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
+ # define TIOCSER_TEMT    0x01		     /* Transmitter physically empty */
+-#define TIOCSERGETMULTI _IOR('T', 90, struct serial_multiport_struct) /* Get multiport config  */
+-#define TIOCSERSETMULTI _IOW('T', 91, struct serial_multiport_struct) /* Set multiport config */
++#define TIOCSERGETMULTI 0x80a8545a /* Get multiport config  */
++			/* _IOR('T', 90, struct serial_multiport_struct) */
++#define TIOCSERSETMULTI 0x40a8545b /* Set multiport config */
++			/* _IOW('T', 91, struct serial_multiport_struct) */
  
- 	DPRINTK("ENTER\n");
-@@ -635,9 +634,9 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
- 
- 	/* issue bus reset */
- 	DPRINTK("about to softreset, devmask=%x\n", devmask);
--	err_mask = scc_bus_softreset(ap, devmask, deadline);
--	if (err_mask) {
--		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", err_mask);
-+	rc = scc_bus_softreset(ap, devmask, deadline);
-+	if (rc) {
-+		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", rc);
- 		return -EIO;
- 	}
- 
+ #define TIOCMIWAIT	_IO('T', 92) /* wait for a change on serial input line(s) */
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
 -- 
 1.7.9.5
 
