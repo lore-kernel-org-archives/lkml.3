@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaIWGpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:45:35 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:26978 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaIWGpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:45:34 -0400
-Message-ID: <54211707.8090604@huawei.com>
-Date: Tue, 23 Sep 2014 14:45:27 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753834AbaIWGqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:46:39 -0400
+Received: from svenfoo.org ([82.94.215.22]:44406 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833AbaIWGqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 02:46:37 -0400
+Message-ID: <5421174A.7060101@zonque.org>
+Date: Tue, 23 Sep 2014 08:46:34 +0200
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>
-Subject: Re: [GIT PULL] cgroup fixes for v3.17-rc6
-References: <20140923063353.GK11740@mtj.dyndns.org>
-In-Reply-To: <20140923063353.GK11740@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.5421170C.007F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: c3e56debbbc1106e7f965f31df1241c9
+To: Matt Ranostay <mranostay@gmail.com>, galak@codeaurora.org,
+        dmitry.torokhov@gmail.com, zonque@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org
+CC: devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] cap1106: Add support for various cap11xx devices
+References: <1411445057-30048-1-git-send-email-mranostay@gmail.com> <1411445057-30048-2-git-send-email-mranostay@gmail.com>
+In-Reply-To: <1411445057-30048-2-git-send-email-mranostay@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/23 14:33, Tejun Heo wrote:
-> Hello, Linus.
-> 
-> One late fix for cgroup.  I was waiting for another set of fixes for a
-> long-standing obscure cpuset bug but am not sure whether they'll be
-> ready before v3.17 release.  This one is a simple fix for a mutex
-> unlock balance bug, which is detected by coccinelle and probably won't
-> trigger in the wild, introduced during this devel cycle.
-> 
+On 09/23/2014 06:04 AM, Matt Ranostay wrote:
+> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+> index d70b65a..07f9e88 100644
+> --- a/drivers/input/keyboard/cap1106.c
+> +++ b/drivers/input/keyboard/cap1106.c
+> @@ -55,8 +55,6 @@
+>  #define CAP1106_REG_MANUFACTURER_ID	0xfe
+>  #define CAP1106_REG_REVISION		0xff
+>  
+> -#define CAP1106_NUM_CHN 6
+> -#define CAP1106_PRODUCT_ID	0x55
+>  #define CAP1106_MANUFACTURER_ID	0x5d
+>  
+>  struct cap1106_priv {
+> @@ -64,7 +62,25 @@ struct cap1106_priv {
+>  	struct input_dev *idev;
+>  
+>  	/* config */
+> -	unsigned short keycodes[CAP1106_NUM_CHN];
+> +	u32 *keycodes;
+> +	unsigned int num_channels;
+> +};
+> +
+> +struct cap11xx_hw_model {
+> +	uint8_t product_id;
+> +	unsigned int num_channels;
+> +};
+> +
+> +enum {
+> +	CAP1106,
+> +	CAP1126,
+> +	CAP1188,
+> +};
+> +
+> +struct cap11xx_hw_model cap11xx_devices[] = {
 
-It was introduced in 3.14, and it was detected by my eyes, not coccinelle. ;)
+This can be static const.
+
+And, as I said, there should be a 3rd patch that renames the file and
+its functions, structs, defines etc to the more generic "11xx" variants.
+
+
+Thanks,
+Daniel
 
