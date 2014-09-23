@@ -1,393 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaIWMpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:45:10 -0400
-Received: from mail-bn1bn0105.outbound.protection.outlook.com ([157.56.110.105]:7980
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751516AbaIWMpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:45:08 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <shawn.guo@freescale.com>, <shawn.guo@linaro.org>
-CC: <mark.rutland@arm.com>, <u.kleine-koenig@pengutronix.de>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        "Xiubo Li" <Li.Xiubo@freescale.com>
-Subject: [PATCH v3] ARM: ls1021a: add gating clocks to IP blocks.
-Date: Tue, 23 Sep 2014 20:44:35 +0800
-Message-ID: <1411476275-9164-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(48376002)(95666004)(97736003)(105606002)(50466002)(62966002)(106466001)(90102001)(10300001)(80022003)(81542003)(74662003)(74502003)(85306004)(120916001)(76482002)(46102003)(36756003)(81342003)(77982003)(44976005)(79102003)(68736004)(83072002)(19580405001)(85852003)(83322001)(19580395003)(87936001)(87286001)(84676001)(99396002)(88136002)(229853001)(104016003)(77156001)(50986999)(89996001)(107046002)(92566001)(6806004)(93916002)(86362001)(92726001)(20776003)(31966008)(47776003)(64706001)(4396001)(21056001)(104166001)(50226001)(2004002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0610;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1755497AbaIWMqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:46:51 -0400
+Received: from mail.kernel.org ([198.145.19.201]:40192 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751860AbaIWMqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:46:49 -0400
+Date: Tue, 23 Sep 2014 09:46:40 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf pollfd v3
+Message-ID: <20140923124640.GB23362@kernel.org>
+References: <20140911113336.GB13634@krava.brq.redhat.com>
+ <20140911114825.GC13634@krava.brq.redhat.com>
+ <20140911133029.GC10158@kernel.org>
+ <20140911213638.GC1801@kernel.org>
+ <20140918160455.GI2770@kernel.org>
+ <20140922133526.GB18187@krava.brq.redhat.com>
+ <20140922144949.GE32694@kernel.org>
+ <20140922145133.GA18809@krava.brq.redhat.com>
+ <20140922211027.GA23362@kernel.org>
+ <20140923092645.GB2979@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0610;
-X-Forefront-PRVS: 0343AC1D30
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923092645.GB2979@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A given application may not use all the peripherals on the device.
-In this case, it may be desirable to disable unused peripherals.
-DCFG provides a mechanism for gating clocks to IP blocks that are
-not used when running an application.
+Em Tue, Sep 23, 2014 at 11:26:45AM +0200, Jiri Olsa escreveu:
+> On Mon, Sep 22, 2014 at 06:10:27PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Sep 22, 2014 at 04:51:33PM +0200, Jiri Olsa escreveu:
+> > > On Mon, Sep 22, 2014 at 11:49:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Mon, Sep 22, 2014 at 03:35:26PM +0200, Jiri Olsa escreveu:
+> > > > > On Thu, Sep 18, 2014 at 01:04:55PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > > Em Thu, Sep 11, 2014 at 06:36:38PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > > > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v4
+> > 
+> > > > > > Its on top of my last perf/core branch, i.e. with builtin-record.c using
+> > > > > > perf_evlist__mmap_consume() and it and builtin-trace.c doing one last
+> > > > > > mmap_read loop to consume what is left after all fds for a mmap are
+> > > > > > closed.
+> > 
+> > > > > > I'll wait a bit before reposting, probably Jiri will not be able to
+> > > > > > comment this week, but I would like to at least post the URL for this
+> > > > > > latest v4 kit.
+> > 
+> > > > > > Adrian, if you could take a look at it, would be really great :-)
+> > 
+> > > > > I checked the branch.. the last patch brakes the functionality
+> > > > > of perf record for me
+> > 
+> > > > Breaks in what sense?
+> > 
+> > > perf record -p pid
+> > 
+> > > and killing the pid won't finish perf record
+> > 
+> > Should be ok now, after making sure record uses
+> > perf_evlist__mmap_consume(), which does what you did in your proposed
+> > fix, tried both killing it and letting it exit normally, i.e. a 'sleep 5s'
+> > target.
+> > 
+> > Pushed
+> > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/fdarray.v6
+> > after moving the changesets for trace and record to be done last,
+> > waiting for all fds to be POLLHUP'ed and doing one last draining
+> > mmap_read loop over the mmaps.
+> 
+> One more thing is I noticed the test 34 is segfaulting, because
+> perf_evlist__munmap_filtered assumes priv pointer setup, which
+> is not done in the test.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
+Yeah, forgot to update it wrt mmap refcounting.
 
-Change in V3:
-- Follow's Uwe Kleine-K?nig advices.
+But this brought to my attention the difficulty in debugging perf test
+entries these days, because we do a fork + exec there, I tried using gdb
+and I must be missing something, because I couldn't add a breakpoint
+inside the tests :-\
 
+I'll try with 'perf probe' instead of with gdb, probably will be a good
+idea to try eating our own dog food, and overal, for just inserting some
+printfs, better than using a full-blown debugger like gdb.
 
- .../devicetree/bindings/clock/ls1021a-clock.txt    |  33 ++++
- arch/arm/mach-imx/Makefile                         |   2 +
- arch/arm/mach-imx/clk-ls1021a.c                    | 200 +++++++++++++++++++++
- arch/arm/mach-imx/clk.h                            |   8 +
- include/dt-bindings/clock/ls1021a-clock.h          |  55 ++++++
- 5 files changed, 298 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/ls1021a-clock.txt
- create mode 100644 arch/arm/mach-imx/clk-ls1021a.c
- create mode 100644 include/dt-bindings/clock/ls1021a-clock.h
-
-diff --git a/Documentation/devicetree/bindings/clock/ls1021a-clock.txt b/Documentation/devicetree/bindings/clock/ls1021a-clock.txt
-new file mode 100644
-index 0000000..950e8d0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/ls1021a-clock.txt
-@@ -0,0 +1,33 @@
-+Gating clock bindings for Freescale LS1021A SOC
-+
-+Required properties:
-+- compatible:		Should be "fsl,ls1021a-gate"
-+- reg:			Address and length of the register set
-+- #clock-cells:		Should be <1>
-+
-+Optional property:
-+- big-endian:		If present the gate clock base registers are
-+			implemented in big endian mode, otherwise in
-+			little mode.
-+
-+The clock consumers should specify the desired clock by having one clock
-+ID in its "clocks" phandle cell.
-+Please see include/dt-bindings/clock/ls1021a-clock.h for the full list of
-+LS1021A clock IDs.
-+
-+Example:
-+
-+gate: gate@1ee0000 {
-+	compatible = "fsl,ls1021a-gate";
-+	reg = <0x0 0x1ee0000 0x0 0x10000>;
-+	#clock-cells = <1>;
-+	big-endian;
-+};
-+
-+wdog0: wdog@2ad0000 {
-+	compatible = "fsl,ls1021a-wdt", "fsl,imx21-wdt";
-+	reg = <0x0 0x2ad0000 0x0 0x10000>;
-+	interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&gate LS1021A_CLK_WDOG12_EN>;
-+	clock-names = "wdog12_en";
-+};
-diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-index 6e4fcd8..f6a1544 100644
---- a/arch/arm/mach-imx/Makefile
-+++ b/arch/arm/mach-imx/Makefile
-@@ -110,4 +110,6 @@ obj-$(CONFIG_SOC_IMX53) += mach-imx53.o
+- Arnaldo
  
- obj-$(CONFIG_SOC_VF610) += clk-vf610.o mach-vf610.o
- 
-+obj-$(CONFIG_SOC_LS1021A) += clk-ls1021a.o
-+
- obj-y += devices/
-diff --git a/arch/arm/mach-imx/clk-ls1021a.c b/arch/arm/mach-imx/clk-ls1021a.c
-new file mode 100644
-index 0000000..568b592
---- /dev/null
-+++ b/arch/arm/mach-imx/clk-ls1021a.c
-@@ -0,0 +1,200 @@
-+/*
-+ * Copyright 2014 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+#include <dt-bindings/clock/ls1021a-clock.h>
-+
-+#include "clk.h"
-+
-+/* The DCFG registers are in big endian mode on LS1021A SoC */
-+static u8 ls1021a_clk_shift_none(u8 shift)
-+{
-+	return shift;
-+}
-+
-+static u8 ls1021a_clk_shift_be(u8 shift)
-+{
-+	u8 m, n;
-+
-+	m = shift / 8;
-+	n = shift % 8;
-+
-+	return (u8)((3 - m) * 8 + n);
-+}
-+
-+static u8 (*ls1021a_clk_shift)(u8 shift) = ls1021a_clk_shift_none;
-+
-+static void __init ls1021a_clocks_init(struct device_node *np)
-+{
-+	struct clk_onecell_data *clk_data;
-+	struct clk **clks;
-+	void __iomem *dcfg_base;
-+	int i;
-+
-+#define DCFG_CCSR_DEVDISR1	(dcfg_base + 0x70)
-+#define DCFG_CCSR_DEVDISR2	(dcfg_base + 0x74)
-+#define DCFG_CCSR_DEVDISR3	(dcfg_base + 0x78)
-+#define DCFG_CCSR_DEVDISR4	(dcfg_base + 0x7c)
-+#define DCFG_CCSR_DEVDISR5	(dcfg_base + 0x80)
-+#define DCFG_CCSR_RSTRQMR1	(dcfg_base + 0xc0)
-+
-+	clk_data = kzalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
-+	clks = kcalloc(LS1021A_CLK_END, sizeof(struct clk *), GFP_KERNEL);
-+
-+	BUG_ON(!clk_data || !clks);
-+
-+	dcfg_base = of_iomap(np, 0);
-+
-+	BUG_ON(!dcfg_base);
-+
-+	if (of_property_read_bool(np, "big-endian"))
-+		ls1021a_clk_shift = ls1021a_clk_shift_be;
-+
-+	clks[LS1021A_CLK_PBL_EN] = ls1021a_clk_gate("pbl_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(0));
-+	clks[LS1021A_CLK_ESDHC_EN] = ls1021a_clk_gate("esdhc_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(2));
-+	clks[LS1021A_CLK_DMA1_EN] = ls1021a_clk_gate("dma1_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(8));
-+	clks[LS1021A_CLK_DMA2_EN] = ls1021a_clk_gate("dma2_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(9));
-+	clks[LS1021A_CLK_USB3_PHY_EN] = ls1021a_clk_gate("usb3_phy_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(12));
-+	clks[LS1021A_CLK_USB2_EN] = ls1021a_clk_gate("usb2_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(13));
-+	clks[LS1021A_CLK_SATA_EN] = ls1021a_clk_gate("sata_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(16));
-+	clks[LS1021A_CLK_USB3_EN] = ls1021a_clk_gate("usb3_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(17));
-+	clks[LS1021A_CLK_SEC_EN] = ls1021a_clk_gate("sec_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(22));
-+	clks[LS1021A_CLK_2D_ACE_EN] = ls1021a_clk_gate("2d_ace_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(30));
-+	clks[LS1021A_CLK_QE_EN] = ls1021a_clk_gate("qe_en", "dummy",
-+						DCFG_CCSR_DEVDISR1,
-+						ls1021a_clk_shift(31));
-+
-+	clks[LS1021A_CLK_ETSEC1_EN] = ls1021a_clk_gate("etsec1_en", "dummy",
-+						DCFG_CCSR_DEVDISR2,
-+						ls1021a_clk_shift(0));
-+	clks[LS1021A_CLK_ETSEC2_EN] = ls1021a_clk_gate("etsec2_en", "dummy",
-+						DCFG_CCSR_DEVDISR2,
-+						ls1021a_clk_shift(1));
-+	clks[LS1021A_CLK_ETSEC3_EN] = ls1021a_clk_gate("etsec3_en", "dummy",
-+						DCFG_CCSR_DEVDISR2,
-+						ls1021a_clk_shift(2));
-+
-+	clks[LS1021A_CLK_PEX1_EN] = ls1021a_clk_gate("pex1_en", "dummy",
-+						DCFG_CCSR_DEVDISR3,
-+						ls1021a_clk_shift(0));
-+	clks[LS1021A_CLK_PEX2_EN] = ls1021a_clk_gate("pex2_en", "dummy",
-+						DCFG_CCSR_DEVDISR3,
-+						ls1021a_clk_shift(1));
-+
-+	clks[LS1021A_CLK_DUART1_EN] = ls1021a_clk_gate("duart1_en", "dummy",
-+						DCFG_CCSR_DEVDISR4,
-+						ls1021a_clk_shift(2));
-+	clks[LS1021A_CLK_DUART2_EN] = ls1021a_clk_gate("duart2_en", "dummy",
-+						DCFG_CCSR_DEVDISR4,
-+						ls1021a_clk_shift(3));
-+	clks[LS1021A_CLK_QSPI_EN] = ls1021a_clk_gate("qspi_en", "dummy",
-+						DCFG_CCSR_DEVDISR4,
-+						ls1021a_clk_shift(4));
-+
-+	clks[LS1021A_CLK_DDR_EN] = ls1021a_clk_gate("ddr_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(0));
-+	clks[LS1021A_CLK_OCRAM1_EN] = ls1021a_clk_gate("ocram1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(4));
-+	clks[LS1021A_CLK_IFC_EN] = ls1021a_clk_gate("ifc_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(8));
-+	clks[LS1021A_CLK_GPIO_EN] = ls1021a_clk_gate("gpio_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(9));
-+	clks[LS1021A_CLK_DBG_EN] = ls1021a_clk_gate("dbg_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(10));
-+	clks[LS1021A_CLK_FLEXCAN1_EN] = ls1021a_clk_gate("flexcan1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(12));
-+	clks[LS1021A_CLK_FLEXCAN234_EN] = ls1021a_clk_gate("flexcan234_en",
-+						"dummy", DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(13));
-+	/* For flextimer 2/3/4/5/6/7/8 */
-+	clks[LS1021A_CLK_FLEXTIMER_EN] = ls1021a_clk_gate("flextimer_en",
-+						"dummy", DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(14));
-+	clks[LS1021A_CLK_SECMON_EN] = ls1021a_clk_gate("secmon_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(17));
-+	clks[LS1021A_CLK_WDOG_EN] = ls1021a_clk_gate("wdog_en", "dummy",
-+						DCFG_CCSR_RSTRQMR1,
-+						ls1021a_clk_shift(22));
-+	clks[LS1021A_CLK_WDOG12_EN] = ls1021a_clk_gate("wdog12_en", "wdog_en",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(21));
-+	clks[LS1021A_CLK_I2C23_EN] = ls1021a_clk_gate("i2c23_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(22));
-+	/* For SAI 1/2/3/4 */
-+	clks[LS1021A_CLK_SAI_EN] = ls1021a_clk_gate("sai_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(23));
-+	/* For lpuart 2/3/4/5/6  */
-+	clks[LS1021A_CLK_LPUART_EN] = ls1021a_clk_gate("lpuart_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(24));
-+	clks[LS1021A_CLK_DSPI12_EN] = ls1021a_clk_gate("dspi12_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(25));
-+	clks[LS1021A_CLK_ASRC_EN] = ls1021a_clk_gate("asrc_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(26));
-+	clks[LS1021A_CLK_SPDIF_EN] = ls1021a_clk_gate("spdif_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(27));
-+	clks[LS1021A_CLK_I2C1_EN] = ls1021a_clk_gate("i2c1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(29));
-+	clks[LS1021A_CLK_LPUART1_EN] = ls1021a_clk_gate("lpuart1_en", "dummy",
-+						DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(30));
-+	clks[LS1021A_CLK_FLEXTIMER1_EN] = ls1021a_clk_gate("flextimer1_en",
-+						"dummy", DCFG_CCSR_DEVDISR5,
-+						ls1021a_clk_shift(31));
-+
-+	for (i = 0; i < LS1021A_CLK_END; i++) {
-+		if (IS_ERR(clks[i])) {
-+			pr_err("LS1021A clk %d: register failed with %ld\n",
-+			       i, PTR_ERR(clks[i]));
-+			BUG();
-+		}
-+	}
-+
-+	/* Add the clocks to provider list */
-+	clk_data->clks = clks;
-+	clk_data->clk_num = LS1021A_CLK_END;
-+	of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
-+}
-+CLK_OF_DECLARE(ls1021a, "fsl,ls1021a-gate", ls1021a_clocks_init);
-diff --git a/arch/arm/mach-imx/clk.h b/arch/arm/mach-imx/clk.h
-index 4cdf8b6..cfbae8c 100644
---- a/arch/arm/mach-imx/clk.h
-+++ b/arch/arm/mach-imx/clk.h
-@@ -107,6 +107,14 @@ static inline struct clk *imx_clk_gate_dis(const char *name, const char *parent,
- 			shift, CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
- }
- 
-+static inline struct clk *ls1021a_clk_gate(const char *name, const char *parent,
-+		void __iomem *reg, u8 shift)
-+{
-+	return clk_register_gate(NULL, name, parent, CLK_SET_RATE_PARENT |
-+			CLK_IGNORE_UNUSED, reg,	shift,
-+			CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
-+}
-+
- static inline struct clk *imx_clk_mux(const char *name, void __iomem *reg,
- 		u8 shift, u8 width, const char **parents, int num_parents)
- {
-diff --git a/include/dt-bindings/clock/ls1021a-clock.h b/include/dt-bindings/clock/ls1021a-clock.h
-new file mode 100644
-index 0000000..09b47d7
---- /dev/null
-+++ b/include/dt-bindings/clock/ls1021a-clock.h
-@@ -0,0 +1,55 @@
-+/*
-+ * Copyright 2014 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef __DT_BINDINGS_CLOCK_LS1021A_H
-+#define __DT_BINDINGS_CLOCK_LS1021A_H
-+
-+#define LS1021A_CLK_DUMMY	0
-+#define LS1021A_CLK_PBL_EN	1
-+#define LS1021A_CLK_ESDHC_EN	2
-+#define LS1021A_CLK_DMA1_EN	3
-+#define LS1021A_CLK_DMA2_EN	4
-+#define LS1021A_CLK_USB3_PHY_EN	5
-+#define LS1021A_CLK_USB2_EN	6
-+#define LS1021A_CLK_SATA_EN	7
-+#define LS1021A_CLK_USB3_EN	8
-+#define LS1021A_CLK_SEC_EN	9
-+#define LS1021A_CLK_2D_ACE_EN	10
-+#define LS1021A_CLK_QE_EN	11
-+#define LS1021A_CLK_ETSEC1_EN	12
-+#define LS1021A_CLK_ETSEC2_EN	13
-+#define LS1021A_CLK_ETSEC3_EN	14
-+#define LS1021A_CLK_PEX1_EN	15
-+#define LS1021A_CLK_PEX2_EN	16
-+#define LS1021A_CLK_DUART1_EN	17
-+#define LS1021A_CLK_DUART2_EN	18
-+#define LS1021A_CLK_QSPI_EN	19
-+#define LS1021A_CLK_DDR_EN	20
-+#define LS1021A_CLK_OCRAM1_EN	21
-+#define LS1021A_CLK_IFC_EN	22
-+#define LS1021A_CLK_GPIO_EN	23
-+#define LS1021A_CLK_DBG_EN	24
-+#define LS1021A_CLK_FLEXCAN1_EN	25
-+#define LS1021A_CLK_FLEXCAN234_EN	26
-+#define LS1021A_CLK_FLEXTIMER_EN	27
-+#define LS1021A_CLK_SECMON_EN	28
-+#define LS1021A_CLK_WDOG_EN	29
-+#define LS1021A_CLK_WDOG12_EN	30
-+#define LS1021A_CLK_I2C23_EN	31
-+#define LS1021A_CLK_SAI_EN	32
-+#define LS1021A_CLK_LPUART_EN	33
-+#define LS1021A_CLK_DSPI12_EN	34
-+#define LS1021A_CLK_ASRC_EN	35
-+#define LS1021A_CLK_SPDIF_EN	36
-+#define LS1021A_CLK_I2C1_EN	37
-+#define LS1021A_CLK_LPUART1_EN	38
-+#define LS1021A_CLK_FLEXTIMER1_EN	39
-+#define LS1021A_CLK_END		40
-+
-+#endif /* __DT_BINDINGS_CLOCK_LS1021A_H */
--- 
-2.1.0.27.g96db324
+> otherwise it looks gut
 
+Danke!
+
+- Arnaldo
