@@ -1,115 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380AbaIWRfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 13:35:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50898 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932149AbaIWRfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 13:35:34 -0400
-Message-ID: <5421AF5D.7090606@samsung.com>
-Date: Wed, 24 Sep 2014 02:35:25 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1756165AbaIWRhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 13:37:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43993 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654AbaIWRhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 13:37:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,581,1406617200"; 
+   d="asc'?scan'208";a="604166619"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Thread-Topic: [PATCH 0/7] Silence even more W=2 warnings
+Thread-Index: AQHP1B6ZqT8VjyQkzkipcFe03W/rTpwNwlkAgAAZ2ACAABpfgIAABS8AgAAGSQCAAAZEgIAAA7mAgAADVoCAAAa4AIAAFZkAgACwXoCAAJd/AA==
+Date: Tue, 23 Sep 2014 17:24:22 +0000
+Message-ID: <029E2CFB-C001-4E16-B1F7-A3FB193E3138@intel.com>
+References: <20140922153355.GB4510@pd.tnic>
+ <AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
+ <20140922184049.GB4709@pd.tnic>
+ <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+ <20140922192152.GD4709@pd.tnic>
+ <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922195737.GE4709@pd.tnic>
+ <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922203336.GF4709@pd.tnic>
+ <A05C31E6-7AD2-482A-B590-A5ED57D028B3@intel.com>
+ <20140923082209.GB22072@pd.tnic>
+In-Reply-To: <20140923082209.GB22072@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.176.72]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_8F870727-F916-4FA5-9497-2AD28BAA004B";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sachin Kamat <sachin.kamat@samsung.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2 2/3] ARM: mm: Fix ifdef around cpu_*_do_[suspend, resume]
- ops
-References: <1407856317-2457-1-git-send-email-b.zolnierkie@samsung.com> <1407856317-2457-3-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1407856317-2457-3-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/14 00:11, Bartlomiej Zolnierkiewicz wrote:
-> Ifdef around cpu_\name\()_do_suspend and cpu_\name\()_do_resume
-> ops in proc-macros.S should check for CONFIG_ARM_CPU_SUSPEND and
-> not CONFIG_PM_SLEEP.  Fix it.
->
-> [ Please note that cpu_v7_do_[suspend,resume] code in proc-v7.S
->    already correctly checks for CONFIG_ARM_CPU_SUSPEND, same is
->    true for functions for other architectures. ]
->
-> This fix is needed for decoupling suspend/resume and advanced
-> cpuidle support on Exynos platform (next patch fixes build for
-> config with CONFIG_PM_SLEEP=n and CONFIG_ARM_EXYNOS_CPUIDLE=y).
->
-> If this fix is not present then the following OOPS happens on
-> the first attempt to go into advanced cpuidle mode (AFTR):
->
-> [   22.244143] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> [   22.250759] pgd = c0004000
-> [   22.253445] [00000000] *pgd=00000000
-> [   22.257012] Internal error: Oops: 80000007 [#1] PREEMPT SMP ARM
-> [   22.262906] Modules linked in:
-> [   22.265949] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-next-20140811-dirty #730
-> [   22.273757] task: c05dce68 ti: c05d2000 task.ti: c05d2000
-> [   22.279139] PC is at 0x0
-> [   22.281661] LR is at __cpu_suspend_save+0x4c/0xa8
-> [   22.286344] pc : [<00000000>]    lr : [<c00125e0>]    psr: a0000093
-> [   22.286344] sp : c05d3ef4  ip : c05da414  fp : 00000001
-> [   22.297799] r10: c05da414  r9 : c0609cb0  r8 : 0000000f
-> [   22.303008] r7 : c05da444  r6 : 00000038  r5 : ea802c00  r4 : c05d3f14
-> [   22.309517] r3 : 00000000  r2 : c05d3f4c  r1 : 00000038  r0 : c05d3f20
-> [   22.316029] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> [   22.323406] Control: 10c5387d  Table: 69d5404a  DAC: 00000015
-> [   22.329135] Process swapper/0 (pid: 0, stack limit = 0xc05d2240)
-> [   22.335124] Stack: (0xc05d3ef4 to 0xc05d4000)
-> [   22.339466] 3ee0:                                              ea802c00 00000038 c05d3f4c
-> [   22.347626] 3f00: 00000000 00000007 c00123bc 00000000 c001d468 6a888000 c05d3f4c 80000000
-> [   22.355785] 3f20: 00000007 c003d3a0 0000193d eaf9dde4 eaf9dde4 c02ef0c8 c000969c fffffffe
-> [   22.363944] 3f40: 00000000 c0037b54 eaf9dbb8 e9d1a380 00000000 c001d468 c0609cb0 00000000
-> [   22.372103] 3f60: c0609cb0 c061649e 00000001 c001250c eaf9dbb8 00000001 c0609cb0 c001d618
-> [   22.380262] 3f80: c001d5d0 c02ef56c 2d9d2e1e 00000005 eaf9dbb8 c02edcc4 2d9d2e1e 00000005
-> [   22.388421] 3fa0: c040446c c05da4ec c040446c eaf9dbb8 c05cfbb0 c004c580 c05dce68 c05b3ae8
-> [   22.396580] 3fc0: 00000000 c058bb24 ffffffff ffffffff c058b5e4 00000000 00000000 c05b3ae8
-> [   22.404740] 3fe0: c0616994 c05da47c c05b3ae4 c05ddeec 4000406a 40008074 00000000 00000000
-> [   22.412909] [<c00125e0>] (__cpu_suspend_save) from [<c00123bc>] (__cpu_suspend+0x5c/0x70)
-> [   22.421074] [<c00123bc>] (__cpu_suspend) from [<c05d3f4c>] (init_thread_union+0x1f4c/0x2000)
-> [   22.429479] Code: bad PC value
-> [   22.432518] ---[ end trace fb90ebf4217d0ad9 ]---
-> [   22.437116] Kernel panic - not syncing: Attempted to kill the idle task!
-> [   22.443800] Rebooting in 5 seconds..
->
-> This patch has been tested on Exynos4210 based Origen board.
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
-> ---
->   arch/arm/mm/proc-macros.S | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
-> index ee1d805..ba1196c 100644
-> --- a/arch/arm/mm/proc-macros.S
-> +++ b/arch/arm/mm/proc-macros.S
-> @@ -279,7 +279,7 @@ ENTRY(\name\()_processor_functions)
->
->   	.if \suspend
->   	.word	cpu_\name\()_suspend_size
-> -#ifdef CONFIG_PM_SLEEP
-> +#ifdef CONFIG_ARM_CPU_SUSPEND
->   	.word	cpu_\name\()_do_suspend
->   	.word	cpu_\name\()_do_resume
->   #else
+--Apple-Mail=_8F870727-F916-4FA5-9497-2AD28BAA004B
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=us-ascii
 
-I'm fine on this but need to get ack from Russell.
+On Sep 23, 2014, at 1:22 AM, Borislav Petkov <bp@alien8.de> wrote:
 
-Russell, how do you think about this?
+> On Mon, Sep 22, 2014 at 09:50:54PM +0000, Rustad, Mark D wrote:
+> * Fixing those is a good idea if the fixes are clean - I think we all
+> agree by now that adding code just to shut up gcc is not nice.
 
-Note, I already applied this into samsung tree but if you mind, I'll 
-revert it.
+Yes, but I think there are a few cases where it could be helpful. When
+there is something exceptional that will throw a warning. In one of the
+patches that Jeff sent, I used the DIAG_CLANG_IGNORE macro to suppress
+the warning that is thrown for every entry of the syscall table when
+compiled with clang. The code is right and doing exactly what is wanted,
+so note the exception and make it shut up.
 
-- Kukjin
+> * Then, even if all those warnings were fixed one fine day, the people
+> who fix them would be fighting windmills because every new patch which
+> adds new places causing those warnings would simply go in because the
+> warnings are not visible in default builds.
+> 
+> So the question IMO turns into: are there some warnings which we should
+> promote to default builds so that they get taken care of eventually...
+
+I would generally be in favor of that over time, but I recognize that with
+the range of architectures and toolchains that need to be supported, that
+may be difficult.
+
+>> Well, I have W=1 in my environment, so I don't even have to ask for it, I
+>> just get it.
+> 
+> I think this was the initial use case we had in mind for W= - use it
+> during development in order to have the compiler do extra checks to your
+> code. And it has caught a couple of issues, FWIW.
+
+Yes, not everyone building the kernel is a developer. I certainly get that.
+Right now W=2 is kind of useless for developers because so much noise is
+generated. With the number of people working on Linux, it may be enough if
+a handful are taking a look at W=2 messages, but right now it is a pretty
+awful task to even try to look.
+
+>> Nested-externs, for example, can catch people gratuitously providing a
+>> function prototype that could become a hazard, but some use of that may
+>> be justified. The macros provide a way to specifically allow certain
+>> instances while generally discouraging it. Of course if you never use
+>> W=2 you may never catch those gratuitous declarations.
+> 
+> Sure, but the cost for fixing that is what bothers me. For that
+> particular case, it probably would even be cleaner to add a
+> nested-extern check to checkpatch instead of cluttering the code with
+> those macros.
+
+Generally there should be relatively few exceptions that need to be tagged.
+If there were 1000, that would be way too many. The full series of my
+patches had 90 instances. Some of the few that have been sent have been
+resolved in better ways, which we all agree is better. Suppose that 40
+can't be reasonably resolved in direct ways. Is that really costly? I'm
+trying to understand what your perception of the cost is.
+
+Perhaps checkpatch would be a better gatekeeper for new code. OTOH, some of
+those nested externs have already been eliminated, so at least for now the
+warning is serving a purpose since it is scrubbing existing code.
+
+>> Hopefully the discussion is somewhat useful.
+> 
+> Well, it has become already, as you can see. :-D
+
+I take it as a given that the kernel sometimes has special needs and needs
+to do special things. The macros make it possible to mark those special
+usages. I prefer adding the macros in a few places to eliminating a warning
+altogether unless the warning is always useless. I'm sure we agree that we
+don't want to ever turn on -pedantic! :-)
+
+-- 
+Mark Rustad, Networking Division, Intel Corporation
+
+
+--Apple-Mail=_8F870727-F916-4FA5-9497-2AD28BAA004B
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJUIazHAAoJEDwO/+eO4+5u5IQQAJLrkRd6vLpBb154ApRs1e87
+RDqo8hJtmVOql11o0+83yUhuIieNrAHCsPeu8Uc5sXWXD8x7q1drtB2Vb9Te8ZUL
+JDzclWBEmRpWOAb4Y3TWSZ3jULHT4Om8HIcmpQ4eiMC8O7RyZfDSYe+hgp/JrFJA
+bxPAX4/pLdTHeKMKj9NoC824BcighOoCnmkmom1zB9Foc1npVyXHgSrhnD05hTgO
+jVv6UeyiJPV7lKjKVqFvihEOclB92hyx835KXTOBhbYJ9wHrdAMRKnpDe1i5n2AD
+5UjZAW0cOnzL6zvir7taU5+0MKjz92YZv3bbc5RUZHh1z5flZQUoLVZQLWPopGtV
+R6IQdKZpoivAd9PE3yz00uiR23MopLvXLd/Xyci94h+wwuuL+w6N9nv7CtAXr96h
+k2lcqqc+Fk6CsWZjGzvipHhOPmCdxrOnrk0gLDKZlF11zh5wlj8tA0Px0tw7ho/S
+wxznAddkG4fnisK+QSEqxIBXcvdYb5WcHQVaXdOzVovxMAhv6dMKOdO5HSY0pRtD
+xtwBALF9Or/41buVkSsD3zqmhcy191Ryyee2PIfzEazMDBqixXM/ldElZ8pHG56z
+ywRVRfklFHDTpsvv1qosCF2nW9De9y8/19ylKM6IuFzXtSQnRR9gsXIaNfCQcH7z
+3jNdJAuHb5P/VwnwDU0i
+=oSoB
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_8F870727-F916-4FA5-9497-2AD28BAA004B--
