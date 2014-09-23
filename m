@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151AbaIWQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:26:26 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:64281 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059AbaIWQ0X (ORCPT
+	id S1756140AbaIWQ0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:26:30 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:53057 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059AbaIWQ02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:26:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
-Date: Tue, 23 Sep 2014 18:26:07 +0200
-Message-ID: <2809308.3y5s7TV5Ip@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2895905.coa5UvrkJk@vostro.rjw.lan>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <12538216.vu4CbU01qP@wuerfel> <2895905.coa5UvrkJk@vostro.rjw.lan>
+	Tue, 23 Sep 2014 12:26:28 -0400
+Date: Tue, 23 Sep 2014 11:26:22 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
+ namespaces
+Message-ID: <20140923162622.GA28059@ubuntu-hedt>
+Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Serge Hallyn <serge.hallyn@ubuntu.com>,
+	fuse-devel <fuse-devel@lists.sourceforge.net>,
+	Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+ <CAJfpegv4RJzWV7=oHvyUWqUnJYk8JHrQsiKfJ5AMRFRaN3frxw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ZV7MQ7FIl6ix1l2pjMFWPB4Ntuq6yAPlhJp771I77fq
- Pg8HlhLTDsNwuQFn40LZciz/jAPEuvHye+eLHH5pWh/JMZLnmp
- 90k6Cc9cMmLPNVv62my7fhnuGw/PTRq0KwvzsilulchpSnDDk3
- 1B8cMj13TYA86VumWLHZnGOhApyZSZ72lREMsV/jatVO9w/t3W
- AZWc0EkBT2r80D2I6uc2C51wkvbnaSgaGsEhUVQNn55R/meC0v
- QYuOSG79eLKLB4VMAjPpfXjbhVgx7LGmQLDZYO4Yg+mqV6S3uc
- fRvW3kQhrmqn2jn2PZ+HkCTQf9w43jy8dJhYOvmMG9doZZMHUQ
- lVPpqlJDv7OSEHWjTAdA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegv4RJzWV7=oHvyUWqUnJYk8JHrQsiKfJ5AMRFRaN3frxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 18:25:01 Rafael J. Wysocki wrote:
-> The problem is iteration over child nodes of a given one where there
-> may not be struct device objects.
+On Tue, Sep 23, 2014 at 06:07:35PM +0200, Miklos Szeredi wrote:
+> On Tue, Sep 2, 2014 at 5:44 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> > Here's an updated set of patches for allowing fuse mounts from pid and
+> > user namespaces. I discussed some of the issues we debated with the last
+> > patch set (and a few others) with Eric at LinuxCon, and the updates here
+> > mainly reflect the outcome of those discussions.
+> >
+> > The stickiest issue in the v1 patches was the question of where to get
+> > the user and pid namespaces from that are used for translating ids for
+> > communication with userspace. Eric told me that for user namespaces at
+> > least we need to grab a namespace at open or mount time and use only
+> > that namespace to prevent certain types of attacks.
 > 
-> For example (from patch [2/16]):
-> 
-> +int acpi_for_each_child_node(struct acpi_device *adev,
-> +                             int (*fn)(struct fw_dev_node *fdn, void *data),
-> +                             void *data)
-> +{
-> +       struct acpi_device *child;
-> +       int ret = 0;
-> +
-> +       list_for_each_entry(child, &adev->children, node) {
-> +               struct fw_dev_node fdn = { .acpi_node = child, };
-> +
-> +               ret = fn(&fdn, data);
-> +               if (ret)
-> +                       break;
-> +       }
-> +       return ret;
-> +}
-> 
-> and then fn() can be made work for both DTs and ACPI.  Without this we'd
-> need to have two versions of fn(), one for DTs and one for ACPI (and possibly
-> more for some other FW protocols), which isn't necessary in general (and
-> duplicates code etc.). 
-> 
-> That actually is used by some patches down in the series (eg. [10/16]).
-> 
+> I'm not convinced.  Let us have the gory details, please.
 
-Ok, I understand what you are doing now.
+I'll do my best, and hopefully Eric will fill in any details I miss.
 
-Looking at the example you point to (http://www.spinics.net/lists/devicetree/msg49502.html), I still feel
-that this is adding more abstraction than what is good for us, and
-I'd be happier with an implementation of gpio_leds_create() that
-has a bit more duplication and less abstraction.
+I think there may have been more than one possible scenario that Eric
+was describing to me, but this is the one I remember. A user could
+create a namespace and mount a fuse filesystem without nosuid. It could
+then pass the /dev/fuse fd to a process in init_user_ns, which could
+expose a suid file owned by root (or any other user) and use it to gain
+elevated privileges.
 
-The important part should be that the driver-side interface is
-sensible, other than that an implementation like
+On the other hand, if file ownership is always interpreted in the
+context of the namespace from which the filesystem is mounted then suid
+can only be used to become another uid already under that user's
+control.
 
-static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
-{
-	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
-		return gpio_leds_create_of(pdev);
-	else if (IS_ENABLED(CONFIG_ACPI))
-		return gpio_leds_create_of(acpi);
-	return ERR_PTR(-ENXIO);
-}
+Eric, does that sound right? Did I miss anything?
 
-would keep either side of it relatively simple, by leaving out the
-indirect function calls and new for_each_available_child_of_node()
-macro.
+Seth
 
-How many other users of fw_dev_node do you have at the moment?
-
-	Arnd
