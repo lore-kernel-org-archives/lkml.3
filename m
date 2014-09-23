@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002AbaIWOcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:32:17 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62019 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751755AbaIWOcQ (ORCPT
+	id S1756124AbaIWOdJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:33:09 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:63547 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896AbaIWOdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:32:16 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
-Date: Tue, 23 Sep 2014 16:52:01 +0200
-Message-ID: <1487657.QLes1WRKBI@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140923121712.GD18814@xps8300>
-References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com> <1408535728-10518-3-git-send-email-heikki.krogerus@linux.intel.com> <20140923121712.GD18814@xps8300>
+	Tue, 23 Sep 2014 10:33:07 -0400
+Date: Tue, 23 Sep 2014 10:33:03 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Yifan Zhang <zhangyf@marvell.com>
+Cc: Jing Xiang <jxiang@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yifan.zhangm@gmail.com" <yifan.zhangm@gmail.com>
+Subject: Re: [PATCH] workqueue: fix a workqueue kernel panic issue.
+Message-ID: <20140923143303.GC19208@htj.dyndns.org>
+References: <1410941884-26034-1-git-send-email-zhangyf@marvell.com>
+ <4737A960563B524DA805CA602BE04B307EEE6C2694@SC-VEXCH2.marvell.com>
+ <20140922033946.GA23583@htj.dyndns.org>
+ <4737A960563B524DA805CA602BE04B307EEEA98F6B@SC-VEXCH2.marvell.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4737A960563B524DA805CA602BE04B307EEEA98F6B@SC-VEXCH2.marvell.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 23, 2014 03:17:12 PM Heikki Krogerus wrote:
-> On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
-> > Most devices are configured for 32-bit DMA addresses.
-> > Setting the mask to 32-bit here removes the need for the
-> > drivers to do it separately.
-> 
-> Rafael, is this OK?
+On Mon, Sep 22, 2014 at 03:40:55AM -0700, Yifan Zhang wrote:
+> You can tell it is a bug when pwq = get_work_pwq() return NULL, and
+> cpu_intensive = pwq->wq->flags use it w/o check.
 
-Fine by me, but it should go in via dwc3 I think.
+A bug somewhere else.
 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > ---
-> >  drivers/acpi/acpi_platform.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-> > index 2bf9082..8d099e6 100644
-> > --- a/drivers/acpi/acpi_platform.c
-> > +++ b/drivers/acpi/acpi_platform.c
-> > @@ -16,6 +16,7 @@
-> >  #include <linux/err.h>
-> >  #include <linux/kernel.h>
-> >  #include <linux/module.h>
-> > +#include <linux/dma-mapping.h>
-> >  #include <linux/platform_device.h>
-> >  
-> >  #include "internal.h"
-> > @@ -102,6 +103,7 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
-> >  	pdevinfo.res = resources;
-> >  	pdevinfo.num_res = count;
-> >  	pdevinfo.acpi_node.companion = adev;
-> > +	pdevinfo.dma_mask = DMA_BIT_MASK(32);
-> >  	pdev = platform_device_register_full(&pdevinfo);
-> >  	if (IS_ERR(pdev))
-> >  		dev_err(&adev->dev, "platform device creation failed: %ld\n",
-> 
-> 
+> Normally get_work_pwq doesn't return NULL, but we had a bug in code
+> which makes INIT_WORK(&work, do_work) is called in multi-thread. In
+> some cases, work_struct is re-init just before get_work_pwq is
+> called, it makes work_struct->data is invalid and thus causes the
+> problem. It is indeed a bug of ourselves, and after fix it there is
+> no such issue. But I wonder we still a NULL check before dereference
+> pwq here anyway, since get_work_pwq may return NULL in some cases.
+
+Do you realize how timing dependent that particular pattern of
+breakage is?  If you're doing INIT_WORK() in racy way, there are many
+places which can break in workqueue.  It's not that different from
+random memory corruption.  It doesn't make any sense at all to add a
+special case code for that in one particular place where this specific
+incidence happens to trigger.  In general, don't do things like this
+anywhere in the kernel.
+
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tejun
