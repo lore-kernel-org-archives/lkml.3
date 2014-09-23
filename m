@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbaIWMvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:51:49 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:33335 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412AbaIWMvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:51:48 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Sebastian Reichel <sre@debian.org>,
-        Jonathan Cameron <jic23@kernel.org>, lars@metafoo.de,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH] iio: consumer.h: Fix scale factor in function comment
-Date: Tue, 23 Sep 2014 15:51:42 +0300
-Message-Id: <1411476702-10004-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.9.1
-To: unlisted-recipients:; (no To-header on input)
+	id S1755759AbaIWMxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:53:14 -0400
+Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:57509 "EHLO
+	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755232AbaIWMxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:53:13 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH] dma: cppi41: Switch to using managed resource in probe
+Date: Tue, 23 Sep 2014 18:20:46 +0530
+Message-Id: <1411476646-16902-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1 milivolt is equal to 1000000 nanovolts.
+This change uses managed resource APIs to allocate resources such as,
+mem, irq in order to simplify the driver unload or failure cases.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
 ---
- include/linux/iio/consumer.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/dma/cppi41.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/iio/consumer.h b/include/linux/iio/consumer.h
-index 651f9a0..087af10 100644
---- a/include/linux/iio/consumer.h
-+++ b/include/linux/iio/consumer.h
-@@ -191,7 +191,7 @@ int iio_read_channel_scale(struct iio_channel *chan, int *val,
-  * The scale factor allows to increase the precession of the returned value. For
-  * a scale factor of 1 the function will return the result in the normal IIO
-  * unit for the channel type. E.g. millivolt for voltage channels, if you want
-- * nanovolts instead pass 1000 as the scale factor.
-+ * nanovolts instead pass 1000000 as the scale factor.
-  */
- int iio_convert_raw_to_processed(struct iio_channel *chan, int raw,
- 	int *processed, unsigned int scale);
+diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
+index 5921ce3..d3700fb 100644
+--- a/drivers/dma/cppi41.c
++++ b/drivers/dma/cppi41.c
+@@ -938,7 +938,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+ 	if (!glue_info)
+ 		return -EINVAL;
+ 
+-	cdd = kzalloc(sizeof(*cdd), GFP_KERNEL);
++	cdd = devm_kzalloc(&pdev->dev, sizeof(*cdd), GFP_KERNEL);
+ 	if (!cdd)
+ 		return -ENOMEM;
+ 
+@@ -959,10 +959,8 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+ 	cdd->qmgr_mem = of_iomap(dev->of_node, 3);
+ 
+ 	if (!cdd->usbss_mem || !cdd->ctrl_mem || !cdd->sched_mem ||
+-			!cdd->qmgr_mem) {
+-		ret = -ENXIO;
+-		goto err_remap;
+-	}
++			!cdd->qmgr_mem)
++		return -ENXIO;
+ 
+ 	pm_runtime_enable(dev);
+ 	ret = pm_runtime_get_sync(dev);
+@@ -989,7 +987,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+ 
+ 	cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
+ 
+-	ret = request_irq(irq, glue_info->isr, IRQF_SHARED,
++	ret = devm_request_irq(&pdev->dev, irq, glue_info->isr, IRQF_SHARED,
+ 			dev_name(dev), cdd);
+ 	if (ret)
+ 		goto err_irq;
+@@ -1009,7 +1007,6 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+ err_of:
+ 	dma_async_device_unregister(&cdd->ddev);
+ err_dma_reg:
+-	free_irq(irq, cdd);
+ err_irq:
+ 	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
+ 	cleanup_chans(cdd);
+@@ -1023,8 +1020,6 @@ err_get_sync:
+ 	iounmap(cdd->ctrl_mem);
+ 	iounmap(cdd->sched_mem);
+ 	iounmap(cdd->qmgr_mem);
+-err_remap:
+-	kfree(cdd);
+ 	return ret;
+ }
+ 
+@@ -1036,7 +1031,6 @@ static int cppi41_dma_remove(struct platform_device *pdev)
+ 	dma_async_device_unregister(&cdd->ddev);
+ 
+ 	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
+-	free_irq(cdd->irq, cdd);
+ 	cleanup_chans(cdd);
+ 	deinit_cppi41(&pdev->dev, cdd);
+ 	iounmap(cdd->usbss_mem);
+@@ -1045,7 +1039,6 @@ static int cppi41_dma_remove(struct platform_device *pdev)
+ 	iounmap(cdd->qmgr_mem);
+ 	pm_runtime_put(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+-	kfree(cdd);
+ 	return 0;
+ }
+ 
 -- 
-1.9.1
+1.7.9.5
 
