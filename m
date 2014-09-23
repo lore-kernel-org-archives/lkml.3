@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140AbaIWQ0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:26:30 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:53057 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059AbaIWQ02 (ORCPT
+	id S1756248AbaIWQ0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:26:48 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34638 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755785AbaIWQ0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 12:26:28 -0400
-Date: Tue, 23 Sep 2014 11:26:22 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
- namespaces
-Message-ID: <20140923162622.GA28059@ubuntu-hedt>
-Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Serge Hallyn <serge.hallyn@ubuntu.com>,
-	fuse-devel <fuse-devel@lists.sourceforge.net>,
-	Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <CAJfpegv4RJzWV7=oHvyUWqUnJYk8JHrQsiKfJ5AMRFRaN3frxw@mail.gmail.com>
+	Tue, 23 Sep 2014 12:26:45 -0400
+Date: Tue, 23 Sep 2014 09:26:23 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Jiri Olsa <jolsa@redhat.com>, Michael Ellerman <michaele@au1.ibm.com>,
+        linuxppc-dev@ozlabs.org, Anton Blanchard <anton@au1.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, ulrich.weigand@de.ibm.com,
+        Maynard Johnson <mpjohn@us.ibm.com>
+Subject: Re: [PATCH v5 1/1] powerpc/perf: Adjust callchain based on DWARF
+ debug info
+Message-ID: <20140923162623.GA1698@us.ibm.com>
+References: <20140625000052.GA4484@us.ibm.com>
+ <20140625074248.GC1153@krava.brq.redhat.com>
+ <20140625154903.GA29607@us.ibm.com>
+ <20140922213345.GB666@drone.musicnaut.iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJfpegv4RJzWV7=oHvyUWqUnJYk8JHrQsiKfJ5AMRFRaN3frxw@mail.gmail.com>
+In-Reply-To: <20140922213345.GB666@drone.musicnaut.iki.fi>
+X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092316-9332-0000-0000-0000021BBD73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 06:07:35PM +0200, Miklos Szeredi wrote:
-> On Tue, Sep 2, 2014 at 5:44 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
-> > Here's an updated set of patches for allowing fuse mounts from pid and
-> > user namespaces. I discussed some of the issues we debated with the last
-> > patch set (and a few others) with Eric at LinuxCon, and the updates here
-> > mainly reflect the outcome of those discussions.
-> >
-> > The stickiest issue in the v1 patches was the question of where to get
-> > the user and pid namespaces from that are used for translating ids for
-> > communication with userspace. Eric told me that for user namespaces at
-> > least we need to grab a namespace at open or mount time and use only
-> > that namespace to prevent certain types of attacks.
-> 
-> I'm not convinced.  Let us have the gory details, please.
+Aaro Koskinen [aaro.koskinen@iki.fi] wrote:
+| Hi,
+| 
+| On Wed, Jun 25, 2014 at 08:49:03AM -0700, Sukadev Bhattiprolu wrote:
+| > powerpc/perf: Adjust callchain based on DWARF debug info
+| > 
+| > When saving the callchain on Power, the kernel conservatively saves excess
+| > entries in the callchain. A few of these entries are needed in some cases
+| > but not others. We should use the DWARF debug information to determine
+| > when the entries are  needed.
+| 
+| This patch breaks perf compilation if DWARF support is not present.
+| DWARF support is auto-detected early in the build, so IMHO either user
+| should be informed to install the needed stuff, or the build should
+| succeed with limited functionality.
+| 
+| arch/powerpc/util/skip-callchain-idx.c:13:19: fatal error: dwarf.h: No such file or directory #include <dwarf.h>
+|                    ^
+| compilation terminated.
 
-I'll do my best, and hopefully Eric will fill in any details I miss.
+Yes. Sorry. Anton fixed this recently:
 
-I think there may have been more than one possible scenario that Eric
-was describing to me, but this is the one I remember. A user could
-create a namespace and mount a fuse filesystem without nosuid. It could
-then pass the /dev/fuse fd to a process in init_user_ns, which could
-expose a suid file owned by root (or any other user) and use it to gain
-elevated privileges.
+	https://lkml.org/lkml/2014/9/19/29
 
-On the other hand, if file ownership is always interpreted in the
-context of the namespace from which the filesystem is mounted then suid
-can only be used to become another uid already under that user's
-control.
-
-Eric, does that sound right? Did I miss anything?
-
-Seth
+Sukadev
 
