@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaIWPtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:49:36 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40990 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaIWPtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:49:35 -0400
-Message-ID: <5421968B.7080309@kernel.dk>
-Date: Tue, 23 Sep 2014 09:49:31 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755942AbaIWPwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:52:47 -0400
+Received: from mga14.intel.com ([192.55.52.115]:59776 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783AbaIWPwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 11:52:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,580,1406617200"; 
+   d="scan'208";a="595654770"
+Date: Tue, 23 Sep 2014 18:52:02 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
+ properties interface
+Message-ID: <20140923155202.GT1786@lahna.fi.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
+ <12538216.vu4CbU01qP@wuerfel>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@lst.de>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq usage
- count
-References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk> <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org> <20140923055924.GA10295@lst.de> <20140923060141.GF11740@mtj.dyndns.org> <20140923060906.GA10547@lst.de> <20140923061152.GI11740@mtj.dyndns.org>
-In-Reply-To: <20140923061152.GI11740@mtj.dyndns.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <12538216.vu4CbU01qP@wuerfel>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 12:11 AM, Tejun Heo wrote:
-> On Tue, Sep 23, 2014 at 08:09:06AM +0200, Christoph Hellwig wrote:
->> On Tue, Sep 23, 2014 at 02:01:41AM -0400, Tejun Heo wrote:
->>> On Tue, Sep 23, 2014 at 07:59:24AM +0200, Christoph Hellwig wrote:
->>>> "[PATCHSET percpu/for-3.18] percpu_ref: implement switch_to_atomic/percpu()"
->>>>
->>>> looks way to big for 3.17, and the regression was introduced in the 3.17
->>>> merge window.  I'm not sure what was broken before, but it defintively
->>>> survived a lot of testing.
->>>
->>> Do we even care about fixing it for 3.17?  scsi-mq isn't enabled by
->>> default even for 3.18.  The open-coded percpu ref thing was subtly
->>> broken there.  It'd be difficult to trigger but I'm fairly sure it'd
->>> crap out in the wild once in a blue moon.
->>
->> It's compiled in by default, and people are extremly eager to test it.
+On Tue, Sep 23, 2014 at 05:45:57PM +0200, Arnd Bergmann wrote:
+> On Tuesday 23 September 2014 17:25:50 Linus Walleij wrote:
+> > On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
+> > <mika.westerberg@linux.intel.com> wrote:
+> > 
+> > > Some drivers need to deal with only firmware representation of its
+> > > GPIOs. An example would be a GPIO button array driver where each button
+> > > is described as a separate firmware node in device tree. Typically these
+> > > child nodes do not have physical representation in the Linux device
+> > > model.
+> > >
+> > > In order to help device drivers to handle such firmware child nodes we
+> > > add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
+> > > parameter, finds the GPIO using whatever is the underlying firmware
+> > > method, and requests the GPIO properly.
+> > >
+> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > 
+> > I have a hard time figuring out if this is what we want for common
+> > accessors between DT and ACPI.
+> > 
+> > Can I get some input from Grant, Arnd, Mark, Darren...?
 > 
-> Ugh, I don't know.  It's not like we have a very good baseline we can
-> go back to and reverting it for -stable and then redoing it seems
-> kinda excessive for a yet experimental feature.  Jens?
+> I just took a brief look at this. My first impression is that the
+> fw_dev_node structure is weird when all callers just do (in patch 2)
+> 
+> +	struct fw_dev_node fdn = {
+> +		.of_node = dev->of_node,
+> +		.acpi_node = ACPI_COMPANION(dev),
+> +	};
+> 
+> I'd much rather see an interface that passes the 'struct device'
+> pointer down to dev_get_named_gpiod() and all other exported
+> functions, and then internally does the conversion at the point
+> where the access is done.
 
-It's not just scsi-mq, there are active users of blk-mq in the current
-tree - like virtio_blk, mtip32xx. None of those are affected by the RCU
-slowdown due to these changes, so it's not a big deal to them. But it is
-a big deal if we can't tell people to test scsi-mq in 3.17, that was the
-entire point of having it there but not default to on. So yeah, this
-really should be fixed for 3.17.
+Problem is that if you don't have the dev pointer in the first place.
+Please look how leds-gpio.c or gpio_keys_polled.c are using this.
 
-I'm not aware of any reports on the existing enter count breaking things
-for them. So while it may not be perfect, reverting the percpu ref count
-changes for 3.17 may be the best option that we have.
-
--- 
-Jens Axboe
-
+Of course you have the first level device but when you need to iterate
+"leds" or "buttons" below where there is no Linux device available we
+need something like this.
