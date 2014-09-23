@@ -1,162 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaIWFYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:24:31 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:50801 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195AbaIWFYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:24:30 -0400
-Message-ID: <54210407.1000602@gmail.com>
-Date: Tue, 23 Sep 2014 07:24:23 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753578AbaIWF2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:28:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44492 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281AbaIWF2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 01:28:03 -0400
+Date: Mon, 22 Sep 2014 22:28:00 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH 08/10] f2fs: remove redundant operation during
+ roll-forward recovery
+Message-ID: <20140923052800.GB38355@jaegeuk-mac02.mot-mobility.com>
+References: <006101cfd646$f53771a0$dfa654e0$@samsung.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <dave@stgolabs.net>
-CC: mtk.manpages@gmail.com, Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com> <1401823560.4911.2.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1401823560.4911.2.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <006101cfd646$f53771a0$dfa654e0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 09:26 PM, Davidlohr Bueso wrote:
-> On Fri, 2014-05-02 at 15:16 +0200, Michael Kerrisk (man-pages) wrote:
->> Hi Manfred,
->>
->> On Mon, Apr 21, 2014 at 4:26 PM, Manfred Spraul
->> <manfred@colorfullife.com> wrote:
->>> Hi all,
->>>
->>> the increase of SHMMAX/SHMALL is now a 4 patch series.
->>> I don't have ideas how to improve it further.
->>
->> On the assumption that your patches are heading to mainline, could you
->> send me a man-pages patch for the changes?
+Hi Chao,
+
+I fixed that. :)
+
+Thanks,
+
+On Mon, Sep 22, 2014 at 05:22:27PM +0800, Chao Yu wrote:
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > Sent: Monday, September 15, 2014 6:14 AM
+> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Cc: Jaegeuk Kim
+> > Subject: [f2fs-dev] [PATCH 08/10] f2fs: remove redundant operation during roll-forward recovery
+> > 
+> > If same data is updated multiple times, we don't need to redo whole the
+> > operations.
+> > Let's just update the lastest one.
 > 
-> It seems we're still behind here and the 3.16 merge window is already
-> opened. Please consider this, and again feel free to add/modify as
-> necessary. I think adding a note as below is enough and was hesitant to
-> add a lot of details... Thanks.
+> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
 > 
-> 8<--------------------------------------------------
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> Subject: [PATCH] shmget.2: document new limits for shmmax/shmall
+> And one comment as following.
 > 
-> These limits have been recently enlarged and
-> modifying them is no longer really necessary.
-> Update the manpage.
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  fs/f2fs/f2fs.h     |  4 +++-
+> >  fs/f2fs/recovery.c | 41 +++++++++++++++++------------------------
+> >  2 files changed, 20 insertions(+), 25 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index 48d7d46..74dde99 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -137,7 +137,9 @@ struct discard_entry {
+> >  struct fsync_inode_entry {
+> >  	struct list_head list;	/* list head */
+> >  	struct inode *inode;	/* vfs inode pointer */
+> > -	block_t blkaddr;	/* block address locating the last inode */
+> > +	block_t blkaddr;	/* block address locating the last fsync */
+> > +	block_t last_dentry;	/* block address locating the last dentry */
+> > +	block_t last_inode;	/* block address locating the last inode */
+> >  };
+> > 
+> >  #define nats_in_cursum(sum)		(le16_to_cpu(sum->n_nats))
+> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> > index 6f7fbfa..95d9dc9 100644
+> > --- a/fs/f2fs/recovery.c
+> > +++ b/fs/f2fs/recovery.c
+> > @@ -66,7 +66,7 @@ static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
+> >  	return NULL;
+> >  }
+> > 
+> > -static int recover_dentry(struct page *ipage, struct inode *inode)
+> > +static int recover_dentry(struct inode *inode, struct page *ipage)
+> >  {
+> >  	struct f2fs_inode *raw_inode = F2FS_INODE(ipage);
+> >  	nid_t pino = le32_to_cpu(raw_inode->i_pino);
+> > @@ -140,7 +140,7 @@ out:
+> >  	return err;
+> >  }
+> > 
+> > -static void __recover_inode(struct inode *inode, struct page *page)
+> > +static void recover_inode(struct inode *inode, struct page *page)
+> >  {
+> >  	struct f2fs_inode *raw = F2FS_INODE(page);
+> > 
+> > @@ -152,21 +152,9 @@ static void __recover_inode(struct inode *inode, struct page *page)
+> >  	inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> >  	inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
+> >  	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> > -}
+> > -
+> > -static int recover_inode(struct inode *inode, struct page *node_page)
+> > -{
+> > -	if (!IS_INODE(node_page))
+> > -		return 0;
+> > -
+> > -	__recover_inode(inode, node_page);
+> > -
+> > -	if (is_dent_dnode(node_page))
+> > -		return recover_dentry(node_page, inode);
+> > 
+> >  	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
+> > -			ino_of_node(node_page), F2FS_INODE(node_page)->i_name);
+> > -	return 0;
+> > +			ino_of_node(page), F2FS_INODE(page)->i_name);
+> >  }
+> > 
+> >  static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
+> > @@ -214,12 +202,11 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head
+> > *head)
+> >  			}
+> > 
+> >  			/* add this fsync inode to the list */
+> > -			entry = kmem_cache_alloc(fsync_entry_slab, GFP_NOFS);
+> > +			entry = kmem_cache_alloc(fsync_entry_slab, GFP_F2FS_ZERO);
+> >  			if (!entry) {
+> >  				err = -ENOMEM;
+> >  				break;
+> >  			}
+> > -
+> >  			/*
+> >  			 * CP | dnode(F) | inode(DF)
+> >  			 * For this case, we should not give up now.
+> > @@ -236,9 +223,11 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head
+> > *head)
+> >  		}
+> >  		entry->blkaddr = blkaddr;
+> > 
+> > -		err = recover_inode(entry->inode, page);
+> > -		if (err && err != -ENOENT)
+> > -			break;
+> > +		if (IS_INODE(page)) {
+> > +			entry->last_inode = blkaddr;
+> > +			if (is_dent_dnode(page))
+> > +				entry->last_dentry = blkaddr;
+> > +		}
+> >  next:
+> >  		/* check next segment */
+> >  		blkaddr = next_blkaddr_of_node(page);
+> > @@ -455,11 +444,15 @@ static int recover_data(struct f2fs_sb_info *sbi,
+> >  		/*
+> >  		 * inode(x) | CP | inode(x) | dnode(F)
+> >  		 * In this case, we can lose the latest inode(x).
+> > -		 * So, call __recover_inode for the inode update.
+> > +		 * So, call recover_inode for the inode update.
+> >  		 */
+> > -		if (IS_INODE(page))
+> > -			__recover_inode(entry->inode, page);
+> > -
+> > +		if (entry->last_inode == blkaddr)
+> > +			recover_inode(entry->inode, page);
+> > +		if (entry->last_dentry == blkaddr) {
+> > +			err = recover_dentry(entry->inode, page);
+> > +			if (err)
 > 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  man2/shmget.2 | 11 +++++++++++
->  1 file changed, 11 insertions(+)
+> Need f2fs_put_page(page, 1);
 > 
-> diff --git a/man2/shmget.2 b/man2/shmget.2
-> index f781048..77764ea 100644
-> --- a/man2/shmget.2
-> +++ b/man2/shmget.2
-> @@ -299,6 +299,11 @@ with 8kB page size, it yields 2^20 (1048576).
->  
->  On Linux, this limit can be read and modified via
->  .IR /proc/sys/kernel/shmall .
-> +As of Linux 3.16, the default value for this limit is increased to
-> +.B ULONG_MAX - 2^24
-> +pages, which is as large as it can be without helping userspace overflow
-> +the values. Modifying this limit is therefore discouraged. This is suitable
-> +for both 32 and 64-bit systems.
->  .TP
->  .B SHMMAX
->  Maximum size in bytes for a shared memory segment.
-> @@ -306,6 +311,12 @@ Since Linux 2.2, the default value of this limit is 0x2000000 (32MB).
->  
->  On Linux, this limit can be read and modified via
->  .IR /proc/sys/kernel/shmmax .
-> +As of Linux 3.16, the default value for this limit is increased from 32Mb
-> +to
-> +.B ULONG_MAX - 2^24
-> +bytes, which is as large as it can be without helping userspace overflow
-> +the values. Modifying this limit is therefore discouraged. This is suitable
-> +for both 32 and 64-bit systems.
->  .TP
->  .B SHMMIN
->  Minimum size in bytes for a shared memory segment: implementation
-
-David,
-
-I applied various pieces from your patch on top of material
-that I already had, so that now we have the text below describing
-these limits.  Comments/suggestions/improvements from all welcome.
-
-Cheers,
-
-Michael
-
-       SHMALL System-wide limit on the number of pages of shared memory.
-
-              On  Linux,  this  limit  can  be  read  and  modified  via
-              /proc/sys/kernel/shmall.  Since Linux  3.16,  the  default
-              value for this limit is:
-
-                  ULONG_MAX - 2^24
-
-              The  effect  of  this  value  (which  is suitable for both
-              32-bit and 64-bit systems) is to impose no  limitation  on
-              allocations.   This value, rather than ULONG_MAX, was cho‐
-              sen as the default to prevent some cases where  historical
-              applications  simply  raised  the  existing  limit without
-              first checking its current value.  Such applications would
-              cause  the  value  to  overflow  if  the  limit was set at
-              ULONG_MAX.
-
-              From Linux 2.4 up to Linux 3.15,  the  default  value  for
-              this limit was:
-
-                  SHMMAX / PAGE_SIZE * (SHMMNI / 16)
-
-              If  SHMMAX  and SHMMNI were not modified, then multiplying
-              the result of this formula by the  page  size  (to  get  a
-              value  in  bytes)  yielded a value of 8 GB as the limit on
-              the total memory used by all shared memory segments.
-
-       SHMMAX Maximum size in bytes for a shared memory segment.
-
-              On  Linux,  this  limit  can  be  read  and  modified  via
-              /proc/sys/kernel/shmmax.   Since  Linux  3.16, the default
-              value for this limit is:
-
-                  ULONG_MAX - 2^24
-
-              The effect of this  value  (which  is  suitable  for  both
-              32-bit  and  64-bit systems) is to impose no limitation on
-              allocations.  See the description of SHMALL for a  discus‐
-              sion  of why this default value (rather than ULONG_MAX) is
-              used.
-
-              From Linux 2.2 up to Linux 3.15, the default value of this
-              limit was 0x2000000 (32MB).
-
-              Because  it  is  not possible to map just part of a shared
-              memory  segment,  the  amount  of  virtual  memory  places
-              another limit on the maximum size of a usable segment: for
-              example, on i386 the largest segments that can  be  mapped
-              have  a  size of around 2.8 GB, and on x86_64 the limit is
-              around 127 TB.
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> > +				break;
+> > +		}
+> >  		err = do_recover_data(sbi, entry->inode, page, blkaddr);
+> >  		if (err)
+> >  			break;
+> > --
+> > 1.8.5.2 (Apple Git-48)
+> > 
+> > 
+> > ------------------------------------------------------------------------------
+> > Want excitement?
+> > Manually upgrade your production database.
+> > When you want reliability, choose Perforce
+> > Perforce version control. Predictably reliable.
+> > http://pubads.g.doubleclick.net/gampad/clk?id=157508191&iu=/4140/ostg.clktrk
+> > _______________________________________________
+> > Linux-f2fs-devel mailing list
+> > Linux-f2fs-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
