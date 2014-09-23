@@ -1,89 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaIWFPa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:15:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63722 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752806AbaIWFP3 convert rfc822-to-8bit (ORCPT
+	id S1753258AbaIWFQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:16:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54693 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164AbaIWFQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:15:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,578,1406617200"; 
-   d="scan'208";a="595376616"
-From: "Sharma, Karun" <karun.sharma@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: 3.17 kernel crash while loading IPoIB
-Thread-Topic: 3.17 kernel crash while loading IPoIB
-Thread-Index: Ac/W7VpLRE13qYLTTwWCP2HykhVlCw==
-Date: Tue, 23 Sep 2014 05:15:21 +0000
-Message-ID: <637AD4DF2E595346BAB0DF8C46F3A2B003291F06@BGSMSX101.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Sep 2014 01:16:44 -0400
+Message-ID: <542101AD.5010406@ti.com>
+Date: Tue, 23 Sep 2014 10:44:21 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <myungjoo.ham@samsung.com>, <grant.likely@linaro.org>,
+        <rongjun.ying@csr.com>, <linux@roeck-us.net>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] extcon: gpio: Convert the driver to use gpio desc
+ API's
+References: <1410236078-11713-1-git-send-email-george.cherian@ti.com> <1410236078-11713-3-git-send-email-george.cherian@ti.com> <541FD8CD.1060400@samsung.com> <541FF138.7040908@ti.com> <5420AD3B.2080306@samsung.com>
+In-Reply-To: <5420AD3B.2080306@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello:
 
-I am facing an issue wherein kernel 3.17 crashes while loading IPoIB module. I guess the issue discussed in this thread (https://www.mail-archive.com/linux-rdma@vger.kernel.org/msg20963.html) is similar.
+On 09/23/2014 04:44 AM, Chanwoo Choi wrote:
+> On 09/22/2014 06:51 PM, George Cherian wrote:
+>> On 09/22/2014 01:37 PM, Chanwoo Choi wrote:
+>>> Hi George,
+>>>
+>>> This patch removes 'gpio_active_low' field of struct gpio_extcon_data.
+>>> But, include/linux/extcon-gpio.h has the description of 'gpio_active_low' field.
+>> Yes didn't want the platform data users to break.
+>> Actually I couldn't find any platform users for this driver. Could you please point me to
+>> one if in case I missed it. If non present then why cant we get rid of platform data altogether.
+> Right,
+> But, Why do you support platform data on as following your patch?
+> - [PATCH 3/5] extcon: gpio: Add dt support for the driver.
+> According to your comment, you had to remove the support for platform data.
+My intention with this series was to add dt support by keeping the 
+existing platform data.
+Now that we know there are no platform data users I will rework on this 
+and keep only dt
+support.
+>
+> IMO,
+> I think this patchset must need to reorder the sequence of patchset.
+> Also, this patchset is more detailed description.
+I will rework and submit a v2.
+>>> Also,
+>>> This patch has not included the any description/comment of removing 'gpio_active_low'.
+>>>
+>>> Also,
+>>> How to set 'FLAG_ACTIVE_LOW' bit for gpio when using platform data?
+>> Now that we are using gpiod_* API's  we need not check for gpio_active_low from this driver.
+> This patch just use gpiod API instead of legacy gpio API.
+>
+> I think that if extcon-gpio don't need to check gpio_activ_low field,
+> you have to implement dt support patch before this patch.
+yes will do in v2
 
-We were able to reproduce the issue with RC6 also. Here are the steps I followed:
+Thanks for your review.
+>>> This patch don't call 'set_bit()' function to set FLAG_ACTIVE_LOW flag.
+>>>
+>>> Thanks,
+>>> Chanwoo Choi
+>>>
+>>> On 09/09/2014 01:14 PM, George Cherian wrote:
+>>>> Convert the driver to use gpiod_* API's.
+>>>>
+>>>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>>>> ---
+>>>>    drivers/extcon/extcon-gpio.c | 18 +++++++-----------
+>>>>    1 file changed, 7 insertions(+), 11 deletions(-)
+>>>>
+>>>> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+>>>> index 72f19a3..25269f6 100644
+>>>> --- a/drivers/extcon/extcon-gpio.c
+>>>> +++ b/drivers/extcon/extcon-gpio.c
+>>>> @@ -33,8 +33,7 @@
+>>>>      struct gpio_extcon_data {
+>>>>        struct extcon_dev *edev;
+>>>> -    unsigned gpio;
+>>>> -    bool gpio_active_low;
+>>>> +    struct gpio_desc *gpiod;
+>>>>        const char *state_on;
+>>>>        const char *state_off;
+>>>>        int irq;
+>>>> @@ -50,9 +49,7 @@ static void gpio_extcon_work(struct work_struct *work)
+>>>>            container_of(to_delayed_work(work), struct gpio_extcon_data,
+>>>>                     work);
+>>>>    -    state = gpio_get_value(data->gpio);
+>>>> -    if (data->gpio_active_low)
+>>>> -        state = !state;
+>>>> +    state = gpiod_get_value(data->gpiod);
+>>>>        extcon_set_state(data->edev, state);
+>>>>    }
+>>>>    @@ -106,22 +103,21 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+>>>>        }
+>>>>        extcon_data->edev->name = pdata->name;
+>>>>    -    extcon_data->gpio = pdata->gpio;
+>>>> -    extcon_data->gpio_active_low = pdata->gpio_active_low;
+>>>> +    extcon_data->gpiod = gpio_to_desc(pdata->gpio);
+>>>>        extcon_data->state_on = pdata->state_on;
+>>>>        extcon_data->state_off = pdata->state_off;
+>>>>        extcon_data->check_on_resume = pdata->check_on_resume;
+>>>>        if (pdata->state_on && pdata->state_off)
+>>>>            extcon_data->edev->print_state = extcon_gpio_print_state;
+>>>>    -    ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
+>>>> +    ret = devm_gpio_request_one(&pdev->dev, pdata->gpio, GPIOF_DIR_IN,
+>>>>                        pdev->name);
+>>>>        if (ret < 0)
+>>>>            return ret;
+>>>>          if (pdata->debounce) {
+>>>> -        ret = gpio_set_debounce(extcon_data->gpio,
+>>>> -                    pdata->debounce * 1000);
+>>>> +        ret = gpiod_set_debounce(extcon_data->gpiod,
+>>>> +                     pdata->debounce * 1000);
+>>>>            if (ret < 0)
+>>>>                extcon_data->debounce_jiffies =
+>>>>                    msecs_to_jiffies(pdata->debounce);
+>>>> @@ -133,7 +129,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+>>>>          INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
+>>>>    -    extcon_data->irq = gpio_to_irq(extcon_data->gpio);
+>>>> +    extcon_data->irq = gpiod_to_irq(extcon_data->gpiod);
+>>>>        if (extcon_data->irq < 0)
+>>>>            return extcon_data->irq;
+>>>>   
+>>
 
-I compiled and installed 3.17 kernel on top of RHEL 6.5. 
-Then I changed rdma.conf to not load IPoIB (If I don't do this, the kernel crashes while booting and starting RDMA service.)
-After the server comes up, I just did "modprobe ib_ipoib" and kernel crashes.
-Please see below the kernel back trace.
-
-Seeing the announcement, it looks like RC6 will be the last RC for 3.17 kernel. Will the release happen with this issue? Is there any workaround available for this issue?
-I am not sure what mechanism/process is used to report issue to kernel community.
-
-Regards
-Karun
-
-
-Kernel Stack back-trace:
---------------------------------------------------------------------------------
-crash> bt
-PID: 145    TASK: ffff88081a580d90  CPU: 3   COMMAND: "kworker/3:1"
-#0 [ffff88081a587750] machine_kexec at ffffffff8103c5d9
-#1 [ffff88081a5877a0] crash_kexec at ffffffff810d0ff8
-#2 [ffff88081a587870] oops_end at ffffffff81007570
-#3 [ffff88081a5878a0] no_context at ffffffff81046e5e
-#4 [ffff88081a5878f0] __bad_area_nosemaphore at ffffffff8104704d
-#5 [ffff88081a587940] bad_area_nosemaphore at ffffffff81047163
-#6 [ffff88081a587950] __do_page_fault at ffffffff81047722
-#7 [ffff88081a587a70] do_page_fault at ffffffff8104798c
-#8 [ffff88081a587a80] page_fault at ffffffff815aad62
-    [exception RIP: __dev_queue_xmit+894]
-    RIP: ffffffff814e17be  RSP: ffff88081a587b38  RFLAGS: 00010282
-    RAX: ffff88087c1679fe  RBX: ffff880812cc2500  RCX: 0000000000000044
-    RDX: 0000000000000008  RSI: 0000000000000000  RDI: ffff88081a363a9c
-    RBP: ffff88081a587b78   R8: 0000000000000000   R9: 0000000000000040
-    R10: 0000000000000000  R11: 000000007c1679ff  R12: ffff88081a363a00
-    R13: ffff880814f3e000  R14: ffff880809535600  R15: 0000000000000000
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
-#9 [ffff88081a587b30] __dev_queue_xmit at ffffffff814e158b
-#10 [ffff88081a587b80] dev_queue_xmit at ffffffff814e1930
-#11 [ffff88081a587b90] neigh_connected_output at ffffffff814e81e8
-#12 [ffff88081a587be0] ip6_finish_output2 at ffffffffa05ff8dd [ipv6]
-#13 [ffff88081a587c40] ip6_finish_output at ffffffffa05ffe5f [ipv6]
-#14 [ffff88081a587c60] ip6_output at ffffffffa05fff18 [ipv6]
-#15 [ffff88081a587c90] ndisc_send_skb at ffffffffa06169a9 [ipv6]
-#16 [ffff88081a587d40] ndisc_send_ns at ffffffffa0616bf6 [ipv6]
-#17 [ffff88081a587db0] addrconf_dad_work at ffffffffa06076cb [ipv6]
-#18 [ffff88081a587df0] process_one_work at ffffffff8106b23e
-#19 [ffff88081a587e40] worker_thread at ffffffff8106b63f
-#20 [ffff88081a587ec0] kthread at ffffffff8107041e
-#21 [ffff88081a587f50] ret_from_fork at ffffffff815a92ac
----------------------------------------------------------------------------------
-
-Regards,
-Karun Sharma
-
+-George
