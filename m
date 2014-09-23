@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515AbaIWSjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:39:12 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51645 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751568AbaIWSjJ (ORCPT
+	id S1756072AbaIWSko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:40:44 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:42021 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735AbaIWSkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:39:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/AjFbpqmSqxoIoxv36yRN/
-Date: Tue, 23 Sep 2014 11:38:38 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Frans Klaver <frans.klaver@xsens.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Alexey Pelykh <alexey.pelykh@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
-Message-ID: <20140923183838.GA3122@atomide.com>
-References: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com>
- <1410789610-23059-4-git-send-email-frans.klaver@xsens.com>
- <54170823.7040801@hurleysoftware.com>
- <5417228C.5070503@hurleysoftware.com>
- <20140916085037.GI28458@ci00147.xsens-tech.local>
- <54197804.3020302@hurleysoftware.com>
- <20140917121303.GB20438@ci00147.xsens-tech.local>
- <20140923082445.GA16218@ci00147.xsens-tech.local>
- <5421AB20.8040606@hurleysoftware.com>
- <88924386-79bc-44c7-9a07-249900cbd359@email.android.com>
+	Tue, 23 Sep 2014 14:40:41 -0400
+Date: Tue, 23 Sep 2014 19:39:55 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140923193955.2fb9cb14@alan.etchedpixels.co.uk>
+In-Reply-To: <5421B9A6.5020408@hurleysoftware.com>
+References: <20140712181328.GA8738@redhat.com>
+	<54079B70.4050200@hurleysoftware.com>
+	<1409785893.30640.118.camel@pasglop>
+	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+	<1409824374.4246.62.camel@pasglop>
+	<5408E458.3@zytor.com>
+	<54090AF4.7060406@hurleysoftware.com>
+	<54091B30.7080100@zytor.com>
+	<5409D76D.2070203@hurleysoftware.com>
+	<5409D9C0.7030403@zytor.com>
+	<20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+	<540DEE6C.2060904@zytor.com>
+	<540E3207.7090007@hurleysoftware.com>
+	<20140911110411.2de01944@alan.etchedpixels.co.uk>
+	<5411FFB6.2080702@hurleysoftware.com>
+	<20140915002427.6ce18965@alan.etchedpixels.co.uk>
+	<5421B9A6.5020408@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <88924386-79bc-44c7-9a07-249900cbd359@email.android.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frans Klaver <fransklaver@gmail.com> [140923 11:12]:
-> On 23 September 2014 19:17:20 CEST, Peter Hurley <peter@hurleysoftware.com> wrote:
-> >
-> >I would've thought the first 2 patches had already been picked up
-> >because
-> >they fix div-by-zero faults.
+> > Yes - because if you think about it that tells you that nobody is hitting
+> > it with the old code and it probably doesn't matter.
 > 
-> I've had no confirmation of that happening so far. I also don't
-> know if I should expect one. Who'd take these patches? Tony? 
+> I don't understand this reply.
 
-$ scripts/get_maintainer.pl -f drivers/tty/serial/omap-serial.c
+It's a matter of priorities. There are hundreds of potential security
+holes turned up by scanners, 2,500+ filed bugs in kernel bugzilla alone.
 
-Shows they should be sent to Greg and linux-serial. Please also Cc
-linux-omap. And if it's a fix, please make sure the subject has the
-magic word fix :)
+Which matters more - fixing the bugs people hit or the ones that they
+don't and which have a very high cost impact on other users ?
 
-Regards,
+> Likewise, I'm pointing that byte-sized circular buffers will also be 
+> corrupted under certain circumstances (when the head comes near the tail).
 
-Tony
+Yes. I believe the classic wording is "this problem has not been observed
+in the field"
+ 
+> 2. I'm not sure where you arrived at the conclusion that set_bit() et.al. is
+> fast on x86. Besides the heavy-duty instructions (lgdt, mov cr0, etc), the
+> bus-locked bit instructions are among the most expensive instructions in the
+> kernel.
+
+> I've attached a smoke test I use for lightweight validation of pty slave reads.
+> If you run this smoke test under perf, almost every high-value hit is a
+> bus-locked bit instruction. Check out canon_copy_from_read_buf() which performs
+> the actual copy of data from the line discipline input buffer to the __user
+> buffer; the clear_bit() is the performance hit. Check out cpu_idle_loop()...
+
+And then go and instrument whether its the bit instructions or the cache
+misses ?
+
+
+If there is a significant performance improvement by spacing the fields
+carefully, and you don't have other ordering problems as a result
+(remembering that the compiler has a lot of re-ordering options provided
+the re-ordering cannot be observed)
+
+If that's the case then fine - submit a patch with numbers and the fields
+spaced and quote the performance data.
+
+Alan
