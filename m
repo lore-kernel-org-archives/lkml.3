@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaIWJl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 05:41:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55157 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754713AbaIWJi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 05:38:56 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v7 02/10] rtc: at91sam9: use standard readl/writel functions instead of raw versions
-Date: Tue, 23 Sep 2014 11:38:42 +0200
-Message-Id: <1411465130-29011-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411465130-29011-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1411465130-29011-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1755461AbaIWJm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 05:42:28 -0400
+Received: from mail-by2on0136.outbound.protection.outlook.com ([207.46.100.136]:47840
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754466AbaIWJm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 05:42:26 -0400
+X-Greylist: delayed 890 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 05:42:26 EDT
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <arnd@arndb.de>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: [PATCH] serial: of-serial: add PM suspend/resume support
+Date: Tue, 23 Sep 2014 16:34:12 +0800
+Message-ID: <1411461252-8730-1-git-send-email-jingchang.lu@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(2351001)(92726001)(106466001)(92566001)(90102001)(26826002)(102836001)(229853001)(50466002)(76482002)(95666004)(97736003)(36756003)(107046002)(50226001)(10300001)(104016003)(4396001)(93916002)(62966002)(21056001)(64706001)(105606002)(79102003)(80022003)(81342003)(83322001)(50986999)(85852003)(74662003)(81542003)(46102003)(77982003)(110136001)(99396002)(77156001)(68736004)(31966008)(44976005)(89996001)(19580405001)(33646002)(83072002)(88136002)(85306004)(20776003)(74502003)(84676001)(86362001)(87936001)(120916001)(19580395003)(6806004)(48376002)(47776003)(104166001)(87286001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB473;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB473;
+X-Forefront-PRVS: 0343AC1D30
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raw versions of writel and writel should not be directly used and should
-be replaced by their relaxed versions (readl/writel_relaxed), which take
-endianness conversion into account.
+This adds PM suspend/resume support for the of-serial driver
+to provide power management support on devices attatched to it.
 
-In this driver we prefer the standard readl/writel function which add the
-appropriate memory barrier around the access (the performance penalty is
-negligible for this kind of application).
-
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
 ---
- drivers/rtc/rtc-at91sam9.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/tty/serial/of_serial.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 51f0038..74a9ca0 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -77,14 +77,14 @@ struct sam9_rtc {
- };
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 27981e2..8bc2563 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -240,6 +240,32 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
+ 	return 0;
+ }
  
- #define rtt_readl(rtc, field) \
--	__raw_readl((rtc)->rtt + AT91_RTT_ ## field)
-+	readl((rtc)->rtt + AT91_RTT_ ## field)
- #define rtt_writel(rtc, field, val) \
--	__raw_writel((val), (rtc)->rtt + AT91_RTT_ ## field)
-+	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
- #define gpbr_readl(rtc) \
--	__raw_readl((rtc)->gpbr)
-+	readl((rtc)->gpbr)
- #define gpbr_writel(rtc, val) \
--	__raw_writel((val), (rtc)->gpbr)
-+	writel((val), (rtc)->gpbr)
- 
++#ifdef CONFIG_PM_SLEEP
++static int of_serial_suspend(struct device *dev)
++{
++	struct of_serial_info *info = dev_get_drvdata(dev);
++
++	serial8250_suspend_port(info->line);
++	if (info->clk)
++		clk_disable_unprepare(info->clk);
++
++	return 0;
++}
++
++static int of_serial_resume(struct device *dev)
++{
++	struct of_serial_info *info = dev_get_drvdata(dev);
++
++	if (info->clk)
++		clk_prepare_enable(info->clk);
++
++	serial8250_resume_port(info->line);
++
++	return 0;
++}
++#endif
++static SIMPLE_DEV_PM_OPS(of_serial_pm_ops, of_serial_suspend, of_serial_resume);
++
  /*
-  * Read current time and date in RTC
+  * A few common types, add more as needed.
+  */
+@@ -271,6 +297,7 @@ static struct platform_driver of_platform_serial_driver = {
+ 		.name = "of_serial",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = of_platform_serial_table,
++		.pm = &of_serial_pm_ops,
+ 	},
+ 	.probe = of_platform_serial_probe,
+ 	.remove = of_platform_serial_remove,
 -- 
-1.9.1
+1.8.0
 
