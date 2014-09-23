@@ -1,66 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaIWPnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:43:31 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:55139 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169AbaIWPna (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:43:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140922203428.GF1880@google.com>
-References: <1409001999-23161-1-git-send-email-minipli@googlemail.com>
-	<20140922202748.GE1880@google.com>
-	<20140922203428.GF1880@google.com>
-Date: Tue, 23 Sep 2014 17:43:29 +0200
-Message-ID: <CA+rthh-7onXuO=CVfRxfuUUThSFaAAWF0+gc0eSq3cZLDXyAAQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] x86/PCI: Minor size reduction by marking init code
- and data as such
-From: Mathias Krause <minipli@googlemail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86-ml <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756240AbaIWPob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:44:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41693 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754722AbaIWPo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 11:44:29 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: sfr@canb.auug.org.au, rdunlap@infradead.org, davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: [PATCH 1/5] mips: Set CONFIG_NET=y in defconfigs
+Date: Tue, 23 Sep 2014 17:44:00 +0200
+Message-Id: <1411487044-14071-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <54218AEF.5090200@suse.cz>
+References: <54218AEF.5090200@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 September 2014 22:34, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc x86 folks]
->
-> On Mon, Sep 22, 2014 at 02:27:48PM -0600, Bjorn Helgaas wrote:
->> On Mon, Aug 25, 2014 at 11:26:34PM +0200, Mathias Krause wrote:
->> > Hi Bjorn,
->> >
->> > [...]
->> >
->> > Mathias Krause (5):
->> >   x86/PCI: Mark DMI tables as initialization data
->> >   x86/PCI: Move __init annotation were it belongs to
->> >   x86/PCI: Mark constants of pci_mmcfg_nvidia_mcp55() as __initconst
->> >   x86/PCI: Constify pci_mmcfg_probes[] array
->> >   x86/PCI: Mark PCI BIOS initialization code as such
->>
->> All applied to pci/initdata for v3.18, thanks!
->
-> Oops, I didn't notice that you hadn't cc'd the x86 folks.
+Commit 5d6be6a5 ("scsi_netlink : Make SCSI_NETLINK dependent on NET
+instead of selecting NET") removed what happened to be the only instance
+of 'select NET'. Defconfigs that were relying on the select now lack
+networking support.
 
-The reason for me not cc'ing the x86 maintainers, but linux-pci
-instead was probably because you're listed as maintainer for these
-files in the MAINTAINERS file. But, true, x86 maintainers should be
-cc'ed for all patches to code below arch/x86/. Just an oversight of
-mine :/
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-mips@linux-mips.org
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ arch/mips/configs/gpr_defconfig             | 1 +
+ arch/mips/configs/ip27_defconfig            | 1 +
+ arch/mips/configs/jazz_defconfig            | 1 +
+ arch/mips/configs/loongson3_defconfig       | 1 +
+ arch/mips/configs/malta_defconfig           | 1 +
+ arch/mips/configs/malta_kvm_defconfig       | 1 +
+ arch/mips/configs/malta_kvm_guest_defconfig | 1 +
+ arch/mips/configs/mtx1_defconfig            | 1 +
+ arch/mips/configs/rm200_defconfig           | 1 +
+ 9 files changed, 9 insertions(+)
 
->
-> Guys, if these should go through -tip, here's my ack:
->
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
->
-> I don't have any other arch/x86 changes in my tree, so I don't care which
-> way these go.
+diff --git a/arch/mips/configs/gpr_defconfig b/arch/mips/configs/gpr_defconfig
+index 8f219da..e24feb06 100644
+--- a/arch/mips/configs/gpr_defconfig
++++ b/arch/mips/configs/gpr_defconfig
+@@ -19,6 +19,7 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PCI=y
+ CONFIG_BINFMT_MISC=m
++CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
+diff --git a/arch/mips/configs/ip27_defconfig b/arch/mips/configs/ip27_defconfig
+index cc07560..48e16d9 100644
+--- a/arch/mips/configs/ip27_defconfig
++++ b/arch/mips/configs/ip27_defconfig
+@@ -28,6 +28,7 @@ CONFIG_MIPS32_COMPAT=y
+ CONFIG_MIPS32_O32=y
+ CONFIG_MIPS32_N32=y
+ CONFIG_PM=y
++CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_XFRM_USER=m
+diff --git a/arch/mips/configs/jazz_defconfig b/arch/mips/configs/jazz_defconfig
+index 2575302..4f37a59 100644
+--- a/arch/mips/configs/jazz_defconfig
++++ b/arch/mips/configs/jazz_defconfig
+@@ -18,6 +18,7 @@ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_BINFMT_MISC=m
+ CONFIG_PM=y
++CONFIG_NET=y
+ CONFIG_PACKET=m
+ CONFIG_UNIX=y
+ CONFIG_NET_KEY=m
+diff --git a/arch/mips/configs/loongson3_defconfig b/arch/mips/configs/loongson3_defconfig
+index 4cb787f..1c6191e 100644
+--- a/arch/mips/configs/loongson3_defconfig
++++ b/arch/mips/configs/loongson3_defconfig
+@@ -59,6 +59,7 @@ CONFIG_MIPS32_COMPAT=y
+ CONFIG_MIPS32_O32=y
+ CONFIG_MIPS32_N32=y
+ CONFIG_PM_RUNTIME=y
++CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_XFRM_USER=y
+diff --git a/arch/mips/configs/malta_defconfig b/arch/mips/configs/malta_defconfig
+index e18741e..f57b96d 100644
+--- a/arch/mips/configs/malta_defconfig
++++ b/arch/mips/configs/malta_defconfig
+@@ -19,6 +19,7 @@ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_MODULE_SRCVERSION_ALL=y
+ CONFIG_PCI=y
++CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_XFRM_USER=m
+diff --git a/arch/mips/configs/malta_kvm_defconfig b/arch/mips/configs/malta_kvm_defconfig
+index cf0e01f..d41742d 100644
+--- a/arch/mips/configs/malta_kvm_defconfig
++++ b/arch/mips/configs/malta_kvm_defconfig
+@@ -20,6 +20,7 @@ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_MODULE_SRCVERSION_ALL=y
+ CONFIG_PCI=y
++CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_XFRM_USER=m
+diff --git a/arch/mips/configs/malta_kvm_guest_defconfig b/arch/mips/configs/malta_kvm_guest_defconfig
+index edd9ec9..a7806e8 100644
+--- a/arch/mips/configs/malta_kvm_guest_defconfig
++++ b/arch/mips/configs/malta_kvm_guest_defconfig
+@@ -19,6 +19,7 @@ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_MODULE_SRCVERSION_ALL=y
+ CONFIG_PCI=y
++CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_XFRM_USER=m
+diff --git a/arch/mips/configs/mtx1_defconfig b/arch/mips/configs/mtx1_defconfig
+index d269a53..9b6926d 100644
+--- a/arch/mips/configs/mtx1_defconfig
++++ b/arch/mips/configs/mtx1_defconfig
+@@ -27,6 +27,7 @@ CONFIG_PD6729=m
+ CONFIG_I82092=m
+ CONFIG_BINFMT_MISC=m
+ CONFIG_PM=y
++CONFIG_NET=y
+ CONFIG_PACKET=m
+ CONFIG_UNIX=y
+ CONFIG_XFRM_USER=m
+diff --git a/arch/mips/configs/rm200_defconfig b/arch/mips/configs/rm200_defconfig
+index 29d79ae..db029f4 100644
+--- a/arch/mips/configs/rm200_defconfig
++++ b/arch/mips/configs/rm200_defconfig
+@@ -20,6 +20,7 @@ CONFIG_MODVERSIONS=y
+ CONFIG_PCI=y
+ CONFIG_BINFMT_MISC=m
+ CONFIG_PM=y
++CONFIG_NET=y
+ CONFIG_PACKET=m
+ CONFIG_UNIX=y
+ CONFIG_NET_KEY=m
+-- 
+1.8.4.5
 
-
-Regards,
-Mathias
