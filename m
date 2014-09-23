@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342AbaIWT76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:59:58 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:47064 "EHLO
+	id S1756528AbaIWUAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:00:04 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:47082 "EHLO
 	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756108AbaIWT7y (ORCPT
+	with ESMTP id S1756176AbaIWT7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:59:54 -0400
-X-ASG-Debug-ID: 1411502392-0759e761297407d0002-xx1T2L
+	Tue, 23 Sep 2014 15:59:55 -0400
+X-ASG-Debug-ID: 1411502393-0759e76129740800002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
@@ -16,10 +16,10 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: Frans Klaver <frans.klaver@xsens.com>, Jiri Slaby <jslaby@suse.cz>,
         <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH 1/2] tty: omap-serial: pull out calculation from baud_is_mode16
-Date: Tue, 23 Sep 2014 21:54:39 +0200
-X-ASG-Orig-Subj: [PATCH 1/2] tty: omap-serial: pull out calculation from baud_is_mode16
-Message-ID: <1411502080-19769-2-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH 2/2] tty: omap-serial: fix a division by zero
+Date: Tue, 23 Sep 2014 21:54:40 +0200
+X-ASG-Orig-Subj: [PATCH 2/2] tty: omap-serial: fix a division by zero
+Message-ID: <1411502080-19769-3-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411502080-19769-1-git-send-email-frans.klaver@xsens.com>
 References: <1411502080-19769-1-git-send-email-frans.klaver@xsens.com>
@@ -27,7 +27,7 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.16.11.160]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1411502392
+X-Barracuda-Start-Time: 1411502393
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -41,60 +41,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To determine the correct divisor, we need to know the difference between
-the desired baud rate and the actual baud rate. The calculation for this
-difference is implemented twice within omap_serial_baud_is_mode16().
-Pull out the calculation for easier maintenance.
+If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
+calculated n values in calculate_baud_abs_diff may become 0. This causes
+a division by zero when calculating the difference between calculated
+and desired baud rates. To prevent this, cap n on 1.
+
+Division by zero in kernel.
+[<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
+[<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
+[<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
+[<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
+[<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
+[<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
+[<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
+[<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
+[<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
+[<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
+[<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
+[<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
+[<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
 
 Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 ---
- drivers/tty/serial/omap-serial.c | 26 ++++++++++++++++++--------
- 1 file changed, 18 insertions(+), 8 deletions(-)
+ drivers/tty/serial/omap-serial.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index d017cec..ae935ce 100644
+index ae935ce..7d3f557 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -239,6 +239,22 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- }
- 
- /*
-+ * Calculate the absolute difference between the desired and actual baud
-+ * rate for the given mode.
-+ */
-+static inline int calculate_baud_abs_diff(struct uart_port *port,
-+				unsigned int baud, unsigned int mode)
-+{
-+	unsigned int n = port->uartclk / (mode * baud);
-+	int abs_diff = baud - (port->uartclk / (mode * n));
-+
-+	if (abs_diff < 0)
-+		abs_diff = -abs_diff;
-+
-+	return abs_diff;
-+}
-+
-+/*
-  * serial_omap_baud_is_mode16 - check if baud rate is MODE16X
-  * @port: uart port info
-  * @baud: baudrate for which mode needs to be determined
-@@ -252,14 +268,8 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- static bool
- serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
+@@ -246,8 +246,12 @@ static inline int calculate_baud_abs_diff(struct uart_port *port,
+ 				unsigned int baud, unsigned int mode)
  {
--	unsigned int n13 = port->uartclk / (13 * baud);
--	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
--	if (baudAbsDiff13 < 0)
--		baudAbsDiff13 = -baudAbsDiff13;
--	if (baudAbsDiff16 < 0)
--		baudAbsDiff16 = -baudAbsDiff16;
-+	int baudAbsDiff13 = calculate_baud_abs_diff(port, baud, 13);
-+	int baudAbsDiff16 = calculate_baud_abs_diff(port, baud, 16);
+ 	unsigned int n = port->uartclk / (mode * baud);
+-	int abs_diff = baud - (port->uartclk / (mode * n));
++	int abs_diff;
  
- 	return (baudAbsDiff13 >= baudAbsDiff16);
- }
++	if (n == 0)
++		n = 1;
++
++	abs_diff = baud - (port->uartclk / (mode * n));
+ 	if (abs_diff < 0)
+ 		abs_diff = -abs_diff;
+ 
 -- 
 2.1.0
 
