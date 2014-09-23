@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975AbaIWNiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:38:20 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47609 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827AbaIWNiS (ORCPT
+	id S1755859AbaIWNnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:43:15 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:57083 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaIWNnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:38:18 -0400
-Message-ID: <542177E5.9060606@ti.com>
-Date: Tue, 23 Sep 2014 16:38:45 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <tony@atomide.com>, <nm@ti.com>, <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: prevent erronous parsing of children during rate
- change
-References: <1408628866-32351-1-git-send-email-t-kristo@ti.com> <20140922191816.GF10233@codeaurora.org>
-In-Reply-To: <20140922191816.GF10233@codeaurora.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 09:43:13 -0400
+From: Chris Zhong <zyw@rock-chips.com>
+To: dianders@chromium.org, heiko@sntech.de
+Cc: linux-rockchip@lists.infradead.org, lee.jones@linaro.org,
+        broonie@kernel.org, Chris Zhong <zyw@rock-chips.com>,
+        devicetree@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v5 0/2] regulator: get voltage & duty table from dts for st-pwm
+Date: Tue, 23 Sep 2014 21:42:57 +0800
+Message-Id: <1411479779-10229-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2014 10:18 PM, Stephen Boyd wrote:
-> On 08/21, Tero Kristo wrote:
->> In some cases, clocks can switch their parent with clk_set_rate, for
->> example clk_mux can do this in some cases. Current implementation of
->> clk_change_rate uses un-safe list iteration on the clock children, which
->> will cause wrong clocks to be parsed in case any of the clock children
->> change their parents during the change rate operation. Fixed by using
->> the safe list iterator instead.
->>
->> The problem was detected due to some divide by zero errors generated
->> by clock init on dra7-evm board, see discussion under
->> http://article.gmane.org/gmane.linux.ports.arm.kernel/349180 for details.
->>
->> Signed-off-by: Tero Kristo <t-kristo@ti.com>
->> To: Mike Turquette <mturquette@linaro.org>
->> Reported-by: Nishanth Menon <nm@ti.com>
->> ---
->>   drivers/clk/clk.c |    7 ++++++-
->>   1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index b76fa69..bacc06f 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -1467,6 +1467,7 @@ static struct clk *clk_propagate_rate_change(struct clk *clk, unsigned long even
->>   static void clk_change_rate(struct clk *clk)
->>   {
->>   	struct clk *child;
->> +	struct hlist_node *tmp;
->>   	unsigned long old_rate;
->>   	unsigned long best_parent_rate = 0;
->>   	bool skip_set_rate = false;
->> @@ -1502,7 +1503,11 @@ static void clk_change_rate(struct clk *clk)
->>   	if (clk->notifier_count && old_rate != clk->rate)
->>   		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
->>
->> -	hlist_for_each_entry(child, &clk->children, child_node) {
->> +	/*
->> +	 * Use safe iteration, as change_rate can actually swap parents
->> +	 * for certain clock types.
->> +	 */
->> +	hlist_for_each_entry_safe(child, tmp, &clk->children, child_node) {
->>   		/* Skip children who will be reparented to another clock */
->>   		if (child->new_parent && child->new_parent != clk)
->>   			continue;
->
-> Are we not hitting the new_parent check here? I don't understand
-> how we can be changing parents here unless the check is being
-> avoided, in which case I wonder why determine_rate isn't being
-> used.
->
+get voltage & duty table from device tree might be better, other platforms can also use this
+driver without any modify.
+Tested on a rk3288 sdk board as logic voltage regulator.
 
-It depends how the clock underneath handles the situation. The error I 
-am seeing actually happens with a SoC specific compound clock (DPLL) 
-which integrates set_rate + mux functionality into a single clock node. 
-A call to the clk_set_rate changes the parent of this clock (from bypass 
-clock to reference clock), in addition to changing the rate (tune the 
-mul+div.) I looked at using the determine rate call with this type but 
-it breaks everything up... the parent gets changed but not the clock 
-rate, in addition to some other issues.
+Changes in v5:
+Adviced by Mark Rutland
+- fix a spelling error
 
--Tero
+Changes in v4:
+Adviced by Doug Anderson
+- improve kconfig
+- add const for desc structure
+Adviced by Doug Anderson
+- remove regulator-always-on and regulator-boot-on from the Example
+
+Changes in v3:
+Adviced by Doug Anderson
+- Make Kconfig & Makefile alphabetical
+- remove pwm_reg_period from pwm_regulator_data
+- modify the calculation in pwm_regulator_set_voltage_sel
+- add length validity check
+Adviced by Doug Anderson
+- update the Example
+
+Changes in v2:
+Adviced by Lee Jones
+- rename the file
+- remove all the prefix st_
+- add depend on PWM in Kconfig
+Adviced by Lee Jones
+- rename the documentation
+Adviced by Doug Anderson
+- update the example
+Adviced by Mark Rutland
+- remove pwm-reg-period
+
+Chris Zhong (2):
+  regulator: st-pwm: get voltage and duty table from dts
+  dt-bindings: add devicetree bindings for st-pwm regulator
+
+ .../bindings/regulator/pwm-regulator.txt           |   27 +++
+ drivers/regulator/Kconfig                          |   13 +-
+ drivers/regulator/Makefile                         |    2 +-
+ drivers/regulator/pwm-regulator.c                  |  197 ++++++++++++++++++++
+ drivers/regulator/st-pwm.c                         |  190 -------------------
+ 5 files changed, 232 insertions(+), 197 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
+ create mode 100644 drivers/regulator/pwm-regulator.c
+ delete mode 100644 drivers/regulator/st-pwm.c
+
+-- 
+1.7.9.5
+
