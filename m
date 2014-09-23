@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536AbaIWTj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:39:27 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:37244 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638AbaIWTjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:39:25 -0400
-Message-ID: <5421CC5E.2010103@osg.samsung.com>
-Date: Tue, 23 Sep 2014 13:39:10 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1756288AbaIWTkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:40:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57538 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714AbaIWTkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 15:40:24 -0400
+Date: Tue, 23 Sep 2014 21:40:21 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kbuild test robot <fengguang.wu@intel.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, kbuild-all@01.org,
+        pavel@ucw.cz, rtc-linux@googlegroups.com, dan.carpenter@oracle.com
+Subject: [patch] drivers/rtc/rtc-bq32k.c fix warnings I introduced
+Message-ID: <20140923194021.GA15840@amd>
+References: <542131f8.FeDGKH/9671AZbCt%fengguang.wu@intel.com>
 MIME-Version: 1.0
-To: Peter Feiner <pfeiner@google.com>
-CC: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickens <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH 1/3] tools: add .gitignore entries for selftests
-References: <1411499027-17801-1-git-send-email-pfeiner@google.com> <1411499123-18050-1-git-send-email-pfeiner@google.com>
-In-Reply-To: <1411499123-18050-1-git-send-email-pfeiner@google.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542131f8.FeDGKH/9671AZbCt%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 01:05 PM, Peter Feiner wrote:
-> Signed-off-by: Peter Feiner <pfeiner@google.com>
-> ---
+Sorry about that, I somehow failed to notice rather severe warnings.
 
-Please add a change log describing what this does and
-why it is needed. I know what you trying to fix, and
-that is a good one, but would like a log with the patch.
+Signed-off-by: Pavel Machek <pavel@denx.de>
 
-thanks,
--- Shuah
+diff --git a/drivers/rtc/rtc-bq32k.c b/drivers/rtc/rtc-bq32k.c
+index 4c24fb0..c02e246 100644
+--- a/drivers/rtc/rtc-bq32k.c
++++ b/drivers/rtc/rtc-bq32k.c
+@@ -132,9 +132,7 @@ static const struct rtc_class_ops bq32k_rtc_ops = {
+ 
+ static int trickle_charger_of_init(struct device *dev, struct device_node *node)
+ {
+-	int plen = 0;
+-	const uint32_t *setup;
+-	const uint32_t *reg;
++	unsigned char reg;
+ 	int error;
+ 	u32 ohms = 0;
+ 
+@@ -166,7 +164,7 @@ static int trickle_charger_of_init(struct device *dev, struct device_node *node)
+ 		break;
+ 
+ 	default:
+-		dev_err(dev, "invalid resistor value (%d)\n", *setup);
++		dev_err(dev, "invalid resistor value (%d)\n", ohms);
+ 		return -EINVAL;
+ 	}
+ 
 
 
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
