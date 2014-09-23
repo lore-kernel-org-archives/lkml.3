@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714AbaIWLYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 07:24:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56575 "EHLO
+	id S1755880AbaIWLYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 07:24:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56657 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755449AbaIWLYU (ORCPT
+	with ESMTP id S1755806AbaIWLY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 07:24:20 -0400
+	Tue, 23 Sep 2014 07:24:29 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,9 +21,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v8 02/10] rtc: at91sam9: use standard readl/writel functions instead of raw versions
-Date: Tue, 23 Sep 2014 13:23:56 +0200
-Message-Id: <1411471444-2764-3-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v8 10/10] mfd: syscon: add Atmel GPBR DT bindings documention
+Date: Tue, 23 Sep 2014 13:24:04 +0200
+Message-Id: <1411471444-2764-11-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1411471444-2764-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -31,45 +31,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raw versions of writel and writel should not be directly used and should
-be replaced by their relaxed versions (readl/writel_relaxed), which take
-endianness conversion into account.
+The GPBR block provides a set of battery-backed registers that can be used
+to save data which need to be kept when the system is powered down and
+VDD-core is maintained by an external battery.
 
-In this driver we prefer the standard readl/writel function which add the
-appropriate memory barrier around the access (the performance penalty is
-negligible for this kind of application).
+A typical usage is the RTT block (when used as an RTC) which needs one of
+those registers to save the current time.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Acked-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/rtc/rtc-at91sam9.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ Documentation/devicetree/bindings/mfd/atmel,gpbr.txt | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 51f0038..74a9ca0 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -77,14 +77,14 @@ struct sam9_rtc {
- };
- 
- #define rtt_readl(rtc, field) \
--	__raw_readl((rtc)->rtt + AT91_RTT_ ## field)
-+	readl((rtc)->rtt + AT91_RTT_ ## field)
- #define rtt_writel(rtc, field, val) \
--	__raw_writel((val), (rtc)->rtt + AT91_RTT_ ## field)
-+	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
- #define gpbr_readl(rtc) \
--	__raw_readl((rtc)->gpbr)
-+	readl((rtc)->gpbr)
- #define gpbr_writel(rtc, val) \
--	__raw_writel((val), (rtc)->gpbr)
-+	writel((val), (rtc)->gpbr)
- 
- /*
-  * Read current time and date in RTC
+diff --git a/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+new file mode 100644
+index 0000000..a285695
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+@@ -0,0 +1,15 @@
++* Device tree bindings for Atmel GPBR (General Purpose Backup Registers)
++
++The GPBR are a set of battery-backed registers.
++
++Required properties:
++- compatible:		"atmel,at91sam9260-gpbr", "syscon"
++- reg:			contains offset/length value of the GPBR memory
++			region.
++
++Example:
++
++gpbr: gpbr@fffffd50 {
++	compatible = "atmel,at91sam9260-gpbr", "syscon";
++	reg = <0xfffffd50 0x10>;
++};
 -- 
 1.9.1
 
