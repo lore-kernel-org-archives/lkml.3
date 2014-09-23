@@ -1,198 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877AbaIWUoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:44:25 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:41457 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaIWUoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:44:23 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude E6440
-Date: Tue, 23 Sep 2014 22:44:19 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.13.2; x86_64; ; )
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-References: <201409232206.02819@pali> <5421D8A3.3090502@redhat.com>
-In-Reply-To: <5421D8A3.3090502@redhat.com>
+	id S1756818AbaIWUqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:46:24 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:37278 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735AbaIWUqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:46:22 -0400
+Message-ID: <5421DC1A.4030509@osg.samsung.com>
+Date: Tue, 23 Sep 2014 14:46:18 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart5788656.ixqAptM7nV";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409232244.19104@pali>
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+CC: Hans Verkuil <hverkuil@xs4all.nl>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        sakari.ailus@linux.intel.com, ramakrmu@cisco.com,
+        Devin Heitmueller <dheitmueller@kernellabs.co>, olebowle@gmx.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH 2/5] media: v4l2-core changes to use media tuner token
+ api
+References: <cover.1411397045.git.shuahkh@osg.samsung.com> <b83cf780636a80aec53e3b7e8f101645049e94f3.1411397045.git.shuahkh@osg.samsung.com> <CAGoCfizUWx-RrRbtuv7ctTqZskmDPK-w9bRTnEwjwn6oJ=V48g@mail.gmail.com> <54208A03.2010101@osg.samsung.com> <CAGoCfix8BH0coq2q-ndvBvDHGJ6f28mVE0CzAnMZYgCaPg+yrw@mail.gmail.com>
+In-Reply-To: <CAGoCfix8BH0coq2q-ndvBvDHGJ6f28mVE0CzAnMZYgCaPg+yrw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5788656.ixqAptM7nV
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hi Devin/Mauro/Hans,
 
-On Tuesday 23 September 2014 22:31:31 you wrote:
-> Hi,
->=20
-> On 09/23/2014 10:06 PM, Pali Roh=C3=A1r wrote:
-> > Hello,
-> >=20
-> > after big changes in acpi video/i915 code I cannot change
-> > display brightness on my Dell Latitude E6440 with kernel
-> > 3.17-rc6. With kernel 3.13 everything worked fine.
-> >=20
-> > More information about this problem:
-> >=20
-> > For configuring brightness on Dell laptops there are 4 ways:
-> > 1) via acpi video driver
-> > 2) via dell-laptop driver
-> > 3) via i915 drm driver
-> > 4) from userspace with special dell SMI call
-> >=20
-> >     (e.g with program dellLcdBrightness from libsmbios
-> >     package)
-> >=20
-> > Methods 2) and 4) are same, both making special SMI call and
-> > Bios handing this request (just 2 is from kernel and 4 from
-> > userspace)
-> >=20
-> > Method 1) via acpi video driver working, but is not perfect.
-> > Driver can be used to change brightness (but only some
-> > levels, probably this depends on acpi/DSDT tables), but
-> > cannot be used to retrieve current brightness (when
-> > BIOS/SMI change brightness acpi driver report old incorrect
-> > value). So I prefer dell-laptop driver instead acpi video.
-> >=20
-> > Method 3) working even with 3.17-rc6 kernel but because that
-> > backlight device exported by i915 is marked as raw, desktop
-> > programs prefer to use other devices.
-> >=20
-> > Moreover it looks like that methods 1) 2) and 4) just
-> > forward request to method 3). So in any cased brightness is
-> > changed by i915 drm driver.
-> >=20
-> > I'm not sure (correct me if I'm wrong!) but I think that
-> > intel i915 drm driver accept changes (file
-> > intel_opregion.c) only if acpi function
-> > acpi_video_verify_backlight_support() returns true.
-> >=20
-> > Function acpi_video_verify_backlight_support() returns true
-> > iff: function acpi_video_backlight_support() returns true
-> > AND at least one of these functions returns false:
-> > acpi_osi_is_win8()
-> > acpi_video_use_native_backlight()
-> > backlight_device_registered(BACKLIGHT_RAW)
-> >=20
-> > On my notebook acpi_osi_is_win8() returns true (as is win8
-> > compliant), backlight_device_registered(BACKLIGHT_RAW)
-> > returns true as I'm using intel i915 drm driver with raw
-> > backlight device and acpi_video_use_native_backlight()
-> > returns true/false depending on
-> > "video.use_native_backlight" kernel param. Default is true.
-> >=20
-> > So if I want to have working acpi video driver with display
-> > brightness support I need to boot kernel with param:
-> > "video.use_native_backlight=3D0". I tested it with kernel
-> > 3.17-rc6 and this param really enabled display brightness
-> > support via acpi video driver -- which is good.
-> >=20
-> > Driver dell-laptop creating backligh device for brightness
-> > control only if acpi_video_backlight_support() returns
-> > false. There is complicated condition for it and when
-> > kernel is booted with "video.use_native_backlight=3D0" that
-> > function returns true.
-> >=20
-> > So conclusion is: With current code in kernel 3.17-rc6 it is
-> > not possible to control brightness of display with native
-> > driver dell-laptop on Dell Latitude E6440 (and probably on
-> > others too)!!!
-> >=20
-> > And Because laptop is win8 compliant and you create decision
-> > to use native driver (instead acpi one) it is not possible
-> > to control display brightness without tweeks in kernel
-> > cmdline.
-> >=20
-> > As I wrote I would rather to use native dell-laptop driver
-> > for controlling brightness, but it is not possible.
-> >=20
-> > So how to solve this problem?
-> >=20
-> > Quick solution would be to set use_native_backlight false
-> > for some Dell laptops which means, that acpi video will be
-> > used and in this case intel i915 driver will *not* drop
-> > backlight change request.
-> >=20
-> > Another solution could be to disable check in dell_laptop
-> > driver and add use_native_backlight=3D0 to hooks. But this
-> > create two backlight interfaces (which is not good), but
-> > only way (for now) how to make dell_laptop working again.
-> >=20
-> > Better and maybe only one proper solution would be to teach
-> > intel drm i915 driver to not drop backlight change request
-> > for Dell laptops (or all??). (This allows to work both acpi
-> > video and dell_laptop drivers without any change and with
-> > *any* value in param use_native_backlight). I think that
-> > problematic code is in function asle_set_backlight() in
-> > file intel_opregion.c (but I'm not sure). My idea is that
-> > "drop" event function it is caused by this commit
-> > 0b9f7d93ca6109048a4eb06332b666b6e29df4fe (but I'm not
-> > sure).
-> >=20
-> > At least something must be done as I think that I'm not only
-> > one who has Dell laptop and brightness configuration is
-> > really important...
->=20
-> I don't understand your problem, the kernel is selecting the
-> i915 backlight driver, making that the only one available to
-> userspace, so the one problem you state with the i915 driver,
-> that it is "raw" is not an issue, as userspace will pick it
-> when it is the only one.
->=20
+Summarizing the discussion on v4l to keep others on this
+thread in the loop. Please see below:
 
-It is not only one. Also dell-laptop (or acpi video) backlight=20
-interface is created (depends on use_native_backlight param). And=20
-userspace will pick dell-laptop (or acpi video) to use (which=20
-cannot change brightness).
+Hans! Could you please take a look and see if it raises
+any red flags for you.
 
-> Why would you want to use dell-laptop despite the i915 driver
-> working fine ?
->=20
+On 09/23/2014 08:17 AM, Devin Heitmueller wrote:
 
-i915 working only if I compile kernel without acpi video dell-
-laptop support (distributions compile kernel with these drivers)=20
-and i915 is not good for usage. First it provides more then=20
-thousand brightness levels and lot of (with low numbers)=20
-completely turn display off. And if userspace map these thousand=20
-levels into 5-10 levels (as nobody want to press brightness key=20
-up/down 1000x) two lowest levels cause display off. With acpi=20
-video and dell-laptop driver levels are mapped into small level=20
-space in perfect way. So this is reason I want to use dell-laptop=20
-for controlling brightness.
+> 
+> We can always start with coarse locking on open/close, and do finer
+> grained locking down the road if needed - or simply change the
+> currently undefined behavior in the spec to say that you have to close
+> the device handle before attempting to open the other side of the
+> device.
+> 
 
-> Regards,
->=20
-> Hans
+I share the same concerns about fine grain locking approach that
+requires changes to various v4l2 ioctls to hold the token. My
+concern with the current approach is that we won't be able to find
+all the v4l paths to secure. During my testing, it is clear that
+several applications don't seem to check ioctls return codes and
+even if one of the ioctls returns -EBUSY, applications keep calling
+other ioctls instead of exiting with device busy condition.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Compared to the current approach, holding lock in open and releasing
+it in close is cleaner with predictable failure conditions. It is lot
+easier to maintain. In addition, this approach keeps it same as the
+dvb core token hold approach as outlined below.
 
---nextPart5788656.ixqAptM7nV
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+dvb on the other hand is easier with its clean entry and exit points.
+In the case of dvb, the lock is held when the device is opened in
+read/write mode before dvb front-end thread gets started and released
+when thread exits.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I discussed this a couple of times in the past during development
+for this current patch series. The concern has been that a number of
+currently supported use-cases will break with the simpler approach
+to lock when v4l device is opened and unlock when it is closed.
 
-iEYEABECAAYFAlQh26MACgkQi/DJPQPkQ1I2PwCgkXRHe1bu1q8Jh+86vKLgJw10
-1RoAoMOHzSHXA+nduz2+fcO4fygLKMJ2
-=76Es
------END PGP SIGNATURE-----
+As we discussed this morning and agreed on giving the simpler
+approach a try first keeping the finer grain locking option
+open for revisit. This would be acceptable provided the token
+code is tested on existing apps, including mythtv, kradio,
+gnome-radio.
 
---nextPart5788656.ixqAptM7nV--
+In addition to releasing the token at device close, release the token
+if an app decides to use S_PRIORITY to release the streaming ownership
+e. g. V4L2_PRIORITY_BACKGROUND
+
+Devin recommended testing on devices that have an encoder to cover
+the cases where there are multiple /dev/videoX nodes tied to the
+same tuner.
+
+Please check if I captured it correctly. I can get started on the
+simpler approach and see where it takes us. I have to change the
+v4l2 and driver v4l2 patches. dvb and the rest can stay the same.
+
+thanks,
+-- Shuah
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
