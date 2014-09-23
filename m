@@ -1,55 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742AbaIWUBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:01:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44628 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756639AbaIWUBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:01:02 -0400
-Date: Tue, 23 Sep 2014 22:00:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140923200054.GB16467@pd.tnic>
-References: <20140918145328.0253f009@as>
- <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
- <20140918200659.GA5331@khazad-dum.debian.net>
- <20140919001311.GB5331@khazad-dum.debian.net>
- <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
- <20140919110014.GC29639@khazad-dum.debian.net>
- <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
- <20140919164217.GD17456@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140919164217.GD17456@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756761AbaIWUBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:01:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37376 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756025AbaIWUB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:01:29 -0400
+Date: Tue, 23 Sep 2014 13:01:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, mhocko@suse.cz,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Anish Bhatt <anish@chelsio.com>,
+        David Miller <davem@davemloft.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: mmotm 2014-09-22-16-57 uploaded
+Message-Id: <20140923130128.79f5931ac03dbb31f53be805@linux-foundation.org>
+In-Reply-To: <20140923190222.GA4662@roeck-us.net>
+References: <5420b8b0.9HdYLyyuTikszzH8%akpm@linux-foundation.org>
+	<20140923190222.GA4662@roeck-us.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 01:42:17PM -0300, Henrique de Moraes Holschuh wrote:
-> 1. offline a "guinea pig" group of "cpus", i.e. an entire "microcode update
-> unit" that doesn't include the BSP.  This is going to be a pain, as what
-> composes a "microcode update unit" is not set in stone, and could change in
-> a future microarch.
+On Tue, 23 Sep 2014 12:02:22 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
 
-I'm pretty sure it is very dangerous to run with different microcode
-revisions on different cores. Your plan won't fly and I have hard time
-understanding why one would do such thing even if it did work.
+> On Mon, Sep 22, 2014 at 05:02:56PM -0700, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2014-09-22-16-57 has been uploaded to
+> > 
+> >    http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > mmotm-readme.txt says
+> > 
+> > README for mm-of-the-moment:
+> > 
+> > http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> > more than once a week.
+> > 
+> Sine I started testing this branch, I figure I might as well share the results.
+> 
+> Build results:
+> 	total: 133 pass: 115 fail: 18
+> Failed builds:
+> 	alpha:defconfig
+> 	alpha:allmodconfig
+> 	arm:imx_v6_v7_defconfig
+> 	arm:imx_v4_v5_defconfig
+> 	i386:allyesconfig
+> 	i386:allmodconfig
+> 	m68k:allmodconfig
+> 	mips:nlm_xlp_defconfig
+> 	parisc:a500_defconfig
+> 	powerpc:cell_defconfig
+> 	powerpc:ppc6xx_defconfig
+> 	powerpc:mpc85xx_defconfig
+> 	powerpc:mpc85xx_smp_defconfig
+> 	tile:tilegx_defconfig
+> 
+> Qemu test results:
+> 	total: 24 pass: 23 fail: 1
+> Failed tests:
+> 	alpha:alpha_defconfig
+> 
+> More information is available at http://server.roeck-us.net:8010/builders.
+> Note that powerpc failures are counted twice because they are built twice,
+> once with binutils 2.23 and once with 2.24.
+> 
+> The most scary problem (in my opinion) is the failed mips:nlm_xlp_defconfig
+> build.  It is caused by 'scsi_netlink : Make SCSI_NETLINK dependent on NET
+> instead of selecting NET', which effectively disables CONFIG_NET for around
+> 30 configurations (assuming I found them all). The practical impact is that
+> the affected configurations won't really work anymore, even if they compile. 
 
-If we're going to have to hide stuff which software might be using, I
-don't see a way around rebooting.
+cc'ing Anish Bhatt.
 
--- 
-Regards/Gruss,
-    Boris.
+> Guenter
+> 
+> ---
+> Details:
+> 
+> alpha (including qemu)
+> 
+> drivers/tty/serial/8250/8250_core.c: In function 'serial8250_ioctl':
+> drivers/tty/serial/8250/8250_core.c:2874:7: error: 'TIOCSRS485' undeclared
+> 
+> arm:imx_v6_v7_defconfig
+> arm:imx_v4_v5_defconfig
+> 
+> drivers/media/platform/coda/coda-bit.c: In function 'coda_fill_bitstream':
+> drivers/media/platform/coda/coda-bit.c:231:4: error: implicit declaration of function 'kmalloc'
+> drivers/media/platform/coda/coda-bit.c: In function 'coda_alloc_framebuffers':
+> drivers/media/platform/coda/coda-bit.c:312:3: error: implicit declaration of function 'kfree'
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+That's odd - it includes slab.h.  Cc Fabio.
+
+> i386:allyesconfig
+> 
+> drivers/built-in.o: In function `_scsih_qcmd':
+> mpt2sas_scsih.c:(.text+0xf5327d): undefined reference to `__udivdi3'
+> mpt2sas_scsih.c:(.text+0xf532b0): undefined reference to `__umoddi3'
+>
+> i386:allmodconfig
+> 
+> ERROR: "__udivdi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
+> ERROR: "__umoddi3" [drivers/scsi/mpt2sas/mpt2sas.ko] undefined!
+
+Sigh.
+ 
+> m68k:allmodconfig
+> 
+> drivers/tty/serial/st-asc.c: In function 'asc_in':
+> drivers/tty/serial/st-asc.c:154:2: error: implicit declaration of function 'readl_relaxed'
+> 
+> mips:nlm_xlp_defconfig
+> 
+> ERROR: "scsi_is_fc_rport" [drivers/scsi/libfc/libfc.ko] undefined!
+> ERROR: "fc_get_event_number" [drivers/scsi/libfc/libfc.ko] undefined!
+> ERROR: "skb_trim" [drivers/scsi/libfc/libfc.ko] undefined!
+> ERROR: "fc_host_post_event" [drivers/scsi/libfc/libfc.ko] undefined!
+> 
+> [and many more]
+> 
+> parisc:a500_defconfig
+> 
+> ERROR: "csum_partial" [drivers/scsi/scsi_debug.ko] undefined!
+> 
+> powerpc:cell_defconfig
+> powerpc:mpc85xx_defconfig
+> powerpc:mpc85xx_smp_defconfig
+> 
+> arch/powerpc/mm/hugetlbpage.c:710:1: error: conflicting types for 'follow_huge_pud'
+>  follow_huge_pud(struct mm_struct *mm, unsigned long address,
+>   ^
+> In file included from arch/powerpc/mm/hugetlbpage.c:14:0: include/linux/hugetlb.h:103:14:
+> 	note: previous declaration of 'follow_huge_pud' was here
+>    struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+                 ^
+
+Naoya, please check:
+
+--- a/arch/powerpc/mm/hugetlbpage.c~mm-hugetlb-reduce-arch-dependent-code-around-follow_huge_-fix
++++ a/arch/powerpc/mm/hugetlbpage.c
+@@ -708,7 +708,7 @@ follow_huge_pmd(struct mm_struct *mm, un
+ 
+ struct page *
+ follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd, int write)
++		pud_t *pud, int write)
+ {
+ 	BUG();
+ 	return NULL;
+_
+
+> powerpc:ppc6xx_defconfig
+> 
+> In file included from include/linux/kernel.h:13:0, from mm/debug.c:8:
+> mm/debug.c: In function 'dump_mm':
+> mm/debug.c:212:5: error: 'const struct mm_struct' has no member named 'owner'
+
+I fixed that.
+
+> tile:tilegx_defconfig
+> 
+> mm/debug.c: In function 'dump_mm':
+> mm/debug.c:169:2: error: expected ')' before 'mm'
+
+Don't have a clue.  In my tree that's
+
+	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
+
