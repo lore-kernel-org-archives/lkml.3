@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560AbaIWSU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:20:57 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45855 "EHLO
+	id S1756593AbaIWSVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:21:44 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45938 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267AbaIWSUz convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756291AbaIWSVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:20:55 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v3] power: reset: use restart_notifier mechanism for msm-poweroff
+	Tue, 23 Sep 2014 14:21:43 -0400
 From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20140923175556.GG868@joshc.qualcomm.com>
-Date: Tue, 23 Sep 2014 13:20:50 -0500
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C6FFC8E5-EDF0-4248-BE4B-AF4EB8533CCB@codeaurora.org>
-References: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com> <542112FD.7080302@smartplayin.com> <2C40727B-BF1E-46AC-9189-6B35E358220E@codeaurora.org> <20140923175556.GG868@joshc.qualcomm.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-X-Mailer: Apple Mail (2.1878.6)
+To: linux-arm-msm@vger.kernel.org
+Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: qcom: Update defconfig
+Date: Tue, 23 Sep 2014 13:21:40 -0500
+Message-Id: <1411496501-20130-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Enable ATA & AHCI platform support to get SATA on IPQ806x platforms
 
-On Sep 23, 2014, at 12:55 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ arch/arm/configs/qcom_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> On Tue, Sep 23, 2014 at 12:48:42PM -0500, Kumar Gala wrote:
->> 
->> On Sep 23, 2014, at 1:28 AM, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
->> 
->>> +linux-arm-msm
->>> On Tuesday 23 September 2014 11:38 AM, Pramod Gurav wrote:
->>>> This change replaces use of arm_pm_restart with recently introduced
->>>> reset mechanism in Linux kernel called restart_notifier.
->> 
->> Can you update the commit message to include details about the priority level we are setting it to.
->> 
->> Probably something like Josh had:
->> 
->> Choose priority 128, as according to documentation, this mechanism "is
->> sufficient to restart the entire system?.
->> 
->> Hmm, what happens if we have ps_hold restart and msm-poweroff enabled.
->> Which one should have priority?
-> 
-> I would hope we would avoid a situation where both this driver is
-> probed, and the pinctrl-msm driver has registered a restart handler?
-> 
-> That is, we wouldn't ever mix the pinctrl-msm ps_hold mechanism (for
-> MSM8660/MSM8960/APQ8064, etc) and msm-poweroff (APQ8074 and later).  Is
-> this a case you're worried about?
-
-Yes, I’m worried about possibly case of having both solutions on a device.
-
-- k
-
+diff --git a/arch/arm/configs/qcom_defconfig b/arch/arm/configs/qcom_defconfig
+index 8c7da33..05372f1 100644
+--- a/arch/arm/configs/qcom_defconfig
++++ b/arch/arm/configs/qcom_defconfig
+@@ -57,13 +57,14 @@ CONFIG_MTD_M25P80=y
+ CONFIG_MTD_SPI_NOR=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_SCSI=y
+ CONFIG_BLK_DEV_SD=y
+ CONFIG_CHR_DEV_SG=y
+ CONFIG_CHR_DEV_SCH=y
+ CONFIG_SCSI_CONSTANTS=y
+ CONFIG_SCSI_LOGGING=y
+ CONFIG_SCSI_SCAN_ASYNC=y
++CONFIG_ATA=y
++CONFIG_SATA_AHCI_PLATFORM=y
+ CONFIG_NETDEVICES=y
+ CONFIG_DUMMY=y
+ CONFIG_MDIO_BITBANG=y
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
