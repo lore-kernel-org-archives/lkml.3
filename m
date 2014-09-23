@@ -1,66 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbaIWQIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 12:08:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37878 "EHLO mx1.redhat.com"
+	id S932192AbaIWQIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 12:08:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4107 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932144AbaIWQIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932134AbaIWQIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Sep 2014 12:08:17 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pinglinux@gmail.com>,
         killertofu@gmail.com
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] HID: wacom: introduce generic HID handling
-Date: Tue, 23 Sep 2014 12:08:04 -0400
-Message-Id: <1411488489-10625-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 1/5] HID: wacom: rename failN with some meaningful information
+Date: Tue, 23 Sep 2014 12:08:05 -0400
+Message-Id: <1411488489-10625-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1411488489-10625-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1411488489-10625-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+When we have to deal with new elements in probe, having the exit labels
+named sequencially is a pain to maintain. Put a meaningful name instead
+so that we do not have to renumber them on inserts.
 
-So, this patch series aims at supporting natively any future HID compliant wacom
-tablet. Those found on the various laptops (ISDv4/5) already are HID compliant
-and they should work in the future without any modification of the kernel.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/wacom_sys.c | 49 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 20 deletions(-)
 
-Few things to note here:
-- I used the PID 0x00E6 found on the Lenovo X230 for the tests
-- I did not removed its entry in the list because there is a slightly different
-  behavior while using this patch set: when more than two fingers are on the
-  screen, the tablet stops sending finger events, while with the wacom
-  proprietary bits, it continues to send them. Besides that, the events emitted
-  before and after the patch series are the same (at least on the E6)
-- I can not rely on hid-input directly because wacom wants to be in control of
-  the input devices it creates. This might be solved in the future, but for now
-  it is just easier to rewrite the few mapping/events handling than trying to
-  fit in the hid-input model.
-- there will still be more specific use cases to handle later (see the joke of
-  the MS surface 3 pen[1] for instance), but this should give a roughly working
-  pen/touch support for those future devices.
-
-Jason, I would be very glad if you could conduct a few tests for this on the
-ISDv4/5 sensors you have.
-
-Cheers,
-Benjamin
-
-[1] http://who-t.blogspot.com/2014/09/stylus-behaviour-on-microsoft-surface-3.html
-
-Benjamin Tissoires (5):
-  HID: wacom: rename failN with some meaningful information
-  HID: wacom: split out input allocation and registration
-  HID: wacom: move allocation of inputs earlier
-  HID: wacom: implement generic HID handling for pen generic devices
-  HID: wacom: implement the finger part of the HID generic handling
-
- drivers/hid/hid-core.c  |   3 +
- drivers/hid/wacom.h     |   6 +
- drivers/hid/wacom_sys.c | 184 +++++++++++++++++++++--------
- drivers/hid/wacom_wac.c | 299 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/hid/wacom_wac.h |  17 +++
- include/linux/hid.h     |   2 +
- 6 files changed, 462 insertions(+), 49 deletions(-)
-
+diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+index 2508628..97e1fef 100644
+--- a/drivers/hid/wacom_sys.c
++++ b/drivers/hid/wacom_sys.c
+@@ -1075,7 +1075,7 @@ static int wacom_register_inputs(struct wacom *wacom)
+ 	pad_input_dev = wacom_allocate_input(wacom);
+ 	if (!input_dev || !pad_input_dev) {
+ 		error = -ENOMEM;
+-		goto fail1;
++		goto fail_allocate_input;
+ 	}
+ 
+ 	wacom_wac->input = input_dev;
+@@ -1084,11 +1084,11 @@ static int wacom_register_inputs(struct wacom *wacom)
+ 
+ 	error = wacom_setup_input_capabilities(input_dev, wacom_wac);
+ 	if (error)
+-		goto fail2;
++		goto fail_input_cap;
+ 
+ 	error = input_register_device(input_dev);
+ 	if (error)
+-		goto fail2;
++		goto fail_register_input;
+ 
+ 	error = wacom_setup_pad_input_capabilities(pad_input_dev, wacom_wac);
+ 	if (error) {
+@@ -1099,25 +1099,26 @@ static int wacom_register_inputs(struct wacom *wacom)
+ 	} else {
+ 		error = input_register_device(pad_input_dev);
+ 		if (error)
+-			goto fail3;
++			goto fail_register_pad_input;
+ 
+ 		error = wacom_initialize_leds(wacom);
+ 		if (error)
+-			goto fail4;
++			goto fail_leds;
+ 	}
+ 
+ 	return 0;
+ 
+-fail4:
++fail_leds:
+ 	input_unregister_device(pad_input_dev);
+ 	pad_input_dev = NULL;
+-fail3:
++fail_register_pad_input:
+ 	input_unregister_device(input_dev);
+ 	input_dev = NULL;
+-fail2:
++fail_register_input:
++fail_input_cap:
+ 	wacom_wac->input = NULL;
+ 	wacom_wac->pad_input = NULL;
+-fail1:
++fail_allocate_input:
+ 	if (input_dev)
+ 		input_free_device(input_dev);
+ 	if (pad_input_dev)
+@@ -1305,7 +1306,7 @@ static int wacom_probe(struct hid_device *hdev,
+ 	error = hid_parse(hdev);
+ 	if (error) {
+ 		hid_err(hdev, "parse failed\n");
+-		goto fail1;
++		goto fail_parse;
+ 	}
+ 
+ 	wacom_wac = &wacom->wacom_wac;
+@@ -1314,12 +1315,12 @@ static int wacom_probe(struct hid_device *hdev,
+ 	features->pktlen = wacom_compute_pktlen(hdev);
+ 	if (features->pktlen > WACOM_PKGLEN_MAX) {
+ 		error = -EINVAL;
+-		goto fail1;
++		goto fail_pktlen;
+ 	}
+ 
+ 	if (features->check_for_hid_type && features->hid_type != hdev->type) {
+ 		error = -ENODEV;
+-		goto fail1;
++		goto fail_type;
+ 	}
+ 
+ 	wacom->usbdev = dev;
+@@ -1388,20 +1389,20 @@ static int wacom_probe(struct hid_device *hdev,
+ 
+ 		error = wacom_add_shared_data(hdev);
+ 		if (error)
+-			goto fail1;
++			goto fail_shared_data;
+ 	}
+ 
+ 	if (!(features->quirks & WACOM_QUIRK_MONITOR) &&
+ 	     (features->quirks & WACOM_QUIRK_BATTERY)) {
+ 		error = wacom_initialize_battery(wacom);
+ 		if (error)
+-			goto fail2;
++			goto fail_battery;
+ 	}
+ 
+ 	if (!(features->quirks & WACOM_QUIRK_NO_INPUT)) {
+ 		error = wacom_register_inputs(wacom);
+ 		if (error)
+-			goto fail3;
++			goto fail_register_inputs;
+ 	}
+ 
+ 	if (hdev->bus == BUS_BLUETOOTH) {
+@@ -1419,7 +1420,7 @@ static int wacom_probe(struct hid_device *hdev,
+ 	error = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+ 	if (error) {
+ 		hid_err(hdev, "hw start failed\n");
+-		goto fail4;
++		goto fail_hw_start;
+ 	}
+ 
+ 	if (features->quirks & WACOM_QUIRK_MONITOR)
+@@ -1432,12 +1433,20 @@ static int wacom_probe(struct hid_device *hdev,
+ 
+ 	return 0;
+ 
+- fail4:	if (hdev->bus == BUS_BLUETOOTH)
++fail_hw_start:
++	wacom_unregister_inputs(wacom);
++	if (hdev->bus == BUS_BLUETOOTH)
+ 		device_remove_file(&hdev->dev, &dev_attr_speed);
++fail_register_inputs:
+ 	wacom_unregister_inputs(wacom);
+- fail3:	wacom_destroy_battery(wacom);
+- fail2:	wacom_remove_shared_data(wacom_wac);
+- fail1:	kfree(wacom);
++	wacom_destroy_battery(wacom);
++fail_battery:
++	wacom_remove_shared_data(wacom_wac);
++fail_shared_data:
++fail_type:
++fail_pktlen:
++fail_parse:
++	kfree(wacom);
+ 	hid_set_drvdata(hdev, NULL);
+ 	return error;
+ }
 -- 
 2.1.0
 
