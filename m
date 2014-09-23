@@ -1,114 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaIWCkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 22:40:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38528 "EHLO mail.kernel.org"
+	id S1755867AbaIWCk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:40:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38585 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754956AbaIWCkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 22:40:43 -0400
+	id S1754956AbaIWCkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Sep 2014 22:40:52 -0400
 From: Zefan Li <lizf@kernel.org>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 36/45] MIPS: Fix accessing to per-cpu data when flushing the cache
-Date: Tue, 23 Sep 2014 10:31:38 +0800
-Message-Id: <1411439507-30391-36-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Stephen Hurd <shurd@broadcom.com>, Michael Chan <mchan@broadcom.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 39/45] 8250_pci: fix warnings in backport of Broadcom TruManage support
+Date: Tue, 23 Sep 2014 10:31:41 +0800
+Message-Id: <1411439507-30391-39-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411439259-30224-1-git-send-email-lizf@kernel.org>
 References: <1411439259-30224-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ralf Baechle <ralf@linux-mips.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
 3.4.104-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-commit ff522058bd717506b2fa066fa564657f2b86477e upstream.
+commit 7400ce7ee9595432b2a1402b6ffcac9faf38d9ae (v3.4.92-76-g7400ce7ee959)
+was a backport of commit ebebd49a8eab5e9aa1b1f8f1614ccc3c2120f886 upstream
+("8250/16?50: Add support for Broadcom TruManage redirected serial port")
 
-This fixes the following issue
+However, in the context of 3.4.x kernels, the pci setup code was
+expecting a struct uart_port and not a struct uart_8250_port, leading to
+the following concerning warnings:
 
-BUG: using smp_processor_id() in preemptible [00000000] code: kjournald/1761
-caller is blast_dcache32+0x30/0x254
-Call Trace:
-[<8047f02c>] dump_stack+0x8/0x34
-[<802e7e40>] debug_smp_processor_id+0xe0/0xf0
-[<80114d94>] blast_dcache32+0x30/0x254
-[<80118484>] r4k_dma_cache_wback_inv+0x200/0x288
-[<80110ff0>] mips_dma_map_sg+0x108/0x180
-[<80355098>] ide_dma_prepare+0xf0/0x1b8
-[<8034eaa4>] do_rw_taskfile+0x1e8/0x33c
-[<8035951c>] ide_do_rw_disk+0x298/0x3e4
-[<8034a3c4>] do_ide_request+0x2e0/0x704
-[<802bb0dc>] __blk_run_queue+0x44/0x64
-[<802be000>] queue_unplugged.isra.36+0x1c/0x54
-[<802beb94>] blk_flush_plug_list+0x18c/0x24c
-[<802bec6c>] blk_finish_plug+0x18/0x48
-[<8026554c>] journal_commit_transaction+0x3b8/0x151c
-[<80269648>] kjournald+0xec/0x238
-[<8014ac00>] kthread+0xb8/0xc0
-[<8010268c>] ret_from_kernel_thread+0x14/0x1c
+drivers/tty/serial/8250/8250_pci.c: In function ‘pci_brcm_trumanage_setup’:
+drivers/tty/serial/8250/8250_pci.c:1086:2: warning: passing argument 3 of ‘pci_default_setup’ from incompatible pointer type [enabled by default]
+  int ret = pci_default_setup(priv, board, port, idx);
+  ^
+drivers/tty/serial/8250/8250_pci.c:1036:1: note: expected ‘struct uart_port *’ but argument is of type ‘struct uart_8250_port *’
+ pci_default_setup(struct serial_private *priv,
+ ^
+drivers/tty/serial/8250/8250_pci.c: At top level:
+drivers/tty/serial/8250/8250_pci.c:1746:3: warning: initialization from incompatible pointer type [enabled by default]
+   .setup  = pci_brcm_trumanage_setup,
+   ^
+drivers/tty/serial/8250/8250_pci.c:1746:3: warning: (near initialization for ‘pci_serial_quirks[56].setup’) [enabled by default]
 
-Caches in most systems are identical - but not always, so we can't avoid
-the use of smp_call_function() by just looking at the boot CPU's data,
-have to fiddle with preemption instead.
+I'd also expect the initialization to not function correctly, and
+perhaps dereference random garbage due to this.  Since the uart_port
+is a field within the uart_8250_port, the adaptation to fix these
+warnings is a straightforward removal of a layer of indirection.
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/5835
+Cc: Stephen Hurd <shurd@broadcom.com>
+Cc: Michael Chan <mchan@broadcom.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/mips/mm/c-r4k.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/tty/serial/8250/8250_pci.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
-index bda8eb2..fdd6042 100644
---- a/arch/mips/mm/c-r4k.c
-+++ b/arch/mips/mm/c-r4k.c
-@@ -12,6 +12,7 @@
- #include <linux/highmem.h>
- #include <linux/kernel.h>
- #include <linux/linkage.h>
-+#include <linux/preempt.h>
- #include <linux/sched.h>
- #include <linux/smp.h>
- #include <linux/mm.h>
-@@ -598,6 +599,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
- 	/* Catch bad driver code */
- 	BUG_ON(size == 0);
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index c48cf89..d53f396 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1080,12 +1080,12 @@ pci_omegapci_setup(struct serial_private *priv,
+ static int
+ pci_brcm_trumanage_setup(struct serial_private *priv,
+ 			 const struct pciserial_board *board,
+-			 struct uart_8250_port *port, int idx)
++			 struct uart_port *port, int idx)
+ {
+ 	int ret = pci_default_setup(priv, board, port, idx);
  
-+	preempt_disable();
- 	if (cpu_has_inclusive_pcaches) {
- 		if (size >= scache_size)
- 			r4k_blast_scache();
-@@ -618,6 +620,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
- 		R4600_HIT_CACHEOP_WAR_IMPL;
- 		blast_dcache_range(addr, addr + size);
- 	}
-+	preempt_enable();
+-	port->port.type = PORT_BRCM_TRUMANAGE;
+-	port->port.flags = (port->port.flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
++	port->type = PORT_BRCM_TRUMANAGE;
++	port->flags = (port->flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
+ 	return ret;
+ }
  
- 	bc_wback_inv(addr, size);
- 	__sync();
-@@ -628,6 +631,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
- 	/* Catch bad driver code */
- 	BUG_ON(size == 0);
- 
-+	preempt_disable();
- 	if (cpu_has_inclusive_pcaches) {
- 		if (size >= scache_size)
- 			r4k_blast_scache();
-@@ -663,6 +667,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
- 		cache_op(Hit_Writeback_Inv_D, (addr + size - 1)  & almask);
- 		blast_inv_dcache_range(addr, addr + size);
- 	}
-+	preempt_enable();
- 
- 	bc_inv(addr, size);
- 	__sync();
 -- 
 1.7.9.5
 
