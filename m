@@ -1,124 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324AbaIWPER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:04:17 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:58744 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109AbaIWPEL (ORCPT
+	id S932490AbaIWPEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:04:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58577 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932276AbaIWOsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:04:11 -0400
-Date: Tue, 23 Sep 2014 17:04:08 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Vidya Sagar <sagar.tv@gmail.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Jason Cooper <jason@lakedaemon.net>, Will Deacon <will.deacon@arm.com>,
-        Stephen Warren <swarren@nvidia.com>, Krishna Thota <kthota@nvidia.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] ARM: fix debug prints relevant to PCI devices
-Message-ID: <20140923150407.GJ5982@ulmo>
-References: <1410085687-11273-1-git-send-email-vidyas@nvidia.com>
- <CAErSpo7CX3XiuNZO8tXYVN2tUJudObFKVBthHfxf9mPS6hE6Cg@mail.gmail.com>
- <20140923140635.GR5182@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="g3RkK9jYN81zD2N+"
-Content-Disposition: inline
-In-Reply-To: <20140923140635.GR5182@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 23 Sep 2014 10:48:52 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Acked-by: Arnd Bergmann" <arnd@arndb.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v9 03/10] rtc: at91sam9: replace devm_ioremap by devm_ioremap_resource
+Date: Tue, 23 Sep 2014 16:48:38 +0200
+Message-Id: <1411483725-31532-4-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace devm_ioremap calls by devm_ioremap_resource which already check
+resource consistency (resource != NULL) and print an error in case of
+failure.
 
---g3RkK9jYN81zD2N+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Johan Hovold <johan@kernel.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/rtc/rtc-at91sam9.c | 29 ++++++++++-------------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
 
-On Tue, Sep 23, 2014 at 03:06:35PM +0100, Russell King - ARM Linux wrote:
-> On Tue, Sep 23, 2014 at 07:56:01AM -0600, Bjorn Helgaas wrote:
-> > This doesn't require any coordination with the PCI core, so I was just
-> > leaving this up to the arch.  But I guess I can at least give you my
-> > opinion :)
->=20
-> However, PCI core people have more knowledge of the issues here than I do.
->=20
-> > > diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-> > > index 17a26c1..03c56ba 100644
-> > > --- a/arch/arm/kernel/bios32.c
-> > > +++ b/arch/arm/kernel/bios32.c
-> > > @@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> > >  {
-> > >         struct pci_dev *dev;
-> > >         u16 features =3D PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_=
-COMMAND_FAST_BACK;
-> > > +       bool has_pcie_dev =3D false;
-> > >
-> > >         /*
-> > >          * Walk the devices on this bus, working out what we can
-> > > @@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> > >         list_for_each_entry(dev, &bus->devices, bus_list) {
-> > >                 u16 status;
-> > >
-> > > +               if (!has_pcie_dev)
-> > > +                       has_pcie_dev =3D pci_is_pcie(dev);
-> > >                 pci_read_config_word(dev, PCI_STATUS, &status);
-> > >
-> > >                 /*
-> > > @@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> > >
-> > >         /*
-> > >          * Report what we did for this bus
-> > > +        * (only if the bus doesn't have any PCIe devices)
-> > >          */
-> > > -       printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sa=
-bled\n",
-> > > -               bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en=
-" : "dis");
-> > > +       if (!has_pcie_dev)
-> > > +               pr_info("PCI: bus%d: Fast back to back transfers %sab=
-led\n",
-> > > +                       bus->number, (features & PCI_COMMAND_FAST_BAC=
-K) ? "en" : "dis");
-> >=20
-> > My first choice would be to just drop the printk altogether.
->=20
-> It can be useful information.
->=20
-> > If we want to keep the printk, it should be enough to test "bus->self
-> > && !pci_is_pcie(bus->self)" to see whether Fast Back-to-Back can be
-> > enabled.
->=20
-> This is exactly the kind of issue that needs to be picked up by core
-> PCI people.
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 74a9ca0..38a2693 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -306,18 +306,11 @@ static const struct rtc_class_ops at91_rtc_ops = {
+  */
+ static int at91_rtc_probe(struct platform_device *pdev)
+ {
+-	struct resource	*r, *r_gpbr;
++	struct resource	*r;
+ 	struct sam9_rtc	*rtc;
+ 	int		ret, irq;
+ 	u32		mr;
+ 
+-	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	r_gpbr = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	if (!r || !r_gpbr) {
+-		dev_err(&pdev->dev, "need 2 ressources\n");
+-		return -ENODEV;
+-	}
+-
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "failed to get interrupt resource\n");
+@@ -335,18 +328,16 @@ static int at91_rtc_probe(struct platform_device *pdev)
+ 		device_init_wakeup(&pdev->dev, 1);
+ 
+ 	platform_set_drvdata(pdev, rtc);
+-	rtc->rtt = devm_ioremap(&pdev->dev, r->start, resource_size(r));
+-	if (!rtc->rtt) {
+-		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
+-		return -ENOMEM;
+-	}
+ 
+-	rtc->gpbr = devm_ioremap(&pdev->dev, r_gpbr->start,
+-				resource_size(r_gpbr));
+-	if (!rtc->gpbr) {
+-		dev_err(&pdev->dev, "failed to map gpbr registers, aborting.\n");
+-		return -ENOMEM;
+-	}
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	rtc->rtt = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(rtc->rtt))
++		return PTR_ERR(rtc->rtt);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(rtc->gpbr))
++		return PTR_ERR(rtc->rtt);
+ 
+ 	mr = rtt_readl(rtc, MR);
+ 
+-- 
+1.9.1
 
-I agree. Wouldn't it be more useful to move this into the core?
-Disabling fast back-to-back transfers hardly seems like an ARM-
-specific "fixup" to me.
-
-Thierry
-
---g3RkK9jYN81zD2N+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUIYvnAAoJEN0jrNd/PrOhTbMP/2/uFIWG3pWyQWrSYehyV8/+
-HcoWcBdsxh6MytFHwxO75YmgB4c6SXdM6Cez4MEaFJDSs3rgrymgZiky8pqO9Ytz
-erNwQdMgCIs+Yie/lo1zQGrQYLW+rcci8GyHrhExR8niU2WPE42JILeAuXwJAiLv
-k3S8iwGCVC3Uuzvy1WLHZA2BISoqoayFOfVSRTLpfbhqyNBkd+zwnyzzbRTQzVre
-I6WjvwunWYbdzsaStNI/MsdpPpCimMhB+M3OXWsGd60MFeNkKTSFfpoAc9D6eyYB
-W1MbFmV4sMqI4QAPtb7DONpMsQMUqa2ZiA3Od+3a6aB04neoblzpwnDipDze1bkV
-Xqs3vZf3S/46jO4WYaHh0/6YjrqNm4zJc0onqNnrMCkEDMChsGqGtI80IPtCm2hR
-caRz+T6/iVbblpNavscBldz/H1zkiJ7JHlZAGa4Y/8OA9JEIvILhAdNpCY4Hsg/r
-UG6fRr4gb7he8gTaIMEOf7QXE0sQ/SJzMD73FA0BS/wtks9Jgd7RoArgIlAYeLYC
-IZmpHiIK4qbCYMbjLt7iC0q03ZBWob2mvXeLcoRoc6BLOkk2HK8bdElfZEUDjWm+
-t/Wrdc5Bn86scsZcbOzklTMLnceQTVNnCx26LLQ+68pJ0rHq71Hoi4qOmBvHr/R5
-qYQti6tMepTFr+dTYNUF
-=i7Kv
------END PGP SIGNATURE-----
-
---g3RkK9jYN81zD2N+--
