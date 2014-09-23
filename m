@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbaIWH0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:26:18 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:48435 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693AbaIWH0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:26:17 -0400
-Date: Tue, 23 Sep 2014 11:26:00 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/2] memcg: move memcg_update_cache_size to slab_common.c
-Message-ID: <20140923072600.GB3588@esperanza>
-References: <e768785511927d65bd3e6d9f65ab2a9851a3d73d.1411054735.git.vdavydov@parallels.com>
- <0689062e28e13375241dcc64df2a398c9d606c64.1411054735.git.vdavydov@parallels.com>
- <20140922201137.GB5373@cmpxchg.org>
+	id S1754654AbaIWH04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:26:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752988AbaIWH0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 03:26:54 -0400
+Date: Tue, 23 Sep 2014 15:24:26 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 7/7] efi_rtc: probe function error out in case no efi
+ runtime enabled
+Message-ID: <20140923072426.GB3916@darkstar.nay.redhat.com>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+ <1408007953-15151-1-git-send-email-dyoung@redhat.com>
+ <1411403609.25340.55.camel@deneb.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140922201137.GB5373@cmpxchg.org>
+In-Reply-To: <1411403609.25340.55.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 04:11:37PM -0400, Johannes Weiner wrote:
-> On Thu, Sep 18, 2014 at 07:50:20PM +0400, Vladimir Davydov wrote:
-> > @@ -646,11 +646,13 @@ int memcg_limited_groups_array_size;
-> >  struct static_key memcg_kmem_enabled_key;
-> >  EXPORT_SYMBOL(memcg_kmem_enabled_key);
-> >  
-> > +static void memcg_free_cache_id(int id);
+Hi, Mark
+
+On 09/22/14 at 12:33pm, Mark Salter wrote:
+> On Thu, 2014-08-14 at 17:19 +0800, Dave Young wrote:
+> > efi rtc depends on efi runtime services, so if efi runtime services are not
+> > usable it should error out.
+> > 
+> > Without this patch rtc-efi will panic with 'noefi' boot
 > 
-> Any chance you could re-order this code to avoid the forward decl?
+> Is this still needed after commit da167ad7638759:
+> 
+>   rtc: ia64: allow other architectures to use EFI RTC
+> 
+> That should keep efi_rtc_probe from being called if runtime services
+> are not available.
 
-I'm going to move the call to memcg_free_cache_id() from the css free
-path to css offline. Actually, this is what "[PATCH -mm 08/14] memcg:
-release memcg_cache_id on css offline", which is a part of my "Per memcg
-slab shrinkers" patch set, does. The css offline path is defined below
-css_alloc/free_cache_id, so the forward declaration will be removed
-then.
+If that's the case then this patch should be unnecessary, I have no machine
+to test it currently though.
 
-Thanks,
-Vladimir
+> 
+> > 
+> > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > ---
+> >  drivers/rtc/rtc-efi.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
+> > index c4c3843..ca2487b 100644
+> > --- a/drivers/rtc/rtc-efi.c
+> > +++ b/drivers/rtc/rtc-efi.c
+> > @@ -191,6 +191,9 @@ static int __init efi_rtc_probe(struct platform_device *dev)
+> >  {
+> >  	struct rtc_device *rtc;
+> >  
+> > +	if (!efi_enabled(EFI_RUNTIME_SERVICES))
+> > +		return -ENODEV;
+> > +
+> >  	rtc = devm_rtc_device_register(&dev->dev, "rtc-efi", &efi_rtc_ops,
+> >  					THIS_MODULE);
+> >  	if (IS_ERR(rtc))
+> 
+> 
