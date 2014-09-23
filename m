@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaIWHoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:44:25 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54034 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750797AbaIWHoX (ORCPT
+	id S1753883AbaIWHoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:44:30 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:5888 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321AbaIWHo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:44:23 -0400
-Message-ID: <5421249E.2000700@st.com>
-Date: Tue, 23 Sep 2014 09:43:26 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 23 Sep 2014 03:44:27 -0400
+Message-ID: <542124D3.9000007@huawei.com>
+Date: Tue, 23 Sep 2014 15:44:19 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, <olof@lixom.net>
-Cc: <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: Re: [RESEND PATCH 0/4] Enables STMicroelectronics Flexgen Clock support
-References: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
-In-Reply-To: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <keescook@chromium.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        "Tetsuo Handa" <penguin-kernel@I-love.SAKURA.ne.jp>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v3 1/3] sched: fix confusing PFA_NO_NEW_PRIVS constant
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.542124D9.0043,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: e139820a3a63be35925b22c0bf3a1328
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gabi,
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-	Series applied to sti-dt-for-v3.18.
+Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
+defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
+because it is used as bit number. Redefine it as decimal bit number.
 
-Thanks!
-Maxime
+Note this changes the bit position of PFA_NOW_NEW_PRIVS from 1 to 0.
 
-On 08/25/2014 04:44 PM, Gabriel FERNANDEZ wrote:
-> These patches enables clock drivers for STih407 boards.
->
-> Gabriel Fernandez (4):
->    ARM: STi: DT: STiH407: 407 DT Entry for clockgen A0
->    ARM: STi: DT: STiH407: 407 DT Entry for clockgen C0
->    ARM: STi: DT: STiH407: 407 DT Entry for clockgen D0/D2/D3
->    ARM: STi: DT: STiH407: 407 DT Entry for clockgenA9
->
->   arch/arm/boot/dts/stih407-clock.dtsi     | 295 ++++++++++++++++++++++++++++++-
->   arch/arm/boot/dts/stih407.dtsi           |  18 +-
->   include/dt-bindings/clock/stih407-clks.h |  11 ++
->   3 files changed, 307 insertions(+), 17 deletions(-)
->   create mode 100644 include/dt-bindings/clock/stih407-clks.h
->
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Kees Cook <keescook@chromium.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Kees Cook <keescook@chromium.org>
+[ lizf: slightly modified subject and changelog ]
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..4557765 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
+ }
+ 
+ /* Per-process atomic flags. */
+-#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
++#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+ 
+ static inline bool task_no_new_privs(struct task_struct *p)
+ {
+-- 
+1.8.0.2
+
