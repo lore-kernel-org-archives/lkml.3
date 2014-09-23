@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671AbaIWT4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:56:06 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:51659 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038AbaIWTzY (ORCPT
+	id S1755052AbaIWT6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:58:48 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53963 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751307AbaIWT6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:55:24 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickens <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Feiner <pfeiner@google.com>
-Subject: [PATCH v2 1/3] tools: add .gitignore entries for selftests
-Date: Tue, 23 Sep 2014 12:55:18 -0700
-Message-Id: <1411502120-28219-2-git-send-email-pfeiner@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1411502120-28219-1-git-send-email-pfeiner@google.com>
-References: <1411499027-17801-1-git-send-email-pfeiner@google.com>
- <1411502120-28219-1-git-send-email-pfeiner@google.com>
+	Tue, 23 Sep 2014 15:58:46 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v12 10/12] PCI: Assign unassigned bus resources in pci_scan_root_bus()
+Date: Tue, 23 Sep 2014 20:01:12 +0100
+Message-Id: <1411498874-9864-11-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignore the binaries built for selftests in 'git status' output to make
-development more pleasant. Without this patch, you see
+If the firmware has not assigned all the bus resources and
+we are not just probing the PCIe busses, it makes sense to
+assign the unassigned resources in pci_scan_root_bus().
 
-       tools/testing/selftests/breakpoints/breakpoint_test
-       tools/testing/selftests/efivarfs/create-read
-       tools/testing/selftests/efivarfs/open-unlink
-       tools/testing/selftests/kcmp/kcmp_test
-       tools/testing/selftests/memfd/memfd_test
-       tools/testing/selftests/mqueue/mq_open_tests
-       tools/testing/selftests/mqueue/mq_perf_tests
-       tools/testing/selftests/net/psock_fanout
-       tools/testing/selftests/net/psock_tpacket
-       tools/testing/selftests/net/socket
-       tools/testing/selftests/ptrace/peeksiginfo
-       tools/testing/selftests/timers/posix_timers
-       tools/testing/selftests/vm/hugepage-mmap
-       tools/testing/selftests/vm/hugepage-shm
-       tools/testing/selftests/vm/hugetlbfstest
-       tools/testing/selftests/vm/map_hugetlb
-       tools/testing/selftests/vm/thuge-gen
-       tools/testing/selftests/mount/unprivileged-remount-test
-
-in the list of untracked files.
-
-Signed-off-by: Peter Feiner <pfeiner@google.com>
-
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 ---
+ drivers/pci/probe.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-v1 -> v2:
-	* added changelog blurb
-	* added mount/.gitignore for unprivileged-remount-test
----
- tools/testing/selftests/breakpoints/.gitignore | 1 +
- tools/testing/selftests/efivarfs/.gitignore    | 2 ++
- tools/testing/selftests/mount/.gitignore       | 1 +
- tools/testing/selftests/ptrace/.gitignore      | 1 +
- tools/testing/selftests/timers/.gitignore      | 1 +
- tools/testing/selftests/vm/.gitignore          | 9 +++++----
- 6 files changed, 11 insertions(+), 4 deletions(-)
- create mode 100644 tools/testing/selftests/breakpoints/.gitignore
- create mode 100644 tools/testing/selftests/efivarfs/.gitignore
- create mode 100644 tools/testing/selftests/mount/.gitignore
- create mode 100644 tools/testing/selftests/ptrace/.gitignore
- create mode 100644 tools/testing/selftests/timers/.gitignore
-
-diff --git a/tools/testing/selftests/breakpoints/.gitignore b/tools/testing/selftests/breakpoints/.gitignore
-new file mode 100644
-index 0000000..ad66922
---- /dev/null
-+++ b/tools/testing/selftests/breakpoints/.gitignore
-@@ -0,0 +1 @@
-+/breakpoint_test
-diff --git a/tools/testing/selftests/efivarfs/.gitignore b/tools/testing/selftests/efivarfs/.gitignore
-new file mode 100644
-index 0000000..66c6e85
---- /dev/null
-+++ b/tools/testing/selftests/efivarfs/.gitignore
-@@ -0,0 +1,2 @@
-+/create-read
-+/open-unlink
-diff --git a/tools/testing/selftests/mount/.gitignore b/tools/testing/selftests/mount/.gitignore
-new file mode 100644
-index 0000000..7ffb29f
---- /dev/null
-+++ b/tools/testing/selftests/mount/.gitignore
-@@ -0,0 +1 @@
-+/unprivileged-remount-test
-diff --git a/tools/testing/selftests/ptrace/.gitignore b/tools/testing/selftests/ptrace/.gitignore
-new file mode 100644
-index 0000000..d348b86
---- /dev/null
-+++ b/tools/testing/selftests/ptrace/.gitignore
-@@ -0,0 +1 @@
-+/peeksiginfo
-diff --git a/tools/testing/selftests/timers/.gitignore b/tools/testing/selftests/timers/.gitignore
-new file mode 100644
-index 0000000..ac85e5b
---- /dev/null
-+++ b/tools/testing/selftests/timers/.gitignore
-@@ -0,0 +1 @@
-+/posix_timers
-diff --git a/tools/testing/selftests/vm/.gitignore b/tools/testing/selftests/vm/.gitignore
-index ff1bb16..e57961f 100644
---- a/tools/testing/selftests/vm/.gitignore
-+++ b/tools/testing/selftests/vm/.gitignore
-@@ -1,4 +1,5 @@
--hugepage-mmap
--hugepage-shm
--map_hugetlb
--thuge-gen
-+/hugepage-mmap
-+/hugepage-shm
-+/map_hugetlb
-+/thuge-gen
-+/hugetlbfstest
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index ef891d2..508cf61 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1953,6 +1953,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+ 	if (!found)
+ 		pci_bus_update_busn_res_end(b, max);
+ 
++	if (!pci_has_flag(PCI_PROBE_ONLY))
++		pci_assign_unassigned_bus_resources(b);
++
+ 	pci_bus_add_devices(b);
+ 	return b;
+ }
 -- 
-2.1.0.rc2.206.gedb03e5
+2.1.0
 
