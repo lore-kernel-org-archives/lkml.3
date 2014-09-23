@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681AbaIWNBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 09:01:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37856 "EHLO mx2.suse.de"
+	id S1751516AbaIWNDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 09:03:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38415 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaIWNBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 09:01:47 -0400
-Message-ID: <54216F39.9030902@suse.cz>
-Date: Tue, 23 Sep 2014 15:01:45 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751307AbaIWNDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 09:03:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,580,1406617200"; 
+   d="scan'208";a="577531807"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Joe Perches <joe@perches.com>, David Airlie <airlied@linux.ie>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH] drm: change drm_err return type to void
+In-Reply-To: <1411403411.2952.36.camel@joe-AO725>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1411403411.2952.36.camel@joe-AO725>
+User-Agent: Notmuch/0.18.1+110~gd9ec63c (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 23 Sep 2014 16:00:44 +0300
+Message-ID: <87lhpa5w5f.fsf@intel.com>
 MIME-Version: 1.0
-To: Alexis Berlemont <alexis.berlemont@gmail.com>
-CC: linux-kernel@vger.kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        mingo@kernel.org, sam@ravnborg.org, namhyung@kernel.org
-Subject: Re: [PATCH 01/15] kbuild: add support of custom paths for "auto.conf*"
- files
-References: <1411422796-27049-1-git-send-email-alexis.berlemont@gmail.com> <1411422796-27049-2-git-send-email-alexis.berlemont@gmail.com>
-In-Reply-To: <1411422796-27049-2-git-send-email-alexis.berlemont@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-22 23:53, Alexis Berlemont wrote:
-> In the scripts/Makefile.build, use KCONFIG_AUTOCONFIG to include a
-> custom path for the "auto.conf" file.
-> 
-> The "*conf" programs were modified so as to work with the environment
-> variable KCONFIG_AUTOCONFIG.
+On Mon, 22 Sep 2014, Joe Perches <joe@perches.com> wrote:
+> The return value is not used by callers of this function
+> nor by uses of the DRM_ERROR macro so change the function
+> to return void.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+
+
 > ---
->  scripts/Makefile.build     |  3 ++-
->  scripts/kconfig/confdata.c | 27 ++++++++++++++++++++++++++-
->  scripts/kconfig/lkc.h      |  1 +
->  3 files changed, 29 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> index bf3e677..ef60769 100644
-> --- a/scripts/Makefile.build
-> +++ b/scripts/Makefile.build
-> @@ -31,7 +31,8 @@ subdir-asflags-y :=
->  subdir-ccflags-y :=
+> This change is associated to a desire to eventually
+> change printk to return void.
+>
+> No x86 change in output size for drm_drv.o
+>
+>  drivers/gpu/drm/drm_drv.c | 7 ++-----
+>  include/drm/drmP.h        | 2 +-
+>  2 files changed, 3 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+> index 6a11902..8889f8e 100644
+> --- a/drivers/gpu/drm/drm_drv.c
+> +++ b/drivers/gpu/drm/drm_drv.c
+> @@ -56,22 +56,19 @@ static struct idr drm_minors_idr;
+>  struct class *drm_class;
+>  static struct dentry *drm_debugfs_root;
 >  
->  # Read auto.conf if it exists, otherwise ignore
-> --include include/config/auto.conf
-> +kconfig-autoconfig := $(if $(KCONFIG_AUTOCONFIG),$(KCONFIG_AUTOCONFIG),include/config/auto.conf)
-> +-include $(kconfig-autoconfig)
+> -int drm_err(const char *func, const char *format, ...)
+> +void drm_err(const char *func, const char *format, ...)
+>  {
+>  	struct va_format vaf;
+>  	va_list args;
+> -	int r;
 >  
->  include scripts/Kbuild.include
+>  	va_start(args, format);
 >  
-> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-> index f88d90f..d4d8920 100644
-> --- a/scripts/kconfig/confdata.c
-> +++ b/scripts/kconfig/confdata.c
-> @@ -75,6 +75,27 @@ const char *conf_get_autoconfig_name(void)
->  	return name ? name : "include/config/auto.conf";
+>  	vaf.fmt = format;
+>  	vaf.va = &args;
+>  
+> -	r = printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
+> +	printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
+>  
+>  	va_end(args);
+> -
+> -	return r;
 >  }
+>  EXPORT_SYMBOL(drm_err);
 >  
-> +#define PATH_MAXLENGTH 4096
-> +const char *conf_get_autoconfigdep_name(void)
-> +{
-> +	static char res_value[PATH_MAXLENGTH];
-> +
-> +	char *name = getenv("KCONFIG_AUTOCONFIG");
-> +
-> +	if (name == NULL)
-> +		name = "include/config/auto.conf.cmd";
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index 5c60d38..2163ccb 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -124,7 +124,7 @@ extern __printf(2, 3)
+>  void drm_ut_debug_printk(const char *function_name,
+>  			 const char *format, ...);
+>  extern __printf(2, 3)
+> -int drm_err(const char *func, const char *format, ...);
+> +void drm_err(const char *func, const char *format, ...);
+>  
+>  /***********************************************************************/
+>  /** \name DRM template customization defaults */
+>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
-This will result in "include/config/auto.conf.cmd.cmd". Better simplify
-it to name = conf_get_autoconfig_name().
-
-
-> +	if (strlen(name) > PATH_MAXLENGTH - 5)
-> +		name = NULL;
-> +	else {
-> +		res_value[0] = 0;
-
-This assignment is superfluous.
-
-
-> +		strncpy(res_value, name, PATH_MAXLENGTH);
-> +		strcat(res_value, ".cmd");
-> +		name = res_value;
-
-Michal
-
+-- 
+Jani Nikula, Intel Open Source Technology Center
