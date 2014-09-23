@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841AbaIWUnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 16:43:32 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:59554 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803AbaIWUn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 16:43:29 -0400
-Date: Tue, 23 Sep 2014 21:43:26 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20140923204326.GK18635@console-pimps.org>
-References: <20140923053510.GB27825@gmail.com>
- <20140923053711.GA28704@gmail.com>
- <20140923055802.GA29052@gmail.com>
- <1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
- <CAKv+Gu_xqnkVKuoWY=PRoAVYE_qOH8dwM+ZxG+ysC7Xvs82ZNw@mail.gmail.com>
- <20140923131805.GH18635@console-pimps.org>
- <CA+55aFyLrvrc2mv0oVPggQjXDVqA2ejZEufEPdMfbW=f_dOqmQ@mail.gmail.com>
- <20140923161117.GJ18635@console-pimps.org>
- <20140923161751.GB7858@hansolo.jdub.homelinux.org>
- <20140923172113.GC7858@hansolo.jdub.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923172113.GC7858@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756861AbaIWUn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 16:43:56 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:57373 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756593AbaIWUmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 16:42:40 -0400
+From: Heiko Stuebner <heiko@sntech.de>
+To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, dianders@chromium.org, heiko@sntech.de,
+        Heiko Stuebner <heiko.stuebner@bq.com>
+Subject: [PATCH v4 3/3] power: gpio-charger: do not use gpio value directly
+Date: Tue, 23 Sep 2014 22:42:16 +0200
+Message-Id: <1411504936-21026-4-git-send-email-heiko@sntech.de>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411504936-21026-1-git-send-email-heiko@sntech.de>
+References: <1411504936-21026-1-git-send-email-heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep, at 01:21:13PM, Josh Boyer wrote:
-> 
-> All of the machines that were broken and subsequently fixed by reverting
-> the EFI GOT change still boot fine with this patch.  That includes the
-> macbook and SB enabled machines.
-> 
-> So results as expected.  Thanks.
+From: Heiko Stuebner <heiko.stuebner@bq.com>
 
-Great, thanks Josh.
+Some gpio implementations return interesting values for gpio_get_value when
+the value is not 0 - as seen on a imx6sl board. Therefore do not use the
+value returned from gpio_get_value directly but simply check for 0 or not 0.
 
-I'm gonna queue up this revert to fix Maarten's boot issue, along with
-the patch to drop the "setup_efi_pci() failed!" message, and send a pull
-request to the tip folks.
+Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/power/gpio-charger.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Meanwhile, I've upgraded one of my test machines to Fedora 20 with grub2
-and can reproduce the issue that you and Linus were hitting before the
-GOT patch revert. I'll take a look at figuring out what on earth is
-going on there.
-
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index 22f084a..7d4eab2 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -57,7 +57,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
+ 
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_ONLINE:
+-		val->intval = gpio_get_value_cansleep(pdata->gpio);
++		val->intval = !!gpio_get_value_cansleep(pdata->gpio);
+ 		val->intval ^= pdata->gpio_active_low;
+ 		break;
+ 	default:
 -- 
-Matt Fleming, Intel Open Source Technology Center
+2.1.0
+
