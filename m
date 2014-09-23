@@ -1,115 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520AbaIWKaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 06:30:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55921 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755465AbaIWK3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 06:29:03 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 09/12] ARM: dts: berlin: add BG2Q nodes for USB support
-Date: Tue, 23 Sep 2014 12:28:05 +0200
-Message-Id: <1411468088-5702-10-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1755489AbaIWKaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 06:30:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755466AbaIWK3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 06:29:04 -0400
+Date: Tue, 23 Sep 2014 13:32:22 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH RFC] virtio_pci: fix virtio spec compliance on restore
+Message-ID: <1411468217-18130-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds nodes describing the Marvell Berlin BG2Q USB PHY and USB. The BG2Q
-SoC has 3 USB host controller, compatible with ChipIdea.
+On restore, virtio pci does the following:
++ set features
++ init vqs etc - device can be used at this point!
++ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+This is in violation of the virtio spec, which
+requires the following order:
+- ACKNOWLEDGE
+- DRIVER
+- init vqs
+- DRIVER_OK
+
+Cc: stable@vger.kernel.org
+Cc: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/arm/boot/dts/berlin2q.dtsi | 52 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index ffba5c3bdab8..faf7cbe2af20 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -114,6 +114,39 @@
- 			#interrupt-cells = <3>;
- 		};
+Lightly tested.
+Will repost as non-RFC once testing is done, sending
+out now for early flames/comments.
+
+Thanks!
+
+ drivers/virtio/virtio_pci.c | 36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index 58f7e45..58cbf6e 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -785,6 +785,7 @@ static int virtio_pci_restore(struct device *dev)
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+ 	struct virtio_driver *drv;
++	unsigned status = 0;
+ 	int ret;
  
-+		usb_phy2: phy@a2f400 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xa2f400 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 14>;
-+			status = "disabled";
-+		};
-+
-+		usb2: usb@a30000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xa30000 0x10000>;
-+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB2>;
-+			phys = <&usb_phy2>;
-+			status = "disabled";
-+		};
-+
-+		usb_phy0: phy@b74000 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xb74000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 12>;
-+			status = "disabled";
-+		};
-+
-+		usb_phy1: phy@b78000 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xb78000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 13>;
-+			status = "disabled";
-+		};
-+
- 		cpu-ctrl@dd0000 {
- 			compatible = "marvell,berlin-cpu-ctrl";
- 			reg = <0xdd0000 0x10000>;
-@@ -348,6 +381,24 @@
- 			};
- 		};
+ 	drv = container_of(vp_dev->vdev.dev.driver,
+@@ -795,14 +796,41 @@ static int virtio_pci_restore(struct device *dev)
+ 		return ret;
  
-+		usb0: usb@ed0000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xed0000 0x10000>;
-+			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB0>;
-+			phys = <&usb_phy0>;
-+			status = "disabled";
-+		};
+ 	pci_set_master(pci_dev);
++	/* We always start by resetting the device, in case a previous
++	 * driver messed it up. */
++	vp_reset(&vp_dev->vdev);
 +
-+		usb1: usb@ee0000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xee0000 0x10000>;
-+			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB1>;
-+			phys = <&usb_phy1>;
-+			status = "disabled";
-+		};
++	/* Acknowledge that we've seen the device. */
++	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
++	vp_set_status(&vp_dev->vdev, status);
 +
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -440,5 +491,6 @@
- 				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
- 			};
- 		};
++	/* Maybe driver failed before freeze.
++	 * Restore the failed status, for debugging. */
++	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
++	vp_set_status(&vp_dev->vdev, status);
 +
- 	};
- };
++	if (!drv)
++		return 0;
++
++	/* We have a driver! */
++	status |= VIRTIO_CONFIG_S_DRIVER;
++	vp_set_status(&vp_dev->vdev, status);
++
+ 	vp_finalize_features(&vp_dev->vdev);
+ 
+-	if (drv && drv->restore)
+-		ret = drv->restore(&vp_dev->vdev);
++	if (!drv->restore)
++		return 0;
++
++	ret = drv->restore(&vp_dev->vdev);
++	if (ret) {
++		status |= VIRTIO_CONFIG_S_FAILED;
++		vp_set_status(&vp_dev->vdev, status);
++		return ret;
++	}
+ 
+ 	/* Finally, tell the device we're all set */
+-	if (!ret)
+-		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
++	status |= VIRTIO_CONFIG_S_DRIVER_OK;
++	vp_set_status(&vp_dev->vdev, status);
+ 
+ 	return ret;
+ }
 -- 
-1.9.1
-
+MST
