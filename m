@@ -1,34 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049AbaIWX2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 19:28:16 -0400
-Received: from resqmta-ch2-05v.sys.comcast.net ([69.252.207.37]:45437 "EHLO
-	resqmta-ch2-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752732AbaIWX2P (ORCPT
+	id S1757133AbaIWX2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 19:28:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19051 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849AbaIWX2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 19:28:15 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Sep 2014 19:28:15 EDT
-Date: Tue, 23 Sep 2014 18:22:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>, a.elovikov@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, slab: initialize object alignment on cache
- creation
-In-Reply-To: <alpine.DEB.2.02.1409231439190.22630@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.11.1409231821050.32451@gentwo.org>
-References: <20140923141940.e2d3840f31d0f8850b925cf6@linux-foundation.org> <alpine.DEB.2.02.1409231439190.22630@chino.kir.corp.google.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 23 Sep 2014 19:28:51 -0400
+To: Chris J Arges <chris.j.arges@canonical.com>
+Cc: hch@infradead.org, bruce.lucas@mongodb.com, adam.radford@avagotech.com,
+        kashyap.desai@avagotech.com,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mptfusion: enable no_write_same for vmware scsi disks
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140923071154.GB3867@infradead.org>
+	<1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
+	<5421F020.1030309@canonical.com>
+Date: Tue, 23 Sep 2014 19:28:04 -0400
+In-Reply-To: <5421F020.1030309@canonical.com> (Chris J. Arges's message of
+	"Tue, 23 Sep 2014 17:11:44 -0500")
+Message-ID: <yq14mvxudbv.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014, David Rientjes wrote:
+>>>>> "Chris" == Chris J Arges <chris.j.arges@canonical.com> writes:
 
-> The proper alignment defaults to BYTES_PER_WORD and can be overridden by
-> SLAB_RED_ZONE or the alignment specified by the caller.
+Chris> 1) Does this workaround make sense? Perhaps there is an easier
+Chris>    way?
 
-Where does it default to BYTES_PER_WORD in __kmem_cache_create?
+One option is to ship a udev rule that disables write same on VMware
+disks. However, I don't have a fundamental problem having a workaround
+for this in the kernel.
+
+Chris> 2) Do we expect changing max_write_same_blocks at the scsi_disk
+Chris>    level to propagate the right write_same flags to other layers
+Chris>    such as dm?
+
+No, there's currently no way to communicate that the underlying topology
+has changed.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
