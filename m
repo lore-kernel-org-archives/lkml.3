@@ -1,108 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125AbaIWGFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:05:15 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:43342 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753978AbaIWGFN (ORCPT
+	id S1754215AbaIWGFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:05:37 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11413 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016AbaIWGFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:05:13 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v3] power: reset: use restart_notifier mechanism for msm-poweroff
-Date: Tue, 23 Sep 2014 11:38:40 +0530
-Message-Id: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 23 Sep 2014 02:05:35 -0400
+Message-ID: <54210DA5.4040606@huawei.com>
+Date: Tue, 23 Sep 2014 14:05:25 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Miao Xie <miaox@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Kees Cook <keescook@chromium.org>
+Subject: [PATCH v2 3/3] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should be
+ atomic flags
+References: <54210D3F.2090409@huawei.com>
+In-Reply-To: <54210D3F.2090409@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change replaces use of arm_pm_restart with recently introduced
-reset mechanism in Linux kernel called restart_notifier.
+When we change cpuset.memory_spread_{page,slab}, cpuset will flip
+PF_SPREAD_{PAGE,SLAB} bit of tsk->flags for each task in that cpuset.
+This should be done using atomic bitops, but currently we don't,
+which is broken.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Josh Cartwright <joshc@codeaurora.org>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-pm@vger.kernel.org
+Tetsuo reported a hard-to-reproduce kernel crash on RHEL6, which happend
+when one thread tried to clear PF_USED_MATH while at the same time another
+thread tried to flip PF_SPREAD_PAGE/PF_SPREAD_SLAB. They both operate on
+the same task.
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Here's the full report:
+https://lkml.org/lkml/2014/9/19/230
+
+To fix this, we make PF_SPREAD_PAGE and PF_SPARED_SLAB atomic flags.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Kees Cook <keescook@chromium.org>
+Fixes: 950592f7b991 ("cpusets: update tasks' page/slab spread flags in time")
+Cc: <stable@vger.kernel.org> # 2.6.31+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
-Tested on Dragonboard APQ8074
+ include/linux/cpuset.h | 4 ++--
+ include/linux/sched.h  | 6 ++++--
+ kernel/cpuset.c        | 9 +++++----
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
-Changes since v2:
-- Removed unwanted header file and added linux/pm.h
-
-Changes since v1:
-- Initialized restart_nb with its declaration
-- Removed return check for register_restart_handler as it always
-  returns 0 as per Guenter's suggestion to Josh's similar patch.
-  This takes care of Guenter's comments on error logs and NULL
-  initialization of restart_nb.notifier_call.
----
- drivers/power/reset/msm-poweroff.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
-index 774f9a3..4702efd 100644
---- a/drivers/power/reset/msm-poweroff.c
-+++ b/drivers/power/reset/msm-poweroff.c
-@@ -20,21 +20,27 @@
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/reboot.h>
--
--#include <asm/system_misc.h>
-+#include <linux/pm.h>
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index 0d4e067..2f073db 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -94,12 +94,12 @@ extern int cpuset_slab_spread_node(void);
  
- static void __iomem *msm_ps_hold;
--
--static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static int do_msm_restart(struct notifier_block *nb, unsigned long action,
-+			   void *data)
+ static inline int cpuset_do_page_mem_spread(void)
  {
- 	writel(0, msm_ps_hold);
- 	mdelay(10000);
-+
-+	return NOTIFY_DONE;
+-	return current->flags & PF_SPREAD_PAGE;
++	return task_spread_page(current);
  }
  
-+static struct notifier_block restart_nb = {
-+	.notifier_call = do_msm_restart,
-+	.priority = 128,
-+};
-+
- static void do_msm_poweroff(void)
+ static inline int cpuset_do_slab_mem_spread(void)
  {
- 	/* TODO: Add poweroff capability */
--	do_msm_restart(REBOOT_HARD, NULL);
-+	do_msm_restart(&restart_nb, 0, NULL);
+-	return current->flags & PF_SPREAD_SLAB;
++	return task_spread_slab(current);
  }
  
- static int msm_restart_probe(struct platform_device *pdev)
-@@ -47,8 +53,10 @@ static int msm_restart_probe(struct platform_device *pdev)
- 	if (IS_ERR(msm_ps_hold))
- 		return PTR_ERR(msm_ps_hold);
+ extern int current_cpuset_is_being_rebound(void);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 04a2ae2..ee634d1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1903,8 +1903,6 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+ #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
+ #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
+ #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+-#define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+-#define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+ #define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
+ #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+ #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+@@ -1958,6 +1956,8 @@ static inline void memalloc_noio_restore(unsigned int flags)
  
-+	register_restart_handler(&restart_nb);
+ /* Per-process atomic flags. */
+ #define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
++#define PFA_SPREAD_PAGE  1      /* Spread page cache over cpuset */
++#define PFA_SPREAD_SLAB  2      /* Spread some slab caches over cpuset */
+ 
+ #define TASK_PFA_BITOPS(name, func)				\
+ static inline bool task_##func(struct task_struct *p)		\
+@@ -1970,6 +1970,8 @@ static inline void task_clear_##func(struct task_struct *p)	\
+ { clear_bit(PFA_##name, &p->atomic_flags); }
+ 
+ TASK_PFA_BITOPS(NO_NEW_PRIVS, no_new_privs)
++TASK_PFA_BITOPS(SPREAD_PAGE, spread_page)
++TASK_PFA_BITOPS(SPREAD_SLAB, spread_slab)
+ 
+ /*
+  * task->jobctl flags
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index a37f4ed..1f107c7 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -365,13 +365,14 @@ static void cpuset_update_task_spread_flag(struct cpuset *cs,
+ 					struct task_struct *tsk)
+ {
+ 	if (is_spread_page(cs))
+-		tsk->flags |= PF_SPREAD_PAGE;
++		task_set_spread_page(tsk);
+ 	else
+-		tsk->flags &= ~PF_SPREAD_PAGE;
++		task_clear_spread_page(tsk);
 +
- 	pm_power_off = do_msm_poweroff;
--	arm_pm_restart = do_msm_restart;
-+
- 	return 0;
+ 	if (is_spread_slab(cs))
+-		tsk->flags |= PF_SPREAD_SLAB;
++		task_set_spread_slab(tsk);
+ 	else
+-		tsk->flags &= ~PF_SPREAD_SLAB;
++		task_clear_spread_slab(tsk);
  }
  
+ /*
 -- 
-1.7.9.5
+1.8.0.2
 
