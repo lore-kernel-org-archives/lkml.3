@@ -1,150 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689AbaIWOEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:04:48 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:54275 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaIWOEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:04:46 -0400
-Date: Tue, 23 Sep 2014 16:04:40 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 3/5] drm: add bus_formats and nbus_formats fields to
- drm_display_info
-Message-ID: <20140923140439.GA5982@ulmo>
-References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
- <1406031827-12432-4-git-send-email-boris.brezillon@free-electrons.com>
+	id S1755971AbaIWOFi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:05:38 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48400 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957AbaIWOFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 10:05:36 -0400
+Date: Tue, 23 Sep 2014 10:05:26 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
+        Dave Hansen <dave@sr71.net>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140923140526.GA15014@cmpxchg.org>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+ <20140922144436.GG336@dhcp22.suse.cz>
+ <20140922155049.GA6630@cmpxchg.org>
+ <20140922172800.GA4343@dhcp22.suse.cz>
+ <20140922195829.GA5197@cmpxchg.org>
+ <20140923132553.GB10046@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406031827-12432-4-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140923132553.GB10046@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 23, 2014 at 03:25:53PM +0200, Michal Hocko wrote:
+> On Mon 22-09-14 15:58:29, Johannes Weiner wrote:
+> > On Mon, Sep 22, 2014 at 07:28:00PM +0200, Michal Hocko wrote:
+> > > On Mon 22-09-14 11:50:49, Johannes Weiner wrote:
+> > > > On Mon, Sep 22, 2014 at 04:44:36PM +0200, Michal Hocko wrote:
+> > > > > On Fri 19-09-14 09:22:08, Johannes Weiner wrote:
+> > > [...]
+> > > > > Nevertheless I think that the counter should live outside of memcg (it
+> > > > > is ugly and bad in general to make HUGETLB controller depend on MEMCG
+> > > > > just to have a counter). If you made kernel/page_counter.c and led both
+> > > > > containers select CONFIG_PAGE_COUNTER then you do not need a dependency
+> > > > > on MEMCG and I would find it cleaner in general.
+> > > > 
+> > > > The reason I did it this way is because the hugetlb controller simply
+> > > > accounts and limits a certain type of memory and in the future I would
+> > > > like to make it a memcg extension, just like kmem and swap.
+> > > 
+> > > I am not sure this is the right way to go. Hugetlb has always been
+> > > "special" and I do not see any advantage to pull its specialness into
+> > > memcg proper.
+> > >
+> > > It would just make the code more complicated. I can also imagine
+> > > users who simply do not want to pay memcg overhead and use only
+> > > hugetlb controller.
+> > 
+> > We already group user memory, kernel memory, and swap space together,
+> > what makes hugetlb-backed memory special?
+> 
+> There is only a little overlap between LRU backed and kmem accounted
+> memory with hugetlb which has always been standing aside from the rest
+> of the memory management code (THP being a successor which fits in much
+> better and which is already covered by memcg). It has basically its own
+> code path for every aspect of its object life cycle and internal data
+> structures which are in many ways not compatible with regular user or
+> kmem memory. Merging the controllers would require to merge hugetlb code
+> closer the MM code. Until then it just doesn't make sense to me.
 
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just look at the hugetlb controller code and think about what would be
+left if it were simply another page counter in struct mem_cgroup.
 
-On Tue, Jul 22, 2014 at 02:23:45PM +0200, Boris BREZILLON wrote:
-> Add bus_formats and nbus_formats fields and
-> drm_display_info_set_bus_formats helper function to specify the bus
-> formats supported by a given display.
->=20
-> This information can be used by display controller drivers to configure
-> the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-> RGB or LVDS busses).
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  drivers/gpu/drm/drm_crtc.c | 28 ++++++++++++++++++++++++++++
->  include/drm/drm_crtc.h     |  8 ++++++++
->  2 files changed, 36 insertions(+)
->=20
-> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> index c808a09..50c8395 100644
-> --- a/drivers/gpu/drm/drm_crtc.c
-> +++ b/drivers/gpu/drm/drm_crtc.c
-> @@ -825,6 +825,34 @@ static void drm_mode_remove(struct drm_connector *co=
-nnector,
->  	drm_mode_destroy(connector->dev, mode);
->  }
-> =20
-> +/*
-> + * drm_display_info_set_bus_formats - set the supported bus formats
-> + * @info: display info to store bus formats in
-> + * @fmts: array containing the supported bus formats
-> + * @nfmts: the number of entries in the fmts array
-> + *
-> + * Store the suppported bus formats in display info structure.
-> + */
-> +int drm_display_info_set_bus_formats(struct drm_display_info *info,
-> +				     const enum video_bus_format *fmts,
-> +				     int nfmts)
+There is a glaring memory leak in its css_alloc() method because
+nobody ever looks at this code.  The controller was missed in the
+reparenting removal patches because it's just not on the radar.
 
-Can you make nfmts unsigned please?
+This is so painfully obvious if you actually work on this code, I
+don't know why we are even discussing this.
 
-> +{
-> +	enum video_bus_format *formats =3D NULL;
-> +
-> +	if (fmts && nfmts) {
-> +		formats =3D kmemdup(fmts, sizeof(*fmts) * nfmts, GFP_KERNEL);
-> +		if (!formats)
-> +			return -ENOMEM;
-> +	}
-> +
-> +	kfree(info->bus_formats);
-> +	info->bus_formats =3D formats;
-> +	info->nbus_formats =3D formats ? nfmts : 0;
+> > It's also better for the user interface to have a single memory
+> > controller.
+> 
+> I have seen so much confusion coming from hugetlb vs. THP that I think
+> the quite opposite is true. Besides that we would need a separate limit
+> for hugetlb accounted memory anyway so having a small and specialized
+> controller for specialized memory sounds like a proper way to go.
+> 
+> Finally, as mentioned in previous email, you might have users interested
+> only in hugetlb controller with memcg disabled.
 
-And perhaps check for formats =3D=3D NULL && nfmts !=3D 0 since that's not a
-valid pair of values. Then you can simply assign this directly without
-relying on the value of formats.
+They use a global spinlock to allocate and charge these pages, I think
+they'll be fine with memcg.
 
-Also other variable names use "num_" as a prefix instead of "n", so if
-you're going to respin anyway might as well make the names more
-consistent.
+> > We're also close to the point where we don't differentiate between the
+> > root group and dedicated groups in terms of performance, Dave's tests
+> > fell apart at fairly high concurrency, and I'm already getting rid of
+> > the lock he saw contended.
+> 
+> Sure but this has nothing to do with it. Hugetlb can safely use the same
+> lockless counter as a replacement for res_counter and benefit from it
+> even though the contention hasn't been seen/reported yet.
 
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(drm_display_info_set_bus_formats);
-> +
->  /**
->   * drm_connector_init - Init a preallocated connector
->   * @dev: DRM device
-> diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-> index e529b68..957729b 100644
-> --- a/include/drm/drm_crtc.h
-> +++ b/include/drm/drm_crtc.h
-> @@ -31,6 +31,7 @@
->  #include <linux/idr.h>
->  #include <linux/fb.h>
->  #include <linux/hdmi.h>
-> +#include <linux/video-bus-format.h>
->  #include <drm/drm_mode.h>
->  #include <drm/drm_fourcc.h>
->  #include <drm/drm_modeset_lock.h>
-> @@ -121,6 +122,9 @@ struct drm_display_info {
->  	enum subpixel_order subpixel_order;
->  	u32 color_formats;
-> =20
-> +	const enum video_bus_format *bus_formats;
-> +	int nbus_formats;
+It doesn't even use these counters the right way, just look at what it
+does during reparenting.  And as per above, it should also be included
+in the reparenting removal, but I'm haven't even configured the thing.
 
-unsigned int here too, please.
+> > The downsides of fragmenting our configuration- and testspace, our
+> > user interface, and our code base by far outweigh the benefits of
+> > offering a dedicated hugetlb controller.
+> 
+> Could you be more specific please? Hugetlb has to be configured and
+> tested separately whether it would be in a separate controller or not.
+> 
+> Last but not least, even if this turns out to make some sense in
+> the future please do not mix those things together here. Your
+> res_counter -> page_counter transition makes a lot of sense for both
+> controllers. And it is a huge improvement. I do not see any reason
+> to pull a conceptually nontrivial merging/dependency of two separate
+> controllers into the picture. If you think it makes some sense then
+> bring that up later for a separate discussion.
 
-Thierry
+That's one way to put it.  But the way I see it is that I remove a
+generic resource counter and replace it with a pure memory counter
+which I put where we account and limit memory - with one exception
+that is hardly worth creating a dedicated library file for.
 
---6c2NcOVqGQ03X4Wi
-Content-Type: application/pgp-signature
+I only explained my plans of merging all memory controllers because I
+assumed we could ever be on the same page when it comes to this code.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUIX33AAoJEN0jrNd/PrOhp0EP/i4QLBT0OdxOEFBG0fiIlmJ8
-Jc17bgilP41zsiFppJ3EYalrk54kwz8OAsNlX1hIkYw45WW32ZZ22gOMXIZvZBWB
-/9bHmS5+MRM3uoOWfI4iZci2k1y5rrZsySLTz4llgMoImVYuO+I064UWgyU68QTO
-/VJDCcUsSQ4YNE0a8aJ4w8GFztzD2xV3Q9hofdPsEgb4D//4oy0n/xc3h20tUT3V
-jkEmHPmD5dJ/E6GJ4PO8iVoQ87L0PeJ5Pkb6chNxXBXg4jnouQyo9KWGHfTx2ABe
-B83ONBrbatqa3wUzjTsmMbg6iNsIGp4C1GDBuio5CAdTODe5eF+q9xwxejDcfRfo
-RZSOQdDJwtKPpEm7gMVfQsaJGOo9ECh223JqYvib6EAPSlbrGkCsdT5fnGWr9kq2
-SkVHI2soPpxNLVI9FeRCmnd2ac82gwPonqvjBG7i+7T6hdBMDrCnoU8g2PaAqVfM
-P/6kVKqxUoVthEXKTlGjspxp6ZE6XUytW7xqtGRA4exL/eGapBuIWQa5X9Al2dt7
-IaNLiSlojF9HbERpqmj6YfOidJoOx25H49lJzBFS/j8oNeSOaK0bPvMFdHNighKQ
-4J2TeRqRq5McCc1lE2FoPCM5NDXxtEDa98cp4abvcwVv0coqZIx+wwuM0BwHEiGU
-zry7PlQb417kMZ4kIKZv
-=VfKp
------END PGP SIGNATURE-----
-
---6c2NcOVqGQ03X4Wi--
+But regardless of that, my approach immediately simplifies Kconfig,
+Makefiles, #includes, and you haven't made a good point why the
+hugetlb controller depending on memcg would harm anybody in real life.
