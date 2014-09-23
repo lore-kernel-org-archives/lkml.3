@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaIWHol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 03:44:41 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:48145 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959AbaIWHoi convert rfc822-to-8bit (ORCPT
+	id S1754496AbaIWHo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 03:44:59 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:42913 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754316AbaIWHoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 03:44:38 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCHv3 1/1] bluetooth: Check for SCO type before setting retransmission effort
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1411451964-4025-1-git-send-email-bernhard.thaler@r-it.at>
-Date: Tue, 23 Sep 2014 09:44:33 +0200
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <736161F0-DA1F-4AD4-B74A-22FCAB58B23F@holtmann.org>
-References: <1411035321-10215-1-git-send-email-bernhard.thaler@r-it.at> <1411451964-4025-1-git-send-email-bernhard.thaler@r-it.at>
-To: Bernhard Thaler <bernhard.thaler@r-it.at>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 23 Sep 2014 03:44:55 -0400
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <wim@iguana.be>, <linux@roeck-us.net>
+CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH v2 1/2] watchdog: dw_wdt: initialise TOP_INIT in dw_wdt_set_top()
+Date: Tue, 23 Sep 2014 15:42:11 +0800
+Message-ID: <1411458132-5410-2-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411458132-5410-1-git-send-email-jszhang@marvell.com>
+References: <1411458132-5410-1-git-send-email-jszhang@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-23_03:2014-09-23,2014-09-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1409230081
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bernhard,
+The TOP_INIT, ie bit 4-7 of the WDOG_TIMEOUT_RANGE_REG_OFFSET register
+may be zero, so the timeout period may be very short after initialization
+is done, thus the system may be reset soon after enabling. We fix this
+problem by also initialising the TOP_INIT when setting TOP in function
+dw_wdt_set_top().
 
-> SCO connection cannot be setup to devices that do not support retransmission.
-> Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
-> adapted for this kernel version.
-> Code changed to check SCO/eSCO type before setting retransmission effort
-> and max. latency. The purpose of the patch is to support older devices not
-> capable of eSCO.
-> 
-> Tested on Blackberry 655+ headset which does not support retransmission.
-> Credits go to Alexander Sommerhuber.
-> 
-> Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
-> ---
-> net/bluetooth/hci_conn.c |   22 +++++++++++++++++-----
-> 1 file changed, 17 insertions(+), 5 deletions(-)
-> 
-> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-> index faff624..32dcde1 100644
-> --- a/net/bluetooth/hci_conn.c
-> +++ b/net/bluetooth/hci_conn.c
-> @@ -38,7 +38,7 @@ struct sco_param {
-> 	u16 max_latency;
-> };
-> 
-> -static const struct sco_param sco_param_cvsd[] = {
-> +static const struct sco_param esco_param_cvsd[] = {
-> 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000a }, /* S3 */
-> 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x0007 }, /* S2 */
-> 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0007 }, /* S1 */
-> @@ -46,6 +46,11 @@ static const struct sco_param sco_param_cvsd[] = {
-> 	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
-> };
-> 
-> +static const struct sco_param sco_param_cvsd[] = {
-> +	{ EDR_ESCO_MASK | ESCO_HV3,   0xffff }, /* D1 */
-> +	{ EDR_ESCO_MASK | ESCO_HV1,   0xffff }, /* D0 */
-> +};
-> +
-> static const struct sco_param sco_param_wideband[] = {
-> 	{ EDR_ESCO_MASK & ~ESCO_2EV3, 0x000d }, /* T2 */
-> 	{ EDR_ESCO_MASK | ESCO_EV3,   0x0008 }, /* T1 */
-> @@ -194,10 +199,17 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
-> 		param = &sco_param_wideband[conn->attempt - 1];
-> 		break;
-> 	case SCO_AIRMODE_CVSD:
-> -		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
-> -			return false;
-> -		cp.retrans_effort = 0x01;
-> -		param = &sco_param_cvsd[conn->attempt - 1];
-> +		if (!lmp_esco_capable(conn->link)) {
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+---
+ drivers/watchdog/dw_wdt.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-please change this statement around to check if eSCO support exists and not if it does not exist. The negation is pointless if you have an else branch anyway.
-
-> +			if ((conn->attempt) > ARRAY_SIZE(sco_param_cvsd))
-
-The extra (conn->attempt) is not needed. Just do (conn->attempt > ARRAY_SIZE(..))
-
-> +				return false;
-> +			cp.retrans_effort = 0xff;
-> +			param = &sco_param_cvsd[conn->attempt - 1];
-> +		} else {
-> +			if (conn->attempt > ARRAY_SIZE(esco_param_cvsd))
-> +				return false;
-> +			cp.retrans_effort = 0x01;
-> +			param = &esco_param_cvsd[conn->attempt - 1];
-> +		}
-> 		break;
-> 	default:
-> 		return false;
-
-The rest looks fine.
-
-Regards
-
-Marcel
+diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+index 9f21029..449c885 100644
+--- a/drivers/watchdog/dw_wdt.c
++++ b/drivers/watchdog/dw_wdt.c
+@@ -40,6 +40,7 @@
+ #define WDOG_CONTROL_REG_OFFSET		    0x00
+ #define WDOG_CONTROL_REG_WDT_EN_MASK	    0x01
+ #define WDOG_TIMEOUT_RANGE_REG_OFFSET	    0x04
++#define WDOG_TIMEOUT_RANGE_TOPINIT_SHIFT    4
+ #define WDOG_CURRENT_COUNT_REG_OFFSET	    0x08
+ #define WDOG_COUNTER_RESTART_REG_OFFSET     0x0c
+ #define WDOG_COUNTER_RESTART_KICK_VALUE	    0x76
+@@ -106,7 +107,8 @@ static int dw_wdt_set_top(unsigned top_s)
+ 		}
+ 
+ 	/* Set the new value in the watchdog. */
+-	writel(top_val, dw_wdt.regs + WDOG_TIMEOUT_RANGE_REG_OFFSET);
++	writel(top_val | top_val << WDOG_TIMEOUT_RANGE_TOPINIT_SHIFT,
++		dw_wdt.regs + WDOG_TIMEOUT_RANGE_REG_OFFSET);
+ 
+ 	dw_wdt_set_next_heartbeat();
+ 
+-- 
+2.1.0
 
