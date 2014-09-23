@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474AbaIWSMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 14:12:54 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:32846 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343AbaIWSMw (ORCPT
+	id S1756312AbaIWSSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 14:18:30 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:52930 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977AbaIWSS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 14:12:52 -0400
+	Tue, 23 Sep 2014 14:18:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org, netdev@vger.kernel.org,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com
+Subject: Re: [PATCH v4 3/9] Documentation: bindings: net: add the Marvell PXA168 Ethernet controller
+Date: Tue, 23 Sep 2014 20:18:19 +0200
+Message-ID: <3847496.NqfTxpsf9X@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5421AE7C.30504@gmail.com>
+References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com> <5150779.ibmzDh88cj@wuerfel> <5421AE7C.30504@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
-Date: Tue, 23 Sep 2014 20:12:50 +0200
-Message-ID: <CAGhQ9VzZ8LadDT5RWUSX89q0WP3fGiQ8f=bWbRVfEz5Vy_zZKw@mail.gmail.com>
-Subject: Re: [PATCH v5] mfd: syscon: Decouple syscon interface from platform devices
-From: Joachim Eastwood <manabian@gmail.com>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kgene.kim@samsung.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, naushad@samsung.com,
-        b29396@freescale.com, tomasz.figa@gmail.com, joshi@samsung.com,
-        thomas.ab@samsung.com, Li.Xiubo@freescale.com,
-        vikas.sajjan@samsung.com, chow.kim@samsung.com, lee.jones@linaro.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+BpoMsuCXvqM9o1dfme5aH/akyyUKnGZezxnBn+tlEB
+ nHGXrI3XZpbLRcvkH6dMAtxGUA68tC4Gai8Cwi7O/EIsEqx5V1
+ oody+foenVqFf0mp9yYmvu9KsPR5SBysH0ECJd31ZF0dugImn5
+ 13G14oFsv4Cs2qwiyL+BrfLR3dw1Fw+e2MwlBllG6/EP7nWnk8
+ 5Dhcx/DbhXy6MDMJs/Gu8n6t+rWDmAP+AMSCBE4oUga82FzlXz
+ 4S/oIIHSLDOdOd/wHU5X2DsQ7njypqr6u8NLYNX0+Fb3qJwiAD
+ M+83pcFVEyDCJ3n1TyOYB9xESey4cFYKn/veeyZ97HZSqp5idy
+ yyEhEMhN/qf1Fxf/jtVg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 September 2014 06:40, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
-> Currently a syscon entity can be only registered directly through a
-> platform device that binds to a dedicated syscon driver. However in
-> certain use cases it is desirable to make a device used with another
-> driver a syscon interface provider.
->
-> For example, certain SoCs (e.g. Exynos) contain system controller
-> blocks which perform various functions such as power domain control,
-> CPU power management, low power mode control, but in addition contain
-> certain IP integration glue, such as various signal masks,
-> coprocessor power control, etc. In such case, there is a need to have
-> a dedicated driver for such system controller but also share registers
-> with other drivers. The latter is where the syscon interface is helpful.
->
-> In case of DT based platforms, this patch decouples syscon object from
-> syscon platform driver, and allows to create syscon objects first time
-> when it is required by calling of syscon_regmap_lookup_by APIs and keep
-> a list of such syscon objects along with syscon provider device_nodes
-> and regmap handles.
->
-> For non-DT based platforms, this patch keeps syscon platform driver
-> structure where is can be probed and such non-DT based drivers can use
-> syscon_regmap_lookup_by_pdev API and get access to regmap handles.
-> Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT based,
-> we can completly remove platform driver of syscon, and keep only helper
-> functions to get regmap handles.
->
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
-> Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+On Tuesday 23 September 2014 19:31:40 Sebastian Hesselbarth wrote:
+> It has been a while I looked it up in the pxa168 datasheet, but IIRC
+> there is only one port per controller. FWIW, there actually is also
+> just one port per controller for Orion SoCs. The multiple ports per
+> controller comes from the PPC system controllers, i.e. mv643xx hence
+> the name. We just made the binding look like it is more ports available
+> to make it backwards compatible.. although I doubt anyone is still using
+> mv643xx anywhere.
 
-Hi Pankaj,
+Ok, I see.
 
-I wrote a clk driver using syscon and your patch. clk driver uses
-CLK_OF_DECLARE, btw.
+> > If there is only one port and we just have to know which one that is,
+> > I don't think we need the child nodes, but if one can have multiple
+> > ports operate independently then the driver will need a rework
+> > to actually be usable with that configuration.
+> 
+> I doubt pxa168 needs port nodes at all, i.e. we have the phy-handle
+> directly as property of the controller node.
 
-It works but I get a '(null): Failed to create debugfs directory'
-message in the boot log.
+Ah, good.
 
-Tested-by: Joachim Eastwood <manabian@gmail.com>
+> The HEC PHY node itself will be a sub-node of some future CEC node,
+> while the (internal) MII PHY node can stay as a sub-node of the
+> controller, e.g.
+> 
+> (one final example to make sure we agree on the same)
+> 
+> eth0: ethernet@f7b90000 {
+>         compatible = "marvell,pxa168-eth";
+>         reg = <...>;
+>         #address-cells = <1>;
+>         #size-cells = <0>;
+>         phy-handle = <&ethphy0>;
+> 
+>         ethphy0: ethernet-phy@0 {
+>                 reg = <0>;
+>         };
+> };
+> 
+> cec0: cec@f7f00baa {
+>         compatible = "marvell,berlin-cec";
+>         reg = <...>;
+>         #address-cells = <1>;
+>         #size-cells = <0>;
+>         
+>         hecphy0: hdmi-ethernet-phy@0 {
+>                 reg = <0>;
+>         };
+> };
+> 
+> With berlin2cd-google-chromecast.dts overwriting
+> 
+> &eth0 { phy-handle = <&hecphy0>; };
 
-regards,
-Joachim Eastwood
+Ok, now I also understood how the cec fits into this. Yes, I think this
+looks very good.
+
+	Arnd
