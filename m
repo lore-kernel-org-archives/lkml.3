@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaIWGDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:03:51 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:51174 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaIWGDu (ORCPT
+	id S1753771AbaIWGEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:04:01 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36569 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaIWGD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:03:50 -0400
-Date: Tue, 23 Sep 2014 02:03:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: boot stall regression due to blk-mq: use percpu_ref for mq usage
- count
-Message-ID: <20140923060346.GG11740@mtj.dyndns.org>
-References: <20140919113815.GA10791@lst.de>
- <541C8047.80705@kernel.dk>
- <20140923055554.GA10189@lst.de>
- <20140923055648.GD11740@mtj.dyndns.org>
- <20140923055924.GA10295@lst.de>
- <20140923060141.GF11740@mtj.dyndns.org>
+	Tue, 23 Sep 2014 02:03:59 -0400
+Message-ID: <54210D3F.2090409@huawei.com>
+Date: Tue, 23 Sep 2014 14:03:43 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923060141.GF11740@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Miao Xie <miaox@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Kees Cook <keescook@chromium.org>
+Subject: [PATCH v2 1/3] sched: fix confusing PFA_NO_NEW_PRIVS constant
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:01:41AM -0400, Tejun Heo wrote:
-> On Tue, Sep 23, 2014 at 07:59:24AM +0200, Christoph Hellwig wrote:
-> > "[PATCHSET percpu/for-3.18] percpu_ref: implement switch_to_atomic/percpu()"
-> > 
-> > looks way to big for 3.17, and the regression was introduced in the 3.17
-> > merge window.  I'm not sure what was broken before, but it defintively
-> > survived a lot of testing.
-> 
-> Do we even care about fixing it for 3.17?  scsi-mq isn't enabled by
-> default even for 3.18.  The open-coded percpu ref thing was subtly
-> broken there.  It'd be difficult to trigger but I'm fairly sure it'd
-> crap out in the wild once in a blue moon.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-Hmmm... also, this is actually an issue with scsi that block layer is
-working around.  For other drivers (virtio), the latency during
-shutdown should be completely fine.
+Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
+defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
+because it is used as bit number. Redefine it as decimal bit number.
 
+Note this changes the bit position of PFA_NOW_NEW_PRIVS from 1 to 0.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Kees Cook <keescook@chromium.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Kees Cook <keescook@chromium.org>
+[ lizf: slightly modified subject and changelog ]
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..4557765 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
+ }
+ 
+ /* Per-process atomic flags. */
+-#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
++#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+ 
+ static inline bool task_no_new_privs(struct task_struct *p)
+ {
 -- 
-tejun
+1.8.0.2
+
