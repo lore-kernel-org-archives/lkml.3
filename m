@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465AbaIWMed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:34:33 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:60472 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790AbaIWMdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:33:42 -0400
-Message-ID: <542168A1.5000406@mm-sol.com>
-Date: Tue, 23 Sep 2014 15:33:37 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1755438AbaIWMjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:39:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:58988 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868AbaIWMi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 08:38:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/9] Documentation: bindings: net: add the Marvell PXA168 Ethernet controller
+Date: Tue, 23 Sep 2014 14:38:39 +0200
+Message-ID: <51745791.Wuu5QiQB2e@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411474536-22626-4-git-send-email-antoine.tenart@free-electrons.com>
+References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com> <1411474536-22626-4-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>
-Subject: Re: [PATCH v4 0/3] Support for Qualcomm QPNP PMIC's
-References: <1406903450-27283-1-git-send-email-svarbanov@mm-sol.com>
-In-Reply-To: <1406903450-27283-1-git-send-email-svarbanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8Ca22btnOJ31tLNZtFKOeK6Fzu9G1bpSPr0INze2sWp
+ b3rC0RA+5Ay9/pak4jMMn9uff7ujc6bgO41WnkZc+ReSNHNBR9
+ OjwGDUbkZL+xh5mPANhttZs5dOvYA/tfL/fVYI0SS2HIiMQlFy
+ 9awXOVCmkFs11142g3yVW/N+z+YVHV9r9Nj2ed+xi/XC43PymQ
+ qbhU5kdreMH3qNl2vdWngcgbqw2bA0vymIBqhYCwem3yMDAyDs
+ Clu1CsMSXXweGimUHJDkYvAL+C9oZSMV1JjGRylYLSBeoQv/bL
+ 9XCWcSjDjbcMvd1yiFc0L7w0BV2DotpTne3/cz3c08xVVTyBrD
+ OODXOMy92ZGLXpVeZN1M=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-There are no comments on this set for more then month,
-could you queue up 1/3 and 2/3 for 3.18 merge window?
-
-On 08/01/2014 05:30 PM, Stanimir Varbanov wrote:
-> Hello all,
-> 
-> Changes since v3:
->  - rename the driver to qcom-spmi-pmic - suggested by David Collins
->  - spmi regmap config now initialize .fast_io to true
->  - added generalized comptatible string in DT binding document and driver
->  - I dropped the pm8921 rename patch for now, it will be subject of another
->    patchset later on.
-> 
-> regards,
-> Stan
-> 
-> --------------------------------------------------------------------------------
-> 
-> Changes since v2:
->  - 1/4 - added new line, signed-off-by / acked-by and module_authors.
->  - 3/4 - the subject has been changed.
-> 
-> The previous v2 can be found at [1].
-> 
-> I'm still waiting Acks for:
->  - 4/4 from Qualcomm folks.
->  - 2/4 and 3/4 from DT folks.
-> 
-> The patchset is ready to merge version and also it can be treated as an
-> intermediate step until we find a solution for non-translatable peripheral
-> addresses.
-> 
-> [1] https://lkml.org/lkml/2014/7/17/877
-> 
-> --------------------------------------------------------------------------------
-> 
-> Hello everyone,
-> 
-> Here is the continuation of patch sets sent recently about Qualcomm
-> QPNP SPMI PMICs.
-> 
-> The previous version of the patch set can be found at [1].
-> 
-> Changes since v1:
->  - removed completely custom *of* parser
->  - renamed the mfd driver from qpnp-spmi to pm8xxx-spmi
->  - now MFD_PM8XXX_SPMI Kconfig option depends on SPMI
-> 
-> Removing of the custom *of* parser leads to that that the *reg* devicetree
-> property cannot exist and therefore cannot be parsed to get PMIC peripheral
-> resources. I took this step aside because no one from mfd drivers does this
-> parsing. This will lead to inconvenience in the peripheral drivers to define
-> internally the SPMI base addresses depending on the compatible property
-> i.e. PMIC version. 
-> 
-> Comments are welcome!
-> 
-> [1] https://lkml.org/lkml/2014/7/8/428
-> 
-> --------------------------------------------------------------------------------
-> 
-> Josh Cartwright (1):
->   mfd: add support for Qualcomm SPMI PMICs
-> 
-> Stanimir Varbanov (2):
->   mfd: document DT bindings for Qualcomm SPMI PMICs
->   ARM: dts: qcom: add pm8941 and pm8841 PMICs device nodes
-> 
->  .../devicetree/bindings/mfd/qcom,spmi-pmic.txt     |   64 +++++++++++++++++++
->  arch/arm/boot/dts/qcom-msm8974.dtsi                |   37 +++++++++++
->  drivers/mfd/Kconfig                                |   15 +++++
->  drivers/mfd/Makefile                               |    1 +
->  drivers/mfd/qcom-spmi-pmic.c                       |   67 ++++++++++++++++++++
->  5 files changed, 184 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/qcom,spmi-pmic.txt
->  create mode 100644 drivers/mfd/qcom-spmi-pmic.c
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Tuesday 23 September 2014 14:15:30 Antoine Tenart wrote:
+> +Optional properties:
+> +- port-id: should be '0','1' or '2'.
+> +- phy-addr: MDIO address of the PHY.
+> +- local-mac-address: see ethernet.txt file in the same directory.
+> +
 > 
 
+I believe new bindings should not use "phy-addr" properties, but
+instead use a phy-handle property pointing to a phy device instead.
 
--- 
-regards,
-Stan
+The port-id property description could be a little more verbose.
+What do those numbers actually mean?
+
+	Arnd
