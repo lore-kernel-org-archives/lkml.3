@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852AbaIWIOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 04:14:19 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:63060 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751989AbaIWIOP (ORCPT
+	id S1754906AbaIWIPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 04:15:01 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:13210 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745AbaIWIPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 04:14:15 -0400
-Message-ID: <1411460053.20236.11.camel@x220>
-Subject: [PATCH] PM / devfreq: Remove ARCH_HAS_OPP completely
-From: Paul Bolle <pebolle@tiscali.nl>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 23 Sep 2014 10:14:13 +0200
-In-Reply-To: <20140916002333.GI9847@verge.net.au>
-References: <1406551632.5397.17.camel@x220> <1410511111.31130.4.camel@x220>
-	 <20140916000916.GD9847@verge.net.au> <20140916002333.GI9847@verge.net.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	Tue, 23 Sep 2014 04:15:00 -0400
+Message-ID: <54212C00.2090800@atmel.com>
+Date: Tue, 23 Sep 2014 10:14:56 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Johan Hovold <jhovold@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/9] rtc: at91sam9: use standard readl/writel functions
+ instead of raw versions
+References: <1411400563-570-1-git-send-email-boris.brezillon@free-electrons.com> <1411400563-570-3-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1411400563-570-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Sep 2014 08:14:13.0576 (UTC) FILETIME=[5C531C80:01CFD706]
-X-RcptDomain: vger.kernel.org
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
-049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
-removed the only dependency that used it. Setting it had no effect
-anymore.
+Can be good to know why... here.
 
-So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
-some reason that commit did not remove all select statements for that
-symbol. These statements are now useless. Remove one from devfreq too.
+Otherwise, you can add my:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Sent previously as part of the treewide patch "PM / OPP: Remove
-ARCH_HAS_OPP completely". But it turns out the changes for omap2 are
-already queued in omap-for-v3.18/soc (but not in linux-next!). Besides,
-Simon Horman wanted the shmobile change split off. As a result this
-change needs to be sent separately.
 
-Done on top of next-20140922. Tested by grepping the tree.
+On 22/09/2014 17:42, Boris BREZILLON :
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  drivers/rtc/rtc-at91sam9.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+> index 51f0038..74a9ca0 100644
+> --- a/drivers/rtc/rtc-at91sam9.c
+> +++ b/drivers/rtc/rtc-at91sam9.c
+> @@ -77,14 +77,14 @@ struct sam9_rtc {
+>  };
+>  
+>  #define rtt_readl(rtc, field) \
+> -	__raw_readl((rtc)->rtt + AT91_RTT_ ## field)
+> +	readl((rtc)->rtt + AT91_RTT_ ## field)
+>  #define rtt_writel(rtc, field, val) \
+> -	__raw_writel((val), (rtc)->rtt + AT91_RTT_ ## field)
+> +	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
+>  
+>  #define gpbr_readl(rtc) \
+> -	__raw_readl((rtc)->gpbr)
+> +	readl((rtc)->gpbr)
+>  #define gpbr_writel(rtc, val) \
+> -	__raw_writel((val), (rtc)->gpbr)
+> +	writel((val), (rtc)->gpbr)
+>  
+>  /*
+>   * Read current time and date in RTC
+> 
 
- drivers/devfreq/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index 3dced0a9eae3..2227e9bf3884 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -80,7 +80,6 @@ config ARM_EXYNOS4_BUS_DEVFREQ
- config ARM_EXYNOS5_BUS_DEVFREQ
- 	bool "ARM Exynos5250 Bus DEVFREQ Driver"
- 	depends on SOC_EXYNOS5250
--	select ARCH_HAS_OPP
- 	select DEVFREQ_GOV_SIMPLE_ONDEMAND
- 	select PM_OPP
- 	help
 -- 
-1.9.3
-
+Nicolas Ferre
