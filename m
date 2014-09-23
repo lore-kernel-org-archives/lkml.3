@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740AbaIWDCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 23:02:35 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38000 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594AbaIWDCR (ORCPT
+	id S1755621AbaIWDCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 23:02:16 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:59866 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594AbaIWDCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 23:02:17 -0400
+	Mon, 22 Sep 2014 23:02:13 -0400
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -14,138 +14,56 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Alex Williamson <alex.williamson@redhat.com>,
         Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org
-Subject: [PATCH v2 11/13] vfio: powerpc/spapr: Move locked_vm accounting to helpers
-Date: Tue, 23 Sep 2014 13:01:00 +1000
-Message-Id: <1411441262-11025-12-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH v2 07/13] powerpc/powernv: Do not set "read" flag if direction==DMA_NONE
+Date: Tue, 23 Sep 2014 13:00:56 +1000
+Message-Id: <1411441262-11025-8-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
 References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092303-7014-0000-0000-0000003A7CBA
+x-cbid: 14092303-0017-0000-0000-0000003DE5BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There moves locked pages accounting to helpers.
-Later they will be reused for Dynamic DMA windows (DDW).
-
-While we are here, update the comment explaining why RLIMIT_MEMLOCK
-might be required to be bigger than the guest RAM.
+Normally a bitmap from the iommu_table is used to track what TCE entry
+is in use. Since we are going to use iommu_table without its locks and
+do xchg() instead, it becomes essential not to put bits which are not
+implied in the direction flag.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- drivers/vfio/vfio_iommu_spapr_tce.c | 71 +++++++++++++++++++++++++++----------
- 1 file changed, 53 insertions(+), 18 deletions(-)
+ arch/powerpc/platforms/powernv/pci.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-index 1c1a9c4..c9fac97 100644
---- a/drivers/vfio/vfio_iommu_spapr_tce.c
-+++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-@@ -29,6 +29,46 @@
- static void tce_iommu_detach_group(void *iommu_data,
- 		struct iommu_group *iommu_group);
+diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+index deddcad..ab79e2d 100644
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -628,10 +628,18 @@ static int pnv_tce_build(struct iommu_table *tbl, long index, long npages,
+ 	__be64 *tcep, *tces;
+ 	u64 rpn;
  
-+static long try_increment_locked_vm(struct iommu_table *tbl)
-+{
-+	long ret = 0, locked, lock_limit, npages;
-+
-+	if (!current || !current->mm)
-+		return -ESRCH; /* process exited */
-+
-+	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
-+
-+	down_write(&current->mm->mmap_sem);
-+	locked = current->mm->locked_vm + npages;
-+	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
-+	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
-+		pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
-+				rlimit(RLIMIT_MEMLOCK));
-+		ret = -ENOMEM;
-+	} else {
-+		current->mm->locked_vm += npages;
+-	proto_tce = TCE_PCI_READ; // Read allowed
+-
+-	if (direction != DMA_TO_DEVICE)
+-		proto_tce |= TCE_PCI_WRITE;
++	switch (direction) {
++	case DMA_BIDIRECTIONAL:
++	case DMA_FROM_DEVICE:
++		proto_tce = TCE_PCI_READ | TCE_PCI_WRITE;
++		break;
++	case DMA_TO_DEVICE:
++		proto_tce = TCE_PCI_READ;
++		break;
++	default:
++		proto_tce = 0;
++		break;
 +	}
-+	up_write(&current->mm->mmap_sem);
-+
-+	return ret;
-+}
-+
-+static void decrement_locked_vm(struct iommu_table *tbl)
-+{
-+	long npages;
-+
-+	if (!current || !current->mm)
-+		return; /* process exited */
-+
-+	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
-+
-+	down_write(&current->mm->mmap_sem);
-+	if (npages > current->mm->locked_vm)
-+		npages = current->mm->locked_vm;
-+	current->mm->locked_vm -= npages;
-+	up_write(&current->mm->mmap_sem);
-+}
-+
- /*
-  * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
-  *
-@@ -86,7 +126,6 @@ static void tce_iommu_take_ownership_notify(struct spapr_tce_iommu_group *data,
- static int tce_iommu_enable(struct tce_container *container)
- {
- 	int ret = 0;
--	unsigned long locked, lock_limit, npages;
- 	struct iommu_table *tbl;
- 	struct spapr_tce_iommu_group *data;
  
-@@ -120,24 +159,23 @@ static int tce_iommu_enable(struct tce_container *container)
- 	 * Also we don't have a nice way to fail on H_PUT_TCE due to ulimits,
- 	 * that would effectively kill the guest at random points, much better
- 	 * enforcing the limit based on the max that the guest can map.
-+	 *
-+	 * Unfortunately at the moment it counts whole tables, no matter how
-+	 * much memory the guest has. I.e. for 4GB guest and 4 IOMMU groups
-+	 * each with 2GB DMA window, 8GB will be counted here. The reason for
-+	 * this is that we cannot tell here the amount of RAM used by the guest
-+	 * as this information is only available from KVM and VFIO is
-+	 * KVM agnostic.
- 	 */
- 	tbl = data->ops->get_table(data, 0);
- 	if (!tbl)
- 		return -ENXIO;
- 
--	down_write(&current->mm->mmap_sem);
--	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
--	locked = current->mm->locked_vm + npages;
--	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
--	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
--		pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
--				rlimit(RLIMIT_MEMLOCK));
--		ret = -ENOMEM;
--	} else {
--		current->mm->locked_vm += npages;
--		container->enabled = true;
--	}
--	up_write(&current->mm->mmap_sem);
-+	ret = try_increment_locked_vm(tbl);
-+	if (ret)
-+		return ret;
-+
-+	container->enabled = true;
- 
- 	return ret;
- }
-@@ -163,10 +201,7 @@ static void tce_iommu_disable(struct tce_container *container)
- 	if (!tbl)
- 		return;
- 
--	down_write(&current->mm->mmap_sem);
--	current->mm->locked_vm -= (tbl->it_size <<
--			IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
--	up_write(&current->mm->mmap_sem);
-+	decrement_locked_vm(tbl);
- }
- 
- static void *tce_iommu_open(unsigned long arg)
+ 	tces = tcep = ((__be64 *)tbl->it_base) + index - tbl->it_offset;
+ 	rpn = __pa(uaddr) >> tbl->it_page_shift;
 -- 
 2.0.0
 
