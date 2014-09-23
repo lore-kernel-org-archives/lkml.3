@@ -1,137 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaIWFQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 01:16:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54693 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaIWFQo (ORCPT
+	id S1753129AbaIWFWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 01:22:49 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:60308 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaIWFWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 01:16:44 -0400
-Message-ID: <542101AD.5010406@ti.com>
-Date: Tue, 23 Sep 2014 10:44:21 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 23 Sep 2014 01:22:48 -0400
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <myungjoo.ham@samsung.com>, <grant.likely@linaro.org>,
-        <rongjun.ying@csr.com>, <linux@roeck-us.net>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] extcon: gpio: Convert the driver to use gpio desc
- API's
-References: <1410236078-11713-1-git-send-email-george.cherian@ti.com> <1410236078-11713-3-git-send-email-george.cherian@ti.com> <541FD8CD.1060400@samsung.com> <541FF138.7040908@ti.com> <5420AD3B.2080306@samsung.com>
-In-Reply-To: <5420AD3B.2080306@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140919104021.GA11552@gmail.com>
+References: <20140919104021.GA11552@gmail.com>
+Date: Mon, 22 Sep 2014 22:22:47 -0700
+X-Google-Sender-Auth: bsOSp1ujHidEbuw4u7ZYEdaa1lE
+Message-ID: <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
+Subject: Re: [GIT PULL] x86 fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 09/23/2014 04:44 AM, Chanwoo Choi wrote:
-> On 09/22/2014 06:51 PM, George Cherian wrote:
->> On 09/22/2014 01:37 PM, Chanwoo Choi wrote:
->>> Hi George,
->>>
->>> This patch removes 'gpio_active_low' field of struct gpio_extcon_data.
->>> But, include/linux/extcon-gpio.h has the description of 'gpio_active_low' field.
->> Yes didn't want the platform data users to break.
->> Actually I couldn't find any platform users for this driver. Could you please point me to
->> one if in case I missed it. If non present then why cant we get rid of platform data altogether.
-> Right,
-> But, Why do you support platform data on as following your patch?
-> - [PATCH 3/5] extcon: gpio: Add dt support for the driver.
-> According to your comment, you had to remove the support for platform data.
-My intention with this series was to add dt support by keeping the 
-existing platform data.
-Now that we know there are no platform data users I will rework on this 
-and keep only dt
-support.
+On Fri, Sep 19, 2014 at 3:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> IMO,
-> I think this patchset must need to reorder the sequence of patchset.
-> Also, this patchset is more detailed description.
-I will rework and submit a v2.
->>> Also,
->>> This patch has not included the any description/comment of removing 'gpio_active_low'.
->>>
->>> Also,
->>> How to set 'FLAG_ACTIVE_LOW' bit for gpio when using platform data?
->> Now that we are using gpiod_* API's  we need not check for gpio_active_low from this driver.
-> This patch just use gpiod API instead of legacy gpio API.
->
-> I think that if extcon-gpio don't need to check gpio_activ_low field,
-> you have to implement dt support patch before this patch.
-yes will do in v2
+> Please pull the latest x86-urgent-for-linus git tree from:
 
-Thanks for your review.
->>> This patch don't call 'set_bit()' function to set FLAG_ACTIVE_LOW flag.
->>>
->>> Thanks,
->>> Chanwoo Choi
->>>
->>> On 09/09/2014 01:14 PM, George Cherian wrote:
->>>> Convert the driver to use gpiod_* API's.
->>>>
->>>> Signed-off-by: George Cherian <george.cherian@ti.com>
->>>> ---
->>>>    drivers/extcon/extcon-gpio.c | 18 +++++++-----------
->>>>    1 file changed, 7 insertions(+), 11 deletions(-)
->>>>
->>>> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->>>> index 72f19a3..25269f6 100644
->>>> --- a/drivers/extcon/extcon-gpio.c
->>>> +++ b/drivers/extcon/extcon-gpio.c
->>>> @@ -33,8 +33,7 @@
->>>>      struct gpio_extcon_data {
->>>>        struct extcon_dev *edev;
->>>> -    unsigned gpio;
->>>> -    bool gpio_active_low;
->>>> +    struct gpio_desc *gpiod;
->>>>        const char *state_on;
->>>>        const char *state_off;
->>>>        int irq;
->>>> @@ -50,9 +49,7 @@ static void gpio_extcon_work(struct work_struct *work)
->>>>            container_of(to_delayed_work(work), struct gpio_extcon_data,
->>>>                     work);
->>>>    -    state = gpio_get_value(data->gpio);
->>>> -    if (data->gpio_active_low)
->>>> -        state = !state;
->>>> +    state = gpiod_get_value(data->gpiod);
->>>>        extcon_set_state(data->edev, state);
->>>>    }
->>>>    @@ -106,22 +103,21 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->>>>        }
->>>>        extcon_data->edev->name = pdata->name;
->>>>    -    extcon_data->gpio = pdata->gpio;
->>>> -    extcon_data->gpio_active_low = pdata->gpio_active_low;
->>>> +    extcon_data->gpiod = gpio_to_desc(pdata->gpio);
->>>>        extcon_data->state_on = pdata->state_on;
->>>>        extcon_data->state_off = pdata->state_off;
->>>>        extcon_data->check_on_resume = pdata->check_on_resume;
->>>>        if (pdata->state_on && pdata->state_off)
->>>>            extcon_data->edev->print_state = extcon_gpio_print_state;
->>>>    -    ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
->>>> +    ret = devm_gpio_request_one(&pdev->dev, pdata->gpio, GPIOF_DIR_IN,
->>>>                        pdev->name);
->>>>        if (ret < 0)
->>>>            return ret;
->>>>          if (pdata->debounce) {
->>>> -        ret = gpio_set_debounce(extcon_data->gpio,
->>>> -                    pdata->debounce * 1000);
->>>> +        ret = gpiod_set_debounce(extcon_data->gpiod,
->>>> +                     pdata->debounce * 1000);
->>>>            if (ret < 0)
->>>>                extcon_data->debounce_jiffies =
->>>>                    msecs_to_jiffies(pdata->debounce);
->>>> @@ -133,7 +129,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->>>>          INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
->>>>    -    extcon_data->irq = gpio_to_irq(extcon_data->gpio);
->>>> +    extcon_data->irq = gpiod_to_irq(extcon_data->gpiod);
->>>>        if (extcon_data->irq < 0)
->>>>            return extcon_data->irq;
->>>>   
->>
+I only just noticed, but this pull request causes my Sony Vaio laptop
+to immediately reboot at startup.
 
--George
+I'm assuming it's one of the efi changes, but I'm bisecting now to say
+exactly where it happens. It will get reverted.
+
+             Linus
