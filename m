@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaIWT3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 15:29:01 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33205 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaIWT3A (ORCPT
+	id S1756633AbaIWT3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 15:29:12 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:54379 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaIWT3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 15:29:00 -0400
-From: behanw@converseincode.com
-To: ak@linux.intel.com, mmarek@suse.cz, yamada.m@jp.panasonic.com
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support clang
-Date: Tue, 23 Sep 2014 12:28:42 -0700
-Message-Id: <1411500522-11480-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 23 Sep 2014 15:29:07 -0400
+Message-ID: <5421C9FF.5030903@kernel.dk>
+Date: Tue, 23 Sep 2014 13:29:03 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Tejun Heo <tj@kernel.org>
+CC: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH block/for-3.17-fixes/core] blk-mq, percpu_ref: implement
+ a kludge for SCSI blk-mq stall during probe
+References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk> <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org> <20140923055924.GA10295@lst.de> <20140923060141.GF11740@mtj.dyndns.org> <20140923060906.GA10547@lst.de> <20140923061152.GI11740@mtj.dyndns.org> <5421968B.7080309@kernel.dk> <20140923192432.GA24441@mtj.dyndns.org>
+In-Reply-To: <20140923192432.GA24441@mtj.dyndns.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+On 09/23/2014 01:24 PM, Tejun Heo wrote:
+> blk-mq uses percpu_ref for its usage counter which tracks the number
+> of in-flight commands and used to synchronously drain the queue on
+> freeze.  percpu_ref shutdown takes measureable wallclock time as it
+> involves a sched RCU grace period.  This means that draining a blk-mq
+> takes measureable wallclock time.  One would think that this shouldn't
+> matter as queue shutdown should be a rare event which takes place
+> asynchronously w.r.t. userland.
+> 
+> Unfortunately, SCSI probing involves synchronously setting up and then
+> tearing down a lot of request_queues back-to-back for non-existent
+> LUNs.  This means that SCSI probing may take more than ten seconds
+> when scsi-mq is used.
+> 
+> This will be properly fixed by implementing a mechanism to keep
+> q->mq_usage_counter in atomic mode till genhd registration; however,
+> that involves rather big updates to percpu_ref which is difficult to
+> apply late in the devel cycle (v3.17-rc6 at the moment).  As a
+> stop-gap measure till the proper fix can be implemented in the next
+> cycle, this patch introduces __percpu_ref_kill_expedited() and makes
+> blk_mq_freeze_queue() use it.  This is heavy-handed but should work
+> for testing the experimental SCSI blk-mq implementation.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Christoph Hellwig <hch@infradead.org>
+> Link: http://lkml.kernel.org/g/20140919113815.GA10791@lst.de
+> Fixes: add703fda981 ("blk-mq: use percpu_ref for mq usage count")
+> Cc: Kent Overstreet <kmo@daterainc.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> ---
+> Hello, Jens, Christoph.
+> 
+> How about this one?  This is kinda ugly but should work fine in most
+> cases and easy to apply to v3.17 and take out during v3.18.
 
-Clang will warn about unknown warnings but will not return false
-unless -Werror is set. GCC will return false if an unknown
-warning is passed.
+The hack looks fine to me, if it passes Christophs boot stall test. The
+hack isn't THAT nasty, since you already have a series queued up to fix
+it for real for 3.18.
 
-Adding -Werror make both compiler behave the same.
-
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
----
- scripts/Kbuild.include | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index 8a9a4e1..e37ca5c 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -111,12 +111,12 @@ as-instr = $(call try-run,\
- # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
- 
- cc-option = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) -Werror $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # cc-option-yn
- # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
- cc-option-yn = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
-+	$(CC) -Werror $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
- 
- # cc-option-align
- # Prefix align with either -falign or -malign
-@@ -126,7 +126,7 @@ cc-option-align = $(subst -functions=0,,\
- # cc-disable-warning
- # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
- cc-disable-warning = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
-+	$(CC) -Werror $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
- 
- # cc-version
- # Usage gcc-ver := $(call cc-version)
 -- 
-1.9.1
+Jens Axboe
 
