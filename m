@@ -1,75 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaIWB5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Sep 2014 21:57:30 -0400
-Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:52929 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753470AbaIWB53 (ORCPT
+	id S1755598AbaIWCAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Sep 2014 22:00:14 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:48369 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087AbaIWCAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Sep 2014 21:57:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:6120:7652:10004:10400:10848:11232:11657:11658:11914:12043:12291:12517:12519:12555:12683:12740:13069:13311:13357:13868:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: town00_41187ff22bc1b
-X-Filterd-Recvd-Size: 2857
-Message-ID: <1411437445.2952.61.camel@joe-AO725>
-Subject: Re: [RFC PATCH linux-next] et131x: Promote staging et131x driver to
- drivers/net
-From: Joe Perches <joe@perches.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@linuxfoundation.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Date: Mon, 22 Sep 2014 18:57:25 -0700
-In-Reply-To: <1411421283-25073-1-git-send-email-mark.einon@gmail.com>
-References: <1411421283-25073-1-git-send-email-mark.einon@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Sep 2014 22:00:12 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] powerpc/iommu/ddw: Fix endianness
+Date: Tue, 23 Sep 2014 11:58:49 +1000
+Message-Id: <1411437529-6126-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 2.0.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092302-0013-0000-0000-00000041CF57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-22 at 22:28 +0100, Mark Einon wrote:
-> This patch moves the et131x gigabit ethernet driver from drivers/staging
-> to drivers/net/ethernet/agere.
-> 
-> There are no known issues at this time.
+rtas_call() accepts and returns values in CPU endianness.
+The ddw_query_response and ddw_create_response structs members are
+defined and treated as BE but as they are passed to rtas_call() as
+(u32 *) and they get byteswapped automatically, the data is actually
+CPU-endian. This fixes ddw_query_response and ddw_create_response
+definitions and use.
 
-This doesn't apply to -next or -linux
+of_read_number() is designed to work with device tree cells - it assumes
+the input is big-endian and returns data in CPU-endian. However due
+to the ddw_create_response struct fix, create.addr_hi/lo are already
+CPU-endian so do not byteswap them.
 
-[]
-> This patch will only apply once the last few pending changes
-> make their way from staging-next to linux-next, but posting
-> now in the hope that feedback can be given and this change can
-> make it in before the next merge window.n yo
+ddw_avail is a pointer to the "ibm,ddw-applicable" property which contains
+3 cells which are big-endian as it is a device tree. rtas_call() accepts
+a RTAS token in CPU-endian. This converts RTAS tokens from big-endian to
+CPU-endian. Since every token is used once till guest is rebooted, there is
+no much sense in caching RTAS tokens in CPU-endian.
 
-When you do post the actual patch, can you please use
-"git format-patch -M" so that the patch is significantly
-smaller and the renames are obvious?
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+Changes:
+v2:
+* updated commit log
+* fixed definition of ddw_query_response and ddw_create_response
+---
+ arch/powerpc/platforms/pseries/iommu.c | 38 ++++++++++++++++++----------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
->  drivers/net/ethernet/Kconfig        |    1 +
->  drivers/net/ethernet/Makefile       |    1 +
->  drivers/net/ethernet/agere/Kconfig  |   31 +
->  drivers/net/ethernet/agere/Makefile |    5 +
->  drivers/net/ethernet/agere/et131x.c | 4412 +++++++++++++++++++++++++++++++++++
->  drivers/net/ethernet/agere/et131x.h | 1533 ++++++++++++
->  drivers/staging/Kconfig             |    2 -
->  drivers/staging/Makefile            |    1 -
->  drivers/staging/et131x/Kconfig      |   10 -
->  drivers/staging/et131x/Makefile     |    5 -
->  drivers/staging/et131x/README       |   15 -
->  drivers/staging/et131x/et131x.c     | 4412 -----------------------------------
->  drivers/staging/et131x/et131x.h     | 1533 ------------
->  13 files changed, 5983 insertions(+), 5978 deletions(-)
->  create mode 100644 drivers/net/ethernet/agere/Kconfig
->  create mode 100644 drivers/net/ethernet/agere/Makefile
->  create mode 100644 drivers/net/ethernet/agere/et131x.c
->  create mode 100644 drivers/net/ethernet/agere/et131x.h
->  delete mode 100644 drivers/staging/et131x/Kconfig
->  delete mode 100644 drivers/staging/et131x/Makefile
->  delete mode 100644 drivers/staging/et131x/README
->  delete mode 100644 drivers/staging/et131x/et131x.c
->  delete mode 100644 drivers/staging/et131x/et131x.h
-
+diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
+index 4642d6a..f052cc8 100644
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -329,16 +329,16 @@ struct direct_window {
+ 
+ /* Dynamic DMA Window support */
+ struct ddw_query_response {
+-	__be32 windows_available;
+-	__be32 largest_available_block;
+-	__be32 page_size;
+-	__be32 migration_capable;
++	u32 windows_available;
++	u32 largest_available_block;
++	u32 page_size;
++	u32 migration_capable;
+ };
+ 
+ struct ddw_create_response {
+-	__be32 liobn;
+-	__be32 addr_hi;
+-	__be32 addr_lo;
++	u32 liobn;
++	u32 addr_hi;
++	u32 addr_lo;
+ };
+ 
+ static LIST_HEAD(direct_window_list);
+@@ -750,7 +750,7 @@ static void remove_ddw(struct device_node *np, bool remove_prop)
+ 		pr_debug("%s successfully cleared tces in window.\n",
+ 			 np->full_name);
+ 
+-	ret = rtas_call(ddw_avail[2], 1, 1, NULL, liobn);
++	ret = rtas_call(be32_to_cpu(ddw_avail[2]), 1, 1, NULL, liobn);
+ 	if (ret)
+ 		pr_warning("%s: failed to remove direct window: rtas returned "
+ 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
+@@ -841,7 +841,7 @@ static int query_ddw(struct pci_dev *dev, const u32 *ddw_avail,
+ 		cfg_addr = edev->pe_config_addr;
+ 	buid = edev->phb->buid;
+ 
+-	ret = rtas_call(ddw_avail[0], 3, 5, (u32 *)query,
++	ret = rtas_call(be32_to_cpu(ddw_avail[0]), 3, 5, (u32 *)query,
+ 		  cfg_addr, BUID_HI(buid), BUID_LO(buid));
+ 	dev_info(&dev->dev, "ibm,query-pe-dma-windows(%x) %x %x %x"
+ 		" returned %d\n", ddw_avail[0], cfg_addr, BUID_HI(buid),
+@@ -872,8 +872,9 @@ static int create_ddw(struct pci_dev *dev, const u32 *ddw_avail,
+ 
+ 	do {
+ 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
+-		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
+-				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
++		ret = rtas_call(be32_to_cpu(ddw_avail[1]), 5, 4, (u32 *)create,
++				cfg_addr, BUID_HI(buid), BUID_LO(buid),
++				page_shift, window_shift);
+ 	} while (rtas_busy_delay(ret));
+ 	dev_info(&dev->dev,
+ 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
+@@ -966,11 +967,11 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 		dev_dbg(&dev->dev, "no free dynamic windows");
+ 		goto out_failed;
+ 	}
+-	if (be32_to_cpu(query.page_size) & 4) {
++	if (query.page_size & 4) {
+ 		page_shift = 24; /* 16MB */
+-	} else if (be32_to_cpu(query.page_size) & 2) {
++	} else if (query.page_size & 2) {
+ 		page_shift = 16; /* 64kB */
+-	} else if (be32_to_cpu(query.page_size) & 1) {
++	} else if (query.page_size & 1) {
+ 		page_shift = 12; /* 4kB */
+ 	} else {
+ 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
+@@ -980,7 +981,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	/* verify the window * number of ptes will map the partition */
+ 	/* check largest block * page size > max memory hotplug addr */
+ 	max_addr = memory_hotplug_max();
+-	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
++	if (query.largest_available_block < (max_addr >> page_shift)) {
+ 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
+ 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
+ 			  1ULL << page_shift);
+@@ -1006,8 +1007,9 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	if (ret != 0)
+ 		goto out_free_prop;
+ 
+-	ddwprop->liobn = create.liobn;
+-	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
++	ddwprop->liobn = cpu_to_be32(create.liobn);
++	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
++			create.addr_lo);
+ 	ddwprop->tce_shift = cpu_to_be32(page_shift);
+ 	ddwprop->window_shift = cpu_to_be32(len);
+ 
+@@ -1039,7 +1041,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	list_add(&window->list, &direct_window_list);
+ 	spin_unlock(&direct_window_list_lock);
+ 
+-	dma_addr = of_read_number(&create.addr_hi, 2);
++	dma_addr = be64_to_cpu(ddwprop->dma_base);
+ 	goto out_unlock;
+ 
+ out_free_window:
+-- 
+2.0.0
 
