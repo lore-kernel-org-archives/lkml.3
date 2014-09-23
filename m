@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279AbaIWPZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:25:53 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:64996 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942AbaIWPZv (ORCPT
+	id S932196AbaIWPZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:25:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52697 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755942AbaIWPZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:25:51 -0400
+	Tue, 23 Sep 2014 11:25:55 -0400
+Date: Tue, 23 Sep 2014 16:25:58 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Weston Andros Adamson <dros@primarydata.com>
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+Message-ID: <20140923152558.GG28608@arm.com>
+References: <20140923130352.GK26472@arm.com>
+ <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com>
+ <20140923135938.GB28608@arm.com>
+ <20140923145356.GD28608@arm.com>
+ <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
+ <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
+ <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com>
 MIME-Version: 1.0
-In-Reply-To: <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
-Date: Tue, 23 Sep 2014 17:25:50 +0200
-Message-ID: <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
- properties interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+On Tue, Sep 23, 2014 at 04:08:36PM +0100, Weston Andros Adamson wrote:
+> On Sep 23, 2014, at 11:02 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
+> > Wait a second - the whole point of this extra reference (that the
+> > WARN_ON_ONCE is related to) is to handle the pass off to commit lists.
+> > 
+> > Maybe I’m just doing the wrong thing here with NFSv2!
+> > 
+> > More soon.
+> 
+> Actually, can you see if this is reproducible with NFSv3?
 
-> Some drivers need to deal with only firmware representation of its
-> GPIOs. An example would be a GPIO button array driver where each button
-> is described as a separate firmware node in device tree. Typically these
-> child nodes do not have physical representation in the Linux device
-> model.
->
-> In order to help device drivers to handle such firmware child nodes we
-> add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
-> parameter, finds the GPIO using whatever is the underlying firmware
-> method, and requests the GPIO properly.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Just tried that, and I'm unable to trigger the problem with NFSv3.
 
-I have a hard time figuring out if this is what we want for common
-accessors between DT and ACPI.
-
-Can I get some input from Grant, Arnd, Mark, Darren...?
-
-Yours,
-Linus Walleij
+Will
