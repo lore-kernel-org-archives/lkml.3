@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259AbaIWMKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 08:10:51 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:64288 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925AbaIWMKt (ORCPT
+	id S1754432AbaIWMM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 08:12:58 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46290 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551AbaIWMM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 08:10:49 -0400
+	Tue, 23 Sep 2014 08:12:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410970722-8579-3-git-send-email-alvin.chen@intel.com>
+In-Reply-To: <1410970722-8579-4-git-send-email-alvin.chen@intel.com>
 References: <1410970722-8579-1-git-send-email-alvin.chen@intel.com>
-	<1410970722-8579-3-git-send-email-alvin.chen@intel.com>
-Date: Tue, 23 Sep 2014 14:10:48 +0200
-Message-ID: <CACRpkdYuDux776OtQGMtN7HvW-LNahV42Ltwa6PzgA1oApig3g@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v5] GPIO: gpio-dwapb: Change readl&writel to dwapb_read&dwapb_write
+	<1410970722-8579-4-git-send-email-alvin.chen@intel.com>
+Date: Tue, 23 Sep 2014 14:12:56 +0200
+Message-ID: <CACRpkda=MOFp_zSoa4s_3VPbg8U__LCa7khmcCN0wzYDDHE5VQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4 v5] GPIO: gpio-dwapb: Support Debounce
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Weike Chen <alvin.chen@intel.com>
 Cc: Alexandre Courbot <gnurou@gmail.com>,
@@ -35,9 +35,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Sep 17, 2014 at 6:18 PM, Weike Chen <alvin.chen@intel.com> wrote:
 
-> This patch replaces 'readl&writel' with 'dwapb_read&dwapb_write'.
+> This patch enables 'debounce' for the designware GPIO, and
+> it is based on Josef Ahmad's previous work.
 >
-> Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
+> Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
+> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > Signed-off-by: Weike Chen <alvin.chen@intel.com>
 
 Patch applied.
