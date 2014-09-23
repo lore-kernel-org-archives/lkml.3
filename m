@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596AbaIWPqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 11:46:00 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:56566 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756547AbaIWPp5 (ORCPT
+	id S1756625AbaIWPqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 11:46:17 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:58839 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223AbaIWPqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 11:45:57 -0400
-Message-ID: <542195B0.6080706@gmail.com>
-Date: Tue, 23 Sep 2014 17:45:52 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com
-Subject: Re: [PATCH v4 3/9] Documentation: bindings: net: add the Marvell
- PXA168 Ethernet controller
-References: <1411474536-22626-1-git-send-email-antoine.tenart@free-electrons.com> <20140923140113.GC18924@kwain> <20140923142922.GE18924@kwain> <4014272.rJbSfrLcuB@wuerfel>
-In-Reply-To: <4014272.rJbSfrLcuB@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Sep 2014 11:46:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
+Date: Tue, 23 Sep 2014 17:45:57 +0200
+Message-ID: <12538216.vu4CbU01qP@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com> <CACRpkdaZJt_6cd1vtDw-Ys+YqUhNb0aXazUxGCX8mk4=6EmdHw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:VCCmUSgGCWPH/Q4BtjgkWNZ8zHFopDA0nPiy6KMgNx5
+ gUgSypme2GQRCAEPCjZUQjW//iUp4QfCKI+NkONVgPw68EUzao
+ r8Uytx7x/fXU0QlRpkH70jgCxUTCXdKHMuFFjtElLs5S0Ege+Y
+ AN4Szid4uOL+rjzksHXb+dgZbBhtD/vdaGTl+8eUZkrJSggXPN
+ RQL9xbTEzZc2K8COSD7B6o+ZlcFcSeRksd6dLOI64LGGyoeOTx
+ SHXnKBz3gEp3NbIFWwco23PkvKurh+EvRbZoQnMQ2rNCaE8mXm
+ 15a2bffzbj250tmyisOzlNC5j56HfY+mLb3I6YqQ62NMnMdw7r
+ NSmELvjAfy99nmIuqxF4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 04:37 PM, Arnd Bergmann wrote:
-> On Tuesday 23 September 2014 16:29:22 Antoine Tenart wrote:
->>
->> So I had a look on other Ethernet bindings. Would you agree with
->> something like the following?
->>
->>          eth0: ethernet@f7b90000 {
->>                  ...
->>                  #address-cells = <1>;
->>                  #size-cells = <0>;
->>                  phy-handle = <&ethphy0>;
->>
->>                  ethphy0: ethernet-phy@0 {
->>                          reg = <0>;
->>                  };
->>          };
->
-> Yes, that looks good.
+On Tuesday 23 September 2014 17:25:50 Linus Walleij wrote:
+> On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > Some drivers need to deal with only firmware representation of its
+> > GPIOs. An example would be a GPIO button array driver where each button
+> > is described as a separate firmware node in device tree. Typically these
+> > child nodes do not have physical representation in the Linux device
+> > model.
+> >
+> > In order to help device drivers to handle such firmware child nodes we
+> > add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
+> > parameter, finds the GPIO using whatever is the underlying firmware
+> > method, and requests the GPIO properly.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> I have a hard time figuring out if this is what we want for common
+> accessors between DT and ACPI.
+> 
+> Can I get some input from Grant, Arnd, Mark, Darren...?
 
-nit: ethernet-phy@0 should not be part of the ethernet controller
-but either part of a separate mdio-ctrl node or a separate node itself.
+I just took a brief look at this. My first impression is that the
+fw_dev_node structure is weird when all callers just do (in patch 2)
 
-AFAIKS, Berlin SoCs have internal PHYs, i.e. no MII/MDIO-pins exposed
-but only MLT-3 differential pairs. At least BG2CD also can connect its
-ethernet IP to a PHY capable of HDMI Ethernet Channel (HEC).
++	struct fw_dev_node fdn = {
++		.of_node = dev->of_node,
++		.acpi_node = ACPI_COMPANION(dev),
++	};
 
-So for BG2CD this has to look something like:
+I'd much rather see an interface that passes the 'struct device'
+pointer down to dev_get_named_gpiod() and all other exported
+functions, and then internally does the conversion at the point
+where the access is done.
 
-eth0: ethernet@f7b90000 {
-	...
-	phy-handle = <&hec>;
-};
-
-cec: cec@f7f00baa {
-	compatible = "marvell,berlin-cec";
-	reg = <0xf7f00baa 0x1234>;
-
-	/* CEC unit contains HEC PHY */
-	hec: ethernet-phy {
-		bla;
-	};
-}
-
-For reference, this is what we have for MVEBU SoCs with multiple ports
-per controller:
-
-eth: ethernet-ctrl@72000 {
-	compatible = "marvell,orion-eth";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	reg = <0x72000 0x4000>;
-	clocks = <&gate_clk 2>;
-	marvell,tx-checksum-limit = <1600>;
-	status = "disabled";
-
-	ethernet-port@0 {
-		compatible = "marvell,orion-eth-port";
-		reg = <0>;
-		interrupts = <29>;
-		/* overwrite MAC address in bootloader */
-		local-mac-address = [00 00 00 00 00 00];
-		phy-handle = <&ethphy>;
-	};
-};
-
-mdio: mdio-bus@72004 {
-	compatible = "marvell,orion-mdio";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	reg = <0x72004 0x84>;
-	interrupts = <30>;
-	clocks = <&gate_clk 2>;
-	status = "disabled";
-	ethphy: ethernet-phy {
-		/* set phy address in board file */
-	};
-};
-
-Sebastian
+	Arnd
