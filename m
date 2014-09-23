@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaIWGVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 02:21:37 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:34342 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaIWGVg (ORCPT
+	id S1753086AbaIWGYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 02:24:49 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:60953 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750818AbaIWGYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 02:21:36 -0400
-X-Originating-IP: 50.43.15.134
-Date: Mon, 22 Sep 2014 23:21:25 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-Message-ID: <20140923062125.GB6900@thin>
-References: <20140923143232.5ffff46e@canb.auug.org.au>
- <20140923054328.GA28790@gmail.com>
+	Tue, 23 Sep 2014 02:24:48 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <542112FD.7080302@smartplayin.com>
+Date: Tue, 23 Sep 2014 11:58:13 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923054328.GA28790@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v3] power: reset: use restart_notifier mechanism for msm-poweroff
+References: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 07:43:28AM +0200, Ingo Molnar wrote:
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Today's linux-next merge of the tiny tree got conflicts in
-> > arch/x86/kernel/process_32.c and arch/x86/kernel/process_64.c between
-> > commits dc56c0f9b870 ("x86, fpu: Shift "fpu_counter = 0" from
-> > copy_thread() to arch_dup_task_struct()") and 6f46b3aef003 ("x86:
-> > copy_thread: Don't nullify ->ptrace_bps twice") from the tip tree and
-> > commits a1cf09f93e66 ("x86: process: Unify 32-bit and 64-bit
-> > copy_thread I/O bitmap handling") and e4a191d1e05b ("x86: Support
-> > compiling out userspace I/O (iopl and ioperm)") from the tiny tree.
++linux-arm-msm
+On Tuesday 23 September 2014 11:38 AM, Pramod Gurav wrote:
+> This change replaces use of arm_pm_restart with recently introduced
+> reset mechanism in Linux kernel called restart_notifier.
 > 
-> Why are such changes in the 'tiny' tree? These are sensitive 
-> arch/x86 files, and any unification and compilation-out support 
-> patches need to go through the proper review channels and be 
-> merged upstream via the x86 tree if accepted...
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: Josh Cartwright <joshc@codeaurora.org>
+> Cc: Sebastian Reichel <sre@kernel.org>
+> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: linux-pm@vger.kernel.org
 > 
-> In particular the graticious sprinking of #ifdef 
-> CONFIG_X86_IOPORTs around x86 code looks ugly.
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+> Tested on Dragonboard APQ8074
 > 
-> Josh, don't do that, this route is really unacceptable. Please 
-> resubmit the latest patches and remove these from linux-next.
-
-I'd previously submitted these patches for review; the last round of
-feedback seemed entirely positive (with some explicit acks) on the 32/64
-unification patches, and generally positive on the last patch of the
-series (apart from a misunderstanding about this being configurable but
-still default y).  I CCed you on that submission, and hadn't seen any of
-this feedback from you at that time (nor a suggestion of which tree this
-should go through).  My intention with adding these patches to tiny/next
-tree was purely for an integration check with -next, and I'd planned to
-resend these by email shortly for an additional round of review with an
-explicit question of what route they should take into the kernel.
-
-I've dropped tiny/no-io from tiny/next; I'll poke at it further and
-resubmit for the x86 tree later, likely not for the next merge window at
-this point.
-
-Thanks for the feedback on process; this is day 1 of having a
-merge-window-bound tree in -next for the first time. :)
-
-- Josh Triplett
+> Changes since v2:
+> - Removed unwanted header file and added linux/pm.h
+> 
+> Changes since v1:
+> - Initialized restart_nb with its declaration
+> - Removed return check for register_restart_handler as it always
+>   returns 0 as per Guenter's suggestion to Josh's similar patch.
+>   This takes care of Guenter's comments on error logs and NULL
+>   initialization of restart_nb.notifier_call.
+> ---
+>  drivers/power/reset/msm-poweroff.c |   20 ++++++++++++++------
+>  1 file changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
+> index 774f9a3..4702efd 100644
+> --- a/drivers/power/reset/msm-poweroff.c
+> +++ b/drivers/power/reset/msm-poweroff.c
+> @@ -20,21 +20,27 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/module.h>
+>  #include <linux/reboot.h>
+> -
+> -#include <asm/system_misc.h>
+> +#include <linux/pm.h>
+>  
+>  static void __iomem *msm_ps_hold;
+> -
+> -static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
+> +static int do_msm_restart(struct notifier_block *nb, unsigned long action,
+> +			   void *data)
+>  {
+>  	writel(0, msm_ps_hold);
+>  	mdelay(10000);
+> +
+> +	return NOTIFY_DONE;
+>  }
+>  
+> +static struct notifier_block restart_nb = {
+> +	.notifier_call = do_msm_restart,
+> +	.priority = 128,
+> +};
+> +
+>  static void do_msm_poweroff(void)
+>  {
+>  	/* TODO: Add poweroff capability */
+> -	do_msm_restart(REBOOT_HARD, NULL);
+> +	do_msm_restart(&restart_nb, 0, NULL);
+>  }
+>  
+>  static int msm_restart_probe(struct platform_device *pdev)
+> @@ -47,8 +53,10 @@ static int msm_restart_probe(struct platform_device *pdev)
+>  	if (IS_ERR(msm_ps_hold))
+>  		return PTR_ERR(msm_ps_hold);
+>  
+> +	register_restart_handler(&restart_nb);
+> +
+>  	pm_power_off = do_msm_poweroff;
+> -	arm_pm_restart = do_msm_restart;
+> +
+>  	return 0;
+>  }
+>  
+> 
