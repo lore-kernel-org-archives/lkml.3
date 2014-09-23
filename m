@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaIWONP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 10:13:15 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:29847 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485AbaIWONL (ORCPT
+	id S1756011AbaIWOOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 10:14:34 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:43471 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390AbaIWOOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 10:13:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,580,1406592000"; 
-   d="scan'208";a="175306581"
-Date: Tue, 23 Sep 2014 15:11:08 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: <xen-devel@lists.xenproject.org>, Ian Campbell <ian.campbell@citrix.com>,
-        <tim@xen.org>, <stefano.stabellini@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: Re: [PATCH] arm{,64}/xen: Remove "EXPERIMENTAL" in the description
- of the Xen options
-In-Reply-To: <1410988026-19949-1-git-send-email-julien.grall@linaro.org>
-Message-ID: <alpine.DEB.2.02.1409231402320.15268@kaball.uk.xensource.com>
-References: <1410988026-19949-1-git-send-email-julien.grall@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 23 Sep 2014 10:14:33 -0400
+Date: Tue, 23 Sep 2014 16:14:29 +0200
+From: Robert Richter <rric@kernel.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Message-ID: <20140923141429.GH20170@rric.localhost>
+References: <1410544187-15876-1-git-send-email-rric@kernel.org>
+ <20140923104122.GE20170@rric.localhost>
+ <20140923104641.GF26472@arm.com>
+ <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014, Julien Grall wrote:
-> The Xen ARM API is stable since Xen 4.4 and everything has been
-> upstreamed in Linux for ARM and ARM64. Therefore we can drop "EXPERIMENTAL"
-> from the Xen option in the both Kconfig.
-> 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
+Olof,
 
-Added to xentip
+On 23.09.14 12:21:05, Catalin Marinas wrote:
+> On Tue, Sep 23, 2014 at 11:46:41AM +0100, Will Deacon wrote:
+> > On Tue, Sep 23, 2014 at 11:41:22AM +0100, Robert Richter wrote:
+> > > On 12.09.14 19:49:43, Robert Richter wrote:
+> > > > From: Robert Richter <rrichter@cavium.com>
+> > > > 
+> > > > This initial patches enable Cavium Thunder SoC Family. The patches add
+> > > > devicetree and Kconfig support and then add Thunder to the defconfig.
+> > > > 
+> > > > The Thunder system needs more enablement patches for subsystems and
+> > > > devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
+> > > > We will send separate patch sets for these. All of them base on this
+> > > > initial patches.
+> > > > 
+> > > > I sent a separate patch set independently that introduces support for
+> > > > dts vendor subdirs. After both patch sets have been applied I will
+> > > > send a patch in addition that moves the dts file into a subdirectory.
+> > > > 
+> > > > I sent another separate patch that sets NR_CPUS to 64 per default.
+> > > > 
+> > > > The first patch introduces dts files without having a Kconfig option
+> > > > for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
+> > > > added to defconfig in patch 4 as this is my preferred solution. If
+> > > > there is still resistance having an ARCH_THUNDER option, just drop
+> > > > them.
+> > > > 
+> > > > Patches are available here:
+> > > > 
+> > > >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
+> > > 
+> > > it would be good if these patches could be applied.
+> > 
+> > Catalin's handling the 3.18 merge window, but this looks like arm-soc
+> > material anyway and should go via Olof/Arnd.
+> 
+> Yes. Olof said he's cherry-picking arm64 SoC patches (or Robert could
+> send him a pull request).
+
+just in case you want to pull, please pull from:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
+
+Thanks,
+
+-Robert
 
 
->  arch/arm/Kconfig   | 2 +-
->  arch/arm64/Kconfig | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 32cbbd5..aa97108 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1758,7 +1758,7 @@ config XEN_DOM0
->  	depends on XEN
->  
->  config XEN
-> -	bool "Xen guest support on ARM (EXPERIMENTAL)"
-> +	bool "Xen guest support on ARM"
->  	depends on ARM && AEABI && OF
->  	depends on CPU_V7 && !CPU_V6
->  	depends on !GENERIC_ATOMIC64
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index fd4e81a..82bd86c 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -317,7 +317,7 @@ config XEN_DOM0
->  	depends on XEN
->  
->  config XEN
-> -	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
-> +	bool "Xen guest support on ARM64"
->  	depends on ARM64 && OF
->  	select SWIOTLB_XEN
->  	help
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://secure-web.cisco.com/10fMHoxLmpT7pslRQhVXoQ98BZM4058tWPAwjHIJFPjSWRzVkTCTZ5DW4mRyexHq4j8P3ydfhTL7AEFkQAPV_2GFn8ObgHE0PFjX8z37tMXWC2pHJcJIxV4gTr-DsOt-jvgxaFlv8DQjb8Lnuuu3eSqqEw4tVTIdc7nTFoE21Jso/http%3A%2F%2Fwww.tux.org%2Flkml%2F
-> 
+
+
+The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
+
+  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
+
+for you to fetch changes up to 1200e87a26b6b4fe1f473267c83515117e08ee39:
+
+  arm64, defconfig: Enable Cavium Thunder SoC in defconfig (2014-09-23 15:10:55 +0200)
+
+----------------------------------------------------------------
+Enablement patches for Cavium Thunder SoC Family. The patches add
+devicetree and Kconfig support and then add Thunder to the defconfig.
+
+----------------------------------------------------------------
+Radha Mohan Chintakuntla (3):
+      arm64, thunder: Add initial dts for Cavium Thunder SoC
+      arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
+      arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
+
+Robert Richter (1):
+      arm64, defconfig: Enable Cavium Thunder SoC in defconfig
+
+ .../devicetree/bindings/arm/cavium-thunder.txt     |  10 +
+ Documentation/devicetree/bindings/arm/cpus.txt     |   1 +
+ arch/arm64/Kconfig                                 |   5 +
+ arch/arm64/boot/dts/Makefile                       |   1 +
+ arch/arm64/boot/dts/thunder-88xx.dts               |  67 ++++
+ arch/arm64/boot/dts/thunder-88xx.dtsi              | 401 +++++++++++++++++++++
+ arch/arm64/configs/defconfig                       |   1 +
+ 7 files changed, 486 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
+ create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+ create mode 100644 arch/arm64/boot/dts/thunder-88xx.dtsi
