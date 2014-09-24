@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaIXJkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:40:06 -0400
-Received: from mail-bn1on0066.outbound.protection.outlook.com ([157.56.110.66]:47481
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751601AbaIXJkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:40:02 -0400
-Date: Wed, 24 Sep 2014 11:39:46 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752868AbaIXJmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:42:18 -0400
+Received: from mga14.intel.com ([192.55.52.115]:54538 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940AbaIXJmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:42:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,588,1406617200"; 
+   d="scan'208";a="479664294"
+Date: Wed, 24 Sep 2014 12:42:08 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [RFC PATCH v2 09/16] leds: leds-gpio: Add support for GPIO
+ descriptors
+Message-ID: <20140924094208.GX1786@lahna.fi.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1410868367-11056-10-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdY9enL9v=-e3W8Mqw+RFeTM8pjAPW_sF050sCVCsrJWHQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: DT: Remove 222 MHz OPP
-References: <1411498520-8117-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1411498520-8117-1-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20950.003
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <b5cd2f8d-f37d-4e19-a891-bd234849096d@BL2FFO11FD054.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51704005)(24454002)(377454003)(199003)(479174003)(164054003)(23746002)(65806001)(83506001)(4396001)(19580405001)(65956001)(64706001)(20776003)(90102001)(21056001)(99396003)(19580395003)(95666004)(104016003)(31966008)(6806004)(44976005)(74316001)(83322001)(106466001)(47776003)(1496007)(10300001)(50466002)(120916001)(107046002)(102836001)(80022003)(85306004)(50986999)(54356999)(76176999)(76482002)(64126003)(31696002)(92726001)(86362001)(92566001)(79102003)(81542003)(70736001)(83072002)(575784001)(74662003)(77982003)(74502003)(81342003)(85852003)(46102003)(87936001)(65826006)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB031;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY9enL9v=-e3W8Mqw+RFeTM8pjAPW_sF050sCVCsrJWHQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 08:55 PM, Soren Brinkmann wrote:
-> Due to dependencies between timer and CPU frequency, only changes by
-> powers of two are allowed. The clocksource driver prevents other
-> changes, but with cpufreq and its governors it can result in being
-> spammed with error messages constantly. Hence, remove the 222 MHz OPP.
+On Wed, Sep 24, 2014 at 09:55:48AM +0200, Linus Walleij wrote:
+> On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
 > 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  arch/arm/boot/dts/zynq-7000.dtsi | 1 -
->  1 file changed, 1 deletion(-)
+> > GPIO descriptors are the preferred way over legacy GPIO numbers
+> > nowadays. Convert the driver to use GPIO descriptors internally but
+> > still allow passing legacy GPIO numbers from platform data to support
+> > existing platforms.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-> index 6cc83d4c6c76..a0ed01d68328 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -30,7 +30,6 @@
->  				/* kHz    uV */
->  				666667  1000000
->  				333334  1000000
-> -				222223  1000000
->  			>;
->  		};
->  
+> Great!
 > 
+> >  #include <linux/gpio.h>
+> > +#include <linux/gpio/consumer.h>
+> 
+> You should not need to include <linux/gpio.h> at all after this change.
 
-Applied.
+It is still needed because we call devm_gpio_request_one() if we find
+legacy numbers from platform data.
 
-Thanks,
-Michal
+> > @@ -85,9 +91,10 @@ static int gpio_blink_set(struct led_classdev *led_cdev,
+> >  {
+> >         struct gpio_led_data *led_dat =
+> >                 container_of(led_cdev, struct gpio_led_data, cdev);
+> > +       int gpio = desc_to_gpio(led_dat->gpiod);
+> >
+> >         led_dat->blinking = 1;
+> > -       return led_dat->platform_gpio_blink_set(led_dat->gpio, GPIO_LED_BLINK,
+> > +       return led_dat->platform_gpio_blink_set(gpio, GPIO_LED_BLINK,
+> >                                                 delay_on, delay_off);
+> >  }
+> 
+> While this is a nice first step, it must be possible to patch all in-kernel
+> users of this callback to take a gpiod too...
+> 
+> It's actually just:
+> 
+> $ git grep gpio_blink_set
+> arch/arm/mach-orion5x/dns323-setup.c:   .gpio_blink_set =
+> orion_gpio_led_blink_set,
+> arch/arm/mach-orion5x/dns323-setup.c:   .gpio_blink_set =
+> orion_gpio_led_blink_set,
+> arch/arm/mach-s3c24xx/mach-h1940.c:     .gpio_blink_set = h1940_led_blink_set,
+> arch/arm/mach-s3c24xx/mach-rx1950.c:    .gpio_blink_set = rx1950_led_blink_set,
+> 
+> However we can do that as a follow-up patch. (Add to TODO...)
+
+OK, I'll add that to my TODO list :)
