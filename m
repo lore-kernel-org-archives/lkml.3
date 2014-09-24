@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735AbaIXH47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:56:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52016 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806AbaIXH45 (ORCPT
+	id S1753858AbaIXH6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:58:16 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:51390 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750772AbaIXH6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:56:57 -0400
-Date: Wed, 24 Sep 2014 09:56:51 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, tony@atomide.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140924075651.GC19565@linutronix.de>
-References: <5411C810.7070906@linutronix.de>
- <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
- <54129F6C.7040508@linutronix.de>
- <20140912094010.GE28458@ci00147.xsens-tech.local>
- <5412C21A.8020203@linutronix.de>
- <20140912102816.GF28458@ci00147.xsens-tech.local>
- <541716DC.9020904@linutronix.de>
- <20140917102812.GA20438@ci00147.xsens-tech.local>
- <20140921204100.GA10111@linutronix.de>
- <20140922092853.GH20438@ci00147.xsens-tech.local>
+	Wed, 24 Sep 2014 03:58:14 -0400
+X-IronPort-AV: E=Sophos;i="5.04,587,1406563200"; 
+   d="scan'208";a="36385359"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
+        <jan.kiszka@web.de>, <pbonzini@redhat.com>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: [PATCH v8 0/8] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
+Date: Wed, 24 Sep 2014 15:57:50 +0800
+Message-ID: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140922092853.GH20438@ci00147.xsens-tech.local>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frans Klaver | 2014-09-22 11:28:54 [+0200]:
+ept identity pagetable and apic access page in kvm are pinned in memory.
+As a result, they cannot be migrated/hot-removed.
 
->
->Wow, thanks for your work here. This does indeed sound hard to trap.
->
->I guess then we'd still have to answer the question why the yocto build
->calls set_termios() so often, but that's not on you then. Did you notice
->it even changing settings? We might want to fix this even if the kernel
->should be able to cope.
+But actually they don't need to be pinned in memory.
 
-Yeah. I don't care if this is yocto's fault or not. If it is possible to
-stop the DMA transfer from userland with whatever method then it needs to
-be fixed in kernel so that this does happen.
+[For ept identity page]
+Just do not pin it. When it is migrated, guest will be able to find the
+new page in the next ept violation.
 
->Thanks again,
->Frans
+[For apic access page]
+The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+for each vcpu in addition.
 
-Sebastian
+This patch-set is based on Linux 3.17.0-rc5.
+
+NOTE: Tested with -cpu xxx,-x2apic option.
+      But since nested vm pins some other pages in memory, if user uses nested
+      vm, memory hot-remove will not work.
+
+Change log v7->v8:
+1. Patch 1/9~3/9 were applied to kvm/queue by Paolo Bonzini <pbonzini@redhat.com>.
+   Just resend them, no changes.
+2. Removed previous patch 4/9, which added unnecessary hook has_secondary_apic_access().
+3. Set kvm_x86_ops->set_apic_access_page_addr to NULL when hardware had no flexpriority
+   functionality which actually exists only on x86. 
+4. Moved declaration of kvm_arch_mmu_notifier_invalidate_page() to arch/*/include/asm/kvm_host.h.
+5. Removed useless set_apic_access_page_addr() hook for svm.
+
+Tang Chen (8):
+  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+  kvm: Remove ept_identity_pagetable from struct kvm_arch.
+  kvm: Make init_rmode_identity_map() return 0 on success.
+  kvm, mem-hotplug: Reload L1's apic access page in vcpu_enter_guest().
+  kvm: Rename make_all_cpus_request() to kvm_make_all_cpus_request() and
+    make it non-static.
+  kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
+    running.
+  kvm, mem-hotplug: Add arch specific mmu notifier to handle apic access
+    migration.
+  kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
+
+ arch/arm/include/asm/kvm_host.h     |   5 ++
+ arch/arm64/include/asm/kvm_host.h   |   5 ++
+ arch/ia64/include/asm/kvm_host.h    |   7 ++
+ arch/mips/include/asm/kvm_host.h    |   6 ++
+ arch/powerpc/include/asm/kvm_host.h |   5 ++
+ arch/s390/include/asm/kvm_host.h    |   8 +++
+ arch/x86/include/asm/kvm_host.h     |   7 +-
+ arch/x86/kvm/svm.c                  |   3 +-
+ arch/x86/kvm/vmx.c                  | 130 ++++++++++++++++++++++++------------
+ arch/x86/kvm/x86.c                  |  45 +++++++++++--
+ include/linux/kvm_host.h            |   2 +
+ virt/kvm/kvm_main.c                 |  13 ++--
+ 12 files changed, 180 insertions(+), 56 deletions(-)
+
+-- 
+1.8.3.1
+
