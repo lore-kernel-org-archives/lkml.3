@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaIXOuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:50:50 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40950 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751937AbaIXOur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:50:47 -0400
-Date: Wed, 24 Sep 2014 15:50:25 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nathan Lynch <Nathan_Lynch@mentor.com>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code
-	consolidation
-Message-ID: <20140924145025.GX5182@n2100.arm.linux.org.uk>
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <20140922223022.GO5182@n2100.arm.linux.org.uk> <5420BE92.7050504@mentor.com> <5422D138.8000002@codeaurora.org> <5422D616.7060807@mentor.com>
+	id S1753243AbaIXOu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:50:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59894 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006AbaIXOu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:50:57 -0400
+Date: Wed, 24 Sep 2014 09:50:53 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Felipe Balbi <balbi@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <linux-usb@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [resend PATCH 3/3] usb: dwc3: add ACPI support
+Message-ID: <20140924145053.GC17997@saruman>
+Reply-To: <balbi@ti.com>
+References: <1411545639-18741-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1411545639-18741-4-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
 Content-Disposition: inline
-In-Reply-To: <5422D616.7060807@mentor.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1411545639-18741-4-git-send-email-heikki.krogerus@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 09:32:54AM -0500, Nathan Lynch wrote:
-> On 09/24/2014 09:12 AM, Christopher Covington wrote:
-> > Hi Nathan,
-> > 
-> > On 09/22/2014 08:28 PM, Nathan Lynch wrote:
-> >> Hmm, this patch set is merely exposing the hardware counter when it is
-> >> present for the VDSO's use; I take it you have no objection to that?
-> >>
-> >> While the 32-bit ARM VDSO I've posted (in a different thread) exploits a
-> >> facility that is required by the virtualization option in the
-> >> architecture, its utility is not limited to guest operating systems.
-> > 
-> > Just to clarify, were the performance improvements you measured from a
-> > virtualized guest or native?
-> 
-> Yeah I should have been explicit about this.  My tests and measurements
-> (and all test results I've received from others, I believe) have been on
-> native/host kernels, not guests.
+--DIOMP1UsTsWJauNi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Have there been any measurements on systems without the architected
-timers?
+On Wed, Sep 24, 2014 at 11:00:39AM +0300, Heikki Krogerus wrote:
+> Adds ACPI ID used on newer Intel SoCs.
+>=20
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
+>  drivers/usb/dwc3/core.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>=20
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index d08cac5..c2cf2d8 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/of.h>
+> +#include <linux/acpi.h>
+> =20
+>  #include <linux/usb/ch9.h>
+>  #include <linux/usb/gadget.h>
+> @@ -960,12 +961,21 @@ static const struct of_device_id of_dwc3_match[] =
+=3D {
+>  MODULE_DEVICE_TABLE(of, of_dwc3_match);
+>  #endif
+> =20
+> +#ifdef CONFIG_ACPI
+> +static const struct acpi_device_id dwc3_acpi_match[] =3D {
+> +	{ "808622B7", 0 },
 
-> > I count 18 dts* files that have "arm,armv7-timer", including platforms with
-> > Krait, Exynos, and Tegra processors.
-> 
-> Yup.
+can you just provide a macro for this string ?
 
-That's not the full story.  Almost every ARM to date has not had an
-architected timer.  Architected timers are a recent addition - as
-pointed out, a Cortex A7/A12/A15 invention.  Most of the platforms I
-see are Cortex A9 which doesn't have any architected timers.
+--=20
+balbi
 
-Yes, it may be fun to work on new hardware and make that perform
-much better than previous, but we should not loose sight that there
-is older hardware out there, and we shouldn't unnecessarily penalise
-it when adding new features.
+--DIOMP1UsTsWJauNi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-What we /need/ to know is what the effect providing a VDSO in an
-environment without an architected timer (so using the VDSO fallback
-functions calling the syscalls) and having glibc use it is compared
-to the current situation where there is no VDSO for glibc to use.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-If you can show that there's no difference, then I'm happy to go with
-always providing the VDSO.  If there's a detrimental effect (which I
-suspect there may be, since we now have to have glibc test to see if
-the VDSO is there, jump to the VDSO, the VDSO then tests whether we
-have an architected timer, and then we finally get to issue the
-syscall), then we must avoid providing the VDSO on systems which have
-no architected timer.
+iQIcBAEBAgAGBQJUItpNAAoJEIaOsuA1yqREkSIP/3L49Fsw+A4Pjd53xMjzXWWV
+DZkvfEa2O9zNgLRK03pdEZe0K1MB4ob6rvP2dDp6kolsWGjd6RxRTv8wIk3pYADz
+s/yYVScZ0lMqlWfmUzj9oCGeyfmszLAPju0xDBTiCtJdtUUACJNptuU9wcIyblka
+mWn1k8dzJSkGCjsQu5keybp4U61bHz5lszkO3Z1pKiC3YYosaGmGLUo+/7BbtEny
+VCpRh7WcbrWFJicro4SEFye3JOQYSMJY98X1lIqiV7fMUOvyj/LXyqERzenq+287
+aj1a3Vj00kqmwj2lEi2RiFDdkNyT4PRTcMunVtCZE9oANh2lo+D4TkcaGGAxaHTA
+qOiIvkmvCUSgOyGJP/f5NilU3seVkPPM5PVcfo1RP9H3Dxq3X4Jc/nnSf6ewDZRF
+98CSobCM4I5UA1j4bMVbkgYhkdipBxmx5meQ18VqthXhyf/o+RirxA2A5dp0G22P
+hLEtOw9lJ8h6/w7E+OxaXj0NPJ/Gdb6TGrE8MPlNXfFrQ2c5n15cMajmTiM8Psui
+nnKEw+nOatRIAGnQ7kd94s3VpuF+M9rReEUXLGkeDVjC4nV5J+TotsFB0/gl+4Vu
+c+z0oB8j+E1M3yi83LGwQOBU0sTUWVyQynCllyB8bnzbnsqvlmVYTGVtUijmd6U6
+PymNY4n/UQ+x4jFw8A25
+=+F6+
+-----END PGP SIGNATURE-----
 
-Things like the time keeping syscalls tend to be hot paths, and having
-extra unnecessary cycles in them can hurt userspace performance.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+--DIOMP1UsTsWJauNi--
