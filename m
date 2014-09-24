@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaIXQaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:30:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:28666 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751301AbaIXQaK (ORCPT
+	id S1752889AbaIXQb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:31:56 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:48403 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaIXQby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:30:10 -0400
-Date: Wed, 24 Sep 2014 12:30:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-Message-ID: <20140924123007.7fcb0099@gandalf.local.home>
-In-Reply-To: <5422EFB4.2050104@osg.samsung.com>
-References: <20140923173846.603cb49c@gandalf.local.home>
-	<5422336A.6030304@hitachi.com>
-	<20140924114235.4287f4a1@gandalf.local.home>
-	<20140924115811.6eeeab8c@gandalf.local.home>
-	<5422EAE2.6080005@osg.samsung.com>
-	<20140924120853.0a717b7e@gandalf.local.home>
-	<5422EFB4.2050104@osg.samsung.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 24 Sep 2014 12:31:54 -0400
+Message-ID: <5422F1F7.8010308@6wind.com>
+Date: Wed, 24 Sep 2014 18:31:51 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+To: Cong Wang <cwang@twopensource.com>
+CC: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com> <CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
+In-Reply-To: <CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014 10:22:12 -0600
-Shuah Khan <shuahkh@osg.samsung.com> wrote:
+Le 24/09/2014 18:15, Cong Wang a écrit :
+> On Wed, Sep 24, 2014 at 9:01 AM, Cong Wang <cwang@twopensource.com> wrote:
+>>
+>> And clearly you missed my question above: how do you get netns id
+>> without sharing /var/run/netns/ ?
+>
+> OK, I found it:
+>
+>> Ids are stored in the parent user namespace. These ids are valid only inside
+>> this user namespace. The user can retrieve these ids via a new netlink messages,
+>> but only if peer netns are in the same user namespace.
+>
+> So your example is confusing, perhaps you need some other way to show the ID's
+> instead of binding to ip netns output which is basically ls
+> /var/run/netns/. We don't
+> want an inner netns know anything outside, IOW, we don't share /var/run/netns/.
+Hmm, not sure to understand you. My usecase shares /var/run/netns, because
+there is only one user ns and one mount ns.
 
-
-> One simple approach is to have the user install the required tools
-> for the test. Indicate what is needed and fail the test with
-> appropriate message with xskip. This is what I have in mind for
-> tests that can't be run because of a missing config. The same can
-> be extended to external tools that the test depends on.
-
-Should I hold off adding my tests until we have all this in place. Or
-should I just push my tests with simply passing if the config isn't
-supported for now and add it later?
-
-I wont add any of the tests that require other tools besides echo, grep
-and cat.
-
--- Steve
-
+> I think in this case your ID's are still available, but aren't you
+> providing a new way
+> for the inner netns device to escape which we are trying to avoid?
+It's why the ids depend on user ns. Only if user ns are the same we allow to
+get an id for a peer netns.
