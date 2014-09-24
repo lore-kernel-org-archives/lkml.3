@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaIXMFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:05:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37197 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751124AbaIXMFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:05:11 -0400
-Date: Wed, 24 Sep 2014 13:05:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>,
-        Alex Williamson <Alex.Williamson@redhat.com>
-Subject: Re: [PATCH v2] kvm-vfio: do not use module_init
-Message-ID: <20140924120505.GF28823@arm.com>
-References: <1411559780-12676-1-git-send-email-pbonzini@redhat.com>
+	id S1752968AbaIXMHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:07:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35010 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595AbaIXMHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 08:07:15 -0400
+Message-ID: <5422B3EF.4000800@suse.cz>
+Date: Wed, 24 Sep 2014 14:07:11 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411559780-12676-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: behanw@converseincode.com
+CC: ak@linux.intel.com, yamada.m@jp.panasonic.com, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support
+ clang
+References: <1411500522-11480-1-git-send-email-behanw@converseincode.com>
+In-Reply-To: <1411500522-11480-1-git-send-email-behanw@converseincode.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:56:20PM +0100, Paolo Bonzini wrote:
-> /me got confused between the kernel and QEMU.  In the kernel, you can
-> only have one module_init function, and it will prevent unloading the
-> module unless you also have the corresponding module_exit function.
+On 2014-09-23 21:28, behanw@converseincode.com wrote:
+> From: Mark Charlebois <charlebm@gmail.com>
 > 
-> So, commit 80ce1639727e (KVM: VFIO: register kvm_device_ops dynamically,
-> 2014-09-02) broke unloading of the kvm module, by adding a module_init
-> function and no module_exit.
-> 
-> Repair it by making kvm_vfio_ops_init weak, and checking it in
-> kvm_init.
-> 
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Alex Williamson <Alex.Williamson@redhat.com>
-> Fixes: 80ce1639727e9d38729c34f162378508c307ca25
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  virt/kvm/kvm_main.c | 9 +++++++++
->  virt/kvm/vfio.c     | 4 ++--
->  virt/kvm/vfio.h     | 6 ++++++
->  3 files changed, 17 insertions(+), 2 deletions(-)
->  create mode 100644 virt/kvm/vfio.h
-> 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index db57363cc287..ad3439835adb 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -58,6 +58,10 @@
->  #include "coalesced_mmio.h"
->  #include "async_pf.h"
->  
-> +#ifdef CONFIG_KVM_VFIO
-> +#include "vfio.h"
-> +#endif
+> Clang will warn about unknown warnings but will not return false
 
-Can't you include this unconditionally, then have the #ifdef in the header
-and a static inline kvm_vfio_ops_init that returns 0?
+You mean unknown options, right?
 
-Will
+
+> unless -Werror is set. GCC will return false if an unknown
+> warning is passed.
+> 
+> Adding -Werror make both compiler behave the same.
+
+Can you please limit it to the clang case? Add an internal variable that
+either contains -Werror or nothing, depending on the compiler. What I
+fear is that if we use -Werror unconditionally and the user (or some
+automated build system) decides to add some silly option to KCFLAGS, we
+will get silent failures in the cc-option tests. Of course, the same can
+happen with clang, but there seems to be no way around it.
+
+BTW, is there a chance that this would be fixed in some later clang
+version? Accepting unknown commandline options is a rather unusual
+behavior. How are all the ./configure scripts going to cope with it?
+
+Thanks,
+Michal
