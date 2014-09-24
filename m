@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaIXOBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:01:43 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:37207 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240AbaIXOBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:01:41 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: zynq: DT: Add missing reference for memory-controller
-Date: Wed, 24 Sep 2014 16:01:33 +0200
-Message-Id: <ca95da888c9cd61e5b5e437b0e1b5cea893455ae.1411567289.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <fced9e56dc4ef8df9ead34f6444c010cc31c7a61.1411567289.git.michal.simek@xilinx.com>
-References: <fced9e56dc4ef8df9ead34f6444c010cc31c7a61.1411567289.git.michal.simek@xilinx.com>
-In-Reply-To: <fced9e56dc4ef8df9ead34f6444c010cc31c7a61.1411567289.git.michal.simek@xilinx.com>
-References: <fced9e56dc4ef8df9ead34f6444c010cc31c7a61.1411567289.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-28055-1411567296-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1753020AbaIXODt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:03:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38147 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaIXODr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:03:47 -0400
+Message-ID: <5422CF41.9000803@suse.com>
+Date: Wed, 24 Sep 2014 16:03:45 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, jbeulich@suse.com
+Subject: Re: [PATCH V3] xen: eliminate scalability issues from initial mapping
+ setup
+References: <1410965981-15444-1-git-send-email-jgross@suse.com> <1410965981-15444-2-git-send-email-jgross@suse.com> <5422C512.1010602@citrix.com>
+In-Reply-To: <5422C512.1010602@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 09/24/2014 03:20 PM, David Vrabel wrote:
+> On 17/09/14 15:59, Juergen Gross wrote:
+>> Direct Xen to place the initial P->M table outside of the initial
+>> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
+>> restriction on the size of the initial mapping limits the amount
+>> of memory a domain can be handed initially.
+>>
+>> As the initial P->M table is copied rather early during boot to
+>> domain private memory and it's initial virtual mapping is dropped,
+>> the easiest way to avoid virtual address conflicts with other
+>> addresses in the kernel is to use a user address area for the
+>> virtual address of the initial P->M table. This allows us to just
+>> throw away the page tables of the initial mapping after the copy
+>> without having to care about address invalidation.
+>>
+>> It should be noted that this patch won't enable a pv-domain to USE
+>> more than 512 GB of RAM. It just enables it to be started with a
+>> P->M table covering more memory. This is especially important for
+>> being able to boot a Dom0 on a system with more than 512 GB memory.
+>
+> This doesn't seem to work.  It crashes when attempting to construct
+> the page tables.  Have these patches been tested on a host with > 512 GiB?
 
---=_mimegpg-monstr-desktop-28055-1411567296-0001
+Not yet. I did a code review and was pretty sure the memory above 512GB
+would be ignored - seems as if I was wrong.
 
-Add missing reference for memory-controller.
+I'll have access to a machine with 1TB RAM soon, so I'll try to test a
+patch which really does what I thought should be done: ignoring the
+memory above 512GB.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-
- arch/arm/boot/dts/zynq-7000.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index fc90f47f9c03..2690e6d01f71 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -145,7 +145,7 @@
- 			cache-level = <2>;
- 		};
-
--		memory-controller@f8006000 {
-+		mc: memory-controller@f8006000 {
- 			compatible = "xlnx,zynq-ddrc-a05";
- 			reg = <0xf8006000 0x1000>;
- 		} ;
---
-1.8.2.3
+Thanks for testing!
 
 
---=_mimegpg-monstr-desktop-28055-1411567296-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlQizsAACgkQykllyylKDCFiEgCfeUclMKkaVzmha4dWPhsn80Km
-0JQAnAmZJE8bAQ8BkZ+eo/C3ZyRahmAh
-=TdIM
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-28055-1411567296-0001--
+Juergen
