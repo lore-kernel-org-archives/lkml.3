@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaIXJmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:42:18 -0400
-Received: from mga14.intel.com ([192.55.52.115]:54538 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940AbaIXJmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:42:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,588,1406617200"; 
-   d="scan'208";a="479664294"
-Date: Wed, 24 Sep 2014 12:42:08 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [RFC PATCH v2 09/16] leds: leds-gpio: Add support for GPIO
- descriptors
-Message-ID: <20140924094208.GX1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1410868367-11056-10-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdY9enL9v=-e3W8Mqw+RFeTM8pjAPW_sF050sCVCsrJWHQ@mail.gmail.com>
+	id S1753198AbaIXJmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:42:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27569 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaIXJml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:42:41 -0400
+Date: Wed, 24 Sep 2014 12:42:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: devel@driverdev.osuosl.org, lidza.louina@gmail.com,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/3] staging: dgap: adds missing iounmap for re_map_port
+ in dgap_release_remap()
+Message-ID: <20140924094229.GB5811@mwanda>
+References: <20140923002208.GA20768@devel>
+ <20140924093648.GA5811@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdY9enL9v=-e3W8Mqw+RFeTM8pjAPW_sF050sCVCsrJWHQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140924093648.GA5811@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 09:55:48AM +0200, Linus Walleij wrote:
-> On Tue, Sep 16, 2014 at 1:52 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
+On Wed, Sep 24, 2014 at 12:36:48PM +0300, Dan Carpenter wrote:
+> On Tue, Sep 23, 2014 at 09:22:08AM +0900, Daeseok Youn wrote:
+> > Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> > ---
+> >  drivers/staging/dgap/dgap.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> > index 779d144..637ea8a 100644
+> > --- a/drivers/staging/dgap/dgap.c
+> > +++ b/drivers/staging/dgap/dgap.c
+> > @@ -1026,6 +1026,7 @@ static void dgap_release_remap(struct board_t *brd)
+> >  	release_mem_region(brd->membase, 0x200000);
+> >  	release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
+> >  	iounmap(brd->re_map_membase);
+> > +	iounmap(brd->re_map_port);
 > 
-> > GPIO descriptors are the preferred way over legacy GPIO numbers
-> > nowadays. Convert the driver to use GPIO descriptors internally but
-> > still allow passing legacy GPIO numbers from platform data to support
-> > existing platforms.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> Great!
+> I don't think it matters, but at least aesthetically it would be better
+> to unmap first and then release the regions.  (You can do this in a
+> different patch).
 > 
-> >  #include <linux/gpio.h>
-> > +#include <linux/gpio/consumer.h>
-> 
-> You should not need to include <linux/gpio.h> at all after this change.
 
-It is still needed because we call devm_gpio_request_one() if we find
-legacy numbers from platform data.
+Also dgap_do_remap() unwinds in the wrong order and is sucky.  It should
+use gotos.
 
-> > @@ -85,9 +91,10 @@ static int gpio_blink_set(struct led_classdev *led_cdev,
-> >  {
-> >         struct gpio_led_data *led_dat =
-> >                 container_of(led_cdev, struct gpio_led_data, cdev);
-> > +       int gpio = desc_to_gpio(led_dat->gpiod);
-> >
-> >         led_dat->blinking = 1;
-> > -       return led_dat->platform_gpio_blink_set(led_dat->gpio, GPIO_LED_BLINK,
-> > +       return led_dat->platform_gpio_blink_set(gpio, GPIO_LED_BLINK,
-> >                                                 delay_on, delay_off);
-> >  }
-> 
-> While this is a nice first step, it must be possible to patch all in-kernel
-> users of this callback to take a gpiod too...
-> 
-> It's actually just:
-> 
-> $ git grep gpio_blink_set
-> arch/arm/mach-orion5x/dns323-setup.c:   .gpio_blink_set =
-> orion_gpio_led_blink_set,
-> arch/arm/mach-orion5x/dns323-setup.c:   .gpio_blink_set =
-> orion_gpio_led_blink_set,
-> arch/arm/mach-s3c24xx/mach-h1940.c:     .gpio_blink_set = h1940_led_blink_set,
-> arch/arm/mach-s3c24xx/mach-rx1950.c:    .gpio_blink_set = rx1950_led_blink_set,
-> 
-> However we can do that as a follow-up patch. (Add to TODO...)
+Also the name dgap_do_remap() isn't great.  Remap is a verb not a noun
+so the "_do" isn't needed.  Just dgap_remap() and dgap_release_remap()
+could be changed to dgap_unmap().
 
-OK, I'll add that to my TODO list :)
+regards,
+dan carpenter
+
