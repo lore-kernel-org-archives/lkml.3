@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaIXJHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:07:23 -0400
-Received: from mga14.intel.com ([192.55.52.115]:46892 "EHLO mga14.intel.com"
+	id S1754029AbaIXJHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:07:50 -0400
+Received: from mga03.intel.com ([134.134.136.65]:36918 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179AbaIXJHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:07:15 -0400
+	id S1753855AbaIXJHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:07:20 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390844588"
+X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
+   d="scan'208";a="607709369"
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 To: tpmdd-devel@lists.sourceforge.net
 Cc: Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>,
         linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com,
         Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v1 11/12] tpm: Driver for TPM 2.0 CRB Interface
-Date: Wed, 24 Sep 2014 12:06:01 +0300
-Message-Id: <1411549562-24242-12-git-send-email-jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v1 12/12] tpm: TPM2 sysfs attributes
+Date: Wed, 24 Sep 2014 12:06:02 +0300
+Message-Id: <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
 References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
@@ -24,394 +24,381 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tpm_crb is a driver for TPM 2.0 CRB Interface as defined in
-
-- http://www.trustedcomputinggroup.org/resources/tpm_20_mobile_command_response_buffer_interface_specification
-- http://www.trustedcomputinggroup.org/resources/server_acpi_specification
-
-Tested with TPM2 PTT included in 4th generation Intel processors.
-
-Notes:
-
-- PTT reports using only ACPI start as start method but seems to
-  require CRB with ACPI start.
-- cmdReady does not seem to work with PTT.
-- Does not have yet interrupt based send/receive because I don't
-  have hardware for that.
+Added tpm2-sysfs.c that implements sysfs attributes for a TPM2
+device.
 
 Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- drivers/char/tpm/Kconfig   |   9 ++
- drivers/char/tpm/Makefile  |   1 +
- drivers/char/tpm/tpm_crb.c | 332 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 342 insertions(+)
- create mode 100644 drivers/char/tpm/tpm_crb.c
+ drivers/char/tpm/Makefile        |   2 +-
+ drivers/char/tpm/tpm-chip.c      |  10 +-
+ drivers/char/tpm/tpm-interface.c |   1 +
+ drivers/char/tpm/tpm2-commands.c |   2 +-
+ drivers/char/tpm/tpm2-sysfs.c    | 242 +++++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm2.h          |  31 +++++
+ 6 files changed, 284 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm2-sysfs.c
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index c54cac3..10c9419 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -122,4 +122,13 @@ config TCG_XEN
- 	  To compile this driver as a module, choose M here; the module
- 	  will be called xen-tpmfront.
- 
-+config TCG_CRB
-+	tristate "TPM 2.0 CRB Interface"
-+	depends on X86 && ACPI
-+	---help---
-+	  If you have a TPM security chip that is compliant with the
-+	  TCG CRB 2.0 TPM specification say Yes and it will be accessible
-+	  from within Linux.  To compile this driver as a module, choose
-+	  M here; the module will be called tpm_crb.
-+
- endif # TCG_TPM
 diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index 5ff5f3d..253e823 100644
+index 253e823..9e71c43 100644
 --- a/drivers/char/tpm/Makefile
 +++ b/drivers/char/tpm/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
- obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
- obj-$(CONFIG_TCG_ST33_I2C) += tpm_i2c_stm_st33.o
- obj-$(CONFIG_TCG_XEN) += xen-tpmfront.o
-+obj-$(CONFIG_TCG_CRB) += tpm_crb.o
-diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
+@@ -2,7 +2,7 @@
+ # Makefile for the kernel tpm device drivers.
+ #
+ obj-$(CONFIG_TCG_TPM) += tpm.o
+-tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-commands.o
++tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-commands.o tpm2-sysfs.o
+ tpm-$(CONFIG_ACPI) += tpm_ppi.o
+ 
+ ifdef CONFIG_ACPI
+diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
+index 128942b..91d8213 100644
+--- a/drivers/char/tpm/tpm-chip.c
++++ b/drivers/char/tpm/tpm-chip.c
+@@ -127,7 +127,10 @@ int tpm_chip_register(struct tpm_chip *chip)
+ 	if (rc)
+ 		return rc;
+ 
+-	rc = tpm_sysfs_add_device(chip);
++	if (chip->tpm2)
++		rc = tpm2_sysfs_add_device(chip);
++	else
++		rc = tpm_sysfs_add_device(chip);
+ 	if (rc)
+ 		goto del_misc;
+ 
+@@ -160,7 +163,10 @@ void tpm_chip_unregister(struct tpm_chip *chip)
+ 	synchronize_rcu();
+ 
+ 	tpm_dev_del_device(chip);
+-	tpm_sysfs_del_device(chip);
++	if (chip->tpm2)
++		tpm2_sysfs_del_device(chip);
++	else
++		tpm_sysfs_del_device(chip);
+ 	tpm_remove_ppi(&chip->dev->kobj);
+ 
+ 	if (!chip->tpm2)
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 7a9c096..26195db 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -899,6 +899,7 @@ void tpm_remove_hardware(struct device *dev)
+ 
+ 	tpm_chip_unregister(chip);
+ 
++
+ 	/* write it this way to be explicit (chip->dev == dev) */
+ 	put_device(chip->dev);
+ }
+diff --git a/drivers/char/tpm/tpm2-commands.c b/drivers/char/tpm/tpm2-commands.c
+index a21dfd5..6365087 100644
+--- a/drivers/char/tpm/tpm2-commands.c
++++ b/drivers/char/tpm/tpm2-commands.c
+@@ -195,7 +195,7 @@ ssize_t tpm2_get_tpm_pt(struct device *dev, u32 property_id,  u32* value,
+ 	cmd.header.in = tpm2_get_tpm_pt_header;
+ 	cmd.params.tpm2_get_tpm_pt_in.cap_id =
+ 		cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
+-	cmd.params.tpm2_get_tpm_pt_in.property_id = property_id;
++	cmd.params.tpm2_get_tpm_pt_in.property_id = cpu_to_be32(property_id);
+ 	cmd.params.tpm2_get_tpm_pt_in.property_cnt = cpu_to_be32(1);
+ 
+ 	rc = tpm_transmit_cmd(chip, &cmd, sizeof(cmd), desc);
+diff --git a/drivers/char/tpm/tpm2-sysfs.c b/drivers/char/tpm/tpm2-sysfs.c
 new file mode 100644
-index 0000000..db29bd2
+index 0000000..a254b2c
 --- /dev/null
-+++ b/drivers/char/tpm/tpm_crb.c
-@@ -0,0 +1,332 @@
++++ b/drivers/char/tpm/tpm2-sysfs.c
+@@ -0,0 +1,242 @@
 +/*
-+ * Copyright (C) 2014 Intel Corporation
-+ *
++ * Copyright (C) 2004 IBM Corporation
 + * Authors:
-+ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
++ * Leendert van Doorn <leendert@watson.ibm.com>
++ * Dave Safford <safford@watson.ibm.com>
++ * Reiner Sailer <sailer@watson.ibm.com>
++ * Kylene Hall <kjhall@us.ibm.com>
 + *
-+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
++ * Copyright (C) 2013 Obsidian Research Corp
++ * Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 + *
-+ * This device driver implements the TPM interface as defined in
-+ * the TCG CRB 2.0 TPM specification.
++ * sysfs filesystem inspection interface to the TPM
 + *
 + * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ *
 + */
-+
-+#include <linux/acpi.h>
-+#include <linux/highmem.h>
-+#include <linux/rculist.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
++#include <linux/device.h>
 +#include "tpm.h"
 +
-+#define ACPI_SIG_TPM2 "TPM2"
-+
-+static const u8 CRB_ACPI_START_UUID[] = {
-+	/* 0000 */ 0xAB, 0x6C, 0xBF, 0x6B, 0x63, 0x54, 0x14, 0x47,
-+	/* 0008 */ 0xB7, 0xCD, 0xF0, 0x20, 0x3C, 0x03, 0x68, 0xD4
-+};
-+
-+enum crb_defaults {
-+	CRB_SHORT_TIMEOUT = 1000,
-+	CRB_LONG_TIMEOUT = 2000,
-+	CRB_ACPI_START_REVISION_ID = 1,
-+	CRB_ACPI_START_INDEX = 1,
-+};
-+
-+enum crb_start_method {
-+	CRB_SM_ACPI_START = 2,
-+	CRB_SM_CRB = 7,
-+	CRB_SM_CRB_WITH_ACPI_START = 8,
-+};
-+
-+struct acpi_tpm2 {
-+	struct acpi_table_header hdr;
-+	u16 platform_class;
-+	u16 reserved;
-+	u64 control_area_pa;
-+	u32 start_method;
-+};
-+
-+enum crb_ca_request {
-+	CRB_CA_REQ_GO_IDLE	= 0x01,
-+	CRB_CA_REQ_CMD_READY	= 0x02,
-+};
-+
-+enum crb_ca_status {
-+	CRB_CA_STS_ERROR	= 0x01,
-+	CRB_CA_STS_TPM_IDLE	= 0x02,
-+};
-+
-+struct crb_control_area {
-+	u32 req;
-+	u32 sts;
-+	u32 cancel;
-+	u32 start;
-+	u32 int_enable;
-+	u32 int_sts;
-+	u32 cmd_size;
-+	u64 cmd_pa;
-+	u32 rsp_size;
-+	u64 rsp_pa;
-+} __packed;
-+
-+enum crb_status {
-+	CRB_STS_COMPLETE	= 0x01,
-+};
-+
-+struct crb_priv {
-+	struct {
-+		unsigned int acpi_start : 1;
-+		unsigned int crb_start	: 1;
-+		unsigned int reserved	: 30;
-+	} opt;
-+
-+	struct crb_control_area *cca;
-+	unsigned long cca_pa;
-+	acpi_handle dev_handle;
-+};
-+
-+#ifdef CONFIG_PM_SLEEP
-+int crb_suspend(struct device *dev)
++static ssize_t pcrs_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
 +{
-+	return 0;
-+}
++	u8 digest[TPM_DIGEST_SIZE];
++	ssize_t rc;
++	int i, j;
++	char *str = buf;
++	struct tpm_chip *chip = dev_get_drvdata(dev);
 +
-+static int crb_resume(struct device *dev)
++	for (i = 0; i < TPM2_PLATFORM_PCR; i++) {
++		rc = tpm2_pcr_read_dev(chip, i, digest);
++		if (rc)
++			break;
++		str += sprintf(str, "PCR-%02d: ", i);
++		for (j = 0; j < TPM_DIGEST_SIZE; j++)
++			str += sprintf(str, "%02X ", digest[j]);
++		str += sprintf(str, "\n");
++	}
++
++	return str - buf;
++}
++static DEVICE_ATTR_RO(pcrs);
++
++static ssize_t enabled_sh_show(struct device *dev, struct device_attribute *attr,
++		     char *buf)
++{
++	struct tpm2_startup_clear value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_STARTUP_CLEAR, (u32 *) &value,
++			     "could not retrieve STARTUP_CLEAR property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", value.sh_enable);
++	return rc;
++}
++static DEVICE_ATTR_RO(enabled_sh);
++
++static ssize_t enabled_eh_show(struct device *dev, struct device_attribute *attr,
++		     char *buf)
++{
++	struct tpm2_startup_clear value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_STARTUP_CLEAR, (u32 *) &value,
++			     "could not retrieve STARTUP_CLEAR property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", value.eh_enable);
++	return rc;
++}
++static DEVICE_ATTR_RO(enabled_eh);
++
++static ssize_t owned_sh_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm2_permanent value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_PERMANENT, (u32 *) &value,
++			     "could not retrieve PERMANENT property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", value.owner_auth_set);
++	return rc;
++}
++static DEVICE_ATTR_RO(owned_sh);
++
++static ssize_t owned_eh_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm2_permanent value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_PERMANENT, (u32 *) &value,
++			     "could not retrieve PERMANENT property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", value.endorsement_auth_set);
++	return rc;
++}
++static DEVICE_ATTR_RO(owned_eh);
++
++static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	u32 value1;
++	u32 value2;
++	ssize_t rc;
++	char *str = buf;
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_MANUFACTURER, (u32 *) &value1,
++			     "could not retrieve MANUFACTURER property");
++	if (rc)
++		return 0;
++
++	str += sprintf(str, "Manufacturer: 0x%08x\n", be32_to_cpu(value1));
++	str += sprintf(str, "TCG version: 2.0\n");
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_FIRMWARE_VERSION_1, (u32 *) &value1,
++			     "could not retrieve FIRMWARE_VERSION_1 property");
++	if (rc)
++		return 0;
++
++	rc = tpm2_get_tpm_pt(dev, TPM2_PT_FIRMWARE_VERSION_2, (u32 *) &value2,
++			     "could not retrieve FIRMWARE_VERSION_2 property");
++	if (rc)
++		return 0;
++
++	str += sprintf(str, "Firmware version: 0x%08x 0x%08x\n", value1, value2);
++
++	return str - buf;
++}
++static DEVICE_ATTR_RO(caps);
++
++static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
++			    const char *buf, size_t count)
++{
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++	if (chip == NULL)
++		return 0;
++
++	chip->ops->cancel(chip);
++	return count;
++}
++static DEVICE_ATTR_WO(cancel);
++
++static ssize_t durations_show(struct device *dev, struct device_attribute *attr,
++			      char *buf)
 +{
 +	struct tpm_chip *chip = dev_get_drvdata(dev);
 +
-+	(void) tpm_do_selftest(chip);
++	if (chip->vendor.duration[TPM_LONG] == 0)
++		return 0;
 +
-+	return 0;
++	return sprintf(buf, "%d %d %d [%s]\n",
++		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
++		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
++		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
++		       chip->vendor.duration_adjusted
++		       ? "adjusted" : "original");
 +}
-+#endif
++static DEVICE_ATTR_RO(durations);
 +
-+static SIMPLE_DEV_PM_OPS(crb_pm, crb_suspend, crb_resume);
-+
-+static u8 crb_status(struct tpm_chip *chip)
++static ssize_t timeouts_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
 +{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	u8 sts = 0;
++	struct tpm_chip *chip = dev_get_drvdata(dev);
 +
-+	if ((priv->cca->start & 1) != 1)
-+		sts |= CRB_STS_COMPLETE;
-+
-+	return sts;
++	return sprintf(buf, "%d %d %d %d [%s]\n",
++		       jiffies_to_usecs(chip->vendor.timeout_a),
++		       jiffies_to_usecs(chip->vendor.timeout_b),
++		       jiffies_to_usecs(chip->vendor.timeout_c),
++		       jiffies_to_usecs(chip->vendor.timeout_d),
++		       chip->vendor.timeout_adjusted
++		       ? "adjusted" : "original");
 +}
++static DEVICE_ATTR_RO(timeouts);
 +
-+static int crb_recv(struct tpm_chip *chip, u8 *buf, size_t count)
++static ssize_t version_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
 +{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	struct crb_control_area *cca;
-+	unsigned int expected;
-+	unsigned long offset;
-+	u8 *resp;
++	char *str = buf;
 +
-+	cca = priv->cca;
-+	if (cca->sts & CRB_CA_STS_ERROR)
-+		return -EIO;
++	str += sprintf(str, "2.0\n");
 +
-+	offset = cca->rsp_pa - priv->cca_pa;
-+	resp = (u8 *) ((unsigned long) cca + offset);
-+	memcpy(buf, resp, 6);
-+	expected = be32_to_cpu(*(__be32 *) (buf + 2));
-+
-+	if (expected > count)
-+		return -EIO;
-+
-+	memcpy(buf + 6, resp + 6, expected - 6);
-+
-+	return expected;
++	return str - buf;
 +}
 +
-+static int crb_do_acpi_start(struct tpm_chip *chip)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	union acpi_object *obj;
-+	int rc;
++static DEVICE_ATTR_RO(version);
 +
-+	obj = acpi_evaluate_dsm(priv->dev_handle,
-+				CRB_ACPI_START_UUID,
-+				CRB_ACPI_START_REVISION_ID,
-+				CRB_ACPI_START_INDEX,
-+				NULL);
-+	if (!obj)
-+		return -ENXIO;
-+	rc = obj->integer.value == 0 ? 0 : -ENXIO;
-+	ACPI_FREE(obj);
-+	return rc;
++
++static ssize_t tpm2_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", chip->tpm2);
 +}
++static DEVICE_ATTR_RO(tpm2);
 +
-+static int crb_send(struct tpm_chip *chip, u8 *buf, size_t len)
++static struct attribute *tpm_dev_attrs[] = {
++	&dev_attr_pcrs.attr,
++	&dev_attr_enabled_sh.attr,
++	&dev_attr_enabled_eh.attr,
++	&dev_attr_owned_sh.attr,
++	&dev_attr_owned_eh.attr,
++	&dev_attr_caps.attr,
++	&dev_attr_cancel.attr,
++	&dev_attr_durations.attr,
++	&dev_attr_timeouts.attr,
++	&dev_attr_version.attr,
++	&dev_attr_tpm2.attr,
++	NULL,
++};
++
++static const struct attribute_group tpm_dev_group = {
++	.attrs = tpm_dev_attrs,
++};
++
++int tpm2_sysfs_add_device(struct tpm_chip *chip)
 +{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	struct crb_control_area *cca;
-+	u8 *cmd;
-+	int rc = 0;
++	int err;
++	err = sysfs_create_group(&chip->dev->kobj,
++				 &tpm_dev_group);
 +
-+	cca = priv->cca;
-+
-+	if (len > cca->cmd_size) {
++	if (err)
 +		dev_err(chip->dev,
-+			"invalid command count value %x %zx\n",
-+			(unsigned int) len,
-+			(size_t) cca->cmd_size);
-+		return -E2BIG;
-+	}
-+
-+	cmd = (u8 *) ((unsigned long) cca + cca->cmd_pa - priv->cca_pa);
-+	memcpy(cmd, buf, len);
-+	wmb();
-+
-+	cca->start = 1;
-+	rc = crb_do_acpi_start(chip);
-+	return rc;
++			"failed to create sysfs attributes, %d\n", err);
++	return err;
 +}
 +
-+static void crb_cancel(struct tpm_chip *chip)
++void tpm2_sysfs_del_device(struct tpm_chip *chip)
 +{
-+	struct crb_priv *priv = chip->vendor.priv;
-+	struct crb_control_area *cca;
-+
-+	cca = priv->cca;
-+	cca->cancel = 1;
-+	wmb();
-+
-+	if (crb_do_acpi_start(chip))
-+		dev_err(chip->dev, "ACPI Start failed\n");
-+
-+	cca->cancel = 0;
++	sysfs_remove_group(&chip->dev->kobj, &tpm_dev_group);
 +}
-+
-+static bool crb_req_canceled(struct tpm_chip *chip, u8 status)
-+{
-+	struct crb_priv *priv = chip->vendor.priv;
-+
-+	return priv->cca->cancel;
-+}
-+
-+static const struct tpm_class_ops tpm_crb = {
-+	.status = crb_status,
-+	.recv = crb_recv,
-+	.send = crb_send,
-+	.cancel = crb_cancel,
-+	.req_canceled = crb_req_canceled,
-+	.req_complete_mask = CRB_STS_COMPLETE,
-+	.req_complete_val = CRB_STS_COMPLETE,
+diff --git a/drivers/char/tpm/tpm2.h b/drivers/char/tpm/tpm2.h
+index ba7c053..7a1502a 100644
+--- a/drivers/char/tpm/tpm2.h
++++ b/drivers/char/tpm/tpm2.h
+@@ -59,6 +59,34 @@ enum tpm2_capabilities {
+ 	TPM2_CAP_TPM_PROPERTIES = 6,
+ };
+ 
++enum tpm2_tpm_properties {
++	TPM2_PT_MANUFACTURER		= 0x00000105,
++	TPM2_PT_FIRMWARE_VERSION_1	= 0x00000111,
++	TPM2_PT_FIRMWARE_VERSION_2	= 0x00000111,
++	TPM2_PT_PERMANENT		= 0x00000200,
++	TPM2_PT_STARTUP_CLEAR		= 0x00000201,
 +};
 +
-+static void crb_release(void *data)
-+{
-+	struct tpm_chip *chip = (struct tpm_chip *) data;
-+	tpm_remove_hardware(chip->dev);
-+}
-+
-+static int crb_acpi_add(struct acpi_device *device)
-+{
-+	struct tpm_chip *chip;
-+	struct acpi_tpm2 *buf;
-+	struct crb_priv *priv;
-+	struct device *dev = &device->dev;
-+	acpi_status status;
-+	u32 sm;
-+	int rc;
-+
-+	chip = tpm_chip_alloc(dev, &tpm_crb);
-+	if (!chip)
-+		return -ENODEV;
-+
-+	chip->tpm2 = true;
-+
-+	rc = tpm_chip_register(chip);
-+	if (rc) {
-+		put_device(chip->dev);
-+		kfree(chip);
-+		return -ENODEV;
-+	}
-+
-+	status = acpi_get_table(ACPI_SIG_TPM2, 1,
-+				(struct acpi_table_header **) &buf);
-+	if (ACPI_FAILURE(status)) {
-+		dev_err(dev, "could not get TPM2 ACPI table\n");
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	priv = (struct crb_priv *) devm_kzalloc(dev, sizeof(struct crb_priv),
-+						GFP_KERNEL);
-+	if (!priv) {
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	sm = buf->start_method;
-+
-+	if (sm == CRB_SM_CRB || sm == CRB_SM_CRB_WITH_ACPI_START)
-+		priv->opt.crb_start = 1;
-+
-+	if (sm == CRB_SM_ACPI_START || sm == CRB_SM_CRB_WITH_ACPI_START)
-+		priv->opt.acpi_start = 1;
-+
-+	priv->dev_handle = device->handle;
-+	priv->cca_pa = buf->control_area_pa;
-+	priv->cca = (struct crb_control_area *)
-+		devm_ioremap_nocache(dev, buf->control_area_pa, 0x1000);
-+	if (!priv->cca) {
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	chip->vendor.priv = priv;
-+
-+	/* Default timeouts and durations */
-+	chip->vendor.timeout_a = msecs_to_jiffies(CRB_SHORT_TIMEOUT);
-+	chip->vendor.timeout_b = msecs_to_jiffies(CRB_LONG_TIMEOUT);
-+	chip->vendor.timeout_c = msecs_to_jiffies(CRB_SHORT_TIMEOUT);
-+	chip->vendor.timeout_d = msecs_to_jiffies(CRB_SHORT_TIMEOUT);
-+
-+	chip->vendor.duration[TPM_SHORT] = usecs_to_jiffies(TPM2_DURATION_SHORT);
-+	chip->vendor.duration[TPM_MEDIUM] = usecs_to_jiffies(TPM2_DURATION_MEDIUM);
-+	chip->vendor.duration[TPM_LONG] = usecs_to_jiffies(TPM2_DURATION_LONG);
-+
-+	rc = tpm_do_selftest(chip);
-+	if (rc) {
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	rc = devm_add_action(dev, crb_release, chip);
-+	if (rc)
-+		goto out_err;
-+
-+	return 0;
-+out_err:
-+	tpm_remove_hardware(chip->dev);
-+	return rc;
-+}
-+
-+static struct acpi_device_id crb_device_ids[] = {
-+	{"MSFT0101", 0},
-+	{"", 0},
-+};
-+MODULE_DEVICE_TABLE(acpi, crb_device_ids);
-+
-+static struct acpi_driver crb_acpi_driver = {
-+	.name = "tpm_crb",
-+	.ids = crb_device_ids,
-+	.ops = {
-+		.add = crb_acpi_add,
-+	},
-+	.drv = {
-+		.pm = &crb_pm,
-+	},
++struct tpm2_permanent {
++	unsigned int owner_auth_set		: 1;
++	unsigned int endorsement_auth_set	: 1;
++	unsigned int lockout_auth_set		: 1;
++	unsigned int reserved1			: 5;
++	unsigned int disable_clear		: 1;
++	unsigned int in_lockout			: 1;
++	unsigned int tpm_generated_eps		: 1;
++	unsigned int reserved2			: 21;
 +};
 +
-+module_acpi_driver(crb_acpi_driver);
-+MODULE_AUTHOR("Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>");
-+MODULE_DESCRIPTION("TPM2 Driver");
-+MODULE_VERSION("0.1");
-+MODULE_LICENSE("GPL");
++struct tpm2_startup_clear {
++	unsigned int ph_enable			: 1;
++	unsigned int sh_enable			: 1;
++	unsigned int eh_enable			: 1;
++	unsigned int ph_enable_nv		: 1;
++	unsigned int reserved			: 27;
++	unsigned int orderly			: 1;
++};
++
+ struct tpm_chip;
+ 
+ #define TPM2_CC_FIRST	0x11F
+@@ -74,4 +102,7 @@ int tpm2_do_selftest(struct tpm_chip *chip);
+ int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max);
+ void tpm2_gen_interrupt(struct tpm_chip *chip);
+ 
++int tpm2_sysfs_add_device(struct tpm_chip *chip);
++void tpm2_sysfs_del_device(struct tpm_chip *chip);
++
+ #endif /* __DRIVERS_CHAR_TPM2_H__ */
 -- 
 2.1.0
 
