@@ -1,83 +1,537 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaIXFan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 01:30:43 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:42736 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826AbaIXFam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 01:30:42 -0400
-Date: Tue, 23 Sep 2014 22:30:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Nicholas Krause <yocto6@gmail.com>
-Cc: jejb@parisc-linux.org, deller@gmx.de, akpm@linux-foundation.org,
-        mgorman@suse.de, julia.lawall@lip6.fr, himangi774@gmail.com,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] parisc:Remove unnecessary FIXMES in init.c
-Message-ID: <20140924053036.GA30405@roeck-us.net>
-References: <1411523383-9820-1-git-send-email-yocto6@gmail.com>
+	id S1751604AbaIXFgD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 01:36:03 -0400
+Received: from mga03.intel.com ([134.134.136.65]:1431 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783AbaIXFf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 01:35:59 -0400
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 01:35:58 EDT
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,586,1406617200"; 
+   d="scan'208";a="607612081"
+Message-ID: <542255EF.6080001@linux.intel.com>
+Date: Wed, 24 Sep 2014 13:26:07 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411523383-9820-1-git-send-email-yocto6@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch] irqdomain: Introduce new interfaces to support hierarchy
+ irqdomains
+References: <alpine.DEB.2.10.1409160859080.4247@nanos> <1411373856-9669-1-git-send-email-jiang.liu@linux.intel.com> <54205C9C.4070101@infradead.org>
+In-Reply-To: <54205C9C.4070101@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 09:49:43PM -0400, Nicholas Krause wrote:
-> This removes the two fixmes in the file, init.c for compiler hints
-> for comments related to compiler hints in linux_gateway_page_addr
-> and map_hpux_gateway_page to change from FIXME to HINT in order
-> for people reading this code to understand that these are compiler
-> hints.
+Thanks Randy! I will fix these issues in next version.
+Regards!
+Gerry
+
+On 2014/9/23 1:30, Randy Dunlap wrote:
+> On 09/22/14 01:17, Jiang Liu wrote:
+>> ---
+>>  Documentation/IRQ-domain.txt |   71 +++++++++
+>>  include/linux/irq.h          |    3 +
+>>  include/linux/irqdomain.h    |   86 ++++++++++
+>>  kernel/irq/Kconfig           |    3 +
+>>  kernel/irq/chip.c            |    3 +
+>>  kernel/irq/irqdomain.c       |  360 ++++++++++++++++++++++++++++++++++++++++--
+>>  6 files changed, 510 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
+>> index 8a8b82c9ca53..062f6b6088b4 100644
+>> --- a/Documentation/IRQ-domain.txt
+>> +++ b/Documentation/IRQ-domain.txt
+>> @@ -151,3 +151,74 @@ used and no descriptor gets allocated it is very important to make sure
+>>  that the driver using the simple domain call irq_create_mapping()
+>>  before any irq_find_mapping() since the latter will actually work
+>>  for the static IRQ assignment case.
+>> +
+>> +==== Hierarchy IRQ domain ====
+>> +On some architectures, there may be multiple interrupt controllers
+>> +involved in delivering an interrupt from the device to the target CPU.
+>> +Let's look at a typical interrupt delivering path on x86 platforms:
+>> +
+>> +Device --> IOAPIC -> Interrupt remapping Controller -> Local APIC -> CPU
+>> +
+>> +There are three interrupt controllers involved:
+>> +1) IOAPIC controller
+>> +2) Interrupt remapping controller
+>> +3) Local APIC controller
+>> +
+>> +To support such a hardware topology and make software architecture match
+>> +hardware architecture, an irq_domain data structure is built for each
+>> +interrupt controller and those irq_domains are organized into hierarchy.
+>> +When building irq_domain hierarchy, the irq_domain near to the device is
+>> +child and the irq_domain near to CPU is parent. So a hierarchy structure
+>> +as below will be built for the example above.
+>> +	CPU Vector irq_domain (root irq_domain to manage CPU vectors)
+>> +		^
+>> +		|
+>> +	Interrupt Remapping irq_domain (manage irq_remapping entries)
+>> +		^
+>> +		|
+>> +	IOAPIC irq_domain (manage IOAPIC delivery entries/pins)
+>> +
+>> +There are four major interfaces to use hierarchy irq_domain:
+>> +1) irq_domain_alloc_irqs(): allocate IRQ descriptors and interrupt
+>> +   controller related resources to deliver these interrupts.
+>> +2) irq_domain_free_irqs(): free IRQ descriptors and interrupt controler
 > 
-
-"* const" tells the compiler that a pointer is a constant.
-It doesn't tell the compiler that the data shall not be treated
-as DP-relative.
-
-FIXME as in: We should find a better way to tell the compiler to
-not treat this data as DP-relative.
-
-Can you please stop this ?
-
-Guenter
-
-> Signed-off-by: Nicholas Krause <yocto6@gmail.com>
-> ---
->  arch/parisc/mm/init.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>                                                                  controller
 > 
-> diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-> index 0bef864..668102e 100644
-> --- a/arch/parisc/mm/init.c
-> +++ b/arch/parisc/mm/init.c
-> @@ -733,7 +733,7 @@ static void __init pagetable_init(void)
->  static void __init gateway_init(void)
->  {
->  	unsigned long linux_gateway_page_addr;
-> -	/* FIXME: This is 'const' in order to trick the compiler
-> +	/* HINT: This is 'const' in order to trick the compiler
->  	   into not treating it as DP-relative data. */
->  	extern void * const linux_gateway_page;
->  
-> @@ -761,7 +761,7 @@ map_hpux_gateway_page(struct task_struct *tsk, struct mm_struct *mm)
->  	unsigned long start_pte;
->  	unsigned long address;
->  	unsigned long hpux_gw_page_addr;
-> -	/* FIXME: This is 'const' in order to trick the compiler
-> +	/* HINT: This is 'const' in order to trick the compiler
->  	   into not treating it as DP-relative data. */
->  	extern void * const hpux_gateway_page;
->  
-> -- 
-> 1.9.1
+>> +   related resources associated with these interrupts.
+>> +3) irq_domain_activate_irq(): activate interrupt controller hardware to
+>> +   deliver the interrupt.
+>> +3) irq_domain_deactivate_irq(): deactivate interrupt controller hardware
+>> +   to stopping delivering the interrupt.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>       to stop
+> 
+>> +
+>> +Following changes are needed to support hierarchy irq_domain.
+>> +1) a new field 'parent' is added to struct irq_domain, it's used to
+> 
+>                                               irq_domain;
+> 
+>> +   maintain irq_domain hierarchy information.
+>> +2) a new field 'parent_data' is added to struct irq_data, it's used to
+> 
+>                                                    irq_data;
+> 
+>> +   build hierarchy irq_data to match hierarchy irq_domains. The irq_data
+>> +   is used to store irq_domain pointer and hardware irq number.
+>> +3) new callbacks are added to struct irq_domain_ops to support hierarchy
+>> +   irq_domain operations.
+>> +
+>> +With support of hierarchy irq_domain and hierarchy irq_data ready, an
+>> +irq_domain structure is built for each interrupt controller, and an
+>> +irq_data structure is allocated for each irq_domain associated with an
+>> +IRQ. Now we could go one step further to support stacked(hierarchy)
+>> +irq_chip. That is, an irq_chip is associated with each irq_data along
+>> +the hierarchy. A child irq_chip may implement a required action by
+>> +itself or by cooperating with its parent irq_chip.
+>> +
+>> +With stacked irq_chip, interrupt controller driver only needs to deal
+>> +with the hardware managed by itself and may ask for services from its
+>> +parent irq_chip when needed. So we could achieve a much more cleaner
+> 
+>                                                     a much cleaner
+> 
+>> +software architecture.
+>> +
+>> +For an interrupt controller driver to support hierarchy irq_domain, it
+>> +needs to:
+>> +1) Implement irq_domain_ops.alloc and irq_domain_ops.free
+>> +2) Optionally implement irq_domain_ops.activate and
+>> +   irq_domain_ops.deactivate.
+>> +3) Optionally implement an irq_chip to manage the interrupt controller
+>> +   hardware.
+>> +4) No need to implement irq_domain_ops.map and irq_domain_ops.unmap,
+>> +   they are unused with hierarchy irq_domain.
+>> +
+>> +Hierarchy irq_domain may also be used to support other architectures,
+>> +such as ARM, ARM64 etc.
+> 
+>> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+>> index b0f9d16e48f6..46e047c414bc 100644
+>> --- a/include/linux/irqdomain.h
+>> +++ b/include/linux/irqdomain.h
+>> @@ -77,6 +89,7 @@ struct irq_domain_chip_generic;
+>>   * @ops: pointer to irq_domain methods
+>>   * @host_data: private data pointer for use by owner.  Not touched by irq_domain
+>>   *             core code.
+>> + * @flags: host per irqdomain flags
+> 
+>                        irq_domain ?
+> 
+>>   *
+>>   * Optional elements
+>>   * @of_node: Pointer to device tree nodes associated with the irq_domain. Used
+>> @@ -84,6 +97,7 @@ struct irq_domain_chip_generic;
+>>   * @gc: Pointer to a list of generic chips. There is a helper function for
+>>   *      setting up one or more generic chips for interrupt controllers
+>>   *      drivers using the generic chip library which uses this pointer.
+>> + * @parent: Pointer to parent irqdomain to support hierarchy irqdomains
+> 
+>                                  irq_domain ?                   irq_domains ?
+> 
+>>   *
+>>   * Revmap data, used internally by irq_domain
+>>   * @revmap_direct_max_irq: The largest hwirq that can be set for controllers that
+> 
+>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>> index 6534ff6ce02e..26628239088c 100644
+>> --- a/kernel/irq/irqdomain.c
+>> +++ b/kernel/irq/irqdomain.c
+>> @@ -709,3 +708,332 @@ const struct irq_domain_ops irq_domain_simple_ops = {
+>>  	.xlate = irq_domain_xlate_onetwocell,
+>>  };
+>>  EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
+>> +
+>> +static int irq_domain_alloc_descs(int virq, unsigned int nr_irqs,
+>> +				  irq_hw_number_t hwirq, int node)
+>> +{
+>> +	unsigned int hint;
+>> +
+>> +	if (virq >= 0) {
+>> +		virq = irq_alloc_descs(virq, virq, nr_irqs, node);
+>> +	} else {
+>> +		hint = hwirq % nr_irqs;
+>> +		if (hint == 0)
+>> +			hint++;
+>> +		virq = irq_alloc_descs_from(hint, nr_irqs, node);
+>> +		if (virq <= 0 && hint > 1)
+>> +			virq = irq_alloc_descs_from(1, nr_irqs, node);
+>> +	}
+>> +
+>> +	return virq;
+>> +}
+>> +
+>> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+>> +static void irq_domain_free_descs(unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	unsigned int i;
+>> +
+>> +	for (i = 0; i < nr_irqs; i++)
+>> +		irq_free_desc(virq + i);
+>> +}
+>> +
+>> +static void irq_domain_insert_irq(int virq)
+>> +{
+>> +	struct irq_data *data;
+>> +
+>> +	for (data = irq_get_irq_data(virq); data; data = data->parent_data) {
+>> +		struct irq_domain *domain = data->domain;
+>> +		irq_hw_number_t hwirq = data->hwirq;
+>> +
+>> +		if (hwirq < domain->revmap_size) {
+>> +			domain->linear_revmap[hwirq] = virq;
+>> +		} else {
+>> +			mutex_lock(&revmap_trees_mutex);
+>> +			radix_tree_insert(&domain->revmap_tree, hwirq, data);
+>> +			mutex_unlock(&revmap_trees_mutex);
+>> +		}
+>> +
+>> +		/* If not already assigned, give the domain the chip's name */
+>> +		if (!domain->name && data->chip)
+>> +			domain->name = data->chip->name;
+>> +	}
+>> +
+>> +	irq_clear_status_flags(virq, IRQ_NOREQUEST);
+>> +}
+>> +
+>> +static void irq_domain_remove_irq(int virq)
+>> +{
+>> +	struct irq_data *data;
+>> +
+>> +	irq_set_status_flags(virq, IRQ_NOREQUEST);
+>> +	irq_set_chip_and_handler(virq, NULL, NULL);
+>> +	synchronize_irq(virq);
+>> +	smp_mb();
+>> +
+>> +	for (data = irq_get_irq_data(virq); data; data = data->parent_data) {
+>> +		struct irq_domain *domain = data->domain;
+>> +		irq_hw_number_t hwirq = data->hwirq;
+>> +
+>> +		if (hwirq < domain->revmap_size) {
+>> +			domain->linear_revmap[hwirq] = 0;
+>> +		} else {
+>> +			mutex_lock(&revmap_trees_mutex);
+>> +			radix_tree_delete(&domain->revmap_tree, hwirq);
+>> +			mutex_unlock(&revmap_trees_mutex);
+>> +		}
+>> +	}
+>> +}
+>> +
+>> +static struct irq_data *irq_domain_insert_irq_data(struct irq_domain *domain,
+>> +						   struct irq_data *child)
+>> +{
+>> +	struct irq_data *irq_data;
+>> +
+>> +	irq_data = kzalloc_node(sizeof(*irq_data), GFP_KERNEL, child->node);
+>> +	if (irq_data) {
+>> +		child->parent_data = irq_data;
+>> +		irq_data->irq = child->irq;
+>> +		irq_data->node = child->node;
+>> +		irq_data->domain = domain;
+>> +	}
+>> +
+>> +	return irq_data;
+>> +}
+>> +
+>> +static void irq_domain_free_irq_data(unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	int i;
+>> +	struct irq_data *irq_data, *tmp;
+>> +
+>> +	for (i = 0; i < nr_irqs; i++) {
+>> +		irq_data = irq_get_irq_data(virq + i);
+>> +		tmp = irq_data->parent_data;
+>> +		irq_data->parent_data = NULL;
+>> +		irq_data->domain = NULL;
+>> +
+>> +		while (tmp) {
+>> +			irq_data = tmp;
+>> +			tmp = tmp->parent_data;
+>> +			kfree(irq_data);
+>> +		}
+>> +	}
+>> +}
+>> +
+>> +static int irq_domain_alloc_irq_data(struct irq_domain *domain,
+>> +				     unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	int i;
+>> +	struct irq_data *irq_data;
+>> +	struct irq_domain *parent;
+>> +
+>> +	/* The outmost irq_data is embedded in struct irq_desc */
+> 
+> 	       outermost
+> 
+>> +	for (i = 0; i < nr_irqs; i++) {
+>> +		irq_data = irq_get_irq_data(virq + i);
+>> +		irq_data->domain = domain;
+>> +
+>> +		for (parent = domain->parent; parent; parent = parent->parent) {
+>> +			irq_data = irq_domain_insert_irq_data(parent, irq_data);
+>> +			if (!irq_data) {
+>> +				irq_domain_free_irq_data(virq, i + 1);
+>> +				return -ENOMEM;
+>> +			}
+>> +		}
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/**
+>> + * irq_domain_get_irq_data - Get irq_data assoicated with @virq and @domain
+> 
+>                                              associated
+> 
+>> + * @domain: domain to match
+>> + * @virq: IRQ number to get irq_data
+>> + */
+>> +struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
+>> +					 unsigned int virq)
+>> +{
+>> +	struct irq_data *irq_data;
+>> +
+>> +	for (irq_data = irq_get_irq_data(virq); irq_data;
+>> +	     irq_data = irq_data->parent_data)
+>> +		if (irq_data->domain == domain)
+>> +			return irq_data;
+>> +
+>> +	return NULL;
+>> +}
+>> +
+>> +int irq_domain_set_hwirq_and_chip(struct irq_domain *domain, unsigned int virq,
+>> +				  irq_hw_number_t hwirq, struct irq_chip *chip,
+>> +				  void *chip_data)
+>> +{
+>> +	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
+>> +
+>> +	if (!irq_data)
+>> +		return -ENOENT;
+>> +
+>> +	irq_data->hwirq = hwirq;
+>> +	irq_data->chip = chip;
+>> +	irq_data->chip_data = chip_data;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +void irq_domain_reset_irq_data(struct irq_data *irq_data)
+>> +{
+>> +	irq_data->hwirq = 0;
+>> +	irq_data->chip = NULL;
+>> +	irq_data->chip_data = NULL;
+>> +}
+>> +
+>> +/**
+>> + * __irq_domain_alloc_irqs - Allocate IRQs from domain
+>> + * @domain: domain to allocate from
+>> + * @irq_base: allocate specified IRQ nubmer if irq_base >= 0
+>> + * @nr_irqs: number of IRQs to allocate
+>> + * @node: NUMA node id for memory allocation
+>> + * @arg: domain specific argument
+>> + * @realloc: IRQ descriptors have already been allocated if true
+>> + *
+>> + * Allocate IRQ numbers and initialized all data structures to support
+>> + * hiearchy IRQ domains.
+>> + * Parameter @realloc is mainly to support legacy IRQs.
+>> + * Returns error code or allocated IRQ number
+>> + */
+>> +int __irq_domain_alloc_irqs(struct irq_domain *domain, int irq_base,
+>> +			    unsigned int nr_irqs, int node, void *arg,
+>> +			    bool realloc)
+>> +{
+>> +	int i, ret, virq;
+>> +
+>> +	if (domain == NULL) {
+>> +		domain = irq_default_domain;
+>> +		if (WARN(!domain, "domain is NULL; cannot allocate IRQ\n"))
+>> +			return -EINVAL;
+>> +	}
+>> +
+>> +	if (!domain->ops->alloc) {
+>> +		pr_debug("domain->ops->alloc() is NULL\n");
+>> +		return -ENOSYS;
+>> +	}
+>> +
+>> +	if (realloc && irq_base >= 0) {
+>> +		virq =  irq_base;
+>> +	} else {
+>> +		virq = irq_domain_alloc_descs(irq_base, nr_irqs, 0, node);
+>> +		if (virq < 0) {
+>> +			pr_debug("cannot allocate IRQ(base %d, count %d)\n",
+>> +				 irq_base, nr_irqs);
+>> +			return virq;
+>> +		}
+>> +	}
+>> +
+>> +	if (irq_domain_alloc_irq_data(domain, virq, nr_irqs)) {
+>> +		pr_debug("cannot allocate memory for IRQ%d\n", virq);
+>> +		ret = -ENOMEM;
+>> +		goto out_free_desc;
+>> +	}
+>> +
+>> +	mutex_lock(&irq_domain_mutex);
+>> +	ret = domain->ops->alloc(domain, virq, nr_irqs, arg);
+>> +	if (ret < 0) {
+>> +		mutex_unlock(&irq_domain_mutex);
+>> +		goto out_free_irq_data;
+>> +	}
+>> +	for (i = 0; i < nr_irqs; i++)
+>> +		irq_domain_insert_irq(virq + i);
+>> +	mutex_unlock(&irq_domain_mutex);
+>> +
+>> +	return virq;
+>> +
+>> +out_free_irq_data:
+>> +	irq_domain_free_irq_data(virq, nr_irqs);
+>> +out_free_desc:
+>> +	irq_domain_free_descs(virq, nr_irqs);
+>> +	return ret;
+>> +}
+>> +
+>> +/**
+>> + * irq_domain_free_irqs - Free IRQ number and assoicated data structures
+> 
+>                                                  associated
+> 
+>> + * @virq: base IRQ number
+>> + * @nr_irqs: number of IRQs to free
+>> + */
+>> +void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	int i;
+>> +	struct irq_data *data = irq_get_irq_data(virq);
+>> +
+>> +	if (WARN(!data || !data->domain || !data->domain->ops->free,
+>> +		 "NULL pointer, cannot free irq\n"))
+>> +		return;
+>> +
+>> +	mutex_lock(&irq_domain_mutex);
+>> +	for (i = 0; i < nr_irqs; i++)
+>> +		irq_domain_remove_irq(virq + i);
+>> +	data->domain->ops->free(data->domain, virq, nr_irqs);
+>> +	mutex_unlock(&irq_domain_mutex);
+>> +
+>> +	irq_domain_free_irq_data(virq, nr_irqs);
+>> +	irq_domain_free_descs(virq, nr_irqs);
+>> +}
+>> +
+>> +/**
+>> + * irq_domain_activate_irq - Call domain_ops->activate recursively to activate
+>> + *			     interrupt
+>> + * @irq_data: out most irq_data associated with interrupt
+> 
+>                  outermost
+> 
+>> + *
+>> + * It calls domain_ops->activate to program interrupt controllers, so the
+>> + * interrupt could actually delivered.
+>> + */
+>> +int irq_domain_activate_irq(struct irq_data *irq_data)
+>> +{
+>> +	int ret = 0;
+>> +
+>> +	if (irq_data && irq_data->domain) {
+>> +		struct irq_domain *domain = irq_data->domain;
+>> +
+>> +		if (irq_data->parent_data)
+>> +			ret = irq_domain_activate_irq(irq_data->parent_data);
+>> +		if (ret == 0 && domain->ops->activate)
+>> +			ret = domain->ops->activate(domain, irq_data);
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +/**
+>> + * irq_domain_deactivate_irq - Call domain_ops->deactivate recursively to
+>> + *			       deactivate interrupt
+>> + * @irq_data: out most irq_data associated with interrupt
+> 
+>                  outermost
+> 
+>> + *
+>> + * It calls domain_ops->deactivate to program interrupt controllers to disable
+>> + * interrupt delivery.
+>> + */
+>> +int irq_domain_deactivate_irq(struct irq_data *irq_data)
+>> +{
+>> +	int ret = 0;
+>> +
+>> +	if (irq_data && irq_data->domain) {
+>> +		struct irq_domain *domain = irq_data->domain;
+>> +
+>> +		if (domain->ops->deactivate)
+>> +			ret = domain->ops->deactivate(domain, irq_data);
+>> +		if (ret == 0 && irq_data->parent_data)
+>> +			ret = irq_domain_deactivate_irq(irq_data->parent_data);
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +#else	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
+>> +/**
+>> + * irq_domain_get_irq_data - Get irq_data assoicated with @virq and @domain
+> 
+>                                              associated
+> 
+>> + * @domain: domain to match
+>> + * @virq: IRQ number to get irq_data
+>> + */
+>> +struct irq_data *irq_domain_get_irq_data(struct irq_domain *domain,
+>> +					 unsigned int virq)
+>> +{
+>> +	struct irq_data *irq_data = irq_get_irq_data(virq);
+>> +
+>> +	return (irq_data && irq_data->domain == domain) ? irq_data : NULL;
+>> +}
+>> +
+>> +#endif	/* CONFIG_IRQ_DOMAIN_HIERARCHY */
+>>
 > 
 > 
