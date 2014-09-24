@@ -1,57 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaIXTnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:43:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49904 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaIXTn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:43:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
-   d="scan'208";a="578424995"
-Date: Wed, 24 Sep 2014 22:43:23 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 03/12] tpm: TPM2 support for tpm_pcr_read()
-Message-ID: <20140924194323.GE6801@intel.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-4-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20140924165320.GD8898@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924165320.GD8898@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754136AbaIXTnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:43:01 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:34525 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887AbaIXTmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:42:15 -0400
+From: Peter Feiner <pfeiner@google.com>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickens <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Feiner <pfeiner@google.com>
+Subject: [PATCH v3 1/3] tools: add .gitignore entries for selftests
+Date: Wed, 24 Sep 2014 12:42:09 -0700
+Message-Id: <1411587731-25088-2-git-send-email-pfeiner@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1411587731-25088-1-git-send-email-pfeiner@google.com>
+References: <1411499027-17801-1-git-send-email-pfeiner@google.com>
+ <1411587731-25088-1-git-send-email-pfeiner@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:53:20AM -0600, Jason Gunthorpe wrote:
-> On Wed, Sep 24, 2014 at 12:05:53PM +0300, Jarkko Sakkinen wrote:
-> 
-> > +static struct tpm_input_header tpm2_pcrread_header = {
-> 
-> Missing const - all of these static structures in tpm2-cmds.c are missing the
-> const, please fix them all.
-> 
-> > +	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-> > +	.length = cpu_to_be32(TPM2_PCR_READ_IN_SIZE),
-> > +	.ordinal = cpu_to_be32(TPM2_CC_PCR_READ)
-> > +};
-> 
-> BTW, I always thought this was a goofy and very expensive way to store
-> 3 values and zero initialize. If you want to do something different in
-> the tpm2-cmds.c that would be great too...
+Ignore the binaries built for selftests in 'git status' output to make
+development more pleasant. Without this patch, you see
 
-What do you think about the way trusted module builds messages? It's easier 
-to maintain and debug than the approach used in the tpm subsystem.
+       tools/testing/selftests/breakpoints/breakpoint_test
+       tools/testing/selftests/efivarfs/create-read
+       tools/testing/selftests/efivarfs/open-unlink
+       tools/testing/selftests/kcmp/kcmp_test
+       tools/testing/selftests/memfd/memfd_test
+       tools/testing/selftests/mqueue/mq_open_tests
+       tools/testing/selftests/mqueue/mq_perf_tests
+       tools/testing/selftests/net/psock_fanout
+       tools/testing/selftests/net/psock_tpacket
+       tools/testing/selftests/net/socket
+       tools/testing/selftests/ptrace/peeksiginfo
+       tools/testing/selftests/timers/posix_timers
+       tools/testing/selftests/vm/hugepage-mmap
+       tools/testing/selftests/vm/hugepage-shm
+       tools/testing/selftests/vm/hugetlbfstest
+       tools/testing/selftests/vm/map_hugetlb
+       tools/testing/selftests/vm/thuge-gen
+       tools/testing/selftests/mount/unprivileged-remount-test
 
-That's the approach I was thinking to use when I started doing this but
-didn't want to diverge before I get feedback.
+in the list of untracked files.
 
-> Jason
+Signed-off-by: Peter Feiner <pfeiner@google.com>
 
-/Jarkko
+---
+
+v1 -> v2:
+	* added changelog blurb
+	* added mount/.gitignore for unprivileged-remount-test
+---
+ tools/testing/selftests/breakpoints/.gitignore | 1 +
+ tools/testing/selftests/efivarfs/.gitignore    | 2 ++
+ tools/testing/selftests/mount/.gitignore       | 1 +
+ tools/testing/selftests/ptrace/.gitignore      | 1 +
+ tools/testing/selftests/timers/.gitignore      | 1 +
+ tools/testing/selftests/vm/.gitignore          | 9 +++++----
+ 6 files changed, 11 insertions(+), 4 deletions(-)
+ create mode 100644 tools/testing/selftests/breakpoints/.gitignore
+ create mode 100644 tools/testing/selftests/efivarfs/.gitignore
+ create mode 100644 tools/testing/selftests/mount/.gitignore
+ create mode 100644 tools/testing/selftests/ptrace/.gitignore
+ create mode 100644 tools/testing/selftests/timers/.gitignore
+
+diff --git a/tools/testing/selftests/breakpoints/.gitignore b/tools/testing/selftests/breakpoints/.gitignore
+new file mode 100644
+index 0000000..ad66922
+--- /dev/null
++++ b/tools/testing/selftests/breakpoints/.gitignore
+@@ -0,0 +1 @@
++/breakpoint_test
+diff --git a/tools/testing/selftests/efivarfs/.gitignore b/tools/testing/selftests/efivarfs/.gitignore
+new file mode 100644
+index 0000000..66c6e85
+--- /dev/null
++++ b/tools/testing/selftests/efivarfs/.gitignore
+@@ -0,0 +1,2 @@
++/create-read
++/open-unlink
+diff --git a/tools/testing/selftests/mount/.gitignore b/tools/testing/selftests/mount/.gitignore
+new file mode 100644
+index 0000000..7ffb29f
+--- /dev/null
++++ b/tools/testing/selftests/mount/.gitignore
+@@ -0,0 +1 @@
++/unprivileged-remount-test
+diff --git a/tools/testing/selftests/ptrace/.gitignore b/tools/testing/selftests/ptrace/.gitignore
+new file mode 100644
+index 0000000..d348b86
+--- /dev/null
++++ b/tools/testing/selftests/ptrace/.gitignore
+@@ -0,0 +1 @@
++/peeksiginfo
+diff --git a/tools/testing/selftests/timers/.gitignore b/tools/testing/selftests/timers/.gitignore
+new file mode 100644
+index 0000000..ac85e5b
+--- /dev/null
++++ b/tools/testing/selftests/timers/.gitignore
+@@ -0,0 +1 @@
++/posix_timers
+diff --git a/tools/testing/selftests/vm/.gitignore b/tools/testing/selftests/vm/.gitignore
+index ff1bb16..e57961f 100644
+--- a/tools/testing/selftests/vm/.gitignore
++++ b/tools/testing/selftests/vm/.gitignore
+@@ -1,4 +1,5 @@
+-hugepage-mmap
+-hugepage-shm
+-map_hugetlb
+-thuge-gen
++/hugepage-mmap
++/hugepage-shm
++/map_hugetlb
++/thuge-gen
++/hugetlbfstest
+-- 
+2.1.0.rc2.206.gedb03e5
+
