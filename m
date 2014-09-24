@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbaIXQv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:51:57 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:41250 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754915AbaIXQvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:51:55 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Wed, 24 Sep 2014 18:51:16 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: shawn.guo@freescale.com, kernel@pengutronix.de, linus.walleij@linaro.org,
-        gnurou@gmail.com, linux@arm.linux.org.uk, jingchang.lu@freescale.com,
-        b20788@freescale.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: Re: [PATCH 5/9] gpio: vf610: Extend with wakeup support
-In-Reply-To: <1411553179.2735.4.camel@pengutronix.de>
-References: <cover.1411404079.git.stefan@agner.ch>
- <704b6bb97147b3d0ee1557b43d85ab9376c28666.1411404079.git.stefan@agner.ch>
- <1411553179.2735.4.camel@pengutronix.de>
-Message-ID: <46921955713f4b155eef9b21e5138064@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
+	id S1754530AbaIXQrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:47:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49593 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754460AbaIXQrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:47:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
+   d="scan'208";a="604749586"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Marcin Wojtas <mw@semihalf.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH 17/27] mmc: sdhci-pxav3: use pm_runtime_last_busy_and_autosuspend helper
+Date: Wed, 24 Sep 2014 21:45:07 +0530
+Message-Id: <1411575342-31048-18-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-09-24 12:06, schrieb Lucas Stach:
-> Hi Stefan,
-> 
-> Am Montag, den 22.09.2014, 19:09 +0200 schrieb Stefan Agner:
->> Support Vybrid GPIO's as wakeup source by requesting the parent
->> IRQ as wakeup IRQ.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->>  drivers/gpio/gpio-vf610.c | 16 ++++++++++++++++
->>  1 file changed, 16 insertions(+)
->>
->> diff --git a/drivers/gpio/gpio-vf610.c b/drivers/gpio/gpio-vf610.c
->> index 5f59424..50326af 100644
->> --- a/drivers/gpio/gpio-vf610.c
->> +++ b/drivers/gpio/gpio-vf610.c
->> @@ -196,12 +196,28 @@ static void vf610_gpio_irq_unmask(struct irq_data *d)
->>  			  pcr_base);
->>  }
->>
->> +static int vf610_gpio_irq_set_wake(struct irq_data *d, u32 enable)
->> +{
->> +	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
->> +
->> +	if (enable)
->> +		enable_irq_wake(port->irq);
->> +	else
->> +		disable_irq_wake(port->irq);
->> +
->> +	return 0;
->> +}
->> +
->> +
->>  static struct irq_chip vf610_gpio_irq_chip = {
->>  	.name		= "gpio-vf610",
->>  	.irq_ack	= vf610_gpio_irq_ack,
->>  	.irq_mask	= vf610_gpio_irq_mask,
->>  	.irq_unmask	= vf610_gpio_irq_unmask,
->>  	.irq_set_type	= vf610_gpio_irq_set_type,
->> +#ifdef CONFIG_PM_SLEEP
->> +	.irq_set_wake	= vf610_gpio_irq_set_wake,
->> +#endif
-> 
-> Either you need to get rid of this #ifdef and always assign this
-> function or you need to wrap the function itself into the same #ifdef.
-> Otherwise you provoke a unused function warning with !CONFIG_PM_SLEEP.
-> 
-> Given that this function isn't really that big I would argue to just
-> drop the #ifdef.
-> 
+Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+coding the same code
 
-Good point, thx! I will drop the #ifdef when including that patch to the
-GPIO driver (as Linus Walleij suggested).
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/mmc/host/sdhci-pxav3.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
---
-Stefan
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index 6f842fb..2706d3f 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -417,8 +417,7 @@ static int sdhci_pxav3_suspend(struct device *dev)
+ 
+ 	pm_runtime_get_sync(dev);
+ 	ret = sdhci_suspend_host(host);
+-	pm_runtime_mark_last_busy(dev);
+-	pm_runtime_put_autosuspend(dev);
++	pm_runtime_last_busy_and_autosuspend(dev);
+ 
+ 	return ret;
+ }
+@@ -430,8 +429,7 @@ static int sdhci_pxav3_resume(struct device *dev)
+ 
+ 	pm_runtime_get_sync(dev);
+ 	ret = sdhci_resume_host(host);
+-	pm_runtime_mark_last_busy(dev);
+-	pm_runtime_put_autosuspend(dev);
++	pm_runtime_last_busy_and_autosuspend(dev);
+ 
+ 	return ret;
+ }
+-- 
+1.7.0.4
+
