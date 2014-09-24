@@ -1,167 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaIXB4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 21:56:17 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:51288 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaIXB4O (ORCPT
+	id S1754039AbaIXB7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 21:59:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40778 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457AbaIXB7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 21:56:14 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: wsa@the-dreams.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <fec3743d4776d5a220a8126d5b6f0e83>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] i2c: rk3x: adjust the LOW divison based on characteristics of SCL
-Date: Wed, 24 Sep 2014 09:55:43 +0800
-Message-Id: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 23 Sep 2014 21:59:04 -0400
+Date: Tue, 23 Sep 2014 21:58:58 -0400 (EDT)
+Message-Id: <20140923.215858.1862286673062032624.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: mmarek@suse.cz, rdunlap@infradead.org, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: linux-next: build warning after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140924072306.799005a3@canb.auug.org.au>
+References: <541A28BA.1060201@infradead.org>
+	<54218AEF.5090200@suse.cz>
+	<20140924072306.799005a3@canb.auug.org.au>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 23 Sep 2014 18:59:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As show in I2C specification:
-- Standard-mode:
-  the minimum HIGH period of the scl clock is 4.0us
-  the minimum LOW period of the scl clock is 4.7us
-- Fast-mode:
-  the minimum HIGH period of the scl clock is 0.6us
-  the minimum LOW period of the scl clock is 1.3us
-- Fast-mode plus:
-  the minimum HIGH period of the scl clock is 0.26us
-  the minimum LOW period of the scl clock is 0.5us
-- HS-mode(<1.7MHz):
-  the minimum HIGH period of the scl clock is 0.12us
-  the minimum LOW period of the scl clock is 0.32us
-- HS-mode(<3.4MHz):
-  the minimum HIGH period of the scl clock is 0.06us
-  the minimum LOW period of the scl clock is 0.16us
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 24 Sep 2014 07:23:06 +1000
 
-I have measured i2c SCL waveforms in fast-mode by oscilloscope
-on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
-It is so critical that we must adjust LOW division to increase
-the LOW period of the scl clock.
+> Dave, this is a bit slack of you since I reported that problem a week
+> ago in the net tree and yet it has not been completely fixed before you
+> asked Linus to pull your tree :-(
 
-Thanks Doug for the suggestion about division formula.
+There were build failures I saw due to some misbalanced select/depends
+issues which I fixed in:
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
- drivers/i2c/busses/i2c-rk3x.c | 79 +++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 72 insertions(+), 7 deletions(-)
+commit df568d8e5250bf24e38c69ad4374baf0f8d279ba
+Author: David S. Miller <davem@davemloft.net>
+Date:   Mon Sep 22 13:14:33 2014 -0400
 
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-index 93cfc83..49d67b7 100644
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -428,18 +428,83 @@ out:
- 	return IRQ_HANDLED;
- }
- 
-+static void rk3x_i2c_get_ratios(unsigned long scl_rate,
-+				unsigned long *high_ratio,
-+				unsigned long *low_ratio)
-+{
-+	/* As show in I2C specification:
-+	 * - Standard-mode:
-+	 *   the minimum HIGH period of the scl clock is 4.0us
-+	 *   the minimum LOW period of the scl clock is 4.7us
-+	 * - Fast-mode:
-+	 *   the minimum HIGH period of the scl clock is 0.6us
-+	 *   the minimum LOW period of the scl clock is 1.3us
-+	 * - Fast-mode plus:
-+	 *   the minimum HIGH period of the scl clock is 0.26us
-+	 *   the minimum LOW period of the scl clock is 0.5us
-+	 * - HS-mode(<1.7MHz):
-+	 *   the minimum HIGH period of the scl clock is 0.12us
-+	 *   the minimum LOW period of the scl clock is 0.32us
-+	 * - HS-mode(<3.4MHz):
-+	 *   the minimum HIGH period of the scl clock is 0.06us
-+	 *   the minimum LOW period of the scl clock is 0.16us
-+	 */
-+	if (scl_rate <= 100000) {
-+		*high_ratio = 40;
-+		*low_ratio = 47;
-+	} else if (scl_rate <= 400000) {
-+		*high_ratio = 6;
-+		*low_ratio = 13;
-+	} else if (scl_rate <= 1000000) {
-+		*high_ratio = 26;
-+		*low_ratio = 50;
-+	} else if (scl_rate <= 1700000) {
-+		*high_ratio = 12;
-+		*low_ratio = 32;
-+	} else {
-+		*high_ratio = 6;
-+		*low_ratio = 16;
-+	}
-+}
-+
-+static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
-+			       unsigned long *divh, unsigned long *divl)
-+{
-+	unsigned long high_ratio, low_ratio;
-+	unsigned long ratio_sum;
-+
-+	rk3x_i2c_get_ratios(scl_rate, &high_ratio, &low_ratio);
-+	ratio_sum = high_ratio + low_ratio;
-+
-+	/* T_high = T_clk * (divh + 1) * 8
-+	 * T_low = T_clk * (divl + 1) * 8
-+	 * T_scl = T_high + T_low
-+	 * T_scl = 1 / scl_rate
-+	 * T_clk = 1 / i2c_rate
-+	 * T_high : T_low = high_ratio : low_ratio
-+	 * ratio_sum = high_ratio + low_ratio
-+	 *
-+	 * so:
-+	 * divh = (i2c_rate * high_ratio) / (scl_rate * ratio_sum * 8) - 1
-+	 * divl = (i2c_rate * low_ratio) / (scl_rate * ratio_sum * 8) - 1
-+	 */
-+	*divh = DIV_ROUND_UP(i2c_rate * high_ratio, scl_rate * ratio_sum * 8);
-+	if (*divh)
-+		*divh = *divh - 1;
-+
-+	*divl = DIV_ROUND_UP(i2c_rate * low_ratio, scl_rate * ratio_sum * 8);
-+	if (*divl)
-+		*divl = *divl - 1;
-+}
-+
- static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
- {
- 	unsigned long i2c_rate = clk_get_rate(i2c->clk);
--	unsigned int div;
-+	unsigned long divh, divl;
- 
--	/* set DIV = DIVH = DIVL
--	 * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
--	 *          = (clk rate) / (16 * (DIV + 1))
--	 */
--	div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
-+	rk3x_i2c_calc_divs(i2c_rate, scl_rate, &divh, &divl);
- 
--	i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
-+	i2c_writel(i2c, (divh << 16) | (divl & 0xffff), REG_CLKDIV);
- }
- 
- /**
--- 
-1.8.3.2
+    scsi: Use 'depends' with LIBFC instead of 'select'.
 
+which went in yesterday.  I thought that would resolve all of your
+problems.
 
+Believe me, it is a tragic surprise that several defconfigs absolutely
+depended upon this broken usage of select in the scsi layer, to of all
+things make CONFIG_NET=y implicit.
+
+I'll do my best to sort this out, but I hope that this short term pain
+is worth it in the end.
+
+Thanks for your understanding.
