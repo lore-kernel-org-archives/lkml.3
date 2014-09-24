@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaIXO6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:58:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59739 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaIXO6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:58:43 -0400
-Date: Wed, 24 Sep 2014 07:57:48 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-8aa6f0ebf41b5fdd186276394bf07e7bd6884d94@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140922183642.11015.66039.stgit@localhost>
-References: <20140922183642.11015.66039.stgit@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt: Use resched_curr() in task_tick_rt()
-Git-Commit-ID: 8aa6f0ebf41b5fdd186276394bf07e7bd6884d94
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753686AbaIXO7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:59:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11951 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722AbaIXO67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:58:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,589,1406617200"; 
+   d="scan'208";a="596213112"
+Date: Wed, 24 Sep 2014 07:58:58 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] lib: string.c: Added a funktion function strzcpy
+Message-ID: <20140924145858.GK28253@tassilo.jf.intel.com>
+References: <1411510416-16655-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1411510416-16655-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20140924011753.GG28253@tassilo.jf.intel.com>
+ <20140924075206.GC5865@mwanda>
+ <20140924143555.GJ28253@tassilo.jf.intel.com>
+ <CAFo99gZUfFUB9xX0GYW=hJMNouiU-M9apZ8KtPg9MW3x7gxZcg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAFo99gZUfFUB9xX0GYW=hJMNouiU-M9apZ8KtPg9MW3x7gxZcg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8aa6f0ebf41b5fdd186276394bf07e7bd6884d94
-Gitweb:     http://git.kernel.org/tip/8aa6f0ebf41b5fdd186276394bf07e7bd6884d94
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Mon, 22 Sep 2014 22:36:43 +0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 14:47:12 +0200
+> I can show a large amount of patches that show that many people do not
+> seem aware that strncpy does not guarantee a terminating null character.
+> Add to that all the code I've seen like this:
 
-sched/rt: Use resched_curr() in task_tick_rt()
+Yes that's understood.
 
-Some time ago PREEMPT_NEED_RESCHED was implemented,
-so reschedule technics is a little more difficult now.
+The question was: where do we rely on the padding semantics of strncpy?
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140922183642.11015.66039.stgit@localhost
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/rt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 2e6a774..87ea5bf 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -2072,7 +2072,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- 	for_each_sched_rt_entity(rt_se) {
- 		if (rt_se->run_list.prev != rt_se->run_list.next) {
- 			requeue_task_rt(rq, p, 0);
--			set_tsk_need_resched(p);
-+			resched_curr(rq);
- 			return;
- 		}
- 	}
+-Andi
