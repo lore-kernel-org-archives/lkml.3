@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaIXWFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 18:05:06 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:59305 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909AbaIXWFE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 18:05:04 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jens Axboe <axboe@kernel.dk> (axboe@kernel.dk)" <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>
-Subject: RE: ftrace function-graph and interprocessor interrupts
-Thread-Topic: ftrace function-graph and interprocessor interrupts
-Thread-Index: Ac/YBflZEtKWFiuHSyShYTcBfCN35AAO34MrAAAGC2A=
-Date: Wed, 24 Sep 2014 22:02:51 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C9BF52@G9W0745.americas.hpqcorp.net>
-References: <94D0CD8314A33A4D9D801C0FE68B402958C9BE4D@G9W0745.americas.hpqcorp.net>
- <87mw9oelje.fsf@tassilo.jf.intel.com>
-In-Reply-To: <87mw9oelje.fsf@tassilo.jf.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.193.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752384AbaIXWFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 18:05:52 -0400
+Received: from [118.99.31.190] ([118.99.31.190]:49411 "EHLO a.00k8.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750725AbaIXWFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 18:05:51 -0400
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 18:05:50 EDT
+Date: Thu, 25 Sep 2014 05:58:08 +0800
+From: "LED LENSER" <iu2@a.00k8.com>
+Reply-To: seles1@jrs-tech.net
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: LED LENSER Flashlight and headlamp
+Message-ID: <201409250558084083703@a.00k8.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8OM5uZT018988
 
+Have a nice day,friend.
 
+Glad to know you are interested in LED LENSER flashlight. We do LED LENSER Wholesale.
+If you need,we will offer you every model with competitive price.
+For more information,please contact us in any time
+it will be our honor to serve you well and be your supplier
+Waitting for your reply.
 
-> -----Original Message-----
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> Sent: Wednesday, 24 September, 2014 4:50 PM
-> To: Elliott, Robert (Server Storage)
-> Cc: Steven Rostedt; linux-kernel@vger.kernel.org; Jens Axboe
-> <axboe@kernel.dk> (axboe@kernel.dk); Christoph Hellwig
-> Subject: Re: ftrace function-graph and interprocessor interrupts
-> 
-> "Elliott, Robert (Server Storage)" <Elliott@hp.com> writes:
-> 
-> > The function-graph tracer marks some interrupt handler functions
-> > with ==========>  and <========== labels.
-> 
-> I'm not sure the marking is really that useful. Isn't it always obvious
-> from the function names where an interrupt starts/end?
-> 
-> -Andi
+Best regards
+Hellen
 
-Although the do_IRQ name stands out pretty well, some of the
-others don't, and blk-mq calling them directly makes it hard
-to tell.  They show up clearly in the function trace, just
-not the function_graph trace.
+JRS Technology Co.,Ltd
 
-Also, the IPI function can end up nested inside { } but 
-without indents, depending on when it occurs.
+E-mail : sales@JRS-Tech.net
+Msn:     techjrsb@msn.cn
+Skype:   techjrsa
+http://www.jrs-tech.net
 
- 10)               |                                    sd_setup_read_write_cmnd [sd_mod]() {
- 10)               |                                    smp_call_function_single_interrupt() {
- 10)               |                                      irq_enter() {
-...
- 10) + 36.788 us   |                                    } /* smp_call_function_single_interrupt */
- 10)               |                                      scsi_init_io() {
-
-The ==> labels also add an indent level.
-
-I'd like to add an option to exclude the time taken by interrupts
-in the cumulative times, but that first requires that function_graph
-understand what times to exclude.
-
+we would be grateful if you will be our led lenser catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
