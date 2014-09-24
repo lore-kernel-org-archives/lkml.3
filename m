@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaIXXsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 19:48:25 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:60770 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaIXXsX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 19:48:23 -0400
-Date: Wed, 24 Sep 2014 17:48:19 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has
- 64bit mmio
-Message-ID: <20140924234819.GF20416@google.com>
-References: <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
- <CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
- <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
- <52A8BAC5.70006@canonical.com>
- <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
- <52D01D82.5070202@canonical.com>
- <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
- <54189BCE.2010206@canonical.com>
- <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
- <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
+	id S1751351AbaIXX6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 19:58:21 -0400
+Received: from mail-bn1bon0077.outbound.protection.outlook.com ([157.56.111.77]:5472
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750725AbaIXX6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 19:58:19 -0400
+X-Greylist: delayed 26574 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 19:58:19 EDT
+Date: Wed, 24 Sep 2014 16:58:14 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <sebastian.hesselbarth@gmail.com>, <Peter.Chen@freescale.com>,
+        <balbi@ti.com>, <p.zabel@pengutronix.de>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20972.003
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <1a0ed130-a53d-42df-9f6a-994c5b68755c@BN1BFFO11FD031.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377424004)(164054003)(189002)(199003)(24454002)(19580395003)(20776003)(83072002)(85852003)(47776003)(85306004)(107046002)(21056001)(23676002)(19580405001)(77982003)(83506001)(80022003)(81542003)(46102003)(90102001)(44976005)(79102003)(64706001)(74662003)(74502003)(83322001)(81342003)(4396001)(86362001)(31696002)(33646002)(76482002)(10300001)(31966008)(120916001)(85182001)(87936001)(92726001)(92566001)(50466002)(95666004)(70736001)(6806004)(76176999)(54356999)(74316001)(50986999)(1496007)(104016003)(106466001)(77096002)(99396003)(53416004)(85202003)(102836001)(110136001)(7059019)(107986001)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB054;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03449D5DD1
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 12:46:24AM -0700, Yinghai Lu wrote:
-> On Tue, Sep 16, 2014 at 3:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
-> > <joseph.salisbury@canonical.com> wrote:
-> >>
-> >> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
-> >> is similar to the original bug[1] we discussed.
-> >>
-> >> Just wondering if there have been any additional ideas on realloc since
-> >> this was last discussed?
-> >>
-> >> [0] http://pad.lv/1363313
-> >
-> > So the resource realloc do work as expected. but LSI firmware has some
-> > problem again?
-> >
-> > We may need to add command after the reset the bridge resource.
+On Tue, 2014-09-23 at 12:28PM +0200, Antoine Tenart wrote:
+> Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
+> and DMA mask, to support USB2 ChipIdea controllers that don't need
+> specific functions.
 > 
-> Can you try attached patch?
-
-This sitting in patchwork, but I'm dropping it because there's no changelog
-or signed-off-by.  I don't think the underlying bug has been resolved,
-though.
-
-Bjorn
-
-> ---
->  drivers/pci/setup-bus.c |   16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
+> Tested on the Marvell Berlin SoCs USB controllers.
 > 
-> Index: linux-2.6/drivers/pci/setup-bus.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/setup-bus.c
-> +++ linux-2.6/drivers/pci/setup-bus.c
-> @@ -1615,6 +1615,22 @@ again:
->  						 fail_res->flags & type_mask,
->  						 rel_type);
->  
-> +	/* reset LSI device */
-> +	list_for_each_entry(fail_res, &fail_head, list) {
-> +		struct pci_dev *pdev;
-> +		struct pci_bus *pbus = fail_res->dev->bus;
-> +
-> +		if (pci_is_root_bus(pbus) || !pbus->self)
-> +			continue;
-> +
-> +		/* LSI device firmware is not happy with changing BAR value */
-> +		list_for_each_entry(pdev, &pbus->devices, bus_list)
-> +			if (pdev->vendor == PCI_VENDOR_ID_LSI_LOGIC) {
-> +				pci_reset_secondary_bus(pbus->self);
-> +				break;
-> +			}
-> +	}
-> +
->  	/* restore size and flags */
->  	list_for_each_entry(fail_res, &fail_head, list) {
->  		struct resource *res = fail_res->res;
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 
+This driver also works for Zynq. I didn't do extensive testing, but I
+could access a flash drive successfully.
+
+Tested-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+
+	Thanks,
+	Sören
