@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875AbaIXTUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:20:41 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:63368 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaIXTUj (ORCPT
+	id S1752979AbaIXTVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:21:55 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:62359 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750891AbaIXTVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:20:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140924185521.GC7996@ZenIV.linux.org.uk>
-References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
-	<20140924185521.GC7996@ZenIV.linux.org.uk>
-Date: Wed, 24 Sep 2014 12:20:38 -0700
-X-Google-Sender-Auth: EZsYuArZ2PdTk5suxZocIc_2XzI
-Message-ID: <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mikhail Efremov <sem@altlinux.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Sep 2014 15:21:53 -0400
+Message-ID: <1411586511.19525.38.camel@x220>
+Subject: [PATCH] Hexagon: Remove useless select of NO_IOPORT_MAP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 24 Sep 2014 21:21:51 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Sep 2014 19:21:52.0271 (UTC) FILETIME=[CB94A1F0:01CFD82C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 11:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Yecchhhh...  Applied, but it's very ugly.  Oh, well - regression is
-> regression, and I don't see a cleaner fix at the moment.  If I don't
-> manage to come up with anything prettier, to Linus it goes in tonight
-> pull request ;-/
+Hexagon's primary Kconfig entry has a select for NO_IOPORT_MAP. But
+because hexagon never defines a Kconfig symbol NO_IOPORT_MAP this select
+is a nop. It can be removed.
 
-Please don't. That thing is too ugly to exist. It also looks
-completely and utterly buggy. There's no way I'm taking it. If
-switch-names is suddenly conditional, what the f*ck happens to the
-name hash which is unconditionally done with a swap() right
-afterwards.
+Perhaps hexagon should add its own Kconfig entry for NO_IOPORT_MAP and
+have it default to 'y'. But since no one apparently had any problems
+with HAS_IOPORT_MAP defaulting to 'y' on hexagon, as it currently does,
+that is unlikely.
 
-There's no way that patch is correct.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested by playing with arch/hexagon/configs/comet_defconfig. After "make
+oldconfig" the .config contains CONFIG_HAS_IOPORT_MAP=y both before and
+after this patch, as is expected.
 
-           Linus
+Actually, the only difference I found in the .config file was that after
+this patch the .config file contained
+    CONFIG_HEXAGON=y
+
+I have no idea why. Did I botch my test?
+
+ arch/hexagon/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 4dc89d1f9c48..f1817eae107a 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -19,7 +19,6 @@ config HEXAGON
+ 	select GENERIC_IRQ_SHOW
+ 	select HAVE_ARCH_KGDB
+ 	select HAVE_ARCH_TRACEHOOK
+-	select NO_IOPORT_MAP
+ 	select GENERIC_IOMAP
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select STACKTRACE_SUPPORT
+-- 
+1.9.3
+
