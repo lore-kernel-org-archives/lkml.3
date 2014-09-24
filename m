@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaIXIZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:25:52 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:12685 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753300AbaIXIZs (ORCPT
+	id S1754581AbaIXI0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:26:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42744 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953AbaIXIZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:25:48 -0400
-X-IronPort-AV: E=Sophos;i="5.04,587,1406563200"; 
-   d="scan'208";a="36387608"
-Message-ID: <54227FF6.10109@cn.fujitsu.com>
-Date: Wed, 24 Sep 2014 16:25:26 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 24 Sep 2014 04:25:58 -0400
+Date: Wed, 24 Sep 2014 01:08:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frans Klaver <frans.klaver@xsens.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/2] tty: omap-serial: fix division by zero
+Message-ID: <20140924080852.GA28215@kroah.com>
+References: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
+ <1411545322-22940-2-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, <gleb@kernel.org>,
-        <mtosatti@redhat.com>, <nadav.amit@gmail.com>, <jan.kiszka@web.de>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH v8 0/8] kvm, mem-hotplug: Do not pin ept identity pagetable
- and apic access page.
-References: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com> <54227EB4.7070608@redhat.com>
-In-Reply-To: <54227EB4.7070608@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411545322-22940-2-git-send-email-frans.klaver@xsens.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 09:55:21AM +0200, Frans Klaver wrote:
+> If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
+> calculated n values in serial_omap_is_baud_mode16() may become 0. This
+> causes a division by zero when calculating the difference between
+> calculated and desired baud rates. To prevent this, cap the n13 and n16
+> values on 1.
+> 
+> Division by zero in kernel.
+> [<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
+> [<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
+> [<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
+> [<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
+> [<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
+> [<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
+> [<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
+> [<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
+> [<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
+> [<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
+> [<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
+> [<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
+> [<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
+> 
+> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> ---
+>  drivers/tty/serial/omap-serial.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
 
-On 09/24/2014 04:20 PM, Paolo Bonzini wrote:
-> Il 24/09/2014 09:57, Tang Chen ha scritto:
->> ept identity pagetable and apic access page in kvm are pinned in memory.
->> As a result, they cannot be migrated/hot-removed.
->>
->> But actually they don't need to be pinned in memory.
->>
->> [For ept identity page]
->> Just do not pin it. When it is migrated, guest will be able to find the
->> new page in the next ept violation.
->>
->> [For apic access page]
->> The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
->> When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
->> for each vcpu in addition.
->>
->> This patch-set is based on Linux 3.17.0-rc5.
->>
->> NOTE: Tested with -cpu xxx,-x2apic option.
->>        But since nested vm pins some other pages in memory, if user uses nested
->>        vm, memory hot-remove will not work.
->>
->> Change log v7->v8:
->> 1. Patch 1/9~3/9 were applied to kvm/queue by Paolo Bonzini <pbonzini@redhat.com>.
->>     Just resend them, no changes.
->> 2. Removed previous patch 4/9, which added unnecessary hook has_secondary_apic_access().
->> 3. Set kvm_x86_ops->set_apic_access_page_addr to NULL when hardware had no flexpriority
->>     functionality which actually exists only on x86.
->> 4. Moved declaration of kvm_arch_mmu_notifier_invalidate_page() to arch/*/include/asm/kvm_host.h.
->> 5. Removed useless set_apic_access_page_addr() hook for svm.
->>
->> Tang Chen (8):
->>    kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
->>    kvm: Remove ept_identity_pagetable from struct kvm_arch.
->>    kvm: Make init_rmode_identity_map() return 0 on success.
->>    kvm, mem-hotplug: Reload L1's apic access page in vcpu_enter_guest().
->>    kvm: Rename make_all_cpus_request() to kvm_make_all_cpus_request() and
->>      make it non-static.
->>    kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
->>      running.
->>    kvm, mem-hotplug: Add arch specific mmu notifier to handle apic access
->>      migration.
->>    kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
->>
->>   arch/arm/include/asm/kvm_host.h     |   5 ++
->>   arch/arm64/include/asm/kvm_host.h   |   5 ++
->>   arch/ia64/include/asm/kvm_host.h    |   7 ++
->>   arch/mips/include/asm/kvm_host.h    |   6 ++
->>   arch/powerpc/include/asm/kvm_host.h |   5 ++
->>   arch/s390/include/asm/kvm_host.h    |   8 +++
->>   arch/x86/include/asm/kvm_host.h     |   7 +-
->>   arch/x86/kvm/svm.c                  |   3 +-
->>   arch/x86/kvm/vmx.c                  | 130 ++++++++++++++++++++++++------------
->>   arch/x86/kvm/x86.c                  |  45 +++++++++++--
->>   include/linux/kvm_host.h            |   2 +
->>   virt/kvm/kvm_main.c                 |  13 ++--
->>   12 files changed, 180 insertions(+), 56 deletions(-)
->>
-> Thanks for your persistence!  The patches look good, I'll test them and
-> apply to kvm/queue.
+Should this go to the stable kernel trees as well?
 
-Sure, thank you very much. :)
+thanks,
+
+greg k-h
