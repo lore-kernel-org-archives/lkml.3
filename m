@@ -1,339 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaIXT64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:58:56 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33423 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaIXT6z (ORCPT
+	id S1751790AbaIXUIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:08:25 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61607 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750871AbaIXUIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:58:55 -0400
-Date: Wed, 24 Sep 2014 12:58:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: atull@opensource.altera.com
-Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
-        broonie@kernel.org, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v3 2/3] pmbus: add regulator support
-Message-ID: <20140924195849.GA25362@roeck-us.net>
-References: <1411581476-12222-1-git-send-email-atull@opensource.altera.com>
- <1411581476-12222-3-git-send-email-atull@opensource.altera.com>
+	Wed, 24 Sep 2014 16:08:20 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, subhransu.s.prusty@intel.com,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Gross <agross@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
+        Chris Ball <chris@printf.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
+        David Herrmann <dh.herrmann@gmail.com>, dmaengine@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, "Du, Wenkai" <wenkai.du@intel.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, intel-gfx@lists.freedesktop.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Jani Nikula <jani.nikula@intel.com>, Jingoo Han <jg1.han@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-nfc@ml01.01.org,
+        linux-omap@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Marcin Wojtas <mw@semihalf.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        patches@opensource.wolfsonmicro.com,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH 00/27] add pm_runtime_last_busy_and_autosuspend() helper
+Date: Wed, 24 Sep 2014 22:28:07 +0200
+Message-ID: <6374313.I12loOK9hA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411581476-12222-3-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:57:55PM -0500, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
+On Wednesday, September 24, 2014 09:44:50 PM Vinod Koul wrote:
+> This patch series adds a simple macro pm_runtime_last_busy_and_autosuspend()
+> which invokes pm_runtime_mark_last_busy() and pm_runtime_put_autosuspend()
+> sequentially. Then we do a tree wide update of current patterns which are
+> present. As evident from log below this pattern is frequent in the
+> kernel.
 > 
-> Add support for simple on/off control of each channel.
+> This series can be found at
+> git://git.kernel.org/pub/scm/linux/kernel/git/vkoul/slave-dma.git
+> topic/pm_runtime_last_busy_and_autosuspend
 > 
-> To add regulator support, the pmbus part driver needs to add
-> regulator_desc information, of_regulator_match information,
-> and number of regulators to its pmbus_driver_info struct.
+> Fengguang's kbuild has tested it so it shouldn't break things for anyone.
+> Barring one patch (explictyly mentioned in its changelog) rest are simple
+> replacements.
 > 
-> regulator_desc can be declared using default macro for a
-> regulator (PMBUS_REGULATOR) that is in pmbus.h
+> If all are okay, this should be merged thru PM tree as it depends on macro
+> addition.
 > 
-> The regulator_init_data can be intialized from either
-> platform data or the device tree.
+> Subhransu S. Prusty (1):
+>   PM: Add helper pm_runtime_last_busy_and_autosuspend()
 > 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> Vinod Koul (26):
+>   dmaengine: ste_dma: use pm_runtime_last_busy_and_autosuspend helper
+>   extcon: arizona: use pm_runtime_last_busy_and_autosuspend helper
+>   drm/i915: use pm_runtime_last_busy_and_autosuspend helper
+>   drm/nouveau: use pm_runtime_last_busy_and_autosuspend helper
+>   drm/radeon: use pm_runtime_last_busy_and_autosuspend helper
+>   vga_switcheroo: use pm_runtime_last_busy_and_autosuspend helper
+>   i2c: designware: use pm_runtime_last_busy_and_autosuspend helper
+>   i2c: omap: use pm_runtime_last_busy_and_autosuspend helper
+>   i2c: qup: use pm_runtime_last_busy_and_autosuspend helper
+>   mfd: ab8500-gpadc: use pm_runtime_last_busy_and_autosuspend helper
+>   mfd: arizona: use pm_runtime_last_busy_and_autosuspend helper
+>   mei: use pm_runtime_last_busy_and_autosuspend helper
+>   mmc: use pm_runtime_last_busy_and_autosuspend helper
+>   mmc: mmci: use pm_runtime_last_busy_and_autosuspend helper
+>   mmc: omap_hsmmc: use pm_runtime_last_busy_and_autosuspend helper
+>   mmc: sdhci-pxav3: use pm_runtime_last_busy_and_autosuspend helper
+>   mmc: sdhci: use pm_runtime_last_busy_and_autosuspend helper
+>   NFC: trf7970a: use pm_runtime_last_busy_and_autosuspend helper
+>   pm2301-charger: use pm_runtime_last_busy_and_autosuspend helper
+>   spi: omap2-mcspi: use pm_runtime_last_busy_and_autosuspend helper
+>   spi: orion: use pm_runtime_last_busy_and_autosuspend helper
+>   spi: ti-qspi: use pm_runtime_last_busy_and_autosuspend helper
+>   spi: core: use pm_runtime_last_busy_and_autosuspend helper
+>   tty: serial: omap: use pm_runtime_last_busy_and_autosuspend helper
+>   usb: musb: omap2430: use pm_runtime_last_busy_and_autosuspend helper
+>   video: fbdev: use pm_runtime_last_busy_and_autosuspend helper
 > 
+>  Documentation/power/runtime_pm.txt          |    4 ++
+>  drivers/dma/ste_dma40.c                     |   30 ++++---------
+>  drivers/extcon/extcon-arizona.c             |    6 +--
+>  drivers/gpu/drm/i915/intel_pm.c             |    3 +-
+>  drivers/gpu/drm/nouveau/nouveau_connector.c |    3 +-
+>  drivers/gpu/drm/nouveau/nouveau_drm.c       |    9 +---
+>  drivers/gpu/drm/radeon/radeon_connectors.c  |   15 ++----
+>  drivers/gpu/drm/radeon/radeon_drv.c         |    5 +-
+>  drivers/gpu/drm/radeon/radeon_kms.c         |    6 +--
+>  drivers/gpu/vga/vga_switcheroo.c            |    7 +--
+>  drivers/i2c/busses/i2c-designware-core.c    |    3 +-
+>  drivers/i2c/busses/i2c-omap.c               |    6 +--
+>  drivers/i2c/busses/i2c-qup.c                |    3 +-
+>  drivers/mfd/ab8500-gpadc.c                  |    6 +--
+>  drivers/mfd/arizona-irq.c                   |    3 +-
+>  drivers/misc/mei/client.c                   |   12 ++----
+>  drivers/mmc/core/core.c                     |    3 +-
+>  drivers/mmc/host/mmci.c                     |   12 ++----
+>  drivers/mmc/host/omap_hsmmc.c               |   19 ++-------
+>  drivers/mmc/host/sdhci-pxav3.c              |    6 +--
+>  drivers/mmc/host/sdhci.c                    |    3 +-
+>  drivers/nfc/trf7970a.c                      |    3 +-
+>  drivers/power/pm2301_charger.c              |    3 +-
+>  drivers/spi/spi-omap2-mcspi.c               |    9 +---
+>  drivers/spi/spi-orion.c                     |    3 +-
+>  drivers/spi/spi-ti-qspi.c                   |    5 +-
+>  drivers/spi/spi.c                           |    6 +--
+>  drivers/tty/serial/omap-serial.c            |   60 +++++++++------------------
+>  drivers/usb/musb/omap2430.c                 |    6 +--
+>  drivers/video/fbdev/auo_k190x.c             |    9 +---
+>  include/linux/pm_runtime.h                  |    6 +++
+>  31 files changed, 97 insertions(+), 177 deletions(-)
 
-Hi Alan,
+OK, I guess this is as good as it gets.
 
-Overall looks pretty good. Couple of comments inline.
+What tree would you like it go through?
 
-> v2: Remove '#include <linux/regulator/machine.h>'
->     Only one regulator per pmbus device
->     Get regulator_init_data from pdata or device tree
-> 
-> v3: Support multiple regulators for each chip
->     Move most code to pmbus_core.c
->     fixed values for on/off
-> ---
->  drivers/hwmon/pmbus/pmbus.h      |   27 ++++++++
->  drivers/hwmon/pmbus/pmbus_core.c |  133 ++++++++++++++++++++++++++++++++++++++
->  include/linux/i2c/pmbus.h        |    4 ++
->  3 files changed, 164 insertions(+)
-> 
-> diff --git a/drivers/hwmon/pmbus/pmbus.h b/drivers/hwmon/pmbus/pmbus.h
-> index fa9beb3..74aa382 100644
-> --- a/drivers/hwmon/pmbus/pmbus.h
-> +++ b/drivers/hwmon/pmbus/pmbus.h
-> @@ -19,6 +19,9 @@
->   * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
->   */
->  
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/of_regulator.h>
-> +
->  #ifndef PMBUS_H
->  #define PMBUS_H
->  
-> @@ -186,6 +189,12 @@
->  #define PMBUS_VIRT_STATUS_VMON		(PMBUS_VIRT_BASE + 35)
->  
->  /*
-> + * OPERATION
-> + */
-> +#define PB_OPERATION_CONTROL_ON		(1<<7)
-> +#define PB_OPERATION_CONTROL_SEQ_OFF	(1<<6)
 
-Can those defines be more consistent ? Does it really need SEQ_OFF or can it
-just be OFF ?
-
-> +
-> +/*
->   * CAPABILITY
->   */
->  #define PB_CAPABILITY_SMBALERT		(1<<4)
-> @@ -365,8 +374,26 @@ struct pmbus_driver_info {
->  	 */
->  	int (*identify)(struct i2c_client *client,
->  			struct pmbus_driver_info *info);
-> +
-> +	/* Regulator functionality, if supported by this chip driver. */
-> +	int num_regulators;
-> +	const struct regulator_desc *reg_desc;
-> +	struct of_regulator_match *reg_matches;
->  };
->  
-> +/* Regulator ops */
-> +
-> +extern struct regulator_ops pmbus_regulator_regulator_ops;
-> +
-How about just pmbus_regulator_ops ? I don't see a double regulator_
-variable name anywhere else in the code, and I don't really see the
-benefit of it.
-
-> +/* Macro for filling in array of struct regulator_desc */
-> +#define PMBUS_REGULATOR(_name, _id)				\
-> +	[_id] = {						\
-> +		.name = (_name # _id),				\
-> +		.id = (_id),					\
-> +		.ops = &pmbus_regulator_regulator_ops,		\
-> +		.owner = THIS_MODULE,				\
-> +	}
-> +
-
-Any idea how/if we can get rid of the resulting checkpatch error ?
-
->  /* Function declarations */
->  
->  void pmbus_clear_cache(struct i2c_client *client);
-> diff --git a/drivers/hwmon/pmbus/pmbus_core.c b/drivers/hwmon/pmbus/pmbus_core.c
-> index d6c3701..9ab8bd4 100644
-> --- a/drivers/hwmon/pmbus/pmbus_core.c
-> +++ b/drivers/hwmon/pmbus/pmbus_core.c
-> @@ -29,6 +29,9 @@
->  #include <linux/hwmon-sysfs.h>
->  #include <linux/jiffies.h>
->  #include <linux/i2c/pmbus.h>
-> +#include <linux/regulator/of_regulator.h>
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/machine.h>
->  #include "pmbus.h"
->  
->  /*
-> @@ -1758,6 +1761,125 @@ static int pmbus_init_common(struct i2c_client *client, struct pmbus_data *data,
->  	return 0;
->  }
->  
-> +#if IS_ENABLED(CONFIG_REGULATOR)
-> +static int pmbus_regulator_is_enabled(struct regulator_dev *rdev)
-> +{
-> +	struct device *dev = rdev_get_dev(rdev);
-> +	struct i2c_client *client = to_i2c_client(dev->parent);
-> +	u8 page = rdev_get_id(rdev);
-> +	int ret;
-> +
-> +	ret = pmbus_read_byte_data(client, page, PMBUS_OPERATION);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return !!(ret & PB_OPERATION_CONTROL_ON);
-> +}
-> +
-> +static int _pmbus_regulator_enable(struct regulator_dev *rdev, bool enable)
-> +{
-
-Can you find a better name for this function ? After all,
-it doesn't just enable the regulator, it also disables it.
-
-> +	struct device *dev = rdev_get_dev(rdev);
-> +	struct i2c_client *client = to_i2c_client(dev->parent);
-> +	u8 val, page = rdev_get_id(rdev);
-> +
-> +	if (enable)
-> +		val = PB_OPERATION_CONTROL_ON;
-> +	else
-> +		val = 0;
-> +
-> +	return pmbus_update_byte_data(client, page, PMBUS_OPERATION,
-> +				      PB_OPERATION_CONTROL_ON, val);
-
-					enable ? PB_OPERATION_CONTROL_ON : 0
-
-would be much simpler here.
-
-> +}
-> +
-> +static int pmbus_regulator_enable(struct regulator_dev *rdev)
-> +{
-> +	return _pmbus_regulator_enable(rdev, 1);
-> +}
-> +
-> +static int pmbus_regulator_disable(struct regulator_dev *rdev)
-> +{
-> +	return _pmbus_regulator_enable(rdev, 0);
-> +}
-> +
-> +struct regulator_ops pmbus_regulator_regulator_ops = {
-> +	.enable = pmbus_regulator_enable,
-> +	.disable = pmbus_regulator_disable,
-> +	.is_enabled = pmbus_regulator_is_enabled,
-
-No get_voltage support ?
-
-[ Guess it isn't mandatory. We can add it later to get this going. ]
-
-> +};
-> +EXPORT_SYMBOL_GPL(pmbus_regulator_regulator_ops);
-> +
-> +#if IS_ENABLED(CONFIG_OF)
-> +static int pmbus_regulator_parse_dt(struct device *dev,
-> +				    const struct pmbus_driver_info *info)
-> +{
-> +	struct device_node *np_regulators;
-> +	int ret;
-> +
-> +	if (!info->num_regulators)
-> +		return 0;
-> +
-> +	if (!info->reg_matches || !info->reg_desc)
-> +		return -EINVAL;
-> +
-> +	np_regulators = of_get_child_by_name(dev->of_node, "regulators");
-> +	if (!np_regulators)
-> +		return 0;
-> +
-> +	ret = of_regulator_match(dev, np_regulators, info->reg_matches,
-> +				 info->num_regulators);
-> +	of_node_put(np_regulators);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +#else
-> +static int pmbus_regulator_parse_dt(struct device *dev,
-> +				    const struct pmbus_driver_info *info)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static int pmbus_regulator_register(struct pmbus_data *data)
-> +{
-> +	struct device *dev = data->dev;
-> +	const struct pmbus_driver_info *info = data->info;
-> +	const struct pmbus_platform_data *pdata = dev_get_platdata(dev);
-> +	struct regulator_dev *rdev;
-> +	int i;
-> +
-> +	for (i = 0; i < info->num_regulators; i++) {
-> +		struct regulator_config config = { };
-> +
-> +		config.dev = dev;
-> +		config.driver_data = data;
-> +
-> +		if (pdata && pdata->reg_init_data) {
-> +			config.init_data = &pdata->reg_init_data[i];
-> +		} else {
-> +			config.init_data = info->reg_matches[i].init_data;
-> +			config.of_node = info->reg_matches[i].of_node;
-> +		}
-> +
-> +		rdev = devm_regulator_register(dev, &info->reg_desc[i],
-> +					       &config);
-> +		if (IS_ERR(rdev)) {
-> +			dev_err(dev, "Failed to register %s regulator\n",
-> +				info->reg_desc[i].name);
-> +			return PTR_ERR(rdev);
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +#else
-> +static int pmbus_regulator_register(struct pmbus_data *data)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->  int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
->  		   struct pmbus_driver_info *info)
->  {
-> @@ -1769,6 +1891,10 @@ int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
->  	if (!info)
->  		return -ENODEV;
->  
-> +	ret = pmbus_regulator_parse_dt(dev, info);
-> +	if (ret)
-> +		return ret;
-> +
-
-You have the conditions wrong above.
-
-If CONFIG_REGULATOR is not enabled, this will fail to build,
-since pmbus_regulator_parse_dt is not declared at all in this case.
-
-I can understand that you want to parse the dt early, but it would be
-simpler to just parse it from pmbus_regulator_register(). It is only
-relevant if regulators are configured anyway, and we don't really need
-to optimize the code for the error case.
-
->  	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WRITE_BYTE
->  				     | I2C_FUNC_SMBUS_BYTE_DATA
->  				     | I2C_FUNC_SMBUS_WORD_DATA))
-> @@ -1812,8 +1938,15 @@ int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
->  		dev_err(dev, "Failed to register hwmon device\n");
->  		goto out_kfree;
->  	}
-> +
-> +	ret = pmbus_regulator_register(data);
-> +	if (ret)
-> +		goto out_unregister;
-> +
->  	return 0;
->  
-> +out_unregister:
-> +	hwmon_device_unregister(data->hwmon_dev);
->  out_kfree:
->  	kfree(data->group.attrs);
->  	return ret;
-> diff --git a/include/linux/i2c/pmbus.h b/include/linux/i2c/pmbus.h
-> index 69280db..ee3c2ab 100644
-> --- a/include/linux/i2c/pmbus.h
-> +++ b/include/linux/i2c/pmbus.h
-> @@ -40,6 +40,10 @@
->  
->  struct pmbus_platform_data {
->  	u32 flags;		/* Device specific flags */
-> +
-> +	/* regulator support */
-> +	int num_regulators;
-> +	struct regulator_init_data *reg_init_data;
->  };
->  
->  #endif /* _PMBUS_H_ */
-> -- 
-> 1.7.9.5
-> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
