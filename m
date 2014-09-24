@@ -1,102 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaIXH4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:56:39 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:37493 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaIXH4h (ORCPT
+	id S1753747AbaIXH5C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:57:02 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:42825 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382AbaIXHzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:56:37 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 24 Sep 2014 16:57:12 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Subject: Re: [PATCH v1 4/5] zram: add swap full hint
-Message-ID: <20140924075712.GA3181@bbox>
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
- <1411344191-2842-5-git-send-email-minchan@kernel.org>
- <20140922141118.de46ae5e54099cf2b39c8c5b@linux-foundation.org>
- <20140923045602.GC8325@bbox>
- <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
+	Wed, 24 Sep 2014 03:55:33 -0400
+X-ASG-Debug-ID: 1411545331-0759e7612989fa50002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Frans Klaver <frans.klaver@xsens.com>, Jiri Slaby <jslaby@suse.cz>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH 2/2] tty: omap-serial: pull out calculation from baud_is_mode16
+Date: Wed, 24 Sep 2014 09:55:22 +0200
+X-ASG-Orig-Subj: [PATCH 2/2] tty: omap-serial: pull out calculation from baud_is_mode16
+Message-ID: <1411545322-22940-3-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
+References: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1411545331
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9817
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:17:55PM -0700, Andrew Morton wrote:
-> On Tue, 23 Sep 2014 13:56:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > > 
-> > > > +#define ZRAM_FULLNESS_PERCENT 80
-> > > 
-> > > We've had problems in the past where 1% is just too large an increment
-> > > for large systems.
-> > 
-> > So, do you want fullness_bytes like dirty_bytes?
-> 
-> Firstly I'd like you to think about whether we're ever likely to have
-> similar granularity problems with this tunable.  If not then forget
-> about it.
+To determine the correct divisor, we need to know the difference between
+the desired baud rate and the actual baud rate. The calculation for this
+difference is implemented twice within omap_serial_baud_is_mode16().
+Pull out the calculation for easier maintenance.
 
-When I think the usecase for zram-swap, it is used for small memory
-but not sure because these days, mobile phone DRAM size tend to be
-big(ex, 3G) and they want to use zRAM for swap due to wear-leveling
-of nand. When I consier the trend, they might set zram-swap to about
-500M in future. In that case, 1% is 5M and given zram comp ratio(ie,
-max 5:1), it could be 25M which is never small for the application.
-So, IMO, we need more fine-grained knob.
+While at it, remove the CamelCasing from the variable names.
 
-> 
-> If yes then we should do something.  I don't like the "bytes" thing
-> much because it requires that the operator know the pool size
-> beforehand, and any time that changes, the "bytes" needs hanging too. 
-> Ratios are nice but percent is too coarse.  Maybe kernel should start
-> using "ppm" for ratios, parts per million.  hrm.
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+ drivers/tty/serial/omap-serial.c | 42 +++++++++++++++++++++++-----------------
+ 1 file changed, 24 insertions(+), 18 deletions(-)
 
-Okay, I will consider it more in next spin.
-
-> 
-> > > > @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > > >  	down_write(&zram->init_lock);
-> > > >  
-> > > >  	zram->limit_pages = 0;
-> > > > +	atomic_set(&zram->alloc_fail, 0);
-> > > >  
-> > > >  	if (!init_done(zram)) {
-> > > >  		up_write(&zram->init_lock);
-> > > > @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
-> > > >  	return 0;
-> > > >  }
-> > > >  
-> > > > +static int zram_full(struct block_device *bdev, void *arg)
-> > > 
-> > > This could return a bool.  That implies that zram_swap_hint should
-> > > return bool too, but as we haven't been told what the zram_swap_hint
-> > > return value does, I'm a bit stumped.
-> > 
-> > Hmm, currently, SWAP_FREE doesn't use return and SWAP_FULL uses return
-> > as bool so in the end, we can change it as bool but I want to remain it
-> > as int for the future. At least, we might use it as propagating error
-> > in future. Instead, I will use *arg to return the result instead of
-> > return val. But I'm not strong so if you want to remove return val,
-> > I will do it. For clarifictaion, please tell me again if you want.
-> 
-> I'm easy, as long as it makes sense, is understandable by people other
-> than he-who-wrote-it and doesn't use argument names such as "arg".
-
-Yeb.
-
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index e454b7c..18c30ca 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -239,6 +239,26 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
+ }
+ 
+ /*
++ * Calculate the absolute difference between the desired and actual baud
++ * rate for the given mode.
++ */
++static inline int calculate_baud_abs_diff(struct uart_port *port,
++				unsigned int baud, unsigned int mode)
++{
++	unsigned int n = port->uartclk / (mode * baud);
++	int abs_diff;
++
++	if (n == 0)
++		n = 1;
++
++	abs_diff = baud - (port->uartclk / (mode * n));
++	if (abs_diff < 0)
++		abs_diff = -abs_diff;
++
++	return abs_diff;
++}
++
++/*
+  * serial_omap_baud_is_mode16 - check if baud rate is MODE16X
+  * @port: uart port info
+  * @baud: baudrate for which mode needs to be determined
+@@ -252,24 +272,10 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
+ static bool
+ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
+ {
+-	unsigned int n13 = port->uartclk / (13 * baud);
+-	unsigned int n16 = port->uartclk / (16 * baud);
+-	int baudAbsDiff13;
+-	int baudAbsDiff16;
+-
+-	if (n13 == 0)
+-		n13 = 1;
+-	if (n16 == 0)
+-		n16 = 1;
+-
+-	baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
+-	baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
+-	if (baudAbsDiff13 < 0)
+-		baudAbsDiff13 = -baudAbsDiff13;
+-	if (baudAbsDiff16 < 0)
+-		baudAbsDiff16 = -baudAbsDiff16;
+-
+-	return (baudAbsDiff13 >= baudAbsDiff16);
++	int abs_diff_13 = calculate_baud_abs_diff(port, baud, 13);
++	int abs_diff_16 = calculate_baud_abs_diff(port, baud, 16);
++
++	return (abs_diff_13 >= abs_diff_16);
+ }
+ 
+ /*
 -- 
-Kind regards,
-Minchan Kim
+2.1.0
+
