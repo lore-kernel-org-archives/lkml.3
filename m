@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaIXI1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:27:47 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:43877 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbaIXI1o (ORCPT
+	id S1754190AbaIXI35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:29:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57049 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaIXI1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:27:44 -0400
-X-AuditID: cbfee61a-f79c06d000004e71-2f-5422807eadfe
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Zhang Rui <rui.zhang@intel.com>, Eduardo Valentin <edubezval@gmail.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH 0/3] thermal: fix: Various fixes for thermal subsystem
-Date: Wed, 24 Sep 2014 10:27:09 +0200
-Message-id: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t9jAd26BqUQg84PGhYbZ6xntZh/5Rqr
-	xZtH3BZvHm5mtLi8aw6bxefeI4wWTx72sTmwe+ycdZfdY/Gel0we66a9Zfbo27KK0ePzJrkA
-	1igum5TUnMyy1CJ9uwSujL5fm5kK3jFXNDz8yNbA2MbcxcjJISFgIrF+0TQoW0ziwr31bF2M
-	XBxCAosYJSZNew7ldDFJnD/czApSxSagJ/H57lOmLkYODhEBb4ktazhAapgFbjBKTOmfzARS
-	IyzgJrHix352EJtFQFXi/eVpYHFeoPjp5bvYIbYpSnQ/m8A2gZF7ASPDKkbR1ILkguKk9FxD
-	veLE3OLSvHS95PzcTYzgIHkmtYNxZYPFIUYBDkYlHt4J4kohQqyJZcWVuYcYJTiYlUR4T5QC
-	hXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBKNTD2mW684ufV
-	ktGx0ftF10ubs4HSWy+mq5z1m74ufWMbv7AwX0qvgGfE+esngm3vZP0wVT9i+fWG5Rqz/csU
-	oys+7cxddHy2zK9pH3bu+Cq1aq/cuRe7AnTlXkslxunuvfKvZqbL17cP913Sl8jRN7M+/Et0
-	T+ehbbX/JURDFv19WNjXtNNC5xGrEktxRqKhFnNRcSIAfMHhCg4CAAA=
+	Wed, 24 Sep 2014 04:27:22 -0400
+Message-Id: <20140924082242.524407432@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 24 Sep 2014 10:18:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org
+Cc: tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH 09/11] net: Clean up sk_wait_event() vs might_sleep()
+References: <20140924081845.572814794@infradead.org>
+Content-Disposition: inline; filename=peterz-sleep-net-sk_stream_wait_memory.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This little patch series comprises fixes for step_wise governor and
-thermal core.
+WARNING: CPU: 1 PID: 1744 at kernel/sched/core.c:7104 __might_sleep+0x58/0x90()
+do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff81070e10>] prepare_to_wait+0x50 /0xa0
 
-Lukasz Majewski (3):
-  thermal: step_wise: fix: Prevent from binary overflow when trend is
-    dropping
-  thermal: core: fix: Initialize the max_state variable to 0
-  thermal: core: fix: Check return code of the ->get_max_state()
-    callback
+ [<ffffffff8105bc38>] __might_sleep+0x58/0x90
+ [<ffffffff8148c671>] lock_sock_nested+0x31/0xb0
+ [<ffffffff81498aaa>] sk_stream_wait_memory+0x18a/0x2d0
 
- drivers/thermal/step_wise.c    | 2 +-
- drivers/thermal/thermal_core.c | 8 +++++---
- 2 files changed, 6 insertions(+), 4 deletions(-)
+Which is a false positive because sk_wait_event() will already have
+TASK_RUNNING at that point if it would've gone through
+schedule_timeout().
 
--- 
-2.0.0.rc2
+So annotate with fixup_sleep(); which goes away on !DEBUG builds.
+
+Cc: netdev@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>
+Reported-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ include/net/sock.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -902,6 +902,7 @@ static inline void sock_rps_reset_rxhash
+ 		if (!__rc) {						\
+ 			*(__timeo) = schedule_timeout(*(__timeo));	\
+ 		}							\
++		fixup_sleep();						\
+ 		lock_sock(__sk);					\
+ 		__rc = __condition;					\
+ 		__rc;							\
+
 
