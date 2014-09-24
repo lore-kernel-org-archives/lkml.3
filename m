@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098AbaIXHkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:40:17 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:49241 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaIXHkP convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 24 Sep 2014 03:40:15 -0400
-Message-Id: <5422917E0200007800038081@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Wed, 24 Sep 2014 08:40:14 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ix86: improve cmpxchg8b_emu.S
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753186AbaIXHkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:40:51 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:45643 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaIXHku (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 03:40:50 -0400
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH net-next] bluetooth: Convert bt_<level> logging functions to return void
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1411409861.2952.57.camel@joe-AO725>
+Date: Wed, 24 Sep 2014 09:40:51 +0200
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <54204FE6-FE0E-4826-93DC-4A6BF6A4F03D@holtmann.org>
+References: <1411409861.2952.57.camel@joe-AO725>
+To: Joe Perches <joe@perches.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- don't include unneeded headers
-- drop redundant entry point label
-- complete unwind annotations
-- use .L prefix on local labels to not clutter the symbol table
+Hi Joe,
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
----
- arch/x86/lib/cmpxchg8b_emu.S |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+> No caller or macro uses the return value so make all
+> the functions return void.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> This change is associated to a desire to eventually
+> change printk to return void.
+> 
+> include/net/bluetooth/bluetooth.h |  4 ++--
+> net/bluetooth/lib.c               | 14 ++++----------
+> 2 files changed, 6 insertions(+), 12 deletions(-)
 
---- 3.17-rc6/arch/x86/lib/cmpxchg8b_emu.S
-+++ 3.17-rc6-ix86-improve-cmpxchg8b_emu/arch/x86/lib/cmpxchg8b_emu.S
-@@ -7,11 +7,8 @@
-  */
- 
- #include <linux/linkage.h>
--#include <asm/alternative-asm.h>
--#include <asm/frame.h>
- #include <asm/dwarf2.h>
- 
--
- .text
- 
- /*
-@@ -30,27 +27,28 @@ CFI_STARTPROC
- # set the whole ZF thing (caller will just compare
- # eax:edx with the expected value)
- #
--cmpxchg8b_emu:
--	pushfl
-+	pushfl_cfi
- 	cli
- 
- 	cmpl  (%esi), %eax
--	jne not_same
-+	jne .Lnot_same
- 	cmpl 4(%esi), %edx
--	jne half_same
-+	jne .Lhalf_same
- 
- 	movl %ebx,  (%esi)
- 	movl %ecx, 4(%esi)
- 
--	popfl
-+	CFI_REMEMBER_STATE
-+	popfl_cfi
- 	ret
- 
-- not_same:
-+	CFI_RESTORE_STATE
-+.Lnot_same:
- 	movl  (%esi), %eax
-- half_same:
-+.Lhalf_same:
- 	movl 4(%esi), %edx
- 
--	popfl
-+	popfl_cfi
- 	ret
- 
- CFI_ENDPROC
+patch has been applied to bluetooth-next tree.
 
+Regards
 
+Marcel
 
