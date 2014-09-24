@@ -1,177 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaIXN5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:57:21 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:45427 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419AbaIXN5S (ORCPT
+	id S1754427AbaIXN5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:57:48 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59099 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbaIXNqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:57:18 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 24 Sep 2014 15:54:44 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20140924135444.GD16198@localhost>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
- <1411158165-25794-2-git-send-email-octavian.purdila@intel.com>
- <20140924104809.GA16198@localhost>
- <CAE1zotLu7pN9pC_C+iRwSpMh2iPW5E1CL4RiycLK-jV_FZEfOQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE1zotLu7pN9pC_C+iRwSpMh2iPW5E1CL4RiycLK-jV_FZEfOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 24 Sep 2014 09:46:00 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jacob Shin <jacob.w.shin@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        xiakaixu <xiakaixu@huawei.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 1/4] perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
+Date: Wed, 24 Sep 2014 15:45:48 +0200
+Message-Id: <1411566351-10987-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411566351-10987-1-git-send-email-fweisbec@gmail.com>
+References: <1411566351-10987-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 04:36:22PM +0300, Octavian Purdila wrote:
-> On Wed, Sep 24, 2014 at 1:48 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Fri, Sep 19, 2014 at 11:22:42PM +0300, Octavian Purdila wrote:
-> 
-> <snip>
-> 
-> >> + * dln2_dev.mod_rx_slots and then the echo header field to index the
-> >> + * slots field and find the receive context for a particular
-> >> + * request.
-> >> + */
-> >> +struct dln2_mod_rx_slots {
-> >> +     /* RX slots bitmap */
-> >> +     unsigned long bmap;
-> >> +
-> >> +     /* used to wait for a free RX slot */
-> >> +     wait_queue_head_t wq;
-> >> +
-> >> +     /* used to wait for an RX operation to complete */
-> >> +     struct dln2_rx_context slots[DLN2_MAX_RX_SLOTS];
-> >> +
-> >> +     /* device has been disconnected */
-> >> +     bool disconnected;
-> >
-> > This belongs in the dln2_dev struct.
-> >
-> > I think you're overcomplicating the disconnect handling by intertwining
-> > it with your slots.
-> >
-> > Add a lock, an active-transfer counter, a disconnected flag, and a wait
-> > queue to struct dln2_dev.
-> >
-> 
-> I agree that disconnected is better suited in dln2_dev.
-> 
-> However, I don't think that we need the active-transfer counter and a
-> new wait queue. We can simply use the existing waiting queues and the
-> implicit alloc_rx_slot()/free_rx_slot() calls to see if we are still
-> waiting for I/O.
+From: Jacob Shin <jacob.w.shin@gmail.com>
 
-Just because you can reuse them doesn't mean it's a good idea. By
-separating a generic disconnect solution from your custom slot
-implementation we get something that is way easier to verify for
-correctness and that could also be reused in other drivers.
+Implement hardware breakpoint address mask for AMD Family 16h and
+above processors. CPUID feature bit indicates hardware support for
+DRn_ADDR_MASK MSRs. These masks further qualify DRn/DR7 hardware
+breakpoint addresses to allow matching of larger addresses ranges.
 
-> <snip>
-> 
-> >> +
-> >> +static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
-> >> +                       const void *obuf, unsigned obuf_len,
-> >> +                       void *ibuf, unsigned *ibuf_len)
-> >> +{
-> >> +     int ret = 0;
-> >> +     u16 result;
-> >> +     int rx_slot;
-> >> +     unsigned long flags;
-> >> +     struct dln2_response *rsp;
-> >> +     struct dln2_rx_context *rxc;
-> >> +     struct device *dev;
-> >> +     const int timeout = DLN2_USB_TIMEOUT * HZ / 1000;
-> >> +     struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
-> >> +
-> >
-> > Check the disconnected flag before incrementing the transfer count
-> > (while holding the device lock) here. Then decrement counter before
-> > returning and wake up an waiters if disconnected below.
-> >
-> > That is sufficient to implement wait-until-io-has-completed. Anything
-> > else you do below and in the helper functions is only to speed things
-> > up at disconnect (and can be done without locking the device).
-> >
-> >> +     rx_slot = alloc_rx_slot(rxs);
-> >> +     if (rx_slot < 0)
-> >> +             return rx_slot;
-> >> +
-> >> +     dev = &dln2->interface->dev;
-> >> +
-> >> +     ret = dln2_send_wait(dln2, handle, cmd, rx_slot, obuf, obuf_len);
-> >> +     if (ret < 0) {
-> >> +             free_rx_slot(dln2, rxs, rx_slot);
-> >
-> > goto out_free_rx_slot
-> >
-> >> +             dev_err(dev, "USB write failed: %d", ret);
-> >> +             return ret;
-> >> +     }
-> >> +
-> >> +     rxc = &rxs->slots[rx_slot];
-> >> +
-> >> +     ret = wait_for_completion_interruptible_timeout(&rxc->done, timeout);
-> >> +     if (ret <= 0) {
-> >> +             if (!ret)
-> >> +                     ret = -ETIMEDOUT;
-> >> +             goto out_free_rx_slot;
-> >> +     }
-> >> +
-> >> +     spin_lock_irqsave(&rxs->lock, flags);
-> >> +
-> >> +     if (!rxc->urb) {
-> >
-> > Just check the disconnected flag directly here. Locking not needed (see
-> > below).
-> >
-> 
-> I think we need the check here for the case when we cancel the
-> completion and no response has been received yet. In that case rx->urb
-> will be NULL (even if we remove the rx->urb = NULL statement in
-> dln2_stop).
+Valuable advice and pseudo code from Oleg Nesterov <oleg@redhat.com>
 
-But the disconnect flag will also be set and makes it more obvious what
-is going on.
+Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: xiakaixu <xiakaixu@huawei.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/include/asm/cpufeature.h     |  2 ++
+ arch/x86/include/asm/debugreg.h       |  5 +++++
+ arch/x86/include/asm/hw_breakpoint.h  |  1 +
+ arch/x86/include/uapi/asm/msr-index.h |  4 ++++
+ arch/x86/kernel/cpu/amd.c             | 19 +++++++++++++++++++
+ arch/x86/kernel/hw_breakpoint.c       | 20 ++++++++++++++++----
+ 6 files changed, 47 insertions(+), 4 deletions(-)
 
-[...]
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index bb9b258..73dffed 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -170,6 +170,7 @@
+ #define X86_FEATURE_TOPOEXT	( 6*32+22) /* topology extensions CPUID leafs */
+ #define X86_FEATURE_PERFCTR_CORE ( 6*32+23) /* core performance counter extensions */
+ #define X86_FEATURE_PERFCTR_NB  ( 6*32+24) /* NB performance counter extensions */
++#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
+ #define X86_FEATURE_PERFCTR_L2	( 6*32+28) /* L2 performance counter extensions */
+ 
+ /*
+@@ -352,6 +353,7 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
+ #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+ #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+ #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
++#define cpu_has_bpext		boot_cpu_has(X86_FEATURE_BPEXT)
+ 
+ #ifdef CONFIG_X86_64
+ 
+diff --git a/arch/x86/include/asm/debugreg.h b/arch/x86/include/asm/debugreg.h
+index 4b528a9..145b009 100644
+--- a/arch/x86/include/asm/debugreg.h
++++ b/arch/x86/include/asm/debugreg.h
+@@ -114,5 +114,10 @@ static inline void debug_stack_usage_inc(void) { }
+ static inline void debug_stack_usage_dec(void) { }
+ #endif /* X86_64 */
+ 
++#ifdef CONFIG_CPU_SUP_AMD
++extern void set_dr_addr_mask(unsigned long mask, int dr);
++#else
++static inline void set_dr_addr_mask(unsigned long mask, int dr) { }
++#endif
+ 
+ #endif /* _ASM_X86_DEBUGREG_H */
+diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
+index ef1c4d2..6c98be8 100644
+--- a/arch/x86/include/asm/hw_breakpoint.h
++++ b/arch/x86/include/asm/hw_breakpoint.h
+@@ -12,6 +12,7 @@
+  */
+ struct arch_hw_breakpoint {
+ 	unsigned long	address;
++	unsigned long	mask;
+ 	u8		len;
+ 	u8		type;
+ };
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index e21331c..60046b9 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -211,6 +211,10 @@
+ /* Fam 16h MSRs */
+ #define MSR_F16H_L2I_PERF_CTL		0xc0010230
+ #define MSR_F16H_L2I_PERF_CTR		0xc0010231
++#define MSR_F16H_DR1_ADDR_MASK		0xc0011019
++#define MSR_F16H_DR2_ADDR_MASK		0xc001101a
++#define MSR_F16H_DR3_ADDR_MASK		0xc001101b
++#define MSR_F16H_DR0_ADDR_MASK		0xc0011027
+ 
+ /* Fam 15h MSRs */
+ #define MSR_F15H_PERF_CTL		0xc0010200
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 60e5497..0d9dbc3 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -863,3 +863,22 @@ static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
+ 
+ 	return false;
+ }
++
++void set_dr_addr_mask(unsigned long mask, int dr)
++{
++	if (!cpu_has_bpext)
++		return;
++
++	switch (dr) {
++	case 0:
++		wrmsr(MSR_F16H_DR0_ADDR_MASK, mask, 0);
++		break;
++	case 1:
++	case 2:
++	case 3:
++		wrmsr(MSR_F16H_DR1_ADDR_MASK - 1 + dr, mask, 0);
++		break;
++	default:
++		break;
++	}
++}
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index 5f9cf20..91ce081 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -126,6 +126,8 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
+ 	*dr7 |= encode_dr7(i, info->len, info->type);
+ 
+ 	set_debugreg(*dr7, 7);
++	if (info->mask)
++		set_dr_addr_mask(info->mask, i);
+ 
+ 	return 0;
+ }
+@@ -161,6 +163,8 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
+ 	*dr7 &= ~__encode_dr7(i, info->len, info->type);
+ 
+ 	set_debugreg(*dr7, 7);
++	if (info->mask)
++		set_dr_addr_mask(0, i);
+ }
+ 
+ static int get_hbp_len(u8 hbp_len)
+@@ -277,6 +281,8 @@ static int arch_build_bp_info(struct perf_event *bp)
+ 	}
+ 
+ 	/* Len */
++	info->mask = 0;
++
+ 	switch (bp->attr.bp_len) {
+ 	case HW_BREAKPOINT_LEN_1:
+ 		info->len = X86_BREAKPOINT_LEN_1;
+@@ -293,11 +299,17 @@ static int arch_build_bp_info(struct perf_event *bp)
+ 		break;
+ #endif
+ 	default:
+-		return -EINVAL;
++		if (!is_power_of_2(bp->attr.bp_len))
++			return -EINVAL;
++		if (!cpu_has_bpext)
++			return -EOPNOTSUPP;
++		info->mask = bp->attr.bp_len - 1;
++		info->len = X86_BREAKPOINT_LEN_1;
+ 	}
+ 
+ 	return 0;
+ }
++
+ /*
+  * Validate the arch-specific HW Breakpoint register settings
+  */
+@@ -312,11 +324,11 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = -EINVAL;
+-
+ 	switch (info->len) {
+ 	case X86_BREAKPOINT_LEN_1:
+ 		align = 0;
++		if (info->mask)
++			align = info->mask;
+ 		break;
+ 	case X86_BREAKPOINT_LEN_2:
+ 		align = 1;
+@@ -330,7 +342,7 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
+ 		break;
+ #endif
+ 	default:
+-		return ret;
++		WARN_ON_ONCE(1);
+ 	}
+ 
+ 	/*
+-- 
+2.1.0
 
-> >> +static void dln2_disconnect(struct usb_interface *interface)
-> >> +{
-> >> +     struct dln2_dev *dln2 = usb_get_intfdata(interface);
-> >> +
-> >
-> > First set the disconnected flag directly here to prevent any new
-> > transfers from starting.
-> >
-> >> +     dln2_stop(dln2);
-> >
-> > Then do all the completions (to speed things up somewhat).
-> >
-> > Then wait for the transfer counter to reach 0.
-> >
-> >> +     mfd_remove_devices(&interface->dev);
-> >> +     dln2_free(dln2);
-> >> +}
-> >> +
-> 
-> As I mentioned above, I don't think we need the transfer counter, we
-> can rely on the slots bitmap. Yes, a counter is simpler but it also
-> requires adding a new waiting queue and a new lock.
-
-That's really not a big deal. See above.
-
-Johan
