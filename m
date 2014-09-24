@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407AbaIXCwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 22:52:05 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:56343 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179AbaIXCwD (ORCPT
+	id S1757420AbaIXCx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 22:53:28 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:36283 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834AbaIXCx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 22:52:03 -0400
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: dianders@chromium.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <cfaf007e0ec53282fda3bfcd8e27fdbd>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <542231C9.1060903@rock-chips.com>
-Date: Wed, 24 Sep 2014 10:51:53 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 23 Sep 2014 22:53:27 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6 1/2] regulator: st-pwm: get voltage and duty table
- from dts
-References: <1411487622-10881-1-git-send-email-zyw@rock-chips.com>	<1411487622-10881-2-git-send-email-zyw@rock-chips.com>	<CAD=FV=Vhejf4JoEPUGwmBJdO+zfHgE5hgoT6V1DGtva7r_1Etg@mail.gmail.com>	<542222BC.4060203@rock-chips.com> <CAD=FV=Umjmrp5grqvYnMe0=EjpH8++i4JL-5fOquyU+SGt95Fw@mail.gmail.com>
-In-Reply-To: <CAD=FV=Umjmrp5grqvYnMe0=EjpH8++i4JL-5fOquyU+SGt95Fw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411344191-2842-3-git-send-email-minchan@kernel.org>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org> <1411344191-2842-3-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Tue, 23 Sep 2014 22:53:05 -0400
+X-Google-Sender-Auth: pUhWIJ6eGTS7xe2MUisQGA_9Usk
+Message-ID: <CALZtONCgteaZwvS-oipcs3zK--AfDMSM0bEcFkEemmg_DvZF=A@mail.gmail.com>
+Subject: Re: [PATCH v1 2/5] mm: add full variable in swap_info_struct
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Now, swap leans on !p->highest_bit to indicate a swap is full.
+> It works well for normal swap because every slot on swap device
+> is used up when the swap is full but in case of zram, swap sees
+> still many empty slot although backed device(ie, zram) is full
+> since zram's limit is over so that it could make trouble when
+> swap use highest_bit to select new slot via free_cluster.
+>
+> This patch introduces full varaiable in swap_info_struct
+> to solve the problem.
+>
+> Suggested-by: Dan Streetman <ddstreet@ieee.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  include/linux/swap.h |  1 +
+>  mm/swapfile.c        | 33 +++++++++++++++++++--------------
+>  2 files changed, 20 insertions(+), 14 deletions(-)
+>
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index ea4f926e6b9b..a3c11c051495 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -224,6 +224,7 @@ struct swap_info_struct {
+>         struct swap_cluster_info free_cluster_tail; /* free cluster list tail */
+>         unsigned int lowest_bit;        /* index of first free in swap_map */
+>         unsigned int highest_bit;       /* index of last free in swap_map */
+> +       bool    full;                   /* whether swap is full or not */
+>         unsigned int pages;             /* total of usable pages of swap */
+>         unsigned int inuse_pages;       /* number of those currently in use */
+>         unsigned int cluster_next;      /* likely index for next allocation */
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index c07f7f4912e9..209112cf8b83 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -558,7 +558,7 @@ checks:
+>         }
+>         if (!(si->flags & SWP_WRITEOK))
+>                 goto no_page;
+> -       if (!si->highest_bit)
+> +       if (si->full)
+>                 goto no_page;
+>         if (offset > si->highest_bit)
+>                 scan_base = offset = si->lowest_bit;
+> @@ -589,6 +589,7 @@ checks:
+>                 spin_lock(&swap_avail_lock);
+>                 plist_del(&si->avail_list, &swap_avail_head);
+>                 spin_unlock(&swap_avail_lock);
+> +               si->full = true;
+>         }
+>         si->swap_map[offset] = usage;
+>         inc_cluster_info_page(si, si->cluster_info, offset);
+> @@ -653,14 +654,14 @@ start_over:
+>                 plist_requeue(&si->avail_list, &swap_avail_head);
+>                 spin_unlock(&swap_avail_lock);
+>                 spin_lock(&si->lock);
+> -               if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
+> +               if (si->full || !(si->flags & SWP_WRITEOK)) {
+>                         spin_lock(&swap_avail_lock);
+>                         if (plist_node_empty(&si->avail_list)) {
+>                                 spin_unlock(&si->lock);
+>                                 goto nextsi;
+>                         }
+> -                       WARN(!si->highest_bit,
+> -                            "swap_info %d in list but !highest_bit\n",
+> +                       WARN(si->full,
+> +                            "swap_info %d in list but swap is full\n",
+>                              si->type);
+>                         WARN(!(si->flags & SWP_WRITEOK),
+>                              "swap_info %d in list but !SWP_WRITEOK\n",
+> @@ -796,21 +797,25 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+>
+>         /* free if no reference */
+>         if (!usage) {
+> +               bool was_full;
+> +
+>                 dec_cluster_info_page(p, p->cluster_info, offset);
+>                 if (offset < p->lowest_bit)
+>                         p->lowest_bit = offset;
+> -               if (offset > p->highest_bit) {
+> -                       bool was_full = !p->highest_bit;
+> +               if (offset > p->highest_bit)
+>                         p->highest_bit = offset;
+> -                       if (was_full && (p->flags & SWP_WRITEOK)) {
+> -                               spin_lock(&swap_avail_lock);
+> -                               WARN_ON(!plist_node_empty(&p->avail_list));
+> -                               if (plist_node_empty(&p->avail_list))
+> -                                       plist_add(&p->avail_list,
+> -                                                 &swap_avail_head);
+> -                               spin_unlock(&swap_avail_lock);
+> -                       }
+> +               was_full = p->full;
+> +
+> +               if (was_full && (p->flags & SWP_WRITEOK)) {
 
-On 09/24/2014 10:13 AM, Doug Anderson wrote:
-> Chris,
->
-> On Tue, Sep 23, 2014 at 6:47 PM, Chris Zhong <zyw@rock-chips.com> wrote:
->> On 09/24/2014 07:43 AM, Doug Anderson wrote:
->>> Chris,
->>>
->>> On Tue, Sep 23, 2014 at 8:53 AM, Chris Zhong <zyw@rock-chips.com> wrote:
->>>> Get voltage & duty table from device tree might be better, other
->>>> platforms can also use this
->>>> driver without any modify.
->>>>
->>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->>>> Reviewed-by: Doug Anderson <dianders@chromium.org>
->>> I finally managed to get everything setup and I've now tested this
->>> myself on an rk3288-based board.
->>>
->>> Tested-by: Doug Anderson <dianders@chromium.org>
->>>
->>> I'd imagine the next step is for Lee to comment on the patch and when
->>> he's happy with it Mark Brown will land it?
->>>
->>>
->>> One thing that's still a bit odd (though no different than the
->>> behavior of the driver from before you touched it, so it shouldn't
->>> block landing IMHO) is that at boot time this regulator will report
->>> that it's at the highest voltage but the voltage won't actually change
->>> until the first client sets the voltage.
->> Yes, I knew this problem, since the default of duty cycle is 0, not a true
->> value.
->> If we can get duty from pwm, this regulator will report a correct voltage.
-> I don't think it's possible in all cases to figure out what the
-> voltage was before this regulator was probed.
->
-> * pin might have been input w/ pullup, pulldown, or no pull
-> * pin might have been driven high or driven low
->
-> In that case trying to read the duty from the pwm wouldn't make sense.
-> ...but I guess you could add a property to the PWM driver to say that
-> it stays enabled at boot if the FW left it enabled (and keep the same
-> duty cycle / clocks?).  That would at least solve the problem where
-> the firmware configured the PWM and left it in a specific state even
-> if it doesn't solve the above problem...
->
->
-> -Doug
->
-If we want pwm stay enabled at boot(FW left it), needn't to modify 
-anything, only need to init pwm duty in FW.
-And now reading the duty from pwm would make sense.
+was_full was only needed because highest_bit was reset to offset right
+before checking for fullness, so now that ->full is used instead of
+!highest_bit, was_full isn't needed anymore, you can just check
+p->full.
 
 
-
+> +                       spin_lock(&swap_avail_lock);
+> +                       WARN_ON(!plist_node_empty(&p->avail_list));
+> +                       if (plist_node_empty(&p->avail_list))
+> +                               plist_add(&p->avail_list,
+> +                                         &swap_avail_head);
+> +                       spin_unlock(&swap_avail_lock);
+> +                       p->full = false;
+>                 }
+> +
+>                 atomic_long_inc(&nr_swap_pages);
+>                 p->inuse_pages--;
+>                 frontswap_invalidate_page(p->type, offset);
+> --
+> 2.0.0
+>
