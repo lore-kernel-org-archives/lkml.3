@@ -1,118 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaIXIJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:09:16 -0400
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:35158 "EHLO
-	homiemail-a1.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752813AbaIXIJI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:09:08 -0400
-X-Greylist: delayed 141685 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 04:09:08 EDT
-Message-ID: <1411546144.30630.10.camel@linux-t7sj.site>
-Subject: Re: [PATCH v2 1/7] selftests: add kselftest framework for uniform
- test reporting
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, ebiederm@xmission.com,
-        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
-        luto@amacapital.net, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 24 Sep 2014 10:09:04 +0200
-In-Reply-To: <0b1961bd4d2104beafd2e8c1a17690f6efe14a61.1411506121.git.shuahkh@osg.samsung.com>
-References: <cover.1411506121.git.shuahkh@osg.samsung.com>
-	 <0b1961bd4d2104beafd2e8c1a17690f6efe14a61.1411506121.git.shuahkh@osg.samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	id S1753808AbaIXILM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:11:12 -0400
+Received: from mga03.intel.com ([134.134.136.65]:31078 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753079AbaIXILA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:11:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
+   d="scan'208";a="607687248"
+Message-ID: <54227C7E.6060506@linux.intel.com>
+Date: Wed, 24 Sep 2014 16:10:38 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC Part2 v1 00/21] Enable hierarchy irqdomian on x86 platforms
+References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com> <542279D0.1040603@jp.fujitsu.com>
+In-Reply-To: <542279D0.1040603@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-23 at 15:32 -0600, Shuah Khan wrote:
-> Add kselftest framework for tests to use. This is a light
-> weight framework provides a set of interfaces to report test
-> results. Tests can use these interfaces to report pass, and
-> fail cases as well as when failure is due to configuration
-> problems such as missing modules, or when a test that is should
-> fail, fails as expected, and a test that should fail, passes.
-> The framework uses POSIX standard return codes for reporting
-> results to address the needs of users that want to run the kernel
-> selftests from their user-space test suites and want to know why a
-> test failed. In addition, the framework includes interfaces to use
-> to report test statistics on number of tests passed and failed.
+
+
+On 2014/9/24 15:59, Yasuaki Ishimatsu wrote:
+> (2014/09/11 23:03), Jiang Liu wrote:
+>> We plan to restructure x86 interrupt code based on hierarchy irqdomain,
+>> that is to build irqdomains for CPU vector, interrupt remapping unit,
+>> IOAPIC, MSI and HPET etc and organize those irqdomains in hierarchy mode.
+>> Each irqdomain manages corresponding interrupt controller and talks to
+>> parent interrupt controller through public irqdomain interfaces. We also
+>> support stacked irq_chip based on hierarchy irqdomain. It will make the
+>> x86 interrupt architecture much more clear and more easy to maintain
+>> with hierarchy irqdomain and stacked irq_chip. It may also help ARM
+>> interrupt management architecture too.
 > 
-> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
-> ---
->  tools/testing/selftests/kselftest.h | 41 +++++++++++++++++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
->  create mode 100644 tools/testing/selftests/kselftest.h
+> Do you have a documentation which more detailed information is written?
+> I'm interested in this feature. And I want to know more detailed information.
 > 
-> diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
-> new file mode 100644
-> index 0000000..c73fc2c
-> --- /dev/null
-> +++ b/tools/testing/selftests/kselftest.h
-> @@ -0,0 +1,41 @@
-> +/*
-> + * kselftest.h: kselftest framework return codes to include from
-> + *		 selftests.
-> + *
-> + * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
-> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> + *
-> + * This file is released under the GPLv2.
-> + */
-> +#ifndef __KSELFTEST_H
-> +#define __KSELFTEST_H
-> +
-> +#include <stdlib.h>
-> +#include <unistd.h>
-> +
-> +/* counters */
-> +static int ksft_pass;
-> +static int ksft_fail;
-> +static int ksft_xfail;
-> +static int ksft_xpass;
-> +static int ksft_xskip;
+> I cannot imagine why the feature makes x86 irq architecture much more clear
+> and more easy to maintain in this description. Of course, I have read the
+> following threads:
+> 
+> https://lkml.org/lkml/2014/9/11/101
+Hi Yasuaki,
 
-unsigned int?
+Do these help?
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg729924.html
+https://lkml.org/lkml/2014/8/1/67
 
-> +static inline void ksft_inc_pass_cnt(void) { ksft_pass++; }
-> +static inline void ksft_inc_fail_cnt(void) { ksft_fail++; }
-> +static inline void ksft_inc_xfail_cnt(void) { ksft_xfail++; }
-> +static inline void ksft_inc_xpass_cnt(void) { ksft_xpass++; }
-> +static inline void ksft_inc_xskip_cnt(void) { ksft_xskip++; }
+Regards!
+Gerry
 
-It would probably make sense to have the counters in a structures,
-something like: struct ksft_counter { ... } ksft_cnt;
-
-Then just pass it around the proposed functions as arguments. That also
-minimizes a bit the global variables and would allow you to easily
-change it in the future.
-
-> +static inline void ksft_print_cnts(void)
-> +{
-> +	printf("Pass: %d Fail: %d Xfail: %d Xpass: %d, Xskip: %d\n",
-> +		ksft_pass, ksft_fail, ksft_xfail, ksft_xpass, ksft_xskip);
-> +}
-
-Same here, just do:
-
-static inline void ksft_print_cnts(struct ksft_counter counters)
-{ 
-	... 
-}
-
-Otherwise looks good.
-
-> +static inline int ksft_exit_pass(void) { exit(0); }
-> +static inline int ksft_exit_fail(void) { exit(1); }
-> +static inline int ksft_exit_xfail(void) { exit(2); }
-> +static inline int ksft_exit_xpass(void) { exit(3); }
-> +static inline int ksft_exit_skip(void) { exit(4); }
-> +
-> +#endif /* __KSELFTEST_H */
-
-
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+>>
+>> This is the second patch set to enable support of hierarchy irqdomain
+>> on x86 platforms. It depends on the first part at:
+>> https://lkml.org/lkml/2014/9/11/101
+>> And you may access it at:
+>> https://github.com/jiangliu/linux.git irqdomain/p2v1
+>>
+>> And there will be a third patch set to convert IOAPIC driver to support
+>> hierarchy irqdomain and clean up code.
+>>
+>> The first patch extends irqdomain interfaces to support hierarchy
+>> irqdomain. Hope this interface could be used by other architectures too,
+>> such as ARM/ARM64.
+>> The second patch introduces two helper functions to support stacked
+>> irq_chip.
+>> Patch 3-9 implements an irqdomain to manange CPU interrupt vectors, and
+>> it's the root irqdomain for x86 platforms.
+>> Patch 10-13 converts Intel and AMD interrupt remapping drivers to
+>> support hierarchy irqdomain.
+>> Patch 14-17 converts HPET, MSI and HT_IRQ drivers to support hierarchy
+>> irqdomain.
+>> Patch 18-21 cleans up unsued code in x86 arch and interrupt remapping
+>> drivers.
+>>
+>> We have tested this patchset on Intel 32-bit and 64-bit systems. But we
+>> have only done compilation tests for HT_IRQ and AMD interrupt remapping
+>> drivers due to hardware resource limitation. Tests on AMD platforms are
+>> warmly welcomed!
+>>
+>> Jiang Liu (21):
+>>    irqdomain: Introduce new interfaces to support hierarchy irqdomains
+>>    genirq: Introduce helper functions to support stacked irq_chip
+>>    x86, irq: Save destination CPU ID in irq_cfg
+>>    x86, irq: Use hierarchy irqdomain to manage CPU interrupt vectors
+>>    x86, hpet: Use new irqdomain interfaces to allocate/free IRQ
+>>    x86, MSI: Use new irqdomain interfaces to allocate/free IRQ
+>>    x86, uv: Use new irqdomain interfaces to allocate/free IRQ
+>>    x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
+>>    x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
+>>    x86: irq_remapping: Introduce new interfaces to support hierarchy
+>>      irqdomain
+>>    iommu/vt-d: Change prototypes to prepare for enabling hierarchy
+>>      irqdomain
+>>    iommu/vt-d: Enhance Intel IR driver to suppport hierarchy irqdomain
+>>    iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
+>>    x86, hpet: Enhance HPET IRQ to support hierarchy irqdomain
+>>    x86, MSI: Use hierarchy irqdomain to manage MSI interrupts
+>>    x86, irq: Directly call native_compose_msi_msg() for DMAR IRQ
+>>    x86, htirq: Use hierarchy irqdomain to manage Hypertransport
+>>      interrupts
+>>    iommu/vt-d: Clean up unused MSI related code
+>>    iommu/amd: Clean up unused MSI related code
+>>    x86: irq_remapping: Clean up unused MSI related code
+>>    x86, irq: Clean up unused MSI related code and interfaces
+>>
+>>   arch/x86/Kconfig                     |    3 +-
+>>   arch/x86/include/asm/hpet.h          |   16 +-
+>>   arch/x86/include/asm/hw_irq.h        |   64 +++++
+>>   arch/x86/include/asm/irq_remapping.h |   66 +++--
+>>   arch/x86/include/asm/pci.h           |    5 -
+>>   arch/x86/include/asm/x86_init.h      |    4 -
+>>   arch/x86/kernel/apic/htirq.c         |  179 +++++++++----
+>>   arch/x86/kernel/apic/io_apic.c       |    3 -
+>>   arch/x86/kernel/apic/msi.c           |  430 +++++++++++++++++++++++--------
+>>   arch/x86/kernel/apic/vector.c        |  158 +++++++++++-
+>>   arch/x86/kernel/hpet.c               |   57 ++---
+>>   arch/x86/kernel/x86_init.c           |    2 -
+>>   arch/x86/platform/uv/uv_irq.c        |   27 +-
+>>   drivers/iommu/amd_iommu.c            |  385 ++++++++++++++++++++++------
+>>   drivers/iommu/amd_iommu_init.c       |    4 +
+>>   drivers/iommu/amd_iommu_proto.h      |    9 +
+>>   drivers/iommu/amd_iommu_types.h      |    5 +
+>>   drivers/iommu/intel_irq_remapping.c  |  468 +++++++++++++++++++++++-----------
+>>   drivers/iommu/irq_remapping.c        |  221 ++++++----------
+>>   drivers/iommu/irq_remapping.h        |   22 +-
+>>   drivers/pci/htirq.c                  |   48 +---
+>>   include/linux/htirq.h                |   22 +-
+>>   include/linux/intel-iommu.h          |    4 +
+>>   include/linux/irq.h                  |    8 +
+>>   include/linux/irqdomain.h            |   60 +++++
+>>   kernel/irq/Kconfig                   |    3 +
+>>   kernel/irq/chip.c                    |   21 ++
+>>   kernel/irq/irqdomain.c               |  349 ++++++++++++++++++++++++-
+>>   28 files changed, 1934 insertions(+), 709 deletions(-)
+>>
+> 
+> 
