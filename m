@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaIXQvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:51:40 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:48594 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754888AbaIXQvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:51:38 -0400
-Date: Wed, 24 Sep 2014 12:51:28 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140924165128.GA9968@cmpxchg.org>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144158.GC20398@esperanza>
- <20140922185736.GB6630@cmpxchg.org>
- <20140923110634.GH18526@esperanza>
- <20140923132801.GA14302@cmpxchg.org>
- <20140923152150.GL18526@esperanza>
- <20140923170525.GA28460@cmpxchg.org>
- <20140924133316.GA4558@dhcp22.suse.cz>
+	id S1754932AbaIXQv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:51:57 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:41250 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754915AbaIXQvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:51:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924133316.GA4558@dhcp22.suse.cz>
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Wed, 24 Sep 2014 18:51:16 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: shawn.guo@freescale.com, kernel@pengutronix.de, linus.walleij@linaro.org,
+        gnurou@gmail.com, linux@arm.linux.org.uk, jingchang.lu@freescale.com,
+        b20788@freescale.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Subject: Re: [PATCH 5/9] gpio: vf610: Extend with wakeup support
+In-Reply-To: <1411553179.2735.4.camel@pengutronix.de>
+References: <cover.1411404079.git.stefan@agner.ch>
+ <704b6bb97147b3d0ee1557b43d85ab9376c28666.1411404079.git.stefan@agner.ch>
+ <1411553179.2735.4.camel@pengutronix.de>
+Message-ID: <46921955713f4b155eef9b21e5138064@agner.ch>
+User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:33:16PM +0200, Michal Hocko wrote:
-> On Tue 23-09-14 13:05:25, Johannes Weiner wrote:
-> [...]
-> > How about the following update?  Don't be thrown by the
-> > page_counter_cancel(), I went back to it until we find something more
-> > suitable.  But as long as it's documented and has only 1.5 callsites,
-> > it shouldn't matter all that much TBH.
-> > 
-> > Thanks for your invaluable feedback so far, and sorry if the original
-> > patch was hard to review.  I'll try to break it up, to me it's usually
-> > easier to verify new functions by looking at the callers in the same
-> > patch, but I can probably remove the res_counter in a follow-up patch.
+Am 2014-09-24 12:06, schrieb Lucas Stach:
+> Hi Stefan,
 > 
-> The original patch was really huge and rather hard to review. Having
-> res_counter removal in a separate patch would be definitely helpful.
+> Am Montag, den 22.09.2014, 19:09 +0200 schrieb Stefan Agner:
+>> Support Vybrid GPIO's as wakeup source by requesting the parent
+>> IRQ as wakeup IRQ.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  drivers/gpio/gpio-vf610.c | 16 ++++++++++++++++
+>>  1 file changed, 16 insertions(+)
+>>
+>> diff --git a/drivers/gpio/gpio-vf610.c b/drivers/gpio/gpio-vf610.c
+>> index 5f59424..50326af 100644
+>> --- a/drivers/gpio/gpio-vf610.c
+>> +++ b/drivers/gpio/gpio-vf610.c
+>> @@ -196,12 +196,28 @@ static void vf610_gpio_irq_unmask(struct irq_data *d)
+>>  			  pcr_base);
+>>  }
+>>
+>> +static int vf610_gpio_irq_set_wake(struct irq_data *d, u32 enable)
+>> +{
+>> +	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
+>> +
+>> +	if (enable)
+>> +		enable_irq_wake(port->irq);
+>> +	else
+>> +		disable_irq_wake(port->irq);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +
+>>  static struct irq_chip vf610_gpio_irq_chip = {
+>>  	.name		= "gpio-vf610",
+>>  	.irq_ack	= vf610_gpio_irq_ack,
+>>  	.irq_mask	= vf610_gpio_irq_mask,
+>>  	.irq_unmask	= vf610_gpio_irq_unmask,
+>>  	.irq_set_type	= vf610_gpio_irq_set_type,
+>> +#ifdef CONFIG_PM_SLEEP
+>> +	.irq_set_wake	= vf610_gpio_irq_set_wake,
+>> +#endif
+> 
+> Either you need to get rid of this #ifdef and always assign this
+> function or you need to wrap the function itself into the same #ifdef.
+> Otherwise you provoke a unused function warning with !CONFIG_PM_SLEEP.
+> 
+> Given that this function isn't really that big I would argue to just
+> drop the #ifdef.
+> 
 
-Sorry, I just saw your follow-up after sending out v2.  Yes, I split
-out the res_counter removal, so the patch is a lot smaller.
+Good point, thx! I will drop the #ifdef when including that patch to the
+GPIO driver (as Linus Walleij suggested).
 
-> I would even lobby to have the new page_counter in a separate patch with
-> the detailed description of the semantic and expected usage. Lockless
-> schemes are always tricky and hard to review.
-
-I was considering that (before someone explicitely asked for it) but
-ended up thinking it's better to have the API go in along with the
-main user, which often helps understanding.  The users of the API are
-unchanged, except for requiring callers to serialize limit updates.
-And I commented all race conditions inside the counter code, hopefully
-that helps, but let me know if things are unclear in v2.
-
-Thanks
+--
+Stefan
