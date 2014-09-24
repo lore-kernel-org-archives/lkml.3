@@ -1,74 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaIXLLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:11:49 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:38628 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIXLLs (ORCPT
+	id S1751742AbaIXLOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:14:51 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36383 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751124AbaIXLOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:11:48 -0400
-Date: Wed, 24 Sep 2014 13:11:44 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140924111144.GB29454@x4>
-References: <20140916212250.GI1205@quack.suse.cz>
- <20140916173328.6306a5c2@gandalf.local.home>
- <20140917141816.GO2840@worktop.localdomain>
- <20140917102255.5cd03071@gandalf.local.home>
- <20140917223633.GE2848@worktop.localdomain>
- <20140917203135.6db2ee5e@gandalf.local.home>
- <20140918173414.GU2840@worktop.localdomain>
- <20140920051224.GA5573@quack.suse.cz>
- <20140920154733.GM2832@worktop.localdomain>
- <20140924110101.GB24411@quack.suse.cz>
+	Wed, 24 Sep 2014 07:14:50 -0400
+Date: Wed, 24 Sep 2014 12:14:47 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "drake@endlessm.com" <drake@endlessm.com>,
+        "loeliger@gmail.com" <loeliger@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v5 4/7] ARM: l2c: Add support for overriding prefetch
+ settings
+Message-ID: <20140924111446.GE5729@leverpostej>
+References: <1411556741-5810-1-git-send-email-m.szyprowski@samsung.com>
+ <1411556741-5810-5-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140924110101.GB24411@quack.suse.cz>
+In-Reply-To: <1411556741-5810-5-git-send-email-m.szyprowski@samsung.com>
+Thread-Topic: [PATCH v5 4/7] ARM: l2c: Add support for overriding prefetch
+ settings
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
-the string "[sched_delayed] " before the actual message.
-However it doesn't take into account the KERN_* prefix of the message,
-that now ends up in the middle of the output:
+On Wed, Sep 24, 2014 at 12:05:38PM +0100, Marek Szyprowski wrote:
+> From: Tomasz Figa <t.figa@samsung.com>
+> 
+> Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
+> settings configured in registers leading to crashes if L2C is enabled
+> without overriding them. This patch introduces bindings to enable
+> prefetch settings to be specified from DT and necessary support in the
+> driver.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/arm/l2cc.txt | 10 +++++++
+>  arch/arm/mm/cache-l2x0.c                       | 39 ++++++++++++++++++++++++++
+>  2 files changed, 49 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+> index af527ee111c2..3443d2d76788 100644
+> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
+> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+> @@ -47,6 +47,16 @@ Optional properties:
+>  - cache-id-part: cache id part number to be used if it is not present
+>    on hardware
+>  - wt-override: If present then L2 is forced to Write through mode
+> +- arm,double-linefill : Override double linefill enable setting. Enable if
+> +  non-zero, disable if zero.
+> +- arm,double-linefill-incr : Override double linefill on INCR read. Enable
+> +  if non-zero, disable if zero.
+> +- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
+> +  if non-zero, disable if zero.
+> +- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
+> +  disable if zero.
 
- [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
+I'm not too keen on tristate properties. Is this level of flexibility
+really required?
 
-Fix this by just getting rid of the "[sched_delayed] " scnprintf().
-This is a safe, because messages get inserted in the kernel ring buffer
-immediately these days. So there is no big difference between printk()
-and printk_deferred() anymore.
+What exact overrides do you need for boards you know of? Why do these
+cause crashes if not overridden?
 
-Acked-by: Jan Kara <jack@suse.cz>
-Acked-by: Steven Rostedt <rostedt@goodmis.org> 
-Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Mark.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 1ce770687ea8..f85994b58934 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	 * The printf needs to come first; we need the syslog
- 	 * prefix which might be passed-in as a parameter.
- 	 */
--	if (in_sched)
--		text_len = scnprintf(text, sizeof(textbuf),
--				     KERN_WARNING "[sched_delayed] ");
--
--	text_len += vscnprintf(text + text_len,
--			       sizeof(textbuf) - text_len, fmt, args);
-+	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
- 
- 	/* mark and strip a trailing newline */
- 	if (text_len && text[text_len-1] == '\n') {
--- 
-Markus
+> +- arm,prefetch-offset : Override prefetch offset value. Valid values are
+> +  0-7, 15, 23, and 31.
+>  
+>  Example:
+>  
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index 84c6c55ab896..af90a6ff6b49 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -1059,6 +1059,8 @@ static void __init l2c310_of_parse(const struct device_node *np,
+>  	u32 data[3] = { 0, 0, 0 };
+>  	u32 tag[3] = { 0, 0, 0 };
+>  	u32 filter[2] = { 0, 0 };
+> +	u32 prefetch;
+> +	u32 val;
+>  
+>  	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
+>  	if (tag[0] && tag[1] && tag[2])
+> @@ -1083,6 +1085,43 @@ static void __init l2c310_of_parse(const struct device_node *np,
+>  		l2x0_saved_regs.filter_start = (filter[0] & ~(SZ_1M - 1))
+>  					| L310_ADDR_FILTER_EN;
+>  	}
+> +
+> +	prefetch = l2x0_saved_regs.prefetch_ctrl;
+> +
+> +	if (!of_property_read_u32(np, "arm,double-linefill", &val)) {
+> +		if (val)
+> +			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
+> +		else
+> +			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
+> +	}
+> +
+> +	if (!of_property_read_u32(np, "arm,double-linefill-incr", &val)) {
+> +		if (val)
+> +			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
+> +		else
+> +			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
+> +	}
+> +
+> +	if (!of_property_read_u32(np, "arm,double-linefill-wrap", &val)) {
+> +		if (!val)
+> +			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
+> +		else
+> +			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
+> +	}
+> +
+> +	if (!of_property_read_u32(np, "arm,prefetch-drop", &val)) {
+> +		if (val)
+> +			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
+> +		else
+> +			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
+> +	}
+> +
+> +	if (!of_property_read_u32(np, "arm,prefetch-offset", &val)) {
+> +		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
+> +		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
+> +	}
+> +
+> +	l2x0_saved_regs.prefetch_ctrl = prefetch;
+>  }
+>  
+>  static const struct l2c_init_data of_l2c310_data __initconst = {
+> -- 
+> 1.9.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
