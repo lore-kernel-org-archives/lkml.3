@@ -1,933 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaIXKur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:50:47 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:64074 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476AbaIXKun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:50:43 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 24 Sep 2014 12:48:09 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20140924104809.GA16198@localhost>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
- <1411158165-25794-2-git-send-email-octavian.purdila@intel.com>
+	id S1753708AbaIXKwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:52:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32924 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521AbaIXKwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:52:03 -0400
+Date: Wed, 24 Sep 2014 12:51:55 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heinrich Schuchardt <xypron.debian@gmx.de>, Jan Kara <jack@suse.cz>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
+Message-ID: <20140924105155.GA24411@quack.suse.cz>
+References: <1411141516-1918-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411158165-25794-2-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1411141516-1918-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:22:42PM +0300, Octavian Purdila wrote:
-> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
-> Master Adapter DLN-2. Details about the device can be found here:
+  Hello,
+
+  Andrew, what do you think about the patch below? Al objected that it
+changes userspace visible behavior some time ago and then he didn't react
+to our explanations...
+								Honza
+
+On Fri 19-09-14 19:45:16, Andrey Vagin wrote:
+> Currently watchers are removed in dentry_iput(), if n_link is zero.  But
+> other detries can be linked with this inode.
 > 
-> https://www.diolan.com/i2c/i2c_interface.html.
+> For example if we create two hard links, open the first one and set an
+> inotify watcher on one of them.  Then if we remove the opened file and
+> then another file, the inotify watcher will be removed. But we will have
+> the alive file descriptor, which allows us to generate more events.
 > 
-> Information about the USB protocol can be found in the Programmer's
-> Reference Manual [1], see section 1.7.
+> And here is another behaviour, if files are removed in another order.
+> The watcher will not be removed and we will keep getting inotify events
+> for that inode.
 > 
-> Because the hardware has a single transmit endpoint and a single
-> receive endpoint the communication between the various DLN2 drivers
-> and the hardware will be muxed/demuxed by this driver.
+> This patch removes difference of behaviours for these cases. Watchers
+> are removed, only if nlink is zero and i_dentry list is empty. The
+> resulting behaviour is the same with what has been described in the
+> second case.
 > 
-> Each DLN2 module will be identified by the handle field within the DLN2
-> message header. If a DLN2 module issues multiple commands in parallel
-> they will be identified by the echo counter field in the message header.
+> Look at a following example:
 > 
-> The DLN2 modules can use the dln2_transfer() function to issue a
-> command and wait for its response. They can also register a callback
-> that is going to be called when a specific event id is generated by
-> the device (e.g. GPIO interrupts). The device uses handle 0 for
-> sending events.
+> 	fd = inotify_init1(IN_NONBLOCK);
+> 	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+> 	link(path, path_link);
 > 
-> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+> 	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
 > 
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> 	unlink(path);
+> 	unlink(path_link);
+> 
+> 	printf(" --- unlink path, path_link\n");
+> 	read_evetns(fd);
+> 
+> 	close(deleted);
+> 	printf(" --- close\n");
+> 	read_evetns(fd);
+> 	printf(" --- end\n");
+> 
+> We expect to get the same set of events for this case and for the
+> case, when files are deleted in another order. But now we get the
+> different set of events.
+> 
+> Without this patch:
+> The first case, when "path" is deleted before "path_link"
+>  --- unlink path, path_link
+> 4	(IN_ATTRIB)
+> 400	(IN_DELETE_SELF)
+> 8000	(IN_IGNORED)
+>  --- close
+>  --- end
+> 
+> and for the case, when "path_link" is deleted before "path"
+>  --- unlink path_link, path
+> 4	(IN_ATTRIB)
+>  --- close
+> 8	(IN_CLOSE_WRITE)
+> 400	(IN_DELETE_SELF)
+> 8000	(IN_IGNORED)
+>  --- end
+> 
+> With this patch we have the same output for both cases:
+>  --- unlink
+> 4	(IN_ATTRIB)
+>  --- close
+> 8	(IN_CLOSE_WRITE)
+> 400	(IN_DELETE_SELF)
+> 8000	(IN_IGNORED)
+>  --- end
+> PASS
+> 
+> v2: generate IN_DELETE_SELF when the last link to the file is removed
+> 
+> Reviewed-by: Jan Kara <jack@suse.cz>
+> Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+> Cc: Heinrich Schuchardt <xypron.debian@gmx.de>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: John McCutchan <john@johnmccutchan.com>
+> Cc: Robert Love <rlove@rlove.org>
+> Cc: Eric Paris <eparis@parisplace.org>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 > ---
->  drivers/mfd/Kconfig      |   9 +
->  drivers/mfd/Makefile     |   1 +
->  drivers/mfd/dln2.c       | 758 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/dln2.h |  67 +++++
->  4 files changed, 835 insertions(+)
->  create mode 100644 drivers/mfd/dln2.c
->  create mode 100644 include/linux/mfd/dln2.h
+>  fs/dcache.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index de5abf2..7bcf895 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -183,6 +183,15 @@ config MFD_DA9063
->  	  Additional drivers must be enabled in order to use the functionality
->  	  of the device.
->  
-> +config MFD_DLN2
-> +	tristate "Diolan DLN2 support"
-> +	select MFD_CORE
-> +	depends on USB
-> +	help
-> +	  This adds support for Diolan USB-I2C/SPI/GPIO Master Adapter DLN-2.
-> +	  Additional drivers must be enabled in order to use the functionality
-> +	  of the device.
-> +
->  config MFD_MC13XXX
->  	tristate
->  	depends on (SPI_MASTER || I2C)
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index f001487..591988d 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
->  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
->  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
->  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-> +obj-$(CONFIG_MFD_DLN2)		+= dln2.o
->  
->  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
->  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-> new file mode 100644
-> index 0000000..36c53cd
-> --- /dev/null
-> +++ b/drivers/mfd/dln2.c
-> @@ -0,0 +1,758 @@
-> +/*
-> + * Driver for the Diolan DLN-2 USB adapter
-> + *
-> + * Copyright (c) 2014 Intel Corporation
-> + *
-> + * Derived from:
-> + *  i2c-diolan-u2c.c
-> + *  Copyright (c) 2010-2011 Ericsson AB
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation, version 2.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/slab.h>
-> +#include <linux/usb.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mutex.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/dln2.h>
-> +#include <linux/rculist.h>
-> +
-> +struct dln2_header {
-> +	__le16 size;
-> +	__le16 id;
-> +	__le16 echo;
-> +	__le16 handle;
-> +} __packed;
-> +
-> +struct dln2_response {
-> +	struct dln2_header hdr;
-> +	__le16 result;
-> +} __packed;
-> +
-> +#define DLN2_GENERIC_MODULE_ID		0x00
-> +#define DLN2_GENERIC_CMD(cmd)		DLN2_CMD(cmd, DLN2_GENERIC_MODULE_ID)
-> +#define CMD_GET_DEVICE_VER		DLN2_GENERIC_CMD(0x30)
-> +#define CMD_GET_DEVICE_SN		DLN2_GENERIC_CMD(0x31)
-> +
-> +#define DLN2_HW_ID			0x200
-> +#define DLN2_USB_TIMEOUT		200	/* in ms */
-> +#define DLN2_MAX_RX_SLOTS		16
-> +#define DLN2_MAX_URBS			16
-> +#define DLN2_RX_BUF_SIZE		512
-> +
-> +#define DLN2_HANDLE_EVENT		0
-> +#define DLN2_HANDLE_CTRL		1
-> +#define DLN2_HANDLE_GPIO		2
-> +#define DLN2_HANDLE_I2C			3
-> +#define DLN2_HANDLES			4
-
-This should be an enum.
-
-> +
-> +
-> +/*
-> + * Receive context used between the receive demultiplexer and the
-> + * transfer routine. While sending a request the transfer routine
-> + * will look for a free receive context and use it to wait for a
-> + * response and to receive the URB and thus the response data.
-> + */
-> +struct dln2_rx_context {
-> +	/* completion used to wait a response */
-
-wait for
-
-> +	struct completion done;
-> +
-> +	/* if non-NULL the URB contains the response */
-> +	struct urb *urb;
-> +
-> +	/* if true then this context is used to wait for a response */
-> +	bool connected;
-
-Now that you have a disconnected flag, perhaps you can rename this to
-something more descriptive as, for example, in_use.
-
-> +
-> +	/* cancel waiting for a response, e.g. on USB disconnect */
-> +	bool cancel;
-
-You this new field now, but never use it.
-
-> +};
-> +
-> +/*
-> + * Receive contexts for a particular DLN2 module (i2c, gpio, etc.). We
-> + * use the handle header field to indentify the module in
-
-identify
-
-> + * dln2_dev.mod_rx_slots and then the echo header field to index the
-> + * slots field and find the receive context for a particular
-> + * request.
-> + */
-> +struct dln2_mod_rx_slots {
-> +	/* RX slots bitmap */
-> +	unsigned long bmap;
-> +
-> +	/* used to wait for a free RX slot */
-> +	wait_queue_head_t wq;
-> +
-> +	/* used to wait for an RX operation to complete */
-> +	struct dln2_rx_context slots[DLN2_MAX_RX_SLOTS];
-> +
-> +	/* device has been disconnected */
-> +	bool disconnected;
-
-This belongs in the dln2_dev struct.
-
-I think you're overcomplicating the disconnect handling by intertwining
-it with your slots.
-
-Add a lock, an active-transfer counter, a disconnected flag, and a wait
-queue to struct dln2_dev.
-
-More below.
-
-> +
-> +	/* avoid races between free_rx_slot, dln2_rx_transfer and dln2_stop */
-> +	spinlock_t lock;
-> +};
-> +
-> +struct dln2_dev {
-> +	struct usb_device *usb_dev;
-> +	struct usb_interface *interface;
-> +	u8 ep_in;
-> +	u8 ep_out;
-> +
-> +	struct urb *rx_urb[DLN2_MAX_URBS];
-> +	void *rx_buf[DLN2_MAX_URBS];
-> +
-> +	struct dln2_mod_rx_slots mod_rx_slots[DLN2_HANDLES];
-> +
-> +	struct list_head rx_cb_list;
-> +	spinlock_t rx_cb_lock;
-> +};
-> +
-> +static bool find_free_slot(struct dln2_mod_rx_slots *rxs, int *slot)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&rxs->lock, flags);
-> +
-> +	if (rxs->disconnected) {
-
-Check the global disconnected flag. Locking not needed.
-
-> +		*slot = -ECONNRESET;
-
--ENODEV
-
-> +		goto out;
-> +	}
-> +
-> +	*slot = find_first_zero_bit(&rxs->bmap, DLN2_MAX_RX_SLOTS);
-> +
-> +	if (*slot < DLN2_MAX_RX_SLOTS) {
-> +		struct dln2_rx_context *rxc = &rxs->slots[*slot];
-> +
-> +		set_bit(*slot, &rxs->bmap);
-> +		rxc->connected = true;
-> +	}
-> +
-> +out:
-> +	spin_unlock_irqrestore(&rxs->lock, flags);
-> +
-> +	return *slot < DLN2_MAX_RX_SLOTS;
-> +}
-> +
-> +static int alloc_rx_slot(struct dln2_mod_rx_slots *rxs)
-> +{
-> +	int ret;
-> +	int slot;
-> +
-> +	/*
-> +	 * No need to timeout here, the wait is bounded by the timeout
-> +	 * in _dln2_transfer.
-> +	 */
-> +	ret = wait_event_interruptible(rxs->wq, find_free_slot(rxs, &slot));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return slot;
-> +}
-> +
-> +static void free_rx_slot(struct dln2_dev *dln2, struct dln2_mod_rx_slots *rxs,
-> +			 int slot)
-> +{
-> +	struct urb *urb = NULL;
-> +	unsigned long flags;
-> +	struct dln2_rx_context *rxc;
-> +	struct device *dev = &dln2->interface->dev;
-> +	int ret;
-> +
-> +	spin_lock_irqsave(&rxs->lock, flags);
-> +
-> +	clear_bit(slot, &rxs->bmap);
-> +
-> +	rxc = &rxs->slots[slot];
-> +	rxc->connected = false;
-> +	urb = rxc->urb;
-> +	rxc->urb = NULL;
-> +	reinit_completion(&rxc->done);
-> +
-> +	spin_unlock_irqrestore(&rxs->lock, flags);
-> +
-> +	if (urb) {
-> +		ret = usb_submit_urb(urb, GFP_KERNEL);
-> +		if (ret < 0)
-> +			dev_err(dev, "failed to re-submit RX URB: %d\n", ret);
-> +	}
-> +
-> +	wake_up_interruptible(&rxs->wq);
-> +}
-
-Could you move these three functions just above _dln2_transfer, which is
-the only function they are used in?
-
-> +
-> +struct dln2_rx_cb_entry {
-> +	struct list_head list;
-> +	u16 id;
-> +	struct platform_device *pdev;
-> +	dln2_rx_cb_t callback;
-> +};
-> +
-> +int dln2_register_event_cb(struct platform_device *pdev, u16 id,
-> +			   dln2_rx_cb_t rx_cb)
-> +{
-> +	struct dln2_dev *dln2 = dev_get_drvdata(pdev->dev.parent);
-> +	struct dln2_rx_cb_entry *i, *new;
-> +	unsigned long flags;
-> +	int ret = 0;
-> +
-> +	new = kmalloc(sizeof(*new), GFP_KERNEL);
-> +	if (!new)
-> +		return -ENOMEM;
-> +
-> +	new->id = id;
-> +	new->callback = rx_cb;
-> +	new->pdev = pdev;
-> +
-> +	spin_lock_irqsave(&dln2->rx_cb_lock, flags);
-> +
-> +	list_for_each_entry_rcu(i, &dln2->rx_cb_list, list) {
-
-No need to use the _rcu version on the update side.
-
-> +		if (i->id == id) {
-> +			ret = -EBUSY;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (!ret)
-> +		list_add_rcu(&new->list, &dln2->rx_cb_list);
-> +
-> +	spin_unlock_irqrestore(&dln2->rx_cb_lock, flags);
-> +
-> +	if (ret)
-> +		kfree(new);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(dln2_register_event_cb);
-> +
-> +void dln2_unregister_event_cb(struct platform_device *pdev, u16 id)
-> +{
-> +	struct dln2_dev *dln2 = dev_get_drvdata(pdev->dev.parent);
-> +	struct dln2_rx_cb_entry *i;
-> +	unsigned long flags;
-> +	bool found = false;
-> +
-> +	spin_lock_irqsave(&dln2->rx_cb_lock, flags);
-> +
-> +	list_for_each_entry_rcu(i, &dln2->rx_cb_list, list) {
-
-No need to use the _rcu version on the update side.
-
-> +		if (i->id == id) {
-> +			list_del_rcu(&i->list);
-> +			found = true;
-> +			break;
-> +		}
-> +	}
-> +
-> +	spin_unlock_irqrestore(&dln2->rx_cb_lock, flags);
-> +
-> +	if (found) {
-> +		synchronize_rcu();
-> +		kfree(i);
-> +	}
-> +}
-> +EXPORT_SYMBOL(dln2_unregister_event_cb);
-> +
-> +static void dln2_rx_transfer(struct dln2_dev *dln2, struct urb *urb,
-> +			     u16 handle, u16 rx_slot)
-> +{
-> +	struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
-> +	struct dln2_rx_context *rxc;
-> +	struct device *dev = &dln2->interface->dev;
-> +	int err;
-> +
-> +	spin_lock(&rxs->lock);
-> +	rxc = &rxs->slots[rx_slot];
-> +	if (rxc->connected) {
-> +		rxc->urb = urb;
-> +		complete(&rxc->done);
-> +	} else {
-> +		dev_warn(dev, "dropping response %d/%d", handle, rx_slot);
-> +		err = usb_submit_urb(urb, GFP_ATOMIC);
-> +		if (err < 0)
-> +			dev_err(dev, "failed to re-submit RX URB: %d\n", err);
-> +	}
-> +	spin_unlock(&rxs->lock);
-> +}
-> +
-> +static void dln2_run_rx_callbacks(struct dln2_dev *dln2, u16 id, u16 echo,
-> +				  void *data, int len)
-> +{
-> +	struct dln2_rx_cb_entry *i;
-> +
-> +	rcu_read_lock();
-> +
-> +	list_for_each_entry_rcu(i, &dln2->rx_cb_list, list)
-> +		if (i->id == id)
-> +			i->callback(i->pdev, echo, data, len);
-> +
-> +	rcu_read_unlock();
-> +}
-> +
-> +static void dln2_rx(struct urb *urb)
-> +{
-> +	int err;
-> +	struct dln2_dev *dln2 = urb->context;
-> +	struct dln2_header *hdr = urb->transfer_buffer;
-> +	struct device *dev = &dln2->interface->dev;
-> +	u16 id, echo, handle, size;
-> +	u8 *data;
-> +	int len;
-> +
-> +	switch (urb->status) {
-> +	case 0:
-> +		/* success */
-> +		break;
-> +	case -ECONNRESET:
-> +	case -ENOENT:
-> +	case -ESHUTDOWN:
-> +	case -EPIPE:
-> +		/* this urb is terminated, clean up */
-> +		dev_dbg(dev, "urb shutting down with status %d\n", urb->status);
-> +		return;
-> +	default:
-> +		dev_dbg(dev, "nonzero urb status received %d\n", urb->status);
-> +		goto out;
-> +	}
-> +
-> +	if (urb->actual_length < sizeof(struct dln2_header)) {
-> +		dev_err(dev, "short response: %d\n", urb->actual_length);
-> +		goto out;
-> +	}
-> +
-> +	handle = le16_to_cpu(hdr->handle);
-> +	id = le16_to_cpu(hdr->id);
-> +	echo = le16_to_cpu(hdr->echo);
-> +	size = le16_to_cpu(hdr->size);
-> +
-> +	if (size != urb->actual_length) {
-> +		dev_err(dev, "size mismatch: handle %x cmd %x echo %x size %d actual %d\n",
-> +			handle, id, echo, size, urb->actual_length);
-> +		goto out;
-> +	}
-> +
-> +	if (handle >= DLN2_HANDLES) {
-> +		dev_warn(dev, "RX: invalid handle %d\n", handle);
-> +		goto out;
-> +	}
-> +
-> +	data = urb->transfer_buffer + sizeof(struct dln2_header);
-> +	len = urb->actual_length - sizeof(struct dln2_header);
-> +
-> +	if (handle == DLN2_HANDLE_EVENT) {
-> +		dln2_run_rx_callbacks(dln2, id, echo, data, len);
-> +		err = usb_submit_urb(urb, GFP_ATOMIC);
-> +		if (err < 0)
-> +			goto out_submit_failed;
-> +	} else {
-> +		dln2_rx_transfer(dln2, urb, handle, echo);
-> +	}
-> +
-> +	return;
-> +
-> +out:
-> +	err = usb_submit_urb(urb, GFP_ATOMIC);
-> +out_submit_failed:
-> +	if (err < 0)
-> +		dev_err(dev, "failed to re-submit RX URB: %d\n", err);
-> +}
-> +
-> +static void *dln2_prep_buf(u16 handle, u16 cmd, u16 echo, const void *obuf,
-> +			   int *obuf_len, gfp_t gfp)
-> +{
-> +	int len;
-> +	void *buf;
-> +	struct dln2_header *hdr;
-> +
-> +	len = *obuf_len + sizeof(*hdr);
-> +	buf = kmalloc(len, gfp);
-> +	if (!buf)
-> +		return NULL;
-> +
-> +	hdr = (struct dln2_header *)buf;
-> +	hdr->id = cpu_to_le16(cmd);
-> +	hdr->size = cpu_to_le16(len);
-> +	hdr->echo = cpu_to_le16(echo);
-> +	hdr->handle = cpu_to_le16(handle);
-> +
-> +	memcpy(buf + sizeof(*hdr), obuf, *obuf_len);
-> +
-> +	*obuf_len = len;
-> +
-> +	return buf;
-> +}
-> +
-> +static int dln2_send_wait(struct dln2_dev *dln2, u16 handle, u16 cmd, u16 echo,
-> +			  const void *obuf, int obuf_len)
-> +{
-> +	int ret = 0;
-> +	int len = obuf_len;
-> +	void *buf;
-> +	int actual;
-> +
-> +	buf = dln2_prep_buf(handle, cmd, echo, obuf, &len, GFP_KERNEL);
-> +	if (!buf)
-> +		return -ENOMEM;
-> +
-> +	ret = usb_bulk_msg(dln2->usb_dev,
-> +			   usb_sndbulkpipe(dln2->usb_dev, dln2->ep_out),
-> +			   buf, len, &actual, DLN2_USB_TIMEOUT);
-> +
-> +	kfree(buf);
-> +
-> +	return ret;
-> +}
-> +
-> +static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
-> +			  const void *obuf, unsigned obuf_len,
-> +			  void *ibuf, unsigned *ibuf_len)
-> +{
-> +	int ret = 0;
-> +	u16 result;
-> +	int rx_slot;
-> +	unsigned long flags;
-> +	struct dln2_response *rsp;
-> +	struct dln2_rx_context *rxc;
-> +	struct device *dev;
-> +	const int timeout = DLN2_USB_TIMEOUT * HZ / 1000;
-> +	struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
-> +
-
-Check the disconnected flag before incrementing the transfer count
-(while holding the device lock) here. Then decrement counter before
-returning and wake up an waiters if disconnected below.
-
-That is sufficient to implement wait-until-io-has-completed. Anything
-else you do below and in the helper functions is only to speed things
-up at disconnect (and can be done without locking the device).
-
-> +	rx_slot = alloc_rx_slot(rxs);
-> +	if (rx_slot < 0)
-> +		return rx_slot;
-> +
-> +	dev = &dln2->interface->dev;
-> +
-> +	ret = dln2_send_wait(dln2, handle, cmd, rx_slot, obuf, obuf_len);
-> +	if (ret < 0) {
-> +		free_rx_slot(dln2, rxs, rx_slot);
-
-goto out_free_rx_slot
-
-> +		dev_err(dev, "USB write failed: %d", ret);
-> +		return ret;
-> +	}
-> +
-> +	rxc = &rxs->slots[rx_slot];
-> +
-> +	ret = wait_for_completion_interruptible_timeout(&rxc->done, timeout);
-> +	if (ret <= 0) {
-> +		if (!ret)
-> +			ret = -ETIMEDOUT;
-> +		goto out_free_rx_slot;
-> +	}
-> +
-> +	spin_lock_irqsave(&rxs->lock, flags);
-> +
-> +	if (!rxc->urb) {
-
-Just check the disconnected flag directly here. Locking not needed (see
-below).
-
-> +		ret = -ECONNRESET;
-
--ENODEV
-
-> +		spin_unlock_irqrestore(&rxs->lock, flags);
-> +		goto out_free_rx_slot;
-> +	}
-> +
-> +	/* if we got here we know that the response header has been checked */
-> +	rsp = rxc->urb->transfer_buffer;
-> +
-> +	spin_unlock_irqrestore(&rxs->lock, flags);
-> +
-> +	if (rsp->hdr.size < sizeof(*rsp)) {
-> +		ret = -EPROTO;
-> +		goto out_free_rx_slot;
-> +	}
-> +
-> +	result = le16_to_cpu(rsp->result);
-> +	if (result) {
-> +		dev_dbg(dev, "%d received response with error %d\n",
-> +			handle, result);
-> +		ret = -EREMOTEIO;
-> +		goto out_free_rx_slot;
-> +	}
-> +
-> +	if (!ibuf) {
-> +		ret = 0;
-> +		goto out_free_rx_slot;
-> +	}
-> +
-> +	if (*ibuf_len > rsp->hdr.size - sizeof(*rsp))
-> +		*ibuf_len = rsp->hdr.size - sizeof(*rsp);
-> +
-> +	memcpy(ibuf, rsp + 1, *ibuf_len);
-> +
-> +out_free_rx_slot:
-> +	free_rx_slot(dln2, rxs, rx_slot);
-> +
-> +	return ret;
-> +}
-> +
-> +int dln2_transfer(struct platform_device *pdev, u16 cmd,
-> +		  const void *obuf, unsigned obuf_len,
-> +		  void *ibuf, unsigned *ibuf_len)
-> +{
-> +	struct dln2_platform_data *dln2_pdata;
-> +	struct dln2_dev *dln2;
-> +	u16 h;
-> +
-> +	dln2 = dev_get_drvdata(pdev->dev.parent);
-> +	dln2_pdata = dev_get_platdata(&pdev->dev);
-> +	h = dln2_pdata->handle;
-> +
-> +	return _dln2_transfer(dln2, h, cmd, obuf, obuf_len, ibuf, ibuf_len);
-> +}
-> +EXPORT_SYMBOL(dln2_transfer);
-> +
-> +static int dln2_check_hw(struct dln2_dev *dln2)
-> +{
-> +	int ret;
-> +	__le32 hw_type;
-> +	int len = sizeof(hw_type);
-> +
-> +	ret = _dln2_transfer(dln2, DLN2_HANDLE_CTRL, CMD_GET_DEVICE_VER,
-> +			     NULL, 0, &hw_type, &len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (len < sizeof(hw_type))
-> +		return -EREMOTEIO;
-> +
-> +	if (le32_to_cpu(hw_type) != DLN2_HW_ID) {
-> +		dev_err(&dln2->interface->dev, "Device ID 0x%x not supported",
-
-Missing newline in message. Please check throughout all patches. There's
-at least one more missing.
-
-> +			le32_to_cpu(hw_type));
-> +		return -ENODEV;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int dln2_print_serialno(struct dln2_dev *dln2)
-> +{
-> +	int ret;
-> +	__le32 serial_no;
-> +	int len = sizeof(serial_no);
-> +	struct device *dev = &dln2->interface->dev;
-> +
-> +	ret = _dln2_transfer(dln2, DLN2_HANDLE_CTRL, CMD_GET_DEVICE_SN, NULL, 0,
-> +			     &serial_no, &len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (len < sizeof(serial_no))
-> +		return -EREMOTEIO;
-> +
-> +	dev_info(dev, "Diolan DLN2 serial 0x%x\n", le32_to_cpu(serial_no));
-> +
-> +	return 0;
-> +}
-> +
-> +static int dln2_hw_init(struct dln2_dev *dln2)
-> +{
-> +	int ret;
-> +
-> +	ret = dln2_check_hw(dln2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return dln2_print_serialno(dln2);
-> +}
-> +
-> +static void dln2_free_rx_urbs(struct dln2_dev *dln2)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < DLN2_MAX_URBS; i++) {
-> +		usb_kill_urb(dln2->rx_urb[i]);
-> +		usb_free_urb(dln2->rx_urb[i]);
-> +		kfree(dln2->rx_buf[i]);
-> +	}
-> +}
-> +
-> +static void dln2_free(struct dln2_dev *dln2)
-> +{
-> +	dln2_free_rx_urbs(dln2);
-> +	usb_put_dev(dln2->usb_dev);
-> +	kfree(dln2);
-> +}
-> +
-> +static int dln2_setup_rx_urbs(struct dln2_dev *dln2,
-> +			      struct usb_host_interface *hostif)
-> +{
-> +	int i;
-> +	const int rx_max_size = DLN2_RX_BUF_SIZE;
-> +	struct device *dev = &dln2->interface->dev;
-> +
-> +	for (i = 0; i < DLN2_MAX_URBS; i++) {
-> +		int ret;
-> +
-> +		dln2->rx_buf[i] = kmalloc(rx_max_size, GFP_KERNEL);
-> +		if (!dln2->rx_buf[i])
-> +			return -ENOMEM;
-> +
-> +		dln2->rx_urb[i] = usb_alloc_urb(0, GFP_KERNEL);
-> +		if (!dln2->rx_urb[i])
-> +			return -ENOMEM;
-> +
-> +		usb_fill_bulk_urb(dln2->rx_urb[i], dln2->usb_dev,
-> +				  usb_rcvbulkpipe(dln2->usb_dev, dln2->ep_in),
-> +				  dln2->rx_buf[i], rx_max_size, dln2_rx, dln2);
-> +
-> +		ret = usb_submit_urb(dln2->rx_urb[i], GFP_KERNEL);
-> +		if (ret < 0) {
-> +			dev_err(dev, "failed to submit RX URB: %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct dln2_platform_data dln2_pdata_gpio = {
-> +	.handle = DLN2_HANDLE_GPIO,
-> +};
-> +
-> +/* Only one I2C port seems to be supported on current hardware */
-> +static struct dln2_platform_data dln2_pdata_i2c = {
-> +	.handle = DLN2_HANDLE_I2C,
-> +	.port = 0,
-> +};
-> +
-> +static const struct mfd_cell dln2_devs[] = {
-> +	{
-> +		.name = "dln2-gpio",
-> +		.platform_data = &dln2_pdata_gpio,
-> +		.pdata_size = sizeof(struct dln2_platform_data),
-> +	},
-> +	{
-> +		.name = "dln2-i2c",
-> +		.platform_data = &dln2_pdata_i2c,
-> +		.pdata_size = sizeof(struct dln2_platform_data),
-> +	},
-> +};
-> +
-> +static bool dln2_all_rx_slots_free(struct dln2_mod_rx_slots *rxs)
-> +{
-> +	unsigned long flags;
-> +	int slot;
-> +
-> +	spin_lock_irqsave(&rxs->lock, flags);
-> +	slot = find_first_bit(&rxs->bmap, DLN2_MAX_RX_SLOTS);
-> +	spin_unlock_irqrestore(&rxs->lock, flags);
-> +
-> +	if (slot < DLN2_MAX_RX_SLOTS)
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +static void dln2_stop(struct dln2_dev *dln2)
-> +{
-> +	int i, j;
-> +
-> +	for (i = 0; i < DLN2_HANDLES; i++) {
-> +		struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[i];
-> +		unsigned long flags;
-> +
-> +		spin_lock_irqsave(&rxs->lock, flags);
-> +
-> +		/* fail further alloc_rx_slot calls */
-> +		rxs->disconnected = true;
-> +
-> +		/* cancel all response waiters */
-> +		for (j = 0; j < DLN2_MAX_RX_SLOTS; j++) {
-> +			struct dln2_rx_context *rxc = &rxs->slots[j];
-> +
-> +			if (rxc->connected) {
-> +				rxc->urb = NULL;
-
-Don't overload the meaning of urb. Check the disconnected flag were
-needed.
-
-Also what would prevent a racing completion handler from setting
-rxc->urb again when you release the lock below?
-
-> +				complete(&rxc->done);
-> +			}
-> +		}
-> +		spin_unlock_irqrestore(&rxs->lock, flags);
-> +
-> +		/* wait for callers to release all rx_slots */
-> +		wait_event(rxs->wq, dln2_all_rx_slots_free(rxs));
-> +	}
-> +}
-> +
-> +static void dln2_disconnect(struct usb_interface *interface)
-> +{
-> +	struct dln2_dev *dln2 = usb_get_intfdata(interface);
-> +
-
-First set the disconnected flag directly here to prevent any new
-transfers from starting.
-
-> +	dln2_stop(dln2);
-
-Then do all the completions (to speed things up somewhat).
-
-Then wait for the transfer counter to reach 0.
-
-> +	mfd_remove_devices(&interface->dev);
-> +	dln2_free(dln2);
-> +}
-> +
-> +static int dln2_probe(struct usb_interface *interface,
-> +		      const struct usb_device_id *id)
-> +{
-> +	struct usb_host_interface *hostif = interface->cur_altsetting;
-> +	struct device *dev = &interface->dev;
-> +	struct dln2_dev *dln2;
-> +	int ret;
-> +	int i, j;
-> +
-> +	if (hostif->desc.bInterfaceNumber != 0 ||
-> +	    hostif->desc.bNumEndpoints < 2)
-> +		return -ENODEV;
-> +
-> +	dln2 = kzalloc(sizeof(*dln2), GFP_KERNEL);
-> +	if (!dln2)
-> +		return -ENOMEM;
-> +
-> +	dln2->ep_out = hostif->endpoint[0].desc.bEndpointAddress;
-> +	dln2->ep_in = hostif->endpoint[1].desc.bEndpointAddress;
-> +	dln2->usb_dev = usb_get_dev(interface_to_usbdev(interface));
-> +	dln2->interface = interface;
-> +	usb_set_intfdata(interface, dln2);
-> +
-> +	for (i = 0; i < DLN2_HANDLES; i++) {
-> +		init_waitqueue_head(&dln2->mod_rx_slots[i].wq);
-> +		spin_lock_init(&dln2->mod_rx_slots[i].lock);
-> +		for (j = 0; j < DLN2_MAX_RX_SLOTS; j++)
-> +			init_completion(&dln2->mod_rx_slots[i].slots[j].done);
-> +	}
-> +
-> +	spin_lock_init(&dln2->rx_cb_lock);
-> +	INIT_LIST_HEAD(&dln2->rx_cb_list);
-> +
-> +	ret = dln2_setup_rx_urbs(dln2, hostif);
-> +	if (ret) {
-> +		dln2_free(dln2);
-> +		return ret;
-> +	}
-> +
-> +	ret = dln2_hw_init(dln2);
-> +	if (ret < 0) {
-> +		dev_err(dev, "failed to initialize hardware\n");
-> +		goto out_cleanup;
-> +	}
-> +
-> +	ret = mfd_add_devices(dev, -1, dln2_devs, ARRAY_SIZE(dln2_devs),
-
-Use
-	busnum << 8 | devnum
-
-as id for now (as mentioned earlier).
-
-> +			      NULL, 0, NULL);
-> +	if (ret != 0) {
-> +		dev_err(dev, "Failed to add mfd devices to core.\n");
-> +		goto out_cleanup;
-> +	}
-> +
-> +	return 0;
-> +
-> +out_cleanup:
-> +	dln2_free(dln2);
-> +
-> +	return ret;
-> +}
-
-Johan
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 7a5b514..3a0e3bc 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -278,12 +278,15 @@ static void dentry_iput(struct dentry * dentry)
+>  	__releases(dentry->d_inode->i_lock)
+>  {
+>  	struct inode *inode = dentry->d_inode;
+> +	bool last_dentry;
+> +
+>  	if (inode) {
+>  		dentry->d_inode = NULL;
+>  		hlist_del_init(&dentry->d_alias);
+> +		last_dentry = hlist_empty(&inode->i_dentry);
+>  		spin_unlock(&dentry->d_lock);
+>  		spin_unlock(&inode->i_lock);
+> -		if (!inode->i_nlink)
+> +		if (!inode->i_nlink && last_dentry)
+>  			fsnotify_inoderemove(inode);
+>  		if (dentry->d_op && dentry->d_op->d_iput)
+>  			dentry->d_op->d_iput(dentry, inode);
+> @@ -303,13 +306,16 @@ static void dentry_unlink_inode(struct dentry * dentry)
+>  	__releases(dentry->d_inode->i_lock)
+>  {
+>  	struct inode *inode = dentry->d_inode;
+> +	bool last_dentry;
+> +
+>  	__d_clear_type(dentry);
+>  	dentry->d_inode = NULL;
+>  	hlist_del_init(&dentry->d_alias);
+>  	dentry_rcuwalk_barrier(dentry);
+> +	last_dentry = hlist_empty(&inode->i_dentry);
+>  	spin_unlock(&dentry->d_lock);
+>  	spin_unlock(&inode->i_lock);
+> -	if (!inode->i_nlink)
+> +	if (!inode->i_nlink && last_dentry)
+>  		fsnotify_inoderemove(inode);
+>  	if (dentry->d_op && dentry->d_op->d_iput)
+>  		dentry->d_op->d_iput(dentry, inode);
+> -- 
+> 1.9.3
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
