@@ -1,358 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072AbaIXAUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 20:20:54 -0400
-Received: from mga14.intel.com ([192.55.52.115]:35612 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755420AbaIXAUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 20:20:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390656530"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v5 2/2] iio/adc: add support for axp288 adc
-Date: Tue, 23 Sep 2014 17:20:27 -0700
-Message-Id: <1411518027-19907-3-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411518027-19907-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1411518027-19907-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1757155AbaIXAVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 20:21:08 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:55536 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaIXAVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 20:21:06 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Milian Wolff <mail@milianw.de>
+Subject: Re: [PATCH] perf tools: Fix line number in the config file error message
+References: <1411434104-5307-1-git-send-email-namhyung@kernel.org>
+	<20140923115656.GC2979@krava.brq.redhat.com>
+Date: Wed, 24 Sep 2014 09:21:02 +0900
+In-Reply-To: <20140923115656.GC2979@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Tue, 23 Sep 2014 13:56:56 +0200")
+Message-ID: <87d2allvgx.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform driver for X-Powers AXP288 ADC, which is a sub-device of the
-customized AXP288 PMIC for Intel Baytrail-CR platforms. GPADC device
-enumerates as one of the MFD cell devices. It uses IIO infrastructure
-to communicate with userspace and consumer drivers.
+Hi Jiri,
 
-Usages of ADC channels include battery charging and thermal sensors.
+On Tue, 23 Sep 2014 13:56:56 +0200, Jiri Olsa wrote:
+> On Tue, Sep 23, 2014 at 10:01:39AM +0900, Namhyung Kim wrote:
+>> Hello,
+>> 
+>> This is patchset to add new callchain related config options so that
+>> users don't need to pass their preference to the cmdline everytime.
+>> 
+>> Following config options will be added, and users can set appropriate
+>> values to ~/.perfconfig file.  Note that the dump-size option is
+>> meaningful only if record-mode = dwarf.
+>> 
+>>   $ cat ~/.perfconfig
+>>   [call-graph]
+>>     record-mode = dwarf
+>>     dump-size = 4096
+>>     print-type = graph
+>>     order = callee
+>>     threshold = 0.5
+>>     print-limit = 128
+>>     sort-key = function
+>> 
+>>   $ perf record -vg sleep 1
+>>   callchain: type DWARF
+>>   callchain: stack dump size 4096
+>>   mmap size 528384B
+>>   [ perf record: Woken up 1 times to write data ]
+>>   [ perf record: Captured and wrote 0.054 MB perf.data (~2378 samples) ]
+>>   Looking at the vmlinux_path (7 entries long)
+>>   Using /lib/modules/3.16.3-1-ARCH/build/vmlinux for symbols
+>> 
+>> 
+>> Jiri and David, I kept your Acked-by and Reviewed-by in this version.
+>> Please take a look at the patch 4/5 which splits parser functions that
+>> it still looks okay to you.
+>
+> looks ok to me, ACK for the patchset
 
-Based on initial work by:
-Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Thanks!
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/iio/adc/Kconfig      |   8 ++
- drivers/iio/adc/Makefile     |   1 +
- drivers/iio/adc/axp288_adc.c | 253 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 262 insertions(+)
- create mode 100644 drivers/iio/adc/axp288_adc.c
+>
+> During the testing I found wrong line is displayed in the parsing
+> error message. It's bug in the config code, attached patch should
+> fix it.
 
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index 11b048a..db2681b 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -127,6 +127,14 @@ config AT91_ADC
- 	help
- 	  Say yes here to build support for Atmel AT91 ADC.
- 
-+config AXP288_ADC
-+	tristate "X-Powers AXP288 ADC driver"
-+	depends on MFD_AXP20X
-+	help
-+	  Say yes here to have support for X-Powers power management IC (PMIC) ADC
-+	  device. Depending on platform configuration, this general purpose ADC can
-+	  be used for sampling sensors such as thermal resistors.
-+
- config EXYNOS_ADC
- 	tristate "Exynos ADC driver support"
- 	depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
-diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index ad81b51..19640f9 100644
---- a/drivers/iio/adc/Makefile
-+++ b/drivers/iio/adc/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_AD7793) += ad7793.o
- obj-$(CONFIG_AD7887) += ad7887.o
- obj-$(CONFIG_AD799X) += ad799x.o
- obj-$(CONFIG_AT91_ADC) += at91_adc.o
-+obj-$(CONFIG_AXP288_ADC) += axp288_adc.o
- obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
- obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
- obj-$(CONFIG_MAX1027) += max1027.o
-diff --git a/drivers/iio/adc/axp288_adc.c b/drivers/iio/adc/axp288_adc.c
-new file mode 100644
-index 0000000..664d18f
---- /dev/null
-+++ b/drivers/iio/adc/axp288_adc.c
-@@ -0,0 +1,253 @@
-+/*
-+ * axp288_adc.c - X-Powers AXP288 PMIC ADC Driver
-+ *
-+ * Copyright (C) 2014 Intel Corporation
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
-+ * General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/device.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/axp20x.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/machine.h>
-+#include <linux/iio/driver.h>
-+
-+#define AXP288_ADC_EN_MASK		0xF1
-+#define AXP288_ADC_TS_PIN_GPADC		0xF2
-+#define AXP288_ADC_TS_PIN_ON		0xF3
-+
-+enum axp288_adc_id {
-+	AXP288_ADC_TS,
-+	AXP288_ADC_PMIC,
-+	AXP288_ADC_GP,
-+	AXP288_ADC_BATT_CHRG_I,
-+	AXP288_ADC_BATT_DISCHRG_I,
-+	AXP288_ADC_BATT_V,
-+	AXP288_ADC_NR_CHAN,
-+};
-+
-+struct axp288_adc_info {
-+	int irq;
-+	struct regmap *regmap;
-+};
-+
-+static const struct iio_chan_spec const axp288_adc_channels[] = {
-+	{
-+		.indexed = 1,
-+		.type = IIO_TEMP,
-+		.channel = 0,
-+		.address = AXP288_TS_ADC_H,
-+		.datasheet_name = "CH0",
-+	}, {
-+		.indexed = 1,
-+		.type = IIO_TEMP,
-+		.channel = 1,
-+		.address = AXP288_PMIC_ADC_H,
-+		.datasheet_name = "CH1",
-+	}, {
-+		.indexed = 1,
-+		.type = IIO_TEMP,
-+		.channel = 2,
-+		.address = AXP288_GP_ADC_H,
-+		.datasheet_name = "CH2",
-+	}, {
-+		.indexed = 1,
-+		.type = IIO_CURRENT,
-+		.channel = 3,
-+		.address = AXP20X_BATT_CHRG_I_H,
-+		.datasheet_name = "CH3",
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-+	}, {
-+		.indexed = 1,
-+		.type = IIO_CURRENT,
-+		.channel = 4,
-+		.address = AXP20X_BATT_DISCHRG_I_H,
-+		.datasheet_name = "CH4",
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-+	}, {
-+		.indexed = 1,
-+		.type = IIO_VOLTAGE,
-+		.channel = 5,
-+		.address = AXP20X_BATT_V_H,
-+		.datasheet_name = "CH5",
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-+	},
-+};
-+
-+#define AXP288_ADC_MAP(_adc_channel_label, _consumer_dev_name,	\
-+		_consumer_channel)				\
-+	{							\
-+		.adc_channel_label = _adc_channel_label,	\
-+		.consumer_dev_name = _consumer_dev_name,	\
-+		.consumer_channel = _consumer_channel,		\
-+	}
-+
-+/* for consumer drivers */
-+static struct iio_map axp288_adc_default_maps[] = {
-+	AXP288_ADC_MAP("TS_PIN", "axp288-batt", "axp288-batt-temp"),
-+	AXP288_ADC_MAP("PMIC_TEMP", "axp288-pmic", "axp288-pmic-temp"),
-+	AXP288_ADC_MAP("GPADC", "axp288-gpadc", "axp288-system-temp"),
-+	AXP288_ADC_MAP("BATT_CHG_I", "axp288-chrg", "axp288-chrg-curr"),
-+	AXP288_ADC_MAP("BATT_DISCHRG_I", "axp288-chrg", "axp288-chrg-d-curr"),
-+	AXP288_ADC_MAP("BATT_V", "axp288-batt", "axp288-batt-volt"),
-+	{},
-+};
-+
-+static int axp288_adc_read_channel(int *val, unsigned long address,
-+				struct regmap *regmap)
-+{
-+	u8 buf[2];
-+
-+	if (regmap_bulk_read(regmap, address, buf, 2))
-+		return -EIO;
-+	*val = (buf[0] << 4) + ((buf[1] >> 4) & 0x0F);
-+
-+	return IIO_VAL_INT;
-+}
-+
-+static int axp288_adc_set_ts(struct regmap *regmap, unsigned int mode,
-+				unsigned long address)
-+{
-+	/* channels other than GPADC do not need to switch TS pin */
-+	if (address != AXP288_GP_ADC_H)
-+		return 0;
-+
-+	return regmap_write(regmap, AXP288_ADC_TS_PIN_CTRL, mode);
-+}
-+
-+static int axp288_adc_read_raw(struct iio_dev *indio_dev,
-+			struct iio_chan_spec const *chan,
-+			int *val, int *val2, long mask)
-+{
-+	int ret;
-+	struct axp288_adc_info *info = iio_priv(indio_dev);
-+
-+	mutex_lock(&indio_dev->mlock);
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		if (axp288_adc_set_ts(info->regmap, AXP288_ADC_TS_PIN_GPADC,
-+					chan->address)) {
-+			dev_err(&indio_dev->dev, "GPADC mode\n");
-+			ret = -EINVAL;
-+			break;
-+		}
-+		ret = axp288_adc_read_channel(val, chan->address, info->regmap);
-+		if (axp288_adc_set_ts(info->regmap, AXP288_ADC_TS_PIN_ON,
-+						chan->address))
-+			dev_err(&indio_dev->dev, "TS pin restore\n");
-+		break;
-+	case IIO_CHAN_INFO_PROCESSED:
-+		ret = axp288_adc_read_channel(val, chan->address, info->regmap);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+	}
-+	mutex_unlock(&indio_dev->mlock);
-+
-+	return ret;
-+}
-+
-+static int axp288_adc_set_state(struct regmap *regmap)
-+{
-+	/* ADC should be always enabled for internal FG to function */
-+	if (regmap_write(regmap, AXP288_ADC_TS_PIN_CTRL, AXP288_ADC_TS_PIN_ON))
-+		return -EIO;
-+
-+	return regmap_write(regmap, AXP20X_ADC_EN1, AXP288_ADC_EN_MASK);
-+}
-+
-+static const struct iio_info axp288_adc_iio_info = {
-+	.read_raw = &axp288_adc_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static int axp288_adc_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct axp288_adc_info *info;
-+	struct iio_dev *indio_dev;
-+	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
-+
-+	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*info));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	info = iio_priv(indio_dev);
-+	info->irq = platform_get_irq(pdev, 0);
-+	if (info->irq < 0) {
-+		dev_err(&pdev->dev, "no irq resource?\n");
-+		return info->irq;
-+	}
-+	platform_set_drvdata(pdev, indio_dev);
-+	info->regmap = axp20x->regmap;
-+	/* set ADC to enabled state at all time, including system suspend.
-+	 * otherwise internal fuel gauge functionality may be affected.
-+	 */
-+	ret = axp288_adc_set_state(axp20x->regmap);
-+	if (ret) {
-+		dev_err(&pdev->dev, "unable to enable ADC device\n");
-+		return ret;
-+	}
-+
-+	indio_dev->dev.parent = &pdev->dev;
-+	indio_dev->name = pdev->name;
-+	indio_dev->channels = axp288_adc_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(axp288_adc_channels);
-+	indio_dev->info = &axp288_adc_iio_info;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	ret = iio_map_array_register(indio_dev, axp288_adc_default_maps);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "unable to register iio device\n");
-+		goto err_array_unregister;
-+	}
-+	return 0;
-+
-+err_array_unregister:
-+	iio_map_array_unregister(indio_dev);
-+
-+	return ret;
-+}
-+
-+static int axp288_adc_remove(struct platform_device *pdev)
-+{
-+	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-+
-+	iio_device_unregister(indio_dev);
-+	iio_map_array_unregister(indio_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver axp288_adc_driver = {
-+	.probe = axp288_adc_probe,
-+	.remove = axp288_adc_remove,
-+	.driver = {
-+		.name = "axp288_adc",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(axp288_adc_driver);
-+
-+MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@linux.intel.com>");
-+MODULE_DESCRIPTION("X-Powers AXP288 ADC Driver");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
+Didn't notice that.. thanks for the quick fix. :)
 
+>
+>
+> ---
+> If we fail to parse the config file within the callback function,
+> the line number counter 'could be' already on the next line.
+>
+> This results in wrong line number report like:
+>
+>   $ cat ~/.perfconfig
+>   [call-graph]
+>           sort-key = krava
+>   $ perf record ls
+>   Fatal: bad config file line 3 in /home/jolsa/.perfconfig
+>
+> Fixing this by saving the current line number for this case.
+>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
+
+
+> ---
+>  tools/perf/util/config.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+> index 953512ed72ba..57ff826f150b 100644
+> --- a/tools/perf/util/config.c
+> +++ b/tools/perf/util/config.c
+> @@ -222,7 +222,8 @@ static int perf_parse_file(config_fn_t fn, void *data)
+>  	const unsigned char *bomptr = utf8_bom;
+>  
+>  	for (;;) {
+> -		int c = get_next_char();
+> +		int line, c = get_next_char();
+> +
+>  		if (bomptr && *bomptr) {
+>  			/* We are at the file beginning; skip UTF8-encoded BOM
+>  			 * if present. Sane editors won't put this in on their
+> @@ -261,8 +262,16 @@ static int perf_parse_file(config_fn_t fn, void *data)
+>  		if (!isalpha(c))
+>  			break;
+>  		var[baselen] = tolower(c);
+> -		if (get_value(fn, data, var, baselen+1) < 0)
+> +
+> +		/*
+> +		 * The get_value function might or might not reach the '\n',
+> +		 * so saving the current line number for error reporting.
+> +		 */
+> +		line = config_linenr;
+> +		if (get_value(fn, data, var, baselen+1) < 0) {
+> +			config_linenr = line;
+>  			break;
+> +		}
+>  	}
+>  	die("bad config file line %d in %s", config_linenr, config_file_name);
+>  }
