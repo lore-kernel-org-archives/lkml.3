@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaIXLoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:44:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36808 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750725AbaIXLoh (ORCPT
+	id S1753300AbaIXLou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:44:50 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:17518 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196AbaIXLos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:44:37 -0400
-Date: Wed, 24 Sep 2014 12:44:36 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>,
-        Alex Williamson <Alex.Williamson@redhat.com>
-Subject: Re: [PATCH] kvm-vfio: do not use module_init
-Message-ID: <20140924114435.GD28823@arm.com>
-References: <1411558149-3609-1-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
+	Wed, 24 Sep 2014 07:44:48 -0400
+To: lizefan@huawei.com, peterz@infradead.org, mingo@kernel.org
+Cc: tj@kernel.org, miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, keescook@chromium.org
+Subject: Re: [PATCH v2 3/3] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should be atomic flags
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <54210D3F.2090409@huawei.com>
+	<54210DA5.4040606@huawei.com>
+	<201409231955.FDB73406.FOOJLOVQMHFSFt@I-love.SAKURA.ne.jp>
+	<542233F0.1080402@huawei.com>
+In-Reply-To: <542233F0.1080402@huawei.com>
+Message-Id: <201409242044.GFJ81269.FJFVQOLSHtFMOO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 24 Sep 2014 20:44:43 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411558149-3609-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:29:09PM +0100, Paolo Bonzini wrote:
-> /me got confused between the kernel and QEMU.  In the kernel, you can
-> only have one module_init function, and it will prevent unloading the
-> module unless you also have the corresponding module_exit function.
+Zefan Li wrote:
+> Those macros make the code easier to read, and emacs and cscope can also
+> understand them.
 
-Happy for you to take the blame, but I think this one's my fault!
+I'm using legacy LXR which cannot understand them. But
 
-> So, commit 80ce1639727e (KVM: VFIO: register kvm_device_ops dynamically,
-> 2014-09-02) broke unloading of the kvm module, by adding a module_init
-> function and no module_exit.
+> I'd vote for this:
+> 
+> TASK_PFA_TEST(NO_NEW_PRIVS, no_new_privs)
+> TASK_PFA_SET(NO_NEW_PRIVS, no_new_privs)
+> 
+> TASK_PFA_TEST(SPREAD_PAGE, spread_page)
+> TASK_PFA_SET(SPREAD_PAGE, spread_page)
+> TASK_PFA_CLEAR(SPREAD_PAGE, spread_page)
+> 
+> TASK_PFA_TEST(SPREAD_SLAB, spread_slab)
+> TASK_PFA_SET(SPREAD_SLAB, spread_slab)
+> TASK_PFA_CLEAR(SPREAD_SLAB, spread_slab)
+> 
+> over this:
 
-I forget kvm builds as a module for other architectures (ie. not arm/arm64).
+you can go ahead. This difference is not a stopper.
 
-> Repair it by making kvm_vfio_ops_init weak, and checking it in
-> kvm_init.
+Tejun Heo wrote:
+> All the patches look good to me.  I can't say I'm a big fan of
+> function defining macros but I don't have prettier alternatives
+> either.  Once Peter/Ingo acks the patches, I'll route them through
+> cgroup/for-3.17-fixes.
 
-Hehe, if only there was a kconfig option for kvm-vfio.c...
-
-Will
+Peter and Ingo, are these patches OK for you?
