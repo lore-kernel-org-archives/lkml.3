@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaIXKSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:18:55 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:33195 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854AbaIXKSw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:18:52 -0400
+	id S1754569AbaIXKTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:19:10 -0400
+Received: from verein.lst.de ([213.95.11.211]:52761 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754495AbaIXKSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:18:54 -0400
+Date: Wed, 24 Sep 2014 12:18:50 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 02/10] block: introduce blk_init_flush and its pair
+Message-ID: <20140924101850.GA19078@lst.de>
+References: <1410786675-7761-1-git-send-email-ming.lei@canonical.com> <1410786675-7761-3-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <13000968.l0laEvMsix@wuerfel>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
-	<1410168160-3624-2-git-send-email-lftan@altera.com>
-	<CAFiDJ5-b_P7aWFXYP4GcgTUb3t_j6dZCsjeGZwVUs+7qo0v-GA@mail.gmail.com>
-	<13000968.l0laEvMsix@wuerfel>
-Date: Wed, 24 Sep 2014 18:18:50 +0800
-X-Google-Sender-Auth: PcXxK_JsHIw9CAje_2ntyTt2qJY
-Message-ID: <CAFiDJ582-Bb2=s+AGsAeTHJMwBkUCUEoEbP770MJgTDkvev0yg@mail.gmail.com>
-Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410786675-7761-3-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 6:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 23 September 2014 18:20:08 LF.Tan wrote:
->> Hi Arnd
->>
->> Are you okay with this generic futex in asm-generic?
->>
->
-> Yes, this looks good. Remind me again who need this, would it make
-> sense to merge this through an architecture-specific tree for
-> whichever architecture can benefit from it?
-What is the common practice for this?
-Do you mean merge with nios2 or other arch, eg m68k?
+On Mon, Sep 15, 2014 at 09:11:06PM +0800, Ming Lei wrote:
+> These two temporary functions are introduced for holding flush
+> initialization and de-initialization, so that we can
+> introduce 'flush queue' easier in the following patch. And
+> once 'flush queue' and its allocation/free functions are ready,
+> they will be removed for sake of code readability.
 
-Ley Foon
+Shouldn't we just do the mq work in this helper as well?  blk_mq_init_flush
+does exactly the same work, plus initializing a lock, which is harmless
+for the !mq case as well.
+
