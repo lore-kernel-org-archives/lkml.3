@@ -1,161 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaIXPDR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:03:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60024 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaIXPDK (ORCPT
+	id S1754343AbaIXPD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:03:26 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:32960 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565AbaIXPDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:03:10 -0400
-Date: Wed, 24 Sep 2014 08:01:52 -0700
-From: tip-bot for Wanpeng Li <tipbot@zytor.com>
-Message-ID: <tip-03bd4e1f7265548832a76e7919a81f3137c44fd1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, linn@hp.com, stable@vger.kernel.org,
-        toshi.kani@hp.com, wanpeng.li@linux.intel.com, srostedt@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de, prarit@redhat.com,
-        rientjes@google.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, linn@hp.com, stable@vger.kernel.org,
-        toshi.kani@hp.com, wanpeng.li@linux.intel.com,
-        isimatu.yasuaki@jp.fujitsu.com, srostedt@redhat.com,
-        tglx@linutronix.de, bp@suse.de, rientjes@google.com, prarit@redhat.com
-In-Reply-To: <1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched:
-  Fix unreleased llc_shared_mask bit during CPU hotplug
-Git-Commit-ID: 03bd4e1f7265548832a76e7919a81f3137c44fd1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 24 Sep 2014 11:03:16 -0400
+Message-ID: <5422DD2F.4090308@atmel.com>
+Date: Wed, 24 Sep 2014 17:03:11 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <u.kleine-koenig@pengutronix.de>,
+        <gerg@uclinux.org>, Olof Johansson <olof@lixom.net>,
+        ARM Maintainers <arm@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [RFC PATCH] ARM: at91: remove no-MMU at91x40 support
+References: <1411568281-3924-1-git-send-email-nicolas.ferre@atmel.com> <3700375.DRR5iB2NGi@wuerfel>
+In-Reply-To: <3700375.DRR5iB2NGi@wuerfel>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03bd4e1f7265548832a76e7919a81f3137c44fd1
-Gitweb:     http://git.kernel.org/tip/03bd4e1f7265548832a76e7919a81f3137c44fd1
-Author:     Wanpeng Li <wanpeng.li@linux.intel.com>
-AuthorDate: Wed, 24 Sep 2014 16:38:05 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 15:13:20 +0200
+On 24/09/2014 16:47, Arnd Bergmann :
+> On Wednesday 24 September 2014 16:18:01 Nicolas Ferre wrote:
+>> As there is currently no-one to take care of this old !MMU target and as its
+>> support in recent kernels is a bit rotten, remove this at91x40 support and the
+>> board file associated with it (at91eb01).
+>> There are modern ARM !MMU in Mainline now so this target is not interesting for
+>> building tests anymore. It would be better to start from these modern ARM !MMU
+>> platforms to reintroduce at91x40 support if needed.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+>> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+>> index 807b22dadcb6..f3bd8abd25c0 100644
+>> --- a/arch/arm/mach-at91/Kconfig
+>> +++ b/arch/arm/mach-at91/Kconfig
+>> @@ -18,26 +18,22 @@ config HAVE_AT91_DBGU2
+>>  config AT91_USE_OLD_CLK
+>>  	bool
+>>  
+>> -config AT91_PMC_UNIT
+>> -	bool
+>> -	default !ARCH_AT91X40
+>> -
+>>  config COMMON_CLK_AT91
+>>  	bool
+>> -	default AT91_PMC_UNIT && USE_OF && !AT91_USE_OLD_CLK
+>> +	default USE_OF && !AT91_USE_OLD_CLK
+>>  	select COMMON_CLK
+>>  
+>>  config OLD_CLK_AT91
+>>  	bool
+>> -	default AT91_PMC_UNIT && AT91_USE_OLD_CLK
+>> +	default AT91_USE_OLD_CLK
+>>  
+>>  config AT91_SAM9_ALT_RESET
+>>  	bool
+>> -	default !ARCH_AT91X40
+>> +	default y
+>>  
+>>  config AT91_SAM9G45_RESET
+>>  	bool
+>> -	default !ARCH_AT91X40
+>> +	default y
+>>  
+>>  config AT91_SAM9_TIME
+>>  	bool
+> 
+> I think these can be simplified further: AT91_SAM9G45_RESET and
+> AT91_SAM9_ALT_RESET can just go away and the files put into
+> obj-y.
 
-sched: Fix unreleased llc_shared_mask bit during CPU hotplug
+Yes, I had the same idea before realizing that these two directives will
+move away in a patch already sent for 3.18. So, as this material is
+probably 3.19-ish, I kept them as they are and keep in mind to remove
+them when I merge them with 3.18-rc1...
 
-The following bug can be triggered by hot adding and removing a large number of
-xen domain0's vcpus repeatedly:
+> OLD_CLK_AT91 is the same as AT91_USE_OLD_CLK, so you could
+> just use that instead. I suspect the 'USE_OF' dependency for
+> COMMON_CLK_AT91 can also go away, since all platforms are
+> either board file based and select AT91_USE_OLD_CLK, or they
+> are DT based and don't.
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
-	PGD 5a9d5067 PUD 13067 PMD 0
-	Oops: 0000 [#3] SMP
-	[...]
-	Call Trace:
-	load_balance
-	? _raw_spin_unlock_irqrestore
-	idle_balance
-	__schedule
-	schedule
-	schedule_timeout
-	? lock_timer_base
-	schedule_timeout_uninterruptible
-	msleep
-	lock_device_hotplug_sysfs
-	online_store
-	dev_attr_store
-	sysfs_write_file
-	vfs_write
-	SyS_write
-	system_call_fastpath
+Here also, I didn't want to touch more because we need to remove the
+arch/arm/mach-at91/Kconfig.non_dt file very soon (3.19) and I don't want
+to change this file (or all the SoC files) before the chunks related to
+these directives simply go away.
 
-Last level cache shared mask is built during CPU up and the
-build_sched_domain() routine takes advantage of it to setup
-the sched domain CPU topology.
+Tell me if it makes sense.
 
-However, llc_shared_mask is not released during CPU disable,
-which leads to an invalid sched domainCPU topology.
-
-This patch fix it by releasing the llc_shared_mask correctly
-during CPU disable.
-
-Yasuaki also reported that this can happen on real hardware:
-
-  https://lkml.org/lkml/2014/7/22/1018
-
-His case is here:
-
-	==
-	Here is an example on my system.
-	My system has 4 sockets and each socket has 15 cores and HT is
-	enabled. In this case, each core of sockes is numbered as
-	follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-44, 90-104
-	Socket#3 | 45-59, 105-119
-
-	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-
-	It means that last level cache of Socket#2 is shared with
-	CPU#30-44 and 90-104.
-
-	When hot-removing socket#2 and #3, each core of sockets is
-	numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-
-	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
-	remains having 0x3fff80000001fffc0000000.
-
-	After that, when hot-adding socket#2 and #3, each core of
-	sockets is numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-59
-	Socket#3 | 90-119
-
-	Then llc_shared_mask of CPU#30 becomes
-	0x3fff8000fffffffc0000000. It means that last level cache of
-	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
-	the wrong value.
-
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: <stable@vger.kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/smpboot.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 2d872e0..42a2dca 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1284,6 +1284,9 @@ static void remove_siblinginfo(int cpu)
- 
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
+Bye,
+-- 
+Nicolas Ferre
