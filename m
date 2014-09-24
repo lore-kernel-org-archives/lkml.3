@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735AbaIXKOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:14:00 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:35004 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbaIXKN6 (ORCPT
+	id S1753964AbaIXKOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:14:16 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53049 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaIXKOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:13:58 -0400
-Date: Wed, 24 Sep 2014 11:13:52 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, johan@kernel.org
-Subject: Re: [PATCH v2 2/2] mfd: viperboard: remove redundant OOM message and
- NULL pointer check
-Message-ID: <20140924101352.GE19999@lee--X1>
-References: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
- <1411414759-7056-3-git-send-email-octavian.purdila@intel.com>
+	Wed, 24 Sep 2014 06:14:11 -0400
+Date: Wed, 24 Sep 2014 06:13:59 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Meelis Roos <mroos@linux.ee>
+Subject: Re: [PATCH] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
+Message-ID: <20140924101359.GC4446@hmsreliant.think-freely.org>
+References: <20140924093021.GA7929@erable>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411414759-7056-3-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140924093021.GA7929@erable>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Octavian Purdila wrote:
+On Wed, Sep 24, 2014 at 09:30:21AM +0000, Sylvain 'ythier' Hitier wrote:
+> Author: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+> Date:   Wed Sep 24 09:22:16 2014 +0000
+> 
+>         3c59x: fix bad split of cpu_to_le32(pci_map_single())
+>     
+>         Change the #else branch like the #if DO_ZEROCOPY branch was changed.
+>     
+>         Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
+>           # 3c59x: Add dma error checking and recovery
+>     
+>         Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+> 
+> diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+> index 8ca49f04..0a3108b3 100644
+> --- a/drivers/net/ethernet/3com/3c59x.c
+> +++ b/drivers/net/ethernet/3com/3c59x.c
+> @@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  		}
+>  	}
+>  #else
+> -	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
+> +	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
+>  	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
+>  		goto out_dma_err;
+>  	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
+> 
+> 
+> 
+> Regards,
+> Sylvain "ythier" Hitier
+> 
+NAK, this isn't how the other side of that was changed.  I added an assignmnt of
+the dma_addr to check mapping errors, but still used cpu_to_le32 when assigning
+dma_addr to tx_ring[entry].addr.  No change is needed here as far as I see.
+Neil
 
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> ---
->  drivers/mfd/viperboard.c | 12 ++++--------
->  1 file changed, 4 insertions(+), 8 deletions(-)
-
-Looks fine, but won't apply without patch 1.
-
-> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
-> index 5f62f4e..d27c131 100644
-> --- a/drivers/mfd/viperboard.c
-> +++ b/drivers/mfd/viperboard.c
-> @@ -59,10 +59,8 @@ static int vprbrd_probe(struct usb_interface *interface,
->  
->  	/* allocate memory for our device state and initialize it */
->  	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
-> -	if (vb == NULL) {
-> -		dev_err(&interface->dev, "Out of memory\n");
-> +	if (vb == NULL)
->  		return -ENOMEM;
-> -	}
->  
->  	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
->  	if (vb->buf == NULL) {
-> @@ -109,11 +107,9 @@ static int vprbrd_probe(struct usb_interface *interface,
->  	return 0;
->  
->  error:
-> -	if (vb) {
-> -		usb_put_dev(vb->usb_dev);
-> -		kfree(vb->buf);
-> -		kfree(vb);
-> -	}
-> +	usb_put_dev(vb->usb_dev);
-> +	kfree(vb->buf);
-> +	kfree(vb);
->  
->  	return ret;
->  }
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> -- 
+> Business is about being busy, not being rich...
+> Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
+> There's THE room for ideals in this mechanical place!
+> 
