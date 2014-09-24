@@ -1,48 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaIXPM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:12:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39429 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397AbaIXPMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:12:25 -0400
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Chris J Arges <chris.j.arges@canonical.com>, bruce.lucas@mongodb.com,
-        adam.radford@avagotech.com, kashyap.desai@avagotech.com,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mptfusion: enable no_write_same for vmware scsi disks
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140923071154.GB3867@infradead.org>
-	<1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
-	<5421F020.1030309@canonical.com> <yq14mvxudbv.fsf@sermon.lab.mkp.net>
-	<20140924081837.GB14285@infradead.org>
-Date: Wed, 24 Sep 2014 11:11:42 -0400
-In-Reply-To: <20140924081837.GB14285@infradead.org> (Christoph Hellwig's
-	message of "Wed, 24 Sep 2014 01:18:37 -0700")
-Message-ID: <yq1mw9prr2p.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1754749AbaIXPMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:12:55 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48549 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753727AbaIXPJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:09:15 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 2/3] mm: memcontrol: simplify detecting when the memory+swap limit is hit
+Date: Wed, 24 Sep 2014 11:08:57 -0400
+Message-Id: <1411571338-8178-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
+When attempting to charge pages, we first charge the memory counter
+and then the memory+swap counter.  If one of the counters is at its
+limit, we enter reclaim, but if it's the memory+swap counter, reclaim
+shouldn't swap because that wouldn't change the situation.  However,
+if the counters have the same limits, we never get to the memory+swap
+limit.  To know whether reclaim should swap or not, there is a state
+flag that indicates whether the limits are equal and whether hitting
+the memory limit implies hitting the memory+swap limit.
 
-Christoph> I'd like to add Chris latests patch and Cc it to stable.
+Just try the memory+swap counter first.
 
-Christoph> Martin, given that you're ok with it can you give me a
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 47 +++++++++++++----------------------------------
+ 1 file changed, 13 insertions(+), 34 deletions(-)
 
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1ec22bf380d0..89c920156c2a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -315,9 +315,6 @@ struct mem_cgroup {
+ 	/* OOM-Killer disable */
+ 	int		oom_kill_disable;
+ 
+-	/* set when res.limit == memsw.limit */
+-	bool		memsw_is_minimum;
+-
+ 	/* protect arrays of thresholds */
+ 	struct mutex thresholds_lock;
+ 
+@@ -1804,8 +1801,6 @@ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
+ 
+ 	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
+ 		noswap = true;
+-	if (!(flags & MEM_CGROUP_RECLAIM_SHRINK) && memcg->memsw_is_minimum)
+-		noswap = true;
+ 
+ 	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
+ 		if (loop)
+@@ -2543,16 +2538,17 @@ retry:
+ 		goto done;
+ 
+ 	size = batch * PAGE_SIZE;
+-	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
+-		if (!do_swap_account)
++	if (!do_swap_account ||
++	    !res_counter_charge(&memcg->memsw, size, &fail_res)) {
++		if (!res_counter_charge(&memcg->res, size, &fail_res))
+ 			goto done_restock;
+-		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
+-			goto done_restock;
+-		res_counter_uncharge(&memcg->res, size);
++		if (do_swap_account)
++			res_counter_uncharge(&memcg->memsw, size);
++		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
++	} else {
+ 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
+ 		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+-	} else
+-		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
++	}
+ 
+ 	if (batch > nr_pages) {
+ 		batch = nr_pages;
+@@ -3615,7 +3611,6 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+ 				unsigned long long val)
+ {
+ 	int retry_count;
+-	u64 memswlimit, memlimit;
+ 	int ret = 0;
+ 	int children = mem_cgroup_count_children(memcg);
+ 	u64 curusage, oldusage;
+@@ -3642,24 +3637,16 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+ 		 * We have to guarantee memcg->res.limit <= memcg->memsw.limit.
+ 		 */
+ 		mutex_lock(&set_limit_mutex);
+-		memswlimit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+-		if (memswlimit < val) {
++		if (res_counter_read_u64(&memcg->memsw, RES_LIMIT) < val) {
+ 			ret = -EINVAL;
+ 			mutex_unlock(&set_limit_mutex);
+ 			break;
+ 		}
+ 
+-		memlimit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-		if (memlimit < val)
++		if (res_counter_read_u64(&memcg->res, RES_LIMIT) < val)
+ 			enlarge = 1;
+ 
+ 		ret = res_counter_set_limit(&memcg->res, val);
+-		if (!ret) {
+-			if (memswlimit == val)
+-				memcg->memsw_is_minimum = true;
+-			else
+-				memcg->memsw_is_minimum = false;
+-		}
+ 		mutex_unlock(&set_limit_mutex);
+ 
+ 		if (!ret)
+@@ -3684,7 +3671,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
+ 					unsigned long long val)
+ {
+ 	int retry_count;
+-	u64 memlimit, memswlimit, oldusage, curusage;
++	u64 oldusage, curusage;
+ 	int children = mem_cgroup_count_children(memcg);
+ 	int ret = -EBUSY;
+ 	int enlarge = 0;
+@@ -3703,22 +3690,14 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
+ 		 * We have to guarantee memcg->res.limit <= memcg->memsw.limit.
+ 		 */
+ 		mutex_lock(&set_limit_mutex);
+-		memlimit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-		if (memlimit > val) {
++		if (res_counter_read_u64(&memcg->res, RES_LIMIT) > val) {
+ 			ret = -EINVAL;
+ 			mutex_unlock(&set_limit_mutex);
+ 			break;
+ 		}
+-		memswlimit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+-		if (memswlimit < val)
++		if (res_counter_read_u64(&memcg->memsw, RES_LIMIT) < val)
+ 			enlarge = 1;
+ 		ret = res_counter_set_limit(&memcg->memsw, val);
+-		if (!ret) {
+-			if (memlimit == val)
+-				memcg->memsw_is_minimum = true;
+-			else
+-				memcg->memsw_is_minimum = false;
+-		}
+ 		mutex_unlock(&set_limit_mutex);
+ 
+ 		if (!ret)
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+2.1.0
+
