@@ -1,99 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaIXOyg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:54:36 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:41620 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaIXOye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:54:34 -0400
+	id S1753898AbaIXOyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:54:46 -0400
+Received: from verein.lst.de ([213.95.11.211]:53754 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753337AbaIXOyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:54:44 -0400
+Date: Wed, 24 Sep 2014 16:54:41 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 06/10] block: remove blk_init_flush() and its pair
+Message-ID: <20140924145441.GA9713@lst.de>
+References: <1410786675-7761-1-git-send-email-ming.lei@canonical.com> <1410786675-7761-7-git-send-email-ming.lei@canonical.com> <20140924102012.GB19078@lst.de> <CACVXFVMv-mb8LJuJHMJA-3LWYHhV3Cki6fc+_OK3kzXXB2WXnA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140924135444.GD16198@localhost>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
-	<1411158165-25794-2-git-send-email-octavian.purdila@intel.com>
-	<20140924104809.GA16198@localhost>
-	<CAE1zotLu7pN9pC_C+iRwSpMh2iPW5E1CL4RiycLK-jV_FZEfOQ@mail.gmail.com>
-	<20140924135444.GD16198@localhost>
-Date: Wed, 24 Sep 2014 17:54:15 +0300
-Message-ID: <CAE1zot+BqL4=kTJaQYwPxL-19W-+2nomXXrKaogJZRXuvrVE0A@mail.gmail.com>
-Subject: Re: [PATCH v5 1/4] mfd: add support for Diolan DLN-2 devices
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVMv-mb8LJuJHMJA-3LWYHhV3Cki6fc+_OK3kzXXB2WXnA@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 4:54 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Wed, Sep 24, 2014 at 04:36:22PM +0300, Octavian Purdila wrote:
->> On Wed, Sep 24, 2014 at 1:48 PM, Johan Hovold <johan@kernel.org> wrote:
->> > On Fri, Sep 19, 2014 at 11:22:42PM +0300, Octavian Purdila wrote:
->>
->> <snip>
->>
->> >> + * dln2_dev.mod_rx_slots and then the echo header field to index the
->> >> + * slots field and find the receive context for a particular
->> >> + * request.
->> >> + */
->> >> +struct dln2_mod_rx_slots {
->> >> +     /* RX slots bitmap */
->> >> +     unsigned long bmap;
->> >> +
->> >> +     /* used to wait for a free RX slot */
->> >> +     wait_queue_head_t wq;
->> >> +
->> >> +     /* used to wait for an RX operation to complete */
->> >> +     struct dln2_rx_context slots[DLN2_MAX_RX_SLOTS];
->> >> +
->> >> +     /* device has been disconnected */
->> >> +     bool disconnected;
->> >
->> > This belongs in the dln2_dev struct.
->> >
->> > I think you're overcomplicating the disconnect handling by intertwining
->> > it with your slots.
->> >
->> > Add a lock, an active-transfer counter, a disconnected flag, and a wait
->> > queue to struct dln2_dev.
->> >
->>
->> I agree that disconnected is better suited in dln2_dev.
->>
->> However, I don't think that we need the active-transfer counter and a
->> new wait queue. We can simply use the existing waiting queues and the
->> implicit alloc_rx_slot()/free_rx_slot() calls to see if we are still
->> waiting for I/O.
->
-> Just because you can reuse them doesn't mean it's a good idea. By
-> separating a generic disconnect solution from your custom slot
-> implementation we get something that is way easier to verify for
-> correctness and that could also be reused in other drivers.
->
+On Wed, Sep 24, 2014 at 10:49:00PM +0800, Ming Lei wrote:
+> Simpler to merge, but more difficult to split. It is for easier review,
+> since patch 5 is a bit big and each patch still does one thing.
 
-Maybe I miss-understood what you are proposing, let me try to
-summarize it to see if I got it right.
+I defintively find the current version hard to review - it moves
+code around a few times before it setlles, so it requires a lot of
+memory or applying patches one after another to a tree.  And while
+this might be useful in some cases this is one where merging the
+patches doesn't seem to have much of a downside.  We'd still move
+various fields into a structure, and add helpers to init it, just
+with a tiny bit more changes on the initialization side.
 
-You are suggesting to add a counter, increment it in alloc_rx_slot(),
-decrement it in free_rx_slot(). Then add a new waitqueue in dln2_dev
-and in free_rx_slot() wake it up while in disconnect do a wait_event()
-on it and check for the counter. Also, alloc_rx_slot() should fail if
-the disconnect flag is set.
-
-In this case we are still coupled to the slots implementation, in the
-sense that you would need to understand the slots implementation to
-understand how the disconnect works. We are also doing two wake-up
-operations which I find redundant and which does not add much value in
-clarity (since we still need to wake-up all completions for each
-handle).
-
-I do agree that using a counter instead of checking the bitmaps is
-cleaner though.
+That being said if you really prefer the split that's fine with me,
+but it doesn't really seem helpful.
