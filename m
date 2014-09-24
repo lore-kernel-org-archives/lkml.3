@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaIXQsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:48:24 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:52960 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766AbaIXQsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:48:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <5422F1F7.8010308@6wind.com>
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
-	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>
-	<54228D87.3070309@6wind.com>
-	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>
-	<CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
-	<5422F1F7.8010308@6wind.com>
-Date: Wed, 24 Sep 2014 09:48:11 -0700
-Message-ID: <CAHA+R7MM04ew=J8sHfSQERwoCAgEDfrGgtgRORqs3ePgtjVYWg@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-From: Cong Wang <cwang@twopensource.com>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1754674AbaIXQrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:47:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49699 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754608AbaIXQr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:47:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
+   d="scan'208";a="604749845"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
+        Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org
+Subject: [PATCH 24/27] spi: core: use pm_runtime_last_busy_and_autosuspend helper
+Date: Wed, 24 Sep 2014 21:45:14 +0530
+Message-Id: <1411575342-31048-25-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 9:31 AM, Nicolas Dichtel
-<nicolas.dichtel@6wind.com> wrote:
->> I think in this case your ID's are still available, but aren't you
->> providing a new way
->> for the inner netns device to escape which we are trying to avoid?
->
-> It's why the ids depend on user ns. Only if user ns are the same we allow to
-> get an id for a peer netns.
+Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+coding the same code
 
-Too late, userns is relatively new, relying on it breaks our existing
-assumption.
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/spi/spi.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index e0531ba..6ec5330 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -893,10 +893,8 @@ static void spi_pump_messages(struct kthread_work *work)
+ 		    master->unprepare_transfer_hardware(master))
+ 			dev_err(&master->dev,
+ 				"failed to unprepare transfer hardware\n");
+-		if (master->auto_runtime_pm) {
+-			pm_runtime_mark_last_busy(master->dev.parent);
+-			pm_runtime_put_autosuspend(master->dev.parent);
+-		}
++		if (master->auto_runtime_pm)
++			pm_runtime_last_busy_and_autosuspend(master->dev.parent);
+ 		trace_spi_master_idle(master);
+ 		return;
+ 	}
+-- 
+1.7.0.4
+
