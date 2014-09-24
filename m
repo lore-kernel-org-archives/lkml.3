@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaIXBEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 21:04:46 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54693 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaIXBEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 21:04:45 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH 2/2] perf callchain: Use global caching provided by libunwind
-References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
-	<1411453828-14832-2-git-send-email-namhyung@kernel.org>
-	<20140923122843.GF2979@krava.brq.redhat.com>
-	<CAM9d7cgwSrqLNghb3Vdt-=c9w1iFq0wc-njVP4UxkWD4hXCteg@mail.gmail.com>
-Date: Wed, 24 Sep 2014 10:04:43 +0900
-In-Reply-To: <CAM9d7cgwSrqLNghb3Vdt-=c9w1iFq0wc-njVP4UxkWD4hXCteg@mail.gmail.com>
-	(Namhyung Kim's message of "Tue, 23 Sep 2014 21:53:43 +0900")
-Message-ID: <878ul9ltg4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754452AbaIXBIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 21:08:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:52654 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801AbaIXBIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 21:08:43 -0400
+Date: Wed, 24 Sep 2014 11:08:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: linux-next: build failure after merge of the samsung tree
+Message-ID: <20140924110836.209bc8e2@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ORd1ovzNsNEEbmYX6il_y_K"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014 21:53:43 +0900, Namhyung Kim wrote:
-> On Tue, Sep 23, 2014 at 9:28 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->> On Tue, Sep 23, 2014 at 03:30:28PM +0900, Namhyung Kim wrote:
->>> The libunwind provides two caching policy which are global and
->>> per-thread.  As perf unwinds callchains in a single thread, it'd
->>> sufficient to use global caching.
->>>
->>> This speeds up my perf report from 14s to 7s on a ~260MB data file.
->>> Although the output contains a slight difference (~0.01% in terms of
->>> number of lines printed) on callchains which were not resolved.
->>
->> hum, the speedup is nice, but what was the diff output.. any example?
->> The new version does not print some lines or different ones?
->
-> I don't have the result now - will post the diff when I go to the
-> office tomorrow.  But IIRC new version only adds new lines..
+--Sig_/ORd1ovzNsNEEbmYX6il_y_K
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Okay, this is the result..  But it doesn't always make a difference.  I
-can see it produces exactly same output for other (even bigger) data files.
+Hi Kukjin,
 
+After merging the samsung tree, today's linux-next build (arm multi_v7_defc=
+onfig)
+failed like this:
 
-  $ diff -U0 callchain-result.{old,new}
-  --- callchain-result.old	2014-09-23 14:52:29.630711402 +0900
-  +++ callchain-result.new	2014-09-23 14:52:52.709505500 +0900
-  @@ -5322,0 +5323,9 @@
-  +                          |          |          |          
-  +                          |          |           --0.00%-- 0x406520
-  +                          |          |                     0x4064f0
-  +                          |          |                     |          
-  +                          |          |                     |--0.00%-- 0x1ad52a0
-  +                          |          |                     |          
-  +                          |          |                     |--0.00%-- 0x1a0f2e0
-  +                          |          |                     |          
-  +                          |          |                      --0.00%-- 0x1a9e0c0
-  @@ -108899,0 +108909,3 @@
-  +                            |          |          0x406520
-  +                            |          |          0x4064f0
-  +                            |          |          0x1a9e0c0
-  @@ -180410,0 +180423,9 @@
-  +                          |          |          
-  +                          |           --0.00%-- 0x406520
-  +                          |                     0x4064f0
-  +                          |                     |          
-  +                          |                     |--0.00%-- 0x1ad52a0
-  +                          |                     |          
-  +                          |                     |--0.00%-- 0x1a0f2e0
-  +                          |                     |          
-  +                          |                      --0.00%-- 0x1a9e0c0
-  
-  $ wc -l callchain-result.{old,new}
-    191412 callchain-result.old
-    191433 callchain-result.new
-    382845 total
+arch/arm/boot/dts/exynos5250-snow.dts:13:46: fatal error: dt-bindings/clock=
+/maxim,max77686.h: No such file or directory
+ #include <dt-bindings/clock/maxim,max77686.h>
+                                              ^
 
+Caused by commit c04c92ed5614 ("ARM: dts: Add rtc_src clk for s3c-rtc on ex=
+ynos5250-snow").
 
-Thanks,
-Namhyung
+In file included from arch/arm/mach-tegra/cpuidle-tegra114.c:17:0:
+arch/arm/mach-tegra/cpuidle-tegra114.c: In function 'tegra114_idle_power_do=
+wn':
+arch/arm/include/asm/firmware.h:64:24: error: too few arguments to function=
+ 'firmware_ops->do_idle'
+  ((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
+                        ^
+arch/arm/mach-tegra/cpuidle-tegra114.c:52:6: note: in expansion of macro 'c=
+all_firmware_op'
+  if (call_firmware_op(do_idle) =3D=3D -ENOSYS)
+      ^
+
+Caused by commit f5217f3b9332 ("ARM: EXYNOS: add AFTR mode support to
+firmware do_idle method").
+
+I have used the samsung tree from next-20140923 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/ORd1ovzNsNEEbmYX6il_y_K
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUIhmYAAoJEMDTa8Ir7ZwVNn8P+gNGIhSUNlxImewT3Laemmie
+Sn/eFI/pO4+uK6oR7W2C46c8vlFBDeGJLhcS2hSgrvhRD4X2Nv7l8iRkW4HZDEgR
+vBofZj4Y1C0c8C/ZuC33COxerEMYoBqVnApVnosNMCU1VQZFX1I5FYA+esnt25MK
+7nVcMeFVdsAUkbpiUkAGt6q4/iqncxpfwatCmFUH3or7s2huZWTMS5ScdY7qjssG
+43cg0WGmWA/+MsZkKkBoEU22059uwvNQCaMKW8N5OqHujOq+lOVQ+tHipaqym8e1
+ymDdiq4Em4qOwR318dEB55BBg/AFBrsmEmaVcgDgzLL4H90ugbwlVTYqMorAvTSR
+MxYfNHer+WyQIUR2zCu1WeyMlaqd/2bTjkh9dHP8hlxY7Wh/00soF5Jjcp9mzlFv
+1S0gA21bkLkshwYBUcxW+rg0OyXLtY3Gks8cPfqAecdFBu4RNA9rLgctqoyj9SSL
+z4y7bJzaPTOt5DaiO0fykaEzvCvLr1K49gj/PVn0yrDuO4JUbjnBCjCxTp+/gyUg
+v9Jf0tJNtAhaT8AI0MeUV4uonadca6WUoRYLA3HTt+Fr4oBQOtwsGxd6X9NrBeU0
+hOuw9NQQJXFkZmybSgVvyiUxOJhN/vx7JEBFElAJQpEpU5s30azbeDe7UXbPuayf
+nJADVflJgVLEH0Jj+5NJ
+=qLzR
+-----END PGP SIGNATURE-----
+
+--Sig_/ORd1ovzNsNEEbmYX6il_y_K--
