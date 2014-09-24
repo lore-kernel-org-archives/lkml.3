@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbaIXVjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:39:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50218 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaIXVjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:39:05 -0400
-Date: Wed, 24 Sep 2014 14:39:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: rdunlap@infradead.org, viro@zeniv.linux.org.uk, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@codethink.co.uk, keescook@chromium.org,
-        penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: [PATCH RESUBMIT 1/2] fs/seq_file: Create new function
- seq_open_init()
-Message-Id: <20140924143904.b6f12611013876253d8ac50a@linux-foundation.org>
-In-Reply-To: <1411557356-10673-2-git-send-email-rob.jones@codethink.co.uk>
-References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk>
-	<1411557356-10673-2-git-send-email-rob.jones@codethink.co.uk>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752593AbaIXVkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:40:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11834 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122AbaIXVkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:40:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,591,1406617200"; 
+   d="scan'208";a="596390022"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Fix perf record as non root with kptr_restrict == 1
+Date: Wed, 24 Sep 2014 14:39:54 -0700
+Message-Id: <1411594794-7229-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014 12:15:55 +0100 Rob Jones <rob.jones@codethink.co.uk> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> Add a new function to help reduce boilerplate code.
-> 
-> This is a wrapper function for seq_open() that will simplify the code in a
-> significant number of cases where seq_open() is currently called.
-> 
-> It's first use is in __seq_open_private(), thereby recovering most of
-> the code space used by the new function.
+Currently perf record always errors out when you run it as non-root
+with kptr_restrict == 1, which is often the default.
 
-It would be nice to include one or more of the conversions in this patch
-series so we can see what the effects look like.
+Make it only warn instead and fix the kernel resolve code
+to not segfault later. Profiling works still fine, except
+kernel symbols are not resolved.
 
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -639,28 +639,38 @@ int seq_release_private(struct inode *inode, struct file *file)
->  }
->  EXPORT_SYMBOL(seq_release_private);
->  
-> +int seq_open_init(struct file *f, const struct seq_operations *ops, void *p)
-> +{
-> +	struct seq_file *s;
-> +	int rc;
-> +
-> +	rc = seq_open(f, ops);
-> +	if (rc)
-> +		return rc;
-> +
-> +	s = f->private_data;
-> +	s->private = p;
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(seq_open_init);
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/event.c   | 8 ++++++--
+ tools/perf/util/session.c | 2 +-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-A global exported-to-modules interface should be documented, please. 
-Especially when it has a void* argument.  seq_file.c is patchy - some
-of it is documented, some of it uses the read-programmers-mind
-approach.
-
-
-__seq_open_private() has
-	void *private;
-
-single_open() has
-	void *data
-
-And now seq_open_init() has
-	void *p
-
-but these all refer to the same thing.  Can we have a bit of
-consistency in the naming please?  I suggest "private", to match
-the seq_file field.
-
-
-
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index ed55819..4af6b27 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -558,13 +558,17 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 	struct map *map;
+ 	struct kmap *kmap;
+ 	int err;
++	union perf_event *event;
++
++	if (machine->vmlinux_maps[0] == NULL)
++		return -1;
++
+ 	/*
+ 	 * We should get this from /sys/kernel/sections/.text, but till that is
+ 	 * available use this, and after it is use this as a fallback for older
+ 	 * kernels.
+ 	 */
+-	union perf_event *event = zalloc((sizeof(event->mmap) +
+-					  machine->id_hdr_size));
++	event = zalloc((sizeof(event->mmap) + machine->id_hdr_size));
+ 	if (event == NULL) {
+ 		pr_debug("Not enough memory synthesizing mmap event "
+ 			 "for kernel modules\n");
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6d2d50d..883406f 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -119,7 +119,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 		 * kernel MMAP event, in perf_event__process_mmap().
+ 		 */
+ 		if (perf_session__create_kernel_maps(session) < 0)
+-			goto out_delete;
++			pr_warning("Cannot read kernel map\n");
+ 	}
+ 
+ 	if (tool && tool->ordering_requires_timestamps &&
+-- 
+1.9.3
 
