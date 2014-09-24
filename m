@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaIXR2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:28:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35019 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbaIXR2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:28:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
-   d="scan'208";a="604770266"
-Date: Wed, 24 Sep 2014 20:28:01 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>,
-        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com,
-        stefanb@linux.vnet.ibm.com
-Subject: Re: [PATCH v1 00/12] tpm: TPM2 support
-Message-ID: <20140924172801.GA5060@intel.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1753932AbaIXR3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:29:33 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:55148 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaIXR3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:29:32 -0400
+Date: Wed, 24 Sep 2014 17:28:36 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, Daniel Mack <daniel@caiaq.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] usb: core: log more general message on malformed
+ LANGID descriptor
+In-Reply-To: <20140924052759.GB20986@kroah.com>
+Message-ID: <alpine.DEB.2.11.1409241632160.2600@localhost.localdomain>
+References: <alpine.DEB.2.11.1409232013320.2145@localhost.localdomain> <20140924052759.GB20986@kroah.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:05:50PM +0300, Jarkko Sakkinen wrote:
-> This patch set enables TPM2 protocol and provides drivers for FIFO and
-> CRB interfaces.
+On Tue, 23 Sep 2014, Greg Kroah-Hartman wrote:
 
-Known issues so far:
+> On Tue, Sep 23, 2014 at 10:28:49PM +0000, Scot Doyle wrote:
+>> I'd like to change this error message:
+>> [    3.325837] usb 1-4: string descriptor 0 malformed (err = -61), defaulting to 0x0409
+>>
+>> into an error message followed by a debug message:
+>> [    3.324726] usb 1-4: malformed string descriptor; unknown language, defaulting to English
+>> [    3.327514] usb 1-4: string descriptor 0 malformed (err = -61), defaulting to 0x0409
+>>
+>> in order to communicate more information from the log itself. Are there
+>> any problems with this approach? Would it be better to put all the
+>> information on a single line? Something else?
+>
+> How about just one line, why two?
+>
+> And something like "device not implementing langid specifier, defaulting
+> to English", but cleaned up to sound a bit better?
 
-- le32/le64_to_cpu()'s and one cpu_to_le32 missing from tpm_crb.c
-  assuming that CRB driver would be used in big-endian architecture.
-- I still have troubles having FIFO testing environment so it would
-  not be a big surprise if it had broke for some reason (help with
-  testing and/or bug fixes for FIFO would be highly appreciated).
+That sounds good, I plan to submit this patch tomorrow unless anyone 
+prefers different wording.
 
-Notes about the implementation:
+---
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index 0c8a7fc..5317081 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -770,9 +770,7 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
+ 		dev->string_langid = 0x0409;
+ 		dev->have_langid = 1;
+ 		dev_err(&dev->dev,
+-			"string descriptor 0 malformed (err = %d), "
+-			"defaulting to 0x%04x\n",
+-				err, dev->string_langid);
++			"language id specifier not provided by device, defaulting to English");
+ 		return 0;
+ 	}
 
-- Reworked the code base to the direction that Jason Gunthorpe suggested.
-- Moved to use devres in tpm_crb as Jason suggested.
-- Did some groundwork for implementing Stefan Bergers suggestions to
-  tpm_crb.
-
-I hope that it is now more in right direction than in my preview.
-
-I'll push fixes on top of tpm2-v1 branch [1] and do not rebase it anymore
-and therefore it is a good testing branch.
-
-When things look good enough I'll create tpm2-v2 branch and prepare and
-send a new patch set.
-
-[1] https://github.com/jsakkine/linux-tpm2/
-
-/Jarko
-
-> Jarkko Sakkinen (8):
->   tpm: prepare TPM driver for adding TPM2 support
->   tpm: TPM2 support for tpm_pcr_read()
->   tpm: TPM2 support for tpm_do_selftest()
->   tpm: added tpm2_get_tpm_pt()
->   tpm: TPM2 support for tpm_pcr_extend()
->   tpm: TPM2 support for tpm_get_random().
->   tpm: Driver for TPM 2.0 CRB Interface
->   tpm: TPM2 sysfs attributes
-> 
-> Will Arthur (4):
->   tpm: TPM2 support for tpm_calc_ordinal_durations()
->   tpm: TPM2 support for tpm_startup()
->   tpm: TPM2 support for tpm_gen_interrupt().
->   tpm: TPM 2.0 FIFO Interface
-> 
->  drivers/char/tpm/Kconfig         |   9 +
->  drivers/char/tpm/Makefile        |   3 +-
->  drivers/char/tpm/tpm-chip.c      | 175 ++++++++++++++++
->  drivers/char/tpm/tpm-interface.c | 160 +++++----------
->  drivers/char/tpm/tpm.h           |  84 ++++++++
->  drivers/char/tpm/tpm2-commands.c | 422 +++++++++++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm2-sysfs.c    | 242 ++++++++++++++++++++++
->  drivers/char/tpm/tpm2.h          | 108 ++++++++++
->  drivers/char/tpm/tpm_crb.c       | 332 ++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_tis.c       |  53 ++++-
->  10 files changed, 1463 insertions(+), 125 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm-chip.c
->  create mode 100644 drivers/char/tpm/tpm2-commands.c
->  create mode 100644 drivers/char/tpm/tpm2-sysfs.c
->  create mode 100644 drivers/char/tpm/tpm2.h
->  create mode 100644 drivers/char/tpm/tpm_crb.c
-> 
-> -- 
-> 2.1.0
-> 
