@@ -1,84 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaIXRqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:46:08 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:56584 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752174AbaIXRqF (ORCPT
+	id S1752991AbaIXRsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:48:00 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48990 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaIXRr6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:46:05 -0400
-X-Sasl-enc: c39eOcKzBVMUGvnW+hbuYahbft0EIzeHhSr4VuSMbOGq 1411580764
-Date: Wed, 24 Sep 2014 14:45:57 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140924174557.GD31678@khazad-dum.debian.net>
-References: <20140919001311.GB5331@khazad-dum.debian.net>
- <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
- <20140919110014.GC29639@khazad-dum.debian.net>
- <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
- <20140919164217.GD17456@khazad-dum.debian.net>
- <20140923200054.GB16467@pd.tnic>
- <20140924145658.GB31678@khazad-dum.debian.net>
- <CALCETrU3-iNqCOT7EArtB91zAZC6ChuVN1wF6LbtdUqpoyJ+ig@mail.gmail.com>
+	Wed, 24 Sep 2014 13:47:58 -0400
+Message-ID: <542303DF.8010606@arm.com>
+Date: Wed, 24 Sep 2014 18:48:15 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrU3-iNqCOT7EArtB91zAZC6ChuVN1wF6LbtdUqpoyJ+ig@mail.gmail.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "riel@redhat.com" <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>
+Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org>
+X-OriginalArrivalTime: 24 Sep 2014 17:47:53.0245 (UTC) FILETIME=[AA758CD0:01CFD81F]
+X-MC-Unique: 114092418475509101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Andy Lutomirski wrote:
-> On Wed, Sep 24, 2014 at 7:56 AM, Henrique de Moraes Holschuh
-> <hmh@hmh.eng.br> wrote:
-> > And I'd really prefer it to be "update x86_capability, warn the user and
-> > carry on" for anything that is not going to crash the kernel.  Several
-> > distros will really want this backported to -stable, as the older kernels
-> > cannot do early microcode updates.
-> >
+On 23/09/14 17:08, Vincent Guittot wrote:
+
+[...]
+
 > 
-> I'm trying to see if Intel is willing to document any additional
-> controls for the TSX bits in this ucode.  No word yet, but I might
-> hear something soon.
+> Finally, the sched_group->sched_group_capacity->capacity_orig has been removed
+> because it's more used during load balance.
 
-If they do document it, please make sure to ask what will happen in the
-following situation:
+So you're not forced to call it rq->cpu_capacity_orig any more, you
+could use rq->cpu_capacity_max instead.
 
-   Assume there is a newer release of Intel microcode for these
-   processors, i.e. newer than the microcodes in the 2014-09-13 release.
-   IOW assume there are at least two public microcode updates in which the
-   Intel TSX feature has been disabled by default, but can be enabled by
-   the BIOS/UEFI.
+[...]
 
-   1. BIOS/UEFI has recent microcode (which has the Intel TSX on/off
-      switch), but it is not the latest microcode, and installed this
-      update on the processor.
+This review (by PeterZ) during v5 of your patch-set recommended some
+renaming (e.g. s/group_has_free_capacity/group_has_capacity and
+s/group_out_of_capacity/group_no_capacity as well as reordering of the
+parameters which I agree with:
 
-   2. BIOS/UEFI has *enabled* Intel TSX on user request.
+https://lkml.org/lkml/2014/9/11/706
 
-   3. Microcode is updated to the latest microcode by the operating
-      system, newer than the one in BIOS/UEFI.
+> 
+> -/*
+> - * Compute the group capacity factor.
+> - *
+> - * Avoid the issue where N*frac(smt_capacity) >= 1 creates 'phantom' cores by
+> - * first dividing out the smt factor and computing the actual number of cores
+> - * and limit unit capacity with that.
+> - */
+> -static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *group)
+> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
 
-   After step 3, will Intel TSX be enabled, or disabled ?
+s/static inline int/static inline bool
 
-Or, to be more explicit: will future microcode updates preserve Intel TSX
-enabled/disabled state, or will they always reset it to disabled?
+> +                       struct lb_env *env)
+>  {
+> -       unsigned int capacity_factor, smt, cpus;
+> -       unsigned int capacity, capacity_orig;
+> +       if ((sgs->group_capacity * 100) >
+> +                       (sgs->group_usage * env->sd->imbalance_pct))
+> +               return true;
+> 
+> -       capacity = group->sgc->capacity;
+> -       capacity_orig = group->sgc->capacity_orig;
+> -       cpus = group->group_weight;
+> +       if (sgs->sum_nr_running < sgs->group_weight)
+> +               return true;
+> 
+> -       /* smt := ceil(cpus / capacity), assumes: 1 < smt_capacity < 2 */
+> -       smt = DIV_ROUND_UP(SCHED_CAPACITY_SCALE * cpus, capacity_orig);
+> -       capacity_factor = cpus / smt; /* cores */
+> +       return false;
+> +}
+> 
+> -       capacity_factor = min_t(unsigned,
+> -               capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE));
+> -       if (!capacity_factor)
+> -               capacity_factor = fix_small_capacity(env->sd, group);
+> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
 
-This is really important, for obvious reasons.
+s/static inline int/static inline bool
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> +                       struct lb_env *env)
+> +{
+> +       if (sgs->sum_nr_running <= sgs->group_weight)
+> +               return false;
+> 
+> -       return capacity_factor;
+> +       if ((sgs->group_capacity * 100) <
+> +                       (sgs->group_usage * env->sd->imbalance_pct))
+> +               return true;
+> +
+> +       return false;
+>  }
+> 
+>  static enum group_type
+> -group_classify(struct sched_group *group, struct sg_lb_stats *sgs)
+> +group_classify(struct sched_group *group, struct sg_lb_stats *sgs,
+> +                       struct lb_env *env)
+>  {
+> -       if (sgs->sum_nr_running > sgs->group_capacity_factor)
+> +       if (group_is_overloaded(sgs, env))
+>                 return group_overloaded;
+> 
+>         if (sg_imbalanced(group))
+> @@ -6072,11 +6038,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>                 sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
+> 
+>         sgs->group_weight = group->group_weight;
+> -       sgs->group_capacity_factor = sg_capacity_factor(env, group);
+> -       sgs->group_type = group_classify(group, sgs);
+> 
+> -       if (sgs->group_capacity_factor > sgs->sum_nr_running)
+> -               sgs->group_has_free_capacity = 1;
+> +       sgs->group_type = group_classify(group, sgs, env);
+> +
+> +       sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
+
+In case sgs->group_type is group_overloaded you could set
+sgs->group_out_of_capacity to 1 without calling group_is_overloaded again.
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7cdf271e8e52..52d441c92a4f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6037,7 +6037,8 @@ static inline void update_sg_lb_stats(struct
+lb_env *env,
+
+        sgs->group_type = group_classify(group, sgs, env);
+
+-       sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
++       if (sgs->group_type == group_overloaded)
++               sgs->group_out_of_capacity = 1;
+ }
+
+>  }
+> 
+>  /**
+> @@ -6198,17 +6163,21 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+
+[...]
+
