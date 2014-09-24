@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaIXHog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:44:36 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:60139 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533AbaIXHoe (ORCPT
+	id S1753438AbaIXHoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:44:54 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3240 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaIXHov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:44:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: balbi@ti.com, Antoine Tenart <antoine.tenart@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, sebastian.hesselbarth@gmail.com,
-        p.zabel@pengutronix.de, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Date: Wed, 24 Sep 2014 09:44:19 +0200
-Message-ID: <2990737.4KzKXPZhaB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140924022736.GA5307@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <62705234.gKJDtUQLyT@wuerfel> <20140924022736.GA5307@peterchendt>
+	Wed, 24 Sep 2014 03:44:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 24 Sep 2014 00:44:50 -0700
+Date: Wed, 24 Sep 2014 10:44:39 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 0/3] Introduce of_match_machine() helper
+Message-ID: <20140924074439.GA25537@tbergstrom-lnx.Nvidia.com>
+References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>
+ <53FB7642.1000808@wwwdotorg.org>
+ <20140919131245.GQ26779@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:FUODaKiPeH0eL3DnNAkUKL9sjFx9IbA9jf/dcOJSetu
- WeaJVA3qFgLDg2PEm/IXHbOxH+23DvuBJahl8JrNcdtuxT4Q1S
- 8GwaLCTg4N73gtL/fJLkPqohpGULS3whFy3KefuUP/J49YkVWg
- EJZB4Ed10Qp2XvnuDmYu/YM29u+UnSOb+Q0tlXFsY5dxzOzZs+
- /EzU0vxtfFFI33+i2yFEClDnHBB0VW01R5DlvhJHliPO9cSOkg
- V3SwfUZhqB5kXGEMCs8NaGCRD2ac798XScGRoUXhiZTe1477tk
- LsfuwH9RLY1M7aTSkwMH/3EmWK8lDIioLQMFJDjgYLz8Htv129
- O/4cxxyIE6kQNxcFmz88=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Disposition: inline
+In-Reply-To: <20140919131245.GQ26779@tbergstrom-lnx.Nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 September 2014 10:27:52 Peter Chen wrote:
+On Fri, Sep 19, 2014 at 04:12:45PM +0300, Peter De Schrijver wrote:
+> On Mon, Aug 25, 2014 at 07:45:38PM +0200, Stephen Warren wrote:
+> > On 08/07/2014 05:01 PM, Tuomas Tynkkynen wrote:
+> > > Some mach-specific drivers that don't require their own node in the device tree
+> > > (for example drivers/soc/*, cpufreq, cpuidle etc.) want to match on the device
+> > > tree root compatible property instead. Instead of open-coding (and forgetting
+> > > to call of_node_put on the root node) everywhere, add a helper to the OF core.
+> > 
+> > Tuomas, I assume there will be a new version of this series to address 
+> > the review comments? For now, I'm not intending on applying this.
 > 
-> Antoine is adding a generic chipdea glue layer driver, which like ehci generic
-> platform driver: drivers/usb/host/ehci-platform.c, since other architectures
-> like MIPS (Someone submitted mips chipidea driver before) may not have device
-> tree support, I think non-dt support is also needed.
+> Given that Tuomas's internship ended, I'm willing to push this patch set
+> forward, if there is interest. So are people still interested in this idea
+> or should we drop it?
 
-Right.
+Seems there's no interest. I won't bother with this then.
 
-> It is a good suggestion for adding DT support for core driver, Since we did
-> not do it at the first, it is a little embarrass at current situation.
-> 
-> - For the new chipidea glue drivers, it is ok we can have a child node
-> for core device at glue device node, and some common entries can be there
-> like: phy, vbus, dr_mode, etc. We need to add support for getting
-> these common things for both through device tree and platform data
-> (parent is DT support and parent is non-DT support) at core driver.
+Cheers,
 
-I don't really want to see the child devices show up in DT, as this is
-really an implementation detail of the way that the driver currently works,
-and IMHO we should change that.
-
-I know that Felipe disagrees with me on this, but almost every other
-driver that has soc-specific specializations does not use parent/child
-nodes, neither in DT nor in Linux. Instead you have a single device
-node that gets distinguished by "compatible" string.
-
-> - For the existing glue drivers, since we can't change existed dts, we can
-> only do it from future SoC support. Then, in this kinds of glue drivers,
-> we need to support for both create core driver by node and by current
-> calling platform_device_add way.
-
-We should be able to easily change the ci_hdrc_add_device call into
-a different exported function that calls a version of the probe()
-code directly, as we do in all sorts of other drivers (ehci, ohci,
-dwc2, ..., but not dwc3 and musb as they are maintained by Felipe).
-
-We can also gradually move in some of the other glue drivers into
-the main driver if the differences are small enough.
-
-Moving the PCI driver over to this model requires a little more
-work but is absolutely doable (again, see ehci, ahci, sdhci examples)
-by moving the platform_device handling out of core.c and changing
-it just operate on the plain 'struct device', with an exported
-probe function that gets called on either the platform device
-or the pci device.
-
-	Arnd
+Peter.
