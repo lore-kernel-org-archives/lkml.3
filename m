@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaIXQKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:10:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51829 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751209AbaIXQKR (ORCPT
+	id S1753604AbaIXQKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:10:31 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:19474 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753458AbaIXQK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:10:17 -0400
-Date: Wed, 24 Sep 2014 18:10:09 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-        gerg@uclinux.org, Olof Johansson <olof@lixom.net>,
-        ARM Maintainers <arm@kernel.org>, linux-kernel@vger.kernel.org,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [RFC PATCH] ARM: at91: remove no-MMU at91x40 support
-Message-ID: <20140924161009.GK3026@piout.net>
-References: <1411568281-3924-1-git-send-email-nicolas.ferre@atmel.com>
- <3700375.DRR5iB2NGi@wuerfel>
- <5422DD2F.4090308@atmel.com>
- <3874734.x93Q9kHIES@wuerfel>
+	Wed, 24 Sep 2014 12:10:29 -0400
+Date: Wed, 24 Sep 2014 10:10:25 -0600
+From: Jens Axboe <axboe@fb.com>
+To: <torvalds@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] One last block fix
+Message-ID: <20140924161025.GA25787@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <3874734.x93Q9kHIES@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-24_07:2014-09-24,2014-09-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=0.000562873213808546 kscore.compositescore=0
+ circleOfTrustscore=33.2965958620397 compositescore=0.9989857498195
+ urlsuspect_oldscore=0.9989857498195 suspectscore=3
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.9989857498195 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1409240164
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/09/2014 at 17:09:14 +0200, Arnd Bergmann wrote :
-> On Wednesday 24 September 2014 17:03:11 Nicolas Ferre wrote:
-> > > I think these can be simplified further: AT91_SAM9G45_RESET and
-> > > AT91_SAM9_ALT_RESET can just go away and the files put into
-> > > obj-y.
-> > 
-> > Yes, I had the same idea before realizing that these two directives will
-> > move away in a patch already sent for 3.18. So, as this material is
-> > probably 3.19-ish, I kept them as they are and keep in mind to remove
-> > them when I merge them with 3.18-rc1...
-> 
-> Ok.
-> 
-> > > OLD_CLK_AT91 is the same as AT91_USE_OLD_CLK, so you could
-> > > just use that instead. I suspect the 'USE_OF' dependency for
-> > > COMMON_CLK_AT91 can also go away, since all platforms are
-> > > either board file based and select AT91_USE_OLD_CLK, or they
-> > > are DT based and don't.
-> > 
-> > Here also, I didn't want to touch more because we need to remove the
-> > arch/arm/mach-at91/Kconfig.non_dt file very soon (3.19) and I don't want
-> > to change this file (or all the SoC files) before the chunks related to
-> > these directives simply go away.
-> > 
-> > Tell me if it makes sense.
-> 
-> Yes, I agree your approach is better then.
-> 
+Hi Linus,
 
-Yeah and what you proposed would actually break the possibility to
-compile a kernel that can both boot DT and non DT platforms. My guess is
-that this is why we have both OLD_CLK_AT91 and AT91_USE_OLD_CLK.
+We've had an issue with scsi-mq where probing takes forever. This was
+bisected down to the percpu changes for blk_mq_queue_enter(), and the
+fact we now suffer an RCU grace period when killing a queue. SCSI
+creates and destroys tons of queues, so this let to 10s of seconds of
+stalls at boot for some.
 
+Tejun has a real fix for this, but it's too involved for 3.17. So this
+is a temporary workaround to expedite the queue killing until we can
+fold in the real fix for 3.18 when that merge window opens.
+
+Please pull!
+
+  git://git.kernel.dk/linux-block.git for-linus
+
+for you to fetch changes up to 0a30288da1aec914e158c2d7a3482a85f632750f:
+
+  blk-mq, percpu_ref: implement a kludge for SCSI blk-mq stall during probe (2014-09-24 08:29:36 -0600)
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      blk-mq, percpu_ref: implement a kludge for SCSI blk-mq stall during probe
+
+ block/blk-mq.c                  | 11 ++++++++++-
+ include/linux/percpu-refcount.h |  1 +
+ lib/percpu-refcount.c           | 16 ++++++++++++++++
+ 3 files changed, 27 insertions(+), 1 deletion(-)
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Jens Axboe
+
