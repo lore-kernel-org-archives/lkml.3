@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaIXOEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:04:23 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:63381 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814AbaIXOEV (ORCPT
+	id S1753758AbaIXOEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:04:34 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:46232 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670AbaIXOEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:04:21 -0400
+	Wed, 24 Sep 2014 10:04:31 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/11] perf stat: Fix AGGR_CORE segfault on multi-socket system
-Date: Wed, 24 Sep 2014 15:04:05 +0100
-Message-Id: <1411567455-31264-2-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 06/11] perf: Move cgroup init before PMU ->event_init()
+Date: Wed, 24 Sep 2014 15:04:10 +0100
+Message-Id: <1411567455-31264-7-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
 References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
@@ -27,34 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-When printing the stats associated with a counter in AGGR_MODE mode, the
-'cpu' argument represents an encoded socket and core_id, not a 'cpu'.
-Using it as an index into the any of the *_stats[MAX_NR_CPUS] arrays
-generates a SIGSEGV if the encoded socket id is non-zero.
+The Intel QoS PMU needs to know whether an event is part of a cgroup
+during ->event_init(), because tasks in the same cgroup share a
+monitoring ID.
 
-Follow the AGGR_GLOBAL case and reset the cpu index to 0.
+Move the cgroup initialisation before calling into the PMU driver.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- tools/perf/builtin-stat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 5fe0edb1de5d..7c30fbd2d9b7 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -964,7 +964,7 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 7925f21cee7f..8a07f51a23ff 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6859,7 +6859,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 		 struct perf_event *group_leader,
+ 		 struct perf_event *parent_event,
+ 		 perf_overflow_handler_t overflow_handler,
+-		 void *context)
++		 void *context, bool cgroup, pid_t pid)
+ {
+ 	struct pmu *pmu;
+ 	struct perf_event *event;
+@@ -6952,6 +6952,12 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
+ 		goto err_ns;
  
- 	aggr_printout(evsel, cpu, nr);
++	if (cgroup) {
++		err = perf_cgroup_connect(pid, event, attr, group_leader);
++		if (err)
++			goto err_ns;
++	}
++
+ 	pmu = perf_init_event(event);
+ 	if (!pmu)
+ 		goto err_ns;
+@@ -6975,6 +6981,8 @@ err_pmu:
+ 		event->destroy(event);
+ 	module_put(pmu->module);
+ err_ns:
++	if (is_cgroup_event(event))
++		perf_detach_cgroup(event);
+ 	if (event->ns)
+ 		put_pid_ns(event->ns);
+ 	kfree(event);
+@@ -7178,6 +7186,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	struct fd group = {NULL, 0};
+ 	struct task_struct *task = NULL;
+ 	struct pmu *pmu;
++	bool cgroup = false;
+ 	int event_fd;
+ 	int move_group = 0;
+ 	int err;
+@@ -7247,21 +7256,16 @@ SYSCALL_DEFINE5(perf_event_open,
  
--	if (aggr_mode == AGGR_GLOBAL)
-+	if (aggr_mode == AGGR_GLOBAL || aggr_mode == AGGR_CORE)
- 		cpu = 0;
+ 	get_online_cpus();
  
- 	fprintf(output, fmt, avg, csv_sep);
++	if (flags & PERF_FLAG_PID_CGROUP)
++		cgroup = true;
++
+ 	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL,
+-				 NULL, NULL);
++				 NULL, NULL, cgroup, pid);
+ 	if (IS_ERR(event)) {
+ 		err = PTR_ERR(event);
+ 		goto err_cpus;
+ 	}
+ 
+-	if (flags & PERF_FLAG_PID_CGROUP) {
+-		err = perf_cgroup_connect(pid, event, &attr, group_leader);
+-		if (err) {
+-			__free_event(event);
+-			goto err_cpus;
+-		}
+-	}
+-
+ 	if (is_sampling_event(event)) {
+ 		if (event->pmu->capabilities & PERF_PMU_CAP_NO_INTERRUPT) {
+ 			err = -ENOTSUPP;
+@@ -7461,7 +7465,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 	 */
+ 
+ 	event = perf_event_alloc(attr, cpu, task, NULL, NULL,
+-				 overflow_handler, context);
++				 overflow_handler, context, false, -1);
+ 	if (IS_ERR(event)) {
+ 		err = PTR_ERR(event);
+ 		goto err;
+@@ -7792,7 +7796,7 @@ inherit_event(struct perf_event *parent_event,
+ 					   parent_event->cpu,
+ 					   child,
+ 					   group_leader, parent_event,
+-				           NULL, NULL);
++				           NULL, NULL, false, -1);
+ 	if (IS_ERR(child_event))
+ 		return child_event;
+ 
 -- 
 1.9.3
 
