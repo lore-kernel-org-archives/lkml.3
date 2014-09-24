@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaIXNsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:48:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51015 "EHLO comal.ext.ti.com"
+	id S1753909AbaIXNsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:48:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55851 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753807AbaIXNsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:48:00 -0400
+	id S1753161AbaIXNsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:48:11 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 14/22] usb: phy: twl4030-usb: Use mutex instead of spinlock for protecting the data
-Date: Wed, 24 Sep 2014 19:17:12 +0530
-Message-ID: <1411566440-19169-15-git-send-email-kishon@ti.com>
+Subject: [PATCH 21/22] phy: exynos-dp-video: Use syscon support to control pmu register
+Date: Wed, 24 Sep 2014 19:17:19 +0530
+Message-ID: <1411566440-19169-22-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411566440-19169-1-git-send-email-kishon@ti.com>
 References: <1411566440-19169-1-git-send-email-kishon@ti.com>
@@ -21,83 +21,185 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tony Lindgren <tony@atomide.com>
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-We're using threaded irq on a I2C bus and we're sleeping in
-twl4030_usb_irq() as it calls twl4030_usb_linkstat() which
-calls the i2c functions. If we ever need to lock for longer
-I2C transaction sequences a mutex will allow us to do that
-easily.
+Currently the DP_PHY_ENABLE register is mapped in the driver,
+and accessed to control power to the PHY.
+With mfd-syscon and regmap interface available at our disposal,
+it's wise to use that instead of using a 'reg' property for the
+controller and allocating a memory resource for that.
 
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+To facilitate this, we have added another compatible string
+for Exynso5420 SoC to acquire driver data which contains
+different DP-PHY-CONTROL register offset.
+
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-twl4030-usb.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ .../devicetree/bindings/phy/samsung-phy.txt        |    7 +-
+ drivers/phy/phy-exynos-dp-video.c                  |   79 +++++++++++++-------
+ 2 files changed, 59 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
-index 24ff3c6..1e0e2d1 100644
---- a/drivers/phy/phy-twl4030-usb.c
-+++ b/drivers/phy/phy-twl4030-usb.c
-@@ -28,7 +28,6 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
--#include <linux/spinlock.h>
- #include <linux/workqueue.h>
+diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+index 7a6feea..15e0f2c 100644
+--- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
++++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+@@ -17,8 +17,11 @@ Samsung EXYNOS SoC series Display Port PHY
+ -------------------------------------------------
+ 
+ Required properties:
+-- compatible : should be "samsung,exynos5250-dp-video-phy";
+-- reg : offset and length of the Display Port PHY register set;
++- compatible : should be one of the following supported values:
++	 - "samsung,exynos5250-dp-video-phy"
++	 - "samsung,exynos5420-dp-video-phy"
++- samsung,pmu-syscon: phandle for PMU system controller interface, used to
++		      control pmu registers for power isolation.
+ - #phy-cells : from the generic PHY bindings, must be 0;
+ 
+ Samsung S5P/EXYNOS SoC series USB PHY
+diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
+index 8b3026e..53f44a0 100644
+--- a/drivers/phy/phy-exynos-dp-video.c
++++ b/drivers/phy/phy-exynos-dp-video.c
+@@ -13,44 +13,55 @@
  #include <linux/io.h>
- #include <linux/delay.h>
-@@ -155,7 +154,7 @@ struct twl4030_usb {
- 	struct regulator	*usb3v1;
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/mfd/syscon.h>
++#include <linux/mfd/syscon/exynos5-pmu.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
++#include <linux/regmap.h>
  
- 	/* for vbus reporting with irqs disabled */
--	spinlock_t		lock;
-+	struct mutex		lock;
+-/* DPTX_PHY_CONTROL register */
+-#define EXYNOS_DPTX_PHY_ENABLE		(1 << 0)
++struct exynos_dp_video_phy_drvdata {
++	u32 phy_ctrl_offset;
++};
  
- 	/* pin configuration */
- 	enum twl4030_usb_mode	usb_mode;
-@@ -516,13 +515,12 @@ static ssize_t twl4030_usb_vbus_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
+ struct exynos_dp_video_phy {
+-	void __iomem *regs;
++	struct regmap *regs;
++	const struct exynos_dp_video_phy_drvdata *drvdata;
+ };
+ 
+-static int __set_phy_state(struct exynos_dp_video_phy *state, unsigned int on)
++static void exynos_dp_video_phy_pwr_isol(struct exynos_dp_video_phy *state,
++							unsigned int on)
  {
- 	struct twl4030_usb *twl = dev_get_drvdata(dev);
--	unsigned long flags;
- 	int ret = -EINVAL;
+-	u32 reg;
++	unsigned int val;
++
++	if (IS_ERR(state->regs))
++		return;
  
--	spin_lock_irqsave(&twl->lock, flags);
-+	mutex_lock(&twl->lock);
- 	ret = sprintf(buf, "%s\n",
- 			twl->vbus_supplied ? "on" : "off");
--	spin_unlock_irqrestore(&twl->lock, flags);
-+	mutex_unlock(&twl->lock);
+-	reg = readl(state->regs);
+-	if (on)
+-		reg |= EXYNOS_DPTX_PHY_ENABLE;
+-	else
+-		reg &= ~EXYNOS_DPTX_PHY_ENABLE;
+-	writel(reg, state->regs);
++	val = on ? 0 : EXYNOS5_PHY_ENABLE;
  
- 	return ret;
+-	return 0;
++	regmap_update_bits(state->regs, state->drvdata->phy_ctrl_offset,
++			   EXYNOS5_PHY_ENABLE, val);
  }
-@@ -536,12 +534,12 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
  
- 	status = twl4030_usb_linkstat(twl);
+ static int exynos_dp_video_phy_power_on(struct phy *phy)
+ {
+ 	struct exynos_dp_video_phy *state = phy_get_drvdata(phy);
  
--	spin_lock_irq(&twl->lock);
-+	mutex_lock(&twl->lock);
- 	if (status >= 0 && status != twl->linkstat) {
- 		twl->linkstat = status;
- 		status_changed = true;
- 	}
--	spin_unlock_irq(&twl->lock);
-+	mutex_unlock(&twl->lock);
+-	return __set_phy_state(state, 1);
++	/* Disable power isolation on DP-PHY */
++	exynos_dp_video_phy_pwr_isol(state, 0);
++
++	return 0;
+ }
  
- 	if (status_changed) {
- 		/* FIXME add a set_power() method so that B-devices can
-@@ -695,8 +693,8 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	if (IS_ERR(phy_provider))
- 		return PTR_ERR(phy_provider);
+ static int exynos_dp_video_phy_power_off(struct phy *phy)
+ {
+ 	struct exynos_dp_video_phy *state = phy_get_drvdata(phy);
  
--	/* init spinlock for workqueue */
--	spin_lock_init(&twl->lock);
-+	/* init mutex for workqueue */
-+	mutex_init(&twl->lock);
+-	return __set_phy_state(state, 0);
++	/* Enable power isolation on DP-PHY */
++	exynos_dp_video_phy_pwr_isol(state, 1);
++
++	return 0;
+ }
  
- 	INIT_DELAYED_WORK(&twl->id_workaround_work, twl4030_id_workaround_work);
+ static struct phy_ops exynos_dp_video_phy_ops = {
+@@ -59,11 +70,31 @@ static struct phy_ops exynos_dp_video_phy_ops = {
+ 	.owner		= THIS_MODULE,
+ };
  
++static const struct exynos_dp_video_phy_drvdata exynos5250_dp_video_phy = {
++	.phy_ctrl_offset	= EXYNOS5_DPTX_PHY_CONTROL,
++};
++
++static const struct exynos_dp_video_phy_drvdata exynos5420_dp_video_phy = {
++	.phy_ctrl_offset	= EXYNOS5420_DPTX_PHY_CONTROL,
++};
++
++static const struct of_device_id exynos_dp_video_phy_of_match[] = {
++	{
++		.compatible = "samsung,exynos5250-dp-video-phy",
++		.data = &exynos5250_dp_video_phy,
++	}, {
++		.compatible = "samsung,exynos5420-dp-video-phy",
++		.data = &exynos5420_dp_video_phy,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, exynos_dp_video_phy_of_match);
++
+ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+ {
+ 	struct exynos_dp_video_phy *state;
+ 	struct device *dev = &pdev->dev;
+-	struct resource *res;
++	const struct of_device_id *match;
+ 	struct phy_provider *phy_provider;
+ 	struct phy *phy;
+ 
+@@ -71,11 +102,15 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+ 	if (!state)
+ 		return -ENOMEM;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-
+-	state->regs = devm_ioremap_resource(dev, res);
+-	if (IS_ERR(state->regs))
++	state->regs = syscon_regmap_lookup_by_phandle(dev->of_node,
++						      "samsung,pmu-syscon");
++	if (IS_ERR(state->regs)) {
++		dev_err(dev, "Failed to lookup PMU regmap\n");
+ 		return PTR_ERR(state->regs);
++	}
++
++	match = of_match_node(exynos_dp_video_phy_of_match, dev->of_node);
++	state->drvdata = match->data;
+ 
+ 	phy = devm_phy_create(dev, NULL, &exynos_dp_video_phy_ops, NULL);
+ 	if (IS_ERR(phy)) {
+@@ -89,12 +124,6 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+ 	return PTR_ERR_OR_ZERO(phy_provider);
+ }
+ 
+-static const struct of_device_id exynos_dp_video_phy_of_match[] = {
+-	{ .compatible = "samsung,exynos5250-dp-video-phy" },
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(of, exynos_dp_video_phy_of_match);
+-
+ static struct platform_driver exynos_dp_video_phy_driver = {
+ 	.probe	= exynos_dp_video_phy_probe,
+ 	.driver = {
 -- 
 1.7.9.5
 
