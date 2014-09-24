@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaIXI12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:27:28 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44215 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373AbaIXI1Y (ORCPT
+	id S1753823AbaIXI1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:27:50 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:48798 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753568AbaIXI1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:27:24 -0400
-Message-ID: <54228067.3090600@collabora.com>
-Date: Wed, 24 Sep 2014 10:27:19 +0200
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v13 0/9] Per-user clock constraints
-References: <1411497613-24049-1-git-send-email-tomeu.vizoso@collabora.com> <5421DF46.2010107@codeaurora.org>
-In-Reply-To: <5421DF46.2010107@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Wed, 24 Sep 2014 04:27:47 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-3e-542280815299
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Zhang Rui <rui.zhang@intel.com>, Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org, Lukasz Majewski <l.majewski@samsung.com>
+Subject: [PATCH 1/3] thermal: step_wise: fix: Prevent from binary overflow when
+ trend is dropping
+Date: Wed, 24 Sep 2014 10:27:10 +0200
+Message-id: <1411547232-21493-2-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAd2mBqUQgyONzBYbZ6xntZh/5Rqr
+	xZtH3BZvHm5mtLi8aw6bxefeI4wWTx72sTmwe+ycdZfdY/Gel0we66a9Zfbo27KK0ePzJrkA
+	1igum5TUnMyy1CJ9uwSujBVnN7AW7OSoOH59OmMD4x+2LkZODgkBE4lp09YxQdhiEhfurQeK
+	c3EICSxilFjy7RIjhNPFJHFmwyxmkCo2AT2Jz3efAnVwcIgIeEtsWcMBUsMscINRYkr/ZLBJ
+	wgLJEu1zG8FsFgFVib+HOxlB6nkF3CSezayFWKYo0f1sAtgRnALuEjd/P2MHsYWASg7+Osg+
+	gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgkHomtYNxZYPFIUYBDkYlHt4J4koh
+	QqyJZcWVuYcYJTiYlUR4T5QChXhTEiurUovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5N
+	LUgtgskycXBKNTDOVLWMvmN/ZNcUxv23L0ySscjyfZ8vf3Cnu+K9XX3/fKakKxZP3Drhg9V/
+	A9P/5WqHUy+z8zPcl801uGnEMEX0wvqf54qa956J1l4/+VCk2Kv2Kz/nTBFweHExJTCDc+vn
+	A2yiH8+GPtk5v+xK7/mL6qunXBWedXj3op27e79cFEt1sb915gS3mRJLcUaioRZzUXEiAKph
+	w5klAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 10:59 PM, Stephen Boyd wrote:
-> On 09/23/14 11:40, Tomeu Vizoso wrote:
->> Hello,
->>
->> this version of the patchset addresses some issues that Russell pointed out
->> yesterday:
->>
->> * Refactor the changes to clkdev.c to reduce the amount of ifdefs.
->>
->> * Properly release clocks when there isn't enough memory to create the per-user
->> wrapper.
->>
->> * Add clk_provider_put(struct clk_core*) for clock implementations to call
->> instead of clk_put(struct clk*) (instead of exposing __clk_put).
->>
->> As the previous versions, this is based on top of 3.17-rc4 and Mike's patch at
->> [0].
-> 
-> Any thoughts on my comments on patch set #10[1]? It seems like we can
-> avoid having a flag day to support this.
+It turns out that some boards can have instance->lower greater than 0 and
+when thermal trend is dropping it results with next_target equal to -1.
 
-I cannot say that I fully understand your proposal, but IMO the most
-valuable thing in this patchset is precisely the API split (and thus,
-the flag day is inherent to it).
+Since the next_target is defined as unsigned long it is interpreted as
+0xFFFFFFFF and larger than instance->upper.
+As a result the next_target is set to instance->upper which ramps up to
+maximal cooling device target when the temperature is steadily decreasing.
 
-I see a lot of value in clk consumers to use a defined set of functions
-that all take and/or return struct clk, and for providers to use the
-functions that take and/or return struct clk_core. Makes the API clearer
-and allows it to have a more scalable growth in the future.
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+---
+ drivers/thermal/step_wise.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-A less important feature of the patchset are per-user clocks, which (if
-I understand correctly) your proposal would address without requiring a
-flag day.
-
-And then we have clock constraints, which is probably the least
-important feature in the grand scheme of things, but it's actually what
-I personally care about.
-
-If we wanted to add a way for clk users to specify clock constraints
-without any refactoring, we could easily do so by reusing the request
-pattern that pm_qos uses:
-
-void clk_add_constraint(struct clk_request *req,
-                        int constraint_type,
-                        unsigned long value);
-
-void clk_update_constraint(struct clk_request *req,
-                           unsigned long new_value);
-
-void clk_remove_constraint(struct clk_request *req);
-
-It wouldn't be that bad IMO, but the API refactoring was something that
-was long desired and this was seen as a good opportunity to tackle it
-before it gets worst.
-
-Cheers,
-
-Tomeu
-
-> [1] https://lkml.org/lkml/2014/9/9/960
-> 
+diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+index 3b54c2c..fdd1f52 100644
+--- a/drivers/thermal/step_wise.c
++++ b/drivers/thermal/step_wise.c
+@@ -77,7 +77,7 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+ 			next_target = instance->upper;
+ 		break;
+ 	case THERMAL_TREND_DROPPING:
+-		if (cur_state == instance->lower) {
++		if (cur_state <= instance->lower) {
+ 			if (!throttle)
+ 				next_target = THERMAL_NO_TARGET;
+ 		} else {
+-- 
+2.0.0.rc2
 
