@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaIXLx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:53:56 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:48012 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaIXLxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:53:54 -0400
+	id S1753035AbaIXL4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:56:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751688AbaIXLz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 07:55:58 -0400
+Date: Wed, 24 Sep 2014 14:59:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC] virtio_pci: fix virtio spec compliance on restore
+Message-ID: <20140924115913.GA32179@redhat.com>
+References: <1411468217-18130-1-git-send-email-mst@redhat.com>
+ <1411522047.3659.10.camel@decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <54227038.2020805@free-electrons.com>
-References: <1411311493-24344-1-git-send-email-wens@csie.org>
- <1411311493-24344-4-git-send-email-wens@csie.org> <20140924063738.GQ15315@lukather>
- <CAGb2v64voZpK_82wtkErRowR0vjEUALNUwvCx_sd8Q5wb4Hq-g@mail.gmail.com> <54227038.2020805@free-electrons.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Wed, 24 Sep 2014 19:53:33 +0800
-X-Google-Sender-Auth: pTku4SgYi6jtK7Rknk4wr8TQhoY
-Message-ID: <CAGb2v64yGmdLeWmA=+nxD85DbQf_xxUNx3n3oedFZi51uc50+w@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH 3/6] ARM: dts: sunxi: Add Allwinner A80 dtsi
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        yhf <yhf@merrii.com>, ctl <ctl@merrii.com>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411522047.3659.10.camel@decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 3:18 PM, Gregory CLEMENT
-<gregory.clement@free-electrons.com> wrote:
-> Hi Chen-Yu,
->
->
->>>> +
->>>> +     memory {
->>>> +             reg = <0x20000000 0x40000000>;
->>>
->>> Usually, what we put there was the maximum amount of RAM that can be
->>> handled by the SoC. I think that it can go above 1GB
->>
->> With LPAE, it can handle 8GB. But the DT won't take 64bit values.
->> I'm not sure how to get it in. I'll look around for examples.
->
-> You can have a look on what we did for Armada XP:
->
-> arch/arm/boot/dts/armada-370-xp.dtsi
-> arch/arm/boot/dts/armada-xp.dtsi
-> arch/arm/boot/dts/armada-xp-gp.dts
->
-> I created a skeleton64.dtsi for this case
+On Wed, Sep 24, 2014 at 02:27:27AM +0100, Ben Hutchings wrote:
+> On Tue, 2014-09-23 at 13:32 +0300, Michael S. Tsirkin wrote:
+> > On restore, virtio pci does the following:
+> > + set features
+> > + init vqs etc - device can be used at this point!
+> > + set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
+> > 
+> > This is in violation of the virtio spec, which
+> > requires the following order:
+> > - ACKNOWLEDGE
+> > - DRIVER
+> > - init vqs
+> > - DRIVER_OK
+> >
+> > Cc: stable@vger.kernel.org
+> > Cc: Amit Shah <amit.shah@redhat.com>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> [...]
+> 
+> What concrete problem does this fix, such that it should be applied to
+> stable branches?
+> 
+> Ben.
 
-Thanks for the tip. Before I send v2, I do have a question. I'm using
+It will break with hypervisors that assume spec compliant behaviour.
+I would like this applied to stable branches so hypervisors don't
+need to support broken behaviour forever.
 
-    ranges = <0 0 0 0x20000000>;
-
-in the clocks and soc node to avoid having to use 64bit values for all
-addresses and sizes. Would this be undesirable, even bad practice maybe?
-
-http://linux-sunxi.org/A80/Memory_map is a document I pieced together
-from Allwinner's SDK header files. AFAIK only the memory goes above
-the 4GB limit. All peripherals are under 512 MB, 256MB even.
-
-
-Thanks
-ChenYu
+-- 
+MST
