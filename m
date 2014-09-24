@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256AbaIXPmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:42:40 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:14948 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753249AbaIXPmi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:42:38 -0400
-Date: Wed, 24 Sep 2014 11:42:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-Message-ID: <20140924114235.4287f4a1@gandalf.local.home>
-In-Reply-To: <5422336A.6030304@hitachi.com>
-References: <20140923173846.603cb49c@gandalf.local.home>
-	<5422336A.6030304@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1754294AbaIXPnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:43:13 -0400
+Received: from mga14.intel.com ([192.55.52.115]:42485 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaIXPnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:43:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391002852"
+Date: Wed, 24 Sep 2014 11:43:07 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 09/21] Replace the XIP page fault handler with the
+ DAX page fault handler
+Message-ID: <20140924154307.GO27730@localhost.localdomain>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <4d71d7a13bec3acf703e26bf6b0c7da21a71ebe0.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140903074724.GE20473@dastard>
+ <20140910152337.GF27730@localhost.localdomain>
+ <20140911030926.GO20518@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911030926.GO20518@dastard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014 11:58:50 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2014/09/24 6:38), Steven Rostedt wrote:
- 
-> >   to them and copied them pretty much unchanged into a ftrace directory
-> >   under test.d. Is this fine, or is there more massaging I need to do
-> >   to them?
-> 
-> Yeah, ftrace has a double meaning :), so test.d/ftrace is fine to me.
-
-I was thinking that more complex tests can go into ftrace, and simple
-tests can go into basic.
-
-> 
+On Thu, Sep 11, 2014 at 01:09:26PM +1000, Dave Chinner wrote:
+> On Wed, Sep 10, 2014 at 11:23:37AM -0400, Matthew Wilcox wrote:
+> > On Wed, Sep 03, 2014 at 05:47:24PM +1000, Dave Chinner wrote:
+> > > > +	error = get_block(inode, block, &bh, 0);
+> > > > +	if (!error && (bh.b_size < PAGE_SIZE))
+> > > > +		error = -EIO;
+> > > > +	if (error)
+> > > > +		goto unlock_page;
+> > > 
+> > > page fault into unwritten region, returns buffer_unwritten(bh) ==
+> > > true. Hence buffer_written(bh) is false, and we take this branch:
+> > > 
+> > > > +	if (!buffer_written(&bh) && !vmf->cow_page) {
+> > > > +		if (vmf->flags & FAULT_FLAG_WRITE) {
+> > > > +			error = get_block(inode, block, &bh, 1);
+> > > 
+> > > Exactly what are you expecting to happen here? We don't do
+> > > allocation because there are already unwritten blocks over this
+> > > extent, and so bh will be unchanged when returning. i.e. it will
+> > > still be mapping an unwritten extent.
 > > 
-> >   I know the echos don't show up, but I kept them anyway. What should
-> >   happen with them?
+> > I was expecting calling get_block() on an unwritten extent to convert it
+> > to a written extent.  Your suggestion below of using b_end_io() to do that
+> > is a better idea.
+> > 
+> > So this should be:
+> > 
+> > 	if (!buffer_mapped(&bh) && !vmf->cow_page) {
+> > 
+> > ... right?
 > 
-> I think you'd better use exit_unsupported/exit_xfail to notify
-> that the test target is not configured, or expected to fail.
+> Yes, that is the conclusion I reached as well. ;)
 
-OK, that answers the exit codes (as you also stated below), but what
-about the echos themselves?
+Now I know why I was expecting get_block() on an unwritten extent to
+convert it to a written extent.  That's the way ext4 behaves!
 
-> Then the user can reconfigure that. Maybe we should keep the
-> detailed log of such results. (you can do it with --keep option)
+[  236.660772] got bh ffffffffa06e3bd0 1000
+[  236.660814] got bh for write ffffffffa06e3bd0 60
+[  236.660821] calling end_io ffffffffa06e3bd0 60
 
-You mean keep the echos, as they are ignored anyway, but if we add
---keep, then the echos will show?  Maybe that option should be -v, like
-other tools use for "verbose".
+(1000 is BH_Unwritten, 60 is BH_Mapped | BH_New)
 
+The code producing this output:
 
-> > --- /dev/null
-> > +++ b/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter.tc
-> > @@ -0,0 +1,111 @@
-> > +#!/bin/sh
-> > +# description: ftrace - function graph filters
-> > +
-> > +# Make sure that function graph filtering works, and is not
-> > +# affected by other tracers enabled (like stack tracer)
-> > +
-> > +if ! grep -q function_graph available_tracers; then
-> > +    echo "no function graph tracer configured"
-> > +    exit 0;
-> 
-> This should call exit_unsupported, because the test is not passed.
+        error = get_block(inode, block, &bh, 0);
+printk("got bh %p %lx\n", bh.b_end_io, bh.b_state);
+        if (!error && (bh.b_size < PAGE_SIZE))
+                error = -EIO;
+        if (error)
+                goto unlock_page;
 
-Will update this and others.
+        if (!buffer_mapped(&bh) && !vmf->cow_page) {
+                if (vmf->flags & FAULT_FLAG_WRITE) {
+                        error = get_block(inode, block, &bh, 1);
+printk("got bh for write %p %lx\n", bh.b_end_io, bh.b_state);
 
+# xfs_io -f -c "truncate 20k" -c "fiemap -v" -c "falloc 0 20k" -c "fiemap -v" -c "mmap -w 0 20k" -c "fiemap -v" -c "mwrite 4k 4k" -c "fiemap -v" /mnt/ram0/b
+/mnt/ram0/b:
+/mnt/ram0/b:
+ EXT: FILE-OFFSET      BLOCK-RANGE      TOTAL FLAGS
+   0: [0..39]:         263176..263215      40 0x801
+/mnt/ram0/b:
+ EXT: FILE-OFFSET      BLOCK-RANGE      TOTAL FLAGS
+   0: [0..39]:         263176..263215      40 0x801
+/mnt/ram0/b:
+ EXT: FILE-OFFSET      BLOCK-RANGE      TOTAL FLAGS
+   0: [0..39]:         263176..263215      40   0x1
 
-> > +# Make sure we did find something
-> > +count=`cat trace | grep 'schedule()' | wc -l` 
-> > +if [ $count -eq 0 ]; then
-> > +    echo "No schedule traces found?"
-> > +    exit -1
-> > +fi
-> > +
-> > +echo "Graph filtering works by itself"
-> > +
-> 
-> I think the following part should be a separated test for
-> stack trace.
-
-Good point. A lot of my test scripts do multiple tests. I think for
-putting them into tools/testing/selftests/ftrace, I'll break them up
-and make them separate tests. For example, the simple graph filtering
-above is an example of something that can go into the basic directory,
-but the test against stack tracer should be in ftrace. What do you
-think?
-
-
-> > +
-> > +echo "Now filter on just schedule"
-> > +echo '*schedule' > set_ftrace_filter
-> > +> trace
-> 
-> echo > trace?
-
-OK. Hmm, I wonder if we should make a bunch of functions that the tests
-can use. Like a "clear_trace" call that does this. Can we export
-functions that this shell will be able to use? When we see lots of
-duplicate code we may want to have something like that. Well, for this,
-it may not be that big of a deal, because "echo > trace" is rather
-simple. But I do have other operations that are a bit more intrusive.
-
--- Steve
-
+Actually, this looks wrong ... ext4 should only have converted one block
+of the extent to written, not all of it.  I think that means ext4 is
+exposing stale data :-(  I'll keep digging.
