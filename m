@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaIXDoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 23:44:55 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40135 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaIXDox (ORCPT
+	id S1755431AbaIXDr0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 23:47:26 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39661 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290AbaIXDrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 23:44:53 -0400
+	Tue, 23 Sep 2014 23:47:22 -0400
 From: Behan Webster <behanw@converseincode.com>
-To: linux@arm.linux.org.uk, linux@prisktech.co.nz
-Cc: behanw@converseincode.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arm, vt8500, LLVMLlinux: Use mcr instead of mcr% for mach-vt8500
-Date: Tue, 23 Sep 2014 20:44:44 -0700
-Message-Id: <1411530284-28807-1-git-send-email-behanw@converseincode.com>
+To: viro@zeniv.linux.org.uk
+Cc: behanw@converseincode.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>
+Subject: [PATCH] fs, LLVMLinux: Remove warning from COMPATIBLE_IOCTL
+Date: Tue, 23 Sep 2014 20:47:17 -0700
+Message-Id: <1411530437-30339-1-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ASM below does not compile with clang and is not the way that the mcr
-command is used in other parts of the kernel.
+From: Mark Charlebois <charlebm@gmail.com>
 
-arch/arm/mach-vt8500/vt8500.c:72:11: error: invalid % escape in inline assembly string
-        asm("mcr%? p15, 0, %0, c7, c0, 4" : : "r" (0));
-            ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
+cmd in COMPATIBLE_IOCTL is always a u32, so cast it so there isn't a warning
+about an overflow in XFORM.
 
-There are other forms that are supported on different ARM instruction sets but
-generally the kernel just uses mcr as it is supported in all ARM instruction
-sets.
-
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 Signed-off-by: Behan Webster <behanw@converseincode.com>
-Reviewed-by: Mark Charlebois <charlebm@gmail.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-vt8500/vt8500.c | 2 +-
+ fs/compat_ioctl.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
-index 2da7be3..3bc0dc9 100644
---- a/arch/arm/mach-vt8500/vt8500.c
-+++ b/arch/arm/mach-vt8500/vt8500.c
-@@ -69,7 +69,7 @@ static void vt8500_power_off(void)
- {
- 	local_irq_disable();
- 	writew(5, pmc_base + VT8500_HCR_REG);
--	asm("mcr%? p15, 0, %0, c7, c0, 4" : : "r" (0));
-+	asm("mcr p15, 0, %0, c7, c0, 4" : : "r" (0));
- }
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index afec645..f6ce1aa 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -810,7 +810,7 @@ static int compat_ioctl_preallocate(struct file *file,
+  */
+ #define XFORM(i) (((i) ^ ((i) << 27) ^ ((i) << 17)) & 0xffffffff)
  
- static void __init vt8500_init(void)
+-#define COMPATIBLE_IOCTL(cmd) XFORM(cmd),
++#define COMPATIBLE_IOCTL(cmd) XFORM((u32)cmd),
+ /* ioctl should not be warned about even if it's not implemented.
+    Valid reasons to use this:
+    - It is implemented with ->compat_ioctl on some device, but programs
 -- 
 1.9.1
 
