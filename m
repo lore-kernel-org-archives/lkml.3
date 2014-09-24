@@ -1,64 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308AbaIXIXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:23:41 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:63049 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543AbaIXIXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:23:32 -0400
-Date: Wed, 24 Sep 2014 09:23:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v7 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
-Message-ID: <20140924082326.GG17801@lee--X1>
-References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1411428329-23172-3-git-send-email-bjorn.andersson@sonymobile.com>
+	id S1754532AbaIXIXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:23:54 -0400
+Received: from verein.lst.de ([213.95.11.211]:52370 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753943AbaIXIXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:23:51 -0400
+Date: Wed, 24 Sep 2014 10:23:48 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH block/for-3.17-fixes/core] blk-mq, percpu_ref:
+	implement a kludge for SCSI blk-mq stall during probe
+Message-ID: <20140924082348.GB8894@lst.de>
+References: <20140919113815.GA10791@lst.de> <541C8047.80705@kernel.dk> <20140923055554.GA10189@lst.de> <20140923055648.GD11740@mtj.dyndns.org> <20140923055924.GA10295@lst.de> <20140923060141.GF11740@mtj.dyndns.org> <20140923060906.GA10547@lst.de> <20140923061152.GI11740@mtj.dyndns.org> <5421968B.7080309@kernel.dk> <20140923192432.GA24441@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411428329-23172-3-git-send-email-bjorn.andersson@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140923192432.GA24441@mtj.dyndns.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Bjorn Andersson wrote:
+Thanks, this fixes the boot stall for me.
 
-> Driver for the Resource Power Manager (RPM) found in Qualcomm 8660, 8960
-> and 8064 based devices. The driver exposes resources that child drivers
-> can operate on; to implementing regulator, clock and bus frequency
-> drivers.
-> 
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
-> 
-> No functional changes since v6.
-
-Then you should have applied my:
-
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
->  drivers/mfd/Kconfig          |   14 +
->  drivers/mfd/Makefile         |    1 +
->  drivers/mfd/qcom_rpm.c       |  580 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/qcom_rpm.h |   10 +
->  4 files changed, 605 insertions(+)
->  create mode 100644 drivers/mfd/qcom_rpm.c
->  create mode 100644 include/linux/mfd/qcom_rpm.h
-
-[...]
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Tested-by: Christoph Hellwig <hch@lst.de>
