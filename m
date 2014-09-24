@@ -1,135 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaIXOil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:38:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54460 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088AbaIXOii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:38:38 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: <santosh.shilimkar@ti.com>, Rob Herring <robh+dt@kernel.org>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [RESEND PATCH v2] dt/documentation: add specification of dma bus information
-Date: Wed, 24 Sep 2014 17:37:24 +0300
-Message-ID: <1411569444-7567-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753181AbaIXOiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:38:52 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:37373 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbaIXOit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:38:49 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: fdt: fix memory range check
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+In-Reply-To: <1411466349-14166-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1411466349-14166-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Wed, 24 Sep 2014 15:38:44 +0100
+Message-Id: <20140924143844.B2218C40738@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Tue, 23 Sep 2014 10:59:09 +0100, Srinivas Kandagatla <srinivas.kandagatla@linaro.org> wrote:
+> In cases where board has below memory DT node
+> 
+> memory{
+> 	device_type = "memory";
+> 	reg = <0x80000000 0x80000000>;
+> };
+> 
+> Check on the memory range in fdt.c will always fail because it is
+> comparing MAX_PHYS_ADDR with base + size, in fact it should compare
+> it with base + size - 1.
+> 
+> This issue was originally noticed on Qualcomm IFC6410 board.
+> Without this patch kernel shows up noticed unnecessary warnings
+> 
+> [    0.000000] Machine model: Qualcomm APQ8064/IFC6410
+> [    0.000000] Ignoring memory range 0xffffffff - 0x100000000
+> [    0.000000] cma: Reserved 64 MiB at ab800000
+> 
+> as a result the size get reduced to 0x7fffffff which looks wrong.
+> 
+> This patch fixes the check involved in generating this warning and
+> as a result it also fixes the wrong size calculation.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> ---
+>  drivers/of/fdt.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 79cb831..3f5736c 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -937,7 +937,7 @@ void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+>  		return;
+>  	}
+>  
+> -	if (base + size > MAX_PHYS_ADDR) {
+> +	if (base + size - 1 > MAX_PHYS_ADDR) {
+>  		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
+>  				ULONG_MAX, base + size);
+>  		size = MAX_PHYS_ADDR - base;
 
-Recently we introduced the generic device tree infrastructure
-for couple of DMA bus parameter, dma-ranges and dma-coherent.
-Update the documentation so that its useful for future users.
+By that logic, the above two lines need to be repaired also:
 
-The "dma-ranges" property is intended to be used for describing the
-configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
+		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
+				MAX_PHYS_ADDR + 1, base + size);
+		size = MAX_PHYS_ADDR - base + 1;
 
-The "dma-coherent" property is intended to be used for identifying devices
-supported coherent DMA operations.
+I've fixed it up and applied, thanks.
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
-Hi Rob,
-
-Seems, this patch has not been merged accidentally, so
-I've rebased it on top of Linux 3.17-rc5.
-
-Link on v1:
- https://lkml.org/lkml/2014/6/5/558
-
- Documentation/devicetree/booting-without-of.txt | 53 +++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
-
-diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
-index 1f013bd..7768518 100644
---- a/Documentation/devicetree/booting-without-of.txt
-+++ b/Documentation/devicetree/booting-without-of.txt
-@@ -51,6 +51,8 @@ Table of Contents
- 
-   VIII - Specifying device power management information (sleep property)
- 
-+  IX - Specifying dma bus information
-+
-   Appendix A - Sample SOC node for MPC8540
- 
- 
-@@ -1332,6 +1334,57 @@ reasonably grouped in this manner, then create a virtual sleep controller
- (similar to an interrupt nexus, except that defining a standardized
- sleep-map should wait until its necessity is demonstrated).
- 
-+IX - Specifying dma bus information
-+
-+Some devices may have DMA memory range shifted relatively to the beginning of
-+RAM, or even placed outside of kernel RAM. For example, the Keystone 2 SoC
-+worked in LPAE mode with 4G memory has:
-+- RAM range: [0x8 0000 0000, 0x8 FFFF FFFF]
-+- DMA range: [  0x8000 0000,   0xFFFF FFFF]
-+and DMA range is aliased into first 2G of RAM in HW.
-+
-+In such cases, DMA addresses translation should be performed between CPU phys
-+and DMA addresses. The "dma-ranges" property is intended to be used
-+for describing the configuration of such system in DT.
-+
-+In addition, each DMA master device on the DMA bus may or may not support
-+coherent DMA operations. The "dma-coherent" property is intended to be used
-+for identifying devices supported coherent DMA operations in DT.
-+
-+* DMA Bus master
-+Optional property:
-+- dma-ranges: <prop-encoded-array> encoded as arbitrary number of triplets of
-+	(child-bus-address, parent-bus-address, length). Each triplet specified
-+	describes a contiguous DMA address range.
-+	The dma-ranges property is used to describe the direct memory access (DMA)
-+	structure of a memory-mapped bus whose device tree parent can be accessed
-+	from DMA operations originating from the bus. It provides a means of
-+	defining a mapping or translation between the physical address space of
-+	the bus and the physical address space of the parent of the bus.
-+	(for more information see ePAPR specification)
-+
-+* DMA Bus child
-+Optional property:
-+- dma-ranges: <empty> value. if present - It means that DMA addresses
-+	translation has to be enabled for this device.
-+- dma-coherent: Present if dma operations are coherent
-+
-+Example:
-+soc {
-+		compatible = "ti,keystone","simple-bus";
-+		ranges = <0x0 0x0 0x0 0xc0000000>;
-+		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
-+
-+		[...]
-+
-+		usb: usb@2680000 {
-+			compatible = "ti,keystone-dwc3";
-+
-+			[...]
-+			dma-coherent;
-+		};
-+};
-+
- Appendix A - Sample SOC node for MPC8540
- ========================================
- 
--- 
-1.9.1
+g.
 
