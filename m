@@ -1,112 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaIXNsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:48:32 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49284 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751969AbaIXNs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:48:27 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
-Date: Wed, 24 Sep 2014 16:08:15 +0200
-Message-ID: <3464697.XblUcyRfDp@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4515093.TGIQh7cBOD@wuerfel>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1579761.oeYleOAY1N@vostro.rjw.lan> <4515093.TGIQh7cBOD@wuerfel>
+	id S1753872AbaIXNsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:48:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51015 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753807AbaIXNsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:48:00 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 14/22] usb: phy: twl4030-usb: Use mutex instead of spinlock for protecting the data
+Date: Wed, 24 Sep 2014 19:17:12 +0530
+Message-ID: <1411566440-19169-15-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411566440-19169-1-git-send-email-kishon@ti.com>
+References: <1411566440-19169-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 24, 2014 09:55:12 AM Arnd Bergmann wrote:
-> On Tuesday 23 September 2014 22:47:36 Rafael J. Wysocki wrote:
-> > Quite frankly, I'm not sure what you're asking for.
-> > 
-> > It seems to mean "I kind of don't like the current implementation", but
-> > then the last part is quite unclear to me.  Are you suggesting to add more
-> > "if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) etc" type of checks to
-> > device drivers?  That I'd like to avoid to be honest.
-> 
-> No, that is not what I want. Device drivers should ideally call interfaces
-> that just take a 'struct device' or 'struct platform_device' pointer,
-> and those should be implemented in an appropriate way.
+From: Tony Lindgren <tony@atomide.com>
 
-But then you have drivers that access properties of their child nodes which
-have no corresponding struct device(s).
+We're using threaded irq on a I2C bus and we're sleeping in
+twl4030_usb_irq() as it calls twl4030_usb_linkstat() which
+calls the i2c functions. If we ever need to lock for longer
+I2C transaction sequences a mutex will allow us to do that
+easily.
 
-> > Instead of the current proposal we can introduce something like
-> > 
-> > int device_get_child_property(struct device *dev, void *child_node,
-> >                               const char *propname, void **valptr);
-> > 
-> > (and analogously for device_read_property*) and use that in the drivers that
-> > need to iterate over child nodes of a device.  Quite along the lines of what
-> > Dmitry is suggesting.
-> > 
-> > Then, fn() in acpi_for_each_child_node() (and the of_ counterpart of it)
-> > would become
-> > 
-> > int (*fn)(struct device *dev, void *child_node, void *data)
-> > 
-> > and so on.
-> > 
-> > Would you prefer that?
-> 
-> I must still be missing part of what you are trying to achieve above.
-> We definitely need an interface to get properties from the device itself,
-> like
-> 
-> int device_get_property(struct device *dev, const char *propname, void **valptr);
-> 
-> (whatever valptr ends up being, that would be a separate discussion).
-> 
-> As soon as it comes to devices that have child nodes, I don't see a
-> necessity to have a generic abstraction for them, as this is typically
-> only done for some of the more obscure bindings, or for child nodes that
-> are defined in a subsystem-wide binding rather than a device private
-> binding.
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-twl4030-usb.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-Well, I don't really agree here.
-
-We can demonstrably reduce code duplication (and therefore complexity too) in
-at least two drivers by doing that at a reasonably low cost, which is
-simply exposing the API for child nodes and adding helpers for iterating
-over them.
-
-We don't have to use struct fw_dev_node (or similar) for that if that's what
-bothers you, but in my opinion something like "get me a property of this thing
-which may be either a device tree node or an ACPI object" (ie. what the current
-dev_node_get_property() does) is more straightforwad than "get me a property
-of that child of this device which may be either a device tree node or an ACPI
-object" (ie. what device_get_child_property() as described above would do).
-
-> For the former case, I think they are indeed better left in drivers that
-> actively know the difference between DT and ACPI, and that don't necessarily
-> use the same binding for both. In the latter case, I'd leave the
-> implementation up to subsystem code, which again would know what
-> interface it is using.
-
-The case in question is drivers that need not know the difference between DT and
-ACPI and do use the same binding for both.  It seems quite clear what needs to
-be done in the other cases.
-
+diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
+index 24ff3c6..1e0e2d1 100644
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -28,7 +28,6 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+-#include <linux/spinlock.h>
+ #include <linux/workqueue.h>
+ #include <linux/io.h>
+ #include <linux/delay.h>
+@@ -155,7 +154,7 @@ struct twl4030_usb {
+ 	struct regulator	*usb3v1;
+ 
+ 	/* for vbus reporting with irqs disabled */
+-	spinlock_t		lock;
++	struct mutex		lock;
+ 
+ 	/* pin configuration */
+ 	enum twl4030_usb_mode	usb_mode;
+@@ -516,13 +515,12 @@ static ssize_t twl4030_usb_vbus_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	struct twl4030_usb *twl = dev_get_drvdata(dev);
+-	unsigned long flags;
+ 	int ret = -EINVAL;
+ 
+-	spin_lock_irqsave(&twl->lock, flags);
++	mutex_lock(&twl->lock);
+ 	ret = sprintf(buf, "%s\n",
+ 			twl->vbus_supplied ? "on" : "off");
+-	spin_unlock_irqrestore(&twl->lock, flags);
++	mutex_unlock(&twl->lock);
+ 
+ 	return ret;
+ }
+@@ -536,12 +534,12 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ 
+ 	status = twl4030_usb_linkstat(twl);
+ 
+-	spin_lock_irq(&twl->lock);
++	mutex_lock(&twl->lock);
+ 	if (status >= 0 && status != twl->linkstat) {
+ 		twl->linkstat = status;
+ 		status_changed = true;
+ 	}
+-	spin_unlock_irq(&twl->lock);
++	mutex_unlock(&twl->lock);
+ 
+ 	if (status_changed) {
+ 		/* FIXME add a set_power() method so that B-devices can
+@@ -695,8 +693,8 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	if (IS_ERR(phy_provider))
+ 		return PTR_ERR(phy_provider);
+ 
+-	/* init spinlock for workqueue */
+-	spin_lock_init(&twl->lock);
++	/* init mutex for workqueue */
++	mutex_init(&twl->lock);
+ 
+ 	INIT_DELAYED_WORK(&twl->id_workaround_work, twl4030_id_workaround_work);
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
