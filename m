@@ -1,102 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaIXLF7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:05:59 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:41349 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417AbaIXLFy (ORCPT
+	id S1753597AbaIXLGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:06:12 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:52127 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561AbaIXLGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:05:54 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-4e-5422a58ff6e4
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
-        santosh.shilimkar@ti.com, tony@atomide.com, drake@endlessm.com,
-        loeliger@gmail.com
-Subject: [PATCH v5 7/7] ARM: dts: exynos4: Add nodes for L2 cache controller
-Date: Wed, 24 Sep 2014 13:05:41 +0200
-Message-id: <1411556741-5810-8-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1411556741-5810-1-git-send-email-m.szyprowski@samsung.com>
-References: <1411556741-5810-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t/xa7r9S5VCDKYftrB4NP8xs0Xvgqts
-	Fmeb3rBbbO+cwW4x5c9yJotNj6+xWlzeNYfNYvaSfhaLGef3MVncvsxrcW77FhaLtUfuslu8
-	7lvDbLFq1x9Gi/1XvBz4PVqae9g8vn2dxOJxua+XyWPR9yyPnbPusnvcubaHzWPzknqPvi2r
-	GD2O39jO5PF5k1wAVxSXTUpqTmZZapG+XQJXRvsn3oLdvBUbdts2MPZydzFyckgImEgcPPmb
-	FcIWk7hwbz1bFyMXh5DAUkaJ71sWQjl9TBKT3i0Cq2ITMJToetvFBmKLCGRL/Pg2mQWkiFmg
-	lVni8ZNvYEXCAj4SPx9MZwaxWQRUJTr33WAHsXkF3CX+vfzABrFOTuL/yxVMIDangIfE48f/
-	GLsYOYC2uUs0bXKZwMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIMH/Zwbj4mNUh
-	RgEORiUe3gniSiFCrIllxZW5hxglOJiVRHhf9QCFeFMSK6tSi/Lji0pzUosPMTJxcEo1MPq0
-	zHJjOszeJZWfdkt//bVvBf58Uu9MP9zgnFAlltbcmrEtJMh1Rg3nFs2LWa9OXD+kdCZistzS
-	L6IP45tO7J1YceKx/kf91b2p9QztWn/tZsnPiOLn2M7x56q7ZsD620/uf2iMNWRn9p20/lX7
-	ppRljDMu3i4wL7ryr+/kQm73bW4zv9WdP6TEUpyRaKjFXFScCADxUuS5RAIAAA==
+	Wed, 24 Sep 2014 07:06:08 -0400
+Date: Wed, 24 Sep 2014 12:06:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Johannes Pointner <johannes.pointner@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, AnilKumar Ch <anilkumar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tps65217: add compatible string for subdevices
+Message-ID: <20140924110602.GI19999@lee--X1>
+References: <5439652.jHp5aCCfrZ@lenovobook>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5439652.jHp5aCCfrZ@lenovobook>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+On Mon, 22 Sep 2014, Johannes Pointner wrote:
 
-This patch adds device tree nodes for L2 cache controller present on
-Exynos4 SoCs.
+> The TPS65217 is missing of_compatible string in the mfd_cell for its
+> subdevices. This compatible string is necessary to use functions like
+> of_find_backlight_by_node in backlight.c.
+> 
+> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+> ---
+>  Documentation/devicetree/bindings/regulator/tps65217.txt            | 5 ++++-
+>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt      | 6 +++---
+>  drivers/mfd/tps65217.c                                              | 2 ++
+>  3 files changed, 9 insertions(+), 4 deletions(-)
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- arch/arm/boot/dts/exynos4210.dtsi |  9 +++++++++
- arch/arm/boot/dts/exynos4x12.dtsi | 14 ++++++++++++++
- 2 files changed, 23 insertions(+)
+[...]
 
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index b31315fc0afa..3b8e094144e6 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -64,6 +64,15 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
- 
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <2 2 1>;
-+	};
-+
- 	gic: interrupt-controller@10490000 {
- 		cpu-offset = <0x8000>;
- 	};
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index 771412e7c06c..6ee773921559 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -54,6 +54,20 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
- 
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <3 2 1>;
-+		arm,double-linefill = <1>;
-+		arm,double-linefill-incr = <0>;
-+		arm,double-linefill-wrap = <1>;
-+		arm,prefetch-drop = <1>;
-+		arm,prefetch-offset = <7>;
-+	};
-+
- 	clock: clock-controller@10030000 {
- 		compatible = "samsung,exynos4412-clock";
- 		reg = <0x10030000 0x20000>;
+> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> index 5fb9279..c3fb649 100644
+> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> @@ -7,18 +7,18 @@ Required properties:
+>  - compatible: "ti,tps65217"
+>  - reg: I2C slave address
+>  - backlight: node for specifying WLED1 and WLED2 lines in TPS65217
+> +- compatible: "ti,tps65217-bl"
+
+This is now confusing.  Please make it clear that this part of the
+documentation is now referencing the sub-node.
+
+>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+>  - default-brightness: valid values: 0-100
+>  
+> -Each regulator is defined using the standard binding for regulators.
+> -
+>  Example:
+>  
+>  	tps: tps@24 {
+>  		reg = <0x24>;
+>  		compatible = "ti,tps65217";
+> -		backlight {
+> +		tps_bl: backlight {
+> +			compatible = "ti,tps65217-bl";
+>  			isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+>  			fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+>  			default-brightness = <50>;
+> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+
+This shouldn't be in this patch.
+
+Please adhere to: Documentation/devicetree/bindings/submitting-patches.txt
+
+> index 3cc4c70..77708f9 100644
+> --- a/drivers/mfd/tps65217.c
+> +++ b/drivers/mfd/tps65217.c
+> @@ -33,9 +33,11 @@
+>  static const struct mfd_cell tps65217s[] = {
+>  	{
+>  		.name = "tps65217-pmic",
+> +		.of_compatible = "ti,tps65217-pmic",
+>  	},
+>  	{
+>  		.name = "tps65217-bl",
+> +		.of_compatible = "ti,tps65217-bl",
+>  	},
+>  };
+>  
+
 -- 
-1.9.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
