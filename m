@@ -1,102 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184AbaIXMlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:41:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60491 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaIXMlN (ORCPT
+	id S1753454AbaIXMll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:41:41 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:44159 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217AbaIXMli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:41:13 -0400
-Date: Wed, 24 Sep 2014 14:40:44 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dandan.he@mediatek.com
-Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
-Message-ID: <20140924124044.GC4992@pengutronix.de>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
- <1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
- <CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
+	Wed, 24 Sep 2014 08:41:38 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Wed, 24 Sep 2014 14:39:05 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
+        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
+        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v5 4/4] gpio: add support for the Diolan DLN-2 USB GPIO
+ driver
+Message-ID: <20140924123905.GB16198@localhost>
+References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
+ <1411158165-25794-5-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:12:01 up 14 days,  4:59, 77 users,  load average: 0.08, 0.06,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1411158165-25794-5-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Sep 19, 2014 at 11:22:45PM +0300, Octavian Purdila wrote:
 
-On Wed, Sep 24, 2014 at 01:23:09PM +0200, Linus Walleij wrote:
-> On Tue, Sep 23, 2014 at 5:39 AM, Hongzhou.Yang
-> <srv_hongzhou.yang@mediatek.com> wrote:
-> 
-> > From: Hongzhou Yang <hongzhou.yang@mediatek.com>
-> >
-> > Add pinctrl node to mt8135.dtsi.
-> >
-> > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
-> (...)
-> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_GPIO0 (MT_PIN_NO(0) | 0)
-> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 (MT_PIN_NO(0) | 1)
-> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_EINT49 (MT_PIN_NO(0) | 2)
-> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_I2SOUT_DAT (MT_PIN_NO(0) | 3)
-> 
-> I haven't got to reviewing the driver, but this looks just wrong.
-> 
-> Have the magic numbers in the driver.
-> 
-> Use strings to describe functions, not integers.
+> +struct dln2_gpio {
+> +	struct platform_device *pdev;
+> +	struct gpio_chip gpio;
+> +
+> +	/*
+> +	 * Cache pin direction to save us one transfer, since the
+> +	 * hardware has separate commands to read the in and out
+> +	 * values. Bit set for out, bit clear for in.
+> +	 */
+> +	DECLARE_BITMAP(pin_dir, DLN2_GPIO_MAX_PINS);
 
-Interrupts, clocks, gpios, dma channels, nearly everything in the device tree is
-arbitrarily numbered. Instead of "irq-i2c0" we have <0 36 IRQ_TYPE_LEVEL_HIGH>
-in the device tree. These numbers can be resolved efficiently in the
-driver by shifting them to get a bitmask or by adding them as offset to
-a register base.
-Why do you want to make pinctrl different? Thanks to the recently
-introduced defines in the device trees these numbers are not magic at
-all anymore.
+Using the more common name output_enabled might be preferred? Then you
+can even get rid of (part of) the comment.
 
-> 
-> We need to move toward standardized device tree bindings
-> for this stuff, and that means using strings, not magic
-> numbers.
+> +
+> +	DECLARE_BITMAP(irqs_masked, DLN2_GPIO_MAX_PINS);
+> +	DECLARE_BITMAP(irqs_enabled, DLN2_GPIO_MAX_PINS);
+> +	DECLARE_BITMAP(irqs_pending, DLN2_GPIO_MAX_PINS);
+> +	struct dln2_irq_work *irq_work;
+> +};
 
-Agreed for standardized device tree bindings, but not for using strings.
+[...]
 
-Sascha
+> +#define DLN2_GPIO_DIRECTION_IN		0
+> +#define DLN2_GPIO_DIRECTION_OUT		1
+> +
+> +static int dln2_gpio_request(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
+> +	struct dln2_gpio_pin req = {
+> +		.pin = cpu_to_le16(offset),
+> +	};
+> +	struct dln2_gpio_pin_val rsp;
+> +	int len = sizeof(rsp);
+> +	int ret;
+> +
+> +	ret = dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_ENABLE, offset);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/* cache the pin direction */
+> +	ret = dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_GET_DIRECTION,
+> +			    &req, sizeof(req), &rsp, &len);
+> +	if (ret < 0)
+> +		return ret;
+> +	if (len < sizeof(rsp) || req.pin != rsp.pin)
+> +		return -EPROTO;
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Disable the pin?
+
+> +
+> +	switch (rsp.value) {
+> +	case DLN2_GPIO_DIRECTION_IN:
+> +		clear_bit(offset, dln2->pin_dir);
+> +		return 0;
+> +	case DLN2_GPIO_DIRECTION_OUT:
+> +		set_bit(offset, dln2->pin_dir);
+> +		return 0;
+> +	default:
+> +		return -EPROTO;
+
+Disable the pin?
+
+> +	}
+> +}
+
+[...]
+
+> +static struct platform_driver dln2_gpio_driver = {
+> +	.driver.name	= "dln2-gpio",
+> +	.driver.owner	= THIS_MODULE,
+
+No need to set the owner field when using the module_platform_driver
+macro.
+
+> +	.probe		= dln2_gpio_probe,
+> +	.remove		= dln2_gpio_remove,
+> +};
+> +
+> +module_platform_driver(dln2_gpio_driver);
+> +
+> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com");
+> +MODULE_DESCRIPTION("Driver for the Diolan DLN2 GPIO interface");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:dln2-gpio");
+
+Johan
