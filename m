@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaIXOtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:49:25 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:41471 "EHLO
+	id S1753518AbaIXOvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:51:48 -0400
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:41501 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaIXOtW (ORCPT
+	with ESMTP id S1752194AbaIXOtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:49:22 -0400
+	Wed, 24 Sep 2014 10:49:24 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -17,9 +17,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
         ctl@merrii.com, Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v2 5/7] devicetree: bindings: Add vendor prefix for Merrii Technology Co., Ltd.
-Date: Wed, 24 Sep 2014 22:48:59 +0800
-Message-Id: <1411570141-29960-6-git-send-email-wens@csie.org>
+Subject: [PATCH v2 4/7] ARM: dts: sun9i: Add A80 Optimus Board support
+Date: Wed, 24 Sep 2014 22:48:58 +0800
+Message-Id: <1411570141-29960-5-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411570141-29960-1-git-send-email-wens@csie.org>
 References: <1411570141-29960-1-git-send-email-wens@csie.org>
@@ -27,26 +27,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merrii Technology Co., Ltd. is a Chinese ARM integration developer that
-specializes in Allwinner SoC based designs.
+The A80 Optimus Board is was launched with the Allwinner A80 SoC.
+It was jointly developed by Allwinner and Merrii.
+
+This board has a UART port, a JTAG connector, USB host ports, a USB
+3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
+4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
+jack, IR receiver, and additional GPIO headers.
+
+This patch adds only basic support.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/boot/dts/Makefile              |  2 +
+ arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++++++++
+ 2 files changed, 68 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index ac7269f..d3a96ac 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -81,6 +81,7 @@ lltc	Linear Technology Corporation
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
- mediatek	MediaTek Inc.
-+merrii	Merrii Technology Co., Ltd.
- micrel	Micrel Inc.
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 2f42b18..098f319 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -424,6 +424,8 @@ dtb-$(CONFIG_MACH_SUN7I) += \
+ 	sun7i-a20-pcduino3.dtb
+ dtb-$(CONFIG_MACH_SUN8I) += \
+ 	sun8i-a23-ippo-q8h-v5.dtb
++dtb-$(CONFIG_MACH_SUN9I) += \
++	sun9i-a80-optimus.dtb
+ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+ 	tegra20-iris-512.dtb \
+ 	tegra20-medcom-wide.dtb \
+diff --git a/arch/arm/boot/dts/sun9i-a80-optimus.dts b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+new file mode 100644
+index 0000000..f83abab
+--- /dev/null
++++ b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+@@ -0,0 +1,66 @@
++/*
++ * Copyright 2014 Chen-Yu Tsai
++ *
++ * Chen-Yu Tsai <wens@csie.org>
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPL or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ *     You should have received a copy of the GNU General Public
++ *     License along with this library; if not, write to the Free
++ *     Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
++ *     MA 02110-1301 USA
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/dts-v1/;
++/include/ "sun9i-a80.dtsi"
++
++/ {
++	model = "Merrii A80 Optimus Board";
++	compatible = "merrii,a80-optimus", "allwinner,sun9i-a80";
++
++	chosen {
++		bootargs = "earlyprintk console=ttyS0,115200";
++	};
++
++	soc {
++		uart0: serial@07000000 {
++			status = "okay";
++		};
++	};
++};
 -- 
 2.1.0
 
