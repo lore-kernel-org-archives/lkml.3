@@ -1,85 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbaIXBIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 21:08:45 -0400
-Received: from ozlabs.org ([103.22.144.67]:52654 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801AbaIXBIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 21:08:43 -0400
-Date: Wed, 24 Sep 2014 11:08:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: linux-next: build failure after merge of the samsung tree
-Message-ID: <20140924110836.209bc8e2@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754531AbaIXBNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 21:13:40 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:16401 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751801AbaIXBNi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 21:13:38 -0400
+Date: Wed, 24 Sep 2014 09:11:01 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] watchdog: dw_wdt: add restart handler support
+Message-ID: <20140924091101.60e065cd@xhacker>
+In-Reply-To: <20140923183159.GB24930@roeck-us.net>
+References: <1411458132-5410-1-git-send-email-jszhang@marvell.com>
+	<1411458132-5410-3-git-send-email-jszhang@marvell.com>
+	<20140923183159.GB24930@roeck-us.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ORd1ovzNsNEEbmYX6il_y_K"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-24_01:2014-09-23,2014-09-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1409240009
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ORd1ovzNsNEEbmYX6il_y_K
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Dear Guenter,
 
-Hi Kukjin,
+On Tue, 23 Sep 2014 11:31:59 -0700
+Guenter Roeck <linux@roeck-us.net> wrote:
 
-After merging the samsung tree, today's linux-next build (arm multi_v7_defc=
-onfig)
-failed like this:
+> On Tue, Sep 23, 2014 at 03:42:12PM +0800, Jisheng Zhang wrote:
+> > The kernel core now provides an API to trigger a system restart.
+> > Register with it to support restarting the system via. watchdog.
+> > 
+> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> > ---
+> >  drivers/watchdog/dw_wdt.c | 32 ++++++++++++++++++++++++++++++++
+> >  1 file changed, 32 insertions(+)
+> > 
+> > diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+> > index 449c885..9e577a6 100644
+> > --- a/drivers/watchdog/dw_wdt.c
+> > +++ b/drivers/watchdog/dw_wdt.c
+> > @@ -21,6 +21,7 @@
+> >  
+> >  #include <linux/bitops.h>
+> >  #include <linux/clk.h>
+> > +#include <linux/delay.h>
+> >  #include <linux/device.h>
+> >  #include <linux/err.h>
+> >  #include <linux/fs.h>
+> > @@ -29,9 +30,11 @@
+> >  #include <linux/miscdevice.h>
+> >  #include <linux/module.h>
+> >  #include <linux/moduleparam.h>
+> > +#include <linux/notifier.h>
+> >  #include <linux/of.h>
+> >  #include <linux/pm.h>
+> >  #include <linux/platform_device.h>
+> > +#include <linux/reboot.h>
+> >  #include <linux/spinlock.h>
+> >  #include <linux/timer.h>
+> >  #include <linux/uaccess.h>
+> > @@ -63,6 +66,7 @@ static struct {
+> >  	unsigned long		next_heartbeat;
+> >  	struct timer_list	timer;
+> >  	int			expect_close;
+> > +	struct notifier_block	restart_handler;
+> >  } dw_wdt;
+> >  
+> >  static inline int dw_wdt_is_enabled(void)
+> > @@ -121,6 +125,26 @@ static void dw_wdt_keepalive(void)
+> >  	       WDOG_COUNTER_RESTART_REG_OFFSET);
+> >  }
+> >  
+> > +static int dw_wdt_restart_handle(struct notifier_block *this,
+> > +				unsigned long mode, void *cmd)
+> > +{
+> > +	u32 val;
+> > +
+> > +	writel(0, dw_wdt.regs + WDOG_TIMEOUT_RANGE_REG_OFFSET);
+> > +	val = readl(dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
+> > +	if (val & WDOG_CONTROL_REG_WDT_EN_MASK)
+> > +		writel(WDOG_COUNTER_RESTART_KICK_VALUE, dw_wdt.regs +
+> > +			WDOG_COUNTER_RESTART_REG_OFFSET);
+> > +	else
+> > +		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
+> > +		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
+> > +
+> > +	/* wait for reset to assert... */
+> > +	mdelay(500);
+> > +
+> > +	return NOTIFY_DONE;
+> > +}
+> > +
+> >  static void dw_wdt_ping(unsigned long data)
+> >  {
+> >  	if (time_before(jiffies, dw_wdt.next_heartbeat) ||
+> > @@ -316,6 +340,12 @@ static int dw_wdt_drv_probe(struct platform_device
+> > *pdev) if (ret)
+> >  		goto out_disable_clk;
+> >  
+> > +	dw_wdt.restart_handler.notifier_call = dw_wdt_restart_handle;
+> > +	dw_wdt.restart_handler.priority = 128;
+> > +	ret = register_restart_handler(&dw_wdt.restart_handler);
+> > +	if (ret)
+> > +		pr_warn("cannot register restart handler\n");
+> 
+> Please use dev_warn(&pdev->dev, ...).
 
-arch/arm/boot/dts/exynos5250-snow.dts:13:46: fatal error: dt-bindings/clock=
-/maxim,max77686.h: No such file or directory
- #include <dt-bindings/clock/maxim,max77686.h>
-                                              ^
+Yep, that's what I thought when patching the code. But the original source is
+using pr_*(), so I use pr_warn() to keep unification. Is there any better
+solution?
 
-Caused by commit c04c92ed5614 ("ARM: dts: Add rtc_src clk for s3c-rtc on ex=
-ynos5250-snow").
+Thanks for your review,
+Jisheng
 
-In file included from arch/arm/mach-tegra/cpuidle-tegra114.c:17:0:
-arch/arm/mach-tegra/cpuidle-tegra114.c: In function 'tegra114_idle_power_do=
-wn':
-arch/arm/include/asm/firmware.h:64:24: error: too few arguments to function=
- 'firmware_ops->do_idle'
-  ((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
-                        ^
-arch/arm/mach-tegra/cpuidle-tegra114.c:52:6: note: in expansion of macro 'c=
-all_firmware_op'
-  if (call_firmware_op(do_idle) =3D=3D -ENOSYS)
-      ^
+> 
+> Thanks,
+> Guenter
+> 
+> > +
+> >  	dw_wdt_set_next_heartbeat();
+> >  	setup_timer(&dw_wdt.timer, dw_wdt_ping, 0);
+> >  	mod_timer(&dw_wdt.timer, jiffies + WDT_TIMEOUT);
+> > @@ -330,6 +360,8 @@ out_disable_clk:
+> >  
+> >  static int dw_wdt_drv_remove(struct platform_device *pdev)
+> >  {
+> > +	unregister_restart_handler(&dw_wdt.restart_handler);
+> > +
+> >  	misc_deregister(&dw_wdt_miscdev);
+> >  
+> >  	clk_disable_unprepare(dw_wdt.clk);
+> > -- 
+> > 2.1.0
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-watchdog"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Caused by commit f5217f3b9332 ("ARM: EXYNOS: add AFTR mode support to
-firmware do_idle method").
-
-I have used the samsung tree from next-20140923 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/ORd1ovzNsNEEbmYX6il_y_K
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUIhmYAAoJEMDTa8Ir7ZwVNn8P+gNGIhSUNlxImewT3Laemmie
-Sn/eFI/pO4+uK6oR7W2C46c8vlFBDeGJLhcS2hSgrvhRD4X2Nv7l8iRkW4HZDEgR
-vBofZj4Y1C0c8C/ZuC33COxerEMYoBqVnApVnosNMCU1VQZFX1I5FYA+esnt25MK
-7nVcMeFVdsAUkbpiUkAGt6q4/iqncxpfwatCmFUH3or7s2huZWTMS5ScdY7qjssG
-43cg0WGmWA/+MsZkKkBoEU22059uwvNQCaMKW8N5OqHujOq+lOVQ+tHipaqym8e1
-ymDdiq4Em4qOwR318dEB55BBg/AFBrsmEmaVcgDgzLL4H90ugbwlVTYqMorAvTSR
-MxYfNHer+WyQIUR2zCu1WeyMlaqd/2bTjkh9dHP8hlxY7Wh/00soF5Jjcp9mzlFv
-1S0gA21bkLkshwYBUcxW+rg0OyXLtY3Gks8cPfqAecdFBu4RNA9rLgctqoyj9SSL
-z4y7bJzaPTOt5DaiO0fykaEzvCvLr1K49gj/PVn0yrDuO4JUbjnBCjCxTp+/gyUg
-v9Jf0tJNtAhaT8AI0MeUV4uonadca6WUoRYLA3HTt+Fr4oBQOtwsGxd6X9NrBeU0
-hOuw9NQQJXFkZmybSgVvyiUxOJhN/vx7JEBFElAJQpEpU5s30azbeDe7UXbPuayf
-nJADVflJgVLEH0Jj+5NJ
-=qLzR
------END PGP SIGNATURE-----
-
---Sig_/ORd1ovzNsNEEbmYX6il_y_K--
