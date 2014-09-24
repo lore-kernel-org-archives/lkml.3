@@ -1,199 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaIXJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:12:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2525 "EHLO mga02.intel.com"
+	id S1754173AbaIXJMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:12:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253AbaIXJGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:06:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
-   d="scan'208";a="607709014"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>,
-        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v1 04/12] tpm: TPM2 support for tpm_do_selftest()
-Date: Wed, 24 Sep 2014 12:05:54 +0300
-Message-Id: <1411549562-24242-5-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1753253AbaIXJMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:12:18 -0400
+Date: Wed, 24 Sep 2014 11:12:12 +0200
+From: Martin Milata <mmilata@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] coredump: add %i/%I in core_pattern to report the tid
+ of the crashed thread
+Message-ID: <20140924091211.GA7034@fe.brq.redhat.com>
+References: <20140921175349.GA21585@redhat.com>
+ <20140922171525.GA32171@redhat.com>
+ <20140923160551.8e93a39f10a818684a514cf2@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923160551.8e93a39f10a818684a514cf2@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implemented tpm2_do_selftest() that runs the full (all commands)
-self-test for the TPM chip. During the self-test TPM2 commands return
-with the TPM error code RC_TESTING. Waiting is done by issuing PCR
-read until it executes succesfully or some other error condition
-than RC_TESTING happens.
+On Tue, Sep 23, 2014 at 16:05:51 -0700, Andrew Morton wrote:
+> On Mon, 22 Sep 2014 19:15:25 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+> > format_corename() can only pass the leader's pid to the core handler, but
+> > there is no simple way to figure out which thread originated the coredump.
+> > 
+> > As Jan explains, this also means that there is no simple way to create the
+> > backtrace of the crashed process:
+> > 
+> > As programs are mostly compiled with implicit gcc -fomit-frame-pointer one
+> > needs program's .eh_frame section (equivalently PT_GNU_EH_FRAME segment) or
+> > .debug_frame section. .debug_frame usually is present only in separate debug
+> > info files usually not even installed on the system.  While .eh_frame is a
+> > part of the executable/library (and it is even always mapped for C++
+> > exceptions unwinding) it no longer has to be present anywhere on the disk
+> > as the program could be upgraded in the meantime and the running instance
+> > has its executable file already unlinked from disk.
+> > 
+> > One possibility is to echo 0x3f >/proc/*/coredump_filter and dump all the
+> > file-backed memory including the executable's .eh_frame section. But that
+> > can create huge core files, for example even due to mmapped data files.
+> > 
+> > Other possibility would be to read .eh_frame from /proc/PID/mem at the
+> > core_pattern handler time of the core dump.  For the backtrace one needs to
+> > read the register state first which can be done from core_pattern handler:
+> > 
+> > 	ptrace(PTRACE_SEIZE, tid, 0, PTRACE_O_TRACEEXIT)
+> > 	close(0);    // close pipe fd to resume the sleeping dumper
+> > 	waitpid();   // should report EXIT
+> > 	PTRACE_GETREGS or other requests
+> > 
+> > The remaining problem is how to get the 'tid' value of the crashed thread.
+> > It could be read from the first NT_PRSTATUS note of the core file but that
+> > makes the core_pattern handler complicated.
+> > 
+> > Unfortunately %t is already used so this patch uses %i/%I.
+> 
+> Is any userspace actually going to use this?  If so, details?
+> 
+> Am wondering what is driving this change...
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/tpm-interface.c |  3 ++
- drivers/char/tpm/tpm.h           |  5 +++
- drivers/char/tpm/tpm2-commands.c | 82 ++++++++++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm2.h          |  7 ++++
- 4 files changed, 97 insertions(+)
+Automatic Bug Reporting Tool [1] is experimenting with this. It is using
+elfutils [2] unwinder for generating the backtraces. Apart from not
+needing matching executables as mentioned above, another advantage is
+that we can get the backtrace without saving the core (which might be
+quite large) to disk.
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 4494b16..069be1e 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -744,6 +744,9 @@ int tpm_do_selftest(struct tpm_chip *chip)
- 	unsigned long duration;
- 	struct tpm_cmd_t cmd;
- 
-+	if (chip->tpm2)
-+		return tpm2_do_selftest(chip);
-+
- 	duration = tpm_calc_ordinal_duration(chip, TPM_ORD_CONTINUE_SELFTEST);
- 
- 	loops = jiffies_to_msecs(duration) / delay_msec;
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 10d6731..7cb0206 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -298,6 +298,10 @@ struct tpm_startup_in {
- 	__be16	startup_type;
- } __packed;
- 
-+struct tpm2_self_test_in {
-+	u8	full_test;
-+} __packed;
-+
- struct tpm2_pcr_read_in {
- 	__be32	pcr_selects_cnt;
- 	__be16	hash_alg;
-@@ -330,6 +334,7 @@ typedef union {
- 	struct tpm_startup_in startup_in;
- 	struct	tpm2_pcr_read_in tpm2_pcrread_in;
- 	struct	tpm2_pcr_read_out tpm2_pcrread_out;
-+	struct	tpm2_self_test_in tpm2_selftest_in;
- } tpm_cmd_params;
- 
- struct tpm_cmd_t {
-diff --git a/drivers/char/tpm/tpm2-commands.c b/drivers/char/tpm/tpm2-commands.c
-index 2fb553c..d54a0d0 100644
---- a/drivers/char/tpm/tpm2-commands.c
-+++ b/drivers/char/tpm/tpm2-commands.c
-@@ -200,3 +200,85 @@ int tpm2_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf)
- 
- 	return rc;
- }
-+
-+static struct tpm_input_header tpm2_selftest_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-+			      sizeof(struct tpm2_self_test_in)),
-+	.ordinal = cpu_to_be32(TPM2_CC_SELF_TEST)
-+};
-+
-+#define TPM2_SELF_TEST_IN_SIZE \
-+	(sizeof(struct tpm_input_header) + sizeof(struct tpm2_self_test_in))
-+
-+/**
-+ * tpm2_continue_selftest -- start a self test
-+ * @chip: TPM chip to use
-+ * @full: test all commands instead of testing only those that were not
-+ *        previously tested.
-+ *
-+ * Returns 0 on success, < 0 on a system error and > 0 on a TPM error.
-+ */
-+static int tpm2_start_selftest(struct tpm_chip *chip, bool full)
-+{
-+	int rc;
-+	struct tpm_cmd_t cmd;
-+
-+	cmd.header.in = tpm2_selftest_header;
-+	cmd.params.tpm2_selftest_in.full_test = full;
-+
-+	rc = tpm_transmit_cmd(chip, &cmd, TPM2_SELF_TEST_IN_SIZE,
-+			      "continue selftest");
-+
-+	return rc;
-+}
-+
-+/**
-+ * tpm2_do_selftest -- start a full self test and wait until it is completed.
-+ *                     During the self test TPM2 commands return with the error
-+ *                     code RC_TESTING. Waiting is done by issuing PCR read until
-+ *                     it executes succesfully.
-+ * @chip: TPM chip to use
-+ *
-+ * Returns 0 on success, < 0 on a system error and > 0 on a TPM error.
-+ */
-+int tpm2_do_selftest(struct tpm_chip *chip)
-+{
-+	int rc;
-+	unsigned int loops;
-+	unsigned int delay_msec = 100;
-+	unsigned long duration;
-+	struct tpm_cmd_t cmd;
-+	int i;
-+
-+	duration = tpm2_calc_ordinal_duration(chip, TPM2_CC_SELF_TEST);
-+
-+	loops = jiffies_to_msecs(duration) / delay_msec;
-+
-+	rc = tpm2_start_selftest(chip, true);
-+	if (rc)
-+		return rc;
-+
-+	for (i = 0; i < loops; i++) {
-+		/* Attempt to read a PCR value */
-+		cmd.header.in = tpm2_pcrread_header;
-+		cmd.params.tpm2_pcrread_in.pcr_selects_cnt = cpu_to_be32(1);
-+		cmd.params.tpm2_pcrread_in.hash_alg = cpu_to_be16(TPM2_ALG_SHA1);
-+		cmd.params.tpm2_pcrread_in.pcr_select_size = TPM2_PCR_SELECT_MIN;
-+		cmd.params.tpm2_pcrread_in.pcr_select[0] = 0x01;
-+		cmd.params.tpm2_pcrread_in.pcr_select[1] = 0x00;
-+		cmd.params.tpm2_pcrread_in.pcr_select[2] = 0x00;
-+
-+		rc = tpm_transmit(chip, (u8 *) &cmd, sizeof(cmd));
-+		if (rc < 0)
-+			break;
-+
-+		rc = be32_to_cpu(cmd.header.out.return_code);
-+		if (rc != TPM2_RC_TESTING)
-+			break;
-+
-+		msleep(delay_msec);
-+	}
-+
-+	return rc;
-+}
-diff --git a/drivers/char/tpm/tpm2.h b/drivers/char/tpm/tpm2.h
-index fbab49c..b1721f9 100644
---- a/drivers/char/tpm/tpm2.h
-+++ b/drivers/char/tpm/tpm2.h
-@@ -25,11 +25,17 @@ enum tpm2_structures {
- 	TPM2_ST_NO_SESSIONS	= 0x8001,
- };
- 
-+enum tpm2_return_codes {
-+	TPM2_RC_TESTING		= 0x090A,
-+	TPM2_RC_DISABLED	= 0x0120,
-+};
-+
- enum tpm2_algorithms {
- 	TPM2_ALG_SHA1		= 0x0004,
- };
- 
- enum tpm2_command_codes {
-+	TPM2_CC_SELF_TEST	= 0x0143,
- 	TPM2_CC_PCR_READ	= 0x017E,
- };
- 
-@@ -40,5 +46,6 @@ struct tpm_chip;
- 
- unsigned long tpm2_calc_ordinal_duration(struct tpm_chip *, u32);
- int tpm2_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
-+int tpm2_do_selftest(struct tpm_chip *chip);
- 
- #endif /* __DRIVERS_CHAR_TPM2_H__ */
--- 
-2.1.0
-
+[1] https://github.com/abrt/abrt/wiki/overview
+[2] https://fedorahosted.org/elfutils/
