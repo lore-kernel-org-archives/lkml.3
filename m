@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaIXOtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:49:52 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.27]:50599 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaIXOtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:49:46 -0400
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 10:49:46 EDT
-From: Christoph Jaeger <cj@linux.com>
-To: shigekatsu.tateno@atmel.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Christoph Jaeger <email@christophjaeger.info>
-Subject: [PATCH linux-next] staging: ozwpan: Remove typedefs
-Date: Wed, 24 Sep 2014 10:42:18 -0400
-Message-Id: <1411569738-12345-1-git-send-email-cj@linux.com>
-X-Mailer: git-send-email 1.9.3
-X-Df-Sender: MTg4NDM4Mw==
+	id S1752760AbaIXOuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:50:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193AbaIXOuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:50:13 -0400
+Date: Wed, 24 Sep 2014 15:59:07 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20140924145906.GC2695@agordeev.usersys.redhat.com>
+References: <cover.1411297686.git.agordeev@redhat.com>
+ <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+ <20140923205710.GB17332@mtj.dyndns.org>
+ <20140924104213.GA2695@agordeev.usersys.redhat.com>
+ <20140924130444.GA16555@htj.dyndns.org>
+ <20140924140844.GB2695@agordeev.usersys.redhat.com>
+ <20140924143913.GH16555@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924143913.GH16555@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Jaeger <email@christophjaeger.info>
+On Wed, Sep 24, 2014 at 10:39:13AM -0400, Tejun Heo wrote:
+> Would it be possible for you compare threaded vs. unthreaded under
+> relatively heavy load?
 
-As these typedefs are only used once, there is no real need for them.
+I will try, although not quite soon.
 
-Signed-off-by: Christoph Jaeger <email@christophjaeger.info>
----
- drivers/staging/ozwpan/ozproto.h | 23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+In the meantime I could fix and resend patches 1,2,3 and 6 as
+they are not related to this topic. Makes sense?
 
-diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
-index 73cc69b..30c2db9 100644
---- a/drivers/staging/ozwpan/ozproto.h
-+++ b/drivers/staging/ozwpan/ozproto.h
-@@ -29,23 +29,14 @@
- 
- /* Application handler functions.
-  */
--typedef int (*oz_app_init_fn_t)(void);
--typedef void (*oz_app_term_fn_t)(void);
--typedef int (*oz_app_start_fn_t)(struct oz_pd *pd, int resume);
--typedef void (*oz_app_stop_fn_t)(struct oz_pd *pd, int pause);
--typedef void (*oz_app_rx_fn_t)(struct oz_pd *pd, struct oz_elt *elt);
--typedef int (*oz_app_heartbeat_fn_t)(struct oz_pd *pd);
--typedef void (*oz_app_farewell_fn_t)(struct oz_pd *pd, u8 ep_num,
--			u8 *data, u8 len);
--
- struct oz_app_if {
--	oz_app_init_fn_t	init;
--	oz_app_term_fn_t	term;
--	oz_app_start_fn_t	start;
--	oz_app_stop_fn_t	stop;
--	oz_app_rx_fn_t		rx;
--	oz_app_heartbeat_fn_t	heartbeat;
--	oz_app_farewell_fn_t	farewell;
-+	int  (*init)(void);
-+	void (*term)(void);
-+	int  (*start)(struct oz_pd *pd, int resume);
-+	void (*stop)(struct oz_pd *pd, int pause);
-+	void (*rx)(struct oz_pd *pd, struct oz_elt *elt);
-+	int  (*heartbeat)(struct oz_pd *pd);
-+	void (*farewell)(struct oz_pd *pd, u8 ep_num, u8 *data, u8 len);
- };
- 
- int oz_protocol_init(char *devs);
+> -- 
+> tejun
+
 -- 
-1.9.3
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
