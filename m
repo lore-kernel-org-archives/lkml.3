@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaIXPzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:55:36 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40347 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaIXPze convert rfc822-to-8bit (ORCPT
+	id S1752806AbaIXP4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:56:24 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:47201 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaIXP4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:55:34 -0400
-Message-ID: <5422E974.3090506@arm.com>
-Date: Wed, 24 Sep 2014 16:55:32 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 11:56:22 -0400
+Date: Wed, 24 Sep 2014 17:56:17 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Hugh Dickins <hughd@google.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] shmem: fix nlink for rename overwrite directory
+Message-ID: <20140924155617.GD7441@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] clocksource: arm_arch_timer: discard unavailable timers
- correctly
-References: <1410911445-19067-1-git-send-email-sudeep.holla@arm.com> <1410982774-4724-1-git-send-email-sudeep.holla@arm.com> <5422E05F.4070405@arm.com> <20140924154802.GK5729@leverpostej>
-In-Reply-To: <20140924154802.GK5729@leverpostej>
-X-OriginalArrivalTime: 24 Sep 2014 15:55:32.0554 (UTC) FILETIME=[F8B1BAA0:01CFD80F]
-X-MC-Unique: 114092416553206501
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Miklos Szeredi <mszeredi@suse.cz>
 
+If overwriting an empty directory with rename, then need to drop the extra
+nlink.
 
-On 24/09/14 16:48, Mark Rutland wrote:
-> On Wed, Sep 24, 2014 at 04:16:47PM +0100, Sudeep Holla wrote:
->> Hi Mark,
->>
->> On 17/09/14 20:39, Sudeep Holla wrote:
->>> Currently we wait until both cp15 and mem timers are probed if we
->>> have both timer device nodes present in the device tree without
->>> checking if the device is actually available. If one of the timer
->>> device node present is disabled, the system locks up on the boot
->>> as no timer gets registered.
->>>
->>> This patch adds the check for the availablity of the timer device
->>> so that we unavailable timers are discarded correctly. It also adds
->>> the missing of_node_put.
->>>
->>> Cc: Stephen Boyd <sboyd@codeaurora.org>
->>> Cc: Mark Rutland <mark.rutland@arm.com>
->>
->> If your are fine with this, can I ask Daniel you pick this up ?
->
-> While I'd prefer to see the cp15 and mmio timer driver pulled apart,
-> that's not going to happen at any point soon. For the moment, this is
+Test prog:
 
-Agreed :)
+#include <stdio.h>
+#include <fcntl.h>
+#include <err.h>
+#include <sys/stat.h>
 
-> far better than the current state of affairs. So:
->
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
->
+int main(void)
+{
+	const char *test_dir1 = "test-dir1";
+	const char *test_dir2 = "test-dir2";
+	int res;
+	int fd;
+	struct stat statbuf;
 
-Thanks
+	res = mkdir(test_dir1, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir1);
 
-Regards,
-Sudeep
+	res = mkdir(test_dir2, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir2);
 
+	fd = open(test_dir2, O_RDONLY);
+	if (fd == -1)
+		err(1, "open(\"%s\")", test_dir2);
+
+	res = rename(test_dir1, test_dir2);
+	if (res == -1)
+		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
+
+	res = fstat(fd, &statbuf);
+	if (res == -1)
+		err(1, "fstat(%i)", fd);
+
+	if (statbuf.st_nlink != 0) {
+		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
+		return 1;
+	}
+
+	return 0;
+}
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: stable@vger.kernel.org
+---
+ mm/shmem.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2367,8 +2367,10 @@ static int shmem_rename2(struct inode *o
+ 
+ 	if (new_dentry->d_inode) {
+ 		(void) shmem_unlink(new_dir, new_dentry);
+-		if (they_are_dirs)
++		if (they_are_dirs) {
++			drop_nlink(new_dentry->d_inode);
+ 			drop_nlink(old_dir);
++		}
+ 	} else if (they_are_dirs) {
+ 		drop_nlink(old_dir);
+ 		inc_nlink(new_dir);
