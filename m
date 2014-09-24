@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaIXUTt (ORCPT <rfc822;w@1wt.eu>);
+	id S1753137AbaIXUTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:19:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49428 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518AbaIXUTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 16:19:49 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:59774 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518AbaIXUTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:19:46 -0400
-Date: Wed, 24 Sep 2014 14:19:38 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 12/12] tpm: TPM2 sysfs attributes
-Message-ID: <20140924201938.GC10887@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20140924171338.GG8898@obsidianresearch.com>
- <20140924190234.GB6801@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924190234.GB6801@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Date: Wed, 24 Sep 2014 13:19:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heinrich Schuchardt <xypron.debian@gmx.de>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
+ (v2)
+Message-Id: <20140924131947.bc083e7f34981bbf73a364f1@linux-foundation.org>
+In-Reply-To: <20140924105155.GA24411@quack.suse.cz>
+References: <1411141516-1918-1-git-send-email-avagin@openvz.org>
+	<20140924105155.GA24411@quack.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:02:34PM +0300, Jarkko Sakkinen wrote:
+On Wed, 24 Sep 2014 12:51:55 +0200 Jan Kara <jack@suse.cz> wrote:
 
-> > The pcrs file never conformed to the sysfs rules, if TPM2 is getting a
-> > whole new file set, I wouldn't mind seeing it not include the
-> > non-conformant ones. What do you think?
+>   Hello,
 > 
-> I think that it's better to put extra focus on these sysfs attributes in
-> first patch set because it's user space visible. What's wrong in the
-> current pcrs file?
+>   Andrew, what do you think about the patch below? Al objected that it
+> changes userspace visible behavior some time ago and then he didn't react
+> to our explanations...
 
-Each PCR should be a distinct sysfs file, probably with a
-directory. One Value Per File is the rule.
+Difficult situation.  There's some really important information missing
+from the changelog:
 
-> > > +static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
-> > > +			 char *buf)
-> > > +{
-> > 
-> > Ditto.. The manfacturer number should probably be its own file
-> 
-> Maybe here would make sense to have three files:
-> 
-> - manufacturer
-> - firmware_1
-> - firmware_2
-> 
-> More or less following the name of the TPM properties in the
-> specification.
+- Who cares?  Is there some real application which is hurting from
+  the current situation?  If so, who, what, how and why.  If not, then
+  why change anything?
 
-Probably, maybe firmware_1/2 could be combined if they are the same
-logical value? (I've always expressed it as firmware_1.firwmare_2?)
+- A description of the userspace API change impact.  How did the
+  interface change?  What is the risk of this change causing damage to
+  real applications?
 
-> I did not fully understand the comment about tpm2 flag. Why driver
-> cannot set it when it initializes the device like with this based
-> on value of the STS3?
+If we can answer these questions then we're in a position to make the
+pain-versus-gain tradeoff decision.
 
-I was talking about the /dev/ char device - a random application today
-will open it and send TPM1 formed messages. Those should be refused
-with EINVAL for a TPM2 chip unless the application declares via IOCTL
-that it will be sending TPM2 messages.
-
-Otherwise the API contract for the /dev/ device (write TPM1 formed
-messages) is broken..
-
-Jason
