@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaIXNya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:54:30 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50995 "EHLO comal.ext.ti.com"
+	id S1754235AbaIXNy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:54:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50987 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528AbaIXNrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:47:40 -0400
+	id S1753476AbaIXNrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:47:33 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/22] usb: phy: twl4030-usb: Simplify phy init to use runtime PM
-Date: Wed, 24 Sep 2014 19:17:09 +0530
-Message-ID: <1411566440-19169-12-git-send-email-kishon@ti.com>
+Subject: [PATCH 06/22] phy: phy-spear1310-miphy: Remove unncessary site specific OOM messages
+Date: Wed, 24 Sep 2014 19:17:04 +0530
+Message-ID: <1411566440-19169-7-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411566440-19169-1-git-send-email-kishon@ti.com>
 References: <1411566440-19169-1-git-send-email-kishon@ti.com>
@@ -21,65 +21,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tony Lindgren <tony@atomide.com>
+From: Peter Griffin <peter.griffin@linaro.org>
 
-We can now let the interrupt and delayed work do all that's
-needed with runtime PM.
+The site specific OOM messages are unncessary, because they duplicate
+messages from the memory subsystem which include dump_stack().
 
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Removing these superflous messages makes the kernel smaller. A discussion
+here http://patchwork.ozlabs.org/patch/324158/ found that all error paths
+from kzalloc will print a error message, and that any error path which maybe
+found which doesn't would be considered a bug in kzalloc.
+
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-twl4030-usb.c |   20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ drivers/phy/phy-spear1310-miphy.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
-index bc28ecc..a292db0 100644
---- a/drivers/phy/phy-twl4030-usb.c
-+++ b/drivers/phy/phy-twl4030-usb.c
-@@ -471,16 +471,8 @@ static int twl4030_phy_power_on(struct phy *phy)
- 	twl4030_usb_set_mode(twl, twl->usb_mode);
- 	if (twl->usb_mode == T2_USB_MODE_ULPI)
- 		twl4030_i2c_access(twl, 0);
-+	schedule_delayed_work(&twl->id_workaround_work, 0);
+diff --git a/drivers/phy/phy-spear1310-miphy.c b/drivers/phy/phy-spear1310-miphy.c
+index 6dcbfcd..911d25b 100644
+--- a/drivers/phy/phy-spear1310-miphy.c
++++ b/drivers/phy/phy-spear1310-miphy.c
+@@ -212,10 +212,8 @@ static int spear1310_miphy_probe(struct platform_device *pdev)
+ 	struct phy_provider *phy_provider;
  
--	/*
--	 * XXX When VBUS gets driven after musb goes to A mode,
--	 * ID_PRES related interrupts no longer arrive, why?
--	 * Register itself is updated fine though, so we must poll.
--	 */
--	if (twl->linkstat == OMAP_MUSB_ID_GROUND) {
--		cancel_delayed_work(&twl->id_workaround_work);
--		schedule_delayed_work(&twl->id_workaround_work, HZ);
+ 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+-	if (!priv) {
+-		dev_err(dev, "can't alloc spear1310_miphy private date memory\n");
++	if (!priv)
+ 		return -ENOMEM;
 -	}
- 	return 0;
- }
  
-@@ -612,16 +604,9 @@ static void twl4030_id_workaround_work(struct work_struct *work)
- static int twl4030_phy_init(struct phy *phy)
- {
- 	struct twl4030_usb *twl = phy_get_drvdata(phy);
--	enum omap_musb_vbus_id_status status;
- 
- 	pm_runtime_get_sync(twl->dev);
--	status = twl4030_usb_linkstat(twl);
--	twl->linkstat = status;
--
--	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID)
--		omap_musb_mailbox(twl->linkstat);
--
--	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
-+	schedule_delayed_work(&twl->id_workaround_work, 0);
- 	pm_runtime_mark_last_busy(twl->dev);
- 	pm_runtime_put_autosuspend(twl->dev);
- 
-@@ -698,6 +683,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	twl->dev		= &pdev->dev;
- 	twl->irq		= platform_get_irq(pdev, 0);
- 	twl->vbus_supplied	= false;
-+	twl->linkstat		= -EINVAL;
- 	twl->asleep		= 1;
- 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
- 
+ 	priv->misc =
+ 		syscon_regmap_lookup_by_phandle(dev->of_node, "misc");
 -- 
 1.7.9.5
 
