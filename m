@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005AbaIXDkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 23:40:31 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:59157 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540AbaIXDk3 (ORCPT
+	id S1755007AbaIXDoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 23:44:55 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:40135 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaIXDox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 23:40:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <542231C9.1060903@rock-chips.com>
-References: <1411487622-10881-1-git-send-email-zyw@rock-chips.com>
-	<1411487622-10881-2-git-send-email-zyw@rock-chips.com>
-	<CAD=FV=Vhejf4JoEPUGwmBJdO+zfHgE5hgoT6V1DGtva7r_1Etg@mail.gmail.com>
-	<542222BC.4060203@rock-chips.com>
-	<CAD=FV=Umjmrp5grqvYnMe0=EjpH8++i4JL-5fOquyU+SGt95Fw@mail.gmail.com>
-	<542231C9.1060903@rock-chips.com>
-Date: Tue, 23 Sep 2014 20:40:28 -0700
-X-Google-Sender-Auth: 2kvQHp5fuBZ85VRIkEjGINWRZco
-Message-ID: <CAD=FV=URhXjY2eW7JnkrwR7zjGzLB9DshySUMX3AJjjstee=KA@mail.gmail.com>
-Subject: Re: [PATCH v6 1/2] regulator: st-pwm: get voltage and duty table from dts
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Sep 2014 23:44:53 -0400
+From: Behan Webster <behanw@converseincode.com>
+To: linux@arm.linux.org.uk, linux@prisktech.co.nz
+Cc: behanw@converseincode.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arm, vt8500, LLVMLlinux: Use mcr instead of mcr% for mach-vt8500
+Date: Tue, 23 Sep 2014 20:44:44 -0700
+Message-Id: <1411530284-28807-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+The ASM below does not compile with clang and is not the way that the mcr
+command is used in other parts of the kernel.
 
-On Tue, Sep 23, 2014 at 7:51 PM, Chris Zhong <zyw@rock-chips.com> wrote:
->
-> On 09/24/2014 10:13 AM, Doug Anderson wrote:
->>
->> Chris,
->>
->> On Tue, Sep 23, 2014 at 6:47 PM, Chris Zhong <zyw@rock-chips.com> wrote:
->>>
->>> On 09/24/2014 07:43 AM, Doug Anderson wrote:
->>>>
->>>> Chris,
->>>>
->>>> On Tue, Sep 23, 2014 at 8:53 AM, Chris Zhong <zyw@rock-chips.com> wrote:
->>>>>
->>>>> Get voltage & duty table from device tree might be better, other
->>>>> platforms can also use this
->>>>> driver without any modify.
->>>>>
->>>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->>>>> Reviewed-by: Doug Anderson <dianders@chromium.org>
->>>>
->>>> I finally managed to get everything setup and I've now tested this
->>>> myself on an rk3288-based board.
->>>>
->>>> Tested-by: Doug Anderson <dianders@chromium.org>
->>>>
->>>> I'd imagine the next step is for Lee to comment on the patch and when
->>>> he's happy with it Mark Brown will land it?
->>>>
->>>>
->>>> One thing that's still a bit odd (though no different than the
->>>> behavior of the driver from before you touched it, so it shouldn't
->>>> block landing IMHO) is that at boot time this regulator will report
->>>> that it's at the highest voltage but the voltage won't actually change
->>>> until the first client sets the voltage.
->>>
->>> Yes, I knew this problem, since the default of duty cycle is 0, not a
->>> true
->>> value.
->>> If we can get duty from pwm, this regulator will report a correct
->>> voltage.
->>
->> I don't think it's possible in all cases to figure out what the
->> voltage was before this regulator was probed.
->>
->> * pin might have been input w/ pullup, pulldown, or no pull
->> * pin might have been driven high or driven low
->>
->> In that case trying to read the duty from the pwm wouldn't make sense.
->> ...but I guess you could add a property to the PWM driver to say that
->> it stays enabled at boot if the FW left it enabled (and keep the same
->> duty cycle / clocks?).  That would at least solve the problem where
->> the firmware configured the PWM and left it in a specific state even
->> if it doesn't solve the above problem...
->>
->>
->> -Doug
->>
-> If we want pwm stay enabled at boot(FW left it), needn't to modify anything,
-> only need to init pwm duty in FW.
-> And now reading the duty from pwm would make sense.
+arch/arm/mach-vt8500/vt8500.c:72:11: error: invalid % escape in inline assembly string
+        asm("mcr%? p15, 0, %0, c7, c0, 4" : : "r" (0));
+            ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
 
-Maybe I'll understand better if you send up some patches.  I would
-have thought that when the PWM initializes it would start out disabled
-and there wouldn't be an easy way to convince the PWM subsystem to
-keep it enabled.  ...I also would have thought that the default
-behavior of a PWM on Linux would be to disable it in the driver probe
-if firmware happened to have left it on.
+There are other forms that are supported on different ARM instruction sets but
+generally the kernel just uses mcr as it is supported in all ARM instruction
+sets.
 
-I could be wrong on both counts, though.
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/mach-vt8500/vt8500.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--Doug
+diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
+index 2da7be3..3bc0dc9 100644
+--- a/arch/arm/mach-vt8500/vt8500.c
++++ b/arch/arm/mach-vt8500/vt8500.c
+@@ -69,7 +69,7 @@ static void vt8500_power_off(void)
+ {
+ 	local_irq_disable();
+ 	writew(5, pmc_base + VT8500_HCR_REG);
+-	asm("mcr%? p15, 0, %0, c7, c0, 4" : : "r" (0));
++	asm("mcr p15, 0, %0, c7, c0, 4" : : "r" (0));
+ }
+ 
+ static void __init vt8500_init(void)
+-- 
+1.9.1
+
