@@ -1,140 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaIXH5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:57:14 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:37718 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaIXH5M (ORCPT
+	id S1753735AbaIXH47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:56:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52016 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806AbaIXH45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:57:12 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 24 Sep 2014 16:57:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Subject: Re: [PATCH v1 2/5] mm: add full variable in swap_info_struct
-Message-ID: <20140924075742.GB3181@bbox>
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
- <1411344191-2842-3-git-send-email-minchan@kernel.org>
- <CALZtONCgteaZwvS-oipcs3zK--AfDMSM0bEcFkEemmg_DvZF=A@mail.gmail.com>
+	Wed, 24 Sep 2014 03:56:57 -0400
+Date: Wed, 24 Sep 2014 09:56:51 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Frans Klaver <frans.klaver@xsens.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140924075651.GC19565@linutronix.de>
+References: <5411C810.7070906@linutronix.de>
+ <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
+ <54129F6C.7040508@linutronix.de>
+ <20140912094010.GE28458@ci00147.xsens-tech.local>
+ <5412C21A.8020203@linutronix.de>
+ <20140912102816.GF28458@ci00147.xsens-tech.local>
+ <541716DC.9020904@linutronix.de>
+ <20140917102812.GA20438@ci00147.xsens-tech.local>
+ <20140921204100.GA10111@linutronix.de>
+ <20140922092853.GH20438@ci00147.xsens-tech.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CALZtONCgteaZwvS-oipcs3zK--AfDMSM0bEcFkEemmg_DvZF=A@mail.gmail.com>
+In-Reply-To: <20140922092853.GH20438@ci00147.xsens-tech.local>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 10:53:05PM -0400, Dan Streetman wrote:
-> On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Now, swap leans on !p->highest_bit to indicate a swap is full.
-> > It works well for normal swap because every slot on swap device
-> > is used up when the swap is full but in case of zram, swap sees
-> > still many empty slot although backed device(ie, zram) is full
-> > since zram's limit is over so that it could make trouble when
-> > swap use highest_bit to select new slot via free_cluster.
-> >
-> > This patch introduces full varaiable in swap_info_struct
-> > to solve the problem.
-> >
-> > Suggested-by: Dan Streetman <ddstreet@ieee.org>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  include/linux/swap.h |  1 +
-> >  mm/swapfile.c        | 33 +++++++++++++++++++--------------
-> >  2 files changed, 20 insertions(+), 14 deletions(-)
-> >
-> > diff --git a/include/linux/swap.h b/include/linux/swap.h
-> > index ea4f926e6b9b..a3c11c051495 100644
-> > --- a/include/linux/swap.h
-> > +++ b/include/linux/swap.h
-> > @@ -224,6 +224,7 @@ struct swap_info_struct {
-> >         struct swap_cluster_info free_cluster_tail; /* free cluster list tail */
-> >         unsigned int lowest_bit;        /* index of first free in swap_map */
-> >         unsigned int highest_bit;       /* index of last free in swap_map */
-> > +       bool    full;                   /* whether swap is full or not */
-> >         unsigned int pages;             /* total of usable pages of swap */
-> >         unsigned int inuse_pages;       /* number of those currently in use */
-> >         unsigned int cluster_next;      /* likely index for next allocation */
-> > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > index c07f7f4912e9..209112cf8b83 100644
-> > --- a/mm/swapfile.c
-> > +++ b/mm/swapfile.c
-> > @@ -558,7 +558,7 @@ checks:
-> >         }
-> >         if (!(si->flags & SWP_WRITEOK))
-> >                 goto no_page;
-> > -       if (!si->highest_bit)
-> > +       if (si->full)
-> >                 goto no_page;
-> >         if (offset > si->highest_bit)
-> >                 scan_base = offset = si->lowest_bit;
-> > @@ -589,6 +589,7 @@ checks:
-> >                 spin_lock(&swap_avail_lock);
-> >                 plist_del(&si->avail_list, &swap_avail_head);
-> >                 spin_unlock(&swap_avail_lock);
-> > +               si->full = true;
-> >         }
-> >         si->swap_map[offset] = usage;
-> >         inc_cluster_info_page(si, si->cluster_info, offset);
-> > @@ -653,14 +654,14 @@ start_over:
-> >                 plist_requeue(&si->avail_list, &swap_avail_head);
-> >                 spin_unlock(&swap_avail_lock);
-> >                 spin_lock(&si->lock);
-> > -               if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
-> > +               if (si->full || !(si->flags & SWP_WRITEOK)) {
-> >                         spin_lock(&swap_avail_lock);
-> >                         if (plist_node_empty(&si->avail_list)) {
-> >                                 spin_unlock(&si->lock);
-> >                                 goto nextsi;
-> >                         }
-> > -                       WARN(!si->highest_bit,
-> > -                            "swap_info %d in list but !highest_bit\n",
-> > +                       WARN(si->full,
-> > +                            "swap_info %d in list but swap is full\n",
-> >                              si->type);
-> >                         WARN(!(si->flags & SWP_WRITEOK),
-> >                              "swap_info %d in list but !SWP_WRITEOK\n",
-> > @@ -796,21 +797,25 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
-> >
-> >         /* free if no reference */
-> >         if (!usage) {
-> > +               bool was_full;
-> > +
-> >                 dec_cluster_info_page(p, p->cluster_info, offset);
-> >                 if (offset < p->lowest_bit)
-> >                         p->lowest_bit = offset;
-> > -               if (offset > p->highest_bit) {
-> > -                       bool was_full = !p->highest_bit;
-> > +               if (offset > p->highest_bit)
-> >                         p->highest_bit = offset;
-> > -                       if (was_full && (p->flags & SWP_WRITEOK)) {
-> > -                               spin_lock(&swap_avail_lock);
-> > -                               WARN_ON(!plist_node_empty(&p->avail_list));
-> > -                               if (plist_node_empty(&p->avail_list))
-> > -                                       plist_add(&p->avail_list,
-> > -                                                 &swap_avail_head);
-> > -                               spin_unlock(&swap_avail_lock);
-> > -                       }
-> > +               was_full = p->full;
-> > +
-> > +               if (was_full && (p->flags & SWP_WRITEOK)) {
-> 
-> was_full was only needed because highest_bit was reset to offset right
-> before checking for fullness, so now that ->full is used instead of
-> !highest_bit, was_full isn't needed anymore, you can just check
-> p->full.
+* Frans Klaver | 2014-09-22 11:28:54 [+0200]:
 
-Okay.
+>
+>Wow, thanks for your work here. This does indeed sound hard to trap.
+>
+>I guess then we'd still have to answer the question why the yocto build
+>calls set_termios() so often, but that's not on you then. Did you notice
+>it even changing settings? We might want to fix this even if the kernel
+>should be able to cope.
 
--- 
-Kind regards,
-Minchan Kim
+Yeah. I don't care if this is yocto's fault or not. If it is possible to
+stop the DMA transfer from userland with whatever method then it needs to
+be fixed in kernel so that this does happen.
+
+>Thanks again,
+>Frans
+
+Sebastian
