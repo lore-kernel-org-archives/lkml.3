@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaIXOt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:49:26 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:41467 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbaIXOtW (ORCPT
+	id S1753067AbaIXOtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:49:46 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:44614 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaIXOtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:49:22 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        ctl@merrii.com, Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v2 0/7] ARM: sunxi: Add basic support for Allwinner A80 SoC
-Date: Wed, 24 Sep 2014 22:48:54 +0800
-Message-Id: <1411570141-29960-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.0
+	Wed, 24 Sep 2014 10:49:43 -0400
+Date: Wed, 24 Sep 2014 15:49:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org
+Subject: [GIT PULL] MFD: Immutable branch between HWMON, LEDs and Watchdog
+Message-ID: <20140924144936.GL32069@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <cover.1409161615.git.andreas.werner@men.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Guenter, Bryan, Wim,
 
-This is v2 of the initial Allwinner A80 support series.
-This patch series adds very basic support for Allwinner's A80 SoC,
-a big.LITTLE architecture with 4 Cortex-A7s and 4 Cortex-A15s.
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+  
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+  
+are available in the git repository at:
+  
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
 
-Development is done on the A80 Optimus Board, the defacto development
-board for the A80, with the accompanying SDK as a reference. 
+for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
 
-So far I've been unable to get the board to boot from MMC, or
-using Android fastboot. I'm using Allwinner's FEL mode to load
-the bootloader and kernel+dtb image over USB. Notes on my attempts
-can be found here: http://linux-sunxi.org/User:Wens#A80_Optimus
+  hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
 
+----------------------------------------------------------------
+Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
 
-Patch 1 introduces the compatible string for the A80.
+----------------------------------------------------------------
+Andreas Werner (4):
+      mfd: menf21bmc: Introduce MEN 14F021P00 BMC MFD Core driver
+      watchdog: menf21bmc_wdt: Introduce MEN 14F021P00 BMC Watchdog driver
+      leds: leds-menf21bmc: Introduce MEN 14F021P00 BMC LED driver
+      hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver
 
-Patch 2 adds options to use UART0 on the A80 as the debug port for
-earlyprintk.
-
-Patch 3 adds a barebone dtsi with just the cpu, memory and uart nodes.
-
-Patch 4 adds a barebone dts for the A80 Optimus Board.
-
-Patch 5 documents the vendor prefix for Merrii Technology Co., Ltd,
-the designer and vendor of the A80 Optimus Board.
-
-Patch 6 documents all the Allwinner SoCs we currently support.
-
-Patch 7 updates the sunxi README with a link to the A80's datasheet.
-
-
-Changes since v1:
-
-  - Use skeleton64.dtsi as basis to support maximum of 8GB DRAM
-  - Dropped dependency on ARCH_SUNXI for DEBUG_SUN9I_UART0
-  - Added empty lines separating cores in the DT cpu-map node
-  - Added patch 7 to update sunxi README
-
-Cheers
-ChenYu
-
-Chen-Yu Tsai (7):
-  ARM: sunxi: Introduce Allwinner A80 support
-  ARM: sunxi: Add debug uart used by sun9i (Allwinner A80)
-  ARM: dts: sunxi: Add Allwinner A80 dtsi
-  ARM: dts: sun9i: Add A80 Optimus Board support
-  devicetree: bindings: Add vendor prefix for Merrii Technology Co.,
-    Ltd.
-  devicetree: bindings: Document supported Allwinner sunxi SoCs
-  Documentation: sunxi: Add A80 datasheet link
-
- Documentation/arm/sunxi/README                     |   3 +-
- Documentation/devicetree/bindings/arm/sunxi.txt    |  12 +
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- arch/arm/Kconfig.debug                             |  10 +
- arch/arm/boot/dts/Makefile                         |   2 +
- arch/arm/boot/dts/sun9i-a80-optimus.dts            |  66 +++++
- arch/arm/boot/dts/sun9i-a80.dtsi                   | 287 +++++++++++++++++++++
- arch/arm/mach-sunxi/Kconfig                        |   5 +
- arch/arm/mach-sunxi/sunxi.c                        |   9 +
- 9 files changed, 394 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/arm/sunxi.txt
- create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
- create mode 100644 arch/arm/boot/dts/sun9i-a80.dtsi
+ Documentation/hwmon/menf21bmc    |  50 +++++++++
+ drivers/hwmon/Kconfig            |  10 ++
+ drivers/hwmon/Makefile           |   1 +
+ drivers/hwmon/menf21bmc_hwmon.c  | 230 +++++++++++++++++++++++++++++++++++++++
+ drivers/leds/Kconfig             |   9 ++
+ drivers/leds/Makefile            |   1 +
+ drivers/leds/leds-menf21bmc.c    | 131 ++++++++++++++++++++++
+ drivers/mfd/Kconfig              |  15 +++
+ drivers/mfd/Makefile             |   1 +
+ drivers/mfd/menf21bmc.c          | 132 ++++++++++++++++++++++
+ drivers/watchdog/Kconfig         |  10 ++
+ drivers/watchdog/Makefile        |   1 +
+ drivers/watchdog/menf21bmc_wdt.c | 203 ++++++++++++++++++++++++++++++++++
+ 13 files changed, 794 insertions(+)
+ create mode 100644 Documentation/hwmon/menf21bmc
+ create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
+ create mode 100644 drivers/leds/leds-menf21bmc.c
+ create mode 100644 drivers/mfd/menf21bmc.c
+ create mode 100644 drivers/watchdog/menf21bmc_wdt.c
 
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
