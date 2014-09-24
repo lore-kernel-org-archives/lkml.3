@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaIXOW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:22:29 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54204 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaIXOW1 (ORCPT
+	id S1753302AbaIXOX0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:23:26 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46295 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaIXOXY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:22:27 -0400
-Message-ID: <5422D39D.70006@gmail.com>
-Date: Wed, 24 Sep 2014 21:22:21 +0700
-From: Lars Melin <larsm17@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 10:23:24 -0400
+Date: Wed, 24 Sep 2014 15:23:18 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Liviu Dudau <liviu@dudau.co.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v12 00/12] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20140924142317.GC1994@e106497-lin.cambridge.arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140923215435.GD27117@google.com>
+ <20140923224810.GA32643@bart.dudau.co.uk>
+ <CAErSpo5PBXSUeU_LP2m=9jxibmqxreL4tEeHBsc5To7D=_bAJA@mail.gmail.com>
+ <CAL_Jsq+U=1JT0qqZgb=aR66Q4NYDyzOogspOmmpsp61pE+aCUg@mail.gmail.com>
 MIME-Version: 1.0
-To: hs@denx.de
-CC: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Macpaul Lin <macpaul@gmail.com>
-Subject: Re: [PATCH] usb: gadget: f_rndis: fix usb_interface_descriptor for
- rndis
-References: <1411541339-32400-1-git-send-email-hs@denx.de> <5422B83A.8030406@gmail.com> <5422C33F.400@denx.de>
-In-Reply-To: <5422C33F.400@denx.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL_Jsq+U=1JT0qqZgb=aR66Q4NYDyzOogspOmmpsp61pE+aCUg@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 24 Sep 2014 14:23:19.0230 (UTC) FILETIME=[16937DE0:01CFD803]
+X-MC-Unique: 114092415232101601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-24 20:12, Heiko Schocher wrote:
-> Hello Lars,
->
-> Am 24.09.2014 14:25, schrieb Lars Melin:
->> On 2014-09-24 13:48, Heiko Schocher wrote:
->>> use the values for RNDIS over Ethernet as defined in
->>> http://www.usb.org/developers/defined_class
->>> (search for RDNIS):
->>>
->>> - baseclass: 0xef (miscellaneous)
->>> - subclass: 0x04
->>> - protocol: 0x01
->>>
->> That is usb class, it is not the same thing as communication device 
->> class.
->>> --- a/include/uapi/linux/usb/cdc.h
->>> +++ b/include/uapi/linux/usb/cdc.h
->>> @@ -12,6 +12,7 @@
->>> #include <linux/types.h>
->>> #define USB_CDC_SUBCLASS_ACM 0x02
->>> +#define USB_CDC_SUBCLASS_RNDIS 0x04
->> No, no, no.
->> There is no CDC_SUBCLASS_RNDIS and you can not define one over an 
->> already used cdc subclass number, 0x04 is Multi-Channel Control Model
->
-> Ah, ok, so I have to define this values in a new header file, as there
-> is no current file for the USB_CLASS_MISC defines? Or is there a proper
-> place for them?
->
-> BTW: where do I find the "cdc subclass number, 0x04 is Multi-Channel
-> Control Model" define?
->
-> bye,
-> Heiko
+On Wed, Sep 24, 2014 at 02:30:37PM +0100, Rob Herring wrote:
+> On Tue, Sep 23, 2014 at 6:00 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Tue, Sep 23, 2014 at 4:48 PM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+> >> ...
+> >> While the next immediate target is converting pci-host-generic.c, pci-imx6.c
+> >> and probably pcie-designware.c to my series, I would like to ask you what
+> >> is your longer term plan. Now that I have got my head full of PCI code,
+> >> I have some ideas but feel that meeting with you and all those involved
+> >> in core PCI support would be a better venue than sending emails back and
+> >> forth. When is your next plan to attend a Linux conference?
+> >
+> > That would be nice.  Unfortunately, I don't know what the next
+> > conference will be yet.
+> 
+> Perhaps an irc meeting or Google hangout. These have been happening on
+> several areas like DT and ARM KVM.
 
-You can still find the original specification usbcdc11.pdf on the net if 
-you google for it, it has been pulled from usb.org where you could 
-download it until a few years ago.
-It is old but covers a lot of what you need to know.
+I'm open to the idea. I don't know if there is a recurring one already for
+PCI or how Bjorn has been handling future planning previously.
 
-Linux has afaik only the cdc.h definition file, everything else is coded 
-by class/subclass in respectively drivers when needed.
-02/02/ff  or  e0/01/03  are the most common interface attribute for 
-rndis,  both of them together with a data interface with attributes 
-0a/00/00.
-Please check the whitelisting in drivers/net/usb/rndis_host.c  and also 
-blacklistings in other net drivers under the same path, it should give 
-you an idea how to bind an interface to a specific driver by interface 
-attributes and/or usb vid:pid.
-You should be able to do the same for your particular device.
+Best regards,
+Liviu
+
+> 
+> Rob
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
