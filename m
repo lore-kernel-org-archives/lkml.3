@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaIXUjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:39:25 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:48048 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751736AbaIXUjY (ORCPT
+	id S1753285AbaIXUjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:39:41 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:32847 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194AbaIXUjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:39:24 -0400
-Message-ID: <54232BF7.5090909@fb.com>
-Date: Wed, 24 Sep 2014 16:39:19 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 24 Sep 2014 16:39:40 -0400
+Date: Wed, 24 Sep 2014 22:39:37 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 08/11] perf/x86/intel: Add Intel Cache QoS Monitoring
+ support
+Message-ID: <20140924203937.GD15923@two.firstfloor.org>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-9-git-send-email-matt@console-pimps.org>
+ <874mvx6kgl.fsf@tassilo.jf.intel.com>
+ <20140924202739.GP18635@console-pimps.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] trace-cmd fixes
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-24_08:2014-09-24,2014-09-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1409240206
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924202739.GP18635@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Sep 24, 2014 at 09:27:39PM +0100, Matt Fleming wrote:
+> > > +static int __init intel_cqm_init(void)
+> > > +{
+> > > +	int i, cpu, ret;
+> > > +
+> > > +	if (!cpu_has(&boot_cpu_data, X86_FEATURE_CQM_OCCUP_LLC))
+> > > +		return -ENODEV;
+> > 
+> > This should use cpufeature.h
+>  
+> What? Please be more explicit.
 
-I have a few outstanding trace-cmd patches that I've sent over the last 
-couple of months, the bulk of which were while you were on vacation.  So 
-here's a pull-able branch with the current backlog.  The 
-"read_next_event" patch is authored today because I nuked the original 
-git tree I had with it, but I sent it in July I think.  If these are 
-acceptable you can just pull from
+Using x86_match_cpu and friends, then it would work for module
+auto loading too.
 
-https://github.com/josefbacik/trace-cmd.git for-steve
+> > But in fact what good is the test then if you only
+> > every likely check cpu #0?
+> 
+> We don't, we check every online cpu, not just cpu 0.
 
-Here is the shortlog
+There are no other cpus online at this point?
 
-Josef Bacik (4):
-       trace-cmd: make sure we have a pending pid in trace-hist
-       trace-cmd: add trace-record.o to the python shared lib
-       trace-cmd: add read_next_event to python lib
-       trace-cmd: add helper to read kernel_stack functions
-
-I've been carrying all but the kernel_stack thing internally for months 
-and have scripts using them in production so they are well tested.  Thanks,
-
-Josef
+-Andi
