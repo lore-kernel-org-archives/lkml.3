@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaIXQ63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:58:29 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:52651 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIXQ61 (ORCPT
+	id S1754680AbaIXQ7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:59:05 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38484 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031AbaIXQ7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:58:27 -0400
-Message-ID: <5422F82B.40507@mentor.com>
-Date: Wed, 24 Sep 2014 11:58:19 -0500
-From: Nathan Lynch <Nathan_Lynch@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 24 Sep 2014 12:59:02 -0400
+Date: Wed, 24 Sep 2014 17:58:55 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, subhransu.s.prusty@intel.com,
+        linux-spi@vger.kernel.org
+Message-ID: <20140924165855.GK16977@sirena.org.uk>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+ <1411575342-31048-22-git-send-email-vinod.koul@intel.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Christopher Covington <cov@codeaurora.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code consolidation
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <20140922223022.GO5182@n2100.arm.linux.org.uk> <5420BE92.7050504@mentor.com> <5422D138.8000002@codeaurora.org> <5422D616.7060807@mentor.com> <20140924145025.GX5182@n2100.arm.linux.org.uk>
-In-Reply-To: <20140924145025.GX5182@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mGCtrYeZ202LI9ZG"
+Content-Disposition: inline
+In-Reply-To: <1411575342-31048-22-git-send-email-vinod.koul@intel.com>
+X-Cookie: Your own mileage may vary.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 21/27] spi: omap2-mcspi: use
+ pm_runtime_last_busy_and_autosuspend helper
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 09:50 AM, Russell King - ARM Linux wrote:
-> On Wed, Sep 24, 2014 at 09:32:54AM -0500, Nathan Lynch wrote:
->> On 09/24/2014 09:12 AM, Christopher Covington wrote:
->>> Hi Nathan,
->>>
->>> On 09/22/2014 08:28 PM, Nathan Lynch wrote:
->>>> Hmm, this patch set is merely exposing the hardware counter when it is
->>>> present for the VDSO's use; I take it you have no objection to that?
->>>>
->>>> While the 32-bit ARM VDSO I've posted (in a different thread) exploits a
->>>> facility that is required by the virtualization option in the
->>>> architecture, its utility is not limited to guest operating systems.
->>>
->>> Just to clarify, were the performance improvements you measured from a
->>> virtualized guest or native?
->>
->> Yeah I should have been explicit about this.  My tests and measurements
->> (and all test results I've received from others, I believe) have been on
->> native/host kernels, not guests.
-> 
-> Have there been any measurements on systems without the architected
-> timers?
 
-I do test on iMX6 regularly.  Afraid I don't have any pre-v7 hardware to
-check though.
+--mGCtrYeZ202LI9ZG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Here's a report from you from an earlier submission that shows little/no
-impact:
+On Wed, Sep 24, 2014 at 09:45:11PM +0530, Vinod Koul wrote:
+> Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+> coding the same code
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/267552.html
+You haven't CCed me on anything earlier in the series so I've no idea
+what's going on here but it looks like there is probably some
+dependency?
 
-But admittedly vdsotest is just doing rudimentary microbenchmarking.
+--mGCtrYeZ202LI9ZG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Running a lttng-ust workload that emits tracepoints as fast as possible
-(lttng-ust calls clock_gettime and getcpu on every tracepoint), I see
-about 1% degradation on iMX6.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUIvhOAAoJECTWi3JdVIfQDaMH/130+TFZCEsIoVdMG2FNoNG5
+8jdVavVu41kYH30h3NbB6SJ5/84NL2IjUkzOTxbLgOPBsaYNzpDrPPE7QDX8IkKW
+oHrTtzNVv0NamzLyYWZ+fgwS+TaB+buL8bMMhe3xe9D71iZr0rEYoWuA+rNyZ7gv
+y9NunQDC3jW9HFfpB+QTnd0IVLLhdu8W/RK0pXLWuo+Vb+hCaTw/pt1SsSD8ISEQ
+Jwj4I0d3d7tFIFYnY3VGZlFdcn/gkcBXpMf3WiSBEA0Ksq/8OR2/DkdZg9Bhc/6k
+3cf5kjmgI7lh3nJamj/Y7nJjOZT6Y9Pxy/5i1yMWeDBw85LuVLavtOifG/Rd2t8=
+=+L+i
+-----END PGP SIGNATURE-----
 
->>> I count 18 dts* files that have "arm,armv7-timer", including platforms with
->>> Krait, Exynos, and Tegra processors.
->>
->> Yup.
-> 
-> That's not the full story.  Almost every ARM to date has not had an
-> architected timer.  Architected timers are a recent addition - as
-> pointed out, a Cortex A7/A12/A15 invention.  Most of the platforms I
-> see are Cortex A9 which doesn't have any architected timers.
-> 
-> Yes, it may be fun to work on new hardware and make that perform
-> much better than previous, but we should not loose sight that there
-> is older hardware out there, and we shouldn't unnecessarily penalise
-> it when adding new features.
-
-Agreed, of course, and I'll include more detailed results from systems
-without the architected timer in future submissions.
-
-
-> What we /need/ to know is what the effect providing a VDSO in an
-> environment without an architected timer (so using the VDSO fallback
-> functions calling the syscalls) and having glibc use it is compared
-> to the current situation where there is no VDSO for glibc to use.
-> 
-> If you can show that there's no difference, then I'm happy to go with
-> always providing the VDSO.  If there's a detrimental effect (which I
-> suspect there may be, since we now have to have glibc test to see if
-> the VDSO is there, jump to the VDSO, the VDSO then tests whether we
-> have an architected timer, and then we finally get to issue the
-> syscall), then we must avoid providing the VDSO on systems which have
-> no architected timer.
-
-One point I would like to raise is that the VDSO provides (or could be
-made to provide) acceleration for APIs that are unrelated to the
-architected timer:
-
-- clock_gettime with CLOCK_REALTIME_COARSE and CLOCK_MONOTONIC_COARSE.
-This is currently included.
-
-- getcpu, which I had planned on submitting later.
-
-I don't know whether the coarse clock support is compelling; they don't
-seem to be commonly used.  But there is a nice 4-5x speedup for those on
-iMX6.
-
-getcpu, on the other hand, is one of the two system calls lttng-ust uses
-in every tracepoint emitted, and I would like to have it available in
-the VDSO on all systems capable of supporting the implementation, which
-may take the form of co-opting TPIDRURW or some other register.
-
-So the question of whether to provide the VDSO may not hinge on whether
-the architected timer is available.
-
-None of which is to argue that unnecessarily degrading gettimeofday
-performance on some systems for the benefit of others is acceptable.
-
+--mGCtrYeZ202LI9ZG--
