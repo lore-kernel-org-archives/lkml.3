@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaIXQ2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:28:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:31246 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750742AbaIXQ2A (ORCPT
+	id S1753981AbaIXQ2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:28:42 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56723 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbaIXQ2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:28:00 -0400
-Message-Id: <20140924162759.665391261@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 24 Sep 2014 12:27:21 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [for-next][PATCH 2/3] ftracetest: Add ftrace basic testcases
-References: <20140924162719.481050866@goodmis.org>
+	Wed, 24 Sep 2014 12:28:38 -0400
+Date: Wed, 24 Sep 2014 09:28:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140924162824.GA13363@roeck-us.net>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <20140924144829.GK32069@lee--X1>
+ <20140924154503.GA12403@roeck-us.net>
+ <20140924161837.GA7113@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-ftracetest-Add-ftrace-basic-testcases.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924161837.GA7113@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Wed, Sep 24, 2014 at 05:18:37PM +0100, Lee Jones wrote:
+> On Wed, 24 Sep 2014, Guenter Roeck wrote:
+> 
+> > On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
+> > > Guenter, Bryan, Wim,
+> > > 
+> > > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> > > 
+> > >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
+> > > 
+> > > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+> > > 
+> > >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+> > > 
+> > > ----------------------------------------------------------------
+> > > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+> > > 
+> > I assume you'll push it all through mfd, correct ?
+> 
+> The idea is for all the affected Maintainers to pull this branch in to
+> their own trees.  If you guys don't, there will be a good chance of
+> conflict during the merge-window, which will subsequently upset Linus.
+> 
+> So in answer to your question; yes I'll be taking this, but so should
+> each of you.
+> 
+No problem with me. Let's see how it goes.
 
-Add ftrace basic testcases. This just checks ftrace debugfs
-interface works as it is designed.
-
-Link: http://lkml.kernel.org/p/20140922234252.23415.62897.stgit@kbuild-f20.novalocal
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/selftests/ftrace/test.d/00basic/basic1.tc | 3 +++
- tools/testing/selftests/ftrace/test.d/00basic/basic2.tc | 6 ++++++
- tools/testing/selftests/ftrace/test.d/00basic/basic3.tc | 8 ++++++++
- 3 files changed, 17 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
- create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
- create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-
-diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
-new file mode 100644
-index 000000000000..9980ff14ae44
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
-@@ -0,0 +1,3 @@
-+#!/bin/sh
-+# description: Basic trace file check
-+test -f README -a -f trace -a -f tracing_on -a -f trace_pipe
-diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-new file mode 100644
-index 000000000000..b04f30df0db3
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-@@ -0,0 +1,6 @@
-+#!/bin/sh
-+# description: Basic test for tracers
-+for t in `cat available_tracers`; do
-+  echo $t > current_tracer || exit 1
-+done
-+echo nop > current_tracer
-diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-new file mode 100644
-index 000000000000..0c1a3a207636
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-@@ -0,0 +1,8 @@
-+#!/bin/sh
-+# description: Basic trace clock test
-+[ -f trace_clock ] || exit 1
-+for c in `cat trace_clock | tr  -d \[\]`; do
-+  echo $c > trace_clock || exit 1
-+  grep '\['$c'\]' trace_clock || exit 1
-+done
-+echo local > trace_clock
--- 
-2.0.1
-
-
+Guenter
