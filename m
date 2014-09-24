@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaIXS1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:27:11 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54030 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaIXS1J (ORCPT
+	id S1752893AbaIXSaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:30:23 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:61419 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaIXSaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:27:09 -0400
-Message-ID: <54230CFA.10003@converseincode.com>
-Date: Wed, 24 Sep 2014 11:27:06 -0700
-From: Behan Webster <behanw@converseincode.com>
+	Wed, 24 Sep 2014 14:30:22 -0400
+X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 14:30:22 EDT
+Message-ID: <54230C1A.30801@prisktech.co.nz>
+Date: Thu, 25 Sep 2014 06:23:22 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: mq@suse.cz, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Tom Gundersen <teg@jklm.no>,
-        Masahiro Yamada <yamada.m@jp.panasonic.com>, fengguang.wu@intel.com
-Subject: Re: [PATCH] kbuild, LLVMLinux: Fix asm-offset generation to work
- with clang
-References: <1411500331-9861-1-git-send-email-behanw@converseincode.com> <3907075.FRP0QfugZW@wuerfel>
-In-Reply-To: <3907075.FRP0QfugZW@wuerfel>
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: Behan Webster <behanw@converseincode.com>, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm, vt8500, LLVMLlinux: Use mcr instead of mcr% for
+ mach-vt8500
+References: <1411530284-28807-1-git-send-email-behanw@converseincode.com> <7810937.UX61PvX9nB@wuerfel>
+In-Reply-To: <7810937.UX61PvX9nB@wuerfel>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/14 03:37, Arnd Bergmann wrote:
-> On Tuesday 23 September 2014 12:25:31 behanw@converseincode.com wrote:
->>   #define DEFINE(sym, val) \
->> -        asm volatile("\n->" #sym " %0 " #val : : "i" (val))
->> +       asm volatile("\n@->" #sym " %0 " #val : : "i" (val))
-> Isn't the '@' character to start a comment architecture specific?
-I had worried about that as well (as we discussed at LCU), but with the 
-limited testing I tried this with it seemed to indicate that gas was 
-smart enough to handle it in most cases. However the kbuild test robot 
-indicates that this patch breaks MIPS. So indeed your concern is justified.
 
-Gotta love the kbuild test robot. Thank you Fengguang Wu!
+On 24/09/14 21:16, Arnd Bergmann wrote:
+> On Tuesday 23 September 2014 20:44:44 Behan Webster wrote:
+>> The ASM below does not compile with clang and is not the way that the mcr
+>> command is used in other parts of the kernel.
+>>
+>> arch/arm/mach-vt8500/vt8500.c:72:11: error: invalid % escape in inline assembly string
+>>          asm("mcr%? p15, 0, %0, c7, c0, 4" : : "r" (0));
+>>              ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+>> 1 error generated.
+>>
+>> There are other forms that are supported on different ARM instruction sets but
+>> generally the kernel just uses mcr as it is supported in all ARM instruction
+>> sets.
+> Just for confirm: both forms are actually correct and we don't need this
+> backported for stable, right?
+>
+>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+>> Acked-by: Will Deacon <will.deacon@arm.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> Tony, would you like to pick this one up and send it in a pull request
+> to arm-soc, or should we apply it to fixes-non-critical directly?
+>
+> 	Arnd
+Arnd,
 
-> If this makes it work on ARM, what about other architectures?
-For now, I think I need to try something else.
+You can apply it directly to fixes-non-critical if that's ok.
 
-Thanks,
-
-Behan
-
--- 
-Behan Webster
-behanw@converseincode.com
-
+Regards
+Tony Prisk
