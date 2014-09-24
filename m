@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476AbaIXQHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:07:18 -0400
-Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:35948 "EHLO
-	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751989AbaIXQHP (ORCPT
+	id S1752914AbaIXQG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:06:58 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:54875 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaIXQGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:07:15 -0400
-Message-ID: <5422EC30.10206@nexus-software.ie>
-Date: Wed, 24 Sep 2014 17:07:12 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 12:06:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, devicetree@vger.kernel.org,
+        linux-pci@vger.kernel.org, Liviu Dudau <liviu.dudau@arm.com>,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>,
+        Sunil Goutham <sgoutham@cavium.com>
+Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree bindings
+Date: Wed, 24 Sep 2014 18:06:04 +0200
+Message-ID: <3082935.e3X4GsVUDn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411573068-12952-4-git-send-email-rric@kernel.org>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org> <1411573068-12952-4-git-send-email-rric@kernel.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        stable@vger.kernel.org, bp@alien8.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/platform] x86/intel/quark: Switch off CR4.PGE so TLB
- flush uses CR3 instead
-References: <1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie> <tip-ee1b5b165c0a2f04d2107e634e51f05d0eb107de@git.kernel.org> <5422E8D0.5080705@zytor.com> <5422EA13.1080706@nexus-software.ie>
-In-Reply-To: <5422EA13.1080706@nexus-software.ie>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ig5lUCqvvjBJTo/1M7fK/j0jt8HALfN8cvEUn08O+QA
+ w06r+erBCZmc5pHw7fUlP4t6rSwNaeiy3Zo+yN3fBthKKtZ6lT
+ zMy8p/C7CZzqbpTIycauMl4xiKeHnhR8oPsYF8/XixBlTzEf74
+ 1cPDpSyocM8sLVb0nigSh65BDnydM+F42vIZU8yXaxm22k+jPm
+ V8VBmhnGv/tCkF2dhTMDjpA+XMUZWdcHr3IQ1XnDpRpJSRT6To
+ 3FhUIBS0xJdlVoOtrD7Phx5qJeA9isP8p0oD31poJfk/6SZglp
+ 0ZUbJ17J4WpL7ot7wTzUR9KAok0ILchFpILVreqmuFNvgB7a2B
+ qh+nx7REHuEKSbI09jqQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/09/14 16:58, Bryan O'Donoghue wrote:
->
->>
->> I believe there is one more change needed: there is a __flush_tlb_all()
->> in the early code which gets executed before the above code runs; the
->> easiest fix is to just add a __flush_tlb() immediately after it.
->>
->> This should have been pushed upstream, and not stayed in the BSP kernel.
->
-> Peter.
->
-> You're talking about void __init setup_arch() right ?
->
-> The code looks like this
->
-> load_cr3(swapper_pg_dir);
-> __flush_tlb_all();
->
-> Note that on Quark the method to invalidate the TLB is by reloading CR3
-> - which is immediately prior to __flush_tlb_all();
->
-> So __flush_tlb_all(); will do nothing but that's OK since load_cr3()
-> already flushed the TLB - including any PTE with PGE set
+On Wednesday 24 September 2014 17:37:45 Robert Richter wrote:
+> 
+> +       pcie0@0x8480,00000000 {
 
-I take your point though.
+The name should be pci, not pci0.
 
-It's probably better to be explicit and do the whole
+> +               compatible = "cavium,thunder-pcie";
+> +               device_type = "pci";
+> +               msi-parent = <&its>;
+> +               bus-range = <0 255>;
+> +               #size-cells = <2>;
+> +               #address-cells = <3>;
+> +               reg = <0x8480 0x00000000 0 0x10000000>;  /* Configuration space */
+> +               ranges = <0x03000000 0x8010 0x00000000 0x8010 0x00000000 0x70 0x00000000>, /* mem ranges */
+> +                       <0x03000000 0x8300 0x00000000 0x8300 0x00000000 0x80 0x00000000>,
+> +                       <0x03000000 0x87e0 0x00000000 0x87e0 0x00000000 0x01 0x00000000>;
+> +        };
 
-if (quark)
-	__flush_tlb();
-else
-	__flush_tlb_all();
+If you claim the entire 0-255 bus range, I think you should also
+specify a domain, otherwise it's not predictable which domain you
+get.
 
-So that we aren't relying on the side effects of the previous statement.
+The interrupt-map and interrupt-map-mask properties are required for PCI,
+otherwise you can't do LSI interrupts.
 
+If your hardware can support it, you should also list I/O space and prefetchable
+memory spaces. Can you explain why you have multiple non-prefetchable ranges?
+
+	Arnd
