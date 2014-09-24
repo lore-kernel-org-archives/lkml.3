@@ -1,329 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaIXVFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:05:47 -0400
-Received: from mail-bn1on0118.outbound.protection.outlook.com ([157.56.110.118]:46336
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752792AbaIXVFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:05:42 -0400
-X-WSS-ID: 0NCFB75-08-8LU-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        "John Bridgman" <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Ben Goz <ben.goz@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        <linux-api@vger.kernel.org>
-Subject: [PATCH v4 20/23] amdkfd: Implement the create/destroy/update queue IOCTLs
-Date: Wed, 24 Sep 2014 23:45:34 +0300
-Message-ID: <1411591537-31636-21-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
-References: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.20.0.84]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51234002)(189002)(199003)(92566001)(92726001)(33646002)(90102001)(85852003)(83072002)(102836001)(88136002)(89996001)(36756003)(77156001)(101416001)(120916001)(20776003)(64706001)(31966008)(99396003)(47776003)(10300001)(62966002)(104166001)(97736003)(229853001)(93916002)(87286001)(107046002)(87936001)(85306004)(86362001)(77096002)(106466001)(76176999)(44976005)(83322001)(50466002)(50226001)(4396001)(48376002)(77982003)(19580395003)(50986999)(84676001)(19580405001)(68736004)(105586002)(21056001)(74662003)(80022003)(79102003)(81342003)(74502003)(81542003)(46102003)(76482002)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
-X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1753927AbaIXVFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:05:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52678 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaIXVFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:05:14 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [Patch v2] spi: qup: Fix incorrect block transfers
+Date: Wed, 24 Sep 2014 16:04:58 -0500
+Message-Id: <1411592698-30952-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Goz <ben.goz@amd.com>
+This patch fixes a number of errors with the QUP block transfer mode.  Errors
+manifested themselves as input underruns, output overruns, and timed out
+transactions.
 
-v3: Removed the use of internal typedefs, fixed debug prints, added checks
-for parameters and moved to using doorbell address from user
+The block mode does not require the priming that occurs in FIFO mode.  At the
+moment that the QUP is placed into the RUN state, the QUP will immediately raise
+an interrupt if the request is a write.  Therefore, there is no need to prime
+the pump.
 
-v4: Extracted some of the code in the create queue ioctl to a different
-function that may be also called from other ioctls in the future. Also fixed
-the check of the ring size argument.
+In addition, the block transfers require that whole blocks of data are
+read/written at a time.  The last block of data that completes a transaction may
+contain less than a full blocks worth of data.
 
-Signed-off-by: Ben Goz <ben.goz@amd.com>
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+Each block of data results in an input/output service interrupt accompanied with
+a input/output block flag set.  Additional block reads/writes require clearing
+of the service flag.  It is ok to check for additional blocks of data in the
+ISR, but you have to ack every block you transfer.  Imbalanced acks result in
+early return from complete transactions with pending interrupts that still have
+to be ack'd.  The next transaction can be affected by these interrupts.
+
+Changes from v1:
+- Split out read/write block function.
+- Removed extraneous checks for transfer length
+
+Signed-off-by: Andy Gross <agross@codeaurora.org>
 ---
- drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c        | 191 ++++++++++++++++++++-
- drivers/gpu/drm/radeon/amdkfd/kfd_priv.h           |   8 +
- .../drm/radeon/amdkfd/kfd_process_queue_manager.c  |   5 +-
- include/uapi/linux/kfd_ioctl.h                     |   7 +-
- 4 files changed, 205 insertions(+), 6 deletions(-)
+ drivers/spi/spi-qup.c |  198 ++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 146 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-index c42f53b..ac3146d 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-@@ -117,19 +117,204 @@ static int kfd_open(struct inode *inode, struct file *filep)
+diff --git a/drivers/spi/spi-qup.c b/drivers/spi/spi-qup.c
+index 9f83d29..e08cc26 100644
+--- a/drivers/spi/spi-qup.c
++++ b/drivers/spi/spi-qup.c
+@@ -80,6 +80,8 @@
+ #define QUP_IO_M_MODE_BAM		3
+ 
+ /* QUP_OPERATIONAL fields */
++#define QUP_OP_IN_BLOCK_READ_REQ	BIT(13)
++#define QUP_OP_OUT_BLOCK_WRITE_REQ	BIT(12)
+ #define QUP_OP_MAX_INPUT_DONE_FLAG	BIT(11)
+ #define QUP_OP_MAX_OUTPUT_DONE_FLAG	BIT(10)
+ #define QUP_OP_IN_SERVICE_FLAG		BIT(9)
+@@ -143,6 +145,7 @@ struct spi_qup {
+ 	int			tx_bytes;
+ 	int			rx_bytes;
+ 	int			qup_v1;
++	int			mode;
+ };
+ 
+ 
+@@ -198,30 +201,14 @@ static int spi_qup_set_state(struct spi_qup *controller, u32 state)
  	return 0;
  }
  
-+static int set_queue_properties_from_user(struct queue_properties *q_properties,
-+				struct kfd_ioctl_create_queue_args *args)
-+{
-+	if (args->queue_percentage > KFD_MAX_QUEUE_PERCENTAGE) {
-+		pr_err("kfd: queue percentage must be between 0 to KFD_MAX_QUEUE_PERCENTAGE\n");
-+		return -EINVAL;
-+	}
+-
+-static void spi_qup_fifo_read(struct spi_qup *controller,
+-			    struct spi_transfer *xfer)
++static void spi_qup_fill_read_buffer(struct spi_qup *controller,
++	struct spi_transfer *xfer, u32 data)
+ {
+ 	u8 *rx_buf = xfer->rx_buf;
+-	u32 word, state;
+-	int idx, shift, w_size;
+-
+-	w_size = controller->w_size;
+-
+-	while (controller->rx_bytes < xfer->len) {
+-
+-		state = readl_relaxed(controller->base + QUP_OPERATIONAL);
+-		if (0 == (state & QUP_OP_IN_FIFO_NOT_EMPTY))
+-			break;
+-
+-		word = readl_relaxed(controller->base + QUP_INPUT_FIFO);
+-
+-		if (!rx_buf) {
+-			controller->rx_bytes += w_size;
+-			continue;
+-		}
++	int idx, shift;
+ 
+-		for (idx = 0; idx < w_size; idx++, controller->rx_bytes++) {
++	if (rx_buf)
++		for (idx = 0; idx < controller->w_size; idx++) {
+ 			/*
+ 			 * The data format depends on bytes per SPI word:
+ 			 *  4 bytes: 0x12345678
+@@ -229,41 +216,139 @@ static void spi_qup_fifo_read(struct spi_qup *controller,
+ 			 *  1 byte : 0x00000012
+ 			 */
+ 			shift = BITS_PER_BYTE;
+-			shift *= (w_size - idx - 1);
+-			rx_buf[controller->rx_bytes] = word >> shift;
++			shift *= (controller->w_size - idx - 1);
++			rx_buf[controller->rx_bytes + idx] = data >> shift;
+ 		}
 +
-+	if (args->queue_priority > KFD_MAX_QUEUE_PRIORITY) {
-+		pr_err("kfd: queue priority must be between 0 to KFD_MAX_QUEUE_PRIORITY\n");
-+		return -EINVAL;
-+	}
-+
-+	if ((args->ring_base_address) &&
-+		(!access_ok(VERIFY_WRITE, args->ring_base_address, sizeof(uint64_t)))) {
-+		pr_err("kfd: can't access ring base address\n");
-+		return -EFAULT;
-+	}
-+
-+	if (!is_power_of_2(args->ring_size) && (args->ring_size != 0)) {
-+		pr_err("kfd: ring size must be a power of 2 or 0\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!access_ok(VERIFY_WRITE, args->read_pointer_address, sizeof(uint32_t))) {
-+		pr_err("kfd: can't access read pointer\n");
-+		return -EFAULT;
-+	}
-+
-+	if (!access_ok(VERIFY_WRITE, args->write_pointer_address, sizeof(uint32_t))) {
-+		pr_err("kfd: can't access write pointer\n");
-+		return -EFAULT;
-+	}
-+
-+	q_properties->is_interop = false;
-+	q_properties->queue_percent = args->queue_percentage;
-+	q_properties->priority = args->queue_priority;
-+	q_properties->queue_address = args->ring_base_address;
-+	q_properties->queue_size = args->ring_size;
-+	q_properties->read_ptr = (uint32_t *) args->read_pointer_address;
-+	q_properties->write_ptr = (uint32_t *) args->write_pointer_address;
-+
-+	pr_debug("Queue Percentage (%d, %d)\n",
-+			q_properties->queue_percent, args->queue_percentage);
-+
-+	pr_debug("Queue Priority (%d, %d)\n",
-+			q_properties->priority, args->queue_priority);
-+
-+	pr_debug("Queue Address (0x%llX, 0x%llX)\n",
-+			q_properties->queue_address, args->ring_base_address);
-+
-+	pr_debug("Queue Size (0x%llX, %u)\n",
-+			q_properties->queue_size, args->ring_size);
-+
-+	pr_debug("Queue r/w Pointers (0x%llX, 0x%llX)\n",
-+			(uint64_t) q_properties->read_ptr,
-+			(uint64_t) q_properties->write_ptr);
-+
-+	return 0;
++	controller->rx_bytes += controller->w_size;
 +}
 +
- static long kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p, void __user *arg)
- {
--	return -ENODEV;
-+	struct kfd_ioctl_create_queue_args args;
-+	struct kfd_dev *dev;
-+	int err = 0;
-+	unsigned int queue_id;
-+	struct kfd_process_device *pdd;
-+	struct queue_properties q_properties;
++static void spi_qup_prepare_write_data(struct spi_qup *controller,
++	struct spi_transfer *xfer, u32 *data)
++{
++	const u8 *tx_buf = xfer->tx_buf;
++	u32 val;
++	int idx;
 +
-+	memset(&q_properties, 0, sizeof(struct queue_properties));
++	*data = 0;
 +
-+	if (copy_from_user(&args, arg, sizeof(args)))
-+		return -EFAULT;
++	if (tx_buf)
++		for (idx = 0; idx < controller->w_size; idx++) {
++			val = tx_buf[controller->tx_bytes + idx];
++			*data |= val << (BITS_PER_BYTE * (3 - idx));
++		}
 +
-+	pr_debug("kfd: creating queue ioctl\n");
++	controller->tx_bytes += controller->w_size;
++}
 +
-+	err = set_queue_properties_from_user(&q_properties, &args);
-+	if (err)
-+		return err;
++static void spi_qup_fifo_read(struct spi_qup *controller,
++			    struct spi_transfer *xfer)
++{
++	u32 data;
 +
-+	dev = kfd_device_by_id(args.gpu_id);
-+	if (dev == NULL)
-+		return -EINVAL;
++	/* clear service request */
++	writel_relaxed(QUP_OP_IN_SERVICE_FLAG,
++		controller->base + QUP_OPERATIONAL);
 +
-+	mutex_lock(&p->mutex);
++	while (controller->rx_bytes < xfer->len) {
++		if (!(readl_relaxed(controller->base + QUP_OPERATIONAL) &
++			QUP_OP_IN_FIFO_NOT_EMPTY))
++			break;
 +
-+	pdd = kfd_bind_process_to_device(dev, p);
-+	if (IS_ERR(pdd) < 0) {
-+		err = PTR_ERR(pdd);
-+		goto err_bind_process;
-+	}
++		data = readl_relaxed(controller->base + QUP_INPUT_FIFO);
 +
-+	pr_debug("kfd: creating queue for PASID %d on GPU 0x%x\n",
-+			p->pasid,
-+			dev->id);
-+
-+	err = pqm_create_queue(&p->pqm, dev, filep, &q_properties, 0, KFD_QUEUE_TYPE_COMPUTE, &queue_id);
-+	if (err != 0)
-+		goto err_create_queue;
-+
-+	args.queue_id = queue_id;
-+
-+	/* Return gpu_id as doorbell offset for mmap usage */
-+	args.doorbell_offset = args.gpu_id << PAGE_SHIFT;
-+
-+	if (copy_to_user(arg, &args, sizeof(args))) {
-+		err = -EFAULT;
-+		goto err_copy_args_out;
-+	}
-+
-+	mutex_unlock(&p->mutex);
-+
-+	pr_debug("kfd: queue id %d was created successfully\n", args.queue_id);
-+
-+	pr_debug("ring buffer address == 0x%016llX\n",
-+			args.ring_base_address);
-+
-+	pr_debug("read ptr address    == 0x%016llX\n",
-+			args.read_pointer_address);
-+
-+	pr_debug("write ptr address   == 0x%016llX\n",
-+			args.write_pointer_address);
-+
-+	return 0;
-+
-+err_copy_args_out:
-+	pqm_destroy_queue(&p->pqm, queue_id);
-+err_create_queue:
-+err_bind_process:
-+	mutex_unlock(&p->mutex);
-+	return err;
++		spi_qup_fill_read_buffer(controller, xfer, data);
+ 	}
  }
  
- static int kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p, void __user *arg)
+ static void spi_qup_fifo_write(struct spi_qup *controller,
+-			    struct spi_transfer *xfer)
++			    struct spi_transfer *xfer, bool irq)
  {
--	return -ENODEV;
-+	int retval;
-+	struct kfd_ioctl_destroy_queue_args args;
+-	const u8 *tx_buf = xfer->tx_buf;
+-	u32 word, state, data;
+-	int idx, w_size;
++	u32 data;
+ 
+-	w_size = controller->w_size;
++	/* clear service request */
++	writel_relaxed(QUP_OP_OUT_SERVICE_FLAG,
++		controller->base + QUP_OPERATIONAL);
+ 
+ 	while (controller->tx_bytes < xfer->len) {
+ 
+-		state = readl_relaxed(controller->base + QUP_OPERATIONAL);
+-		if (state & QUP_OP_OUT_FIFO_FULL)
++		if (readl_relaxed(controller->base + QUP_OPERATIONAL) &
++				QUP_OP_OUT_FIFO_FULL)
+ 			break;
+ 
+-		word = 0;
+-		for (idx = 0; idx < w_size; idx++, controller->tx_bytes++) {
++		spi_qup_prepare_write_data(controller, xfer, &data);
++		writel_relaxed(data, controller->base + QUP_OUTPUT_FIFO);
+ 
+-			if (!tx_buf) {
+-				controller->tx_bytes += w_size;
+-				break;
+-			}
++	}
++}
+ 
+-			data = tx_buf[controller->tx_bytes];
+-			word |= data << (BITS_PER_BYTE * (3 - idx));
++static void spi_qup_block_read(struct spi_qup *controller,
++	struct spi_transfer *xfer)
++{
++	u32 data;
++	u32 words_per_blk = controller->in_blk_sz >> 2;
++	u32 num_words = (xfer->len - controller->rx_bytes) / controller->w_size;
++	int i;
 +
-+	if (copy_from_user(&args, arg, sizeof(args)))
-+		return -EFAULT;
++	do {
++		/* ACK by clearing service flag */
++		writel_relaxed(QUP_OP_IN_SERVICE_FLAG,
++			controller->base + QUP_OPERATIONAL);
 +
-+	pr_debug("kfd: destroying queue id %d for PASID %d\n",
-+				args.queue_id,
-+				p->pasid);
++		/* transfer up to a block size of data in a single pass */
++		for (i = 0; num_words && i < words_per_blk; i++, num_words--) {
 +
-+	mutex_lock(&p->mutex);
++			/* read data and fill up rx buffer */
++			data = readl_relaxed(controller->base + QUP_INPUT_FIFO);
++			spi_qup_fill_read_buffer(controller, xfer, data);
+ 		}
+ 
+-		writel_relaxed(word, controller->base + QUP_OUTPUT_FIFO);
+-	}
++		/* check to see if next block is ready */
++		if (!(readl_relaxed(controller->base + QUP_OPERATIONAL) &
++			QUP_OP_IN_BLOCK_READ_REQ))
++			break;
 +
-+	retval = pqm_destroy_queue(&p->pqm, args.queue_id);
++	} while (num_words);
 +
-+	mutex_unlock(&p->mutex);
-+	return retval;
++	/*
++	 * Due to extra stickiness of the QUP_OP_IN_SERVICE_FLAG during block
++	 * reads, it has to be cleared again at the very end
++	 */
++	if (readl_relaxed(controller->base + QUP_OPERATIONAL) &
++		QUP_OP_MAX_INPUT_DONE_FLAG)
++		writel_relaxed(QUP_OP_IN_SERVICE_FLAG,
++			controller->base + QUP_OPERATIONAL);
++
++}
++
++static void spi_qup_block_write(struct spi_qup *controller,
++	struct spi_transfer *xfer)
++{
++	u32 data;
++	u32 words_per_blk = controller->out_blk_sz >> 2;
++	u32 num_words = (xfer->len - controller->tx_bytes) / controller->w_size;
++	int i;
++
++	do {
++		/* ACK by clearing service flag */
++		writel_relaxed(QUP_OP_OUT_SERVICE_FLAG,
++			controller->base + QUP_OPERATIONAL);
++
++		/* transfer up to a block size of data in a single pass */
++		for (i = 0; num_words && i < words_per_blk; i++, num_words--) {
++
++			/* swizzle the bytes for output and write out */
++			spi_qup_prepare_write_data(controller, xfer, &data);
++			writel_relaxed(data,
++				controller->base + QUP_OUTPUT_FIFO);
++		}
++
++		/* check to see if next block is ready */
++		if (!(readl_relaxed(controller->base + QUP_OPERATIONAL) &
++			QUP_OP_OUT_BLOCK_WRITE_REQ))
++			break;
++
++	} while (num_words);
  }
  
- static int kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p, void __user *arg)
- {
--	return -ENODEV;
-+	int retval;
-+	struct kfd_ioctl_update_queue_args args;
-+	struct queue_properties properties;
-+
-+	if (copy_from_user(&args, arg, sizeof(args)))
-+		return -EFAULT;
-+
-+	if (args.queue_percentage > KFD_MAX_QUEUE_PERCENTAGE) {
-+		pr_err("kfd: queue percentage must be between 0 to KFD_MAX_QUEUE_PERCENTAGE\n");
-+		return -EINVAL;
+ static irqreturn_t spi_qup_qup_irq(int irq, void *dev_id)
+@@ -285,9 +370,9 @@ static irqreturn_t spi_qup_qup_irq(int irq, void *dev_id)
+ 
+ 	writel_relaxed(qup_err, controller->base + QUP_ERROR_FLAGS);
+ 	writel_relaxed(spi_err, controller->base + SPI_ERROR_FLAGS);
+-	writel_relaxed(opflags, controller->base + QUP_OPERATIONAL);
+ 
+ 	if (!xfer) {
++		writel_relaxed(opflags, controller->base + QUP_OPERATIONAL);
+ 		dev_err_ratelimited(controller->dev, "unexpected irq %08x %08x %08x\n",
+ 				    qup_err, spi_err, opflags);
+ 		return IRQ_HANDLED;
+@@ -315,11 +400,19 @@ static irqreturn_t spi_qup_qup_irq(int irq, void *dev_id)
+ 		error = -EIO;
+ 	}
+ 
+-	if (opflags & QUP_OP_IN_SERVICE_FLAG)
+-		spi_qup_fifo_read(controller, xfer);
++	if (opflags & QUP_OP_IN_SERVICE_FLAG) {
++		if (opflags & QUP_OP_IN_BLOCK_READ_REQ)
++			spi_qup_block_read(controller, xfer);
++		else
++			spi_qup_fifo_read(controller, xfer);
 +	}
-+
-+	if (args.queue_priority > KFD_MAX_QUEUE_PRIORITY) {
-+		pr_err("kfd: queue priority must be between 0 to KFD_MAX_QUEUE_PRIORITY\n");
-+		return -EINVAL;
+ 
+-	if (opflags & QUP_OP_OUT_SERVICE_FLAG)
+-		spi_qup_fifo_write(controller, xfer);
++	if (opflags & QUP_OP_OUT_SERVICE_FLAG) {
++		if (opflags & QUP_OP_OUT_BLOCK_WRITE_REQ)
++			spi_qup_block_write(controller, xfer);
++		else
++			spi_qup_fifo_write(controller, xfer,1);
 +	}
-+
-+	if ((args.ring_base_address) &&
-+		(!access_ok(VERIFY_WRITE, args.ring_base_address, sizeof(uint64_t)))) {
-+		pr_err("kfd: can't access ring base address\n");
-+		return -EFAULT;
-+	}
-+
-+	if (!is_power_of_2(args.ring_size) && (args.ring_size != 0)) {
-+		pr_err("kfd: ring size must be a power of 2 or 0\n");
-+		return -EINVAL;
-+	}
-+
-+	properties.queue_address = args.ring_base_address;
-+	properties.queue_size = args.ring_size;
-+	properties.queue_percent = args.queue_percentage;
-+	properties.priority = args.queue_priority;
-+
-+	pr_debug("kfd: updating queue id %d for PASID %d\n", args.queue_id, p->pasid);
-+
-+	mutex_lock(&p->mutex);
-+
-+	retval = pqm_update_queue(&p->pqm, args.queue_id, &properties);
-+
-+	mutex_unlock(&p->mutex);
-+
-+	return retval;
+ 
+ 	spin_lock_irqsave(&controller->lock, flags);
+ 	controller->error = error;
+@@ -332,12 +425,11 @@ static irqreturn_t spi_qup_qup_irq(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
  }
  
- static long kfd_ioctl_set_memory_policy(struct file *filep, struct kfd_process *p, void __user *arg)
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-index 6c656d8..0e3e18f 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-@@ -513,7 +513,15 @@ struct process_queue_node {
+-
+ /* set clock freq ... bits per word */
+ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
+ {
+ 	struct spi_qup *controller = spi_master_get_devdata(spi->master);
+-	u32 config, iomode, mode;
++	u32 config, iomode;
+ 	int ret, n_words, w_size;
  
- int pqm_init(struct process_queue_manager *pqm, struct kfd_process *p);
- void pqm_uninit(struct process_queue_manager *pqm);
-+int pqm_create_queue(struct process_queue_manager *pqm,
-+			    struct kfd_dev *dev,
-+			    struct file *f,
-+			    struct queue_properties *properties,
-+			    unsigned int flags,
-+			    enum kfd_queue_type type,
-+			    unsigned int *qid);
- int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid);
-+int pqm_update_queue(struct process_queue_manager *pqm, unsigned int qid, struct queue_properties *p);
+ 	if (spi->mode & SPI_LOOP && xfer->len > controller->in_fifo_sz) {
+@@ -368,14 +460,14 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
+ 	controller->w_size = w_size;
  
- /* Packet Manager */
+ 	if (n_words <= (controller->in_fifo_sz / sizeof(u32))) {
+-		mode = QUP_IO_M_MODE_FIFO;
++		controller->mode = QUP_IO_M_MODE_FIFO;
+ 		writel_relaxed(n_words, controller->base + QUP_MX_READ_CNT);
+ 		writel_relaxed(n_words, controller->base + QUP_MX_WRITE_CNT);
+ 		/* must be zero for FIFO */
+ 		writel_relaxed(0, controller->base + QUP_MX_INPUT_CNT);
+ 		writel_relaxed(0, controller->base + QUP_MX_OUTPUT_CNT);
+ 	} else {
+-		mode = QUP_IO_M_MODE_BLOCK;
++		controller->mode = QUP_IO_M_MODE_BLOCK;
+ 		writel_relaxed(n_words, controller->base + QUP_MX_INPUT_CNT);
+ 		writel_relaxed(n_words, controller->base + QUP_MX_OUTPUT_CNT);
+ 		/* must be zero for BLOCK and BAM */
+@@ -387,8 +479,8 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
+ 	/* Set input and output transfer mode */
+ 	iomode &= ~(QUP_IO_M_INPUT_MODE_MASK | QUP_IO_M_OUTPUT_MODE_MASK);
+ 	iomode &= ~(QUP_IO_M_PACK_EN | QUP_IO_M_UNPACK_EN);
+-	iomode |= (mode << QUP_IO_M_OUTPUT_MODE_MASK_SHIFT);
+-	iomode |= (mode << QUP_IO_M_INPUT_MODE_MASK_SHIFT);
++	iomode |= (controller->mode << QUP_IO_M_OUTPUT_MODE_MASK_SHIFT);
++	iomode |= (controller->mode << QUP_IO_M_INPUT_MODE_MASK_SHIFT);
  
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c b/drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c
-index 5bd6a5d..780c749 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_process_queue_manager.c
-@@ -264,7 +264,10 @@ int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid)
- 	pr_debug("kfd: In Func %s\n", __func__);
+ 	writel_relaxed(iomode, controller->base + QUP_IO_M_MODES);
  
- 	pqn = get_queue_by_qid(pqm, qid);
--	BUG_ON(!pqn);
-+	if (pqn == NULL) {
-+		pr_err("kfd: queue id does not match any known queue\n");
-+		return -EINVAL;
-+	}
+@@ -462,7 +554,8 @@ static int spi_qup_transfer_one(struct spi_master *master,
+ 		goto exit;
+ 	}
  
- 	dev = NULL;
- 	if (pqn->kq)
-diff --git a/include/uapi/linux/kfd_ioctl.h b/include/uapi/linux/kfd_ioctl.h
-index a06e021..1ce8302 100644
---- a/include/uapi/linux/kfd_ioctl.h
-+++ b/include/uapi/linux/kfd_ioctl.h
-@@ -34,8 +34,11 @@ struct kfd_ioctl_get_version_args {
- };
+-	spi_qup_fifo_write(controller, xfer);
++	if (controller->mode == QUP_IO_M_MODE_FIFO)
++		spi_qup_fifo_write(controller, xfer, 0);
  
- /* For kfd_ioctl_create_queue_args.queue_type. */
--#define KFD_IOC_QUEUE_TYPE_COMPUTE   0
--#define KFD_IOC_QUEUE_TYPE_SDMA      1
-+#define KFD_IOC_QUEUE_TYPE_COMPUTE	0
-+#define KFD_IOC_QUEUE_TYPE_SDMA		1
+ 	if (spi_qup_set_state(controller, QUP_STATE_RUN)) {
+ 		dev_warn(controller->dev, "cannot set EXECUTE state\n");
+@@ -478,6 +571,7 @@ exit:
+ 	if (!ret)
+ 		ret = controller->error;
+ 	spin_unlock_irqrestore(&controller->lock, flags);
 +
-+#define KFD_MAX_QUEUE_PERCENTAGE	100
-+#define KFD_MAX_QUEUE_PRIORITY		15
+ 	return ret;
+ }
  
- struct kfd_ioctl_create_queue_args {
- 	uint64_t ring_base_address;	/* to KFD */
 -- 
-1.9.1
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
