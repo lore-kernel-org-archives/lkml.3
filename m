@@ -1,37 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaIXMHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:07:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767AbaIXMHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:07:47 -0400
-Message-ID: <5422B409.5000808@redhat.com>
-Date: Wed, 24 Sep 2014 14:07:37 +0200
+	id S1752806AbaIXMJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:09:37 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:35640 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaIXMJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 08:09:35 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>,
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: Will Deacon <will.deacon@arm.com>, Gleb Natapov <gleb@kernel.org>,
         Alex Williamson <Alex.Williamson@redhat.com>
-Subject: Re: [PATCH v2] kvm-vfio: do not use module_init
-References: <1411559780-12676-1-git-send-email-pbonzini@redhat.com> <20140924120505.GF28823@arm.com>
-In-Reply-To: <20140924120505.GF28823@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v3] kvm-vfio: do not use module_init
+Date: Wed, 24 Sep 2014 14:09:28 +0200
+Message-Id: <1411560568-15989-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/09/2014 14:05, Will Deacon ha scritto:
->> > +#ifdef CONFIG_KVM_VFIO
->> > +#include "vfio.h"
->> > +#endif
-> Can't you include this unconditionally, then have the #ifdef in the header
-> and a static inline kvm_vfio_ops_init that returns 0?
+/me got confused between the kernel and QEMU.  In the kernel, you can
+only have one module_init function, and it will prevent unloading the
+module unless you also have the corresponding module_exit function.
 
-Yup.  What was I thinking...
+So, commit 80ce1639727e (KVM: VFIO: register kvm_device_ops dynamically,
+2014-09-02) broke unloading of the kvm module, by adding a module_init
+function and no module_exit.
 
-Paolo
+Repair it by making kvm_vfio_ops_init weak, and checking it in
+kvm_init.
+
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Alex Williamson <Alex.Williamson@redhat.com>
+Fixes: 80ce1639727e9d38729c34f162378508c307ca25
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ virt/kvm/kvm_main.c |  4 ++++
+ virt/kvm/vfio.c     |  4 ++--
+ virt/kvm/vfio.h     | 13 +++++++++++++
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+ create mode 100644 virt/kvm/vfio.h
+
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index db57363cc287..499db0977f3c 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -57,6 +57,7 @@
+ 
+ #include "coalesced_mmio.h"
+ #include "async_pf.h"
++#include "vfio.h"
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/kvm.h>
+@@ -3226,6 +3227,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
+ 		goto out_undebugfs;
+ 	}
+ 
++	r = kvm_vfio_ops_init();
++	WARN_ON(r);
++
+ 	return 0;
+ 
+ out_undebugfs:
+diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+index bb11b36ee8a2..281e7cf2b8e5 100644
+--- a/virt/kvm/vfio.c
++++ b/virt/kvm/vfio.c
+@@ -18,6 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
+ #include <linux/vfio.h>
++#include "vfio.h"
+ 
+ struct kvm_vfio_group {
+ 	struct list_head node;
+@@ -278,8 +279,7 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
+ 	return 0;
+ }
+ 
+-static int __init kvm_vfio_ops_init(void)
++int kvm_vfio_ops_init(void)
+ {
+ 	return kvm_register_device_ops(&kvm_vfio_ops, KVM_DEV_TYPE_VFIO);
+ }
+-module_init(kvm_vfio_ops_init);
+diff --git a/virt/kvm/vfio.h b/virt/kvm/vfio.h
+new file mode 100644
+index 000000000000..92eac75d6b62
+--- /dev/null
++++ b/virt/kvm/vfio.h
+@@ -0,0 +1,13 @@
++#ifndef __KVM_VFIO_H
++#define __KVM_VFIO_H
++
++#ifdef CONFIG_KVM_VFIO
++int kvm_vfio_ops_init(void);
++#else
++static inline int kvm_vfio_ops_init(void)
++{
++	return 0;
++}
++#endif
++
++#endif
+-- 
+1.8.3.1
+
