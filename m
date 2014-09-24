@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaIXI5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:57:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18034 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753072AbaIXI5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:57:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390840518"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch v6 02/15] ACPI: Correct return value of acpi_dev_resource_address_space()
-Date: Wed, 24 Sep 2014 16:59:23 +0800
-Message-Id: <1411549176-30780-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1754085AbaIXJEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:04:45 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:48286 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752584AbaIXI5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:57:08 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: <nicolas.ferre@atmel.com>, <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH] misc: atmel-ssc: prepare clock only when request
+Date: Wed, 24 Sep 2014 16:56:59 +0800
+Message-ID: <1411549019-12663-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 2.1.0.24.g4109c28
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change acpi_dev_resource_address_space() to return failure if the
-acpi_resource structure can't be converted to an ACPI address64
-structure, so caller could correctly detect failure.
+Prepare SSC clock only when request SSC channel, the clock will be
+enabled when initialize the SSC.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
 ---
- drivers/acpi/resource.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index 2ba8f02ced36..782a0d15c25f 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+ drivers/misc/atmel-ssc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
+index 60843a2..f9807a7 100644
+--- a/drivers/misc/atmel-ssc.c
++++ b/drivers/misc/atmel-ssc.c
+@@ -57,7 +57,7 @@ struct ssc_device *ssc_request(unsigned int ssc_num)
+ 	ssc->user++;
+ 	spin_unlock(&user_lock);
  
- 	status = acpi_resource_to_address64(ares, &addr);
- 	if (ACPI_FAILURE(status))
--		return true;
-+		return false;
+-	clk_prepare_enable(ssc->clk);
++	clk_prepare(ssc->clk);
  
- 	res->start = addr.minimum;
- 	res->end = addr.maximum;
+ 	return ssc;
+ }
+@@ -77,7 +77,7 @@ void ssc_free(struct ssc_device *ssc)
+ 	spin_unlock(&user_lock);
+ 
+ 	if (disable_clk)
+-		clk_disable_unprepare(ssc->clk);
++		clk_unprepare(ssc->clk);
+ }
+ EXPORT_SYMBOL(ssc_free);
+ 
 -- 
-1.7.10.4
+2.1.0.24.g4109c28
 
