@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaIXTj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:39:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38910 "EHLO arroyo.ext.ti.com"
+	id S1753294AbaIXTlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:41:13 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33312 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237AbaIXTjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:39:53 -0400
-Date: Wed, 24 Sep 2014 14:39:42 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <Peter.Chen@freescale.com>, <stern@rowland.harvard.edu>,
-        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
-        <linux-tegra@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <yoshihiro.shimoda.uh@renesas.com>,
-        <linux-kernel@vger.kernel.org>, <antoine.tenart@free-electrons.com>
-Subject: Re: [PATCH v6 1/2] usb: rename phy to usb_phy in HCD
-Message-ID: <20140924193942.GR17997@saruman>
-Reply-To: <balbi@ti.com>
-References: <37148636.BU5lT4M4eC@wasted.cogentembedded.com>
- <2300651.HNvMzB0aUB@wasted.cogentembedded.com>
- <20140924192806.GO17997@saruman>
- <54231BFF.5070901@cogentembedded.com>
+	id S1751237AbaIXTlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:41:11 -0400
+Message-ID: <54231E52.2030501@linux.vnet.ibm.com>
+Date: Wed, 24 Sep 2014 15:41:06 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ffBYM5qgR8HH9Mta"
-Content-Disposition: inline
-In-Reply-To: <54231BFF.5070901@cogentembedded.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Scot Doyle <lkml14@scotdoyle.com>
+CC: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        Michael Mullin <masmullin@gmail.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net
+Subject: Re: [PATCH v9] tpm_tis: verify interrupt during init
+References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com> <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com> <alpine.LNX.2.11.1408302229001.579@localhost.localdomain> <20140902172015.GD13956@obsidianresearch.com> <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain> <20140908220238.GB6204@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain> <20140922171338.GB28082@obsidianresearch.com> <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain> <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain> <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain> <5421A9F8.9070301@linux.vnet.ibm.com> <alpine.DEB.2.11.1409241936270.3152@localhost.localdomain>
+In-Reply-To: <alpine.DEB.2.11.1409241936270.3152@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092419-7182-0000-0000-0000008A5910
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ffBYM5qgR8HH9Mta
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/24/2014 03:38 PM, Scot Doyle wrote:
+> On Tue, 23 Sep 2014, Stefan Berger wrote:
+>> On 09/23/2014 07:55 AM, Scot Doyle wrote:
+>>> On Tue, 23 Sep 2014, Scot Doyle wrote:
+>>> +static void disable_interrupts(struct tpm_chip *chip)
+>>> +{
+>>> +	u32 intmask;
+>>> +	intmask =
+>>> +	    ioread32(chip->vendor.iobase +
+>>> +		     TPM_INT_ENABLE(chip->vendor.locality));
+>>> +	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
+>>> +		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
+>> You want to disable interrupts but you set all the flags? Maybe you meant:
+>>
+>> intmask &= ~(FOO|BAR)
+>>
+>> ?
+> Thanks, would this work? I think it's how tpm_tis_init masks during a probe.
+>
+> static void disable_interrupts(struct tpm_chip *chip)
+> {
+> 	u32 intmask;
+> 	intmask =
+> 	    ioread32(chip->vendor.iobase +
+> 		     TPM_INT_ENABLE(chip->vendor.locality));
+> 	intmask &= ~TPM_GLOBAL_INT_ENABLE;
+> 	iowrite32(intmask,
+> 		  chip->vendor.iobase +
+> 		  TPM_INT_ENABLE(chip->vendor.locality));
+> 	free_irq(chip->vendor.irq, chip);
+> 	chip->vendor.irq = 0;
+> }
+>
+Yes, this should be sufficient.
 
-On Wed, Sep 24, 2014 at 11:31:11PM +0400, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 09/24/2014 11:28 PM, Felipe Balbi wrote:
->=20
-> >>From: Antoine Tenart <antoine.tenart@free-electrons.com>
->=20
-> >>The USB PHY member of the HCD structure is renamed to 'usb_phy' and
-> >>modifications are done in all drivers accessing it.
-> >>This is in preparation to adding the generic PHY support.
->=20
-> >>Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> >>[Sergei: added missing 'drivers/usb/misc/lvstest.c' file, resolved reje=
-cts,
-> >>updated changelog.]
-> >>Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> >>Acked-by: Alan Stern <stern@rowland.harvard.edu>
->=20
-> >Acked-by: Felipe Balbi <balbi@ti.com>
->=20
->    Sorry, forgot to collect your ACK from the previous posting. :-/
+     Stefan
 
-don't worry ;-)
-
---=20
-balbi
-
---ffBYM5qgR8HH9Mta
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIx3+AAoJEIaOsuA1yqREKlQP/ilSdXJbAq8hq/pE2JDK3q+P
-A8zFNo5Kjpz0wuUFg4KaP9s/rPx+aLPdhSTuPTXobe+J1ayYAO5g0JgrDOOQ/BI5
-WF9a64pZuHJjSK5lp8LgjZ5GXCsJyy75SOCAjrsdZD1Zqhoo4g151YlxTcC3ZUCj
-NXtrMzH1uYDEz9p7t6laFus8s+UyVTahEeQyYLiICW72uRIygtiWDZulhwoiSlSi
-IcYfuJmumvgmPnC6J3ym+Muh65TjVzyods3KDT/qbNGpYJkk6yWICb+OS5xGt3mm
-8e5pyRnlCTMH2M1Do5kUwMFNlH29m41iMIypqZZqY0Vi/QfIKZFo2iNPNPHNBNmg
-rSBA6RqDzIeqGcLa6FWPGeFPiTRl/XL4+x4tWaWkGFnedsTY11eX0kC04wPtShQS
-e795+RRL8TOInyStcpN2srnnDzSIhdAcKjM/kdcMAaHv+h6FZTFolm6pQRV9PNbZ
-kl4iO1apq9mUhFURsN6I3xL6S447jTpjN+G0zSZm5kpClc0zuFTjmBQH0bKydrWM
-H1cI1/PjTo2qNrrfKMswur5SwSUZI/PY0lk4jifZqLD314PR3W+fwQYiomzX6veh
-M5D+D5tDy+SPNM9CZ5ms7Uaj1cd8m7TGyjyZ0UqSrc/CBBgJMeDTnfuIIB5Mtc+B
-NuUPT9yX6NpVl45S/NPc
-=aVIp
------END PGP SIGNATURE-----
-
---ffBYM5qgR8HH9Mta--
