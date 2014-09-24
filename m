@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285AbaIXBQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 21:16:55 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33231 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757267AbaIXBQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 21:16:53 -0400
-Message-ID: <54221B7D.3010104@hitachi.com>
-Date: Wed, 24 Sep 2014 10:16:45 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757287AbaIXBW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 21:22:27 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:59069 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753029AbaIXBW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 21:22:26 -0400
+Date: Wed, 24 Sep 2014 02:18:51 +0100
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v12 10/12] PCI: Assign unassigned bus resources in
+ pci_scan_root_bus()
+Message-ID: <20140924011851.GD32643@bart.dudau.co.uk>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-11-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/4] ftracetest: Initial commit for ftracetest
-References: <20140922234248.23415.36560.stgit@kbuild-f20.novalocal> <20140922234250.23415.68758.stgit@kbuild-f20.novalocal> <20140923093610.4f404274@gandalf.local.home>
-In-Reply-To: <20140923093610.4f404274@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1411498874-9864-11-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Sep 24 02:22:23 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,54221cce3116025815529
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/23 22:36), Steven Rostedt wrote:
-> For future reference:
+On Tue, Sep 23, 2014 at 08:01:12PM +0100, Liviu Dudau wrote:
+> If the firmware has not assigned all the bus resources and
+> we are not just probing the PCIe busses, it makes sense to
+> assign the unassigned resources in pci_scan_root_bus().
 > 
-> On Mon, 22 Sep 2014 23:42:50 +0000
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> ---
+>  drivers/pci/probe.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
->> ftracetest is a collection of testcase shell-scripts for ftrace.
->> To avoid regressions of ftrace, these testcases check correct
->> ftrace behaviors. If someone would like to add any features on
->> ftrace, the patch series should have at least one testcase for
->> checking the new behavior.
->>
->> Changes in v5:
->>  - Fix a TODO item, since this already integrated to kselftest.
->>  - Print the test name at the first line.
->>
->> Changes in v4:
->>  - Move this under selftests. :)
->>  - Add a copyright and note of GPLv2.
->>  - Fix documents acconding to Steven's comments.
->>  - Fix a small bug pointed by Namhyng.
->>
->> Changes in v3:
->>  - Use "." instead of "source".
->>  - Don't use -e option for echo since dash doesn't support it.
->>
->> Changes in v2:
->>  - Remove unneeded 'function' keyword.
->>  - Add abspath and find_testcases.
->>  - Make OPT_TEST_CASES a local var.
->>  - Ensure given testcase ended with .tc.
->>  - Accept a directory option which has multiple testcases.
->>  - Change [PASSED]/[FAILED] to [PASS]/[FAIL]
->>  - Change the basic shell to sh (dash).
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index ef891d2..508cf61 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1953,6 +1953,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+>  	if (!found)
+>  		pci_bus_update_busn_res_end(b, max);
+>  
+> +	if (!pci_has_flag(PCI_PROBE_ONLY))
+> +		pci_assign_unassigned_bus_resources(b);
+> +
+>  	pci_bus_add_devices(b);
+>  	return b;
+>  }
+> -- 
+> 2.1.0
 > 
-> Place the version changes after the '---'. They are great for patch
-> series, but we prefer not to have them in the git logs. The "Link:" tag
-> should allow people to find the version history of patches if they are
-> interested. By placing the version updates after the '---', git will
-> ignore them when pulling them in.
 
-Ah, I see :)
-For the next series, I'll do that.
+Bjorn,
 
+If you are OK with this patch, can you let me know how do you feel about
+making pci_scan_root_bus() set up the bus->msi pointer as well?
+
+Side note: I don't know exactly how to do it now, but setting bus->msi is
+needed by platforms that are based on my patches and want to use MSI,
+otherwise they have to open code pci_scan_root_bus() to set it. I haven't
+made any attempts to do it in this series as the GICv2m patches are not
+ready yet, but I can see the need arriving soon.
+
+Best regards,
+Liviu
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
-> 
-> Also, please have the Signed-off-by be the last tag, otherwise it
-> screws up my scripts ;-)
-
-OK.
-
-Thank you!
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
+ One small step
+   for me ...
 
