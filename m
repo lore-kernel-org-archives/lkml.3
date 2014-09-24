@@ -1,27 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaIXPHC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:07:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59601 "EHLO
+	id S1754468AbaIXPHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:07:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59613 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaIXO4M (ORCPT
+	with ESMTP id S1751595AbaIXO42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:56:12 -0400
-Date: Wed, 24 Sep 2014 07:55:11 -0700
+	Wed, 24 Sep 2014 10:56:28 -0400
+Date: Wed, 24 Sep 2014 07:54:55 -0700
 From: tip-bot for Juri Lelli <tipbot@zytor.com>
-Message-ID: <tip-91ec6778ec4f963fcb2c2793610919b572f633b0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        juri.lelli@arm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, juri.lelli@arm.com,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1411118561-26323-4-git-send-email-juri.lelli@arm.com>
-References: <1411118561-26323-4-git-send-email-juri.lelli@arm.com>
+Message-ID: <tip-a5e7be3b28a235108c59561bea55eea1072b23b0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luca.abeni@unitn.it, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        daniel.wagner@bmw-carit.de, daniele.alessandrelli@gmail.com,
+        raistlin@linux.it, fchecconi@gmail.com, vincent@legout.info,
+        juri.lelli@arm.com, michael@amarulasolutions.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, luca.abeni@unitn.it,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        daniel.wagner@bmw-carit.de, peterz@infradead.org,
+        daniele.alessandrelli@gmail.com, raistlin@linux.it,
+        fchecconi@gmail.com, vincent@legout.info, juri.lelli@arm.com,
+        tglx@linutronix.de, michael@amarulasolutions.com
+In-Reply-To: <1411118561-26323-2-git-send-email-juri.lelli@arm.com>
+References: <1411118561-26323-2-git-send-email-juri.lelli@arm.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched/deadline:
-  Fix inter- exclusive cpusets migrations
-Git-Commit-ID: 91ec6778ec4f963fcb2c2793610919b572f633b0
+  Clear dl_entity params when setscheduling to different class
+Git-Commit-ID: a5e7be3b28a235108c59561bea55eea1072b23b0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,72 +39,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  91ec6778ec4f963fcb2c2793610919b572f633b0
-Gitweb:     http://git.kernel.org/tip/91ec6778ec4f963fcb2c2793610919b572f633b0
+Commit-ID:  a5e7be3b28a235108c59561bea55eea1072b23b0
+Gitweb:     http://git.kernel.org/tip/a5e7be3b28a235108c59561bea55eea1072b23b0
 Author:     Juri Lelli <juri.lelli@arm.com>
-AuthorDate: Fri, 19 Sep 2014 10:22:41 +0100
+AuthorDate: Fri, 19 Sep 2014 10:22:39 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 14:46:57 +0200
+CommitDate: Wed, 24 Sep 2014 14:46:56 +0200
 
-sched/deadline: Fix inter- exclusive cpusets migrations
+sched/deadline: Clear dl_entity params when setscheduling to different class
 
-Users can perform clustered scheduling using the cpuset facility.
-After an exclusive cpuset is created, task migrations happen only
-between CPUs belonging to the same cpuset. Inter- cpuset migrations
-can only happen when the user requires so, moving a task between
-different cpusets. This behaviour is broken in SCHED_DEADLINE, as
-currently spurious inter- cpuset migration may happen without user
-intervention.
+When a task is using SCHED_DEADLINE and the user setschedules it to a
+different class its sched_dl_entity static parameters are not cleaned
+up. This causes a bug if the user sets it back to SCHED_DEADLINE with
+the same parameters again.  The problem resides in the check we
+perform at the very beginning of dl_overflow():
 
-This patch fix the problem (and shuffles the code a bit to improve
-clarity).
+	if (new_bw == p->dl.dl_bw)
+		return 0;
 
+This condition is met in the case depicted above, so the function
+returns and dl_b->total_bw is not updated (the p->dl.dl_bw is not
+added to it). After this, admission control is broken.
+
+This patch fixes the thing, properly clearing static parameters for a
+task that ceases to use SCHED_DEADLINE.
+
+Reported-by: Daniele Alessandrelli <daniele.alessandrelli@gmail.com>
+Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Reported-by: Vincent Legout <vincent@legout.info>
+Tested-by: Luca Abeni <luca.abeni@unitn.it>
+Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Tested-by: Vincent Legout <vincent@legout.info>
 Signed-off-by: Juri Lelli <juri.lelli@arm.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: raistlin@linux.it
-Cc: michael@amarulasolutions.com
-Cc: fchecconi@gmail.com
-Cc: daniel.wagner@bmw-carit.de
-Cc: vincent@legout.info
-Cc: luca.abeni@unitn.it
+Cc: Fabio Checconi <fchecconi@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: Michael Trimarchi <michael@amarulasolutions.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1411118561-26323-4-git-send-email-juri.lelli@arm.com
+Link: http://lkml.kernel.org/r/1411118561-26323-2-git-send-email-juri.lelli@arm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/cpudeadline.c | 4 +---
- kernel/sched/deadline.c    | 7 +++++++
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ kernel/sched/core.c     | 19 +++++++++++++++----
+ kernel/sched/deadline.c |  2 ++
+ kernel/sched/sched.h    |  3 +++
+ 3 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index bd95963..539ca3c 100644
---- a/kernel/sched/cpudeadline.c
-+++ b/kernel/sched/cpudeadline.c
-@@ -107,9 +107,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
- 	int best_cpu = -1;
- 	const struct sched_dl_entity *dl_se = &p->dl;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a284190..09bde2a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1809,6 +1809,20 @@ int wake_up_state(struct task_struct *p, unsigned int state)
+ }
  
--	if (later_mask && cpumask_and(later_mask, cp->free_cpus,
--			&p->cpus_allowed) && cpumask_and(later_mask,
--			later_mask, cpu_active_mask)) {
-+	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
- 		best_cpu = cpumask_any(later_mask);
- 		goto out;
- 	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
+ /*
++ * This function clears the sched_dl_entity static params.
++ */
++void __dl_clear_params(struct task_struct *p)
++{
++	struct sched_dl_entity *dl_se = &p->dl;
++
++	dl_se->dl_runtime = 0;
++	dl_se->dl_deadline = 0;
++	dl_se->dl_period = 0;
++	dl_se->flags = 0;
++	dl_se->dl_bw = 0;
++}
++
++/*
+  * Perform scheduler related setup for a newly forked process p.
+  * p is forked by current.
+  *
+@@ -1832,10 +1846,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 
+ 	RB_CLEAR_NODE(&p->dl.rb_node);
+ 	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	p->dl.dl_runtime = p->dl.runtime = 0;
+-	p->dl.dl_deadline = p->dl.deadline = 0;
+-	p->dl.dl_period = 0;
+-	p->dl.flags = 0;
++	__dl_clear_params(p);
+ 
+ 	INIT_LIST_HEAD(&p->rt.run_list);
+ 
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index efb9412..abfaf3d 100644
+index aaa5abb..efb9412 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
-@@ -1164,6 +1164,13 @@ static int find_later_rq(struct task_struct *task)
- 	if (task->nr_cpus_allowed == 1)
- 		return -1;
+@@ -1565,6 +1565,8 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
+ 	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
+ 		hrtimer_try_to_cancel(&p->dl.dl_timer);
  
-+	/*
-+	 * We have to consider system topology and task affinity
-+	 * first, then we can look for a suitable cpu.
-+	 */
-+	cpumask_copy(later_mask, task_rq(task)->rd->span);
-+	cpumask_and(later_mask, later_mask, cpu_active_mask);
-+	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
- 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
- 			task, later_mask);
- 	if (best_cpu == -1)
++	__dl_clear_params(p);
++
+ #ifdef CONFIG_SMP
+ 	/*
+ 	 * Since this might be the only -deadline task on the rq,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1bc6aad..76f3a38 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -130,6 +130,9 @@ struct rt_bandwidth {
+ 	u64			rt_runtime;
+ 	struct hrtimer		rt_period_timer;
+ };
++
++void __dl_clear_params(struct task_struct *p);
++
+ /*
+  * To keep the bandwidth of -deadline tasks and groups under control
+  * we need some place where:
