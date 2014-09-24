@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaIXQb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:31:56 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:48403 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaIXQby (ORCPT
+	id S1753096AbaIXQdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:33:43 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:40789 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaIXQdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:31:54 -0400
-Message-ID: <5422F1F7.8010308@6wind.com>
-Date: Wed, 24 Sep 2014 18:31:51 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 12:33:42 -0400
 MIME-Version: 1.0
-To: Cong Wang <cwang@twopensource.com>
-CC: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com> <CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
-In-Reply-To: <CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Wed, 24 Sep 2014 18:33:03 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>, jingchang.lu@freescale.com,
+        Huang Yongcai-B20788 <b20788@freescale.com>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH 5/9] gpio: vf610: Extend with wakeup support
+In-Reply-To: <CACRpkdYCiKzyVpg9u-YXn-QMd7PSKR72siXQQWALe0OqTNr-rw@mail.gmail.com>
+References: <cover.1411404079.git.stefan@agner.ch>
+ <704b6bb97147b3d0ee1557b43d85ab9376c28666.1411404079.git.stefan@agner.ch>
+ <CACRpkdYCiKzyVpg9u-YXn-QMd7PSKR72siXQQWALe0OqTNr-rw@mail.gmail.com>
+Message-ID: <0a182a1652d0271cdd0a262bc9efc945@agner.ch>
+User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 24/09/2014 18:15, Cong Wang a écrit :
-> On Wed, Sep 24, 2014 at 9:01 AM, Cong Wang <cwang@twopensource.com> wrote:
+Am 2014-09-24 11:19, schrieb Linus Walleij:
+> On Mon, Sep 22, 2014 at 7:09 PM, Stefan Agner <stefan@agner.ch> wrote:
+> 
+>> Support Vybrid GPIO's as wakeup source by requesting the parent
+>> IRQ as wakeup IRQ.
 >>
->> And clearly you missed my question above: how do you get netns id
->> without sharing /var/run/netns/ ?
->
-> OK, I found it:
->
->> Ids are stored in the parent user namespace. These ids are valid only inside
->> this user namespace. The user can retrieve these ids via a new netlink messages,
->> but only if peer netns are in the same user namespace.
->
-> So your example is confusing, perhaps you need some other way to show the ID's
-> instead of binding to ip netns output which is basically ls
-> /var/run/netns/. We don't
-> want an inner netns know anything outside, IOW, we don't share /var/run/netns/.
-Hmm, not sure to understand you. My usecase shares /var/run/netns, because
-there is only one user ns and one mount ns.
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  drivers/gpio/gpio-vf610.c | 16 ++++++++++++++++
+> 
+> This driver is not yet upstream. Make wakeup support part
+> of the initial driver submission instead, it doesn't hurt.
 
-> I think in this case your ID's are still available, but aren't you
-> providing a new way
-> for the inner netns device to escape which we are trying to avoid?
-It's why the ids depend on user ns. Only if user ns are the same we allow to
-get an id for a peer netns.
+Ok, will do. 
+
+Just realized that this patch even leads to compile errors when applying
+on top of v2 of the GPIO driver; we need the irq in drivers struct here,
+and I removed that in v2...  :-)
+
+--
+Stefan
