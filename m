@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaIXOFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:05:52 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:44576 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbaIXOEh (ORCPT
+	id S1754129AbaIXOGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:06:19 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:45890 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609AbaIXOE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:04:37 -0400
+	Wed, 24 Sep 2014 10:04:29 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/11] perf/x86/intel: Implement LRU monitoring ID allocation for CQM
-Date: Wed, 24 Sep 2014 15:04:13 +0100
-Message-Id: <1411567455-31264-10-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 05/11] perf: Add ->count() function to read per-package counters
+Date: Wed, 24 Sep 2014 15:04:09 +0100
+Message-Id: <1411567455-31264-6-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
 References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
@@ -27,165 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-It's possible to run into issues with re-using unused monitoring IDs
-because there may be stale cachelines associated with that ID from a
-previous allocation. This can cause the LLC occupancy values to be
-inaccurate.
+For PMU drivers that record per-package counters, the ->count variable
+cannot be used to record an accurate aggregated value, since it's not
+possible to perform SMP cross-calls to cpus on other packages from the
+context in which we update ->count.
 
-To attempt to mitigate this problem we place the IDs on a least recently
-used list, essentially a FIFO. The basic idea is that the longer the
-time period between ID re-use the lower the probability that stale
-cachelines exist in the cache.
+Introduce a new optional ->count() accessor function that can be used to
+customize how values are collected. If a PMU driver doesn't provide a
+->count() function, we fallback to the existing code.
+
+There is necessarily a window of staleness with this approach because
+the task that generated the counter value may not have been scheduled by
+the cpu recently.
+
+An alternative and more complex approach would be to use a hrtimer to
+periodically refresh the values from a more permissive scheduling
+context. So, we're trading off complexity for accuracy.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_cqm.c | 100 ++++++++++++++++++++++++++---
- 1 file changed, 92 insertions(+), 8 deletions(-)
+ include/linux/perf_event.h | 10 ++++++++++
+ kernel/events/core.c       |  5 ++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_cqm.c b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-index acf687fd7e2e..a8c1e40b32b9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-@@ -24,7 +24,7 @@ struct intel_cqm_state {
- static DEFINE_PER_CPU(struct intel_cqm_state, cqm_state);
- 
- /*
-- * Protects cache_cgroups.
-+ * Protects cache_cgroups and cqm_rmid_lru.
-  */
- static DEFINE_MUTEX(cache_mutex);
- 
-@@ -63,36 +63,120 @@ static u64 __rmid_read(unsigned long rmid)
- 	return val;
- }
- 
--static unsigned long *cqm_rmid_bitmap;
-+struct cqm_rmid_entry {
-+	u64 rmid;
-+	struct list_head list;
-+};
-+
-+/*
-+ * A least recently used list of RMIDs.
-+ *
-+ * Oldest entry at the head, newest (most recently used) entry at the
-+ * tail. This list is never traversed, it's only used to keep track of
-+ * the lru order. That is, we only pick entries of the head or insert
-+ * them on the tail.
-+ *
-+ * All entries on the list are 'free', and their RMIDs are not currently
-+ * in use. To mark an RMID as in use, remove its entry from the lru
-+ * list.
-+ *
-+ * This list is protected by cache_mutex.
-+ */
-+static LIST_HEAD(cqm_rmid_lru);
-+
-+/*
-+ * We use a simple array of pointers so that we can lookup a struct
-+ * cqm_rmid_entry in O(1). This alleviates the callers of __get_rmid()
-+ * and __put_rmid() from having to worry about dealing with struct
-+ * cqm_rmid_entry - they just deal with rmids, i.e. integers.
-+ *
-+ * Once this array is initialized it is read-only. No locks are required
-+ * to access it.
-+ *
-+ * All entries for all RMIDs can be looked up in the this array at all
-+ * times.
-+ */
-+static struct cqm_rmid_entry **cqm_rmid_ptrs;
-+
-+static inline struct cqm_rmid_entry *__rmid_entry(int rmid)
-+{
-+	struct cqm_rmid_entry *entry;
-+
-+	entry = cqm_rmid_ptrs[rmid];
-+	WARN_ON(entry->rmid != rmid);
-+
-+	return entry;
-+}
- 
- /*
-  * Returns < 0 on fail.
-+ *
-+ * We expect to be called with cache_mutex held.
-  */
- static int __get_rmid(void)
- {
--	return bitmap_find_free_region(cqm_rmid_bitmap, cqm_max_rmid, 0);
-+	struct cqm_rmid_entry *entry;
-+
-+	lockdep_assert_held(&cache_mutex);
-+
-+	if (list_empty(&cqm_rmid_lru))
-+		return -EAGAIN;
-+
-+	entry = list_first_entry(&cqm_rmid_lru, struct cqm_rmid_entry, list);
-+	list_del(&entry->list);
-+
-+	return entry->rmid;
- }
- 
- static void __put_rmid(int rmid)
- {
--	bitmap_release_region(cqm_rmid_bitmap, rmid, 0);
-+	struct cqm_rmid_entry *entry;
-+
-+	lockdep_assert_held(&cache_mutex);
-+
-+	entry = __rmid_entry(rmid);
-+
-+	list_add_tail(&entry->list, &cqm_rmid_lru);
- }
- 
- static int intel_cqm_setup_rmid_cache(void)
- {
--	cqm_rmid_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(cqm_max_rmid), GFP_KERNEL);
--	if (!cqm_rmid_bitmap)
-+	struct cqm_rmid_entry *entry;
-+	int r;
-+
-+	cqm_rmid_ptrs = kmalloc(sizeof(struct cqm_rmid_entry *) *
-+				(cqm_max_rmid + 1), GFP_KERNEL);
-+	if (!cqm_rmid_ptrs)
- 		return -ENOMEM;
- 
--	bitmap_zero(cqm_rmid_bitmap, cqm_max_rmid);
-+	for (r = 0; r <= cqm_max_rmid; r++) {
-+		struct cqm_rmid_entry *entry;
-+
-+		entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-+		if (!entry)
-+			goto fail;
-+
-+		INIT_LIST_HEAD(&entry->list);
-+		entry->rmid = r;
-+		cqm_rmid_ptrs[r] = entry;
-+
-+		list_add_tail(&entry->list, &cqm_rmid_lru);
-+	}
- 
- 	/*
- 	 * RMID 0 is special and is always allocated. It's used for all
- 	 * tasks that are not monitored.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1a4e2846d6fb..1bf06b6fd5dc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -264,6 +264,11 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
  	 */
--	bitmap_allocate_region(cqm_rmid_bitmap, 0, 0);
-+	entry = __rmid_entry(0);
-+	list_del(&entry->list);
- 
- 	return 0;
-+fail:
-+	while (r--)
-+		kfree(cqm_rmid_ptrs[r]);
+ 	void (*flush_branch_stack)	(void);
 +
-+	kfree(cqm_rmid_ptrs);
-+	return -ENOMEM;
++	/*
++	 * Return the count value for a counter.
++	 */
++	u64 (*count)			(struct perf_event *event); /*optional*/
+ };
+ 
+ /**
+@@ -743,6 +748,11 @@ static inline void perf_event_task_sched_out(struct task_struct *prev,
+ 		__perf_event_task_sched_out(prev, next);
  }
  
- /*
++static inline u64 __perf_event_count(struct perf_event *event)
++{
++	return local64_read(&event->count) + atomic64_read(&event->child_count);
++}
++
+ extern void perf_event_mmap(struct vm_area_struct *vma);
+ extern struct perf_guest_info_callbacks *perf_guest_cbs;
+ extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 957cc13d4b1a..7925f21cee7f 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3052,7 +3052,10 @@ static void __perf_event_read(void *info)
+ 
+ static inline u64 perf_event_count(struct perf_event *event)
+ {
+-	return local64_read(&event->count) + atomic64_read(&event->child_count);
++	if (event->pmu->count)
++		return event->pmu->count(event);
++
++	return __perf_event_count(event);
+ }
+ 
+ static u64 perf_event_read(struct perf_event *event)
 -- 
 1.9.3
 
