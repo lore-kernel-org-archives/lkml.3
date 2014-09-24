@@ -1,454 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981AbaIXOY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:24:28 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:37412 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaIXOY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:24:27 -0400
-Message-ID: <5422D418.3000003@osg.samsung.com>
-Date: Wed, 24 Sep 2014 08:24:24 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1751719AbaIXO01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:26:27 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:56665 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaIXO0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:26:25 -0400
+X-ASG-Debug-ID: 1411568543-0759e70b73a2810002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Wed, 24 Sep 2014 16:22:22 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] sbs-battery: add forced instantiation from
+ device tree
+Message-ID: <20140924142222.GC22872@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [RFC PATCH 1/2] sbs-battery: add forced instantiation from
+ device tree
+References: <1411564278-17207-1-git-send-email-frans.klaver@xsens.com>
+ <1411564278-17207-2-git-send-email-frans.klaver@xsens.com>
+ <20140924131655.GG5729@leverpostej>
 MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>, m.chehab@samsung.com,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, crope@iki.fi,
-        olebowle@gmx.com, dheitmueller@kernellabs.com, ramakrmu@cisco.com,
-        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH 2/5] media: v4l2-core changes to use media tuner token
- api
-References: <cover.1411397045.git.shuahkh@osg.samsung.com> <b83cf780636a80aec53e3b7e8f101645049e94f3.1411397045.git.shuahkh@osg.samsung.com> <5422B1B8.1080401@xs4all.nl>
-In-Reply-To: <5422B1B8.1080401@xs4all.nl>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140924131655.GG5729@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1411568544
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9826
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 05:57 AM, Hans Verkuil wrote:
-> Hi Shuah,
+On Wed, Sep 24, 2014 at 02:16:55PM +0100, Mark Rutland wrote:
+> On Wed, Sep 24, 2014 at 02:11:17PM +0100, Frans Klaver wrote:
+> > In some cases you want to instantiate a battery even before it is
+> > attached; it is perfectly reasonable for a device to start up on
+> > wall-power and be connected to a battery later. The current advice is to
+> > instantiate a device explicitly in the kernel, or probe for the device
+> > from userspace. The downside of these approaches is that the user needs
+> > to keep the information related to the i2c battery in different places,
+> > which is inconvenient.
 > 
-> Here is my review...
+> This really sounds like a Linux policy issue rather than something that
+> should be described in dt.
 > 
-> On 09/22/2014 05:00 PM, Shuah Khan wrote:
->> Changes to v4l2-core to hold tuner token in v4l2 ioctl that change
->> the tuner modes, and reset the token from fh exit. The changes are
->> limited to vb2 calls that disrupt digital stream. vb1 changes are
->> made in the driver. The following ioctls are changed:
->>
->> S_INPUT, S_OUTPUT, S_FMT, S_TUNER, S_MODULATOR, S_FREQUENCY,
-> 
-> S_MODULATOR doesn't need to take a token. Certainly not a tuner token,
-> since it is a modulator, not a tuner. There aren't many modulator drivers,
-> and none of them have different modes.
-> 
-> The same is true for S_OUTPUT: it deals with outputs, so it has nothing
-> to do with tuners since those are for input.
+> Presumably there's a reason we sanity cehck this in the first place.
+> What happens while the battery isn't plugged in? What can fail, and how?
 
-ok I will remove these. I will have to check why I added
-S_OUTPUT - maybe au0828 does something in its vidioc_
-If it does something it can be handled in the driver.
-S_MODULATOR can go - I kept adding ioctls as I detected them
-to cause problems, and this might have been one of the ones
-I added as the first set.
+It was introduced in a22b41a31e53 "sbs-battery: Probe should try talking
+to the device", saying:
 
-> 
->> S_STD, S_HW_FREQ_SEEK:
->>
->> - hold tuner in shared analog mode before calling appropriate
->>    ops->vidioc_s_*
->> - return leaving tuner in shared mode.
->> - Note that S_MODULATOR is now implemented in the core
->>    previously FCN.
->>
->> QUERYSTD:
->> - hold tuner in shared analog mode before calling
->>    ops->vidioc_querystd
->> - return after calling put tuner - this simply decrements the
->>    owners. Leaves tuner in shared analog mode if owners > 0
-> 
-> I would handle QUERYSTD the same as the ones in the first group.
-> It's a fair assumption that once you call QUERYSTD you expect to
-> switch the tuner to analog mode and keep it there.
-> 
-> I'm missing STREAMON in this list as well.
+  "this driver doesn't actually try talking to the device at probe time,
+  so if it's incorrectly configured in the device tree or platform data
+  (or if the battery has been removed from the system), then probe will
+  succeed and every access will sit there and time out. The end result
+  is a possibly laggy system that thinks it has a battery but can never
+  read status, which isn't very useful."
 
-Yes on STREAMON. ok I will make the changes. Do you want to see
-STREAMON changes in vb1 or vb2? In our previous discussion, we
-decides to make the STERANON changes in vb2 layer and handle
-vb1 in the driver.
+That's a reasonable thing to do, but it breaks just the feature I need.
+Besides that, the driver provides us with a gpio that indicates battery
+presence, which will also be useless if the device isn't present at
+probe time. That commit also doesn't take into account the fact that a
+battery could be removed after probing without any problems, leaving the
+system in the same state as before the probe change.
+
+Now if the battery isn't plugged in, it is never detected after it has
+been attached, unless you take action from userspace. Basically you
+don't know your battery level until it has been explicitly probed.
+
+We might also reduce the severity of the sanity check failure to produce
+a warning instead of an error. This would achieve that a developer might
+be warned that the battery isn't present, but also allow my use case
+where the battery may not be present at boot time. Was that what you
+meant with policy by the way?
 
 > 
-> With regards to G_TUNER and ENUM_INPUT, I will reply to the post that
-> discusses that topic.
+> > Add the "sbs,always-present" option to the device tree. If set, the
+> > battery is instantiated without sanity checking the connection.
 > 
->>
->> v4l2_fh_exit:
->> - resets the media tuner token. A simple put token could leave
->>    the token in shared mode. The nature of analog token holds
->>    is unbalanced requiring a reset to clear it.
-> 
-> Nack on the reset. It should just put the tuner token.
-> 
-> The way it should work is that whenever an ioctl is issued that needs to
-> take a tuner token, then it should check if the filehandle already has a
-> token. If not, then take the token if possible. If it has, then check if
-> the token is in the right mode and continue if that's the case, otherwise
-> return EBUSY. I don't think it can ever be in the wrong mode, but it
-> doesn't hurt to check. Or do WARN_ON or something like that.
+> From the description above, this name is incorrect. You're adding this
+> property to work around the battery _not_ being present at probe-time.
+> From a binding point of view, "instantiated" is somewhat meaningless --
+> that's an OS level detail rather than a contract detail.
 
-Yes that would work. Thanks.
+That's fair. I wasn't entirely sure of the name myself, so feel free to
+suggest some other names. It started out with "sbs,force-presence", but
+I would be just as happy using "sbs,always-register",
+"sbs,no-sanity-check" or something entirely different altogether.
 
-> 
-> This way each filehandle will take a token only once, and it is released
-> when the filehandle is closed.
-> 
-> You do need to store in struct v4l2_fh whether or not a token was obtained
-> so the v4l2_fh_exit knows to release it.
-> 
-> Almost all drivers support v4l2_fh by now, so I wouldn't bother with
-> drivers
-> that don't support v4l2_fh.
+If we go with the downgrade of the status read error, the device tree
+requirement will be removed entirely.
 
-ok. au0828 calls fh_exit() from its close routine and then does a tuner
-reset later. I did change the driver close to handle this case.
-
-> 
->>
->> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
->>   drivers/media/v4l2-core/v4l2-fh.c    |   16 ++++++
->>   drivers/media/v4l2-core/v4l2-ioctl.c |   96
->> +++++++++++++++++++++++++++++++++-
->>   2 files changed, 110 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/media/v4l2-core/v4l2-fh.c
->> b/drivers/media/v4l2-core/v4l2-fh.c
->> index c97067a..81ce3f9 100644
->> --- a/drivers/media/v4l2-core/v4l2-fh.c
->> +++ b/drivers/media/v4l2-core/v4l2-fh.c
->> @@ -25,7 +25,10 @@
->>   #include <linux/bitops.h>
->>   #include <linux/slab.h>
->>   #include <linux/export.h>
->> +#include <linux/device.h>
->> +#include <linux/media_tknres.h>
->>   #include <media/v4l2-dev.h>
->> +#include <media/v4l2-device.h>
->>   #include <media/v4l2-fh.h>
->>   #include <media/v4l2-event.h>
->>   #include <media/v4l2-ioctl.h>
->> @@ -92,6 +95,19 @@ void v4l2_fh_exit(struct v4l2_fh *fh)
->>   {
->>       if (fh->vdev == NULL)
->>           return;
->> +
->> +    if (fh->vdev->dev_parent) {
->> +        enum media_tkn_mode mode;
->> +
->> +        mode = (fh->vdev->vfl_type == V4L2_TUNER_RADIO) ?
->> +            MEDIA_MODE_RADIO : MEDIA_MODE_ANALOG;
->> +        /* reset the token - the nature of token get in
->> +           analog mode is shared and unbalanced. There is
->> +           no clear start and stop, so shared token might
->> +           never get cleared */
->> +        media_reset_shared_tuner_tkn(fh->vdev->dev_parent, mode);
-> 
-> As mentioned above, this should just be a put, not a reset.
-
-ok on that.
-
-> 
->> +    }
->> +
->>       v4l2_event_unsubscribe_all(fh);
->>       fh->vdev = NULL;
->>   }
->> diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c
->> b/drivers/media/v4l2-core/v4l2-ioctl.c
->> index d15e167..9e1f042 100644
->> --- a/drivers/media/v4l2-core/v4l2-ioctl.c
->> +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
->> @@ -17,6 +17,7 @@
->>   #include <linux/types.h>
->>   #include <linux/kernel.h>
->>   #include <linux/version.h>
->> +#include <linux/media_tknres.h>
->>
->>   #include <linux/videodev2.h>
->>
->> @@ -1003,6 +1004,37 @@ static void v4l_sanitize_format(struct
->> v4l2_format *fmt)
->>              sizeof(fmt->fmt.pix) - offset);
->>   }
->>
->> +static int v4l_get_tuner_tkn(struct video_device *vfd,
->> +                enum v4l2_tuner_type type)
->> +{
->> +    int ret = 0;
->> +
->> +    if (vfd->dev_parent) {
->> +        enum media_tkn_mode mode;
->> +
->> +        mode = (type == V4L2_TUNER_RADIO) ?
->> +            MEDIA_MODE_RADIO : MEDIA_MODE_ANALOG;
->> +        ret = media_get_shared_tuner_tkn(vfd->dev_parent, mode);
->> +        if (ret)
->> +            dev_info(vfd->dev_parent,
->> +                "%s: Tuner is busy\n", __func__);
->> +    }
->> +    dev_dbg(vfd->dev_parent, "%s: No token?? %d\n", __func__, ret);
-> 
-> Shouldn't this be in a 'else'? Now the 'No token' message is also
-> printed when
-> media_get_shared_tuner_tkn got the tuner.
-
-Yes it should have been.
-
-> 
->> +    return ret;
->> +}
->> +
->> +static void v4l_put_tuner_tkn(struct video_device *vfd,
->> +                enum v4l2_tuner_type type)
->> +{
->> +    if (vfd->dev_parent) {
->> +        enum media_tkn_mode mode;
->> +
->> +        mode = (type == V4L2_TUNER_RADIO) ?
->> +            MEDIA_MODE_RADIO : MEDIA_MODE_ANALOG;
->> +        media_put_tuner_tkn(vfd->dev_parent, mode);
->> +    }
->> +}
->> +
->>   static int v4l_querycap(const struct v4l2_ioctl_ops *ops,
->>                   struct file *file, void *fh, void *arg)
->>   {
->> @@ -1022,12 +1054,24 @@ static int v4l_querycap(const struct
->> v4l2_ioctl_ops *ops,
->>   static int v4l_s_input(const struct v4l2_ioctl_ops *ops,
->>                   struct file *file, void *fh, void *arg)
->>   {
->> +    struct video_device *vfd = video_devdata(file);
->> +    int ret = 0;
->> +
->> +    ret = v4l_get_tuner_tkn(vfd, V4L2_TUNER_ANALOG_TV);
->> +    if (ret)
->> +        return ret;
->>       return ops->vidioc_s_input(file, fh, *(unsigned int *)arg);
->>   }
->>
->>   static int v4l_s_output(const struct v4l2_ioctl_ops *ops,
->>                   struct file *file, void *fh, void *arg)
->>   {
->> +    struct video_device *vfd = video_devdata(file);
->> +    int ret = 0;
->> +
->> +    ret = v4l_get_tuner_tkn(vfd, V4L2_TUNER_ANALOG_TV);
->> +    if (ret)
->> +        return ret;
->>       return ops->vidioc_s_output(file, fh, *(unsigned int *)arg);
->>   }
-> 
-> As mentioned, tuner tokens make no sense for s_output.
-
-Right. ack on that.
-
-> 
->>
->> @@ -1236,6 +1280,10 @@ static int v4l_s_fmt(const struct
->> v4l2_ioctl_ops *ops,
->>       bool is_tx = vfd->vfl_dir != VFL_DIR_RX;
->>       int ret;
->>
->> +    ret = v4l_get_tuner_tkn(vfd, V4L2_TUNER_ANALOG_TV);
->> +    if (ret)
->> +        return ret;
->> +
->>       v4l_sanitize_format(p);
->>
->>       switch (p->type) {
->> @@ -1415,9 +1463,13 @@ static int v4l_s_tuner(const struct
->> v4l2_ioctl_ops *ops,
->>   {
->>       struct video_device *vfd = video_devdata(file);
->>       struct v4l2_tuner *p = arg;
->> +    int ret;
->>
->>       p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
->>               V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
->> +    ret = v4l_get_tuner_tkn(vfd, p->type);
->> +    if (ret)
->> +        return ret;
->>       return ops->vidioc_s_tuner(file, fh, p);
->>   }
->>
->> @@ -1433,6 +1485,26 @@ static int v4l_g_modulator(const struct
->> v4l2_ioctl_ops *ops,
->>       return err;
->>   }
->>
->> +static int v4l_s_modulator(const struct v4l2_ioctl_ops *ops,
->> +                struct file *file, void *fh, void *arg)
->> +{
->> +    struct video_device *vfd = video_devdata(file);
->> +    struct v4l2_fh *vfh =
->> +        test_bit(V4L2_FL_USES_V4L2_FH, &vfd->flags) ? fh : NULL;
->> +
->> +    if (vfh != NULL) {
->> +        int ret;
->> +        enum v4l2_tuner_type type;
->> +
->> +        type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
->> +                V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
->> +        ret = v4l_get_tuner_tkn(vfd, type);
->> +        if (ret)
->> +            return ret;
->> +    }
->> +    return ops->vidioc_s_modulator(file, fh, arg);
->> +}
-> 
-> Again, tuner tokens make no sense for a modulator.
-
-Yes. Will fix it.
-
-> 
->> +
->>   static int v4l_g_frequency(const struct v4l2_ioctl_ops *ops,
->>                   struct file *file, void *fh, void *arg)
->>   {
->> @@ -1453,6 +1525,7 @@ static int v4l_s_frequency(const struct
->> v4l2_ioctl_ops *ops,
->>       struct video_device *vfd = video_devdata(file);
->>       const struct v4l2_frequency *p = arg;
->>       enum v4l2_tuner_type type;
->> +    int ret;
->>
->>       if (vfd->vfl_type == VFL_TYPE_SDR) {
->>           if (p->type != V4L2_TUNER_ADC && p->type != V4L2_TUNER_RF)
->> @@ -1462,6 +1535,9 @@ static int v4l_s_frequency(const struct
->> v4l2_ioctl_ops *ops,
->>                   V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
->>           if (type != p->type)
->>               return -EINVAL;
->> +        ret = v4l_get_tuner_tkn(vfd, type);
->> +        if (ret)
->> +            return ret;
->>       }
->>       return ops->vidioc_s_frequency(file, fh, p);
->>   }
->> @@ -1508,11 +1584,16 @@ static int v4l_s_std(const struct
->> v4l2_ioctl_ops *ops,
->>   {
->>       struct video_device *vfd = video_devdata(file);
->>       v4l2_std_id id = *(v4l2_std_id *)arg, norm;
->> +    int ret = 0;
->>
->>       norm = id & vfd->tvnorms;
->>       if (vfd->tvnorms && !norm)    /* Check if std is supported */
->>           return -EINVAL;
->>
->> +    ret = v4l_get_tuner_tkn(vfd, V4L2_TUNER_ANALOG_TV);
->> +    if (ret)
->> +        return ret;
->> +
->>       /* Calls the specific handler */
->>       return ops->vidioc_s_std(file, fh, norm);
->>   }
->> @@ -1522,7 +1603,11 @@ static int v4l_querystd(const struct
->> v4l2_ioctl_ops *ops,
->>   {
->>       struct video_device *vfd = video_devdata(file);
->>       v4l2_std_id *p = arg;
->> +    int ret = 0;
->>
->> +    ret = v4l_get_tuner_tkn(vfd, V4L2_TUNER_ANALOG_TV);
->> +    if (ret)
->> +        return ret;
->>       /*
->>        * If no signal is detected, then the driver should return
->>        * V4L2_STD_UNKNOWN. Otherwise it should return tvnorms with
->> @@ -1532,7 +1617,9 @@ static int v4l_querystd(const struct
->> v4l2_ioctl_ops *ops,
->>        * their efforts to improve the standards detection.
->>        */
->>       *p = vfd->tvnorms;
->> -    return ops->vidioc_querystd(file, fh, arg);
->> +    ret = ops->vidioc_querystd(file, fh, arg);
->> +    v4l_put_tuner_tkn(vfd, V4L2_TUNER_ANALOG_TV);
-> 
-> No put needed.
-
-ok - will fix it.
-
-> 
->> +    return ret;
->>   }
->>
->>   static int v4l_s_hw_freq_seek(const struct v4l2_ioctl_ops *ops,
->> @@ -1541,6 +1628,7 @@ static int v4l_s_hw_freq_seek(const struct
->> v4l2_ioctl_ops *ops,
->>       struct video_device *vfd = video_devdata(file);
->>       struct v4l2_hw_freq_seek *p = arg;
->>       enum v4l2_tuner_type type;
->> +    int ret;
->>
->>       /* s_hw_freq_seek is not supported for SDR for now */
->>       if (vfd->vfl_type == VFL_TYPE_SDR)
->> @@ -1550,6 +1638,9 @@ static int v4l_s_hw_freq_seek(const struct
->> v4l2_ioctl_ops *ops,
->>           V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
->>       if (p->type != type)
->>           return -EINVAL;
->> +    ret = v4l_get_tuner_tkn(vfd, type);
->> +    if (ret)
->> +        return ret;
->>       return ops->vidioc_s_hw_freq_seek(file, fh, p);
->>   }
->>
->> @@ -2217,7 +2308,8 @@ static struct v4l2_ioctl_info v4l2_ioctls[] = {
->>       IOCTL_INFO_STD(VIDIOC_G_AUDOUT, vidioc_g_audout,
->> v4l_print_audioout, 0),
->>       IOCTL_INFO_STD(VIDIOC_S_AUDOUT, vidioc_s_audout,
->> v4l_print_audioout, INFO_FL_PRIO),
->>       IOCTL_INFO_FNC(VIDIOC_G_MODULATOR, v4l_g_modulator,
->> v4l_print_modulator, INFO_FL_CLEAR(v4l2_modulator, index)),
->> -    IOCTL_INFO_STD(VIDIOC_S_MODULATOR, vidioc_s_modulator,
->> v4l_print_modulator, INFO_FL_PRIO),
->> +    IOCTL_INFO_FNC(VIDIOC_S_FREQUENCY, v4l_s_modulator,
->> +            v4l_print_frequency, INFO_FL_PRIO),
-> 
-> Huh? S_MODULATOR is removed and a duplicate S_FREQUENCY is added?
-
-Oops. This is a mistake. Actually I don't think I need this at all
-based on your earlier comment on S_MODULATOR. I will remove this.
-
-> 
->>       IOCTL_INFO_FNC(VIDIOC_G_FREQUENCY, v4l_g_frequency,
->> v4l_print_frequency, INFO_FL_CLEAR(v4l2_frequency, tuner)),
->>       IOCTL_INFO_FNC(VIDIOC_S_FREQUENCY, v4l_s_frequency,
->> v4l_print_frequency, INFO_FL_PRIO),
->>       IOCTL_INFO_FNC(VIDIOC_CROPCAP, v4l_cropcap, v4l_print_cropcap,
->> INFO_FL_CLEAR(v4l2_cropcap, type)),
->>
-> 
-> BTW, I still haven't seen how you are going to handle snd-usb-audio. I
-> want to
-> see how that is going to be handled before I will Ack anything.
-> 
-
-Yes. Agreed. I will get the snd-usb-audio changes in before I send
-out the next version.
-
-thanks,
--- Shuah
-
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Thanks,
+Frans
