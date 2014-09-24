@@ -1,40 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaIXQNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:13:24 -0400
-Received: from mail-in-11.arcor-online.net ([151.189.21.51]:40026 "EHLO
-	mail-in-11.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750974AbaIXQNW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:13:22 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-02.arcor-online.net 8F13A30D03
-Date: Wed, 24 Sep 2014 18:13:20 +0200 (CEST)
-From: praxis-buczek@arcor.de
-To: info@upgrade.org
-Message-ID: <1601680786.1127909.1411575200549.JavaMail.ngmail@webmail22.arcor-online.net>
-Subject: Alert zabezpiecze&#324;
+	id S1753333AbaIXQNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:13:54 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:34225 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaIXQNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:13:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-ngMessageSubType: MessageSubType_MAIL
-X-WebmailclientIP: 41.71.208.152
+In-Reply-To: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+Date: Wed, 24 Sep 2014 20:13:51 +0400
+Message-ID: <CANaxB-xM6NuXaHu443WXCGbUKNqhXg=bNih3zFzr-DrvEfSFag@mail.gmail.com>
+Subject: Re: linux-next: cgroup_mount() falls asleep forever
+From: Andrey Wagin <avagin@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-09-24 14:31 GMT+04:00 Andrey Wagin <avagin@gmail.com>:
+> Hi All,
+>
+> I execute CRIU tests on linux-next. Today I found that one of tests
+> hangs up forever.
+>
+> [root@linux-next-test linux-next]# git describe HEAD
+> next-20140922
+> [root@linux-next-test ~]# ps axf
+> ...
+>   698 ?        Ss     0:05  \_ sshd: root@notty
+>   700 ?        Ss     0:00  |   \_ bash -x
+> jenkins-scripts/jenkins-ct.sh jenkins.sh
+>   706 ?        S      0:00  |       \_ bash -c ( mount --make-rprivate
+> / && umount -l  /proc && mount -t proc proc /proc/ && bash -x
+> jenkins.sh)
+>   707 ?        S      0:00  |           \_ bash -c ( mount
+> --make-rprivate / && umount -l  /proc && mount -t proc proc /proc/ &&
+> bash -x jenkins.sh)
+>   711 ?        S      0:00  |               \_ bash -x jenkins.sh
+>  2981 ?        S      0:05  |                   \_ bash -x
+> test/zdtm.sh -C -x .*\(maps01\|maps04\)
+>  6717 ?        S      0:00  |                       \_ /bin/bash
+> zdtm/live/static/cgroup00.hook --clean
+>  6719 ?        D     11:13  |                           \_ mount -t
+> cgroup none cgclean.cWgK71 -o none,name=zdtmtst
+>
+> [root@linux-next-test ~]# cat /proc/6719/stack
+> [<ffffffff8111fcb7>] msleep+0x37/0x50
+> [<ffffffff8114bde2>] cgroup_mount+0x712/0xa50
+> [<ffffffff8124d0e9>] mount_fs+0x39/0x1b0
+> [<ffffffff8126d76b>] vfs_kern_mount+0x6b/0x150
+> [<ffffffff8127075b>] do_mount+0x22b/0xc20
+> [<ffffffff81271492>] SyS_mount+0xa2/0x110
+> [<ffffffff817e3ba9>] system_call_fastpath+0x12/0x17
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> Let me know which info do you need for investigation.
+>
+> Steps to reproduce:
+>
+> git clone https://github.com/xemul/criu.git
+> cd criu
+> make
+> bash test/zdtm.sh static/cgroup00
 
+Steps to reproduce without CRIU:
 
-Alert zabezpiecze&#324; 
+[root@avagin-fc19-cr ~]# mount -t cgroup -o none,name=zdtmtst xxx /mnt/test/
+[root@avagin-fc19-cr ~]# mkdir /mnt/test/xxx
+[root@avagin-fc19-cr ~]# umount /mnt/test/
+[root@avagin-fc19-cr ~]# mount -t cgroup -o none,name=zdtmtst xxx /mnt/test/
+[1]+  Stopped                 mount -t cgroup -o none,name=zdtmtst xxx
+/mnt/test/
+[root@avagin-fc19-cr ~]# bg
+[root@avagin-fc19-cr ~]# cat /proc/633/stack
+[<ffffffff810e9377>] msleep+0x37/0x50
+[<ffffffff811118a2>] cgroup_mount+0x482/0x670
+[<ffffffff811e3769>] mount_fs+0x39/0x1b0
+[<ffffffff8120157b>] vfs_kern_mount+0x6b/0x150
+[<ffffffff8120422b>] do_mount+0x22b/0xc20
+[<ffffffff81204f62>] SyS_mount+0xa2/0x110
+[<ffffffff816fcc69>] system_call_fastpath+0x12/0x17
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-
-
-Skrzynki pocztowej wymaga pilnej modernizacji, aby poprawi&#263; swój adres e-mail 
-  wydajno&#347;&#263; w wysy&#322;anie i odbieranie wiadomo&#347;ci e-mail, aby uaktualni&#263; 
-e-mail, kliknij-tutaj: http://fhhf-hhj.webs.com/ uaktualni&#263; swoje konto 
-
-  Twoje konto e-mail zostanie dezaktywowany, je&#347;li nie 
-uaktualni&#263; swoj&#261; skrzynk&#281; pocztow&#261; w ci&#261;gu najbli&#380;szych 48 godzin !!! 
-
-  Webmaster Us&#322;ugi Administracyjne 
-  ISBN 298102GHD 
-  Wszelkie prawa zastrze&#380;one c) us&#322;ugi dla webmasterów 2014
+>
+> Thanks,
+> Andrew
