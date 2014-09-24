@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaIXLtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:49:41 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:37486 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaIXLti (ORCPT
+	id S1753553AbaIXLtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:49:53 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49786 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaIXLtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:49:38 -0400
+	Wed, 24 Sep 2014 07:49:51 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         acme@redhat.com, cebbert.lkml@gmail.com
-Subject: [PATCH v7 3/6] perf tools: add core support for sampling intr machine state regs
-Date: Wed, 24 Sep 2014 13:48:39 +0200
-Message-Id: <1411559322-16548-4-git-send-email-eranian@google.com>
+Subject: [PATCH v7 4/6] perf/tests: add interrupted state sample parsing test
+Date: Wed, 24 Sep 2014 13:48:40 +0200
+Message-Id: <1411559322-16548-5-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411559322-16548-1-git-send-email-eranian@google.com>
 References: <1411559322-16548-1-git-send-email-eranian@google.com>
@@ -21,212 +21,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the infrastructure to setup, collect and report the interrupt
-machine state regs which can be captured by the kernel.
+This patch updates the sample parsing test with support
+for the sampling of machine interrupted state.
+
+The patch modifies the do_test() code to sahred the sample
+regts bitmask between user and intr regs.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/perf.h         |    1 +
- tools/perf/util/event.h   |    1 +
- tools/perf/util/evsel.c   |   46 ++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/header.c  |    1 +
- tools/perf/util/session.c |   44 ++++++++++++++++++++++++++++++++++++++-----
- 5 files changed, 87 insertions(+), 6 deletions(-)
+ tools/perf/tests/sample-parsing.c |   55 +++++++++++++++++++++++++++----------
+ 1 file changed, 40 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 510c65f..309d956 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -54,6 +54,7 @@ struct record_opts {
- 	bool	     sample_weight;
- 	bool	     sample_time;
- 	bool	     period;
-+	bool	     sample_intr_regs;
- 	unsigned int freq;
- 	unsigned int mmap_pages;
- 	unsigned int user_freq;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 7eb7107..d6e79f3 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -162,6 +162,7 @@ struct perf_sample {
- 	struct ip_callchain *callchain;
- 	struct branch_stack *branch_stack;
- 	struct regs_dump  user_regs;
-+	struct regs_dump  intr_regs;
- 	struct stack_dump user_stack;
- 	struct sample_read read;
- };
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index b38de58..5c2e784 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -628,6 +628,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 	if (opts->call_graph_enabled && !evsel->no_aux_samples)
- 		perf_evsel__config_callgraph(evsel, opts);
- 
-+	if (opts->sample_intr_regs) {
-+		attr->sample_regs_intr = PERF_REGS_MASK;
-+		perf_evsel__set_sample_bit(evsel, REGS_INTR);
-+	}
-+
- 	if (target__has_cpu(&opts->target))
- 		perf_evsel__set_sample_bit(evsel, CPU);
- 
-@@ -1005,6 +1010,7 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
- 	ret += PRINT_ATTR_X64(branch_sample_type);
- 	ret += PRINT_ATTR_X64(sample_regs_user);
- 	ret += PRINT_ATTR_U32(sample_stack_user);
-+	ret += PRINT_ATTR_X64(sample_regs_intr);
- 
- 	ret += fprintf(fp, "%.60s\n", graph_dotted_line);
- 
-@@ -1504,6 +1510,23 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array++;
- 	}
- 
-+	data->intr_regs.abi = PERF_SAMPLE_REGS_ABI_NONE;
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		OVERFLOW_CHECK_u64(array);
-+		data->intr_regs.abi = *array;
-+		array++;
-+
-+		if (data->intr_regs.abi != PERF_SAMPLE_REGS_ABI_NONE) {
-+			u64 mask = evsel->attr.sample_regs_intr;
-+
-+			sz = hweight_long(mask) * sizeof(u64);
-+			OVERFLOW_CHECK(array, sz, max_size);
-+			data->intr_regs.mask = mask;
-+			data->intr_regs.regs = (u64 *)array;
-+			array = (void *)array + sz;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -1599,6 +1622,16 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index ca292f9..4908c64 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -126,16 +126,28 @@ static bool samples_same(const struct perf_sample *s1,
  	if (type & PERF_SAMPLE_TRANSACTION)
- 		result += sizeof(u64);
+ 		COMP(transaction);
  
 +	if (type & PERF_SAMPLE_REGS_INTR) {
-+		if (sample->intr_regs.abi) {
-+			result += sizeof(u64);
-+			sz = hweight_long(sample->intr_regs.mask) * sizeof(u64);
-+			result += sz;
-+		} else {
-+			result += sizeof(u64);
++		size_t sz = hweight_long(s1->intr_regs.mask) * sizeof(u64);
++
++		COMP(intr_regs.mask);
++		COMP(intr_regs.abi);
++		if (s1->intr_regs.abi &&
++		    (!s1->intr_regs.regs || !s2->intr_regs.regs ||
++		     memcmp(s1->intr_regs.regs, s2->intr_regs.regs, sz))) {
++			pr_debug("Samples differ at 'intr_regs'\n");
++			return false;
 +		}
 +	}
 +
- 	return result;
+ 	return true;
  }
  
-@@ -1777,6 +1810,17 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		array++;
- 	}
- 
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		if (sample->intr_regs.abi) {
-+			*array++ = sample->intr_regs.abi;
-+			sz = hweight_long(sample->intr_regs.mask) * sizeof(u64);
-+			memcpy(array, sample->intr_regs.regs, sz);
-+			array = (void *)array + sz;
-+		} else {
-+			*array++ = 0;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -1906,7 +1950,7 @@ static int sample_type__fprintf(FILE *fp, bool *first, u64 value)
- 		bit_name(READ), bit_name(CALLCHAIN), bit_name(ID), bit_name(CPU),
- 		bit_name(PERIOD), bit_name(STREAM_ID), bit_name(RAW),
- 		bit_name(BRANCH_STACK), bit_name(REGS_USER), bit_name(STACK_USER),
--		bit_name(IDENTIFIER),
-+		bit_name(IDENTIFIER), bit_name(REGS_INTR),
- 		{ .name = NULL, }
- 	};
- #undef bit_name
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 158c787..62514a7 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2458,6 +2458,7 @@ static const int attr_file_abi_sizes[] = {
- 	[1] = PERF_ATTR_SIZE_VER1,
- 	[2] = PERF_ATTR_SIZE_VER2,
- 	[3] = PERF_ATTR_SIZE_VER3,
-+	[4] = PERF_ATTR_SIZE_VER4,
- 	0,
- };
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6d2d50d..dc7a8d1 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -581,15 +581,46 @@ static void regs_dump__printf(u64 mask, u64 *regs)
- 	}
- }
- 
-+static const char *regs_abi[] = {
-+	[PERF_SAMPLE_REGS_ABI_NONE] = "none",
-+	[PERF_SAMPLE_REGS_ABI_32] = "32-bit",
-+	[PERF_SAMPLE_REGS_ABI_64] = "64-bit",
-+};
-+
-+static inline const char *regs_dump_abi(struct regs_dump *d)
-+{
-+	if (d->abi > PERF_SAMPLE_REGS_ABI_64)
-+		return "unknown";
-+
-+	return regs_abi[d->abi];
-+}
-+
-+static void regs__printf(const char *type, struct regs_dump *regs)
-+{
-+	u64 mask = regs->mask;
-+
-+	printf("... %s regs: mask 0x%" PRIx64 " ABI %s\n",
-+	       type,
-+	       mask,
-+	       regs_dump_abi(regs));
-+
-+	regs_dump__printf(mask, regs->regs);
-+}
-+
- static void regs_user__printf(struct perf_sample *sample)
+-static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
++static int do_test(u64 sample_type, u64 sample_regs, u64 read_format)
  {
- 	struct regs_dump *user_regs = &sample->user_regs;
+ 	struct perf_evsel evsel = {
+ 		.needs_swap = false,
+ 		.attr = {
+ 			.sample_type = sample_type,
+-			.sample_regs_user = sample_regs_user,
+ 			.read_format = read_format,
+ 		},
+ 	};
+@@ -154,7 +166,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 		/* 1 branch_entry */
+ 		.data = {1, 211, 212, 213},
+ 	};
+-	u64 user_regs[64];
++	u64 regs[64];
+ 	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
+ 	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
+ 	struct perf_sample sample = {
+@@ -176,8 +188,8 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 		.branch_stack	= &branch_stack.branch_stack,
+ 		.user_regs	= {
+ 			.abi	= PERF_SAMPLE_REGS_ABI_64,
+-			.mask	= sample_regs_user,
+-			.regs	= user_regs,
++			.mask	= sample_regs,
++			.regs	= regs,
+ 		},
+ 		.user_stack	= {
+ 			.size	= sizeof(data),
+@@ -187,14 +199,25 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 			.time_enabled = 0x030a59d664fca7deULL,
+ 			.time_running = 0x011b6ae553eb98edULL,
+ 		},
++		.intr_regs	= {
++			.abi	= PERF_SAMPLE_REGS_ABI_64,
++			.mask	= sample_regs,
++			.regs	= regs,
++		},
+ 	};
+ 	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
+ 	struct perf_sample sample_out;
+ 	size_t i, sz, bufsz;
+ 	int err, ret = -1;
  
--	if (user_regs->regs) {
--		u64 mask = user_regs->mask;
--		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
--		regs_dump__printf(mask, user_regs->regs);
--	}
-+	if (user_regs->regs)
-+		regs__printf("user", user_regs);
-+}
+-	for (i = 0; i < sizeof(user_regs); i++)
+-		*(i + (u8 *)user_regs) = i & 0xfe;
++	if (sample_type & PERF_SAMPLE_REGS_USER)
++		evsel.attr.sample_regs_user = sample_regs;
 +
-+static void regs_intr__printf(struct perf_sample *sample)
-+{
-+	struct regs_dump *intr_regs = &sample->intr_regs;
-+
-+	if (intr_regs->regs)
-+		regs__printf("intr", intr_regs);
- }
- 
- static void stack_user__printf(struct stack_dump *dump)
-@@ -688,6 +719,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 	if (sample_type & PERF_SAMPLE_REGS_USER)
- 		regs_user__printf(sample);
- 
 +	if (sample_type & PERF_SAMPLE_REGS_INTR)
-+		regs_intr__printf(sample);
++		evsel.attr.sample_regs_intr = sample_regs;
 +
- 	if (sample_type & PERF_SAMPLE_STACK_USER)
- 		stack_user__printf(&sample->user_stack);
++	for (i = 0; i < sizeof(regs); i++)
++		*(i + (u8 *)regs) = i & 0xfe;
  
+ 	if (read_format & PERF_FORMAT_GROUP) {
+ 		sample.read.group.nr     = 4;
+@@ -271,7 +294,7 @@ int test__sample_parsing(void)
+ {
+ 	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
+ 	u64 sample_type;
+-	u64 sample_regs_user;
++	u64 sample_regs;
+ 	size_t i;
+ 	int err;
+ 
+@@ -280,7 +303,7 @@ int test__sample_parsing(void)
+ 	 * were added.  Please actually update the test rather than just change
+ 	 * the condition below.
+ 	 */
+-	if (PERF_SAMPLE_MAX > PERF_SAMPLE_TRANSACTION << 1) {
++	if (PERF_SAMPLE_MAX > PERF_SAMPLE_REGS_INTR << 1) {
+ 		pr_debug("sample format has changed, some new PERF_SAMPLE_ bit was introduced - test needs updating\n");
+ 		return -1;
+ 	}
+@@ -297,22 +320,24 @@ int test__sample_parsing(void)
+ 			}
+ 			continue;
+ 		}
++		sample_regs = 0;
+ 
+ 		if (sample_type == PERF_SAMPLE_REGS_USER)
+-			sample_regs_user = 0x3fff;
+-		else
+-			sample_regs_user = 0;
++			sample_regs = 0x3fff;
++
++		if (sample_type == PERF_SAMPLE_REGS_INTR)
++			sample_regs = 0xff0fff;
+ 
+-		err = do_test(sample_type, sample_regs_user, 0);
++		err = do_test(sample_type, sample_regs, 0);
+ 		if (err)
+ 			return err;
+ 	}
+ 
+ 	/* Test all sample format bits together */
+ 	sample_type = PERF_SAMPLE_MAX - 1;
+-	sample_regs_user = 0x3fff;
++	sample_regs = 0x3fff; /* shared yb intr and user regs */
+ 	for (i = 0; i < ARRAY_SIZE(rf); i++) {
+-		err = do_test(sample_type, sample_regs_user, rf[i]);
++		err = do_test(sample_type, sample_regs, rf[i]);
+ 		if (err)
+ 			return err;
+ 	}
 -- 
 1.7.9.5
 
