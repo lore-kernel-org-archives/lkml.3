@@ -1,257 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaIXJzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:55:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53116 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaIXJzq (ORCPT
+	id S1752204AbaIXJ7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:59:51 -0400
+Received: from smtp121.ord1c.emailsrvr.com ([108.166.43.121]:47212 "EHLO
+	smtp121.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750742AbaIXJ7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:55:46 -0400
-Message-ID: <54229500.8060009@ti.com>
-Date: Wed, 24 Sep 2014 15:25:12 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Kiran Padwal <kiran.padwal@smartplayin.com>, <kgene.kim@samsung.com>,
-        <k.debski@samsung.com>, <maxime.ripard@free-electrons.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 4/5] Phy: Remove .owner field for driver
-References: <1411552158-27928-1-git-send-email-kiran.padwal@smartplayin.com>
-In-Reply-To: <1411552158-27928-1-git-send-email-kiran.padwal@smartplayin.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Sep 2014 05:59:49 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: mpm@selenic.com, kgene.kim@samsung.com, olof@lixom.net,
+        gregkh@linuxfoundation.org, sboyd@codeaurora.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH 1/5] char: hw_random: Remove .owner field for driver
+Date: Wed, 24 Sep 2014 15:27:24 +0530
+Message-Id: <1411552645-28025-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There is no need to init .owner field.
 
-On Wednesday 24 September 2014 03:19 PM, Kiran Padwal wrote:
-> There is no need to init .owner field.
-> 
-> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-> "mmc: remove .owner field for drivers using module_platform_driver"
+Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+"mmc: remove .owner field for drivers using module_platform_driver"
 
-he has sent a patch for phy too and it's already been merged in linux-phy next.
+This patch removes the superflous .owner field for drivers which
+use the module_platform_driver API, as this is overriden in
+platform_driver_register anyway."
 
-Cheers
-Kishon
-> 
-> This patch removes the superflous .owner field for drivers which
-> use the module_platform_driver API, as this is overriden in
-> platform_driver_register anyway."
-> 
-> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
-> ---
->  drivers/phy/phy-bcm-kona-usb2.c     |    1 -
->  drivers/phy/phy-berlin-sata.c       |    1 -
->  drivers/phy/phy-exynos-dp-video.c   |    1 -
->  drivers/phy/phy-exynos-mipi-video.c |    1 -
->  drivers/phy/phy-exynos5-usbdrd.c    |    1 -
->  drivers/phy/phy-exynos5250-sata.c   |    1 -
->  drivers/phy/phy-hix5hd2-sata.c      |    1 -
->  drivers/phy/phy-miphy365x.c         |    1 -
->  drivers/phy/phy-mvebu-sata.c        |    1 -
->  drivers/phy/phy-omap-usb2.c         |    1 -
->  drivers/phy/phy-qcom-apq8064-sata.c |    1 -
->  drivers/phy/phy-qcom-ipq806x-sata.c |    1 -
->  drivers/phy/phy-samsung-usb2.c      |    1 -
->  drivers/phy/phy-sun4i-usb.c         |    1 -
->  drivers/phy/phy-ti-pipe3.c          |    1 -
->  drivers/phy/phy-xgene.c             |    1 -
->  16 files changed, 16 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
-> index 894fe74..c1e0ca3 100644
-> --- a/drivers/phy/phy-bcm-kona-usb2.c
-> +++ b/drivers/phy/phy-bcm-kona-usb2.c
-> @@ -143,7 +143,6 @@ static struct platform_driver bcm_kona_usb2_driver = {
->  	.probe		= bcm_kona_usb2_probe,
->  	.driver		= {
->  		.name	= "bcm-kona-usb2",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table = bcm_kona_usb2_dt_ids,
->  	},
->  };
-> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
-> index 5c3a042..69ced52 100644
-> --- a/drivers/phy/phy-berlin-sata.c
-> +++ b/drivers/phy/phy-berlin-sata.c
-> @@ -273,7 +273,6 @@ static struct platform_driver phy_berlin_sata_driver = {
->  	.probe	= phy_berlin_sata_probe,
->  	.driver	= {
->  		.name		= "phy-berlin-sata",
-> -		.owner		= THIS_MODULE,
->  		.of_match_table	= phy_berlin_sata_of_match,
->  	},
->  };
-> diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
-> index 8b3026e..5c6e513 100644
-> --- a/drivers/phy/phy-exynos-dp-video.c
-> +++ b/drivers/phy/phy-exynos-dp-video.c
-> @@ -99,7 +99,6 @@ static struct platform_driver exynos_dp_video_phy_driver = {
->  	.probe	= exynos_dp_video_phy_probe,
->  	.driver = {
->  		.name	= "exynos-dp-video-phy",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table	= exynos_dp_video_phy_of_match,
->  	}
->  };
-> diff --git a/drivers/phy/phy-exynos-mipi-video.c b/drivers/phy/phy-exynos-mipi-video.c
-> index b55a92e..6a9bef1 100644
-> --- a/drivers/phy/phy-exynos-mipi-video.c
-> +++ b/drivers/phy/phy-exynos-mipi-video.c
-> @@ -165,7 +165,6 @@ static struct platform_driver exynos_mipi_video_phy_driver = {
->  	.driver = {
->  		.of_match_table	= exynos_mipi_video_phy_of_match,
->  		.name  = "exynos-mipi-video-phy",
-> -		.owner = THIS_MODULE,
->  	}
->  };
->  module_platform_driver(exynos_mipi_video_phy_driver);
-> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-> index 392101c..f756aca 100644
-> --- a/drivers/phy/phy-exynos5-usbdrd.c
-> +++ b/drivers/phy/phy-exynos5-usbdrd.c
-> @@ -667,7 +667,6 @@ static struct platform_driver exynos5_usb3drd_phy = {
->  	.driver = {
->  		.of_match_table	= exynos5_usbdrd_phy_of_match,
->  		.name		= "exynos5_usb3drd_phy",
-> -		.owner		= THIS_MODULE,
->  	}
->  };
->  
-> diff --git a/drivers/phy/phy-exynos5250-sata.c b/drivers/phy/phy-exynos5250-sata.c
-> index 19a679a..54cf4ae 100644
-> --- a/drivers/phy/phy-exynos5250-sata.c
-> +++ b/drivers/phy/phy-exynos5250-sata.c
-> @@ -240,7 +240,6 @@ static struct platform_driver exynos_sata_phy_driver = {
->  	.driver = {
->  		.of_match_table	= exynos_sata_phy_of_match,
->  		.name  = "samsung,sata-phy",
-> -		.owner = THIS_MODULE,
->  	}
->  };
->  module_platform_driver(exynos_sata_phy_driver);
-> diff --git a/drivers/phy/phy-hix5hd2-sata.c b/drivers/phy/phy-hix5hd2-sata.c
-> index 6a08fa5..d5d9780 100644
-> --- a/drivers/phy/phy-hix5hd2-sata.c
-> +++ b/drivers/phy/phy-hix5hd2-sata.c
-> @@ -180,7 +180,6 @@ static struct platform_driver hix5hd2_sata_phy_driver = {
->  	.probe	= hix5hd2_sata_phy_probe,
->  	.driver = {
->  		.name	= "hix5hd2-sata-phy",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table	= hix5hd2_sata_phy_of_match,
->  	}
->  };
-> diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-> index e0fb7a1..801afaf 100644
-> --- a/drivers/phy/phy-miphy365x.c
-> +++ b/drivers/phy/phy-miphy365x.c
-> @@ -626,7 +626,6 @@ static struct platform_driver miphy365x_driver = {
->  	.probe	= miphy365x_probe,
->  	.driver = {
->  		.name	= "miphy365x-phy",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table	= miphy365x_of_match,
->  	}
->  };
-> diff --git a/drivers/phy/phy-mvebu-sata.c b/drivers/phy/phy-mvebu-sata.c
-> index cc3c0e1..bb0b3b8 100644
-> --- a/drivers/phy/phy-mvebu-sata.c
-> +++ b/drivers/phy/phy-mvebu-sata.c
-> @@ -126,7 +126,6 @@ static struct platform_driver phy_mvebu_sata_driver = {
->  	.probe	= phy_mvebu_sata_probe,
->  	.driver = {
->  		.name	= "phy-mvebu-sata",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table	= phy_mvebu_sata_of_match,
->  	}
->  };
-> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-> index 93d7835..37cbf67 100644
-> --- a/drivers/phy/phy-omap-usb2.c
-> +++ b/drivers/phy/phy-omap-usb2.c
-> @@ -382,7 +382,6 @@ static struct platform_driver omap_usb2_driver = {
->  	.remove		= omap_usb2_remove,
->  	.driver		= {
->  		.name	= "omap-usb2",
-> -		.owner	= THIS_MODULE,
->  		.pm	= DEV_PM_OPS,
->  		.of_match_table = of_match_ptr(omap_usb2_id_table),
->  	},
-> diff --git a/drivers/phy/phy-qcom-apq8064-sata.c b/drivers/phy/phy-qcom-apq8064-sata.c
-> index b3ef7d8..7b3ddfb 100644
-> --- a/drivers/phy/phy-qcom-apq8064-sata.c
-> +++ b/drivers/phy/phy-qcom-apq8064-sata.c
-> @@ -279,7 +279,6 @@ static struct platform_driver qcom_apq8064_sata_phy_driver = {
->  	.remove	= qcom_apq8064_sata_phy_remove,
->  	.driver = {
->  		.name	= "qcom-apq8064-sata-phy",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table	= qcom_apq8064_sata_phy_of_match,
->  	}
->  };
-> diff --git a/drivers/phy/phy-qcom-ipq806x-sata.c b/drivers/phy/phy-qcom-ipq806x-sata.c
-> index 909b5a8..759b0bf 100644
-> --- a/drivers/phy/phy-qcom-ipq806x-sata.c
-> +++ b/drivers/phy/phy-qcom-ipq806x-sata.c
-> @@ -201,7 +201,6 @@ static struct platform_driver qcom_ipq806x_sata_phy_driver = {
->  	.remove	= qcom_ipq806x_sata_phy_remove,
->  	.driver = {
->  		.name	= "qcom-ipq806x-sata-phy",
-> -		.owner	= THIS_MODULE,
->  		.of_match_table	= qcom_ipq806x_sata_phy_of_match,
->  	}
->  };
-> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
-> index 3732ca2..908949d 100644
-> --- a/drivers/phy/phy-samsung-usb2.c
-> +++ b/drivers/phy/phy-samsung-usb2.c
-> @@ -231,7 +231,6 @@ static struct platform_driver samsung_usb2_phy_driver = {
->  	.driver = {
->  		.of_match_table	= samsung_usb2_phy_of_match,
->  		.name		= "samsung-usb2-phy",
-> -		.owner		= THIS_MODULE,
->  	}
->  };
->  
-> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> index 61ebea4..0baf5ef 100644
-> --- a/drivers/phy/phy-sun4i-usb.c
-> +++ b/drivers/phy/phy-sun4i-usb.c
-> @@ -325,7 +325,6 @@ static struct platform_driver sun4i_usb_phy_driver = {
->  	.driver = {
->  		.of_match_table	= sun4i_usb_phy_of_match,
->  		.name  = "sun4i-usb-phy",
-> -		.owner = THIS_MODULE,
->  	}
->  };
->  module_platform_driver(sun4i_usb_phy_driver);
-> diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-> index b964aa9..561dcd4 100644
-> --- a/drivers/phy/phy-ti-pipe3.c
-> +++ b/drivers/phy/phy-ti-pipe3.c
-> @@ -519,7 +519,6 @@ static struct platform_driver ti_pipe3_driver = {
->  	.remove		= ti_pipe3_remove,
->  	.driver		= {
->  		.name	= "ti-pipe3",
-> -		.owner	= THIS_MODULE,
->  		.pm	= DEV_PM_OPS,
->  		.of_match_table = of_match_ptr(ti_pipe3_id_table),
->  	},
-> diff --git a/drivers/phy/phy-xgene.c b/drivers/phy/phy-xgene.c
-> index db809b9..f8a51b1 100644
-> --- a/drivers/phy/phy-xgene.c
-> +++ b/drivers/phy/phy-xgene.c
-> @@ -1738,7 +1738,6 @@ static struct platform_driver xgene_phy_driver = {
->  	.probe = xgene_phy_probe,
->  	.driver = {
->  		   .name = "xgene-phy",
-> -		   .owner = THIS_MODULE,
->  		   .of_match_table = xgene_phy_of_match,
->  	},
->  };
-> 
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+ drivers/char/hw_random/atmel-rng.c      |    1 -
+ drivers/char/hw_random/bcm2835-rng.c    |    1 -
+ drivers/char/hw_random/bcm63xx-rng.c    |    1 -
+ drivers/char/hw_random/exynos-rng.c     |    1 -
+ drivers/char/hw_random/msm-rng.c        |    1 -
+ drivers/char/hw_random/n2-drv.c         |    1 -
+ drivers/char/hw_random/octeon-rng.c     |    1 -
+ drivers/char/hw_random/omap3-rom-rng.c  |    1 -
+ drivers/char/hw_random/pasemi-rng.c     |    1 -
+ drivers/char/hw_random/ppc4xx-rng.c     |    1 -
+ drivers/char/hw_random/timeriomem-rng.c |    1 -
+ 11 files changed, 11 deletions(-)
+
+diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+index 851bc7e..25a4de2 100644
+--- a/drivers/char/hw_random/atmel-rng.c
++++ b/drivers/char/hw_random/atmel-rng.c
+@@ -128,7 +128,6 @@ static struct platform_driver atmel_trng_driver = {
+ 	.remove		= atmel_trng_remove,
+ 	.driver		= {
+ 		.name	= "atmel-trng",
+-		.owner	= THIS_MODULE,
+ #ifdef CONFIG_PM
+ 		.pm	= &atmel_trng_pm_ops,
+ #endif /* CONFIG_PM */
+diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
+index e900961..7192ec2 100644
+--- a/drivers/char/hw_random/bcm2835-rng.c
++++ b/drivers/char/hw_random/bcm2835-rng.c
+@@ -99,7 +99,6 @@ MODULE_DEVICE_TABLE(of, bcm2835_rng_of_match);
+ static struct platform_driver bcm2835_rng_driver = {
+ 	.driver = {
+ 		.name = "bcm2835-rng",
+-		.owner = THIS_MODULE,
+ 		.of_match_table = bcm2835_rng_of_match,
+ 	},
+ 	.probe		= bcm2835_rng_probe,
+diff --git a/drivers/char/hw_random/bcm63xx-rng.c b/drivers/char/hw_random/bcm63xx-rng.c
+index 36581ea..ba6a65a 100644
+--- a/drivers/char/hw_random/bcm63xx-rng.c
++++ b/drivers/char/hw_random/bcm63xx-rng.c
+@@ -162,7 +162,6 @@ static struct platform_driver bcm63xx_rng_driver = {
+ 	.remove		= bcm63xx_rng_remove,
+ 	.driver		= {
+ 		.name	= "bcm63xx-rng",
+-		.owner	= THIS_MODULE,
+ 	},
+ };
+ 
+diff --git a/drivers/char/hw_random/exynos-rng.c b/drivers/char/hw_random/exynos-rng.c
+index 9f8277c..beaa157 100644
+--- a/drivers/char/hw_random/exynos-rng.c
++++ b/drivers/char/hw_random/exynos-rng.c
+@@ -169,7 +169,6 @@ static UNIVERSAL_DEV_PM_OPS(exynos_rng_pm_ops, exynos_rng_runtime_suspend,
+ static struct platform_driver exynos_rng_driver = {
+ 	.driver		= {
+ 		.name	= "exynos-rng",
+-		.owner	= THIS_MODULE,
+ 		.pm	= &exynos_rng_pm_ops,
+ 	},
+ 	.probe		= exynos_rng_probe,
+diff --git a/drivers/char/hw_random/msm-rng.c b/drivers/char/hw_random/msm-rng.c
+index 148521e..cea1c70 100644
+--- a/drivers/char/hw_random/msm-rng.c
++++ b/drivers/char/hw_random/msm-rng.c
+@@ -185,7 +185,6 @@ static struct platform_driver msm_rng_driver = {
+ 	.remove = msm_rng_remove,
+ 	.driver = {
+ 		.name = KBUILD_MODNAME,
+-		.owner = THIS_MODULE,
+ 		.of_match_table = of_match_ptr(msm_rng_of_match),
+ 	}
+ };
+diff --git a/drivers/char/hw_random/n2-drv.c b/drivers/char/hw_random/n2-drv.c
+index 292a588..843d6f6 100644
+--- a/drivers/char/hw_random/n2-drv.c
++++ b/drivers/char/hw_random/n2-drv.c
+@@ -750,7 +750,6 @@ MODULE_DEVICE_TABLE(of, n2rng_match);
+ static struct platform_driver n2rng_driver = {
+ 	.driver = {
+ 		.name = "n2rng",
+-		.owner = THIS_MODULE,
+ 		.of_match_table = n2rng_match,
+ 	},
+ 	.probe		= n2rng_probe,
+diff --git a/drivers/char/hw_random/octeon-rng.c b/drivers/char/hw_random/octeon-rng.c
+index b5cc342..be1c3f6 100644
+--- a/drivers/char/hw_random/octeon-rng.c
++++ b/drivers/char/hw_random/octeon-rng.c
+@@ -117,7 +117,6 @@ static int __exit octeon_rng_remove(struct platform_device *pdev)
+ static struct platform_driver octeon_rng_driver = {
+ 	.driver = {
+ 		.name		= "octeon_rng",
+-		.owner		= THIS_MODULE,
+ 	},
+ 	.probe		= octeon_rng_probe,
+ 	.remove		= __exit_p(octeon_rng_remove),
+diff --git a/drivers/char/hw_random/omap3-rom-rng.c b/drivers/char/hw_random/omap3-rom-rng.c
+index 6f2eaff..a405cdc 100644
+--- a/drivers/char/hw_random/omap3-rom-rng.c
++++ b/drivers/char/hw_random/omap3-rom-rng.c
+@@ -126,7 +126,6 @@ static int omap3_rom_rng_remove(struct platform_device *pdev)
+ static struct platform_driver omap3_rom_rng_driver = {
+ 	.driver = {
+ 		.name		= "omap3-rom-rng",
+-		.owner		= THIS_MODULE,
+ 	},
+ 	.probe		= omap3_rom_rng_probe,
+ 	.remove		= omap3_rom_rng_remove,
+diff --git a/drivers/char/hw_random/pasemi-rng.c b/drivers/char/hw_random/pasemi-rng.c
+index c66279b..ebd6f65 100644
+--- a/drivers/char/hw_random/pasemi-rng.c
++++ b/drivers/char/hw_random/pasemi-rng.c
+@@ -142,7 +142,6 @@ static struct of_device_id rng_match[] = {
+ static struct platform_driver rng_driver = {
+ 	.driver = {
+ 		.name = "pasemi-rng",
+-		.owner = THIS_MODULE,
+ 		.of_match_table = rng_match,
+ 	},
+ 	.probe		= rng_probe,
+diff --git a/drivers/char/hw_random/ppc4xx-rng.c b/drivers/char/hw_random/ppc4xx-rng.c
+index 521f76b..c85d31a 100644
+--- a/drivers/char/hw_random/ppc4xx-rng.c
++++ b/drivers/char/hw_random/ppc4xx-rng.c
+@@ -133,7 +133,6 @@ static struct of_device_id ppc4xx_rng_match[] = {
+ static struct platform_driver ppc4xx_rng_driver = {
+ 	.driver = {
+ 		.name = MODULE_NAME,
+-		.owner = THIS_MODULE,
+ 		.of_match_table = ppc4xx_rng_match,
+ 	},
+ 	.probe = ppc4xx_rng_probe,
+diff --git a/drivers/char/hw_random/timeriomem-rng.c b/drivers/char/hw_random/timeriomem-rng.c
+index b6ab9ac..cf37db2 100644
+--- a/drivers/char/hw_random/timeriomem-rng.c
++++ b/drivers/char/hw_random/timeriomem-rng.c
+@@ -200,7 +200,6 @@ MODULE_DEVICE_TABLE(of, timeriomem_rng_match);
+ static struct platform_driver timeriomem_rng_driver = {
+ 	.driver = {
+ 		.name		= "timeriomem_rng",
+-		.owner		= THIS_MODULE,
+ 		.of_match_table	= timeriomem_rng_match,
+ 	},
+ 	.probe		= timeriomem_rng_probe,
+-- 
+1.7.9.5
+
