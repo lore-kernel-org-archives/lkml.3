@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237AbaIXFEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 01:04:54 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:37894 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIXFEx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 01:04:53 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
-Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
-        serge.hallyn@ubuntu.com
-References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com>
-Date: Tue, 23 Sep 2014 22:04:30 -0700
-In-Reply-To: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com>
-	(riya khanna's message of "Tue, 23 Sep 2014 23:34:46 -0500")
-Message-ID: <87bnq5vcbl.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751514AbaIXFGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 01:06:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24383 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaIXFGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 01:06:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,586,1406617200"; 
+   d="scan'208";a="604445439"
+Date: Wed, 24 Sep 2014 10:07:55 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH 1/2] dmaengine: Add QCOM ADM DMA driver
+Message-ID: <20140924043755.GQ24663@intel.com>
+References: <1410401933-20621-1-git-send-email-agross@codeaurora.org>
+ <1410401933-20621-2-git-send-email-agross@codeaurora.org>
+ <20140923102850.GI24663@intel.com>
+ <20140923221002.GC5975@qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+HMu/PIGhWGOfyoE7LLShKKSVdjItFT8o=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.4 XM_Superlative01 Best-rated language
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4999]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;LXC development mailing-list
-	<lxc-devel@lists.linuxcontainers.org>
-X-Spam-Relay-Country: 
-Subject: Re: [lxc-devel] device namespaces
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923221002.GC5975@qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-riya khanna <riyakhanna1983@gmail.com> writes:
+On Tue, Sep 23, 2014 at 05:10:02PM -0500, Andy Gross wrote:
+> <snip>
+> 
+> > > +			break;
+> > > +		default:
+> > > +			achan->slave.src_maxburst = 0;
+> > > +			achan->slave.dst_maxburst = 0;
+> > Why clear these for error cases
+> 
+> With the return I shouldn't need to.  I'll fix this.
+> 
+> > > +			ret = -EINVAL;
+> > > +			break;
+> > > +		}
+> > > +
+> > > +		if (!ret)
+> > > +			writel(achan->blk_size,
+> > > +				adev->regs + HI_CRCI_CTL(achan->id, adev->ee));
+> > and why do we write to HW on this. Shouldn't this be done when you program
+> > the descriptor?
+> 
+> It could be deferred to later.  The main point is that I don't see the
+> slave_config happening every transaction.  I was only modifying it now instead
+> of making a register write for every transaction.
+Well wouldn't it cause a problem if you write to hardware and a transaction
+is already in progress.
+So it makese sense to write every time at transaction start with latest
+value programmed.
 
-> (Please pardon multiple emails, artifact of merging all separate conversations)
->
-> Thanks for your feedback! 
->
-> Letting the kernel know about what devices a container could access (based on
-> device cgroups) and having devtmpfs in the kernel create device nodes for a
-> container that map to corresponding CUSE nodes is what I thought of. For
-> example, "echo 29:0 > /proc/<pid>/devices" would prepare a virtual framebuffer
-> (based on real fb0 SCREENINFO properties) for this process provided permissions
-> allow this operation. To view the framebuffer, the CUSE based virtual device
-> would talk to the actual hardware. Since namespaces would have different view of
-> the underlying devices, "sysfs" has to made aware of this as well. 
->
-> Please let me know your inputs. Thanks again!
+> > 
+> > > +static enum dma_status adm_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+> > > +	struct dma_tx_state *txstate)
+> > > +{
+> > > +	struct adm_chan *achan = to_adm_chan(chan);
+> > > +	struct virt_dma_desc *vd;
+> > > +	enum dma_status ret;
+> > > +	unsigned long flags;
+> > > +	size_t residue = 0;
+> > > +
+> > > +	ret = dma_cookie_status(chan, cookie, txstate);
+> > > +
+> > Last arg can be null to this, so before you do residue calcluation and block
+> > interrupts would make sense to return from here if arg is NULL
+> 
+> Good catch.  Will fix.
+> 
+> > 
+> > > +	spin_lock_irqsave(&achan->vc.lock, flags);
+> > > +
+> > > +	vd = vchan_find_desc(&achan->vc, cookie);
+> > > +	if (vd)
+> > > +		residue = container_of(vd, struct adm_async_desc, vd)->length;
+> > > +	else if (achan->curr_txd && achan->curr_txd->vd.tx.cookie == cookie)
+> > > +		residue = achan->curr_txd->length;
+> > so this is current cookie, so you need to read from HW on current position
+> 
+> There is no way to get current position unfortunately without relying on
+> unreliable debug registers.
+In that case would it make sense to return complete txn length?
 
-The solution hugely depends on what you are trying to do with it.
-
-The situation today is that device nodes are slowly fading out.  In
-another 20 years linux may not have any device nodes at all.
-
-Therefore the question becomes what are you trying to support.
-
-If it is just filtering of existing device nodes.  We can do a pretty
-good approximation with bind mounts.
-
-If you want to emulate a device you can use normal fuse (not cuse).
-As normal fuse file will support arbitrary ioctls.
-
-There are a few cases where it is desirable to emulate what devpts
-does for allowing arbitrary users to creating virtual devices in the
-kernel.  Loop devices in particular.
-
-Ultimately given the existence of device hotplug I don't see any call
-for being able to create device nodes with well known device numbers
-(fundamentally what a device namespace would be about).
-
-The conversation last year was about people wanting to multiplex devices
-that don't have multiplexer support in the kernel.  If that is your
-desire I think it is entirely reasonable to device type by device type
-add support for multiplexing that device type to the kernel, or
-potentially just use fuse or cuse to implement your multiplexer in
-userspace but that has the potential to be unusably slow.
-
-Eric
+-- 
+~Vinod
