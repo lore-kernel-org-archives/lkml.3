@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaIXOEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:04:20 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:60685 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096AbaIXOET (ORCPT
+	id S1753357AbaIXOEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:04:23 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:63381 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814AbaIXOEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:04:19 -0400
+	Wed, 24 Sep 2014 10:04:21 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 00/11] perf: Intel Cache QoS Monitoring support
-Date: Wed, 24 Sep 2014 15:04:04 +0100
-Message-Id: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/11] perf stat: Fix AGGR_CORE segfault on multi-socket system
+Date: Wed, 24 Sep 2014 15:04:05 +0100
+Message-Id: <1411567455-31264-2-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-This patch series adds a new PMU driver for the Intel Cache Monitoring
-hardware feature available in Intel Xeon processors, which allows
-monitoring of LLC occupancy on a task, group or system-wide basis.
+When printing the stats associated with a counter in AGGR_MODE mode, the
+'cpu' argument represents an encoded socket and core_id, not a 'cpu'.
+Using it as an index into the any of the *_stats[MAX_NR_CPUS] arrays
+generates a SIGSEGV if the encoded socket id is non-zero.
 
-The first few patches modify tools/perf to handle per-package counters,
-which necessitates discarding some values when doing per-cpu reads to
-avoid getting duplicate data. The rest add support for the new PMU code.
+Follow the AGGR_GLOBAL case and reset the cpu index to 0.
 
-I've left a notoriously funky bit of code as the last patch, the RMID
-rotation code, in an attempt to simplify things. Doing the rotation
-provides the ability to multiplex the RMIDs and basically overcome the
-hardware limitation, but the rest of the patches work fine without it.
-But there are a number of scenarios where being able to monitor more
-tasks than RMIDs is extremely useful.
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ tools/perf/builtin-stat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The series is based on tip/perf/core.
-
-Matt Fleming (10):
-  perf stat: Fix AGGR_CORE segfault on multi-socket system
-  perf tools: Refactor unit and scale function parameters
-  perf tools: Parse event per-package info files
-  perf: Make perf_cgroup_from_task() global
-  perf: Add ->count() function to read per-package counters
-  perf: Move cgroup init before PMU ->event_init()
-  perf/x86/intel: Add Intel Cache QoS Monitoring support
-  perf/x86/intel: Implement LRU monitoring ID allocation for CQM
-  perf/x86/intel: Support task events with Intel CQM
-  perf/x86/intel: Perform rotation on Intel CQM RMIDs
-
-Peter P Waskiewicz Jr (1):
-  x86: Add support for Intel Cache QoS Monitoring (CQM) detection
-
- arch/x86/include/asm/cpufeature.h          |    9 +-
- arch/x86/include/asm/processor.h           |    3 +
- arch/x86/kernel/cpu/Makefile               |    2 +-
- arch/x86/kernel/cpu/common.c               |   39 +
- arch/x86/kernel/cpu/perf_event_intel_cqm.c | 1159 ++++++++++++++++++++++++++++
- include/linux/perf_event.h                 |   48 ++
- include/uapi/linux/perf_event.h            |    1 +
- kernel/events/core.c                       |   63 +-
- tools/perf/builtin-stat.c                  |   81 +-
- tools/perf/util/evsel.c                    |    6 +-
- tools/perf/util/evsel.h                    |    8 +-
- tools/perf/util/parse-events.c             |   10 +-
- tools/perf/util/pmu.c                      |   66 +-
- tools/perf/util/pmu.h                      |    8 +-
- 14 files changed, 1434 insertions(+), 69 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_cqm.c
-
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 5fe0edb1de5d..7c30fbd2d9b7 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -964,7 +964,7 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 
+ 	aggr_printout(evsel, cpu, nr);
+ 
+-	if (aggr_mode == AGGR_GLOBAL)
++	if (aggr_mode == AGGR_GLOBAL || aggr_mode == AGGR_CORE)
+ 		cpu = 0;
+ 
+ 	fprintf(output, fmt, avg, csv_sep);
 -- 
 1.9.3
 
