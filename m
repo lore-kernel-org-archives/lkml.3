@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaIXScI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:32:08 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:41006 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaIXScG (ORCPT
+	id S1753513AbaIXSc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:32:26 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60094 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751890AbaIXScY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:32:06 -0400
-Date: Wed, 24 Sep 2014 14:32:06 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: rui.zhang@intel.com, swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        juha-matti.tilli@iki.fi
-Subject: Re: [PATCH v5 3/4] ARM: tegra: Add thermal trip points for Jetson TK1
-Message-ID: <20140924183204.GE27076@developer>
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
- <1408616242-21009-4-git-send-email-mperttunen@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408616242-21009-4-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 24 Sep 2014 14:32:24 -0400
+Message-ID: <1411583542.19525.22.camel@x220>
+Subject: [PATCH] ARC: Remove unneeded Kconfig entry NO_DMA
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Vineet Gupta <vgupta@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 24 Sep 2014 20:32:22 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Sep 2014 18:32:23.0231 (UTC) FILETIME=[E1E514F0:01CFD825]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mikko,
+Architectures only need a Kconfig entry for NO_DMA if it is possible
+that its value will be 'y'. For arc its value will always be 'n', making
+it pointless. Remove it.
 
-On Thu, Aug 21, 2014 at 01:17:21PM +0300, Mikko Perttunen wrote:
-> This adds critical trip points to the Jetson TK1 device tree.
-> The device will do a controlled shutdown when either the CPU, GPU
-> or MEM thermal zone reaches 101 degrees Celsius.
-> 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> ---
-> v5: added cooling-maps nodes
-> 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested by playing with arch/arc/configs/tb10x_defconfig. The only
+difference this change should make, is that the line reading
+    # CONFIG_NO_DMA is not set
 
-OK. But no cooling map entry in it. What was the reason again you don't
-need/want to add the maps?
+is dropped from the .config file after "make oldconfig". That should
+have no impact whatsoever on the build.
 
->  arch/arm/boot/dts/tegra124-jetson-tk1.dts | 41 +++++++++++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-> index 0cdb5cf..bcdab7f 100644
-> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-> @@ -1876,4 +1876,45 @@
->  			 <&tegra_car TEGRA124_CLK_EXTERN1>;
->  		clock-names = "pll_a", "pll_a_out0", "mclk";
->  	};
-> +
-> +	thermal-zones {
-> +		cpu {
-> +			trips {
-> +				trip@0 {
-> +					temperature = <101000>;
-> +					hysteresis = <0>;
-> +					type = "critical";
-> +				};
-> +			};
-> +
-> +			cooling-maps {
-> +			};
-> +		};
-> +
-> +		mem {
-> +			trips {
-> +				trip@0 {
-> +					temperature = <101000>;
-> +					hysteresis = <0>;
-> +					type = "critical";
-> +				};
-> +			};
-> +
-> +			cooling-maps {
-> +			};
-> +		};
-> +
-> +		gpu {
-> +			trips {
-> +				trip@0 {
-> +					temperature = <101000>;
-> +					hysteresis = <0>;
-> +					type = "critical";
-> +				};
-> +			};
-> +
-> +			cooling-maps {
-> +			};
-> +		};
-> +	};
->  };
-> -- 
-> 1.8.1.5
-> 
+ arch/arc/Kconfig | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 32b4f8ecf3f0..2a08449ef1c7 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -73,9 +73,6 @@ config STACKTRACE_SUPPORT
+ config HAVE_LATENCYTOP_SUPPORT
+ 	def_bool y
+ 
+-config NO_DMA
+-	def_bool n
+-
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
+ 
+-- 
+1.9.3
+
