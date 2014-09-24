@@ -1,135 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaIXL0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:26:09 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:50484 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaIXL0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:26:07 -0400
-Date: Wed, 24 Sep 2014 12:26:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Jeff Lance <j-lance1@ti.com>
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: Update logic in CTRL register for
- 5-wire TS
-Message-ID: <20140924112600.GJ19999@lee--X1>
-References: <1409850117-5156-1-git-send-email-bigeasy@linutronix.de>
+	id S1752425AbaIXL0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:26:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34034 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751875AbaIXL0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 07:26:41 -0400
+Date: Wed, 24 Sep 2014 13:26:37 +0200
+From: Jan Kara <jack@suse.cz>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140924112637.GE24411@quack.suse.cz>
+References: <20140916173328.6306a5c2@gandalf.local.home>
+ <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+ <20140920154733.GM2832@worktop.localdomain>
+ <20140924110101.GB24411@quack.suse.cz>
+ <20140924111144.GB29454@x4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409850117-5156-1-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <20140924111144.GB29454@x4>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep 2014, Sebastian Andrzej Siewior wrote:
-
-> From: Jeff Lance <j-lance1@ti.com>
+On Wed 24-09-14 13:11:44, Markus Trippelsdorf wrote:
+> commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
+> the string "[sched_delayed] " before the actual message.
+> However it doesn't take into account the KERN_* prefix of the message,
+> that now ends up in the middle of the output:
 > 
-> The logic in AFE_Pen_Ctrl bitmask in the CTRL register is different for five
-> wire versus four or eight wire touschscreens. This patch should fix this for
-> five-wire touch screens. There should be no change needed here for four and
-> eight wire tousch screens.
+>  [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
 > 
-> Signed-off-by: Jeff Lance <j-lance1@ti.com>
-> [bigeasy: keep the change mfd only]
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
-> I've been looking at moving this piece and the idle mode setting into the
-> TSC driver. Kinda odd that I have to patch within the MFD driver for this
-> TSC related change.
-> Anyone disagrees?
+> Fix this by just getting rid of the "[sched_delayed] " scnprintf().
+> This is a safe, because messages get inserted in the kernel ring buffer
+> immediately these days. So there is no big difference between printk()
+> and printk_deferred() anymore.
+  I'd prefer to be a bit more verbose in the last paragraph like:
+Fix this by just getting rid of the "[sched_delayed] " scnprintf(). The
+prefix is useless since commit 458df9fd4815 (printk: remove separate
+printk_sched buffers and use printk buf instead) anyway since from that
+moment printk_deferred() inserts the message into the kernel printk buffer
+immediately. So if the message eventually gets printed to console, it is
+printed in the correct order with other messages and there's no need for
+any special prefix. And if the kernel crashes before the message makes it
+to console, then prefix in the printk buffer doesn't make the situation any
+better.
+
+								Honza
+> Acked-by: Jan Kara <jack@suse.cz>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org> 
+> Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 > 
->  drivers/mfd/ti_am335x_tscadc.c       | 30 +++++++++++++++++-------------
->  include/linux/mfd/ti_am335x_tscadc.h |  1 +
->  2 files changed, 18 insertions(+), 13 deletions(-)
-
-I hope this has been fully tested.
-
-Looks like it could work though, so applied, thanks.
-
-> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> index dd4bf5816221..6c9cfb8c1d01 100644
-> --- a/drivers/mfd/ti_am335x_tscadc.c
-> +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -241,18 +241,20 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
->  	tscadc_writel(tscadc, REG_CLKDIV, tscadc->clk_div);
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index 1ce770687ea8..f85994b58934 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  	 * The printf needs to come first; we need the syslog
+>  	 * prefix which might be passed-in as a parameter.
+>  	 */
+> -	if (in_sched)
+> -		text_len = scnprintf(text, sizeof(textbuf),
+> -				     KERN_WARNING "[sched_delayed] ");
+> -
+> -	text_len += vscnprintf(text + text_len,
+> -			       sizeof(textbuf) - text_len, fmt, args);
+> +	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
 >  
->  	/* Set the control register bits */
-> -	ctrl = CNTRLREG_STEPCONFIGWRT |
-> -			CNTRLREG_STEPID;
-> -	if (tsc_wires > 0)
-> -		ctrl |= CNTRLREG_4WIRE | CNTRLREG_TSCENB;
-> +	ctrl = CNTRLREG_STEPCONFIGWRT |	CNTRLREG_STEPID;
->  	tscadc_writel(tscadc, REG_CTRL, ctrl);
->  
->  	/* Set register bits for Idle Config Mode */
-> -	if (tsc_wires > 0)
-> +	if (tsc_wires > 0) {
-> +		tscadc->tsc_wires = tsc_wires;
-> +		if (tsc_wires == 5)
-> +			ctrl |= CNTRLREG_5WIRE | CNTRLREG_TSCENB;
-> +		else
-> +			ctrl |= CNTRLREG_4WIRE | CNTRLREG_TSCENB;
->  		tscadc_idle_config(tscadc);
-> +	}
->  
->  	/* Enable the TSC module enable bit */
-> -	ctrl = tscadc_readl(tscadc, REG_CTRL);
->  	ctrl |= CNTRLREG_TSCSSENB;
->  	tscadc_writel(tscadc, REG_CTRL, ctrl);
->  
-> @@ -324,21 +326,23 @@ static int tscadc_suspend(struct device *dev)
->  static int tscadc_resume(struct device *dev)
->  {
->  	struct ti_tscadc_dev	*tscadc_dev = dev_get_drvdata(dev);
-> -	unsigned int restore, ctrl;
-> +	u32 ctrl;
->  
->  	pm_runtime_get_sync(dev);
->  
->  	/* context restore */
->  	ctrl = CNTRLREG_STEPCONFIGWRT |	CNTRLREG_STEPID;
-> -	if (tscadc_dev->tsc_cell != -1)
-> -		ctrl |= CNTRLREG_TSCENB | CNTRLREG_4WIRE;
->  	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
->  
-> -	if (tscadc_dev->tsc_cell != -1)
-> +	if (tscadc_dev->tsc_cell != -1) {
-> +		if (tscadc_dev->tsc_wires == 5)
-> +			ctrl |= CNTRLREG_5WIRE | CNTRLREG_TSCENB;
-> +		else
-> +			ctrl |= CNTRLREG_4WIRE | CNTRLREG_TSCENB;
->  		tscadc_idle_config(tscadc_dev);
-> -	restore = tscadc_readl(tscadc_dev, REG_CTRL);
-> -	tscadc_writel(tscadc_dev, REG_CTRL,
-> -			(restore | CNTRLREG_TSCSSENB));
-> +	}
-> +	ctrl |= CNTRLREG_TSCSSENB;
-> +	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
->  
->  	tscadc_writel(tscadc_dev, REG_CLKDIV, tscadc_dev->clk_div);
->  
-> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> index fb96c84dada5..e2e70053470e 100644
-> --- a/include/linux/mfd/ti_am335x_tscadc.h
-> +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -155,6 +155,7 @@ struct ti_tscadc_dev {
->  	void __iomem *tscadc_base;
->  	int irq;
->  	int used_cells;	/* 1-2 */
-> +	int tsc_wires;
->  	int tsc_cell;	/* -1 if not used */
->  	int adc_cell;	/* -1 if not used */
->  	struct mfd_cell cells[TSCADC_CELLS];
-
+>  	/* mark and strip a trailing newline */
+>  	if (text_len && text[text_len-1] == '\n') {
+> -- 
+> Markus
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
