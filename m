@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaIXJjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:39:43 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40608 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751716AbaIXJjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:39:40 -0400
-Date: Wed, 24 Sep 2014 10:39:27 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jingchang Lu <jingchang.lu@freescale.com>
-Cc: vinod.koul@intel.com, arnd@arndb.de, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2] dmaengine: fsl-edma: fixup reg offset and hw S/G
-	support in big-endian model
-Message-ID: <20140924093926.GT5182@n2100.arm.linux.org.uk>
-References: <1411542727-11026-1-git-send-email-jingchang.lu@freescale.com>
+	id S1753505AbaIXJkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:40:06 -0400
+Received: from mail-bn1on0066.outbound.protection.outlook.com ([157.56.110.66]:47481
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751601AbaIXJkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:40:02 -0400
+Date: Wed, 24 Sep 2014 11:39:46 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411542727-11026-1-git-send-email-jingchang.lu@freescale.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] ARM: zynq: DT: Remove 222 MHz OPP
+References: <1411498520-8117-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1411498520-8117-1-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20950.003
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <b5cd2f8d-f37d-4e19-a891-bd234849096d@BL2FFO11FD054.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51704005)(24454002)(377454003)(199003)(479174003)(164054003)(23746002)(65806001)(83506001)(4396001)(19580405001)(65956001)(64706001)(20776003)(90102001)(21056001)(99396003)(19580395003)(95666004)(104016003)(31966008)(6806004)(44976005)(74316001)(83322001)(106466001)(47776003)(1496007)(10300001)(50466002)(120916001)(107046002)(102836001)(80022003)(85306004)(50986999)(54356999)(76176999)(76482002)(64126003)(31696002)(92726001)(86362001)(92566001)(79102003)(81542003)(70736001)(83072002)(575784001)(74662003)(77982003)(74502003)(81342003)(85852003)(46102003)(87936001)(65826006)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB031;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03449D5DD1
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:12:07PM +0800, Jingchang Lu wrote:
->  static void edma_writeb(struct fsl_edma_engine *edma, u8 val, void __iomem *addr)
->  {
-> -	iowrite8(val, addr);
-> +	/* swap the reg offset for these in big-endian mode */
-> +	if (edma->big_endian)
-> +		iowrite8(val, (void __iomem *)((u32)addr ^ 0x3));
+On 09/23/2014 08:55 PM, Soren Brinkmann wrote:
+> Due to dependencies between timer and CPU frequency, only changes by
+> powers of two are allowed. The clocksource driver prevents other
+> changes, but with cpufreq and its governors it can result in being
+> spammed with error messages constantly. Hence, remove the 222 MHz OPP.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> index 6cc83d4c6c76..a0ed01d68328 100644
+> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> @@ -30,7 +30,6 @@
+>  				/* kHz    uV */
+>  				666667  1000000
+>  				333334  1000000
+> -				222223  1000000
+>  			>;
+>  		};
+>  
+> 
 
-NAK.  /Not/ u32.  unsigned long.  Run this through sparse, and sparse
-will complain with u32 here.  Just because the driver is currently used
-on a 32-bit arch is no reason to be sloppy about this.
+Applied.
 
-In fact, running this through sparse (make ... C=1) or even C=2 might
-well be a good idea to check whether there's any other silly mistakes.
-
-Note that Documentation/SubmitChecklist calls for checks with sparse.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+Michal
