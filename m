@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaIXT16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:27:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:37144 "EHLO e8.ny.us.ibm.com"
+	id S1754610AbaIXTcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:32:20 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:36484 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaIXT1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:27:55 -0400
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
-        Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
-        Paul Mackerras <paulus@samba.org>
-Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
-        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v4 03/10] perf: provide sysfs_show for struct perf_pmu_events_attr
-Date: Wed, 24 Sep 2014 12:27:17 -0700
-Message-Id: <1411586844-21381-4-git-send-email-sukadev@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411586844-21381-1-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1411586844-21381-1-git-send-email-sukadev@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092419-0320-0000-0000-000000946337
+	id S1752464AbaIXTcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:32:18 -0400
+Message-ID: <54231C3D.6040900@kapsi.fi>
+Date: Wed, 24 Sep 2014 22:32:13 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Eduardo Valentin <edubezval@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+CC: rui.zhang@intel.com, swarren@wwwdotorg.org, thierry.reding@gmail.com,
+        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        juha-matti.tilli@iki.fi
+Subject: Re: [PATCH v5 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com> <1408616242-21009-5-git-send-email-mperttunen@nvidia.com> <20140924191829.GA16529@developer>
+In-Reply-To: <20140924191829.GA16529@developer>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
+On 09/24/2014 10:18 PM, Eduardo Valentin wrote:
+>
+> Mikko,
+>
+> On Thu, Aug 21, 2014 at 01:17:22PM +0300, Mikko Perttunen wrote:
+>> ...
+>> +
+>> +static int enable_tsensor(struct tegra_soctherm *tegra,
+>> +			  const struct tegra_tsensor *sensor,
+>> +			  struct tsensor_shared_calibration shared)
+>> +{
+>> +	void * __iomem base = tegra->regs + sensor->base;
+>
+> I get sparse complaining about this declaration. For the sake of keeping
+> a clean static checks, can you please:
+> -       void * __iomem base = tegra->regs + sensor->base;
+> +       void __iomem * base = tegra->regs + sensor->base;
+>
 
-(struct perf_pmu_events_attr) is defined in include/linux/perf_event.h,
-but the only "show" for it is in x86 and contains x86 specific stuff.
+Sure.
 
-Make a generic one for those of us who are just using the event_str.
+>
+> Can you also please check the remaining sparse errors?
+>    CHECK   drivers/thermal/tegra_soctherm.c
+>    drivers/thermal/tegra_soctherm.c:260:43: warning: incorrect type in
+>    initializer (different address spaces)
+>    drivers/thermal/tegra_soctherm.c:260:43:    expected void *[noderef]
+>    <asn:2>base
+>    drivers/thermal/tegra_soctherm.c:260:43:    got void [noderef]
+>    <asn:2>*
+>    drivers/thermal/tegra_soctherm.c:271:9: warning: incorrect type in
+>    argument 2 (different address spaces)
+>    drivers/thermal/tegra_soctherm.c:271:9:    expected void volatile
+>    [noderef] <asn:2>*addr
+>    drivers/thermal/tegra_soctherm.c:271:9:    got void *
+>    drivers/thermal/tegra_soctherm.c:279:9: warning: incorrect type in
+>    argument 2 (different address spaces)
+>    drivers/thermal/tegra_soctherm.c:279:9:    expected void volatile
+>    [noderef] <asn:2>*addr
+>    drivers/thermal/tegra_soctherm.c:279:9:    got void *
+>    drivers/thermal/tegra_soctherm.c:281:9: warning: incorrect type in
+>    argument 2 (different address spaces)
+>    drivers/thermal/tegra_soctherm.c:281:9:    expected void volatile
+>    [noderef] <asn:2>*addr
+>    drivers/thermal/tegra_soctherm.c:281:9:    got void *
+>    drivers/thermal/tegra_soctherm.c:347:25: warning: incorrect type in
+>    argument 1 (different address spaces)
+>    drivers/thermal/tegra_soctherm.c:347:25:    expected void const *ptr
+>    drivers/thermal/tegra_soctherm.c:347:25:    got void [noderef]
+>    <asn:2>*regs
+>    drivers/thermal/tegra_soctherm.c:349:37: warning: incorrect type in
+>    argument 1 (different address spaces)
+>    drivers/thermal/tegra_soctherm.c:349:37:    expected void const *ptr
+>    drivers/thermal/tegra_soctherm.c:349:37:    got void [noderef]
+>    <asn:2>*regs
+>    drivers/thermal/tegra_soctherm.c:271:9: warning: dereference of
+>    noderef expression
+>    drivers/thermal/tegra_soctherm.c:279:9: warning: dereference of
+>    noderef expression
+>    drivers/thermal/tegra_soctherm.c:281:9: warning: dereference of
+>    noderef expression
+>
 
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-CC: Haren Myneni <hbabu@us.ibm.com>
-CC: Cody P Schafer <dev@codyps.com>
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- include/linux/perf_event.h | 3 +++
- kernel/events/core.c       | 8 ++++++++
- 2 files changed, 11 insertions(+)
+Most of these seem to be caused by the above-mentioned swapping of 
+__iomem and *. The ones on lines 347 and 349 are more peculiar, though. 
+Apparently sparse doesn't like using IS_ERR and PTR_ERR on the void 
+__iomem * pointer returned by devm_ioremap_resource. Looks like this has 
+been discussed before (https://lkml.org/lkml/2013/6/17/216) and sparse 
+should have been patched to ignore this situation, so I'm not sure why 
+it's complaining about it. Anyway, there shouldn't be any issue here.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 893a0d0..da442a0 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -894,6 +894,9 @@ struct perf_pmu_events_attr {
- 	const char *event_str;
- };
- 
-+ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
-+			      char *page);
-+
- #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
- static struct perf_pmu_events_attr _var = {				\
- 	.attr = __ATTR(_name, 0444, _show, NULL),			\
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 733c616..9ef60e5 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -8210,6 +8210,14 @@ void __init perf_event_init(void)
- 		     != 1024);
- }
- 
-+ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
-+			      char *page)
-+{
-+	struct perf_pmu_events_attr *pmu_attr =
-+		container_of(attr, struct perf_pmu_events_attr, attr);
-+	return sprintf(page, "%s\n", pmu_attr->event_str);
-+}
-+
- static int __init perf_event_sysfs_init(void)
- {
- 	struct pmu *pmu;
--- 
-1.8.3.1
+Mikko
 
