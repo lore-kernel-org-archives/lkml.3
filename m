@@ -1,114 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaIXTHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:07:05 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58925 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaIXTHC (ORCPT
+	id S1753330AbaIXTHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:07:35 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35817 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659AbaIXTHd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:07:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <3414852.SWQ9rRcUDx@wuerfel>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org>
-	<3082935.e3X4GsVUDn@wuerfel>
-	<CA+sq2Ce8sb=YGma05qEk_992Mc9M92TxCk+RWsyi6tY-FVOCXw@mail.gmail.com>
-	<3414852.SWQ9rRcUDx@wuerfel>
-Date: Thu, 25 Sep 2014 00:37:00 +0530
-Message-ID: <CA+sq2CcXCVrk=fxH79n88ZJj5fBQmbyhnzj08qHNO8EmpZT1Yg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree bindings
-From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: LAKML <linux-arm-kernel@lists.infradead.org>,
-        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Liviu Dudau <liviu.dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>,
-        Sunil Goutham <sgoutham@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Sep 2014 15:07:33 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [lxc-devel] device namespaces
+From: Riya Khanna <riyakhanna1983@gmail.com>
+In-Reply-To: <20140924163740.GD3865@ubuntumail>
+Date: Wed, 24 Sep 2014 14:07:31 -0500
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F55D2D4C-7421-4907-8035-5E6A48224A98@gmail.com>
+References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com> <87bnq5vcbl.fsf@x220.int.ebiederm.org> <CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com> <20140924163740.GD3865@ubuntumail>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:04 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 24 September 2014 23:34:04 Sunil Kovvuri wrote:
->> On Wed, Sep 24, 2014 at 9:36 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Wednesday 24 September 2014 17:37:45 Robert Richter wrote:
->> >> +               compatible = "cavium,thunder-pcie";
->> >> +               device_type = "pci";
->> >> +               msi-parent = <&its>;
->> >> +               bus-range = <0 255>;
->> >> +               #size-cells = <2>;
->> >> +               #address-cells = <3>;
->> >> +               reg = <0x8480 0x00000000 0 0x10000000>;  /* Configuration space */
->> >> +               ranges = <0x03000000 0x8010 0x00000000 0x8010 0x00000000 0x70 0x00000000>, /* mem ranges */
->> >> +                       <0x03000000 0x8300 0x00000000 0x8300 0x00000000 0x80 0x00000000>,
->> >> +                       <0x03000000 0x87e0 0x00000000 0x87e0 0x00000000 0x01 0x00000000>;
->> >> +        };
->> >
->> > If you claim the entire 0-255 bus range, I think you should also
->> > specify a domain, otherwise it's not predictable which domain you
->> > get.
->> >
->> > The interrupt-map and interrupt-map-mask properties are required for PCI,
->> > otherwise you can't do LSI interrupts.
->>
->> This PCI controller supports only MSIx interrupts which are edge triggered.
->
-> Interesting, so it's not PCI compliant then? I assume this will be fixed
-> in the production version of the silicon, right?
->
-> Having no support for interrupts mean that the majority of PCI device drivers
-> will fail.
+I guess policy-based multiplexing (or exclusive ownership) is the usage. What kind of devices (loop, fb, etc.) this is needed for depends on the usage. If there are multiple FBs, then each container could potentially own one. One may want to provide exclusive ownership of input devices to one container at a time to avoid information leakage. Like we saw at LPC last year, this applies to sensors (gps, accelerometer, etc.) on mobile devices as well.
+ 
+On Sep 24, 2014, at 11:37 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
 
-This controller is for on-board PCI devices and all of them do support
-MSIx interrupts.
+> Isolation is provided by the devices cgroup.  You want something more
+> than isolation.
+> 
+> Quoting riya khanna (riyakhanna1983@gmail.com):
+>> My use case for having device namespaces is device isolation. Isn't what
+>> namespaces are there for (as I understand)? Not everything should be
+>> accessible (or even visible) from a container all the time (we have seen
+>> people come up with different use cases for this). However, bind-mounting
+>> takes away this flexibility. I agree that assigning fixed device numbers is
+>> clearly not a long-term solution. Emulation for safe and flexible
+>> multiplexing, like you suggested either using CUSE/FUSE or something like
+>> devpts, is what I'm exploring.
+>> 
+>> On Wed, Sep 24, 2014 at 12:04 AM, Eric W. Biederman <ebiederm@xmission.com>
+>> wrote:
+>> 
+>>> riya khanna <riyakhanna1983@gmail.com> writes:
+>>> 
+>>>> (Please pardon multiple emails, artifact of merging all separate
+>>> conversations)
+>>>> 
+>>>> Thanks for your feedback!
+>>>> 
+>>>> Letting the kernel know about what devices a container could access
+>>> (based on
+>>>> device cgroups) and having devtmpfs in the kernel create device nodes
+>>> for a
+>>>> container that map to corresponding CUSE nodes is what I thought of. For
+>>>> example, "echo 29:0 > /proc/<pid>/devices" would prepare a virtual
+>>> framebuffer
+>>>> (based on real fb0 SCREENINFO properties) for this process provided
+>>> permissions
+>>>> allow this operation. To view the framebuffer, the CUSE based virtual
+>>> device
+>>>> would talk to the actual hardware. Since namespaces would have different
+>>> view of
+>>>> the underlying devices, "sysfs" has to made aware of this as well.
+>>>> 
+>>>> Please let me know your inputs. Thanks again!
+>>> 
+>>> The solution hugely depends on what you are trying to do with it.
+>>> 
+>>> The situation today is that device nodes are slowly fading out.  In
+>>> another 20 years linux may not have any device nodes at all.
+>>> 
+>>> Therefore the question becomes what are you trying to support.
+>>> 
+>>> If it is just filtering of existing device nodes.  We can do a pretty
+>>> good approximation with bind mounts.
+>>> 
+>>> If you want to emulate a device you can use normal fuse (not cuse).
+>>> As normal fuse file will support arbitrary ioctls.
+>>> 
+>>> There are a few cases where it is desirable to emulate what devpts
+>>> does for allowing arbitrary users to creating virtual devices in the
+>>> kernel.  Loop devices in particular.
+>>> 
+>>> Ultimately given the existence of device hotplug I don't see any call
+>>> for being able to create device nodes with well known device numbers
+>>> (fundamentally what a device namespace would be about).
+>>> 
+>>> The conversation last year was about people wanting to multiplex devices
+>>> that don't have multiplexer support in the kernel.  If that is your
+>>> desire I think it is entirely reasonable to device type by device type
+>>> add support for multiplexing that device type to the kernel, or
+>>> potentially just use fuse or cuse to implement your multiplexer in
+>>> userspace but that has the potential to be unusably slow.
+>>> 
+>>> Eric
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>> 
 
->
->> > If your hardware can support it, you should also list I/O space and prefetchable
->> > memory spaces. Can you explain why you have multiple non-prefetchable ranges?
->>
->> Our hardware is an ECAM based host controller and doesn't support I/O
->> and prefetchable memory spaces.
->> All on-board PCI devices connected to this PCI controller have fixed resources
->> and doesn't have to be allocated/reassigned. Some of these devices are
->> SRIOV based.
->
-> I think you need to mark the ones that are nonrelocatable with flag
-> 0x80000000, otherwise the PCI core might decide to reassign them.
-
-Is this flag part of DT pci node properties ?
-I am using IORESOURCE_PCI_FIXED flag. Its there in other patches of
-the same series.
-
->
->> Kernel's SRIOV (pci/iov.c) is expecting 'resource->parent' hierarchy
->> to be set, otherwise doesn't
->> enable SRIOV device. So, here multiple non-prefetchable ranges of root bus
->> aid in resource claiming and setting res->parent hierarchy.
->
-> I don't understand. Isn't that just a bug in the code that you are working
-> around with the DT. Have you tried fixing the code instead?
-
-I tried but wasn't sure if its going to impact existing SRIOV devices.
-Will have a deeper look again .
-
->
->> We do call "pci_claim_resource" in controller driver code.
->> "[PATCH 1/6] pci, thunder: Add support for Thunder PCIe host controller."
->
-> My guess is that you are using the wrong interface here. Isn't the normal
-> request_resource() in the host driver enough?
-
-Isn't that host driver calls "request_resource" only for resources of root port.
-i.e requesting from iomem_resource/ioport_resource. Here i am referring
-to SRIOV devices enumerated upon scan of root port.
-
->
->         Arnd
