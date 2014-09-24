@@ -1,101 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaIXOMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:12:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42890 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIXOMM (ORCPT
+	id S1752794AbaIXOMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:12:41 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:32908 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaIXOMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:12:12 -0400
-Message-ID: <5422D138.8000002@codeaurora.org>
-Date: Wed, 24 Sep 2014 10:12:08 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 24 Sep 2014 10:12:39 -0400
 MIME-Version: 1.0
-To: Nathan Lynch <Nathan_Lynch@mentor.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code consolidation
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <20140922223022.GO5182@n2100.arm.linux.org.uk> <5420BE92.7050504@mentor.com>
-In-Reply-To: <5420BE92.7050504@mentor.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411344191-2842-4-git-send-email-minchan@kernel.org>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org> <1411344191-2842-4-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 24 Sep 2014 10:12:18 -0400
+X-Google-Sender-Auth: _y56NjFE8oxiUFAgEVz-1paWpj4
+Message-ID: <CALZtOND9YOXPQ0vNKFVrs+yhnkbWkKg8FD78cHmqJWhLyo89Gw@mail.gmail.com>
+Subject: Re: [PATCH v1 3/5] mm: VM can be aware of zram fullness
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nathan,
+On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> VM uses nr_swap_pages to throttle amount of swap when it reclaims
+> anonymous pages because the nr_swap_pages means freeable space
+> of swap disk.
+>
+> However, it's a problem for zram because zram can limit memory
+> usage by knob(ie, mem_limit) so that swap out can fail although
+> VM can see lots of free space from zram disk but no more free
+> space in zram by the limit. If it happens, VM should notice it
+> and stop reclaimaing until zram can obtain more free space but
+> we don't have a way to communicate between VM and zram.
+>
+> This patch adds new hint SWAP_FULL so that zram can say to VM
+> "I'm full" from now on. Then VM cannot reclaim annoymous page
+> any more. If VM notice swap is full, it can remove swap_info_struct
+> from swap_avail_head and substract remained freeable space from
+> nr_swap_pages so that VM can think swap is full until VM frees a
+> swap and increase nr_swap_pages again.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  include/linux/blkdev.h |  1 +
+>  mm/swapfile.c          | 44 ++++++++++++++++++++++++++++++++++++++------
+>  2 files changed, 39 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index c7220409456c..39f074e0acd7 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -1611,6 +1611,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
+>
+>  enum swap_blk_hint {
+>         SWAP_FREE,
+> +       SWAP_FULL,
+>  };
+>
+>  struct block_device_operations {
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 209112cf8b83..71e3df0431b6 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -493,6 +493,29 @@ static unsigned long scan_swap_map(struct swap_info_struct *si,
+>         int latency_ration = LATENCY_LIMIT;
+>
+>         /*
+> +        * If zram is full, we don't need to scan and want to stop swap.
+> +        * For it, we removes si from swap_avail_head and decreases
+> +        * nr_swap_pages to prevent further anonymous reclaim so that
+> +        * VM can restart swap out if zram has a free space.
+> +        * Look at swap_entry_free.
+> +        */
+> +       if (si->flags & SWP_BLKDEV) {
+> +               struct gendisk *disk = si->bdev->bd_disk;
+> +
+> +               if (disk->fops->swap_hint && disk->fops->swap_hint(
+> +                               si->bdev, SWAP_FULL, NULL)) {
+> +                       spin_lock(&swap_avail_lock);
+> +                       WARN_ON(plist_node_empty(&si->avail_list));
+> +                       plist_del(&si->avail_list, &swap_avail_head);
+> +                       spin_unlock(&swap_avail_lock);
+> +                       atomic_long_sub(si->pages - si->inuse_pages,
+> +                                               &nr_swap_pages);
+> +                       si->full = true;
+> +                       return 0;
+> +               }
+> +       }
+> +
+> +       /*
+>          * We try to cluster swap pages by allocating them sequentially
+>          * in swap.  Once we've allocated SWAPFILE_CLUSTER pages this
+>          * way, however, we resort to first-free allocation, starting
+> @@ -798,6 +821,14 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+>         /* free if no reference */
+>         if (!usage) {
+>                 bool was_full;
+> +               struct gendisk *virt_swap = NULL;
+> +
+> +               /* Check virtual swap */
+> +               if (p->flags & SWP_BLKDEV) {
+> +                       virt_swap = p->bdev->bd_disk;
+> +                       if (!virt_swap->fops->swap_hint)
 
-On 09/22/2014 08:28 PM, Nathan Lynch wrote:
-> On 09/22/2014 05:30 PM, Russell King - ARM Linux wrote:
->> On Mon, Sep 22, 2014 at 04:39:19PM +0100, Will Deacon wrote:
->>> On Thu, Sep 18, 2014 at 03:59:32PM +0100, Nathan Lynch wrote:
->>>> This series contains the necessary changes to allow architected timer
->>>> access from user-space on 32-bit ARM.  This allows the VDSO to support
->>>> high resolution timestamps for clock_gettime and gettimeofday.  This
->>>> also merges substantially similar code from arm and arm64 into the
->>>> core arm_arch_timer driver.
->>>>
->>>> The functional changes are:
->>>> - When available, CNTVCT is made readable by user space on arm, as it
->>>>   is on arm64.
->>>> - The clocksource name becomes "arch_mem_counter" if CP15 access to
->>>>   the counter is not available.
->>>>
->>>> These changes have been carried as part of the ARM VDSO patch set over
->>>> the last several months, but I am splitting them out here as I assume
->>>> they should go through the clocksource maintainers.
->>>
->>> For the series:
->>>
->>>   Acked-by: Will Deacon <will.deacon@arm.com>
->>>
->>> I'm not sure which tree the arch-timer stuff usually goes through, but
->>> the arm/arm64 bits look fine so I'm happy for them to merged together.
->>
->> I raised a while back with Will whether there's much point to having
->> this on ARM.  While it's useful for virtualisation, the majority of
->> 32-bit ARM doesn't run virtualised.  So there's little point in having
->> the VDSO on the majority of platforms - it will just add additional
->> unnecessary cycles slowing down the system calls that the VDSO is
->> designed to try to speed up.
-> 
-> Hmm, this patch set is merely exposing the hardware counter when it is
-> present for the VDSO's use; I take it you have no objection to that?
-> 
-> While the 32-bit ARM VDSO I've posted (in a different thread) exploits a
-> facility that is required by the virtualization option in the
-> architecture, its utility is not limited to guest operating systems.
+not a big deal, but can't you just combine these two if's to simplify this?
 
-Just to clarify, were the performance improvements you measured from a
-virtualized guest or native?
+> +                               virt_swap = NULL;
+> +               }
+>
+>                 dec_cluster_info_page(p, p->cluster_info, offset);
+>                 if (offset < p->lowest_bit)
+> @@ -814,17 +845,18 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+>                                           &swap_avail_head);
+>                         spin_unlock(&swap_avail_lock);
+>                         p->full = false;
+> +                       if (virt_swap)
+> +                               atomic_long_add(p->pages -
+> +                                               p->inuse_pages,
+> +                                               &nr_swap_pages);
 
->> So, my view is that this VDSO will only be of very limited use for
->> 32-bit ARM, and should not be exposed to userspace unless there is
->> a reason for it to be exposed (iow, the hardware necessary to support
->> it is present.)
-> 
-> My thinking is that it should prove useful in a growing subset of v7
-> CPUs.  It is useful today on Cortex-A15 and -A7, and I believe -A12 and
-> -A17 implement the generic timer facility as well.
+a comment here might be good, to clarify it relies on the check at the
+top of scan_swap_map previously subtracting the same number of pages.
 
-I count 18 dts* files that have "arm,armv7-timer", including platforms with
-Krait, Exynos, and Tegra processors.
 
-Christopher
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+>                 }
+>
+>                 atomic_long_inc(&nr_swap_pages);
+>                 p->inuse_pages--;
+>                 frontswap_invalidate_page(p->type, offset);
+> -               if (p->flags & SWP_BLKDEV) {
+> -                       struct gendisk *disk = p->bdev->bd_disk;
+> -                       if (disk->fops->swap_hint)
+> -                               disk->fops->swap_hint(p->bdev,
+> -                                               SWAP_FREE, (void *)offset);
+> -               }
+> +               if (virt_swap)
+> +                       virt_swap->fops->swap_hint(p->bdev,
+> +                                       SWAP_FREE, (void *)offset);
+>         }
+>
+>         return usage;
+> --
+> 2.0.0
+>
