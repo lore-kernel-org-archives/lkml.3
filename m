@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaIXQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:28:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:39328 "EHLO
+	id S1754113AbaIXQ2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:28:04 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:25439 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753344AbaIXQ2A (ORCPT
+	by vger.kernel.org with ESMTP id S1752194AbaIXQ2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 12:28:00 -0400
-Message-Id: <20140924162759.829793859@goodmis.org>
+Message-Id: <20140924162719.481050866@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 24 Sep 2014 12:27:22 -0400
+Date: Wed, 24 Sep 2014 12:27:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [for-next][PATCH 3/3] ftracetest: Add kprobe basic testcases
-References: <20140924162719.481050866@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0003-ftracetest-Add-kprobe-basic-testcases.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 0/3] ftracetest: Added tests for ftrace in the selftests directory
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-Add basic testcases for kprobe dynamic events.
-This also shows that the ftracetest accepts sub-directory
-for new testcases.
-
-Link: http://lkml.kernel.org/p/20140922234254.23415.46964.stgit@kbuild-f20.novalocal
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- .../selftests/ftrace/test.d/kprobe/add_and_remove.tc       | 11 +++++++++++
- tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc | 14 ++++++++++++++
- 2 files changed, 25 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
- create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-new file mode 100644
-index 000000000000..5ddfb476eceb
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-@@ -0,0 +1,11 @@
-+#!/bin/sh
-+# description: Kprobe dynamic event - adding and removing
-+
-+[ -f kprobe_events ] || exit 1
-+
-+echo 0 > events/enable || exit 1
-+echo > kprobe_events || exit 1
-+echo p:myevent do_fork > kprobe_events || exit 1
-+grep myevent kprobe_events || exit 1
-+[ -d events/kprobes/myevent ] || exit 1
-+echo > kprobe_events
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-new file mode 100644
-index 000000000000..588fde97e93f
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-@@ -0,0 +1,14 @@
-+#!/bin/sh
-+# description: Kprobe dynamic event - busy event check
-+
-+[ -f kprobe_events ] || exit 1
-+
-+echo 0 > events/enable || exit 1
-+echo > kprobe_events || exit 1
-+echo p:myevent do_fork > kprobe_events || exit 1
-+[ -d events/kprobes/myevent ] || exit 1
-+echo 1 > events/kprobes/myevent/enable || exit 1
-+echo > kprobe_events && exit 1 # this must fail
-+echo 0 > events/kprobes/myevent/enable || exit 1
-+echo > kprobe_events # this must succeed
-+
--- 
-2.0.1
+Head SHA1: 7cbfb5eed9832e7c3ae58a17078f62396e7b55f8
 
 
+Masami Hiramatsu (3):
+      ftracetest: Initial commit for ftracetest
+      ftracetest: Add ftrace basic testcases
+      ftracetest: Add kprobe basic testcases
+
+----
+ MAINTAINERS                                        |   1 +
+ tools/testing/selftests/Makefile                   |   1 +
+ tools/testing/selftests/ftrace/Makefile            |   7 +
+ tools/testing/selftests/ftrace/README              |  45 ++++++
+ tools/testing/selftests/ftrace/ftracetest          | 159 +++++++++++++++++++++
+ .../selftests/ftrace/test.d/00basic/basic1.tc      |   3 +
+ .../selftests/ftrace/test.d/00basic/basic2.tc      |   6 +
+ .../selftests/ftrace/test.d/00basic/basic3.tc      |   8 ++
+ .../ftrace/test.d/kprobe/add_and_remove.tc         |  11 ++
+ .../selftests/ftrace/test.d/kprobe/busy_check.tc   |  14 ++
+ tools/testing/selftests/ftrace/test.d/template     |   4 +
+ 11 files changed, 259 insertions(+)
