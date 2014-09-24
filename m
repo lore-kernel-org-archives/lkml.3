@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaIXNxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:53:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38822 "EHLO
+	id S1753592AbaIXNrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:47:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38810 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaIXNrs (ORCPT
+	with ESMTP id S1753554AbaIXNrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:47:48 -0400
+	Wed, 24 Sep 2014 09:47:41 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 16/22] phy: phy-stih407-usb: Add dt documentation for USB picophy found on stih407 SoC family
-Date: Wed, 24 Sep 2014 19:17:14 +0530
-Message-ID: <1411566440-19169-17-git-send-email-kishon@ti.com>
+Subject: [PATCH 02/22] phy: phy-omap-control: Remove unncessary site specific OOM messages
+Date: Wed, 24 Sep 2014 19:17:00 +0530
+Message-ID: <1411566440-19169-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411566440-19169-1-git-send-email-kishon@ti.com>
 References: <1411566440-19169-1-git-send-email-kishon@ti.com>
@@ -24,53 +24,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Griffin <peter.griffin@linaro.org>
 
-This patch adds the dt documentation for the usb picophy found on stih407 SoC family
-available from STMicroelectronics.
+The site specific OOM messages are unncessary, because they duplicate
+messages from the memory subsystem which include dump_stack().
 
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Removing these superflous messages makes the kernel smaller. A discussion
+here http://patchwork.ozlabs.org/patch/324158/ found that all error paths
+from kzalloc will print a error message, and that any error path which maybe
+found which doesn't would be considered a bug in kzalloc.
+
 Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- .../devicetree/bindings/phy/phy-stih407-usb.txt    |   30 ++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
+ drivers/phy/phy-omap-control.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-new file mode 100644
-index 0000000..1ef8228
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-@@ -0,0 +1,30 @@
-+ST STiH407 USB PHY controller
-+
-+This file documents the dt bindings for the usb picoPHY driver which is the PHY for both USB2 and USB3
-+host controllers (when controlling usb2/1.1 devices) available on STiH407 SoC family from STMicroelectronics.
-+
-+Required properties:
-+- compatible		: should be "st,stih407-usb2-phy"
-+- reg			: contain the offset and length of the system configuration registers
-+			  used as glue logic to control & parameter phy
-+- reg-names		: the names of the system configuration registers in "reg", should be "param" and "reg"
-+- st,syscfg		: sysconfig register to manage phy parameter at driver level
-+- resets		: list of phandle and reset specifier pairs. There should be two entries, one
-+			  for the whole phy and one for the port
-+- reset-names		: list of reset signal names. Should be "global" and "port"
-+See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
-+See: Documentation/devicetree/bindings/reset/reset.txt
-+
-+Example:
-+
-+usb2_picophy0: usbpicophy@f8 {
-+	compatible	= "st,stih407-usb2-phy";
-+	reg		= <0xf8 0x04>,	/* syscfg 5062 */
-+			  <0xf4 0x04>;	/* syscfg 5061 */
-+	reg-names	= "param", "ctrl";
-+	#phy-cells	= <0>;
-+	st,syscfg	= <&syscfg_core>;
-+	resets		= <&softreset STIH407_PICOPHY_SOFTRESET>,
-+			  <&picophyreset STIH407_PICOPHY0_RESET>;
-+	reset-names	= "global", "port";
-+};
+diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
+index 9487bf1..cb2f4d1 100644
+--- a/drivers/phy/phy-omap-control.c
++++ b/drivers/phy/phy-omap-control.c
+@@ -295,10 +295,8 @@ static int omap_control_phy_probe(struct platform_device *pdev)
+ 
+ 	control_phy = devm_kzalloc(&pdev->dev, sizeof(*control_phy),
+ 		GFP_KERNEL);
+-	if (!control_phy) {
+-		dev_err(&pdev->dev, "unable to alloc memory for control phy\n");
++	if (!control_phy)
+ 		return -ENOMEM;
+-	}
+ 
+ 	control_phy->dev = &pdev->dev;
+ 	control_phy->type = *(enum omap_control_phy_type *)of_id->data;
 -- 
 1.7.9.5
 
