@@ -1,72 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352AbaIXIWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:22:12 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:53643 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753291AbaIXIWJ (ORCPT
+	id S1754528AbaIXIWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:22:38 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:34788 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154AbaIXIWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:22:09 -0400
-Message-ID: <1411546927.19525.12.camel@x220>
-Subject: [PATCH] [next-20140923] KVM: Remove KVM_VFIO
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Alex Williamson <Alex.Williamson@redhat.com>, kvm@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 24 Sep 2014 10:22:07 +0200
-In-Reply-To: <5421D82E.6090103@redhat.com>
-References: <1411499391.24045.13.camel@x220> <5421D82E.6090103@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2014 08:22:07.0248 (UTC) FILETIME=[A1117900:01CFD7D0]
-X-RcptDomain: vger.kernel.org
+	Wed, 24 Sep 2014 04:22:35 -0400
+Date: Wed, 24 Sep 2014 09:22:28 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v7 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
+ binding
+Message-ID: <20140924082228.GF17801@lee--X1>
+References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no checks for CONFIG_KVM_VFIO and nothing depends on KVM_VFIO.
-Setting KVM_VFIO has no effect. Remove that Kconfig symbol.
+On Mon, 22 Sep 2014, Bjorn Andersson wrote:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-I choose not to mention commit 80ce1639727e ("KVM: VFIO: register
-kvm_device_ops dynamically") as references to linux-next commits might
-go stale and only confuse future readers.
+> Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660,
+> 8960 and 8064 based devices. The binding currently describes the rpm
+> itself and the regulator subnodes.
+> 
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/qcom-rpm.txt |  246 ++++++++++++++++++++
 
-Done on top of next-21040923. Tested with "git grep" only.
+Please adhere to: Documentation/devicetree/bindings/submitting-patches.txt
 
- arch/x86/kvm/Kconfig | 1 -
- virt/kvm/Kconfig     | 3 ---
- 2 files changed, 4 deletions(-)
+>  include/dt-bindings/mfd/qcom-rpm.h                 |  154 ++++++++++++
+>  2 files changed, 400 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm.txt
+>  create mode 100644 include/dt-bindings/mfd/qcom-rpm.h
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
+> new file mode 100644
+> index 0000000..4264021
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
 
-diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-index f9d16ff56c6b..178d872734b1 100644
---- a/arch/x86/kvm/Kconfig
-+++ b/arch/x86/kvm/Kconfig
-@@ -39,7 +39,6 @@ config KVM
- 	select PERF_EVENTS
- 	select HAVE_KVM_MSI
- 	select HAVE_KVM_CPU_RELAX_INTERCEPT
--	select KVM_VFIO
- 	---help---
- 	  Support hosting fully virtualized guest machines using hardware
- 	  virtualization extensions.  You will need a fairly recent
-diff --git a/virt/kvm/Kconfig b/virt/kvm/Kconfig
-index fc0c5e603eb4..1f5ebc4693c3 100644
---- a/virt/kvm/Kconfig
-+++ b/virt/kvm/Kconfig
-@@ -34,6 +34,3 @@ config HAVE_KVM_MSI
- 
- config HAVE_KVM_CPU_RELAX_INTERCEPT
-        bool
--
--config KVM_VFIO
--       bool
+This requires a DT Ack.
+
+[...]
+
+> +++ b/include/dt-bindings/mfd/qcom-rpm.h
+
+Please split this into a separate patch.
+
+When you do, for this file only, please apply my:
+
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+> @@ -0,0 +1,154 @@
+> +/*
+> + * This header provides constants for the Qualcomm RPM bindings.
+> + */
+> +
+> +#ifndef _DT_BINDINGS_MFD_QCOM_RPM_H
+> +#define _DT_BINDINGS_MFD_QCOM_RPM_H
+> +
+> +/*
+> + * Constants use to identify individual resources in the RPM.
+> + */
+> +#define QCOM_RPM_APPS_FABRIC_ARB		1
+> +#define QCOM_RPM_APPS_FABRIC_CLK		2
+> +#define QCOM_RPM_APPS_FABRIC_HALT		3
+> +#define QCOM_RPM_APPS_FABRIC_IOCTL		4
+> +#define QCOM_RPM_APPS_FABRIC_MODE		5
+> +#define QCOM_RPM_APPS_L2_CACHE_CTL		6
+> +#define QCOM_RPM_CFPB_CLK			7
+> +#define QCOM_RPM_CXO_BUFFERS			8
+> +#define QCOM_RPM_CXO_CLK			9
+> +#define QCOM_RPM_DAYTONA_FABRIC_CLK		10
+> +#define QCOM_RPM_DDR_DMM			11
+> +#define QCOM_RPM_EBI1_CLK			12
+> +#define QCOM_RPM_HDMI_SWITCH			13
+> +#define QCOM_RPM_MMFPB_CLK			14
+> +#define QCOM_RPM_MM_FABRIC_ARB			15
+> +#define QCOM_RPM_MM_FABRIC_CLK			16
+> +#define QCOM_RPM_MM_FABRIC_HALT			17
+> +#define QCOM_RPM_MM_FABRIC_IOCTL		18
+> +#define QCOM_RPM_MM_FABRIC_MODE			19
+> +#define QCOM_RPM_PLL_4				20
+> +#define QCOM_RPM_PM8058_LDO0			21
+> +#define QCOM_RPM_PM8058_LDO1			22
+> +#define QCOM_RPM_PM8058_LDO2			23
+> +#define QCOM_RPM_PM8058_LDO3			24
+> +#define QCOM_RPM_PM8058_LDO4			25
+> +#define QCOM_RPM_PM8058_LDO5			26
+> +#define QCOM_RPM_PM8058_LDO6			27
+> +#define QCOM_RPM_PM8058_LDO7			28
+> +#define QCOM_RPM_PM8058_LDO8			29
+> +#define QCOM_RPM_PM8058_LDO9			30
+> +#define QCOM_RPM_PM8058_LDO10			31
+> +#define QCOM_RPM_PM8058_LDO11			32
+> +#define QCOM_RPM_PM8058_LDO12			33
+> +#define QCOM_RPM_PM8058_LDO13			34
+> +#define QCOM_RPM_PM8058_LDO14			35
+> +#define QCOM_RPM_PM8058_LDO15			36
+> +#define QCOM_RPM_PM8058_LDO16			37
+> +#define QCOM_RPM_PM8058_LDO17			38
+> +#define QCOM_RPM_PM8058_LDO18			39
+> +#define QCOM_RPM_PM8058_LDO19			40
+> +#define QCOM_RPM_PM8058_LDO20			41
+> +#define QCOM_RPM_PM8058_LDO21			42
+> +#define QCOM_RPM_PM8058_LDO22			43
+> +#define QCOM_RPM_PM8058_LDO23			44
+> +#define QCOM_RPM_PM8058_LDO24			45
+> +#define QCOM_RPM_PM8058_LDO25			46
+> +#define QCOM_RPM_PM8058_LVS0			47
+> +#define QCOM_RPM_PM8058_LVS1			48
+> +#define QCOM_RPM_PM8058_NCP			49
+> +#define QCOM_RPM_PM8058_SMPS0			50
+> +#define QCOM_RPM_PM8058_SMPS1			51
+> +#define QCOM_RPM_PM8058_SMPS2			52
+> +#define QCOM_RPM_PM8058_SMPS3			53
+> +#define QCOM_RPM_PM8058_SMPS4			54
+> +#define QCOM_RPM_PM8821_LDO1			55
+> +#define QCOM_RPM_PM8821_SMPS1			56
+> +#define QCOM_RPM_PM8821_SMPS2			57
+> +#define QCOM_RPM_PM8901_LDO0			58
+> +#define QCOM_RPM_PM8901_LDO1			59
+> +#define QCOM_RPM_PM8901_LDO2			60
+> +#define QCOM_RPM_PM8901_LDO3			61
+> +#define QCOM_RPM_PM8901_LDO4			62
+> +#define QCOM_RPM_PM8901_LDO5			63
+> +#define QCOM_RPM_PM8901_LDO6			64
+> +#define QCOM_RPM_PM8901_LVS0			65
+> +#define QCOM_RPM_PM8901_LVS1			66
+> +#define QCOM_RPM_PM8901_LVS2			67
+> +#define QCOM_RPM_PM8901_LVS3			68
+> +#define QCOM_RPM_PM8901_MVS			69
+> +#define QCOM_RPM_PM8901_SMPS0			70
+> +#define QCOM_RPM_PM8901_SMPS1			71
+> +#define QCOM_RPM_PM8901_SMPS2			72
+> +#define QCOM_RPM_PM8901_SMPS3			73
+> +#define QCOM_RPM_PM8901_SMPS4			74
+> +#define QCOM_RPM_PM8921_CLK1			75
+> +#define QCOM_RPM_PM8921_CLK2			76
+> +#define QCOM_RPM_PM8921_LDO1			77
+> +#define QCOM_RPM_PM8921_LDO2			78
+> +#define QCOM_RPM_PM8921_LDO3			79
+> +#define QCOM_RPM_PM8921_LDO4			80
+> +#define QCOM_RPM_PM8921_LDO5			81
+> +#define QCOM_RPM_PM8921_LDO6			82
+> +#define QCOM_RPM_PM8921_LDO7			83
+> +#define QCOM_RPM_PM8921_LDO8			84
+> +#define QCOM_RPM_PM8921_LDO9			85
+> +#define QCOM_RPM_PM8921_LDO10			86
+> +#define QCOM_RPM_PM8921_LDO11			87
+> +#define QCOM_RPM_PM8921_LDO12			88
+> +#define QCOM_RPM_PM8921_LDO13			89
+> +#define QCOM_RPM_PM8921_LDO14			90
+> +#define QCOM_RPM_PM8921_LDO15			91
+> +#define QCOM_RPM_PM8921_LDO16			92
+> +#define QCOM_RPM_PM8921_LDO17			93
+> +#define QCOM_RPM_PM8921_LDO18			94
+> +#define QCOM_RPM_PM8921_LDO19			95
+> +#define QCOM_RPM_PM8921_LDO20			96
+> +#define QCOM_RPM_PM8921_LDO21			97
+> +#define QCOM_RPM_PM8921_LDO22			98
+> +#define QCOM_RPM_PM8921_LDO23			99
+> +#define QCOM_RPM_PM8921_LDO24			100
+> +#define QCOM_RPM_PM8921_LDO25			101
+> +#define QCOM_RPM_PM8921_LDO26			102
+> +#define QCOM_RPM_PM8921_LDO27			103
+> +#define QCOM_RPM_PM8921_LDO28			104
+> +#define QCOM_RPM_PM8921_LDO29			105
+> +#define QCOM_RPM_PM8921_LVS1			106
+> +#define QCOM_RPM_PM8921_LVS2			107
+> +#define QCOM_RPM_PM8921_LVS3			108
+> +#define QCOM_RPM_PM8921_LVS4			109
+> +#define QCOM_RPM_PM8921_LVS5			110
+> +#define QCOM_RPM_PM8921_LVS6			111
+> +#define QCOM_RPM_PM8921_LVS7			112
+> +#define QCOM_RPM_PM8921_MVS			113
+> +#define QCOM_RPM_PM8921_NCP			114
+> +#define QCOM_RPM_PM8921_SMPS1			115
+> +#define QCOM_RPM_PM8921_SMPS2			116
+> +#define QCOM_RPM_PM8921_SMPS3			117
+> +#define QCOM_RPM_PM8921_SMPS4			118
+> +#define QCOM_RPM_PM8921_SMPS5			119
+> +#define QCOM_RPM_PM8921_SMPS6			120
+> +#define QCOM_RPM_PM8921_SMPS7			121
+> +#define QCOM_RPM_PM8921_SMPS8			122
+> +#define QCOM_RPM_PXO_CLK			123
+> +#define QCOM_RPM_QDSS_CLK			124
+> +#define QCOM_RPM_SFPB_CLK			125
+> +#define QCOM_RPM_SMI_CLK			126
+> +#define QCOM_RPM_SYS_FABRIC_ARB			127
+> +#define QCOM_RPM_SYS_FABRIC_CLK			128
+> +#define QCOM_RPM_SYS_FABRIC_HALT		129
+> +#define QCOM_RPM_SYS_FABRIC_IOCTL		130
+> +#define QCOM_RPM_SYS_FABRIC_MODE		131
+> +#define QCOM_RPM_USB_OTG_SWITCH			132
+> +#define QCOM_RPM_VDDMIN_GPIO			133
+> +
+> +/*
+> + * Constants used to select force mode for regulators.
+> + */
+> +#define QCOM_RPM_FORCE_MODE_NONE		0
+> +#define QCOM_RPM_FORCE_MODE_LPM			1
+> +#define QCOM_RPM_FORCE_MODE_HPM			2
+> +#define QCOM_RPM_FORCE_MODE_AUTO		3
+> +#define QCOM_RPM_FORCE_MODE_BYPASS		4
+> +
+> +#endif
+> -- 
+> 1.7.9.5
+> 
+
 -- 
-1.9.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
