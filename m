@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921AbaIXSk6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:40:58 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:62232 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaIXSk4 (ORCPT
+	id S1753954AbaIXSlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:41:52 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53227 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785AbaIXSlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:40:56 -0400
-Date: Wed, 24 Sep 2014 14:40:56 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: rui.zhang@intel.com, swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        juha-matti.tilli@iki.fi
-Subject: Re: [PATCH v5 1/4] of: Add bindings for nvidia,tegra124-soctherm
-Message-ID: <20140924184054.GA7593@developer>
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
- <1408616242-21009-2-git-send-email-mperttunen@nvidia.com>
+	Wed, 24 Sep 2014 14:41:49 -0400
+Date: Wed, 24 Sep 2014 19:41:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Bryan Wu <cooloney@gmail.com>, Andreas Werner <andreas.werner@men.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140924184143.GC7113@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <20140924144829.GK32069@lee--X1>
+ <20140924154503.GA12403@roeck-us.net>
+ <20140924161837.GA7113@lee--X1>
+ <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com>
+ <20140924165739.GA31578@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1408616242-21009-2-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140924165739.GA31578@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 24 Sep 2014, Guenter Roeck wrote:
 
-On Thu, Aug 21, 2014 at 01:17:19PM +0300, Mikko Perttunen wrote:
-> This adds binding documentation and headers for the Tegra124
-> SOCTHERM device tree node.
+> On Wed, Sep 24, 2014 at 09:33:32AM -0700, Bryan Wu wrote:
+> > On Wed, Sep 24, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > > On Wed, 24 Sep 2014, Guenter Roeck wrote:
+> > >
+> > >> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
+> > >> > Guenter, Bryan, Wim,
+> > >> >
+> > >> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> > >> >
+> > >> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> > >> >
+> > >> > are available in the git repository at:
+> > >> >
+> > >> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
+> > >> >
+> > >> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+> > >> >
+> > >> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+> > >> >
+> > >> > ----------------------------------------------------------------
+> > >> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+> > >> >
+> > >> I assume you'll push it all through mfd, correct ?
+> > >
+> > > The idea is for all the affected Maintainers to pull this branch in to
+> > > their own trees.  If you guys don't, there will be a good chance of
+> > > conflict during the merge-window, which will subsequently upset Linus.
+> > >
+> > > So in answer to your question; yes I'll be taking this, but so should
+> > > each of you.
+> > >
+> > 
+> > Thanks for this, man. What am I going to do here? Need I pull in all
+> > the patches here into my LED tree or just one LED patch? I think if
+> > you push this for Linus through MFD tree, I don't need to pull it into
+> > my tree, right?
+> > 
+> I did
 > 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-
-Acked-by: Eduardo Valentin <edubezval@gmail.com>
-
-Stephen, are you still queueing this series in your tree?
-
-> ---
->  .../devicetree/bindings/thermal/tegra-soctherm.txt | 53 ++++++++++++++++++++++
->  include/dt-bindings/thermal/tegra124-soctherm.h    | 13 ++++++
->  2 files changed, 66 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
->  create mode 100644 include/dt-bindings/thermal/tegra124-soctherm.h
+> git remote add mfd git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
+> git fetch --tags mfd
+> git merge mfd-hwmon-leds-watchdog-v3.18
 > 
-> diff --git a/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt b/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
-> new file mode 100644
-> index 0000000..ecf3ed7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
-> @@ -0,0 +1,53 @@
-> +Tegra124 SOCTHERM thermal management system
-> +
-> +The SOCTHERM IP block contains thermal sensors, support for polled
-> +or interrupt-based thermal monitoring, CPU and GPU throttling based
-> +on temperature trip points, and handling external overcurrent
-> +notifications. It is also used to manage emergency shutdown in an
-> +overheating situation.
-> +
-> +Required properties :
-> +- compatible : "nvidia,tegra124-soctherm".
-> +- reg : Should contain 1 entry:
-> +  - SOCTHERM register set
-> +- interrupts : Defines the interrupt used by SOCTHERM
-> +- clocks : Must contain an entry for each entry in clock-names.
-> +  See ../clocks/clock-bindings.txt for details.
-> +- clock-names : Must include the following entries:
-> +  - tsensor
-> +  - soctherm
-> +- resets : Must contain an entry for each entry in reset-names.
-> +  See ../reset/reset.txt for details.
-> +- reset-names : Must include the following entries:
-> +  - soctherm
-> +- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description
-> +    of this property. See <dt-bindings/thermal/tegra124-soctherm.h> for a
-> +    list of valid values when referring to thermal sensors.
-> +
-> +
-> +Example :
-> +
-> +	soctherm@0,700e2000 {
-> +		compatible = "nvidia,tegra124-soctherm";
-> +		reg = <0x0 0x700e2000 0x0 0x1000>;
-> +		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
-> +		clocks = <&tegra_car TEGRA124_CLK_TSENSOR>,
-> +			<&tegra_car TEGRA124_CLK_SOC_THERM>;
-> +		clock-names = "tsensor", "soctherm";
-> +		resets = <&tegra_car 78>;
-> +		reset-names = "soctherm";
-> +
-> +		#thermal-sensor-cells = <1>;
-> +	};
-> +
-> +Example: referring to thermal sensors :
-> +
-> +       thermal-zones {
-> +                cpu {
-> +                        polling-delay-passive = <1000>;
-> +                        polling-delay = <1000>;
-> +
-> +                        thermal-sensors =
-> +                                <&soctherm TEGRA124_SOCTHERM_SENSOR_CPU>;
-> +                };
-> +	};
-> diff --git a/include/dt-bindings/thermal/tegra124-soctherm.h b/include/dt-bindings/thermal/tegra124-soctherm.h
-> new file mode 100644
-> index 0000000..85aaf66
-> --- /dev/null
-> +++ b/include/dt-bindings/thermal/tegra124-soctherm.h
-> @@ -0,0 +1,13 @@
-> +/*
-> + * This header provides constants for binding nvidia,tegra124-soctherm.
-> + */
-> +
-> +#ifndef _DT_BINDINGS_THERMAL_TEGRA124_SOCTHERM_H
-> +#define _DT_BINDINGS_THERMAL_TEGRA124_SOCTHERM_H
-> +
-> +#define TEGRA124_SOCTHERM_SENSOR_CPU 0
-> +#define TEGRA124_SOCTHERM_SENSOR_MEM 1
-> +#define TEGRA124_SOCTHERM_SENSOR_GPU 2
-> +#define TEGRA124_SOCTHERM_SENSOR_PLLX 3
-> +
-> +#endif
-> -- 
-> 1.8.1.5
+> in both my hwmon-next and watchdog-next branches. Both are currently building,
+> and already pushed into to my repository at kernel.org.
 > 
+> So, effectively, when I send my pull request to Linus, all patches from
+> mfd-hwmon-leds-watchdog-v3.18 will be included, ie the entire series.
+> The same will happen when Lee sends his pull request, and Wim, and you. 
+> I believe that is what Lee is asking for.
+
+That's right.  It's not okay to break this branch up.  If it was, we
+would have been able to apply our respective components into our own
+trees from the beginning, but as there are interdependencies, breaking
+up the branch could have nasty consequences depending on the order in
+which they land in Mainline.  Most likely bisectability will be
+broken, which is not allowed.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
