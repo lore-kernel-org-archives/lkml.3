@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaIXHUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:20:47 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:41985 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaIXHUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:20:45 -0400
-Message-ID: <542270BA.4090708@gmail.com>
-Date: Wed, 24 Sep 2014 15:20:26 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752349AbaIXHXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:23:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29176 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717AbaIXHX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 03:23:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
+   d="scan'208";a="607666006"
+Message-ID: <54227166.7010901@linux.intel.com>
+Date: Wed, 24 Sep 2014 15:23:18 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Andres Lagar-Cavilla <andreslc@google.com>
-CC: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v4] kvm: Fix page ageing bugs
-References: <1411410865-3603-1-git-send-email-andreslc@google.com> <1411422882-16245-1-git-send-email-andreslc@google.com> <20140924022729.GA2889@kernel> <54226CEB.9080504@redhat.com>
-In-Reply-To: <54226CEB.9080504@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC Part2 v1 01/21] irqdomain: Introduce new interfaces to support
+ hierarchy irqdomains
+References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com> <1410444228-3134-2-git-send-email-jiang.liu@linux.intel.com> <54226AE1.4000603@jp.fujitsu.com>
+In-Reply-To: <54226AE1.4000603@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
-于 9/24/14, 3:04 PM, Paolo Bonzini 写道:
-> Il 24/09/2014 04:27, Wanpeng Li ha scritto:
->> Hi Andres,
->> On Mon, Sep 22, 2014 at 02:54:42PM -0700, Andres Lagar-Cavilla wrote:
->>> 1. We were calling clear_flush_young_notify in unmap_one, but we are
->>> within an mmu notifier invalidate range scope. The spte exists no more
->>> (due to range_start) and the accessed bit info has already been
->>> propagated (due to kvm_pfn_set_accessed). Simply call
->>> clear_flush_young.
->>>
->>> 2. We clear_flush_young on a primary MMU PMD, but this may be mapped
->>> as a collection of PTEs by the secondary MMU (e.g. during log-dirty).
->>> This required expanding the interface of the clear_flush_young mmu
->>> notifier, so a lot of code has been trivially touched.
->>>
->>> 3. In the absence of shadow_accessed_mask (e.g. EPT A bit), we emulate
->>> the access bit by blowing the spte. This requires proper synchronizing
->>> with MMU notifier consumers, like every other removal of spte's does.
->>>
->> [...]
->>> ---
->>> +	BUG_ON(!shadow_accessed_mask);
->>>
->>> 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
->>> 	     sptep = rmap_get_next(&iter)) {
->>> +		struct kvm_mmu_page *sp;
->>> +		gfn_t gfn;
->>> 		BUG_ON(!is_shadow_present_pte(*sptep));
->>> +		/* From spte to gfn. */
->>> +		sp = page_header(__pa(sptep));
->>> +		gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
->>>
->>> 		if (*sptep & shadow_accessed_mask) {
->>> 			young = 1;
->>> 			clear_bit((ffs(shadow_accessed_mask) - 1),
->>> 				 (unsigned long *)sptep);
->>> 		}
->>> +		trace_kvm_age_page(gfn, slot, young);
->> IIUC, all the rmapps in this for loop are against the same gfn which
->> results in the above trace point dump the message duplicated.
-> You're right; Andres's patch "[PATCH] kvm/x86/mmu: Pass gfn and level to
-> rmapp callback" helps avoiding that.
-
- From Andres's patch "[PATCH] kvm/x86/mmu: Pass gfn and level to rmapp 
-callback"
-
-@@ -1410,25 +1421,20 @@ static int kvm_age_rmapp(struct kvm *kvm, 
-unsigned long *rmapp,
-
-for (sptep = rmap_get_first(*rmapp, &iter); sptep;
-sptep = rmap_get_next(&iter)) {
-- struct kvm_mmu_page *sp;
-- gfn_t gfn;
-BUG_ON(!is_shadow_present_pte(*sptep));
-- /* From spte to gfn. */
-- sp = page_header(__pa(sptep));
-- gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
--
-if (*sptep & shadow_accessed_mask) {
-young = 1;
-clear_bit((ffs(shadow_accessed_mask) - 1),
-(unsigned long *)sptep);
-}
-- trace_kvm_age_page(gfn, slot, young);
-+ trace_kvm_age_page(gfn, level, slot, young);
-}
-return young;
-}
 
 
-This trace point still dup duplicated message for the same gfn in the 
-for loop.
+On 2014/9/24 14:55, Yasuaki Ishimatsu wrote:
+> (2014/09/11 23:03), Jiang Liu wrote:
+>> +static void irq_domain_free_irq_data(unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	int i;
+>> +	struct irq_data *irq_data, *tmp;
+>> +
+>> +	for (i = 0; i < nr_irqs; i++) {
+> 
+>> +		irq_data = irq_get_irq_data(virq + i);
+>> +		tmp = irq_data->parent_data;
+> 
+> Why don't you care NULL condition?
+Yeah, there's an explicitly assumption that, irq_get_irq_data()
+always return valid pointer once we have allocated the irq number
+and associated irq_desc. If preferred, I will add a check here.
 
-Regards,
-Wanpeng Li
+> 
+>> +		irq_data->parent_data = NULL;
+>> +		irq_data->domain = NULL;
+>> +
+>> +		while (tmp) {
+>> +			irq_data = tmp;
+>> +			tmp = tmp->parent_data;
+>> +			kfree(irq_data);
+>> +		}
+>> +	}
+>> +}
+>> +
+>> +static int irq_domain_alloc_irq_data(struct irq_domain *domain,
+>> +				     unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	int i;
+>> +	struct irq_data *irq_data;
+>> +	struct irq_domain *parent;
+>> +
+>> +	/* The outmost irq_data is embedded in struct irq_desc */
+>> +	for (i = 0; i < nr_irqs; i++) {
+> 
+> 
+>> +		irq_data = irq_get_irq_data(virq + i);
+>> +		irq_data->domain = domain;
+> 
+> ditto.
+Seems as above.
+Regards!
+Gerry
 
->
-> Paolo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
