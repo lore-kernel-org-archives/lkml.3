@@ -1,118 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaIXH5C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:57:02 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:42825 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaIXHzd (ORCPT
+	id S1753823AbaIXH5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:57:14 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:37718 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778AbaIXH5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:55:33 -0400
-X-ASG-Debug-ID: 1411545331-0759e7612989fa50002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Frans Klaver <frans.klaver@xsens.com>, Jiri Slaby <jslaby@suse.cz>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH 2/2] tty: omap-serial: pull out calculation from baud_is_mode16
-Date: Wed, 24 Sep 2014 09:55:22 +0200
-X-ASG-Orig-Subj: [PATCH 2/2] tty: omap-serial: pull out calculation from baud_is_mode16
-Message-ID: <1411545322-22940-3-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
-References: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
+	Wed, 24 Sep 2014 03:57:12 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 24 Sep 2014 16:57:42 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Subject: Re: [PATCH v1 2/5] mm: add full variable in swap_info_struct
+Message-ID: <20140924075742.GB3181@bbox>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+ <1411344191-2842-3-git-send-email-minchan@kernel.org>
+ <CALZtONCgteaZwvS-oipcs3zK--AfDMSM0bEcFkEemmg_DvZF=A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1411545331
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9817
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALZtONCgteaZwvS-oipcs3zK--AfDMSM0bEcFkEemmg_DvZF=A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To determine the correct divisor, we need to know the difference between
-the desired baud rate and the actual baud rate. The calculation for this
-difference is implemented twice within omap_serial_baud_is_mode16().
-Pull out the calculation for easier maintenance.
+On Tue, Sep 23, 2014 at 10:53:05PM -0400, Dan Streetman wrote:
+> On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > Now, swap leans on !p->highest_bit to indicate a swap is full.
+> > It works well for normal swap because every slot on swap device
+> > is used up when the swap is full but in case of zram, swap sees
+> > still many empty slot although backed device(ie, zram) is full
+> > since zram's limit is over so that it could make trouble when
+> > swap use highest_bit to select new slot via free_cluster.
+> >
+> > This patch introduces full varaiable in swap_info_struct
+> > to solve the problem.
+> >
+> > Suggested-by: Dan Streetman <ddstreet@ieee.org>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  include/linux/swap.h |  1 +
+> >  mm/swapfile.c        | 33 +++++++++++++++++++--------------
+> >  2 files changed, 20 insertions(+), 14 deletions(-)
+> >
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index ea4f926e6b9b..a3c11c051495 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -224,6 +224,7 @@ struct swap_info_struct {
+> >         struct swap_cluster_info free_cluster_tail; /* free cluster list tail */
+> >         unsigned int lowest_bit;        /* index of first free in swap_map */
+> >         unsigned int highest_bit;       /* index of last free in swap_map */
+> > +       bool    full;                   /* whether swap is full or not */
+> >         unsigned int pages;             /* total of usable pages of swap */
+> >         unsigned int inuse_pages;       /* number of those currently in use */
+> >         unsigned int cluster_next;      /* likely index for next allocation */
+> > diff --git a/mm/swapfile.c b/mm/swapfile.c
+> > index c07f7f4912e9..209112cf8b83 100644
+> > --- a/mm/swapfile.c
+> > +++ b/mm/swapfile.c
+> > @@ -558,7 +558,7 @@ checks:
+> >         }
+> >         if (!(si->flags & SWP_WRITEOK))
+> >                 goto no_page;
+> > -       if (!si->highest_bit)
+> > +       if (si->full)
+> >                 goto no_page;
+> >         if (offset > si->highest_bit)
+> >                 scan_base = offset = si->lowest_bit;
+> > @@ -589,6 +589,7 @@ checks:
+> >                 spin_lock(&swap_avail_lock);
+> >                 plist_del(&si->avail_list, &swap_avail_head);
+> >                 spin_unlock(&swap_avail_lock);
+> > +               si->full = true;
+> >         }
+> >         si->swap_map[offset] = usage;
+> >         inc_cluster_info_page(si, si->cluster_info, offset);
+> > @@ -653,14 +654,14 @@ start_over:
+> >                 plist_requeue(&si->avail_list, &swap_avail_head);
+> >                 spin_unlock(&swap_avail_lock);
+> >                 spin_lock(&si->lock);
+> > -               if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
+> > +               if (si->full || !(si->flags & SWP_WRITEOK)) {
+> >                         spin_lock(&swap_avail_lock);
+> >                         if (plist_node_empty(&si->avail_list)) {
+> >                                 spin_unlock(&si->lock);
+> >                                 goto nextsi;
+> >                         }
+> > -                       WARN(!si->highest_bit,
+> > -                            "swap_info %d in list but !highest_bit\n",
+> > +                       WARN(si->full,
+> > +                            "swap_info %d in list but swap is full\n",
+> >                              si->type);
+> >                         WARN(!(si->flags & SWP_WRITEOK),
+> >                              "swap_info %d in list but !SWP_WRITEOK\n",
+> > @@ -796,21 +797,25 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+> >
+> >         /* free if no reference */
+> >         if (!usage) {
+> > +               bool was_full;
+> > +
+> >                 dec_cluster_info_page(p, p->cluster_info, offset);
+> >                 if (offset < p->lowest_bit)
+> >                         p->lowest_bit = offset;
+> > -               if (offset > p->highest_bit) {
+> > -                       bool was_full = !p->highest_bit;
+> > +               if (offset > p->highest_bit)
+> >                         p->highest_bit = offset;
+> > -                       if (was_full && (p->flags & SWP_WRITEOK)) {
+> > -                               spin_lock(&swap_avail_lock);
+> > -                               WARN_ON(!plist_node_empty(&p->avail_list));
+> > -                               if (plist_node_empty(&p->avail_list))
+> > -                                       plist_add(&p->avail_list,
+> > -                                                 &swap_avail_head);
+> > -                               spin_unlock(&swap_avail_lock);
+> > -                       }
+> > +               was_full = p->full;
+> > +
+> > +               if (was_full && (p->flags & SWP_WRITEOK)) {
+> 
+> was_full was only needed because highest_bit was reset to offset right
+> before checking for fullness, so now that ->full is used instead of
+> !highest_bit, was_full isn't needed anymore, you can just check
+> p->full.
 
-While at it, remove the CamelCasing from the variable names.
+Okay.
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/tty/serial/omap-serial.c | 42 +++++++++++++++++++++++-----------------
- 1 file changed, 24 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index e454b7c..18c30ca 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -239,6 +239,26 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- }
- 
- /*
-+ * Calculate the absolute difference between the desired and actual baud
-+ * rate for the given mode.
-+ */
-+static inline int calculate_baud_abs_diff(struct uart_port *port,
-+				unsigned int baud, unsigned int mode)
-+{
-+	unsigned int n = port->uartclk / (mode * baud);
-+	int abs_diff;
-+
-+	if (n == 0)
-+		n = 1;
-+
-+	abs_diff = baud - (port->uartclk / (mode * n));
-+	if (abs_diff < 0)
-+		abs_diff = -abs_diff;
-+
-+	return abs_diff;
-+}
-+
-+/*
-  * serial_omap_baud_is_mode16 - check if baud rate is MODE16X
-  * @port: uart port info
-  * @baud: baudrate for which mode needs to be determined
-@@ -252,24 +272,10 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- static bool
- serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
- {
--	unsigned int n13 = port->uartclk / (13 * baud);
--	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13;
--	int baudAbsDiff16;
--
--	if (n13 == 0)
--		n13 = 1;
--	if (n16 == 0)
--		n16 = 1;
--
--	baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
--	if (baudAbsDiff13 < 0)
--		baudAbsDiff13 = -baudAbsDiff13;
--	if (baudAbsDiff16 < 0)
--		baudAbsDiff16 = -baudAbsDiff16;
--
--	return (baudAbsDiff13 >= baudAbsDiff16);
-+	int abs_diff_13 = calculate_baud_abs_diff(port, baud, 13);
-+	int abs_diff_16 = calculate_baud_abs_diff(port, baud, 16);
-+
-+	return (abs_diff_13 >= abs_diff_16);
- }
- 
- /*
 -- 
-2.1.0
-
+Kind regards,
+Minchan Kim
