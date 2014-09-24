@@ -1,47 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671AbaIXA6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 20:58:42 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:64455 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754740AbaIXA6k (ORCPT
+	id S1754173AbaIXBEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 21:04:46 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54693 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659AbaIXBEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 20:58:40 -0400
+	Tue, 23 Sep 2014 21:04:45 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH 2/2] perf callchain: Use global caching provided by libunwind
+References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
+	<1411453828-14832-2-git-send-email-namhyung@kernel.org>
+	<20140923122843.GF2979@krava.brq.redhat.com>
+	<CAM9d7cgwSrqLNghb3Vdt-=c9w1iFq0wc-njVP4UxkWD4hXCteg@mail.gmail.com>
+Date: Wed, 24 Sep 2014 10:04:43 +0900
+In-Reply-To: <CAM9d7cgwSrqLNghb3Vdt-=c9w1iFq0wc-njVP4UxkWD4hXCteg@mail.gmail.com>
+	(Namhyung Kim's message of "Tue, 23 Sep 2014 21:53:43 +0900")
+Message-ID: <878ul9ltg4.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:8:ee7:c074:25b1:7d97:a0af]
-In-Reply-To: <20140923175137.aa87c1ea.akpm@linux-foundation.org>
-References: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
- <5421EA22.6000206@infradead.org> <ndhwbqvboe9c48.fsf@rasscmlmus001.pdx.intel.com>
- <CAOFdcFMLYJ9qqRB-uwyLwyBpa=KTsHMbzdANJrmRu_wrqNArOA@mail.gmail.com>
- <20140923163816.2f3cf938c7815424e55e444f@linux-foundation.org>
- <CAOFdcFMiqS6-QFUo-QbwroOMmXnUL5mJd=Pjei_RjT3mhO8P5g@mail.gmail.com> <20140923175137.aa87c1ea.akpm@linux-foundation.org>
-From: Peter Foley <pefoley2@pefoley.com>
-Date: Tue, 23 Sep 2014 20:58:19 -0400
-Message-ID: <CAOFdcFOG0hfeUZz6QkjgfAYbsFN3uVHgSn25hWqwtd6bNU0d5A@mail.gmail.com>
-Subject: Re: [PATCH linux-next] Documentation: mic: mpssd: Disable mpssd
- builds for kernels < 3.13
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: ashutosh dixit <ashutosh.dixit@intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Dutt, Sudeep" <sudeep.dutt@intel.com>,
-        "Rao, Nikhil" <nikhil.rao@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 8:51 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> Can't we just fix the Makefiles?  Cook up a rule which makes
-> headers_install (if needed) before building Documentation/?
+On Tue, 23 Sep 2014 21:53:43 +0900, Namhyung Kim wrote:
+> On Tue, Sep 23, 2014 at 9:28 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> On Tue, Sep 23, 2014 at 03:30:28PM +0900, Namhyung Kim wrote:
+>>> The libunwind provides two caching policy which are global and
+>>> per-thread.  As perf unwinds callchains in a single thread, it'd
+>>> sufficient to use global caching.
+>>>
+>>> This speeds up my perf report from 14s to 7s on a ~260MB data file.
+>>> Although the output contains a slight difference (~0.01% in terms of
+>>> number of lines printed) on callchains which were not resolved.
+>>
+>> hum, the speedup is nice, but what was the diff output.. any example?
+>> The new version does not print some lines or different ones?
+>
+> I don't have the result now - will post the diff when I go to the
+> office tomorrow.  But IIRC new version only adds new lines..
 
-Currently, the ordering is enforced by
-http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/Makefile#n946
-I'll take a look at making Documentation/ depend on headers_install.
+Okay, this is the result..  But it doesn't always make a difference.  I
+can see it produces exactly same output for other (even bigger) data files.
+
+
+  $ diff -U0 callchain-result.{old,new}
+  --- callchain-result.old	2014-09-23 14:52:29.630711402 +0900
+  +++ callchain-result.new	2014-09-23 14:52:52.709505500 +0900
+  @@ -5322,0 +5323,9 @@
+  +                          |          |          |          
+  +                          |          |           --0.00%-- 0x406520
+  +                          |          |                     0x4064f0
+  +                          |          |                     |          
+  +                          |          |                     |--0.00%-- 0x1ad52a0
+  +                          |          |                     |          
+  +                          |          |                     |--0.00%-- 0x1a0f2e0
+  +                          |          |                     |          
+  +                          |          |                      --0.00%-- 0x1a9e0c0
+  @@ -108899,0 +108909,3 @@
+  +                            |          |          0x406520
+  +                            |          |          0x4064f0
+  +                            |          |          0x1a9e0c0
+  @@ -180410,0 +180423,9 @@
+  +                          |          |          
+  +                          |           --0.00%-- 0x406520
+  +                          |                     0x4064f0
+  +                          |                     |          
+  +                          |                     |--0.00%-- 0x1ad52a0
+  +                          |                     |          
+  +                          |                     |--0.00%-- 0x1a0f2e0
+  +                          |                     |          
+  +                          |                      --0.00%-- 0x1a9e0c0
+  
+  $ wc -l callchain-result.{old,new}
+    191412 callchain-result.old
+    191433 callchain-result.new
+    382845 total
+
 
 Thanks,
-
-Peter
+Namhyung
