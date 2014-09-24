@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaIXMm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:42:58 -0400
-Received: from blu004-omc2s38.hotmail.com ([65.55.111.113]:49813 "EHLO
-	BLU004-OMC2S38.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750783AbaIXMm5 (ORCPT
+	id S1753656AbaIXMnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:43:18 -0400
+Received: from smtp-vbr15.xs4all.nl ([194.109.24.35]:2759 "EHLO
+	smtp-vbr15.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaIXMnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:42:57 -0400
-X-TMN: [yfLf55Z+fGGSodFZJhIvjlLUJJOroNZR]
-X-Originating-Email: [dave.anglin@bell.net]
-Message-ID: <BLU437-SMTP36FDD8606D9D645C6428697B10@phx.gbl>
-From: John David Anglin <dave.anglin@bell.net>
-To: nick <yocto6@gmail.com>
-In-Reply-To: <5422AE20.3050702@gmail.com>
-Subject: Re: [PATCH] parisc:Remove unnecessary FIXMES in init.c
-References: <1411523383-9820-1-git-send-email-yocto6@gmail.com> <20140924053036.GA30405@roeck-us.net> <5422AE20.3050702@gmail.com>
-Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0 (Apple Message framework v936)
-Date: Wed, 24 Sep 2014 08:42:37 -0400
-CC: Guenter Roeck <linux@roeck-us.net>, jejb@parisc-linux.org, deller@gmx.de,
-        akpm@linux-foundation.org, mgorman@suse.de, julia.lawall@lip6.fr,
-        himangi774@gmail.com, linux-parisc@vger.kernel.org,
+	Wed, 24 Sep 2014 08:43:15 -0400
+Message-ID: <5422BC49.3050000@xs4all.nl>
+Date: Wed, 24 Sep 2014 14:42:49 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Fancy Fang <chen.fang@freescale.com>, m.chehab@samsung.com,
+        viro@ZenIV.linux.org.uk
+CC: shawn.guo@freescale.com, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-X-Mailer: Apple Mail (2.936)
-X-OriginalArrivalTime: 24 Sep 2014 12:42:55.0023 (UTC) FILETIME=[0FDE73F0:01CFD7F5]
+Subject: Re: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory()
+ with remap_pfn_range().
+References: <1410326937-31140-1-git-send-email-chen.fang@freescale.com> <540FF70E.9050203@xs4all.nl> <5422BBDB.7050904@samsung.com>
+In-Reply-To: <5422BBDB.7050904@samsung.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24-Sep-14, at 7:42 AM, nick wrote:
 
+
+On 09/24/2014 02:40 PM, Marek Szyprowski wrote:
+> Hello,
 >
+> On 2014-09-10 09:00, Hans Verkuil wrote:
+>> On 09/10/14 07:28, Fancy Fang wrote:
+>>> When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
+>>> will assign the corresponding offset to the 'boff' field of the
+>>> videobuf_buffer for each requested buffer sequentially. Later, user
+>>> may call mmap() to map one or all of the buffers with the 'offset'
+>>> parameter which is equal to its 'boff' value. Obviously, the 'offset'
+>>> value is only used to find the matched buffer instead of to be the
+>>> real offset from the buffer's physical start address as used by
+>>> vm_iomap_memory(). So, in some case that if the offset is not zero,
+>>> vm_iomap_memory() will fail.
+>> Is this just a fix for something that can fail theoretically, or do you
+>> actually have a case where this happens? I am very reluctant to make
+>> any changes to videobuf. Drivers should all migrate to vb2.
+>>
+>> I have CC-ed Marek as well since he knows a lot more about this stuff
+>> than I do.
 >
-> On 14-09-24 01:30 AM, Guenter Roeck wrote:
->> On Tue, Sep 23, 2014 at 09:49:43PM -0400, Nicholas Krause wrote:
->>> This removes the two fixmes in the file, init.c for compiler hints
->>> for comments related to compiler hints in linux_gateway_page_addr
->>> and map_hpux_gateway_page to change from FIXME to HINT in order
->>> for people reading this code to understand that these are compiler
->>> hints.
->>>
->>
->> "* const" tells the compiler that a pointer is a constant.
->> It doesn't tell the compiler that the data shall not be treated
->> as DP-relative.
->>
->> FIXME as in: We should find a better way to tell the compiler to
->> not treat this data as DP-relative.
->>
->> Can you please stop this ?
->>
->> Guenter
->>
->>> Signed-off-by: Nicholas Krause <yocto6@gmail.com>
+> I'm sorry for a delay, I was really busy with other things.
+>
+>>> Signed-off-by: Fancy Fang <chen.fang@freescale.com>
 >>> ---
->>> arch/parisc/mm/init.c | 4 ++--
->>> 1 file changed, 2 insertions(+), 2 deletions(-)
+>>>   drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
+>>>   1 file changed, 3 insertions(+), 1 deletion(-)
 >>>
->>> diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
->>> index 0bef864..668102e 100644
->>> --- a/arch/parisc/mm/init.c
->>> +++ b/arch/parisc/mm/init.c
->>> @@ -733,7 +733,7 @@ static void __init pagetable_init(void)
->>> static void __init gateway_init(void)
->>> {
->>> 	unsigned long linux_gateway_page_addr;
->>> -	/* FIXME: This is 'const' in order to trick the compiler
->>> +	/* HINT: This is 'const' in order to trick the compiler
->>> 	   into not treating it as DP-relative data. */
->>> 	extern void * const linux_gateway_page;
->>>
->>> @@ -761,7 +761,7 @@ map_hpux_gateway_page(struct task_struct *tsk,  
->>> struct mm_struct *mm)
->>> 	unsigned long start_pte;
->>> 	unsigned long address;
->>> 	unsigned long hpux_gw_page_addr;
->>> -	/* FIXME: This is 'const' in order to trick the compiler
->>> +	/* HINT: This is 'const' in order to trick the compiler
->>> 	   into not treating it as DP-relative data. */
->>> 	extern void * const hpux_gateway_page;
->>>
->>> -- 
->>> 1.9.1
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux- 
->>> kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
-> Guenter,
-> I asked the maintainers and I got,
-> On 9/23/2014 4:48 PM, Helge Deller wrote:
->> The FIXME: is misleading. It should maybe better read "HINT:" or  
->> something like that.
->> Trivially it's basically just casting the symbol so that the compiler
->> will produce the correct code later on.
->> There is nothing you could try to "fix".
-> Why not just remove "FIXME: " from these comments?
+>>> diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
+>>> index bf80f0f..8bd9889 100644
+>>> --- a/drivers/media/v4l2-core/videobuf-dma-contig.c
+>>> +++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+>>> @@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+>>>       /* Try to remap memory */
+>>>       size = vma->vm_end - vma->vm_start;
+>>>       vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>>> -    retval = vm_iomap_memory(vma, mem->dma_handle, size);
+>>> +    retval = remap_pfn_range(vma, vma->vm_start,
+>>> +                 mem->dma_handle >> PAGE_SHIFT,
+>>> +                 size, vma->vm_page_prot);
+>>>       if (retval) {
+>>>           dev_err(q->dev, "mmap: remap failed with error %d. ",
+>>>               retval);
+>
+> I think we don't need to revert the code to use remap_pfn_range() again (like
+> it was in pre v3.10 times). The simplest way will be to correctly fix
+> vma->vm_pgoff and set it to zero before calling vm_iomap_memory(). It is
+> done the same way in vb2_dma_contig.c:vb2_dc_mmap().
+>
+> To sum up - please change your patch: keep vm_iomap_memory() call and add
+> "vma->vm_pgoff = 0;" line before it with suitable comment.
 
+Much better, I agree completely.
 
-The wording of the comment is not good.  You can't "trick" the  
-compiler into not
-treating a constant as DP-relative data.  Whether or not a constant is  
-loaded as an
-immediate depends on its value.
+Regards,
 
-Dave
---
-John David Anglin	dave.anglin@bell.net
-
-
-
+	Hans
