@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaIXLKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:10:37 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:49972 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaIXLKf (ORCPT
+	id S1752890AbaIXLLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:11:49 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:38628 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaIXLLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:10:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <a7c933339713dc1783770faf1eceb734@agner.ch>
-References: <cover.1410020458.git.stefan@agner.ch>
-	<ff236f6dab7f3408551f8f4b0345e62b37fd99c5.1410020459.git.stefan@agner.ch>
-	<CACRpkdaNbTj+hXtNFZ6DqosHPfHg2G+X2Cb_S_15mULpdebgrQ@mail.gmail.com>
-	<a7c933339713dc1783770faf1eceb734@agner.ch>
-Date: Wed, 24 Sep 2014 13:10:34 +0200
-Message-ID: <CACRpkdbJePuG0g=AFGqjDS4=yW0CXnkpf1Yr_1P4e9Kkpu9n-g@mail.gmail.com>
-Subject: Re: [PATCH 3/4] gpio: vf610: add gpiolib/IRQ chip driver for Vybird
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Wed, 24 Sep 2014 07:11:48 -0400
+Date: Wed, 24 Sep 2014 13:11:44 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140924111144.GB29454@x4>
+References: <20140916212250.GI1205@quack.suse.cz>
+ <20140916173328.6306a5c2@gandalf.local.home>
+ <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+ <20140920154733.GM2832@worktop.localdomain>
+ <20140924110101.GB24411@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924110101.GB24411@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 1:51 PM, Stefan Agner <stefan@agner.ch> wrote:
-> [Me]
->> postcore again. I don't like this, can you get rid of it?
->
-> I guess we could load this driver easily a bit later. IMHO, since lots
-> of other driver use GPIO's, we should it load before all the drivers
-> gets loaded (before device_initcall).
+commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
+the string "[sched_delayed] " before the actual message.
+However it doesn't take into account the KERN_* prefix of the message,
+that now ends up in the middle of the output:
 
-Nope. We use deferred probing to control that today. Ideally
-all drivers should be device_initcall() and deferred probe be used
-to order things, not by playing around with initcalls.
+ [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
 
-> Most GPIO driver do this, some statistic again:
-> $ grep -h -o ".*_initcall" drivers/gpio/*.c | sort | uniq -c | sort -n
-> -r
->      33 subsys_initcall
->      14 postcore_initcall
->       2 device_initcall
->       2 arch_initcall
->       1 late_initcall
->       1 core_initcall
+Fix this by just getting rid of the "[sched_delayed] " scnprintf().
+This is a safe, because messages get inserted in the kernel ring buffer
+immediately these days. So there is no big difference between printk()
+and printk_deferred() anymore.
 
-Yeah old legacy. There are patch attacks to get rid of this.
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Steven Rostedt <rostedt@goodmis.org> 
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-The reason we can't just change them is because sometimes
-dependent drivers do not handle the errorpath very well can can't
-defer cleanly.
-
-With a new driver I expect deferred probe to be used.
-
-Yours,
-Linus Walleij
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ce770687ea8..f85994b58934 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	 * The printf needs to come first; we need the syslog
+ 	 * prefix which might be passed-in as a parameter.
+ 	 */
+-	if (in_sched)
+-		text_len = scnprintf(text, sizeof(textbuf),
+-				     KERN_WARNING "[sched_delayed] ");
+-
+-	text_len += vscnprintf(text + text_len,
+-			       sizeof(textbuf) - text_len, fmt, args);
++	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+ 
+ 	/* mark and strip a trailing newline */
+ 	if (text_len && text[text_len-1] == '\n') {
+-- 
+Markus
