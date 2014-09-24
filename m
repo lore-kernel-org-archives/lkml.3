@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaIXB7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 21:59:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40778 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457AbaIXB7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 21:59:04 -0400
-Date: Tue, 23 Sep 2014 21:58:58 -0400 (EDT)
-Message-Id: <20140923.215858.1862286673062032624.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: mmarek@suse.cz, rdunlap@infradead.org, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: linux-next: build warning after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140924072306.799005a3@canb.auug.org.au>
-References: <541A28BA.1060201@infradead.org>
-	<54218AEF.5090200@suse.cz>
-	<20140924072306.799005a3@canb.auug.org.au>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754193AbaIXCDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 22:03:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51851 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752738AbaIXCDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 22:03:07 -0400
+From: NeilBrown <neilb@suse.de>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Date: Wed, 24 Sep 2014 11:28:32 +1000
+Subject: [PATCH 0/5]  Remove possible deadlocks in nfs_release_page() - V3
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Message-ID: <20140924012422.4838.29188.stgit@notabene.brown>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 23 Sep 2014 18:59:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 24 Sep 2014 07:23:06 +1000
+This set includes acked-by's from Andrew and Peter so it should be
+OK for all five patches to go upstream through the NFS tree.
 
-> Dave, this is a bit slack of you since I reported that problem a week
-> ago in the net tree and yet it has not been completely fixed before you
-> asked Linus to pull your tree :-(
+I split the congestion tracking patch out from the wait-for-PG_private
+patch as they are conceptually separate.
 
-There were build failures I saw due to some misbalanced select/depends
-issues which I fixed in:
+This set continues to perform well in my tests and addresses all
+issues that have been raised.
 
-commit df568d8e5250bf24e38c69ad4374baf0f8d279ba
-Author: David S. Miller <davem@davemloft.net>
-Date:   Mon Sep 22 13:14:33 2014 -0400
+Thanks a lot,
+NeilBrown
 
-    scsi: Use 'depends' with LIBFC instead of 'select'.
 
-which went in yesterday.  I thought that would resolve all of your
-problems.
+---
 
-Believe me, it is a tragic surprise that several defconfigs absolutely
-depended upon this broken usage of select in the scsi layer, to of all
-things make CONFIG_NET=y implicit.
+NeilBrown (5):
+      SCHED: add some "wait..on_bit...timeout()" interfaces.
+      MM: export page_wakeup functions
+      NFS: avoid deadlocks with loop-back mounted NFS filesystems.
+      NFS: avoid waiting at all in nfs_release_page when congested.
+      NFS/SUNRPC: Remove other deadlock-avoidance mechanisms in nfs_release_page()
 
-I'll do my best to sort this out, but I hope that this short term pain
-is worth it in the end.
 
-Thanks for your understanding.
+ fs/nfs/file.c                   |   29 +++++++++++++++++++----------
+ fs/nfs/write.c                  |    7 +++++++
+ include/linux/pagemap.h         |   12 ++++++++++--
+ include/linux/wait.h            |    5 ++++-
+ kernel/sched/wait.c             |   36 ++++++++++++++++++++++++++++++++++++
+ mm/filemap.c                    |   21 +++++++++++++++------
+ net/sunrpc/sched.c              |    2 --
+ net/sunrpc/xprtrdma/transport.c |    2 --
+ net/sunrpc/xprtsock.c           |   10 ----------
+ 9 files changed, 91 insertions(+), 33 deletions(-)
+
+-- 
+Signature
+
