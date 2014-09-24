@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaIXQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:18:26 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:40625 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742AbaIXQSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:18:25 -0400
-Date: Wed, 24 Sep 2014 10:18:10 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH 2/2] tpm/tpm_ibmvtpm: Remove unnecessary
- casts
-Message-ID: <20140924161810.GA8898@obsidianresearch.com>
-References: <20140920072942.27c28768@kryten>
- <20140920073014.071007cc@kryten>
+	id S1753048AbaIXQSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:18:45 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:62791 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990AbaIXQSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:18:44 -0400
+Date: Wed, 24 Sep 2014 17:18:37 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140924161837.GA7113@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <20140924144829.GK32069@lee--X1>
+ <20140924154503.GA12403@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140920073014.071007cc@kryten>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140924154503.GA12403@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 20, 2014 at 07:30:14AM +1000, Anton Blanchard wrote:
-> There is no need to cast from a void pointer to another pointer.
+On Wed, 24 Sep 2014, Guenter Roeck wrote:
 
-Looks reasonable to me:
+> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
+> > Guenter, Bryan, Wim,
+> > 
+> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> > 
+> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
+> > 
+> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+> > 
+> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+> > 
+> > ----------------------------------------------------------------
+> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+> > 
+> I assume you'll push it all through mfd, correct ?
 
-Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
- 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> 
-> Index: b/drivers/char/tpm/tpm_ibmvtpm.c
-> ===================================================================
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> @@ -65,7 +65,7 @@ static struct ibmvtpm_dev *ibmvtpm_get_d
->  	struct tpm_chip *chip = dev_get_drvdata(dev);
->  
->  	BUG_ON(!chip);
-> -	return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> +	return TPM_VPRIV(chip);
->  }
->  
->  /**
-> @@ -83,7 +83,7 @@ static int tpm_ibmvtpm_recv(struct tpm_c
->  	u16 len;
->  	int sig;
->  
-> -	ibmvtpm = (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> +	ibmvtpm = TPM_VPRIV(chip);
->  
->  	if (!ibmvtpm->rtce_buf) {
->  		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
-> @@ -127,7 +127,7 @@ static int tpm_ibmvtpm_send(struct tpm_c
->  	u64 *word = (u64 *) &crq;
->  	int rc;
->  
-> -	ibmvtpm = (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> +	ibmvtpm = TPM_VPRIV(chip);
->  
->  	if (!ibmvtpm->rtce_buf) {
->  		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
-> @@ -521,7 +521,7 @@ static void ibmvtpm_crq_process(struct i
->   **/
->  static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
->  {
-> -	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
-> +	struct ibmvtpm_dev *ibmvtpm = vtpm_instance;
->  	struct ibmvtpm_crq *crq;
->  
->  	/* while loop is needed for initial setup (get version and
-> 
-> Meet PCI DSS 3.0 Compliance Requirements with EventLog Analyzer
-> Achieve PCI DSS 3.0 Compliant Status with Out-of-the-box PCI DSS Reports
-> Are you Audit-Ready for PCI DSS 3.0 Compliance? Download White paper
-> Comply to PCI DSS 3.0 Requirement 10 and 11.5 with EventLog Analyzer
-> http://pubads.g.doubleclick.net/gampad/clk?id=154622311&iu=/4140/ostg.clktrk
-> _______________________________________________
-> tpmdd-devel mailing list
-> tpmdd-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
+The idea is for all the affected Maintainers to pull this branch in to
+their own trees.  If you guys don't, there will be a good chance of
+conflict during the merge-window, which will subsequently upset Linus.
+
+So in answer to your question; yes I'll be taking this, but so should
+each of you.
+
+> > ----------------------------------------------------------------
+> > Andreas Werner (4):
+> >       mfd: menf21bmc: Introduce MEN 14F021P00 BMC MFD Core driver
+> >       watchdog: menf21bmc_wdt: Introduce MEN 14F021P00 BMC Watchdog driver
+> >       leds: leds-menf21bmc: Introduce MEN 14F021P00 BMC LED driver
+> >       hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver
+> > 
+> >  Documentation/hwmon/menf21bmc    |  50 +++++++++
+> >  drivers/hwmon/Kconfig            |  10 ++
+> >  drivers/hwmon/Makefile           |   1 +
+> >  drivers/hwmon/menf21bmc_hwmon.c  | 230 +++++++++++++++++++++++++++++++++++++++
+> >  drivers/leds/Kconfig             |   9 ++
+> >  drivers/leds/Makefile            |   1 +
+> >  drivers/leds/leds-menf21bmc.c    | 131 ++++++++++++++++++++++
+> >  drivers/mfd/Kconfig              |  15 +++
+> >  drivers/mfd/Makefile             |   1 +
+> >  drivers/mfd/menf21bmc.c          | 132 ++++++++++++++++++++++
+> >  drivers/watchdog/Kconfig         |  10 ++
+> >  drivers/watchdog/Makefile        |   1 +
+> >  drivers/watchdog/menf21bmc_wdt.c | 203 ++++++++++++++++++++++++++++++++++
+> >  13 files changed, 794 insertions(+)
+> >  create mode 100644 Documentation/hwmon/menf21bmc
+> >  create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
+> >  create mode 100644 drivers/leds/leds-menf21bmc.c
+> >  create mode 100644 drivers/mfd/menf21bmc.c
+> >  create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+> > 
 
 -- 
-Jason Gunthorpe <jgunthorpe@obsidianresearch.com>        (780)4406067x832
-Chief Technology Officer, Obsidian Research Corp         Edmonton, Canada
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
