@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaIXUhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:37:55 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:36839 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIXUhy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:37:54 -0400
+	id S1753214AbaIXUi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:38:29 -0400
+Received: from mout.gmx.net ([212.227.17.20]:56495 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783AbaIXUi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 16:38:28 -0400
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v1 12/12] tpm: TPM2 sysfs attributes
+Date: Wed, 24 Sep 2014 22:39:41 +0200
+User-Agent: KMail/1.13.7 (Linux/3.16.2-dirty; KDE/4.12.5; x86_64; ; )
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com> <54230093.2060303@linux.vnet.ibm.com> <20140924175940.GI8898@obsidianresearch.com>
+In-Reply-To: <20140924175940.GI8898@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <1411575342-31048-7-git-send-email-vinod.koul@intel.com>
-References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
-	<1411575342-31048-7-git-send-email-vinod.koul@intel.com>
-Date: Wed, 24 Sep 2014 16:37:53 -0400
-Message-ID: <CADnq5_MzBmNCCzHexYeXvOFCBG6ku8ZuL_PUrjDWCK4DhwaFyA@mail.gmail.com>
-Subject: Re: [PATCH 06/27] drm/radeon: use pm_runtime_last_busy_and_autosuspend
- helper
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Alex Deucher <alexander.deucher@amd.com>, subhransu.s.prusty@intel.com,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409242239.41379.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:oN2p7AQbihLalcVckNK5oGJJxHLyqqFDhKZ0k7wfibc59mONK6q
+ CpQO5UiPRaE/C2t9DuZ6RxaIGkSj38fRxMsR6GDPR+p34XnwBbS1bYdg+OT0z3wE4byluAs
+ GxitoqefaKeoqOZukljJFUbg+Ocn6z35+sT/K/hYf4faWtLBCYnJtxRChFRb00+u6l+we7b
+ ucW80icz8UnNOvZFki4Lw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:14 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
-> coding the same code
->
-> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Am Mittwoch, 24. September 2014, 19:59:40 schrieb Jason Gunthorpe:
+> On Wed, Sep 24, 2014 at 01:34:11PM -0400, Stefan Berger wrote:
+> > On 09/24/2014 01:13 PM, Jason Gunthorpe wrote:
+> > >On Wed, Sep 24, 2014 at 12:06:02PM +0300, Jarkko Sakkinen wrote:
+> > >>+static ssize_t durations_show(struct device *dev, struct
+> > >>device_attribute *attr, +			      char *buf)
+> > >>+{
+> > >>+	struct tpm_chip *chip = dev_get_drvdata(dev);
+> > >>+
+> > >>+	if (chip->vendor.duration[TPM_LONG] == 0)
+> > >>+		return 0;
+> > >>+
+> > >>+	return sprintf(buf, "%d %d %d [%s]\n",
+> > >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
+> > >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
+> > >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
+> > >>+		       chip->vendor.duration_adjusted
+> > >>+		       ? "adjusted" : "original");
+> > >>+}
+> > >>+static DEVICE_ATTR_RO(durations);
+> > >
+> > >Seem useless since the durations are constant, drop it?
+> > 
+> > We show them for TPM 1.2 as well, so I'd keep them fo TPM2.
+> 
+> The durations are constant and hardwired in the driver for TPM2, and
+> the sysfs file format does not follow the one-value-per-file
+> rule.
+> 
+> So it doesn't display anything useful. In TPM2 mode all the timeouts
+> are constant and known, so I'd rather see it go away.
 
-Acked-by: Alex Deucher <alexander.deucher@amd.com>
 
-I don't care which tree this goes through.
+If it is more or less a no-op since we have set chip-
+>vendor.duration[TPM_SHORT] for other code to work, we can show the values for 
+TPM2.0.
 
-> ---
->  drivers/gpu/drm/radeon/radeon_connectors.c |   15 +++++----------
->  drivers/gpu/drm/radeon/radeon_drv.c        |    5 ++---
->  drivers/gpu/drm/radeon/radeon_kms.c        |    6 ++----
->  3 files changed, 9 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-> index 300c4b3..b48cf9d 100644
-> --- a/drivers/gpu/drm/radeon/radeon_connectors.c
-> +++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-> @@ -852,8 +852,7 @@ radeon_lvds_detect(struct drm_connector *connector, bool force)
->         /* check acpi lid status ??? */
->
->         radeon_connector_update_scratch_regs(connector, ret);
-> -       pm_runtime_mark_last_busy(connector->dev->dev);
-> -       pm_runtime_put_autosuspend(connector->dev->dev);
-> +       pm_runtime_last_busy_and_autosuspend(connector->dev->dev);
->         return ret;
->  }
->
-> @@ -1025,8 +1024,7 @@ radeon_vga_detect(struct drm_connector *connector, bool force)
->         radeon_connector_update_scratch_regs(connector, ret);
->
->  out:
-> -       pm_runtime_mark_last_busy(connector->dev->dev);
-> -       pm_runtime_put_autosuspend(connector->dev->dev);
-> +       pm_runtime_last_busy_and_autosuspend(connector->dev->dev);
->
->         return ret;
->  }
-> @@ -1103,8 +1101,7 @@ radeon_tv_detect(struct drm_connector *connector, bool force)
->         if (ret == connector_status_connected)
->                 ret = radeon_connector_analog_encoder_conflict_solve(connector, encoder, ret, false);
->         radeon_connector_update_scratch_regs(connector, ret);
-> -       pm_runtime_mark_last_busy(connector->dev->dev);
-> -       pm_runtime_put_autosuspend(connector->dev->dev);
-> +       pm_runtime_last_busy_and_autosuspend(connector->dev->dev);
->         return ret;
->  }
->
-> @@ -1321,8 +1318,7 @@ out:
->         radeon_connector_update_scratch_regs(connector, ret);
->
->  exit:
-> -       pm_runtime_mark_last_busy(connector->dev->dev);
-> -       pm_runtime_put_autosuspend(connector->dev->dev);
-> +       pm_runtime_last_busy_and_autosuspend(connector->dev->dev);
->
->         return ret;
->  }
-> @@ -1638,8 +1634,7 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
->
->         radeon_connector_update_scratch_regs(connector, ret);
->  out:
-> -       pm_runtime_mark_last_busy(connector->dev->dev);
-> -       pm_runtime_put_autosuspend(connector->dev->dev);
-> +       pm_runtime_last_busy_and_autosuspend(connector->dev->dev);
->
->         return ret;
->  }
-> diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
-> index 092d067..548d129 100644
-> --- a/drivers/gpu/drm/radeon/radeon_drv.c
-> +++ b/drivers/gpu/drm/radeon/radeon_drv.c
-> @@ -503,9 +503,8 @@ long radeon_drm_ioctl(struct file *filp,
->                 return ret;
->
->         ret = drm_ioctl(filp, cmd, arg);
-> -
-> -       pm_runtime_mark_last_busy(dev->dev);
-> -       pm_runtime_put_autosuspend(dev->dev);
-> +
-> +       pm_runtime_last_busy_and_autosuspend(dev->dev);
->         return ret;
->  }
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-> index eb7164d..80f061d 100644
-> --- a/drivers/gpu/drm/radeon/radeon_kms.c
-> +++ b/drivers/gpu/drm/radeon/radeon_kms.c
-> @@ -147,8 +147,7 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
->                 pm_runtime_set_autosuspend_delay(dev->dev, 5000);
->                 pm_runtime_set_active(dev->dev);
->                 pm_runtime_allow(dev->dev);
-> -               pm_runtime_mark_last_busy(dev->dev);
-> -               pm_runtime_put_autosuspend(dev->dev);
-> +               pm_runtime_last_busy_and_autosuspend(dev->dev);
->         }
->
->  out:
-> @@ -632,8 +631,7 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
->                 file_priv->driver_priv = fpriv;
->         }
->
-> -       pm_runtime_mark_last_busy(dev->dev);
-> -       pm_runtime_put_autosuspend(dev->dev);
-> +       pm_runtime_last_busy_and_autosuspend(dev->dev);
->         return 0;
->  }
->
-> --
-> 1.7.0.4
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+However I think we don't need any extra code to show or hide the sysfs files 
+for TPM2.0.
+
+Peter
