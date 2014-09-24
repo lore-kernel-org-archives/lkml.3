@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaIXQuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:50:01 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:42579 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753465AbaIXQt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:49:58 -0400
-Date: Wed, 24 Sep 2014 10:49:49 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 01/12] tpm: prepare TPM driver for adding TPM2 support
-Message-ID: <20140924164949.GC8898@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-2-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754857AbaIXQuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:50:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41136 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751883AbaIXQuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:50:16 -0400
+Date: Wed, 24 Sep 2014 17:49:46 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Sunil Goutham <sgoutham@cavium.com>
+Subject: Re: [PATCH 1/6] pci, thunder: Add support for Thunder PCIe host
+ controller
+Message-ID: <20140924164946.GI16244@arm.com>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org>
+ <1411573068-12952-2-git-send-email-rric@kernel.org>
+ <27476217.5ToIFGoMDz@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411549562-24242-2-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <27476217.5ToIFGoMDz@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:05:51PM +0300, Jarkko Sakkinen wrote:
-> * Separated allocation and registeration into two functions:
->   * tpm_chip_alloc()
->   * tpm_chip_register()
+On Wed, Sep 24, 2014 at 05:12:26PM +0100, Arnd Bergmann wrote:
+> On Wednesday 24 September 2014 17:37:43 Robert Richter wrote:
+> > From: Sunil Goutham <sgoutham@cavium.com>
+> > 
+> > This patch adds support for PCI host controller of Cavium Thunder
+> > SoCs.
+> 
+> I had expected this hardware to be SBSA compliant. Why do you need
+> a hardware specific driver, is this a workaround for buggy hardware
+> or just noncompliant?
 
-Okay, this is a nice start!
+Patches welcome to pci-host-generic.c :) Lorenzo already has code to port
+it to Liviu's new API, so do shout if it's not suitable for your needs.
 
-I had intended tpm-interface.c to hold these 'chip' functions and the
-other cmd related functions to be moved out into tpm-cmds.c (or
-tpm1-cmds?), which is more symmetrical with what you are doing with
-tpm2-cmds. Does that seem reasonable?
+> > +static int thunder_pcie_msi_enable(struct thunder_pcie *pcie,
+> > +					struct pci_bus *bus)
+> > +{
+> > +	struct device_node *msi_node;
+> > +
+> > +	msi_node = of_parse_phandle(pcie->node, "msi-parent", 0);
+> > +	if (!msi_node)
+> > +		return -ENODEV;
+> > +
+> > +	pcie->msi = of_pci_find_msi_chip_by_node(msi_node);
+> > +	if (!pcie->msi)
+> > +		return -ENODEV;
+> > +
+> > +	pcie->msi->dev = pcie->dev;
+> > +	bus->msi = pcie->msi;
+> > +
+> > +	return 0;
+> > +}
+> 
+> This is probably something we should add to the generic host driver as well,
+> so it can work with SBSA compliant implementations that come with an MSI
+> controller. Maybe move it into common code so it can be shared with that
+> driver.
 
-It doesn't make sense to leave some chip related stuff in
-tpm-interface mixed with cmd stuff, I'd prefer to see a clean split if
-you are going to split them.
+Agreed. I've been carrying something similar [1] (based on a hacked-up version
+of bios32, so not bothered to post it) whilst I've been waiting for the
+arm64 core PCI code to get merged.
 
-> +struct tpm_chip *tpm_chip_alloc(struct device *dev,
-> +                               const struct tpm_class_ops *ops)
-> +{
+Will
 
-I want to see a clear description of what the unwind procedures are
-for each step using the new API, and kdoc on all the new API functions
-drivers are expected to use.
-
-> +int tpm_chip_register(struct tpm_chip *chip)
-> +{
-> +	int rc;
-
-All the common startup functions need to be done here too: get
-timeouts, self test, etc.
-
-> +	rc = tpm_dev_add_device(chip);
-> +	if (rc)
-> +		return rc;
-> +
-> +	rc = tpm_sysfs_add_device(chip);
-> +	if (rc)
-> +		goto del_misc;
-> +
-> +	rc = tpm_add_ppi(&chip->dev->kobj);
-> +	if (rc)
-> +		goto del_sysfs;
-> +
-> +	if (!chip->tpm2)
-> +		chip->bios_dir = tpm_bios_log_setup(chip->devname);
-
-What about failure of tpm_bios_log_setup?
-
->  /*
->   * Called from tpm_<specific>.c probe function only for devices
->   * the driver has determined it should claim.  Prior to calling
-> @@ -1081,61 +1019,19 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
->  				       const struct tpm_class_ops *ops)
->  {
->  	struct tpm_chip *chip;
-> +	int rc;
->  
-> -	/* Driver specific per-device data */
-> -	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-> -
-> -	if (chip == NULL)
-> +	chip = tpm_chip_alloc(dev, ops);
-> +	if (!chip)
->  		return NULL;
-
-I think tpm_chip_alloc should return an ERR_PTR..
-
-> -	mutex_init(&chip->tpm_mutex);
-> -	INIT_LIST_HEAD(&chip->list);
-> -
-> -	chip->ops = ops;
-> -	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
-> -
-> -	if (chip->dev_num >= TPM_NUM_DEVICES) {
-> -		dev_err(dev, "No available tpm device numbers\n");
-> -		goto out_free;
-> +	rc = tpm_chip_register(chip);
-> +	if (rc) {
-> +		put_device(chip->dev);
-> +		kfree(chip);
-
-No, open coding this is not a good unwind, and this is not correct
-anyhow, it looks like it will double free chip...
-
-This is where things got stuck for me too, the unwind is where all the
-problems are and I think the solution is to make the alloc paths
-completely different between new and old.
-
-We really want tpmm_chip_alloc for the new style path (so drivers have
-no unwind) and the old style path .. I don't know what is correct
-there, but the safest thing is to stay exactly the same.
-
-Also, please split this patch into moving stuff into tmp1-cmds.c and
-then patching to add functionality.
-
-Jason
+[1] https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/drivers/pci/host/pci-host-generic.c?h=iommu/pci&id=b719acf062ceccfbd79ee7b1ae0b7904ea4da27e
