@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaIXRGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:06:01 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:35958 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754036AbaIXRF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:05:59 -0400
-Date: Wed, 24 Sep 2014 11:05:51 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 11/12] tpm: Driver for TPM 2.0 CRB Interface
-Message-ID: <20140924170551.GF8898@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-12-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754268AbaIXRGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:06:23 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:35996 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaIXRGV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:06:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411549562-24242-12-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <54228F8B.2030804@6wind.com>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+ <CALCETrWnZtWstBviDxcHpLpjHF3R+sgS48RYf2pbKBYeExZVOQ@mail.gmail.com> <54228F8B.2030804@6wind.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 24 Sep 2014 10:05:59 -0700
+Message-ID: <CALCETrXMkV_1XR2mXOoO_2_vpB=6cPbWAAOhPFhPbDa_1P+zxw@mail.gmail.com>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: Network Development <netdev@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:06:01PM +0300, Jarkko Sakkinen wrote:
+On Wed, Sep 24, 2014 at 2:31 AM, Nicolas Dichtel
+<nicolas.dichtel@6wind.com> wrote:
+> Le 23/09/2014 21:26, Andy Lutomirski a écrit :
+>
+>> On Tue, Sep 23, 2014 at 6:20 AM, Nicolas Dichtel
+>> <nicolas.dichtel@6wind.com> wrote:
+>>>
+>>> The goal of this serie is to be able to multicast netlink messages with
+>>> an
+>>> attribute that identify a peer netns.
+>>> This is needed by the userland to interpret some informations contained
+>>> in
+>>> netlink messages (like IFLA_LINK value, but also some other attributes in
+>>> case
+>>> of x-netns netdevice (see also
+>>> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
+>>> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
+>>>
+>>> Ids are stored in the parent user namespace. These ids are valid only
+>>> inside
+>>> this user namespace. The user can retrieve these ids via a new netlink
+>>> messages,
+>>> but only if peer netns are in the same user namespace.
+>>
+>>
+>> What about the parent / ancestors of the owning userns?  Can processes
+>> in those usernses see any form of netns id?
+>
+> With this serie no. I'm not sure if ancestors really needs to be able to
+> get these ids. What is your opinion?
 
-> +	offset = cca->rsp_pa - priv->cca_pa;
-> +	resp = (u8 *) ((unsigned long) cca + offset);
-> +	memcpy(buf, resp, 6);
-> +	expected = be32_to_cpu(*(__be32 *) (buf + 2));
+I might be missing some consideration here, but I would hope that ip
+link would work correctly if I have a veth interface shared with a
+netns that's in a child userns.
 
-be32_to_cpup?
+--Andy
 
-> +static void crb_release(void *data)
-> +{
-> +	struct tpm_chip *chip = (struct tpm_chip *) data;
-> +	tpm_remove_hardware(chip->dev);
-> +}
-
-Please use a proper remove function on the device driver, not a devm
-function like this. 'tpm_remove_hardware' is the wrong name for a new
-API, it must be 'tpm_chip_unregister' (ie the undo of 'tpm_chip_register')
-
-> +static int crb_acpi_add(struct acpi_device *device)
-> +{
-> +	struct tpm_chip *chip;
-> +	struct acpi_tpm2 *buf;
-> +	struct crb_priv *priv;
-> +	struct device *dev = &device->dev;
-> +	acpi_status status;
-> +	u32 sm;
-> +	int rc;
-> +
-> +	chip = tpm_chip_alloc(dev, &tpm_crb);
-> +	if (!chip)
-> +		return -ENODEV;
-
-Lets use ERRPTR here
-
-> +	chip->tpm2 = true;
-> +
-> +	rc = tpm_chip_register(chip);
-
-This is in the wrong place, it needs to be the last call in the probe
-function - the driver must be fully operational when register is
-called, that is one of the bugs the new interface must be fixing.
-
-> +	rc = tpm_do_selftest(chip);
-> +	if (rc) {
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-
-The common TPM command startup sequence should be in
-tpm_chip_register(), so move this into there.
-
-> +	rc = devm_add_action(dev, crb_release, chip);
-> +	if (rc)
-> +		goto out_err;
-> +
-> +	return 0;
-> +out_err:
-> +	tpm_remove_hardware(chip->dev);
-> +	return rc;
-> +}
-> +
-> +static struct acpi_device_id crb_device_ids[] = {
-
-const? Not sure
-
-Jason
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
