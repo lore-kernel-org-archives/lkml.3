@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaIXI1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:27:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56946 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981AbaIXI1S (ORCPT
+	id S1754263AbaIXIan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:30:43 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:19157 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaIXI1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:27:18 -0400
-Message-Id: <20140924082242.119255706@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 24 Sep 2014 10:18:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org
-Cc: tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 03/11] wait: Add might_sleep()
-References: <20140924081845.572814794@infradead.org>
-Content-Disposition: inline; filename=peterz-wait-might_sleep.patch
+	Wed, 24 Sep 2014 04:27:20 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-02-542280640cbe
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
+        "David A. Long" <dave.long@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>, Vinayak Kale <vkale@apm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH v2] ARM: cacheflush: Fix v7_exit_coherency_flush exynos build
+ breakage on ARMv6
+Date: Wed, 24 Sep 2014 10:27:02 +0200
+Message-id: <1411547222-677-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xq7opDUohBu1v1S02zljPajH14RM2
+	i497FrBZvH5haNG74CqbxdmmN+wW2ztnsFtsenyN1eLyrjlsFrcv81qsPXKX3WLp9YtMFp+e
+	/WO3WLXrD6PFvGen2SxefjzB4iDg8XH9J0aPNfPWMHq0NPeweVzu62Xy2DnrLrvHplWdbB53
+	ru1h89i8pN6jb8sqRo/Pm+QCuKK4bFJSczLLUov07RK4Mk6+/8tc8Jm34urpmewNjJe5uxg5
+	OCQETCTebfHqYuQEMsUkLtxbzwZiCwksZZT4ui28i5ELyO5jkni56CczSIJNwFhi8/IlbCAJ
+	EYEWZol758+CdTALNDFJTNnHC2ILCyRKbJyzlwXEZhFQldg2ZQkLyDJeAVeJ3p36EMvkJE4e
+	m8w6gZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQQP2yg3HxMatDjAIcjEo8vBPE
+	lUKEWBPLiitzDzFKcDArifCeKAUK8aYkVlalFuXHF5XmpBYfYmTi4JRqYKzl37nuAsfDKSln
+	zrpvSpbyEYvb5GwTtWPaavEFseoWCQosPlO//fOWq7q/g7lktcdD9QNlcTPb/+dYla8K3BHw
+	vvfOWT/vKU+5n83mtU7yYXxeHGP4b/ania+d6zYn1VW/n5DcUfWhc5rPtOu7bVbPudLHsUzh
+	qqPEpCjmU4d5Lwhu0RRNaVFiKc5INNRiLipOBACD/6g0MgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add more might_sleep() checks, suppose someone put a wait_event() like
-thing in a wait loop..
+This fixes build breakage of platsmp.c if ARMv6 was chosen for compile
+time options (e.g. by building allmodconfig):
 
-Can't put might_sleep() in ___wait_event() because there's the locked
-primitives which call ___wait_event() with locks held.
+$ make allmodconfig
+$ make
+  CC      arch/arm/mach-exynos/platsmp.o
+/tmp/ccdQM0Eg.s: Assembler messages:
+/tmp/ccdQM0Eg.s:432: Error: selected processor does not support ARM mode `isb '
+/tmp/ccdQM0Eg.s:437: Error: selected processor does not support ARM mode `isb '
+/tmp/ccdQM0Eg.s:438: Error: selected processor does not support ARM mode `dsb '
+make[1]: *** [arch/arm/mach-exynos/platsmp.o] Error 1
 
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+The error was introduced in commit "ARM: EXYNOS: Move code from
+hotplug.c to platsmp.c".  Previously code using
+v7_exit_coherency_flush() macro was built with '-march=armv7-a' flag but
+this flag dissapeared during the movement.
+
+Fix this by annotating the v7_exit_coherency_flush() asm code with
+armv7-a architecture.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reported-by: Mark Brown <broonie@kernel.org>
+Link: http://www.spinics.net/lists/linux-samsung-soc/msg36790.html
+
 ---
- include/linux/wait.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
 
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -260,6 +260,7 @@ __out:	__ret;								\
-  */
- #define wait_event(wq, condition)					\
- do {									\
-+	might_sleep();							\
- 	if (condition)							\
- 		break;							\
- 	__wait_event(wq, condition);					\
-@@ -292,6 +293,7 @@ do {									\
- #define wait_event_timeout(wq, condition, timeout)			\
- ({									\
- 	long __ret = timeout;						\
-+	might_sleep();							\
- 	if (!___wait_cond_timeout(condition))				\
- 		__ret = __wait_event_timeout(wq, condition, timeout);	\
- 	__ret;								\
-@@ -317,6 +319,7 @@ do {									\
-  */
- #define wait_event_cmd(wq, condition, cmd1, cmd2)			\
- do {									\
-+	might_sleep();							\
- 	if (condition)							\
- 		break;							\
- 	__wait_event_cmd(wq, condition, cmd1, cmd2);			\
-@@ -344,6 +347,7 @@ do {									\
- #define wait_event_interruptible(wq, condition)				\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_interruptible(wq, condition);	\
- 	__ret;								\
-@@ -377,6 +381,7 @@ do {									\
- #define wait_event_interruptible_timeout(wq, condition, timeout)	\
- ({									\
- 	long __ret = timeout;						\
-+	might_sleep();							\
- 	if (!___wait_cond_timeout(condition))				\
- 		__ret = __wait_event_interruptible_timeout(wq,		\
- 						condition, timeout);	\
-@@ -427,6 +432,7 @@ do {									\
- #define wait_event_hrtimeout(wq, condition, timeout)			\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_hrtimeout(wq, condition, timeout,	\
- 					       TASK_UNINTERRUPTIBLE);	\
-@@ -452,6 +458,7 @@ do {									\
- #define wait_event_interruptible_hrtimeout(wq, condition, timeout)	\
- ({									\
- 	long __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_hrtimeout(wq, condition, timeout,	\
- 					       TASK_INTERRUPTIBLE);	\
-@@ -465,6 +472,7 @@ do {									\
- #define wait_event_interruptible_exclusive(wq, condition)		\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_interruptible_exclusive(wq, condition);\
- 	__ret;								\
-@@ -639,6 +647,7 @@ do {									\
- #define wait_event_killable(wq, condition)				\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_killable(wq, condition);		\
- 	__ret;								\
-@@ -888,6 +897,7 @@ extern int bit_wait_io(struct wait_bit_k
- static inline int
- wait_on_bit(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit(word, bit,
-@@ -912,6 +922,7 @@ wait_on_bit(void *word, int bit, unsigne
- static inline int
- wait_on_bit_io(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit(word, bit,
-@@ -938,6 +949,7 @@ wait_on_bit_io(void *word, int bit, unsi
- static inline int
- wait_on_bit_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit(word, bit, action, mode);
-@@ -965,6 +977,7 @@ wait_on_bit_action(void *word, int bit,
- static inline int
- wait_on_bit_lock(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit_lock(word, bit, bit_wait, mode);
-@@ -988,6 +1001,7 @@ wait_on_bit_lock(void *word, int bit, un
- static inline int
- wait_on_bit_lock_io(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit_lock(word, bit, bit_wait_io, mode);
-@@ -1013,6 +1027,7 @@ wait_on_bit_lock_io(void *word, int bit,
- static inline int
- wait_on_bit_lock_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit_lock(word, bit, action, mode);
-@@ -1031,6 +1046,7 @@ wait_on_bit_lock_action(void *word, int
- static inline
- int wait_on_atomic_t(atomic_t *val, int (*action)(atomic_t *), unsigned mode)
- {
-+	might_sleep();
- 	if (atomic_read(val) == 0)
- 		return 0;
- 	return out_of_line_wait_on_atomic_t(val, action, mode);
+Changes since v1:
+1. Use armv7-a arch annotation instead replacing isb/dsb with macros.
+   Suggsted by Nicolas Pitre.
+---
+ arch/arm/include/asm/cacheflush.h | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+index 79ecb4f34ffb..10e78d00a0bb 100644
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -466,6 +466,7 @@ static inline void __sync_cache_range_r(volatile void *p, size_t size)
+  */
+ #define v7_exit_coherency_flush(level) \
+ 	asm volatile( \
++	".arch	armv7-a \n\t" \
+ 	"stmfd	sp!, {fp, ip} \n\t" \
+ 	"mrc	p15, 0, r0, c1, c0, 0	@ get SCTLR \n\t" \
+ 	"bic	r0, r0, #"__stringify(CR_C)" \n\t" \
+-- 
+1.9.1
 
