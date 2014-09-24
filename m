@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaIXPBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:01:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59889 "EHLO
+	id S1754154AbaIXPBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:01:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59901 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaIXPBL (ORCPT
+	with ESMTP id S1751237AbaIXPB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:01:11 -0400
-Date: Wed, 24 Sep 2014 08:00:37 -0700
+	Wed, 24 Sep 2014 11:01:27 -0400
+Date: Wed, 24 Sep 2014 08:00:53 -0700
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-7e96ae1a8915e7064091ab75857f8c63334ea28d@git.kernel.org>
+Message-ID: <tip-b10fc1c3e30c44033d1cb1d2900cc2ab06dff342@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1409872109-31645-4-git-send-email-andi@firstfloor.org>
-References: <1409872109-31645-4-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1409872109-31645-5-git-send-email-andi@firstfloor.org>
+References: <1409872109-31645-5-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf/x86/intel/uncore:
-  Add missing cbox filter flags on IvyBridge-EP uncore driver
-Git-Commit-ID: 7e96ae1a8915e7064091ab75857f8c63334ea28d
+  Fix PCU filter setup for Sandy/Ivy/Haswell EP
+Git-Commit-ID: b10fc1c3e30c44033d1cb1d2900cc2ab06dff342
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,66 +32,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7e96ae1a8915e7064091ab75857f8c63334ea28d
-Gitweb:     http://git.kernel.org/tip/7e96ae1a8915e7064091ab75857f8c63334ea28d
+Commit-ID:  b10fc1c3e30c44033d1cb1d2900cc2ab06dff342
+Gitweb:     http://git.kernel.org/tip/b10fc1c3e30c44033d1cb1d2900cc2ab06dff342
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Thu, 4 Sep 2014 16:08:28 -0700
+AuthorDate: Thu, 4 Sep 2014 16:08:29 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 14:48:23 +0200
+CommitDate: Wed, 24 Sep 2014 14:48:24 +0200
 
-perf/x86/intel/uncore: Add missing cbox filter flags on IvyBridge-EP uncore driver
+perf/x86/intel/uncore: Fix PCU filter setup for Sandy/Ivy/Haswell EP
 
-The IvyBridge-EP uncore driver was missing three filter flags:
-NC, ISOC, C6 which are useful in some cases. Support them in the same way
-as the Haswell EP driver, by allowing to set them and exposing
-them in the sysfs formats.
+The PCU frequency band filters use 8 bit each in a register.
+When setting up the value the shift value was not correctly
+scaled, which resulted in all filters except for band 0 to
+be zero. Fix the scaling.
 
-Also fix a typo in a define.
-
-Relies on the Haswell EP driver to be applied earlier.
+This allows to correctly monitor multiple uncore frequency bands.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1409872109-31645-4-git-send-email-andi@firstfloor.org
+Cc: eranian@google.com
+Link: http://lkml.kernel.org/r/1409872109-31645-5-git-send-email-andi@firstfloor.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-index a4fe9fa..b237abc 100644
+index b237abc..adf138e 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-@@ -139,7 +139,7 @@
- #define IVBEP_CB0_MSR_PMON_BOX_FILTER_OPC		(0x1ffULL << 52)
- #define IVBEP_CB0_MSR_PMON_BOX_FILTER_C6		(0x1ULL << 61)
- #define IVBEP_CB0_MSR_PMON_BOX_FILTER_NC		(0x1ULL << 62)
--#define IVBEP_CB0_MSR_PMON_BOX_FILTER_IOSC	(0x1ULL << 63)
-+#define IVBEP_CB0_MSR_PMON_BOX_FILTER_ISOC	(0x1ULL << 63)
- 
- /* IVBEP home agent */
- #define IVBEP_HA_PCI_PMON_CTL_Q_OCC_RST		(1 << 16)
-@@ -1214,6 +1214,9 @@ static struct attribute *ivbep_uncore_cbox_formats_attr[] = {
- 	&format_attr_filter_state2.attr,
- 	&format_attr_filter_nid2.attr,
- 	&format_attr_filter_opc2.attr,
-+	&format_attr_filter_nc.attr,
-+	&format_attr_filter_c6.attr,
-+	&format_attr_filter_isoc.attr,
- 	NULL,
- };
- 
-@@ -1350,8 +1353,12 @@ static u64 ivbep_cbox_filter_mask(int fields)
- 		mask |= IVBEP_CB0_MSR_PMON_BOX_FILTER_STATE;
- 	if (fields & 0x8)
- 		mask |= IVBEP_CB0_MSR_PMON_BOX_FILTER_NID;
--	if (fields & 0x10)
-+	if (fields & 0x10) {
- 		mask |= IVBEP_CB0_MSR_PMON_BOX_FILTER_OPC;
-+		mask |= IVBEP_CB0_MSR_PMON_BOX_FILTER_NC;
-+		mask |= IVBEP_CB0_MSR_PMON_BOX_FILTER_C6;
-+		mask |= IVBEP_CB0_MSR_PMON_BOX_FILTER_ISOC;
-+	}
- 
- 	return mask;
+@@ -841,7 +841,7 @@ static int snbep_pcu_hw_config(struct intel_uncore_box *box, struct perf_event *
+ 	if (ev_sel >= 0xb && ev_sel <= 0xe) {
+ 		reg1->reg = SNBEP_PCU_MSR_PMON_BOX_FILTER;
+ 		reg1->idx = ev_sel - 0xb;
+-		reg1->config = event->attr.config1 & (0xff << reg1->idx);
++		reg1->config = event->attr.config1 & (0xff << (reg1->idx * 8));
+ 	}
+ 	return 0;
  }
