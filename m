@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaIXPf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:35:56 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:55427 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750802AbaIXPfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:35:55 -0400
-Date: Wed, 24 Sep 2014 11:35:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, Jan Kara <jack@suse.cz>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140924113553.075e5bb1@gandalf.local.home>
-In-Reply-To: <20140924152019.GD29454@x4>
-References: <20140924152019.GD29454@x4>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1754333AbaIXPgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:36:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277AbaIXPgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:36:22 -0400
+Message-ID: <5422E474.4010001@redhat.com>
+Date: Wed, 24 Sep 2014 11:34:12 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Hui Zhu <zhuhui@xiaomi.com>, gregkh@linuxfoundation.org,
+        rientjes@google.com, vinayakm.list@gmail.com, weijie.yang@samsung.com
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        teawater@gmail.com
+Subject: Re: [PATCH] Fix the issue that lowmemkiller fell into a cycle that
+ try to kill a task
+References: <1411441029-8428-1-git-send-email-zhuhui@xiaomi.com>
+In-Reply-To: <1411441029-8428-1-git-send-email-zhuhui@xiaomi.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
-
-You want to pull this patch?
-
-Thanks,
-
--- Steve
-
-
-On Wed, 24 Sep 2014 17:20:19 +0200
-Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-
-> commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
-> the string "[sched_delayed] " before the actual message.
-> However it doesn't take into account the KERN_* prefix of the message,
-> that now ends up in the middle of the output:
+On 09/22/2014 10:57 PM, Hui Zhu wrote:
+> The cause of this issue is when free memroy size is low and a lot of task is
+> trying to shrink the memory, the task that is killed by lowmemkiller cannot get
+> CPU to exit itself.
 > 
->  [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
-> 
-> Fix this by just getting rid of the "[sched_delayed] " scnprintf(). The
-> prefix is useless since commit 458df9fd4815 (printk: remove separate
-> printk_sched buffers and use printk buf instead) anyway since from that
-> moment printk_deferred() inserts the message into the kernel printk buffer
-> immediately. So if the message eventually gets printed to console, it is
-> printed in the correct order with other messages and there's no need for
-> any special prefix. And if the kernel crashes before the message makes it
-> to console, then prefix in the printk buffer doesn't make the situation any
-> better.
-> 
-> Link: http://lkml.org/lkml/2014/9/14/4
-> 
-> Acked-by: Jan Kara <jack@suse.cz>
-> Acked-by: Steven Rostedt <rostedt@goodmis.org> 
-> Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index 1ce770687ea8..f85994b58934 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	 * The printf needs to come first; we need the syslog
->  	 * prefix which might be passed-in as a parameter.
->  	 */
-> -	if (in_sched)
-> -		text_len = scnprintf(text, sizeof(textbuf),
-> -				     KERN_WARNING "[sched_delayed] ");
-> -
-> -	text_len += vscnprintf(text + text_len,
-> -			       sizeof(textbuf) - text_len, fmt, args);
-> +	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
->  
->  	/* mark and strip a trailing newline */
->  	if (text_len && text[text_len-1] == '\n') {
+> Fix this issue with change the scheduling policy to SCHED_FIFO if a task's flag
+> is TIF_MEMDIE in lowmemkiller.
+
+Is it actually true that the task that was killed by lowmemkiller
+cannot get CPU time?
+
+It is also possible that the task is busy in the kernel, for example
+in the reclaim code, and is not breaking out of some loop fast enough,
+despite the TIF_MEMDIE flag being set.
+
+I suspect SCHED_FIFO simply papers over that kind of issue, by not
+letting anything else run until the task is gone, instead of fixing
+the root cause of the problem.
 
