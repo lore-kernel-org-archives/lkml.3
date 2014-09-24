@@ -1,64 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaIXU1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:27:34 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:63470 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752501AbaIXU1b (ORCPT
+	id S1753080AbaIXU1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:27:45 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:64751 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009AbaIXU1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:27:31 -0400
-Message-ID: <1411590448.19525.42.camel@x220>
-Subject: Re: [PATCH] ASoC: samsung: Remove goni or aquila with the WM8994
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mark Brown <broonie@kernel.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 24 Sep 2014 22:27:28 +0200
-In-Reply-To: <20140923010418.GI7960@sirena.org.uk>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-	 <53C675E4.4020502@samsung.com> <1409825105.5546.91.camel@x220>
-	 <201409041802.36466.arnd@arndb.de> <1411033409.2017.15.camel@x220>
-	 <20140918175752.GC7960@sirena.org.uk> <1411077427.2012.6.camel@x41>
-	 <20140923010418.GI7960@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2014 20:27:29.0025 (UTC) FILETIME=[F6119F10:01CFD835]
-X-RcptDomain: vger.kernel.org
+	Wed, 24 Sep 2014 16:27:42 -0400
+Date: Wed, 24 Sep 2014 21:27:39 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 08/11] perf/x86/intel: Add Intel Cache QoS Monitoring
+ support
+Message-ID: <20140924202739.GP18635@console-pimps.org>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-9-git-send-email-matt@console-pimps.org>
+ <874mvx6kgl.fsf@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874mvx6kgl.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-22 at 18:04 -0700, Mark Brown wrote:
-> On Thu, Sep 18, 2014 at 11:57:07PM +0200, Paul Bolle wrote:
-> > Mark Brown schreef op do 18-09-2014 om 10:57 [-0700]:
-> > > Please follow the patch submission process in SubmittingPatches.
+On Wed, 24 Sep, at 09:40:10AM, Andi Kleen wrote:
+> Matt Fleming <matt@console-pimps.org> writes:
+> >
+> > diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> > index 7e1fd4e08552..8abb18fbcd13 100644
+> > --- a/arch/x86/kernel/cpu/Makefile
+> > +++ b/arch/x86/kernel/cpu/Makefile
+> > @@ -38,7 +38,7 @@ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_uncore_snb.o
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore_snbep.o perf_event_intel_uncore_nhmex.o
+> > -obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
+> > +obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o perf_event_intel_cqm.o
 > 
-> > Could you please be more specific? What part of SubmittingPatches have I
-> > skipped?
+> What's missing to be able to make this a module?
+ 
+Not sure, that's not something I'd thought of. I simply copied every
+other PMU driver in this directory.
+
+But as an experiment I tried it, and the only thing that appears to be
+necessary is adding EXPORT_SYMBOL_GPL() to events_sysfs_show.
+
+> > +
+> > +	/*
+> > +	 * Is @cpu a designated cqm reader?
+> > +	 */
+> > +	if (!cpumask_test_and_clear_cpu(cpu, &cqm_cpumask))
+> > +		return;
+> > +
+> > +	for_each_online_cpu(i) {
 > 
-> > Is it the perhaps the use of scissors? Or the superfluous From: line?
-> > "git am -c" appears to handle this message (and the very similar message
-> > I also sent today) just fine.
+> Likely possible cpus to avoid races? Otherwise you'll need more locking.
+ 
+I was under the impression that CPU_DOWN_PREPARE notifiers were
+serialized against cpu hotplug. And reading the code, that does appear
+to be so.
+
+What race have you got in mind?
+
+> > +static int __init intel_cqm_init(void)
+> > +{
+> > +	int i, cpu, ret;
+> > +
+> > +	if (!cpu_has(&boot_cpu_data, X86_FEATURE_CQM_OCCUP_LLC))
+> > +		return -ENODEV;
 > 
-> It's the fact that you've included the patch in the middle of the reply
-> to another mail in the middle of a thread after some other stuff; you
-> can tell this isn't the normal process by observing that your mail
-> doesn't look visually close to a normal patch submission - if that's the
-> case then people aren't likely to sit around and try to figure out some
-> magic set of git options needed, manually edit or otherwise special case
-> to special case it unless it's *really* important.
+> This should use cpufeature.h
+ 
+What? Please be more explicit.
 
-I see. I hope to resend shortly.
+> > +
+> > +	cqm_l3_scale = boot_cpu_data.x86_cache_occ_scale;
+> > +
+> > +	/*
+> > +	 * It's possible that not all resources support the same number
+> > +	 * of RMIDs. Instead of making scheduling much more complicated
+> > +	 * (where we have to match a task's RMID to a cpu that supports
+> > +	 * that many RMIDs) just find the minimum RMIDs supported across
+> > +	 * all cpus.
+> > +	 *
+> > +	 * Also, check that the scales match on all cpus.
+> > +	 */
+> > +	for_each_online_cpu(cpu) {
+> 
+> And this should take the cpu hotplug lock (although it may be
+> latent at this point if it's only running at early initializion)
+ 
+Good catch, this is racy. I'll fix this up.
 
-Thanks!
+> But in fact what good is the test then if you only
+> every likely check cpu #0?
 
+We don't, we check every online cpu, not just cpu 0.
 
-Paul Bolle
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
