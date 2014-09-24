@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263AbaIXISp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:18:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42024 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883AbaIXISm (ORCPT
+	id S1754124AbaIXIT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:19:26 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:57634 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbaIXITV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:18:42 -0400
-Date: Wed, 24 Sep 2014 01:18:37 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Chris J Arges <chris.j.arges@canonical.com>, hch@infradead.org,
-        bruce.lucas@mongodb.com, adam.radford@avagotech.com,
-        kashyap.desai@avagotech.com,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mptfusion: enable no_write_same for vmware scsi disks
-Message-ID: <20140924081837.GB14285@infradead.org>
-References: <20140923071154.GB3867@infradead.org>
- <1411482160-32007-1-git-send-email-chris.j.arges@canonical.com>
- <5421F020.1030309@canonical.com>
- <yq14mvxudbv.fsf@sermon.lab.mkp.net>
+	Wed, 24 Sep 2014 04:19:21 -0400
+Message-ID: <54227E6F.6080707@gmail.com>
+Date: Wed, 24 Sep 2014 16:18:55 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq14mvxudbv.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ingo Molnar <mingo@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] x86, cpu-hotplug: fix llc shared map unreleased during
+ cpu hotplug
+References: <1410938272-7217-1-git-send-email-wanpeng.li@linux.intel.com> <20140923093753.GA22644@pd.tnic> <542206DB.9080102@gmail.com> <20140924075210.GC3797@gmail.com>
+In-Reply-To: <20140924075210.GC3797@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 07:28:04PM -0400, Martin K. Petersen wrote:
-> >>>>> "Chris" == Chris J Arges <chris.j.arges@canonical.com> writes:
-> 
-> Chris> 1) Does this workaround make sense? Perhaps there is an easier
-> Chris>    way?
-> 
-> One option is to ship a udev rule that disables write same on VMware
-> disks. However, I don't have a fundamental problem having a workaround
-> for this in the kernel.
 
-This sounds way to scary to me.
+于 9/24/14, 3:52 PM, Ingo Molnar 写道:
+> * Wanpeng Li <kernellwp@gmail.com> wrote:
+>
+>> 于 14-9-23 下午5:37, Borislav Petkov 写道:
+>>> On Wed, Sep 17, 2014 at 03:17:52PM +0800, Wanpeng Li wrote:
+>>>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+>>>> IP: [..] find_busiest_group
+>>>> PGD 5a9d5067 PUD 13067 PMD 0
+>>>> Oops: 0000 [#3] SMP
+>>>> [...]
+>>>> Call Trace:
+>>>> load_balance
+>>>> ? _raw_spin_unlock_irqrestore
+>>>> idle_balance
+>>>> __schedule
+>>>> schedule
+>>>> schedule_timeout
+>>>> ? lock_timer_base
+>>>> schedule_timeout_uninterruptible
+>>>> msleep
+>>>> lock_device_hotplug_sysfs
+>>>> online_store
+>>>> dev_attr_store
+>>>> sysfs_write_file
+>>>> vfs_write
+>>>> SyS_write
+>>>> system_call_fastpath
+>>>>
+>>>> This bug can be triggered by hot add and remove large number of xen
+>>>> domain0's vcpus repeatedly.
+>>>>
+>>>> Last level cache shared map is built during cpu up and build sched domain
+>>>> routine takes advantage of it to setup sched domain cpu topology, however,
+>>>> llc shared map is unreleased during cpu disable which lead to invalid sched
+>>>> domain cpu topology. This patch fix it by release llc shared map correctly
+>>>> during cpu disable.
+>>>>
+>>>> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+>>>> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>> Tested-by: Linn Crosetto <linn@hp.com>
+>>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> Reviewed-by: Borislav Petkov <bp@suse.de>
+>>>
+>> Thanks.
+>>
+>>
+>> Ingo, Peter Z, HPA,
+>>
+>>
+>> Could this patch catch up with 3.18 merge window?
+> Please also add the real-hardware reports to the changelog.
 
-I'd like to add Chris latests patch and Cc it to stable.
+Just send out the latest version.
 
-Martin, given that you're ok with it can you give me a review?
+Regards,
+Wanpeng Li
+
+>
+> Thanks,
+>
+> 	Ingo
+
