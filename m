@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaIXH0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:26:39 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:58450 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIXH0i (ORCPT
+	id S1753020AbaIXH1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:27:35 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:38285 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaIXH1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:26:38 -0400
-Date: Wed, 24 Sep 2014 09:26:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Roy Franz <roy.franz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20140924072633.GA1768@gmail.com>
-References: <20140919104021.GA11552@gmail.com>
- <CA+55aFxW9PmtjOf9nUQwpU8swsFqJOz8whZXcONo+XFmkSwezg@mail.gmail.com>
- <20140923053510.GB27825@gmail.com>
- <20140923053711.GA28704@gmail.com>
- <20140923055802.GA29052@gmail.com>
- <1411456851.21380.355.camel@mfleming-mobl1.ger.corp.intel.com>
- <CAKv+Gu_xqnkVKuoWY=PRoAVYE_qOH8dwM+ZxG+ysC7Xvs82ZNw@mail.gmail.com>
- <20140923131805.GH18635@console-pimps.org>
- <542182E0.6090101@canonical.com>
- <20140923143712.GI18635@console-pimps.org>
+	Wed, 24 Sep 2014 03:27:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923143712.GI18635@console-pimps.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54227038.2020805@free-electrons.com>
+References: <1411311493-24344-1-git-send-email-wens@csie.org>
+ <1411311493-24344-4-git-send-email-wens@csie.org> <20140924063738.GQ15315@lukather>
+ <CAGb2v64voZpK_82wtkErRowR0vjEUALNUwvCx_sd8Q5wb4Hq-g@mail.gmail.com> <54227038.2020805@free-electrons.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Wed, 24 Sep 2014 15:27:13 +0800
+X-Google-Sender-Auth: XdIKgMCWN5wrtJPtKipLY7pjXCs
+Message-ID: <CAGb2v66WvZXVD6r70wCP_ZyfMH8rf04JO2B4K+DtDvwoBTaP5Q@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 3/6] ARM: dts: sunxi: Add Allwinner A80 dtsi
+To: linux-sunxi <linux-sunxi@googlegroups.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        yhf <yhf@merrii.com>, ctl <ctl@merrii.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 3:18 PM, Gregory CLEMENT
+<gregory.clement@free-electrons.com> wrote:
+> Hi Chen-Yu,
+>
+>
+>>>> +
+>>>> +     memory {
+>>>> +             reg = <0x20000000 0x40000000>;
+>>>
+>>> Usually, what we put there was the maximum amount of RAM that can be
+>>> handled by the SoC. I think that it can go above 1GB
+>>
+>> With LPAE, it can handle 8GB. But the DT won't take 64bit values.
+>> I'm not sure how to get it in. I'll look around for examples.
+>
+> You can have a look on what we did for Armada XP:
+>
+> arch/arm/boot/dts/armada-370-xp.dtsi
+> arch/arm/boot/dts/armada-xp.dtsi
+> arch/arm/boot/dts/armada-xp-gp.dts
+>
+> I created a skeleton64.dtsi for this case
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+Thanks! I was wondering what that was for.
 
-> @@ -1394,10 +1394,7 @@ struct boot_params *efi_main(struct efi_config *c,
->  
->  	setup_graphics(boot_params);
->  
-> -	status = setup_efi_pci(boot_params);
-> -	if (status != EFI_SUCCESS) {
-> -		efi_printk(sys_table, "setup_efi_pci() failed!\n");
-> -	}
-> +	setup_efi_pci(boot_params);
->  
->  	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
->  				sizeof(*gdt), (void **)&gdt);
-
-
-So 'status' is unused - either use it for a less threatening 
-message, or remove the return code from the function and document 
-that failure is an option?
-
-Thanks,
-
-	Ingo
+ChenYu
