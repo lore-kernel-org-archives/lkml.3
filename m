@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301AbaIXPQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:16:54 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54115 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaIXPQw convert rfc822-to-8bit (ORCPT
+	id S1752524AbaIXPUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:20:24 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:37037 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbaIXPUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:16:52 -0400
-Message-ID: <5422E05F.4070405@arm.com>
-Date: Wed, 24 Sep 2014 16:16:47 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 11:20:22 -0400
+Date: Wed, 24 Sep 2014 17:20:19 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140924152019.GD29454@x4>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] clocksource: arm_arch_timer: discard unavailable timers
- correctly
-References: <1410911445-19067-1-git-send-email-sudeep.holla@arm.com> <1410982774-4724-1-git-send-email-sudeep.holla@arm.com>
-In-Reply-To: <1410982774-4724-1-git-send-email-sudeep.holla@arm.com>
-X-OriginalArrivalTime: 24 Sep 2014 15:16:47.0460 (UTC) FILETIME=[8ED48A40:01CFD80A]
-X-MC-Unique: 114092416164905001
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
+the string "[sched_delayed] " before the actual message.
+However it doesn't take into account the KERN_* prefix of the message,
+that now ends up in the middle of the output:
 
-On 17/09/14 20:39, Sudeep Holla wrote:
-> Currently we wait until both cp15 and mem timers are probed if we
-> have both timer device nodes present in the device tree without
-> checking if the device is actually available. If one of the timer
-> device node present is disabled, the system locks up on the boot
-> as no timer gets registered.
->
-> This patch adds the check for the availablity of the timer device
-> so that we unavailable timers are discarded correctly. It also adds
-> the missing of_node_put.
->
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Mark Rutland <mark.rutland@arm.com>
+ [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
 
-If your are fine with this, can I ask Daniel you pick this up ?
+Fix this by just getting rid of the "[sched_delayed] " scnprintf(). The
+prefix is useless since commit 458df9fd4815 (printk: remove separate
+printk_sched buffers and use printk buf instead) anyway since from that
+moment printk_deferred() inserts the message into the kernel printk buffer
+immediately. So if the message eventually gets printed to console, it is
+printed in the correct order with other messages and there's no need for
+any special prefix. And if the kernel crashes before the message makes it
+to console, then prefix in the printk buffer doesn't make the situation any
+better.
 
-Regards,
-Sudeep
+Link: http://lkml.org/lkml/2014/9/14/4
 
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> ---
->   drivers/clocksource/arm_arch_timer.c | 20 ++++++++++++++++----
->   1 file changed, 16 insertions(+), 4 deletions(-)
->
-> Changes v1->v2:
-> 	- Added missing of_node_put in the original code
-> 	- Updated the commit log as suggested
->
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 5163ec13429d..7e267e3990ab 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -616,17 +616,29 @@ static const struct of_device_id arch_timer_mem_of_match[] __initconst = {
->   	{},
->   };
->
-> +static bool __init
-> +arch_timer_probed(int type, const struct of_device_id *matches)
-> +{
-> +	struct device_node *dn;
-> +	bool probed = false;
-> +
-> +	dn = of_find_matching_node(NULL, matches);
-> +	if (dn && of_device_is_available(dn) && (arch_timers_present & type))
-> +		probed = true;
-> +	of_node_put(dn);
-> +
-> +	return probed;
-> +}
-> +
->   static void __init arch_timer_common_init(void)
->   {
->   	unsigned mask = ARCH_CP15_TIMER | ARCH_MEM_TIMER;
->
->   	/* Wait until both nodes are probed if we have two timers */
->   	if ((arch_timers_present & mask) != mask) {
-> -		if (of_find_matching_node(NULL, arch_timer_mem_of_match) &&
-> -				!(arch_timers_present & ARCH_MEM_TIMER))
-> +		if (!arch_timer_probed(ARCH_MEM_TIMER, arch_timer_mem_of_match))
->   			return;
-> -		if (of_find_matching_node(NULL, arch_timer_of_match) &&
-> -				!(arch_timers_present & ARCH_CP15_TIMER))
-> +		if (!arch_timer_probed(ARCH_CP15_TIMER, arch_timer_of_match))
->   			return;
->   	}
->
->
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Steven Rostedt <rostedt@goodmis.org> 
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ce770687ea8..f85994b58934 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	 * The printf needs to come first; we need the syslog
+ 	 * prefix which might be passed-in as a parameter.
+ 	 */
+-	if (in_sched)
+-		text_len = scnprintf(text, sizeof(textbuf),
+-				     KERN_WARNING "[sched_delayed] ");
+-
+-	text_len += vscnprintf(text + text_len,
+-			       sizeof(textbuf) - text_len, fmt, args);
++	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+ 
+ 	/* mark and strip a trailing newline */
+ 	if (text_len && text[text_len-1] == '\n') {
+-- 
+Markus
