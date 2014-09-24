@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaIXSc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:32:26 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60094 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751890AbaIXScY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:32:24 -0400
-Message-ID: <1411583542.19525.22.camel@x220>
-Subject: [PATCH] ARC: Remove unneeded Kconfig entry NO_DMA
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Vineet Gupta <vgupta@synopsys.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 24 Sep 2014 20:32:22 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2014 18:32:23.0231 (UTC) FILETIME=[E1E514F0:01CFD825]
-X-RcptDomain: vger.kernel.org
+	id S1753604AbaIXSci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:32:38 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:11508 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742AbaIXScg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 14:32:36 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCHv8 5/6] file: trivial: replace get_unused_fd() by get_unused_fd_flags(0)
+Date: Wed, 24 Sep 2014 15:11:10 +0200
+Message-Id: <683ade9499bc02f3a1795ae52eed6492e57e55c5.1411562410.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1411562410.git.ydroneaud@opteya.com>
+References: <cover.1411562410.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1411562410.git.ydroneaud@opteya.com>
+References: <cover.1411562410.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Architectures only need a Kconfig entry for NO_DMA if it is possible
-that its value will be 'y'. For arc its value will always be 'n', making
-it pointless. Remove it.
+This patch replaces calls to get_unused_fd() with equivalent call to
+get_unused_fd_flags(0) to preserve current behavor for existing code.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+In a further patch, get_unused_fd() will be removed so that new code
+start using get_unused_fd_flags(), with the hope O_CLOEXEC could be
+used, either by default or choosen by userspace.
+
+Link: http://lkml.kernel.org/r/cover.1411562410.git.ydroneaud@opteya.com
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: trivial@kernel.org
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
-Tested by playing with arch/arc/configs/tb10x_defconfig. The only
-difference this change should make, is that the line reading
-    # CONFIG_NO_DMA is not set
+ fs/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-is dropped from the .config file after "make oldconfig". That should
-have no impact whatsoever on the build.
-
- arch/arc/Kconfig | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 32b4f8ecf3f0..2a08449ef1c7 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -73,9 +73,6 @@ config STACKTRACE_SUPPORT
- config HAVE_LATENCYTOP_SUPPORT
- 	def_bool y
+diff --git a/fs/file.c b/fs/file.c
+index ab3eb6a88239..ee738ea028fa 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -869,7 +869,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
+ 	struct file *file = fget_raw(fildes);
  
--config NO_DMA
--	def_bool n
--
- source "init/Kconfig"
- source "kernel/Kconfig.freezer"
- 
+ 	if (file) {
+-		ret = get_unused_fd();
++		ret = get_unused_fd_flags(0);
+ 		if (ret >= 0)
+ 			fd_install(ret, file);
+ 		else
 -- 
 1.9.3
 
