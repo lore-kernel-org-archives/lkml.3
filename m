@@ -1,154 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaIXVNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:13:38 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:41441 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIXVNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:13:37 -0400
-Date: Wed, 24 Sep 2014 14:13:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: atull <atull@opensource.altera.com>
-Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
-        broonie@kernel.org, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v3 3/3] pmbus: ltc2978: add regulator support
-Message-ID: <20140924211332.GA2720@roeck-us.net>
-References: <1411581476-12222-1-git-send-email-atull@opensource.altera.com>
- <1411581476-12222-4-git-send-email-atull@opensource.altera.com>
- <20140924201934.GB25362@roeck-us.net>
- <alpine.DEB.2.02.1409241536530.9901@atx-linux-37>
+	id S1753213AbaIXVOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:14:12 -0400
+Received: from mail-bn1on0066.outbound.protection.outlook.com ([157.56.110.66]:24304
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750821AbaIXVOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:14:11 -0400
+Date: Wed, 24 Sep 2014 16:08:05 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Dinh Nguyen <dinguyen@opensource.altera.com>
+CC: <linux@roeck-us.net>, <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>,
+        <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <delicious.quinoa@gmail.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v3 2/3] pmbus: add regulator support
+In-Reply-To: <54231E64.8030707@opensource.altera.com>
+Message-ID: <alpine.DEB.2.02.1409241607010.9901@atx-linux-37>
+References: <1411581476-12222-1-git-send-email-atull@opensource.altera.com> <1411581476-12222-3-git-send-email-atull@opensource.altera.com> <54231E64.8030707@opensource.altera.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1409241536530.9901@atx-linux-37>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="8323329-93954703-1411592900=:9901"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR02CA0024.namprd02.prod.outlook.com (10.141.56.24) To
+ BY2PR03MB314.namprd03.prod.outlook.com (10.141.139.19)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB314;
+X-Forefront-PRVS: 03449D5DD1
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(199003)(377454003)(479174003)(24454002)(189002)(164054003)(77982003)(81342003)(110136001)(76176999)(21056001)(69596002)(79102003)(4396001)(19580395003)(74662003)(81542003)(31966008)(85306004)(107046002)(74502003)(80022003)(92726001)(53416004)(90102001)(42186005)(54356999)(10300001)(99396003)(106356001)(83322001)(97736003)(50986999)(84326002)(19580405001)(105586002)(83506001)(86362001)(81156004)(66066001)(76482002)(120916001)(102836001)(71186001)(86152002)(92566001)(77096002)(46102003)(83072002)(85852003)(33716001)(20776003)(95666004)(87976001)(41446005)(64706001)(101416001)(512934002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB314;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:48:40PM -0500, atull wrote:
-> On Wed, 24 Sep 2014, Guenter Roeck wrote:
+--8323329-93954703-1411592900=:9901
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 24 Sep 2014, Dinh Nguyen wrote:
+
+> Hi Alan,
 > 
-> Hi Guenter,
-> 
-> > On Wed, Sep 24, 2014 at 12:57:56PM -0500, atull@opensource.altera.com wrote:
-> > > From: Alan Tull <atull@opensource.altera.com>
-> > > 
-> > > Add simple on/off regulator support for ltc2978 and
-> > > other pmbus parts supported by ltc2978.c
-> > > 
-> > > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > > 
-> > > v2: Remove '#include <linux/regulator/machine.h>'
-> > >     Only one regulator per pmbus device
-> > >     Get regulator_init_data from pdata or device tree
-> > > 
-> > > v3: Support multiple regulators for each chip
-> > >     Move most code to pmbus_core.c
-> > >     fixed values for on/off
-> > > ---
-> > >  drivers/hwmon/pmbus/Kconfig   |    7 ++++++
-> > >  drivers/hwmon/pmbus/ltc2978.c |   51 +++++++++++++++++++++++++++++++++++++++++
+> On 9/24/14, 12:57 PM, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
 > > 
-> > This will also require devicetree documentation describing the device nodes.
+> > Add support for simple on/off control of each channel.
+> > 
+> > To add regulator support, the pmbus part driver needs to add
+> > regulator_desc information, of_regulator_match information,
+> > and number of regulators to its pmbus_driver_info struct.
+> > 
+> > regulator_desc can be declared using default macro for a
+> > regulator (PMBUS_REGULATOR) that is in pmbus.h
+> > 
+> > The regulator_init_data can be intialized from either
+> > platform data or the device tree.
+> > 
+> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > 
+> > v2: Remove '#include <linux/regulator/machine.h>'
+> >     Only one regulator per pmbus device
+> >     Get regulator_init_data from pdata or device tree
+> > 
+> > v3: Support multiple regulators for each chip
+> >     Move most code to pmbus_core.c
+> >     fixed values for on/off
+> > ---
+> >  drivers/hwmon/pmbus/pmbus.h      |   27 ++++++++
+> >  drivers/hwmon/pmbus/pmbus_core.c |  133 ++++++++++++++++++++++++++++++++++++++
+> >  include/linux/i2c/pmbus.h        |    4 ++
+> >  3 files changed, 164 insertions(+)
+> > 
+> > diff --git a/drivers/hwmon/pmbus/pmbus.h b/drivers/hwmon/pmbus/pmbus.h
+> > index fa9beb3..74aa382 100644
+> > --- a/drivers/hwmon/pmbus/pmbus.h
+> > +++ b/drivers/hwmon/pmbus/pmbus.h
+> > @@ -19,6 +19,9 @@
+> >   * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> >   */
+> >  
+> > +#include <linux/regulator/driver.h>
+> > +#include <linux/regulator/of_regulator.h>
+> > +
+> >  #ifndef PMBUS_H
+> >  #define PMBUS_H
+> >  
+> > @@ -186,6 +189,12 @@
+> >  #define PMBUS_VIRT_STATUS_VMON		(PMBUS_VIRT_BASE + 35)
+> >  
+> >  /*
+> > + * OPERATION
+> > + */
+> > +#define PB_OPERATION_CONTROL_ON		(1<<7)
+> > +#define PB_OPERATION_CONTROL_SEQ_OFF	(1<<6)
+> > +
+> > +/*
+> >   * CAPABILITY
+> >   */
+> >  #define PB_CAPABILITY_SMBALERT		(1<<4)
+> > @@ -365,8 +374,26 @@ struct pmbus_driver_info {
+> >  	 */
+> >  	int (*identify)(struct i2c_client *client,
+> >  			struct pmbus_driver_info *info);
+> > +
+> > +	/* Regulator functionality, if supported by this chip driver. */
+> > +	int num_regulators;
+> > +	const struct regulator_desc *reg_desc;
+> > +	struct of_regulator_match *reg_matches;
+> >  };
+> >  
+> > +/* Regulator ops */
+> > +
+> > +extern struct regulator_ops pmbus_regulator_regulator_ops;
+> > +
+> > +/* Macro for filling in array of struct regulator_desc */
+> > +#define PMBUS_REGULATOR(_name, _id)				\
+> > +	[_id] = {						\
+> > +		.name = (_name # _id),				\
+> > +		.id = (_id),					\
+> > +		.ops = &pmbus_regulator_regulator_ops,		\
+> > +		.owner = THIS_MODULE,				\
+> > +	}
+> > +
+> >  /* Function declarations */
+> >  
+> >  void pmbus_clear_cache(struct i2c_client *client);
+> > diff --git a/drivers/hwmon/pmbus/pmbus_core.c b/drivers/hwmon/pmbus/pmbus_core.c
+> > index d6c3701..9ab8bd4 100644
+> > --- a/drivers/hwmon/pmbus/pmbus_core.c
+> > +++ b/drivers/hwmon/pmbus/pmbus_core.c
+> > @@ -29,6 +29,9 @@
+> >  #include <linux/hwmon-sysfs.h>
+> >  #include <linux/jiffies.h>
+> >  #include <linux/i2c/pmbus.h>
+> > +#include <linux/regulator/of_regulator.h>
+> > +#include <linux/regulator/driver.h>
+> > +#include <linux/regulator/machine.h>
+> >  #include "pmbus.h"
+> >  
+> >  /*
+> > @@ -1758,6 +1761,125 @@ static int pmbus_init_common(struct i2c_client *client, struct pmbus_data *data,
+> >  	return 0;
+> >  }
+> >  
+> > +#if IS_ENABLED(CONFIG_REGULATOR)
+> > +static int pmbus_regulator_is_enabled(struct regulator_dev *rdev)
+> > +{
+> > +	struct device *dev = rdev_get_dev(rdev);
+> > +	struct i2c_client *client = to_i2c_client(dev->parent);
+> > +	u8 page = rdev_get_id(rdev);
+> > +	int ret;
+> > +
+> > +	ret = pmbus_read_byte_data(client, page, PMBUS_OPERATION);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	return !!(ret & PB_OPERATION_CONTROL_ON);
+> > +}
+> > +
+> > +static int _pmbus_regulator_enable(struct regulator_dev *rdev, bool enable)
+> > +{
+> > +	struct device *dev = rdev_get_dev(rdev);
+> > +	struct i2c_client *client = to_i2c_client(dev->parent);
+> > +	u8 val, page = rdev_get_id(rdev);
+> > +
+> > +	if (enable)
+> > +		val = PB_OPERATION_CONTROL_ON;
+> > +	else
+> > +		val = 0;
+> > +
+> > +	return pmbus_update_byte_data(client, page, PMBUS_OPERATION,
+> > +				      PB_OPERATION_CONTROL_ON, val);
+> > +}
+> > +
+> > +static int pmbus_regulator_enable(struct regulator_dev *rdev)
+> > +{
+> > +	return _pmbus_regulator_enable(rdev, 1);
+> > +}
+> > +
+> > +static int pmbus_regulator_disable(struct regulator_dev *rdev)
+> > +{
+> > +	return _pmbus_regulator_enable(rdev, 0);
+> > +}
+> > +
+> > +struct regulator_ops pmbus_regulator_regulator_ops = {
+> > +	.enable = pmbus_regulator_enable,
+> > +	.disable = pmbus_regulator_disable,
+> > +	.is_enabled = pmbus_regulator_is_enabled,
+> > +};
+> > +EXPORT_SYMBOL_GPL(pmbus_regulator_regulator_ops);
+> > +
+> > +#if IS_ENABLED(CONFIG_OF)
+> > +static int pmbus_regulator_parse_dt(struct device *dev,
+> > +				    const struct pmbus_driver_info *info)
+> > +{
+> > +	struct device_node *np_regulators;
+> > +	int ret;
+> > +
+> > +	if (!info->num_regulators)
+> > +		return 0;
+> > +
+> > +	if (!info->reg_matches || !info->reg_desc)
+> > +		return -EINVAL;
+> > +
+> > +	np_regulators = of_get_child_by_name(dev->of_node, "regulators");
+> > +	if (!np_regulators)
+> > +		return 0;
+> > +
+> > +	ret = of_regulator_match(dev, np_regulators, info->reg_matches,
+> > +				 info->num_regulators);
+> > +	of_node_put(np_regulators);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	return 0;
+> > +}
+> > +#else
+> > +static int pmbus_regulator_parse_dt(struct device *dev,
+> > +				    const struct pmbus_driver_info *info)
+> > +{
+> > +	return 0;
+> > +}
+> > +#endif
 > 
-> Yes, I'll add that as a separate patch to v4.  It will be a new file since
-> there currently isn't any pmbus or ltc2978 bindings documentation that I
-> could find.
+> This breaks the build if CONFIG_REGULATOR is not enabled:
+> 
+> drivers/hwmon/pmbus/pmbus_core.c: In function âpmbus_do_probeâ:
+> drivers/hwmon/pmbus/pmbus_core.c:1894:2: error: implicit declaration of
+> function âpmbus_regulator_parse_dtâ [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> 
+> Dinh
 > 
 
-Hi Alan,
+Hi Dinh,
 
-It wasn't needed so far... just describe the bindings for ltc2978.
+Thanks, I will fix it.  I had that working earlier, but obviously broke it again...
 
-> > 
-> > >  2 files changed, 58 insertions(+)
-> > > 
-> > > diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-> > > index 6e1e493..79117b7 100644
-> > > --- a/drivers/hwmon/pmbus/Kconfig
-> > > +++ b/drivers/hwmon/pmbus/Kconfig
-> > > @@ -56,6 +56,13 @@ config SENSORS_LTC2978
-> > >  	  This driver can also be built as a module. If so, the module will
-> > >  	  be called ltc2978.
-> > >  
-> > > +config SENSORS_LTC2978_REGULATOR
-> > > +	boolean "Regulator support for LTC2974, LTC2978, LTC3880, and LTC3883"
-> > > +	depends on SENSORS_LTC2978 && REGULATOR
-> > > +	help
-> > > +	  If you say yes here you get regulator support for Linear
-> > > +	  Technology LTC2974, LTC2978, LTC3880, and LTC3883.
-> > > +
-> > >  config SENSORS_MAX16064
-> > >  	tristate "Maxim MAX16064"
-> > >  	default n
-> > > diff --git a/drivers/hwmon/pmbus/ltc2978.c b/drivers/hwmon/pmbus/ltc2978.c
-> > > index e24ed52..7d4dcd7 100644
-> > > --- a/drivers/hwmon/pmbus/ltc2978.c
-> > > +++ b/drivers/hwmon/pmbus/ltc2978.c
-> > > @@ -22,6 +22,8 @@
-> > >  #include <linux/err.h>
-> > >  #include <linux/slab.h>
-> > >  #include <linux/i2c.h>
-> > > +#include <linux/regulator/driver.h>
-> > > +#include <linux/regulator/of_regulator.h>
-> > >  #include "pmbus.h"
-> > >  
-> > >  enum chips { ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676 };
-> > > @@ -374,6 +376,30 @@ static const struct i2c_device_id ltc2978_id[] = {
-> > >  };
-> > >  MODULE_DEVICE_TABLE(i2c, ltc2978_id);
-> > >  
-> > > +#if IS_ENABLED(CONFIG_SENSORS_LTC2978_REGULATOR)
-> > > +static const struct regulator_desc ltc2978_reg_desc[] = {
-> > > +	PMBUS_REGULATOR("vout_en", 0),
-> > > +	PMBUS_REGULATOR("vout_en", 1),
-> > > +	PMBUS_REGULATOR("vout_en", 2),
-> > > +	PMBUS_REGULATOR("vout_en", 3),
-> > > +	PMBUS_REGULATOR("vout_en", 4),
-> > > +	PMBUS_REGULATOR("vout_en", 5),
-> > > +	PMBUS_REGULATOR("vout_en", 6),
-> > > +	PMBUS_REGULATOR("vout_en", 7),
-> > 
-> > How about just vout[0-7] ? I don't see a value in "_en".
-> 
-> That's cool.  I'll do it.
-> 
-> > 
-> > > +};
-> > > +
-> > > +static struct of_regulator_match ltc2978_reg_matches[] = {
-> > > +	{ .name = "vout_en0" },
-> > > +	{ .name = "vout_en1" },
-> > > +	{ .name = "vout_en2" },
-> > > +	{ .name = "vout_en3" },
-> > > +	{ .name = "vout_en4" },
-> > > +	{ .name = "vout_en5" },
-> > > +	{ .name = "vout_en6" },
-> > > +	{ .name = "vout_en7" },
-> > 
-> > If there are multiple LTC chips in the system, this will result in duplicate
-> > regulator names. Does that matter ? Any ideas how other regulators handle this ?
-> > 
-> > Example on my test system:
-> > 
-> > root@localhost:/sys/class/regulator# grep vout_en0 */name
-> > regulator.15/name:vout_en0
-> > regulator.2/name:vout_en0
-> > regulator.23/name:vout_en0
-> > regulator.31/name:vout_en0
-> > regulator.39/name:vout_en0
-> > regulator.47/name:vout_en0
-> 
-> These are just default names, but I think I could make the name better.
-> How about <part #>-<i2c address>-vout<#> such as "ltc2978-5c-vout0"
-> 
-Problem with that is that i2c bus numbers are not static, which would
-make it quite difficult to describe the regulator in devicetree data.
-
-Any idea what other regulators do in such situations ?
-
-Guenter
+Alan
+--8323329-93954703-1411592900=:9901--
