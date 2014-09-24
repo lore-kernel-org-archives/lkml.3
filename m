@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaIXPxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:53:15 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14621 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750940AbaIXPxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:53:13 -0400
-Date: Wed, 24 Sep 2014 08:53:20 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>
-CC: Mark Brown <broonie@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v7 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
- binding
-Message-ID: <20140924155319.GA28481@sonymobile.com>
-References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
- <20140924082228.GF17801@lee--X1>
+	id S1752536AbaIXPxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:53:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60667 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940AbaIXPxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:53:21 -0400
+Message-ID: <5422E8D0.5080705@zytor.com>
+Date: Wed, 24 Sep 2014 08:52:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140924082228.GF17801@lee--X1>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        pure.logic@nexus-software.ie, tglx@linutronix.de,
+        stable@vger.kernel.org, bp@alien8.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/platform] x86/intel/quark: Switch off CR4.PGE so TLB
+ flush uses CR3 instead
+References: <1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie> <tip-ee1b5b165c0a2f04d2107e634e51f05d0eb107de@git.kernel.org>
+In-Reply-To: <tip-ee1b5b165c0a2f04d2107e634e51f05d0eb107de@git.kernel.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24 Sep 01:22 PDT 2014, Lee Jones wrote:
+On 09/24/2014 08:01 AM, tip-bot for Bryan O'Donoghue wrote:
+> Commit-ID:  ee1b5b165c0a2f04d2107e634e51f05d0eb107de
+> Gitweb:     http://git.kernel.org/tip/ee1b5b165c0a2f04d2107e634e51f05d0eb107de
+> Author:     Bryan O'Donoghue <pure.logic@nexus-software.ie>
+> AuthorDate: Wed, 24 Sep 2014 00:26:24 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 24 Sep 2014 15:06:15 +0200
+>
+> x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
+>
+> Quark x1000 advertises PGE via the standard CPUID method
+> PGE bits exist in Quark X1000's PTEs. In order to flush
+> an individual PTE it is necessary to reload CR3 irrespective
+> of the PTE.PGE bit.
+>
+> See Quark Core_DevMan_001.pdf section 6.4.11
+>
+> This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
+> crash and burn on this platform.
+>
+> Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: <stable@vger.kernel.org>
+> Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>   arch/x86/kernel/cpu/intel.c | 15 +++++++++++++++
+>   1 file changed, 15 insertions(+)
+>
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index 74e804d..50ce751 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -144,6 +144,21 @@ static void early_init_intel(struct cpuinfo_x86 *c)
+>   			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+>   		}
+>   	}
+> +
+> +	/*
+> +	 * Intel Quark Core DevMan_001.pdf section 6.4.11
+> +	 * "The operating system also is required to invalidate (i.e., flush)
+> +	 *  the TLB when any changes are made to any of the page table entries.
+> +	 *  The operating system must reload CR3 to cause the TLB to be flushed"
+> +	 *
+> +	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
+> +	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
+> +	 * to be modified
+> +	 */
+> +	if (c->x86 == 5 && c->x86_model == 9) {
+> +		pr_info("Disabling PGE capability bit\n");
+> +		setup_clear_cpu_cap(X86_FEATURE_PGE);
+> +	}
+>   }
+>
+>   #ifdef CONFIG_X86_32
+>
 
-> On Mon, 22 Sep 2014, Bjorn Andersson wrote:
-> 
-> > Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660,
-> > 8960 and 8064 based devices. The binding currently describes the rpm
-> > itself and the regulator subnodes.
-> > 
-> > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/qcom-rpm.txt |  246 ++++++++++++++++++++
-> 
-> Please adhere to: Documentation/devicetree/bindings/submitting-patches.txt
-> 
+I believe there is one more change needed: there is a __flush_tlb_all() 
+in the early code which gets executed before the above code runs; the 
+easiest fix is to just add a __flush_tlb() immediately after it.
 
-I assume you mean this part:
+This should have been pushed upstream, and not stayed in the BSP kernel.
 
-  1) The Documentation/ portion of the patch should be a separate patch.
+	-hpa
 
-But I doubt this document was written with include/dt-bindings in mind, because
-in my eyes they are part of "device tree bindings".
-
-> >  include/dt-bindings/mfd/qcom-rpm.h                 |  154 ++++++++++++
-> >  2 files changed, 400 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-> >  create mode 100644 include/dt-bindings/mfd/qcom-rpm.h
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-> > new file mode 100644
-> > index 0000000..4264021
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-> 
-> This requires a DT Ack.
-> 
-> [...]
-> 
-> > +++ b/include/dt-bindings/mfd/qcom-rpm.h
-> 
-> Please split this into a separate patch.
-> 
-
-But this is part of the device tree binding and the binding "depends" on it.
-
-> When you do, for this file only, please apply my:
-> 
->   Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-
-Thanks,
-Bjorn
