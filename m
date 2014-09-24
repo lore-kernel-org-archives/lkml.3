@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaIXL3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:29:24 -0400
-Received: from mail-bn1bon0136.outbound.protection.outlook.com ([157.56.111.136]:30420
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751110AbaIXL3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:29:21 -0400
-Date: Wed, 24 Sep 2014 19:29:05 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <balbi@ti.com>, Antoine Tenart <antoine.tenart@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
-        <jszhang@marvell.com>
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140924112902.GA23331@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <20140924022736.GA5307@peterchendt> <2990737.4KzKXPZhaB@wuerfel>
- <2923729.dtX0WmHSV0@wuerfel>
+	id S1751509AbaIXLhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:37:08 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:45143 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaIXLhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 07:37:06 -0400
+Date: Wed, 24 Sep 2014 13:37:02 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140924113702.GC29454@x4>
+References: <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+ <20140920154733.GM2832@worktop.localdomain>
+ <20140924110101.GB24411@quack.suse.cz>
+ <20140924111144.GB29454@x4>
+ <20140924112637.GE24411@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2923729.dtX0WmHSV0@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(52314003)(164054003)(24454002)(51704005)(189002)(199003)(50466002)(74502003)(106466001)(107046002)(64706001)(85852003)(23726002)(31966008)(33716001)(84676001)(21056001)(105606002)(110136001)(104016003)(20776003)(74662003)(97736003)(47776003)(81342003)(81542003)(77982003)(80022003)(95666004)(90102001)(10300001)(76482002)(93886004)(79102003)(120916001)(85306004)(87936001)(33656002)(68736004)(83506001)(83072002)(97756001)(54356999)(46102003)(83322001)(4396001)(44976005)(46406003)(6806004)(76176999)(92566001)(57986006)(50986999)(99396003)(92726001)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0625;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0625;
-X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0723;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140924112637.GE24411@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:30:41AM +0200, Arnd Bergmann wrote:
-> On Wednesday 24 September 2014 09:44:19 Arnd Bergmann wrote:
-> > 
-> > We can also gradually move in some of the other glue drivers into
-> > the main driver if the differences are small enough.
-> > 
-> 
-> FWIW, I've just looked at the other glue drivers that already
-> exist:
-> 
-> - zevio can just get merged into the common driver, all that seems
->   to be needed for that is the additional compatible string, and
->   keying off the ci_default_zevio_platdata on the .data field of
->   the of_device_id table.
-> 
-> - msm has a custom notifier, which justifies leaving it in a separate
->   driver, but it's also small enough that it wouldn't hurt to have
->   that merged into the main driver too.
-> 
-> - imx requires a lot of other things, in particular the dependency
->   on the usbmisc driver means we don't want to have that in the
->   core anyway, so we can't really merge that in.
-> 
-> - the proposed ar933x driver again looks almost trivial, so no reason
->   for a separate glue driver for that.
-> 
-> 	Arnd
+commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
+the string "[sched_delayed] " before the actual message.
+However it doesn't take into account the KERN_* prefix of the message,
+that now ends up in the middle of the output:
 
-Thanks, Arnd.
+ [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
 
-So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
-(dwc3, musb, chipidea) you are talking about, right? Except for
-creating another platform driver as well as related DT node (optional),
-are there any advantages compared to current IP core driver structure?
+Fix this by just getting rid of the "[sched_delayed] " scnprintf(). The
+prefix is useless since commit 458df9fd4815 (printk: remove separate
+printk_sched buffers and use printk buf instead) anyway since from that
+moment printk_deferred() inserts the message into the kernel printk buffer
+immediately. So if the message eventually gets printed to console, it is
+printed in the correct order with other messages and there's no need for
+any special prefix. And if the kernel crashes before the message makes it
+to console, then prefix in the printk buffer doesn't make the situation any
+better.
 
-In this thread, we are talking about creating common platform driver for glue
-layer, its design purpose (adapt it for as many as platforms) should be the
-same, no matter the IP core part is a LIB or platform driver, am I missing
-something?
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Steven Rostedt <rostedt@goodmis.org> 
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ce770687ea8..f85994b58934 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	 * The printf needs to come first; we need the syslog
+ 	 * prefix which might be passed-in as a parameter.
+ 	 */
+-	if (in_sched)
+-		text_len = scnprintf(text, sizeof(textbuf),
+-				     KERN_WARNING "[sched_delayed] ");
+-
+-	text_len += vscnprintf(text + text_len,
+-			       sizeof(textbuf) - text_len, fmt, args);
++	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+ 
+ 	/* mark and strip a trailing newline */
+ 	if (text_len && text[text_len-1] == '\n') {
 -- 
-Best Regards,
-Peter Chen
+Markus
