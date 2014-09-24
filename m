@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaIXHzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:55:37 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:42812 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaIXHzd (ORCPT
+	id S1753596AbaIXHzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:55:45 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36750 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570AbaIXHzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:55:33 -0400
-X-ASG-Debug-ID: 1411545330-0759e7612989fa40002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Frans Klaver <frans.klaver@xsens.com>, Jiri Slaby <jslaby@suse.cz>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH 1/2] tty: omap-serial: fix division by zero
-Date: Wed, 24 Sep 2014 09:55:21 +0200
-X-ASG-Orig-Subj: [PATCH 1/2] tty: omap-serial: fix division by zero
-Message-ID: <1411545322-22940-2-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
-References: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
+	Wed, 24 Sep 2014 03:55:42 -0400
+Date: Wed, 24 Sep 2014 08:55:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 0/3] Qualcomm Resource Power Manager driver
+Message-ID: <20140924075535.GD17801@lee--X1>
+References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <54212CA0.4030700@linaro.org>
+ <20140924042737.GQ10179@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1411545331
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9817
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140924042737.GQ10179@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
-calculated n values in serial_omap_is_baud_mode16() may become 0. This
-causes a division by zero when calculating the difference between
-calculated and desired baud rates. To prevent this, cap the n13 and n16
-values on 1.
+On Tue, 23 Sep 2014, Bjorn Andersson wrote:
 
-Division by zero in kernel.
-[<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
-[<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
-[<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
-[<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
-[<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
-[<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
-[<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
-[<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
-[<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
-[<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
-[<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
-[<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
-[<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
+> On Tue 23 Sep 01:17 PDT 2014, Srinivas Kandagatla wrote:
+> 
+> > Hi Bjorn,
+> > 
+> > Thankyou for the new patchset.
+> > 
+> > I got few device-tree patches for apq8064 usb, sata, phy and hdmi which 
+> > depend on rpm header file. It will be nice to get this functionality 
+> > into 3.18.
+> > 
+> 
+> We should be able to send out the dts patches separate of these.
+> 
+> > Do you think we should take these patches via arm-soc tree?
+> > 
+> 
+> Both Lee and Mark indicated that they will pull the parts individually. However
+> both of the patches depend on the header file created in patch 1, someone needs
+> to take both for it to work out?
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/tty/serial/omap-serial.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+Once reviewed I can take the whole set with Mark's Ack.
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index d017cec..e454b7c 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -254,8 +254,16 @@ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
- {
- 	unsigned int n13 = port->uartclk / (13 * baud);
- 	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
-+	int baudAbsDiff13;
-+	int baudAbsDiff16;
-+
-+	if (n13 == 0)
-+		n13 = 1;
-+	if (n16 == 0)
-+		n16 = 1;
-+
-+	baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
-+	baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
- 	if (baudAbsDiff13 < 0)
- 		baudAbsDiff13 = -baudAbsDiff13;
- 	if (baudAbsDiff16 < 0)
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
