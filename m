@@ -1,157 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030AbaIXJMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:12:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38096 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294AbaIXJGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:06:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
-   d="scan'208";a="604543850"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>,
-        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v1 07/12] tpm: TPM2 support for tpm_get_random().
-Date: Wed, 24 Sep 2014 12:05:57 +0300
-Message-Id: <1411549562-24242-8-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754195AbaIXJM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:12:56 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:56507 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaIXJMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:12:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Darren Hart <dvhart@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <david.woodhouse@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
+Date: Wed, 24 Sep 2014 11:12:36 +0200
+Message-ID: <6744174.JquHLt80n3@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <D04730D8.A9DB0%dvhart@linux.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <2809308.3y5s7TV5Ip@wuerfel> <D04730D8.A9DB0%dvhart@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:yVrQTsXXREuS8J5iFW4vpjJWCumwftBSGQlDzYPYzUW
+ qzchy29H5rSpRwYscf1b7V4yN6ajNnYbRuNi9AhNWeFRZFwT+X
+ 1ghFmpCYHdFcETphwBgb7cJ0aVz6+daJ3aqBEbY4GC6D+uq10q
+ coe5si1ONpyj+q8fUXLF+mMXF12EtTaK/yOeepT8rOK11J2uBX
+ IgPjnCNH1Huns7LCMh/5bZ/1OzXIqi8wBv9B88iNEYyZm8/qmi
+ sNdp308ZUcGmO/rHMjee/mvRJN7TqUpBqPcHiMKuLSEmwDbUBh
+ Bu67JphIizlJHgE23MlLffmsRbaM9isKPYDqLt0TOU9YHQ1uqD
+ WEnrcRNbsRInaw+PnMuI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implemented TPM2 support for tpm_get_random().
+On Tuesday 23 September 2014 14:15:47 Darren Hart wrote:
+> Arnd, I think you meant:
+> 
+>         Return gpio_leds_create_acpi(pdev) ?
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/tpm-interface.c |  6 ++++++
- drivers/char/tpm/tpm.h           | 11 ++++++++++
- drivers/char/tpm/tpm2-commands.c | 45 ++++++++++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm2.h          |  2 ++
- 4 files changed, 64 insertions(+)
+Yes, sorry for the confusion on my part.
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index ed23ba3..3d4a664 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -1002,6 +1002,12 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 	if (chip == NULL)
- 		return -ENODEV;
- 
-+	if (chip->tpm2) {
-+		err = tpm2_get_random(chip, out, max);
-+		tpm_chip_put(chip);
-+		return err;
-+	}
-+
- 	do {
- 		tpm_cmd.header.in = tpm_getrandom_header;
- 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 4637342..b4c0d5d 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -351,6 +351,15 @@ struct tpm2_get_tpm_pt_out {
- 	__be32	value;
- } __packed;
- 
-+struct tpm2_get_random_in {
-+	__be16	size;
-+} __packed;
-+
-+struct tpm2_get_random_out {
-+	__be16	size;
-+	u8	buffer[TPM_MAX_RNG_DATA];
-+} __packed;
-+
- typedef union {
- 	struct	tpm_getcap_params_out getcap_out;
- 	struct	tpm_readpubek_params_out readpubek_out;
-@@ -368,6 +377,8 @@ typedef union {
- 	struct	tpm2_self_test_in tpm2_selftest_in;
- 	struct	tpm2_get_tpm_pt_in tpm2_get_tpm_pt_in;
- 	struct	tpm2_get_tpm_pt_out tpm2_get_tpm_pt_out;
-+	struct	tpm2_get_random_in tpm2_getrandom_in;
-+	struct	tpm2_get_random_out tpm2_getrandom_out;
- } tpm_cmd_params;
- 
- struct tpm_cmd_t {
-diff --git a/drivers/char/tpm/tpm2-commands.c b/drivers/char/tpm/tpm2-commands.c
-index b69999e..90cebb2 100644
---- a/drivers/char/tpm/tpm2-commands.c
-+++ b/drivers/char/tpm/tpm2-commands.c
-@@ -349,3 +349,48 @@ int tpm2_do_selftest(struct tpm_chip *chip)
- 
- 	return rc;
- }
-+
-+static struct tpm_input_header tpm2_getrandom_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-+			      sizeof(struct tpm2_get_random_in)),
-+	.ordinal = cpu_to_be32(TPM2_CC_GET_RANDOM)
-+};
-+
-+/**
-+ * tpm2_get_random() - get random bytes from the TPM RNG
-+ * @chip: TPM chip to use
-+ * @out: destination buffer for the random bytes
-+ * @max: the max number of bytes to write to @out
-+ *
-+ * Returns < 0 on error and the number of bytes read on success
-+ */
-+int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
-+{
-+	struct tpm_cmd_t tpm_cmd;
-+	u32 recd, num_bytes = min_t(u32, max, TPM_MAX_RNG_DATA);
-+	int err, total = 0, retries = 5;
-+	u8 *dest = out;
-+
-+	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
-+		return -EINVAL;
-+
-+	do {
-+		tpm_cmd.header.in = tpm2_getrandom_header;
-+		tpm_cmd.params.tpm2_getrandom_in.size = cpu_to_be16(num_bytes);
-+
-+		err = tpm_transmit_cmd(chip, &tpm_cmd, sizeof(tpm_cmd),
-+				       "attempting get random");
-+		if (err)
-+			break;
-+
-+		recd = be16_to_cpu(tpm_cmd.params.tpm2_getrandom_out.size);
-+		memcpy(dest, tpm_cmd.params.tpm2_getrandom_out.buffer, recd);
-+
-+		dest += recd;
-+		total += recd;
-+		num_bytes -= recd;
-+	} while (retries-- && total < max);
-+
-+	return total ? total : -EIO;
-+}
-diff --git a/drivers/char/tpm/tpm2.h b/drivers/char/tpm/tpm2.h
-index e4ed2e5..6ec84bc 100644
---- a/drivers/char/tpm/tpm2.h
-+++ b/drivers/char/tpm/tpm2.h
-@@ -38,6 +38,7 @@ enum tpm2_algorithms {
- enum tpm2_command_codes {
- 	TPM2_CC_SELF_TEST	= 0x0143,
- 	TPM2_CC_GET_CAPABILITY	= 0x017A,
-+	TPM2_CC_GET_RANDOM	= 0x017B,
- 	TPM2_CC_PCR_READ	= 0x017E,
- 	TPM2_CC_PCR_EXTEND	= 0x0182,
- };
-@@ -61,5 +62,6 @@ ssize_t tpm2_get_tpm_pt(struct device *dev, u32 property_id,  u32* value,
- int tpm2_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
- int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash);
- int tpm2_do_selftest(struct tpm_chip *chip);
-+int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max);
- 
- #endif /* __DRIVERS_CHAR_TPM2_H__ */
--- 
-2.1.0
+> This is what we did early on to prototype this concept, but the problem
+> with this approach we duplicate all of the creation code, which leads to
+> maintenance errors, and is inconsistent with the goals of the _DSD which
+> is to reuse the same schemas for ACPI and FDT. If we have separate pdata
+> creation functions anyway, we are leaving much of the advantage of the
+> common schema on the table. Namely the ability to reuse drivers relatively
+> easily across firmware implementations. We don't want driver authors to
+> have to care if it's ACPI or FDT.
 
+I think we are absolutely in agreement about the basic principle here,
+but disagree on how far we'd want to take the abstraction.
+
+I got a little confused by the leds-gpio example, as I initially saw
+that as generic infrastructure rather than a specific driver. As I just
+wrote in my reply to Rafael, I generally believe we should strive to
+have generic driver-side interfaces so drivers don't have to care,
+but keep the differences in subsystem specific code.
+
+> We would have preferred to have deprecated the of property interface in
+> favor of the new generic device_property interface, but Grant specifically
+> requested that we update drivers individually rather than all at once,
+> which means we can't just kill the OF interface.
+
+I don't actually have a strong opinion on that matter, having only the
+device property interface does have some advantages as well, but I also
+agree that we are somewhat better off not having to change all the drivers.
+
+> We agreed to that, somewhat reluctantly as it adds more work in updating
+> the drivers over time which will slow adoption, but I understand the
+> desire not to make large sweeping changes due to the risk of breaking
+> things inadvertently as we cannot expect to be able to test all of them.
+> That said, I don't want to forget that the goal is to use the common
+> interface over time as we convert individual drivers, and using the common
+> interface means we need a common iterator function and that we not have fw
+> implementation specific pdata create functions.
+
+I've looked a bit closer at how the LED subsystem handles sub-nodes
+in DT at the moment. It seems that there is some duplication between
+the drivers already, as they all implement a variation of the sub-node
+parsing code.
+
+There are other non-LED drivers with similar loops, but they seem to be
+either very specialized, or explicitly for DT abstractions, so I'm still
+not convinced we need a generic loop-through-child-nodes-and-parse-properties
+interface.
+
+How would you feel about a more general way of probing LED, using
+a new helper in the leds-core that iterates over the child nodes
+and parses the standard properties but calls into a driver specific
+callback to parse the specific properties?
+It's probably much more work than your current approach, but it seems
+to me that there is more to gain by solving the problem for LED
+drivers in particular to cut down the per-driver duplication
+at the same time as the per-firmware-interface duplication.
+
+As a start, we could probably take the proposed device_for_each_child_node
+and move that into the leds-core, changing the fw_dev_node argument
+for an led_classdev with the addition of the of_node and acpi_object
+members. It would still leave it up to the gpio-leds driver to do
+
+	if (led_cdev->of_node)
+		gpiod = devm_of_get_gpiod(led_cdev->of_node, ...);
+	else
+		gpiod = devm_acpi_get_gpiod(led_cdev->acpi_object, ...);
+
+but there seems little benefit in abstracting this because there is
+only one driver that needs it.
+
+	Arnd
