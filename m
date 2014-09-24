@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaIXWFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 18:05:52 -0400
-Received: from [118.99.31.190] ([118.99.31.190]:49411 "EHLO a.00k8.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725AbaIXWFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 18:05:51 -0400
-X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 18:05:50 EDT
-Date: Thu, 25 Sep 2014 05:58:08 +0800
-From: "LED LENSER" <iu2@a.00k8.com>
-Reply-To: seles1@jrs-tech.net
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: LED LENSER Flashlight and headlamp
-Message-ID: <201409250558084083703@a.00k8.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1752876AbaIXWGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 18:06:09 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:37572 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752603AbaIXWGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 18:06:08 -0400
+Message-ID: <5423404B.2050400@osg.samsung.com>
+Date: Wed, 24 Sep 2014 16:06:03 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+To: Davidlohr Bueso <dave@stgolabs.net>
+CC: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
+        luto@amacapital.net, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH v2 1/7] selftests: add kselftest framework for uniform
+ test reporting
+References: <cover.1411506121.git.shuahkh@osg.samsung.com> <0b1961bd4d2104beafd2e8c1a17690f6efe14a61.1411506121.git.shuahkh@osg.samsung.com> <1411546144.30630.10.camel@linux-t7sj.site>
+In-Reply-To: <1411546144.30630.10.camel@linux-t7sj.site>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8OM5uZT018988
 
-Have a nice day,friend.
+On 09/24/2014 02:09 AM, Davidlohr Bueso wrote:
 
-Glad to know you are interested in LED LENSER flashlight. We do LED LENSER Wholesale.
-If you need,we will offer you every model with competitive price.
-For more information,please contact us in any time
-it will be our honor to serve you well and be your supplier
-Waitting for your reply.
+>> +/* counters */
+>> +static int ksft_pass;
+>> +static int ksft_fail;
+>> +static int ksft_xfail;
+>> +static int ksft_xpass;
+>> +static int ksft_xskip;
+> 
+> unsigned int?
 
-Best regards
-Hellen
+Yes unsigned int is a better choice.
 
-JRS Technology Co.,Ltd
+> 
+>> +static inline void ksft_inc_pass_cnt(void) { ksft_pass++; }
+>> +static inline void ksft_inc_fail_cnt(void) { ksft_fail++; }
+>> +static inline void ksft_inc_xfail_cnt(void) { ksft_xfail++; }
+>> +static inline void ksft_inc_xpass_cnt(void) { ksft_xpass++; }
+>> +static inline void ksft_inc_xskip_cnt(void) { ksft_xskip++; }
+> 
+> It would probably make sense to have the counters in a structures,
+> something like: struct ksft_counter { ... } ksft_cnt;
+> 
+> Then just pass it around the proposed functions as arguments. That also
+> minimizes a bit the global variables and would allow you to easily
+> change it in the future.
 
-E-mail : sales@JRS-Tech.net
-Msn:     techjrsb@msn.cn
-Skype:   techjrsa
-http://www.jrs-tech.net
+How does the following look?
 
-we would be grateful if you will be our led lenser catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+struct ksft_count
+{
+        unsigned int ksft_pass;
+        unsigned int ksft_fail;
+        unsigned int ksft_xfail;
+        unsigned int ksft_xpass;
+        unsigned int ksft_xskip;
+};
+
+static ksft_count ksft_cnt;
+
+static inline void ksft_inc_pass_cnt(void) { ksft_cnt.ksft_pass++; }
+static inline void ksft_inc_fail_cnt(void) { ksft_cnt.ksft_fail++; }
+static inline void ksft_inc_xfail_cnt(void) { ksft_cnt.ksft_xfail++; }
+static inline void ksft_inc_xpass_cnt(void) { ksft_cnt.ksft_xpass++; }
+static inline void ksft_inc_xskip_cnt(void) { ksft_cnt.ksft_xskip++; }
+
+With this approach, tests don't have to define their own counter
+variable and pass it in. I am looking to abstract the framework
+as much as possible.
+
+thanks,
+-- Shuah
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
