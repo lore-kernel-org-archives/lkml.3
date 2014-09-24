@@ -1,141 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaIXGtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 02:49:17 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:33220 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaIXGtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 02:49:14 -0400
-X-Auth-Info: By2jACooslfxXGnXddSVq0y/vXG15qxrLN1PstSpRZU=
-From: Heiko Schocher <hs@denx.de>
-To: linux-usb@vger.kernel.org
-Cc: Heiko Schocher <hs@denx.de>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Oliver Neukum <oliver@neukum.name>, netdev@vger.kernel.org,
-        linux-api@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Macpaul Lin <macpaul@gmail.com>
-Subject: [PATCH] usb: gadget: f_rndis: fix usb_interface_descriptor for rndis
-Date: Wed, 24 Sep 2014 08:48:59 +0200
-Message-Id: <1411541339-32400-1-git-send-email-hs@denx.de>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752501AbaIXGuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 02:50:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:47568 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826AbaIXGum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 02:50:42 -0400
+Date: Wed, 24 Sep 2014 16:50:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoffer Dall <cdall@cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Auger <eric.auger@linaro.org>
+Subject: Re: linux-next: build failure after merge of the kvm-arm tree
+Message-ID: <20140924165030.41c90baf@canb.auug.org.au>
+In-Reply-To: <20140922140645.7c2ad9c8@canb.auug.org.au>
+References: <20140922140645.7c2ad9c8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/192MeR9bTmk4VsjCJO8.nus"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use the values for RNDIS over Ethernet as defined in
-http://www.usb.org/developers/defined_class
-(search for RDNIS):
+--Sig_/192MeR9bTmk4VsjCJO8.nus
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-- baseclass: 0xef (miscellaneous)
-- subclass: 0x04
-- protocol: 0x01
+Hi all,
 
-with this setings the file in Documentation/usb/linux.inf is
-obsolete.
+On Mon, 22 Sep 2014 14:06:45 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi all,
+>=20
+> After merging the kvm-arm tree, today's linux-next build (x86_64 allmodco=
+nfig)
+> failed like this:
+>=20
+> arch/x86/kvm/../../../virt/kvm/eventfd.c: In function 'kvm_register_irq_a=
+ck_notifier':
+> arch/x86/kvm/../../../virt/kvm/eventfd.c:493:2: error: implicit declarati=
+on of function 'kvm_vcpu_request_scan_ioapic' [-Werror=3Dimplicit-function-=
+declaration]
+>   kvm_vcpu_request_scan_ioapic(kvm);
+>   ^
+>=20
+> Probably caused by commit 0ba09511ddc3 ("KVM: EVENTFD: remove inclusion
+> of irq.h").
+>=20
+> I have used the kvm-arm tree from next-20140919 for today.
 
-Signed-off-by: Heiko Schocher <hs@denx.de>
+Still getting this failure.
 
----
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Oliver Neukum <oliver@neukum.name>
-Cc: netdev@vger.kernel.org
-Cc: linux-api@vger.kernel.org
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Macpaul Lin <macpaul@gmail.com>
+--Sig_/192MeR9bTmk4VsjCJO8.nus
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Tested with the "USB Compliance test suite which runs Windows", see:
-http://www.usb.org/developers/tools/usb20_tools/#usb20cv
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
- drivers/net/usb/cdc_ether.c           | 6 +++---
- drivers/usb/core/generic.c            | 6 +++---
- drivers/usb/gadget/function/f_rndis.c | 6 +++---
- include/uapi/linux/usb/cdc.h          | 3 +++
- 4 files changed, 12 insertions(+), 9 deletions(-)
+iQIcBAEBCAAGBQJUImm+AAoJEMDTa8Ir7ZwVILgP/0QSK6aPjzRXBcG7zuHLchu8
+DtNNNftbm2eYJ1q3zbqHWaSKKMi8ud/YeqewVbPURGWKCUlYPKQoS3Zr+lVk+V0X
+/d3nXMLcQvgWPlD1xmNfsA5qcRjhCmBULg1B3UWrZ0RUU/jBDkEct2ETyoiljflT
+6S39qhwO75igX2XwbUlDNhkgpKBOFM7SDkOwKkgjQzzumBSRRhUcBEakldtX5LwD
+ay1+DGSiJAoCCMLRZCGtV4jemCflSJDvxJbW9vEnVY1OD0ngRCwkYF6Vi25uj5EE
+Z4JIKih+GK/p/ayoFYoY96GWtAKM1V5gMrmiO/MyjxGW2GmFHBhw/4MOJcZKFO9T
+SVkNfJwQc6hQT2QgNMGwTeA3JUk2KouQMpFC44qz+cUL155kuOefJ7xZRucFGGQX
+zN1xVJKNiZCtNZBU9iSy9lNfMg5juLWg4eH4BAQCetF1ud1qaXvcCBxZsES5i1oo
+P5W5gwWh8whGck80mdm2yGoivmTVRUTS2fJEvFyUy/ZWk/kI262HwWDFF/MDZ0Pq
+JABm2QIYRYCeQJms0IGL34yCRP4PX83H7l2kLz5xo/njaqGaG1pUopcBkxwZjQ8e
+UuEOgczNtf6lEvD7sOIxIej18Y2ykOYYd+pCAeBIvr2UNCcgrqjXWX3ax0x+Zbfr
+Z2hZy2LgSgSU9w1u6tkY
+=UbSn
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
-index 2a32d91..9c216c2 100644
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -35,9 +35,9 @@
- 
- static int is_rndis(struct usb_interface_descriptor *desc)
- {
--	return (desc->bInterfaceClass == USB_CLASS_COMM &&
--		desc->bInterfaceSubClass == 2 &&
--		desc->bInterfaceProtocol == 0xff);
-+	return (desc->bInterfaceClass == USB_CLASS_MISC &&
-+		desc->bInterfaceSubClass == USB_CDC_SUBCLASS_RNDIS &&
-+		desc->bInterfaceProtocol == USB_CDC_RNDIS_PROTO_ETH);
- }
- 
- static int is_activesync(struct usb_interface_descriptor *desc)
-diff --git a/drivers/usb/core/generic.c b/drivers/usb/core/generic.c
-index 358ca8d..a2a4e05 100644
---- a/drivers/usb/core/generic.c
-+++ b/drivers/usb/core/generic.c
-@@ -28,9 +28,9 @@ static inline const char *plural(int n)
- 
- static int is_rndis(struct usb_interface_descriptor *desc)
- {
--	return desc->bInterfaceClass == USB_CLASS_COMM
--		&& desc->bInterfaceSubClass == 2
--		&& desc->bInterfaceProtocol == 0xff;
-+	return desc->bInterfaceClass == USB_CLASS_MISC
-+		&& desc->bInterfaceSubClass == USB_CDC_SUBCLASS_RNDIS
-+		&& desc->bInterfaceProtocol == USB_CDC_RNDIS_PROTO_ETH;
- }
- 
- static int is_activesync(struct usb_interface_descriptor *desc)
-diff --git a/drivers/usb/gadget/function/f_rndis.c b/drivers/usb/gadget/function/f_rndis.c
-index ddb09dc..cc06046 100644
---- a/drivers/usb/gadget/function/f_rndis.c
-+++ b/drivers/usb/gadget/function/f_rndis.c
-@@ -117,9 +117,9 @@ static struct usb_interface_descriptor rndis_control_intf = {
- 	/* .bInterfaceNumber = DYNAMIC */
- 	/* status endpoint is optional; this could be patched later */
- 	.bNumEndpoints =	1,
--	.bInterfaceClass =	USB_CLASS_COMM,
--	.bInterfaceSubClass =   USB_CDC_SUBCLASS_ACM,
--	.bInterfaceProtocol =   USB_CDC_ACM_PROTO_VENDOR,
-+	.bInterfaceClass =	USB_CLASS_MISC,
-+	.bInterfaceSubClass =   USB_CDC_SUBCLASS_RNDIS,
-+	.bInterfaceProtocol =   USB_CDC_RNDIS_PROTO_ETH,
- 	/* .iInterface = DYNAMIC */
- };
- 
-diff --git a/include/uapi/linux/usb/cdc.h b/include/uapi/linux/usb/cdc.h
-index b6a9cdd..8e8fc85 100644
---- a/include/uapi/linux/usb/cdc.h
-+++ b/include/uapi/linux/usb/cdc.h
-@@ -12,6 +12,7 @@
- #include <linux/types.h>
- 
- #define USB_CDC_SUBCLASS_ACM			0x02
-+#define USB_CDC_SUBCLASS_RNDIS			0x04
- #define USB_CDC_SUBCLASS_ETHERNET		0x06
- #define USB_CDC_SUBCLASS_WHCM			0x08
- #define USB_CDC_SUBCLASS_DMM			0x09
-@@ -31,6 +32,8 @@
- #define USB_CDC_ACM_PROTO_AT_CDMA		6
- #define USB_CDC_ACM_PROTO_VENDOR		0xff
- 
-+#define USB_CDC_RNDIS_PROTO_ETH			1
-+
- #define USB_CDC_PROTO_EEM			7
- 
- #define USB_CDC_NCM_PROTO_NTB			1
--- 
-1.8.3.1
-
+--Sig_/192MeR9bTmk4VsjCJO8.nus--
