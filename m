@@ -1,69 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaIXONb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:13:31 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:52744 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaIXON3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:13:29 -0400
-Date: Wed, 24 Sep 2014 15:13:22 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, lm-sensors@lm-sensors.org, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v6 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-Message-ID: <20140924141322.GG32069@lee--X1>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de>
- <20140924123548.GE32069@lee--X1>
- <5422C612.70906@roeck-us.net>
+	id S1753116AbaIXONz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:13:55 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:38511 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969AbaIXONx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:13:53 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
+        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
+        xjq@rock-chips.com, hj@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] clk: rockchip: use the clock id for nodes init
+Date: Wed, 24 Sep 2014 16:13:38 +0200
+Message-ID: <2851535.OK273GeIKc@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1411565795-26966-3-git-send-email-kever.yang@rock-chips.com>
+References: <1411565795-26966-1-git-send-email-kever.yang@rock-chips.com> <1411565795-26966-3-git-send-email-kever.yang@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5422C612.70906@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> On 09/24/2014 05:35 AM, Lee Jones wrote:
-> >On Wed, 27 Aug 2014, Andreas Werner wrote:
-> >
-> >>Added driver to support the 14F021P00 BMC Watchdog.
-> >>The BMC is a Board Management Controller including watchdog functionality.
-> >>
-> >>Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> >>---
-> >>  drivers/watchdog/Kconfig         |  10 ++
-> >>  drivers/watchdog/Makefile        |   1 +
-> >>  drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 214 insertions(+)
-> >>  create mode 100644 drivers/watchdog/menf21bmc_wdt.c
-> >
-> >I see no reason to keep this dragging on.  I'm going to apply this
-> >along with the remainder of the set and send a pull-request to all the
-> >other Maintainers.  This branch is currently under test.
-> >
-> >Any fix-ups for review comments can go in subsequently.
-> >
-> Tend to agree. I thought I sent it before, but in case I didn't
+Am Mittwoch, 24. September 2014, 21:36:35 schrieb Kever Yang:
+> This patch use the new defined clock ID to initial the clock nodes.
 > 
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> This patch also add the clock nodes in PD_VIDEO.
+
+Commit messages like this [two things the patch does, connected by 
+"and"/"also"] are normally a good indicator that it should be split into two 
+patches.
+
+
 > 
-> [ for the watchdog driver ]
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 
-Sorry Guenter, the branch is tested, tagged and pushed.
+apart from one style-nit below
 
-Will be sending a pull-request shortly.
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> ---
+> 
+>  drivers/clk/rockchip/clk-rk3288.c | 79
+> ++++++++++++++++++++++----------------- 1 file changed, 45 insertions(+),
+> 34 deletions(-)
+> 
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c
+> b/drivers/clk/rockchip/clk-rk3288.c index 8ea885b..9268818 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -219,12 +219,12 @@ static struct rockchip_clk_branch
+> rk3288_clk_branches[] __initdata = { RK3288_CLKSEL_CON(1), 15, 1, MFLAGS,
+> 3, 5, DFLAGS),
+>  	DIV(0, "aclk_cpu_pre", "aclk_cpu_src", 0,
+>  			RK3288_CLKSEL_CON(1), 0, 3, DFLAGS),
+> -	GATE(0, "aclk_cpu", "aclk_cpu_pre", 0,
+> +	GATE(ACLK_CPU, "aclk_cpu", "aclk_cpu_pre", 0,
+>  			RK3288_CLKGATE_CON(0), 3, GFLAGS),
+> -	COMPOSITE_NOMUX(0, "pclk_cpu", "aclk_cpu_pre", 0,
+> +	COMPOSITE_NOMUX(PCLK_CPU, "pclk_cpu", "aclk_cpu_pre", 0,
+>  			RK3288_CLKSEL_CON(1), 12, 3, DFLAGS,
+>  			RK3288_CLKGATE_CON(0), 5, GFLAGS),
+> -	COMPOSITE_NOMUX_DIVTBL(0, "hclk_cpu", "aclk_cpu_pre", 0,
+> +	COMPOSITE_NOMUX_DIVTBL(HCLK_CPU, "hclk_cpu", "aclk_cpu_pre", 0,
+>  			RK3288_CLKSEL_CON(1), 8, 2, DFLAGS, div_hclk_cpu_t,
+>  			RK3288_CLKGATE_CON(0), 4, GFLAGS),
+>  	GATE(0, "c2c_host", "aclk_cpu_src", 0,
+> @@ -296,6 +296,17 @@ static struct rockchip_clk_branch rk3288_clk_branches[]
+> __initdata = { COMPOSITE(0, "aclk_vdpu", mux_pll_src_cpll_gpll_usb480m_p,
+> 0,
+>  			RK3288_CLKSEL_CON(32), 14, 2, MFLAGS, 8, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 11, GFLAGS),
+> +	/*
+> +	 * We use aclk_vdpu by default GRF_SOC_CON0[7] setting in system,
+> +	 * so we ignore the mux and make clocks nodes as following,
+> +	 * NOTE THAT hclk_vcodec is fix div by 4 from aclk_vcodec_pre.
+> +	 * */
+
+comment ending is off, i.e. "* */" should be simple "*/" instead
+
+
+> +	GATE(ACLK_VCODEC, "aclk_vcodec", "aclk_vdpu", 0,
+> +			RK3288_CLKGATE_CON(9), 0, GFLAGS),
+> +	GATE(0, "hclk_vcodec_pre", "aclk_vdpu", 0,
+> +			RK3288_CLKGATE_CON(3), 10, GFLAGS),
+> +	GATE(HCLK_VCODEC, "hclk_vcodec", "hclk_vcodec_pre", 0,
+> +			RK3288_CLKGATE_CON(9), 1, GFLAGS),
+> 
+>  	COMPOSITE(0, "aclk_vio0", mux_pll_src_cpll_gpll_usb480m_p, 0,
+>  			RK3288_CLKSEL_CON(31), 6, 2, MFLAGS, 0, 5, DFLAGS,
+> @@ -309,7 +320,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[]
+> __initdata = { COMPOSITE(0, "aclk_rga_pre",
+> mux_pll_src_cpll_gpll_usb480m_p, 0, RK3288_CLKSEL_CON(30), 6, 2, MFLAGS, 0,
+> 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 5, GFLAGS),
+> -	COMPOSITE(0, "sclk_rga", mux_pll_src_cpll_gpll_usb480m_p, 0,
+> +	COMPOSITE(SCLK_RGA, "sclk_rga", mux_pll_src_cpll_gpll_usb480m_p, 0,
+>  			RK3288_CLKSEL_CON(30), 14, 2, MFLAGS, 8, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 4, GFLAGS),
+> 
+> @@ -320,35 +331,35 @@ static struct rockchip_clk_branch
+> rk3288_clk_branches[] __initdata = { RK3288_CLKSEL_CON(29), 6, 2, MFLAGS,
+> 8, 8, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 3, GFLAGS),
+> 
+> -	COMPOSITE_NODIV(0, "sclk_edp_24m", mux_edp_24m_p, 0,
+> +	COMPOSITE_NODIV(SCLK_EDP_24M, "sclk_edp_24m", mux_edp_24m_p, 0,
+>  			RK3288_CLKSEL_CON(28), 15, 1, MFLAGS,
+>  			RK3288_CLKGATE_CON(3), 12, GFLAGS),
+> -	COMPOSITE(0, "sclk_edp", mux_pll_src_cpll_gpll_npll_p, 0,
+> +	COMPOSITE(SCLK_EDP, "sclk_edp", mux_pll_src_cpll_gpll_npll_p, 0,
+>  			RK3288_CLKSEL_CON(28), 6, 2, MFLAGS, 0, 6, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 13, GFLAGS),
+> 
+> -	COMPOSITE(0, "sclk_isp", mux_pll_src_cpll_gpll_npll_p, 0,
+> +	COMPOSITE(SCLK_ISP, "sclk_isp", mux_pll_src_cpll_gpll_npll_p, 0,
+>  			RK3288_CLKSEL_CON(6), 6, 2, MFLAGS, 0, 6, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 14, GFLAGS),
+> -	COMPOSITE(0, "sclk_isp_jpe", mux_pll_src_cpll_gpll_npll_p, 0,
+> +	COMPOSITE(SCLK_ISP_JPE, "sclk_isp_jpe", mux_pll_src_cpll_gpll_npll_p, 0,
+>  			RK3288_CLKSEL_CON(6), 14, 2, MFLAGS, 8, 6, DFLAGS,
+>  			RK3288_CLKGATE_CON(3), 15, GFLAGS),
+> 
+> -	GATE(0, "sclk_hdmi_hdcp", "xin24m", 0,
+> +	GATE(SCLK_HDMI_HDCP, "sclk_hdmi_hdcp", "xin24m", 0,
+>  			RK3288_CLKGATE_CON(5), 12, GFLAGS),
+> -	GATE(0, "sclk_hdmi_cec", "xin32k", 0,
+> +	GATE(SCLK_HDMI_CEC, "sclk_hdmi_cec", "xin32k", 0,
+>  			RK3288_CLKGATE_CON(5), 11, GFLAGS),
+> 
+> -	COMPOSITE(0, "aclk_hevc", mux_pll_src_cpll_gpll_npll_p, 0,
+> +	COMPOSITE(ACLK_HEVC, "aclk_hevc", mux_pll_src_cpll_gpll_npll_p, 0,
+>  			RK3288_CLKSEL_CON(39), 14, 2, MFLAGS, 8, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(13), 13, GFLAGS),
+> -	DIV(0, "hclk_hevc", "aclk_hevc", 0,
+> +	DIV(HCLK_HEVC, "hclk_hevc", "aclk_hevc", 0,
+>  			RK3288_CLKSEL_CON(40), 12, 2, DFLAGS),
+> 
+> -	COMPOSITE(0, "sclk_hevc_cabac", mux_pll_src_cpll_gpll_npll_p, 0,
+> +	COMPOSITE(SCLK_HEVC_CABAC, "sclk_hevc_cabac",
+> mux_pll_src_cpll_gpll_npll_p, 0, RK3288_CLKSEL_CON(42), 6, 2, MFLAGS, 0, 5,
+> DFLAGS,
+>  			RK3288_CLKGATE_CON(13), 14, GFLAGS),
+> -	COMPOSITE(0, "sclk_hevc_core", mux_pll_src_cpll_gpll_npll_p, 0,
+> +	COMPOSITE(SCLK_HEVC_CORE, "sclk_hevc_core", mux_pll_src_cpll_gpll_npll_p,
+> 0, RK3288_CLKSEL_CON(42), 14, 2, MFLAGS, 8, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(13), 15, GFLAGS),
+> 
+> @@ -371,13 +382,13 @@ static struct rockchip_clk_branch
+> rk3288_clk_branches[] __initdata = { COMPOSITE(0, "aclk_peri_src",
+> mux_pll_src_cpll_gpll_p, 0,
+>  			RK3288_CLKSEL_CON(10), 15, 1, MFLAGS, 0, 5, DFLAGS,
+>  			RK3288_CLKGATE_CON(2), 0, GFLAGS),
+> -	COMPOSITE_NOMUX(0, "pclk_peri", "aclk_peri_src", 0,
+> +	COMPOSITE_NOMUX(PCLK_PERI, "pclk_peri", "aclk_peri_src", 0,
+>  			RK3288_CLKSEL_CON(10), 12, 2, DFLAGS | 
+CLK_DIVIDER_POWER_OF_TWO,
+>  			RK3288_CLKGATE_CON(2), 3, GFLAGS),
+> -	COMPOSITE_NOMUX(0, "hclk_peri", "aclk_peri_src", 0,
+> +	COMPOSITE_NOMUX(HCLK_PERI, "hclk_peri", "aclk_peri_src", 0,
+>  			RK3288_CLKSEL_CON(10), 8, 2, DFLAGS | CLK_DIVIDER_POWER_OF_TWO,
+>  			RK3288_CLKGATE_CON(2), 2, GFLAGS),
+> -	GATE(0, "aclk_peri", "aclk_peri_src", 0,
+> +	GATE(ACLK_PERI, "aclk_peri", "aclk_peri_src", 0,
+>  			RK3288_CLKGATE_CON(2), 1, GFLAGS),
+> 
+>  	/*
+> @@ -643,34 +654,34 @@ static struct rockchip_clk_branch
+> rk3288_clk_branches[] __initdata = { GATE(HCLK_RGA, "hclk_rga", "hclk_vio",
+> 0, RK3288_CLKGATE_CON(15), 1, GFLAGS), GATE(HCLK_VOP0, "hclk_vop0",
+> "hclk_vio", 0, RK3288_CLKGATE_CON(15), 6, GFLAGS), GATE(HCLK_VOP1,
+> "hclk_vop1", "hclk_vio", 0, RK3288_CLKGATE_CON(15), 8, GFLAGS), -	GATE(0,
+> "hclk_vio_ahb_arbi", "hclk_vio", 0, RK3288_CLKGATE_CON(15), 9, GFLAGS),
+> -	GATE(0, "hclk_vio_niu", "hclk_vio", 0, RK3288_CLKGATE_CON(15), 10,
+> GFLAGS), -	GATE(0, "hclk_vip", "hclk_vio", 0, RK3288_CLKGATE_CON(15), 15,
+> GFLAGS), +	GATE(HCLK_VIO_AHB_ARBI, "hclk_vio_ahb_arbi", "hclk_vio", 0,
+> RK3288_CLKGATE_CON(15), 9, GFLAGS), +	GATE(HCLK_VIO_NIU, "hclk_vio_niu",
+> "hclk_vio", 0, RK3288_CLKGATE_CON(15), 10, GFLAGS), +	GATE(HCLK_VIP,
+> "hclk_vip", "hclk_vio", 0, RK3288_CLKGATE_CON(15), 15, GFLAGS),
+> GATE(HCLK_IEP, "hclk_iep", "hclk_vio", 0, RK3288_CLKGATE_CON(15), 3,
+> GFLAGS), GATE(HCLK_ISP, "hclk_isp", "hclk_vio", 0, RK3288_CLKGATE_CON(16),
+> 1, GFLAGS), -	GATE(0, "hclk_vio2_h2p", "hclk_vio", 0,
+> RK3288_CLKGATE_CON(16), 10, GFLAGS), -	GATE(0, "pclk_mipi_dsi0",
+> "hclk_vio", 0, RK3288_CLKGATE_CON(16), 4, GFLAGS), -	GATE(0,
+> "pclk_mipi_dsi1", "hclk_vio", 0, RK3288_CLKGATE_CON(16), 5, GFLAGS),
+> -	GATE(0, "pclk_mipi_csi", "hclk_vio", 0, RK3288_CLKGATE_CON(16), 6,
+> GFLAGS), -	GATE(0, "pclk_lvds_phy", "hclk_vio", 0, RK3288_CLKGATE_CON(16),
+> 7, GFLAGS), -	GATE(0, "pclk_edp_ctrl", "hclk_vio", 0,
+> RK3288_CLKGATE_CON(16), 8, GFLAGS), -	GATE(0, "pclk_hdmi_ctrl", 
+"hclk_vio",
+> 0, RK3288_CLKGATE_CON(16), 9, GFLAGS), -	GATE(0, "pclk_vio2_h2p",
+> "hclk_vio", 0, RK3288_CLKGATE_CON(16), 11, GFLAGS), +	GATE(HCLK_VIO2_H2P,
+> "hclk_vio2_h2p", "hclk_vio", 0, RK3288_CLKGATE_CON(16), 10, GFLAGS),
+> +	GATE(PCLK_MIPI_DSI0, "pclk_mipi_dsi0", "hclk_vio", 0,
+> RK3288_CLKGATE_CON(16), 4, GFLAGS), +	GATE(PCLK_MIPI_DSI1,
+> "pclk_mipi_dsi1", "hclk_vio", 0, RK3288_CLKGATE_CON(16), 5, GFLAGS),
+> +	GATE(PCLK_MIPI_CSI, "pclk_mipi_csi", "hclk_vio", 0,
+> RK3288_CLKGATE_CON(16), 6, GFLAGS), +	GATE(PCLK_LVDS_PHY, "pclk_lvds_phy",
+> "hclk_vio", 0, RK3288_CLKGATE_CON(16), 7, GFLAGS), +	GATE(PCLK_EDP_CTRL,
+> "pclk_edp_ctrl", "hclk_vio", 0, RK3288_CLKGATE_CON(16), 8, GFLAGS),
+> +	GATE(PCLK_HDMI_CTRL, "pclk_hdmi_ctrl", "hclk_vio", 0,
+> RK3288_CLKGATE_CON(16), 9, GFLAGS), +	GATE(PCLK_VIO2_H2P, "pclk_vio2_h2p",
+> "hclk_vio", 0, RK3288_CLKGATE_CON(16), 11, GFLAGS),
+> 
+>  	/* aclk_vio0 gates */
+>  	GATE(ACLK_VOP0, "aclk_vop0", "aclk_vio0", 0, RK3288_CLKGATE_CON(15), 5,
+> GFLAGS), -	GATE(0, "aclk_iep", "aclk_vio0", 0, RK3288_CLKGATE_CON(15), 2,
+> GFLAGS), -	GATE(0, "aclk_vio0_niu", "aclk_vio0", 0, 
+RK3288_CLKGATE_CON(15),
+> 11, GFLAGS), -	GATE(0, "aclk_vip", "aclk_vio0", 0, 
+RK3288_CLKGATE_CON(15),
+> 14, GFLAGS), +	GATE(ACLK_IEP, "aclk_iep", "aclk_vio0", 0,
+> RK3288_CLKGATE_CON(15), 2, GFLAGS), +	GATE(ACLK_VIO0_NIU, "aclk_vio0_niu",
+> "aclk_vio0", 0, RK3288_CLKGATE_CON(15), 11, GFLAGS), +	GATE(ACLK_VIP,
+> "aclk_vip", "aclk_vio0", 0, RK3288_CLKGATE_CON(15), 14, GFLAGS),
+> 
+>  	/* aclk_vio1 gates */
+>  	GATE(ACLK_VOP1, "aclk_vop1", "aclk_vio1", 0, RK3288_CLKGATE_CON(15), 7,
+> GFLAGS), -	GATE(0, "aclk_isp", "aclk_vio1", 0, RK3288_CLKGATE_CON(16), 2,
+> GFLAGS), -	GATE(0, "aclk_vio1_niu", "aclk_vio1", 0, 
+RK3288_CLKGATE_CON(15),
+> 12, GFLAGS), +	GATE(ACLK_ISP, "aclk_isp", "aclk_vio1", 0,
+> RK3288_CLKGATE_CON(16), 2, GFLAGS), +	GATE(ACLK_VIO1_NIU, "aclk_vio1_niu",
+> "aclk_vio1", 0, RK3288_CLKGATE_CON(15), 12, GFLAGS),
+> 
+>  	/* aclk_rga_pre gates */
+>  	GATE(ACLK_RGA, "aclk_rga", "aclk_rga_pre", 0, RK3288_CLKGATE_CON(15), 0,
+> GFLAGS), -	GATE(0, "aclk_rga_niu", "aclk_rga_pre", 0,
+> RK3288_CLKGATE_CON(15), 13, GFLAGS), +	GATE(ACLK_RGA_NIU, "aclk_rga_niu",
+> "aclk_rga_pre", 0, RK3288_CLKGATE_CON(15), 13, GFLAGS),
+> 
+>  	/*
+>  	 * Other ungrouped clocks.
+
