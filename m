@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaIXFjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 01:39:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:46265 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909AbaIXFjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 01:39:06 -0400
-Date: Wed, 24 Sep 2014 15:38:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Guy Briggs <rgb@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: linux-next: manual merge of the tip tree with the audit tree
-Message-ID: <20140924153857.191a97a4@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752025AbaIXFi4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 01:38:56 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:37855 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902AbaIXFiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 01:38:54 -0400
+Date: Tue, 23 Sep 2014 22:26:47 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Georgi Djakov <gdjakov@mm-sol.com>, pramod.gurav@smartplayin.com,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [GIT PULL] qcom DT changes for v3.18
+Message-ID: <20140924052647.GE30340@localhost>
+References: <13536005-9FFF-4362-8B87-5F0DC9930D29@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5RuMqHSjQxWmZ2iYe6Bek_J"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13536005-9FFF-4362-8B87-5F0DC9930D29@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5RuMqHSjQxWmZ2iYe6Bek_J
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 12, 2014 at 02:40:41PM -0500, Kumar Gala wrote:
+> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+> 
+>   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.18
+> 
+> for you to fetch changes up to edb81ca3bf586ad526ee67b245cb87f7c7142a87:
+> 
+>   ARM: DT: QCOM: apq8064: Add dma support for sdcc node (2014-09-11 12:07:40 -0500)
+> 
+> ----------------------------------------------------------------
+> Qualcomm ARM Based Device Tree Updates for v3.18
+> 
+> * Added APQ8084 dt support for clocks, serial, pinctrl, and IFC6540 board
+> * Added IPQ8064 dt support for basic SoC and AP148 board
+> * Added APQ8064 dt support for pinctrl, reset, SDHC, and multimedia clocks
+> * Added PMIC 8058 dt support on MSM8660, enables PMIC based power key,
+>   keypad, rtc, and vibrator
+> * Added PMIC 8921 dt support on MSM8960, enables PMIC based power key,
+>   keypad, and rtc
 
-Hi all,
+Merged, thanks.
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/kernel/entry_64.S between commit b4f0d3755c5e ("audit: x86:
-drop arch from __audit_syscall_entry() interface") from the audit tree
-and commit 1dcf74f6edfc ("x86_64, entry: Use split-phase
-syscall_trace_enter for 64-bit syscalls") from the tip tree.
 
-I fixed it up (probably incorrectly - I removed the auditsys section
-as that is what the latter did) and can carry the fix as necessary (no
-action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/5RuMqHSjQxWmZ2iYe6Bek_J
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUIlj3AAoJEMDTa8Ir7ZwVXrMQAJLqwRsUszFniIgdVsSDoK3r
-lGyMt537l175TqijSpiebnJZKuylUgsFldn58phRW1N+YQ8gE7RlvOE42lJEOjJW
-zV/vEMQCEfmDpZVMCq1VRtJt4xwVPN4I2TCzy/ET8GFVZh2Vfw637P+5hF4qtJZK
-yLPfMPifjPFHXKC5uIFYTclG+3KYIIRuIUWPv7gVAGe7C/1oHao0IUEGFr6eQZ1e
-wVXToHI697GZdd8mRunJSUPIxqImdBxzQxLFyacTHMr5s+cpyLrLVL49wWTjTzBN
-rBNPYZ9kKwtm4XAs6c3J4wJ5x7HaRyk33VueU3XkhLZ+yMosHsMPXbVBMobeolbh
-40K9iZFoAhxezwxvunbYqDfHglGqf/CrQ+b8w8bWAUAU3H47MtS1vBCIETgRW9fJ
-+xFo0PJfS1nJYCMSH1TbdKAEsPxvufIdNPwTvHDc7ncUeCY/TChZyEfs2pWECYVZ
-/1fEX97mcFnT/NhV7TQWwoYqTULB/z3tHCSqBlrWnH4nBeNdfxtO57mjKbC2l0sJ
-9R1iI4xiL8prJY6WUIp8szaIRozRKu1f6ShW9/ZeCTAI9GPmPaJXkz+UQF9NiXwV
-/JKhtIh29jV09GYZq8RLx48wli0jIt9nsXhboEjUbJj7L3y8+zsmm+yKMc0G1a/L
-ErUIb2tMe3wCHPnV6zW4
-=nlMt
------END PGP SIGNATURE-----
-
---Sig_/5RuMqHSjQxWmZ2iYe6Bek_J--
+-Olof
