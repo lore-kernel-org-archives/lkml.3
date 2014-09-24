@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaIXMBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:01:06 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49666 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIXMBD (ORCPT
+	id S1751875AbaIXMDY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:03:24 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:54335 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaIXMDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:01:03 -0400
-Date: Wed, 24 Sep 2014 13:00:56 +0100
+	Wed, 24 Sep 2014 08:03:22 -0400
+Date: Wed, 24 Sep 2014 13:03:15 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [RFC PATCH v2 05/16] mfd: Add ACPI support
-Message-ID: <20140924120056.GB32069@lee--X1>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1410868367-11056-6-git-send-email-mika.westerberg@linux.intel.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Samuel Ortiz <sameo@linux.intel.com>, Johan Hovold <jhovold@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 00/10] rtc: at91sam9: add DT support
+Message-ID: <20140924120315.GC32069@lee--X1>
+References: <1411483725-31532-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140924084911.GI17801@lee--X1>
+ <20140924111757.00c303d2@bbrezillon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410868367-11056-6-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <20140924111757.00c303d2@bbrezillon>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014, Mika Westerberg wrote:
-> If an MFD device is backed by ACPI namespace, we should allow subdevice
-> drivers to access their corresponding ACPI companion devices through normal
-> means (e.g using ACPI_COMPANION()).
-> 
-> This patch adds such support to the MFD core. If the MFD parent device
-> does not specify any ACPI _HID/_CID for the child device, the child
-> device will share the parent ACPI companion device. Otherwise the child
-> device will be assigned with the corresponding ACPI companion, if found
-> in the namespace below the parent.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-> ---
-> Lee, I tried to get rid of #ifdefs in the below patch but it wasn't
-> possible because we are using functions that are not available when
-> !CONFIG_ACPI.
-> 
->  Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
->  drivers/mfd/mfd-core.c             | 40 ++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/core.h           |  3 +++
->  3 files changed, 70 insertions(+)
+On Wed, 24 Sep 2014, Boris BREZILLON wrote:
+> And I'll take care to wait between each version next time (that's often
+> what I'm doing BTW).
 
-Applied, thanks.
+I know you usually do.
+
+> > If I have to deal with another 55 repeat emails again, you'll find
+> > yourself as an entry in my spam filter.
+> 
+> This won't happen again.
+
+Thank you.
 
 -- 
 Lee Jones
