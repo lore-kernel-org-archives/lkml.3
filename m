@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaIXUgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:36:37 -0400
-Received: from mx.treblig.org ([80.68.94.177]:37032 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012AbaIXUgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:36:36 -0400
-X-Greylist: delayed 1085 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 16:36:36 EDT
-Date: Wed, 24 Sep 2014 21:18:27 +0100
-From: "Dr. David Alan Gilbert" <dave@treblig.org>
-To: Marcin Gibula <m.gibula@gmail.com>
-Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com
-Subject: Re: 3.16.1 - general protection fault
-Message-ID: <20140924201827.GA30643@gallifrey>
-References: <CAGKO+35+H3MmkaN1m_PfHi0XhbRvtnSBqm3PDmOhs5YBmAZ1jg@mail.gmail.com>
+	id S1753157AbaIXUhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:37:10 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:64569 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753072AbaIXUhI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 16:37:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGKO+35+H3MmkaN1m_PfHi0XhbRvtnSBqm3PDmOhs5YBmAZ1jg@mail.gmail.com>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/3.2.60-kvm-i386-20140609 (i686)
-X-Uptime: 21:12:07 up 62 days,  3:36,  1 user,  load average: 0.04, 0.09, 0.07
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1411575342-31048-8-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+	<1411575342-31048-8-git-send-email-vinod.koul@intel.com>
+Date: Wed, 24 Sep 2014 16:37:07 -0400
+Message-ID: <CADnq5_OmJh-p=HpMWQkAQUE=Z9TiCe2y9yhnhQxoO8KtzaTqhQ@mail.gmail.com>
+Subject: Re: [PATCH 07/27] vga_switcheroo: use pm_runtime_last_busy_and_autosuspend
+ helper
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, subhransu.s.prusty@intel.com,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marcin Gibula (m.gibula@gmail.com) wrote:
+On Wed, Sep 24, 2014 at 12:14 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+> coding the same code
+>
+> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 
-Hi Marcin,
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
 
-> Hi,
-> 
-> I've been playing with 3.16 kernel on my test machine as a KVM
-> hypervisor and encountered the following crash twice (almost identical
-> backtraces).
-> 
-> Sep 24 09:39:31 dev4 kernel: general protection fault: 0000 [#1] SMP
-
-<snip>
-
-> This machine is serving as NFS client and KVM hypervisor. I'm still
-> not sure how to trigger it reliably (right now, I just have to run
-> ubuntu instalation in VM guest multiple times and sometimes it
-> triggers).
-> 
-> Attaching .config, slub.s and disassembled __kmalloc_node_track_caller function.
-
-Yes, I hit something similar:
-
-http://www.spinics.net/lists/linux-nfs/msg46047.html 'nfs: disallow duplicate pages in pgio page vectors'
-http://www.spinics.net/lists/linux-nfs/msg46048.html 'nfs: can_coalesce_requests must enforce contiguity'
-
-seem to stop the GPF's/crashes, although there's still something else
-going on with a corruption I'm seeing every so often.
-
-Dave
-
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+> ---
+>  drivers/gpu/vga/vga_switcheroo.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+> index 6866448..697ffbd 100644
+> --- a/drivers/gpu/vga/vga_switcheroo.c
+> +++ b/drivers/gpu/vga/vga_switcheroo.c
+> @@ -682,10 +682,9 @@ static int vga_switcheroo_runtime_resume_hdmi_audio(struct device *dev)
+>         ret = dev->bus->pm->runtime_resume(dev);
+>
+>         /* put the reference for the gpu */
+> -       if (found) {
+> -               pm_runtime_mark_last_busy(&found->pdev->dev);
+> -               pm_runtime_put_autosuspend(&found->pdev->dev);
+> -       }
+> +       if (found)
+> +               pm_runtime_last_busy_and_autosuspend(&found->pdev->dev);
+> +
+>         return ret;
+>  }
+>
+> --
+> 1.7.0.4
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
