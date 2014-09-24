@@ -1,237 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442AbaIXKRc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:17:32 -0400
-Received: from mail-by2on0140.outbound.protection.outlook.com ([207.46.100.140]:17632
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751435AbaIXKR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:17:28 -0400
-X-Greylist: delayed 60204 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 06:17:28 EDT
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <linux@arm.linux.org.uk>, <arnd@arndb.de>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: [PATCHv3] dmaengine: fsl-edma: fixup reg offset and hw S/G support in big-endian model
-Date: Wed, 24 Sep 2014 17:24:02 +0800
-Message-ID: <1411550642-12577-1-git-send-email-jingchang.lu@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(48376002)(106466001)(95666004)(76482002)(105606002)(50466002)(87286001)(50986999)(84676001)(89996001)(64706001)(99396003)(36756003)(6806004)(77156001)(87936001)(85852003)(21056001)(97736003)(110136001)(92726001)(33646002)(90102001)(74662003)(107046002)(4396001)(102836001)(46102003)(50226001)(229853001)(81542003)(104016003)(31966008)(19580395003)(86362001)(19580405001)(62966002)(85306004)(68736004)(104166001)(81342003)(2351001)(83072002)(20776003)(74502003)(92566001)(79102003)(44976005)(80022003)(120916001)(77982003)(83322001)(10300001)(47776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB467;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB467;
-X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=jingchang.lu@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1754475AbaIXKRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:17:38 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:51045 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446AbaIXKRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:17:35 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-6e-54229a3d7bc0
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 3/6 v2] f2fs: export dir operations for inline dir
+Date: Wed, 24 Sep 2014 18:17:04 +0800
+Message-id: <003e01cfd7e0$c1ec51d0$45c4f570$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/X35Sr3UM5tAk9QOiAeovN/9xHMA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAV3bWUohBj9+qFhc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr48D5ZraC
+	V5YV16bOZmlg7NXvYuTkkBAwkVjz9SEbhC0mceHeeiCbi0NIYBGjxL83jxghnB+MEjtObmMC
+	qWITUJFY3vEfzBYR8JKYtP8EC4jNLOAh0djxnRXEFhbwkXjX0sXexcjBwSKgKjGpNQskzCtg
+	KfGj+x8ThC0o8WPyPahWLYn1O48zQdjyEpvXvGWGOEhBYsfZ14wQq/Qkdu9byAxRIy6x8cgt
+	lgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4pJ9J7WBc
+	2WBxiFGAg1GJh3eCuFKIEGtiWXFl7iFGCQ5mJRHeVz1AId6UxMqq1KL8+KLSnNTiQ4zSHCxK
+	4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYxRbzcf1Lq7SmxjG3fPkw+HJ8xmPFsrznhXeuPF
+	nHYdiQVTvmrOCjD/9P9qFv+m81KiameZPrznnfzZN3j6H+mkqAMGfyzzu+QXB23z3fZWTLjt
+	U1rp7ajiy8d3H+bdb1+9vPDnB8epi2eZhab+1VA315+rWPdHVJPH+qHE/vgc0ZTde0/5Weso
+	sRRnJBpqMRcVJwIABrmD+WUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The offset of all 8-/16-bit register in big-endian eDMA model are
-swapped in a 32-bit size opposite those in the little-endian model.
+This patch exports some dir operations for inline dir, additionally introduces
+f2fs_drop_nlink from f2fs_delete_entry for reusing by inline dir function.
 
-The hardware Scatter/Gather requires the subsequent TCDs in memory
-to be auto loaded should retain little endian independent of the
-register endian model, the dma engine will do the swap if need.
-
-This patch also use regular assignment for tcd variables r/w
-instead of with io function previously that may not always be true.
-
-Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
-changes in v3:
- use unsigned long instead of u32 in reg offset swap cast to avoid warning.
+ fs/f2fs/dir.c      | 71 +++++++++++++++++++++++++++++-------------------------
+ fs/f2fs/f2fs.h     | 10 +++++++-
+ fs/f2fs/namei.c    |  4 +--
+ fs/f2fs/recovery.c |  2 +-
+ 4 files changed, 50 insertions(+), 37 deletions(-)
 
-changes in v2:
- simplify register offset swap calculation.
- use regular assignment for tcd variables r/w instead of io function.
-
- drivers/dma/fsl-edma.c | 106 ++++++++++++++++++++++++++-----------------------
- 1 file changed, 57 insertions(+), 49 deletions(-)
-
-diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
-index 3c5711d..9ca55ee 100644
---- a/drivers/dma/fsl-edma.c
-+++ b/drivers/dma/fsl-edma.c
-@@ -177,16 +177,10 @@ struct fsl_edma_engine {
- /*
-  * R/W functions for big- or little-endian registers
-  * the eDMA controller's endian is independent of the CPU core's endian.
-+ * for the big-endian IP module, the offset for 8-bit or 16-bit register
-+ * should also be swapped oposite to that in little-endian IP.
-  */
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index b54f871..99e944e 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -37,7 +37,7 @@ static unsigned int bucket_blocks(unsigned int level)
+ 		return 4;
+ }
  
--static u16 edma_readw(struct fsl_edma_engine *edma, void __iomem *addr)
--{
--	if (edma->big_endian)
--		return ioread16be(addr);
--	else
--		return ioread16(addr);
--}
+-static unsigned char f2fs_filetype_table[F2FS_FT_MAX] = {
++unsigned char f2fs_filetype_table[F2FS_FT_MAX] = {
+ 	[F2FS_FT_UNKNOWN]	= DT_UNKNOWN,
+ 	[F2FS_FT_REG_FILE]	= DT_REG,
+ 	[F2FS_FT_DIR]		= DT_DIR,
+@@ -59,7 +59,7 @@ static unsigned char f2fs_type_by_mode[S_IFMT >> S_SHIFT] = {
+ 	[S_IFLNK >> S_SHIFT]	= F2FS_FT_SYMLINK,
+ };
+ 
+-static void set_de_type(struct f2fs_dir_entry *de, struct inode *inode)
++void set_de_type(struct f2fs_dir_entry *de, struct inode *inode)
+ {
+ 	umode_t mode = inode->i_mode;
+ 	de->file_type = f2fs_type_by_mode[(mode & S_IFMT) >> S_SHIFT];
+@@ -77,7 +77,7 @@ static unsigned long dir_block_index(unsigned int level,
+ 	return bidx;
+ }
+ 
+-static bool early_match_name(size_t namelen, f2fs_hash_t namehash,
++bool early_match_name(size_t namelen, f2fs_hash_t namehash,
+ 				struct f2fs_dir_entry *de)
+ {
+ 	if (le16_to_cpu(de->name_len) != namelen)
+@@ -307,7 +307,6 @@ static int make_empty_dir(struct inode *inode,
+ 	if (IS_ERR(dentry_page))
+ 		return PTR_ERR(dentry_page);
+ 
 -
- static u32 edma_readl(struct fsl_edma_engine *edma, void __iomem *addr)
- {
- 	if (edma->big_endian)
-@@ -197,13 +191,18 @@ static u32 edma_readl(struct fsl_edma_engine *edma, void __iomem *addr)
+ 	dentry_blk = kmap_atomic(dentry_page);
  
- static void edma_writeb(struct fsl_edma_engine *edma, u8 val, void __iomem *addr)
+ 	de = &dentry_blk->dentry[0];
+@@ -333,7 +332,7 @@ static int make_empty_dir(struct inode *inode,
+ 	return 0;
+ }
+ 
+-static struct page *init_inode_metadata(struct inode *inode,
++struct page *init_inode_metadata(struct inode *inode,
+ 		struct inode *dir, const struct qstr *name)
  {
--	iowrite8(val, addr);
-+	/* swap the reg offset for these in big-endian mode */
-+	if (edma->big_endian)
-+		iowrite8(val, (void __iomem *)((unsigned long)addr ^ 0x3));
+ 	struct page *page;
+@@ -395,7 +394,7 @@ error:
+ 	return ERR_PTR(err);
+ }
+ 
+-static void update_parent_metadata(struct inode *dir, struct inode *inode,
++void update_parent_metadata(struct inode *dir, struct inode *inode,
+ 						unsigned int current_depth)
+ {
+ 	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
+@@ -560,16 +559,44 @@ fail:
+ 	return err;
+ }
+ 
++void f2fs_drop_nlink(struct inode *dir, struct inode *inode, struct page *page)
++{
++	struct f2fs_sb_info *sbi = F2FS_I_SB(dir);
++
++	down_write(&F2FS_I(inode)->i_sem);
++
++	if (S_ISDIR(inode->i_mode)) {
++		drop_nlink(dir);
++		if (page)
++			update_inode(dir, page);
++		else
++			update_inode_page(dir);
++	}
++	inode->i_ctime = CURRENT_TIME;
++
++	drop_nlink(inode);
++	if (S_ISDIR(inode->i_mode)) {
++		drop_nlink(inode);
++		i_size_write(inode, 0);
++	}
++	up_write(&F2FS_I(inode)->i_sem);
++	update_inode_page(inode);
++
++	if (inode->i_nlink == 0)
++		add_orphan_inode(sbi, inode->i_ino);
 +	else
-+		iowrite8(val, addr);
- }
- 
- static void edma_writew(struct fsl_edma_engine *edma, u16 val, void __iomem *addr)
++		release_orphan_inode(sbi);
++}
++
+ /*
+  * It only removes the dentry from the dentry page, corresponding name
+  * entry in name page does not need to be touched during deletion.
+  */
+ void f2fs_delete_entry(struct f2fs_dir_entry *dentry, struct page *page,
+-						struct inode *inode)
++					struct inode *dir, struct inode *inode)
  {
-+	/* swap the reg offset for these in big-endian mode */
- 	if (edma->big_endian)
--		iowrite16be(val, addr);
-+		iowrite16be(val, (void __iomem *)((unsigned long)addr ^ 0x2));
- 	else
- 		iowrite16(val, addr);
- }
-@@ -256,11 +255,10 @@ static void fsl_edma_chan_mux(struct fsl_edma_chan *fsl_chan,
- 	muxaddr = fsl_chan->edma->muxbase[ch / chans_per_mux];
+ 	struct	f2fs_dentry_block *dentry_blk;
+ 	unsigned int bit_pos;
+-	struct inode *dir = page->mapping->host;
+ 	int slots = GET_DENTRY_SLOTS(le16_to_cpu(dentry->name_len));
+ 	int i;
  
- 	if (enable)
--		edma_writeb(fsl_chan->edma,
--				EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(slot),
-+		writeb(EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(slot),
- 				muxaddr + ch_off);
- 	else
--		edma_writeb(fsl_chan->edma, EDMAMUX_CHCFG_DIS, muxaddr + ch_off);
-+		writeb(EDMAMUX_CHCFG_DIS, muxaddr + ch_off);
- }
+@@ -590,29 +617,8 @@ void f2fs_delete_entry(struct f2fs_dir_entry *dentry, struct page *page,
  
- static unsigned int fsl_edma_get_tcd_attr(enum dma_slave_buswidth addr_width)
-@@ -363,8 +361,8 @@ static size_t fsl_edma_desc_residue(struct fsl_edma_chan *fsl_chan,
+ 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
  
- 	/* calculate the total size in this desc */
- 	for (len = i = 0; i < fsl_chan->edesc->n_tcds; i++)
--		len += edma_readl(fsl_chan->edma, &(edesc->tcd[i].vtcd->nbytes))
--			* edma_readw(fsl_chan->edma, &(edesc->tcd[i].vtcd->biter));
-+		len += le32_to_cpu(edesc->tcd[i].vtcd->nbytes)
-+			* le16_to_cpu(edesc->tcd[i].vtcd->biter);
+-	if (inode) {
+-		struct f2fs_sb_info *sbi = F2FS_I_SB(dir);
+-
+-		down_write(&F2FS_I(inode)->i_sem);
+-
+-		if (S_ISDIR(inode->i_mode)) {
+-			drop_nlink(dir);
+-			update_inode_page(dir);
+-		}
+-		inode->i_ctime = CURRENT_TIME;
+-		drop_nlink(inode);
+-		if (S_ISDIR(inode->i_mode)) {
+-			drop_nlink(inode);
+-			i_size_write(inode, 0);
+-		}
+-		up_write(&F2FS_I(inode)->i_sem);
+-		update_inode_page(inode);
+-
+-		if (inode->i_nlink == 0)
+-			add_orphan_inode(sbi, inode->i_ino);
+-		else
+-			release_orphan_inode(sbi);
+-	}
++	if (inode)
++		f2fs_drop_nlink(dir, inode, NULL);
  
- 	if (!in_progress)
- 		return len;
-@@ -376,14 +374,12 @@ static size_t fsl_edma_desc_residue(struct fsl_edma_chan *fsl_chan,
+ 	if (bit_pos == NR_DENTRY_IN_BLOCK) {
+ 		truncate_hole(dir, page->index, page->index + 1);
+@@ -628,7 +634,7 @@ bool f2fs_empty_dir(struct inode *dir)
+ 	unsigned long bidx;
+ 	struct page *dentry_page;
+ 	unsigned int bit_pos;
+-	struct	f2fs_dentry_block *dentry_blk;
++	struct f2fs_dentry_block *dentry_blk;
+ 	unsigned long nblock = dir_blocks(dir);
  
- 	/* figure out the finished and calculate the residue */
- 	for (i = 0; i < fsl_chan->edesc->n_tcds; i++) {
--		size = edma_readl(fsl_chan->edma, &(edesc->tcd[i].vtcd->nbytes))
--			* edma_readw(fsl_chan->edma, &(edesc->tcd[i].vtcd->biter));
-+		size = le32_to_cpu(edesc->tcd[i].vtcd->nbytes)
-+			* le16_to_cpu(edesc->tcd[i].vtcd->biter);
- 		if (dir == DMA_MEM_TO_DEV)
--			dma_addr = edma_readl(fsl_chan->edma,
--					&(edesc->tcd[i].vtcd->saddr));
-+			dma_addr = le32_to_cpu(edesc->tcd[i].vtcd->saddr);
- 		else
--			dma_addr = edma_readl(fsl_chan->edma,
--					&(edesc->tcd[i].vtcd->daddr));
-+			dma_addr = le32_to_cpu(edesc->tcd[i].vtcd->daddr);
+ 	for (bidx = 0; bidx < nblock; bidx++) {
+@@ -640,7 +646,6 @@ bool f2fs_empty_dir(struct inode *dir)
+ 				return false;
+ 		}
  
- 		len -= size;
- 		if (cur_addr > dma_addr && cur_addr < dma_addr + size) {
-@@ -433,21 +429,26 @@ static void fsl_edma_set_tcd_params(struct fsl_edma_chan *fsl_chan,
- 	u32 ch = fsl_chan->vchan.chan.chan_id;
+-
+ 		dentry_blk = kmap_atomic(dentry_page);
+ 		if (bidx == 0)
+ 			bit_pos = 2;
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index b94721c..8e819b0 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1220,6 +1220,13 @@ struct dentry *f2fs_get_parent(struct dentry *child);
+ /*
+  * dir.c
+  */
++extern unsigned char f2fs_filetype_table[F2FS_FT_MAX];
++bool early_match_name(size_t, f2fs_hash_t, struct f2fs_dir_entry *);
++void set_de_type(struct f2fs_dir_entry *, struct inode *);
++struct page *init_inode_metadata(struct inode *, struct inode *,
++							const struct qstr *);
++void update_parent_metadata(struct inode *, struct inode *, unsigned int);
++void f2fs_drop_nlink(struct inode *, struct inode *, struct page *);
+ struct f2fs_dir_entry *f2fs_find_entry(struct inode *, struct qstr *,
+ 							struct page **);
+ struct f2fs_dir_entry *f2fs_parent_dir(struct inode *, struct page **);
+@@ -1228,7 +1235,8 @@ void f2fs_set_link(struct inode *, struct f2fs_dir_entry *,
+ 				struct page *, struct inode *);
+ int update_dent_inode(struct inode *, const struct qstr *);
+ int __f2fs_add_link(struct inode *, const struct qstr *, struct inode *);
+-void f2fs_delete_entry(struct f2fs_dir_entry *, struct page *, struct inode *);
++void f2fs_delete_entry(struct f2fs_dir_entry *, struct page *, struct inode *,
++							struct inode *);
+ int f2fs_do_tmpfile(struct inode *, struct inode *);
+ int f2fs_make_empty(struct inode *, struct inode *);
+ bool f2fs_empty_dir(struct inode *);
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index ba0779d..58c1276 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -224,7 +224,7 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 		f2fs_put_page(page, 0);
+ 		goto fail;
+ 	}
+-	f2fs_delete_entry(de, page, inode);
++	f2fs_delete_entry(de, page, dir, inode);
+ 	f2fs_unlock_op(sbi);
  
- 	/*
--	 * TCD parameters have been swapped in fill_tcd_params(),
--	 * so just write them to registers in the cpu endian here
-+	 * TCD parameters should be swapped according the eDMA
-+	 * engine requirement.
- 	 */
--	writew(0, addr + EDMA_TCD_CSR(ch));
--	writel(src, addr + EDMA_TCD_SADDR(ch));
--	writel(dst, addr + EDMA_TCD_DADDR(ch));
--	writew(attr, addr + EDMA_TCD_ATTR(ch));
--	writew(soff, addr + EDMA_TCD_SOFF(ch));
--	writel(nbytes, addr + EDMA_TCD_NBYTES(ch));
--	writel(slast, addr + EDMA_TCD_SLAST(ch));
--	writew(citer, addr + EDMA_TCD_CITER(ch));
--	writew(biter, addr + EDMA_TCD_BITER(ch));
--	writew(doff, addr + EDMA_TCD_DOFF(ch));
--	writel(dlast_sga, addr + EDMA_TCD_DLAST_SGA(ch));
--	writew(csr, addr + EDMA_TCD_CSR(ch));
-+	edma_writew(fsl_chan->edma, 0, addr + EDMA_TCD_CSR(ch));
-+	edma_writel(fsl_chan->edma, src, addr + EDMA_TCD_SADDR(ch));
-+	edma_writel(fsl_chan->edma, dst, addr + EDMA_TCD_DADDR(ch));
-+
-+	edma_writew(fsl_chan->edma, attr, addr + EDMA_TCD_ATTR(ch));
-+	edma_writew(fsl_chan->edma, soff, addr + EDMA_TCD_SOFF(ch));
-+
-+	edma_writel(fsl_chan->edma, nbytes, addr + EDMA_TCD_NBYTES(ch));
-+	edma_writel(fsl_chan->edma, slast, addr + EDMA_TCD_SLAST(ch));
-+
-+	edma_writew(fsl_chan->edma, citer, addr + EDMA_TCD_CITER(ch));
-+	edma_writew(fsl_chan->edma, biter, addr + EDMA_TCD_BITER(ch));
-+	edma_writew(fsl_chan->edma, doff, addr + EDMA_TCD_DOFF(ch));
-+
-+	edma_writel(fsl_chan->edma, dlast_sga, addr + EDMA_TCD_DLAST_SGA(ch));
-+
-+	edma_writew(fsl_chan->edma, csr, addr + EDMA_TCD_CSR(ch));
- }
+ 	/* In order to evict this inode, we set it dirty */
+@@ -442,7 +442,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	old_inode->i_ctime = CURRENT_TIME;
+ 	mark_inode_dirty(old_inode);
  
- static void fill_tcd_params(struct fsl_edma_engine *edma,
-@@ -459,20 +460,27 @@ static void fill_tcd_params(struct fsl_edma_engine *edma,
- 	u16 csr = 0;
+-	f2fs_delete_entry(old_entry, old_page, NULL);
++	f2fs_delete_entry(old_entry, old_page, old_dir, NULL);
  
- 	/*
--	 * eDMA hardware SGs require the TCD parameters stored in memory
--	 * the same endian as the eDMA module so that they can be loaded
--	 * automatically by the engine
-+	 * eDMA hardware SGs requires the TCDs to be auto loaded
-+	 * in the little endian whenver the register endian model,
-+	 * So we put the value in little endian in memory, waitting
-+	 * for fsl_set_tcd_params doing the swap.
- 	 */
--	edma_writel(edma, src, &(tcd->saddr));
--	edma_writel(edma, dst, &(tcd->daddr));
--	edma_writew(edma, attr, &(tcd->attr));
--	edma_writew(edma, EDMA_TCD_SOFF_SOFF(soff), &(tcd->soff));
--	edma_writel(edma, EDMA_TCD_NBYTES_NBYTES(nbytes), &(tcd->nbytes));
--	edma_writel(edma, EDMA_TCD_SLAST_SLAST(slast), &(tcd->slast));
--	edma_writew(edma, EDMA_TCD_CITER_CITER(citer), &(tcd->citer));
--	edma_writew(edma, EDMA_TCD_DOFF_DOFF(doff), &(tcd->doff));
--	edma_writel(edma, EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga), &(tcd->dlast_sga));
--	edma_writew(edma, EDMA_TCD_BITER_BITER(biter), &(tcd->biter));
-+	tcd->saddr = cpu_to_le32(src);
-+	tcd->daddr = cpu_to_le32(dst);
-+
-+	tcd->attr = cpu_to_le16(attr);
-+
-+	tcd->soff = cpu_to_le16(EDMA_TCD_SOFF_SOFF(soff));
-+
-+	tcd->nbytes = cpu_to_le32(EDMA_TCD_NBYTES_NBYTES(nbytes));
-+	tcd->slast = cpu_to_le32(EDMA_TCD_SLAST_SLAST(slast));
-+
-+	tcd->citer = cpu_to_le16(EDMA_TCD_CITER_CITER(citer));
-+	tcd->doff = cpu_to_le16(EDMA_TCD_DOFF_DOFF(doff));
-+
-+	tcd->dlast_sga = cpu_to_le32(EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga));
-+
-+	tcd->biter = cpu_to_le16(EDMA_TCD_BITER_BITER(biter));
- 	if (major_int)
- 		csr |= EDMA_TCD_CSR_INT_MAJOR;
- 
-@@ -482,7 +490,7 @@ static void fill_tcd_params(struct fsl_edma_engine *edma,
- 	if (enable_sg)
- 		csr |= EDMA_TCD_CSR_E_SG;
- 
--	edma_writew(edma, csr, &(tcd->csr));
-+	tcd->csr = cpu_to_le16(csr);
- }
- 
- static struct fsl_edma_desc *fsl_edma_alloc_desc(struct fsl_edma_chan *fsl_chan,
+ 	if (old_dir_entry) {
+ 		if (old_dir != new_dir) {
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 4189003..fdbcea4 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -111,7 +111,7 @@ retry:
+ 			iput(einode);
+ 			goto out_unmap_put;
+ 		}
+-		f2fs_delete_entry(de, page, einode);
++		f2fs_delete_entry(de, page, dir, einode);
+ 		iput(einode);
+ 		goto retry;
+ 	}
 -- 
-1.8.0
+2.0.1.474.g72c7794
+
 
