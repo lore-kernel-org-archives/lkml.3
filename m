@@ -1,162 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaIXRsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:48:00 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48990 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaIXRr6 convert rfc822-to-8bit (ORCPT
+	id S1753593AbaIXRsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:48:09 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:38794 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaIXRsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:47:58 -0400
-Message-ID: <542303DF.8010606@arm.com>
-Date: Wed, 24 Sep 2014 18:48:15 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 24 Sep 2014 13:48:05 -0400
+Date: Wed, 24 Sep 2014 11:48:01 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Scott Murray <scott@spiteful.org>, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] PCI: remove assignement in non straight forward
+ if condition
+Message-ID: <20140924174801.GC20416@google.com>
+References: <20140907180428.GA12424@greed>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "riel@redhat.com" <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>
-Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org>
-X-OriginalArrivalTime: 24 Sep 2014 17:47:53.0245 (UTC) FILETIME=[AA758CD0:01CFD81F]
-X-MC-Unique: 114092418475509101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140907180428.GA12424@greed>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/09/14 17:08, Vincent Guittot wrote:
-
-[...]
-
+On Sun, Sep 07, 2014 at 08:04:28PM +0200, Quentin Lambert wrote:
+> The modifications effectively change the value of len_tmp
+> in the case where the first condition is not met.
 > 
-> Finally, the sched_group->sched_group_capacity->capacity_orig has been removed
-> because it's more used during load balance.
+> Signed-off-by: Quentin Lambert <lambert.quentin@gmail.com>
+> ---
+>  drivers/pci/hotplug/ibmphp_res.c | 13 +++++++++----
+>  drivers/pci/pci.c                |  6 +++++-
+>  drivers/pci/slot.c               | 12 ++++++++++--
+>  3 files changed, 24 insertions(+), 7 deletions(-)
+> ...
 
-So you're not forced to call it rq->cpu_capacity_orig any more, you
-could use rq->cpu_capacity_max instead.
-
-[...]
-
-This review (by PeterZ) during v5 of your patch-set recommended some
-renaming (e.g. s/group_has_free_capacity/group_has_capacity and
-s/group_out_of_capacity/group_no_capacity as well as reordering of the
-parameters which I agree with:
-
-https://lkml.org/lkml/2014/9/11/706
-
-> 
-> -/*
-> - * Compute the group capacity factor.
-> - *
-> - * Avoid the issue where N*frac(smt_capacity) >= 1 creates 'phantom' cores by
-> - * first dividing out the smt factor and computing the actual number of cores
-> - * and limit unit capacity with that.
-> - */
-> -static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *group)
-> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
-
-s/static inline int/static inline bool
-
-> +                       struct lb_env *env)
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 8b63a5b..4c3ef21 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -4434,9 +4434,13 @@ static int __init pci_setup(char *str)
 >  {
-> -       unsigned int capacity_factor, smt, cpus;
-> -       unsigned int capacity, capacity_orig;
-> +       if ((sgs->group_capacity * 100) >
-> +                       (sgs->group_usage * env->sd->imbalance_pct))
-> +               return true;
-> 
-> -       capacity = group->sgc->capacity;
-> -       capacity_orig = group->sgc->capacity_orig;
-> -       cpus = group->group_weight;
-> +       if (sgs->sum_nr_running < sgs->group_weight)
-> +               return true;
-> 
-> -       /* smt := ceil(cpus / capacity), assumes: 1 < smt_capacity < 2 */
-> -       smt = DIV_ROUND_UP(SCHED_CAPACITY_SCALE * cpus, capacity_orig);
-> -       capacity_factor = cpus / smt; /* cores */
-> +       return false;
-> +}
-> 
-> -       capacity_factor = min_t(unsigned,
-> -               capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE));
-> -       if (!capacity_factor)
-> -               capacity_factor = fix_small_capacity(env->sd, group);
-> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
-
-s/static inline int/static inline bool
-
-> +                       struct lb_env *env)
-> +{
-> +       if (sgs->sum_nr_running <= sgs->group_weight)
-> +               return false;
-> 
-> -       return capacity_factor;
-> +       if ((sgs->group_capacity * 100) <
-> +                       (sgs->group_usage * env->sd->imbalance_pct))
-> +               return true;
+>  	while (str) {
+>  		char *k = strchr(str, ',');
+> +		char tmp = *str;
 > +
-> +       return false;
->  }
-> 
->  static enum group_type
-> -group_classify(struct sched_group *group, struct sg_lb_stats *sgs)
-> +group_classify(struct sched_group *group, struct sg_lb_stats *sgs,
-> +                       struct lb_env *env)
->  {
-> -       if (sgs->sum_nr_running > sgs->group_capacity_factor)
-> +       if (group_is_overloaded(sgs, env))
->                 return group_overloaded;
-> 
->         if (sg_imbalanced(group))
-> @@ -6072,11 +6038,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->                 sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
-> 
->         sgs->group_weight = group->group_weight;
-> -       sgs->group_capacity_factor = sg_capacity_factor(env, group);
-> -       sgs->group_type = group_classify(group, sgs);
-> 
-> -       if (sgs->group_capacity_factor > sgs->sum_nr_running)
-> -               sgs->group_has_free_capacity = 1;
-> +       sgs->group_type = group_classify(group, sgs, env);
+>  		if (k)
+>  			*k++ = 0;
+> -		if (*str && (str = pcibios_setup(str)) && *str) {
 > +
-> +       sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
+> +		str = pcibios_setup(str);
+> +		if (tmp && str && *str) {
 
-In case sgs->group_type is group_overloaded you could set
-sgs->group_out_of_capacity to 1 without calling group_is_overloaded again.
+I dropped this change  because I don't think the replacement is quite
+equivalent.  Previously, we only called pcibios_setup() if "*str".  The new
+code calls it even if "!*str".
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7cdf271e8e52..52d441c92a4f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6037,7 +6037,8 @@ static inline void update_sg_lb_stats(struct
-lb_env *env,
+>  			if (!strcmp(str, "nomsi")) {
+>  				pci_no_msi();
+>  			} else if (!strcmp(str, "noaer")) {
+> diff --git a/drivers/pci/slot.c b/drivers/pci/slot.c
+> index 396c200..22d20db 100644
+> --- a/drivers/pci/slot.c
+> +++ b/drivers/pci/slot.c
+> @@ -265,8 +265,16 @@ struct pci_slot *pci_create_slot(struct pci_bus *parent, int slot_nr,
+>  	slot = get_slot(parent, slot_nr);
+>  	if (slot) {
+>  		if (hotplug) {
+> -			if ((err = slot->hotplug ? -EBUSY : 0)
+> -			     || (err = rename_slot(slot, name))) {
+> +			err = slot->hotplug ? -EBUSY : 0;
+> +			if (err)
+> +				goto hotplugerror;
+> +
+> +			err = rename_slot(slot, name);
+> +			if (err)
+> +				goto hotplugerror;
+> +
+> +			if (0) {
+> +hotplugerror:
+>  				kobject_put(&slot->kobj);
+>  				slot = NULL;
+>  				goto err;
 
-        sgs->group_type = group_classify(group, sgs, env);
+And I dropped this one because the code is too ugly.  Granted, the
+original is probably even uglier, but if we're going to change it, I'm
+going to hold out for a prettier restructuring.
 
--       sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
-+       if (sgs->group_type == group_overloaded)
-+               sgs->group_out_of_capacity = 1;
- }
-
->  }
-> 
->  /**
-> @@ -6198,17 +6163,21 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
-
-[...]
-
+Bjorn
