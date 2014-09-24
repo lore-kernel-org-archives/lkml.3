@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaIXL4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:56:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62775 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688AbaIXLz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:55:58 -0400
-Date: Wed, 24 Sep 2014 14:59:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC] virtio_pci: fix virtio spec compliance on restore
-Message-ID: <20140924115913.GA32179@redhat.com>
-References: <1411468217-18130-1-git-send-email-mst@redhat.com>
- <1411522047.3659.10.camel@decadent.org.uk>
+	id S1752611AbaIXLz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:55:59 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:44718 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaIXLz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 07:55:56 -0400
+Date: Wed, 24 Sep 2014 12:55:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v7 0/8] charger/mfd: max14577: Add support for MAX77836
+Message-ID: <20140924115549.GL19999@lee--X1>
+References: <1411472603-11821-1-git-send-email-k.kozlowski@samsung.com>
+ <20140924100325.GB19999@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1411522047.3659.10.camel@decadent.org.uk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140924100325.GB19999@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 02:27:27AM +0100, Ben Hutchings wrote:
-> On Tue, 2014-09-23 at 13:32 +0300, Michael S. Tsirkin wrote:
-> > On restore, virtio pci does the following:
-> > + set features
-> > + init vqs etc - device can be used at this point!
-> > + set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
-> > 
-> > This is in violation of the virtio spec, which
-> > requires the following order:
-> > - ACKNOWLEDGE
-> > - DRIVER
-> > - init vqs
-> > - DRIVER_OK
-> >
-> > Cc: stable@vger.kernel.org
-> > Cc: Amit Shah <amit.shah@redhat.com>
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> [...]
-> 
-> What concrete problem does this fix, such that it should be applied to
-> stable branches?
-> 
-> Ben.
+Mark, Sebastian,
 
-It will break with hypervisors that assume spec compliant behaviour.
-I would like this applied to stable branches so hypervisors don't
-need to support broken behaviour forever.
+Please don't pull this in yet!  There is an issue with the set.
+
+I'll reply to this mail once it's been rectified.
+
+Kind regards,
+Lee
+
+> The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+> 
+>   Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-regulator-power-v3.17
+> 
+> for you to fetch changes up to f453d80f908254293bf453a2d7e68974e2abc2af:
+> 
+>   Documentation: charger: max14577: Document exported sysfs entry (2014-09-24 10:58:07 +0100)
+> 
+> ----------------------------------------------------------------
+> Immutable branch between MFD, Regulator and Power due for v3.17
+> 
+> ----------------------------------------------------------------
+> Krzysztof Kozlowski (8):
+>       mfd: max14577: Add defines for MAX77836 charger
+>       mfd: max14577: Map charger device to its own of_node
+>       charger: max14577: Add support for MAX77836 charger
+>       regulator/mfd: max14577: Export symbols for calculating charger current
+>       charger: max14577: Configure battery-dependent settings from DTS and sysfs
+>       power: max17040: Add ID for MAX77836 Fuel Gauge block
+>       devicetree: mfd: max14577: Add device tree bindings document
+>       Documentation: charger: max14577: Document exported sysfs entry
+> 
+>  Documentation/ABI/testing/sysfs-class-power        |  14 +
+>  Documentation/devicetree/bindings/mfd/max14577.txt | 146 ++++++++
+>  drivers/mfd/max14577.c                             | 100 +++++-
+>  drivers/power/Kconfig                              |   5 +-
+>  drivers/power/max14577_charger.c                   | 370 +++++++++++++++++++--
+>  drivers/power/max17040_battery.c                   |   3 +-
+>  drivers/regulator/max14577.c                       |  80 +----
+>  include/linux/mfd/max14577-private.h               |  95 ++++--
+>  include/linux/mfd/max14577.h                       |  30 ++
+>  9 files changed, 704 insertions(+), 139 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+> 
 
 -- 
-MST
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
