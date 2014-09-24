@@ -1,65 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaIXVSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:18:45 -0400
-Received: from sauhun.de ([89.238.76.85]:43217 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750793AbaIXVSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:18:44 -0400
-Date: Wed, 24 Sep 2014 23:19:13 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Peter Huewe <peterhuewe@gmx.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [REGRESSION] i2c-acpi: Fix NULL Pointer dereference
-Message-ID: <20140924211913.GA1947@katana>
-References: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
- <1696265.yGhHYgE97A@vostro.rjw.lan>
- <20140924210216.GA1291@katana>
- <2180819.4Kky9hrQa3@vostro.rjw.lan>
+	id S1751736AbaIXVWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:22:18 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35676 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaIXVWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:22:17 -0400
+Date: Wed, 24 Sep 2014 14:22:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: atull <atull@opensource.altera.com>
+Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
+        broonie@kernel.org, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v3 2/3] pmbus: add regulator support
+Message-ID: <20140924212212.GB2720@roeck-us.net>
+References: <1411581476-12222-1-git-send-email-atull@opensource.altera.com>
+ <1411581476-12222-3-git-send-email-atull@opensource.altera.com>
+ <20140924195849.GA25362@roeck-us.net>
+ <alpine.DEB.2.02.1409241553370.9901@atx-linux-37>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2180819.4Kky9hrQa3@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.02.1409241553370.9901@atx-linux-37>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 04:06:11PM -0500, atull wrote:
+> On Wed, 24 Sep 2014, Guenter Roeck wrote:
+> 
+> > On Wed, Sep 24, 2014 at 12:57:55PM -0500, atull@opensource.altera.com wrote:
+> > > From: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > > Add support for simple on/off control of each channel.
+> > > 
+> > > To add regulator support, the pmbus part driver needs to add
+> > > regulator_desc information, of_regulator_match information,
+> > > and number of regulators to its pmbus_driver_info struct.
+> > > 
+> > > regulator_desc can be declared using default macro for a
+> > > regulator (PMBUS_REGULATOR) that is in pmbus.h
+> > > 
+> > > The regulator_init_data can be intialized from either
+> > > platform data or the device tree.
+> > > 
+> > > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > 
+> > Hi Alan,
+> > 
+> > Overall looks pretty good. Couple of comments inline.
+> > 
+> 
+> Hi Guenter,
+> 
+> > > v2: Remove '#include <linux/regulator/machine.h>'
+> > >     Only one regulator per pmbus device
+> > >     Get regulator_init_data from pdata or device tree
+> > > 
+> > > v3: Support multiple regulators for each chip
+> > >     Move most code to pmbus_core.c
+> > >     fixed values for on/off
+> > > ---
+> > >  drivers/hwmon/pmbus/pmbus.h      |   27 ++++++++
+> > >  drivers/hwmon/pmbus/pmbus_core.c |  133 ++++++++++++++++++++++++++++++++++++++
+> > >  include/linux/i2c/pmbus.h        |    4 ++
+> > >  3 files changed, 164 insertions(+)
+> > > 
+> > > diff --git a/drivers/hwmon/pmbus/pmbus.h b/drivers/hwmon/pmbus/pmbus.h
+> > > index fa9beb3..74aa382 100644
+> > > --- a/drivers/hwmon/pmbus/pmbus.h
+> > > +++ b/drivers/hwmon/pmbus/pmbus.h
+> > > @@ -19,6 +19,9 @@
+> > >   * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> > >   */
+> > >  
+> > > +#include <linux/regulator/driver.h>
+> > > +#include <linux/regulator/of_regulator.h>
+> > > +
+> > >  #ifndef PMBUS_H
+> > >  #define PMBUS_H
+> > >  
+> > > @@ -186,6 +189,12 @@
+> > >  #define PMBUS_VIRT_STATUS_VMON		(PMBUS_VIRT_BASE + 35)
+> > >  
+> > >  /*
+> > > + * OPERATION
+> > > + */
+> > > +#define PB_OPERATION_CONTROL_ON		(1<<7)
+> > > +#define PB_OPERATION_CONTROL_SEQ_OFF	(1<<6)
+> > 
+> > Can those defines be more consistent ? Does it really need SEQ_OFF or can it
+> > just be OFF ?
+> 
+> PB_OPERATION_CONTROL_SEQ_OFF is not used, so I will eliminate it.
+> 
+Even better ;)
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > 
+> > > +
+> > > +/*
+> > >   * CAPABILITY
+> > >   */
+> > >  #define PB_CAPABILITY_SMBALERT		(1<<4)
+> > > @@ -365,8 +374,26 @@ struct pmbus_driver_info {
+> > >  	 */
+> > >  	int (*identify)(struct i2c_client *client,
+> > >  			struct pmbus_driver_info *info);
+> > > +
+> > > +	/* Regulator functionality, if supported by this chip driver. */
+> > > +	int num_regulators;
+> > > +	const struct regulator_desc *reg_desc;
+> > > +	struct of_regulator_match *reg_matches;
+> > >  };
+> > >  
+> > > +/* Regulator ops */
+> > > +
+> > > +extern struct regulator_ops pmbus_regulator_regulator_ops;
+> > > +
+> > How about just pmbus_regulator_ops ? I don't see a double regulator_
+> > variable name anywhere else in the code, and I don't really see the
+> > benefit of it.
+> 
+> That was a mistake.  No need for double regulators here.
+> 
+> > 
+> > > +/* Macro for filling in array of struct regulator_desc */
+> > > +#define PMBUS_REGULATOR(_name, _id)				\
+> > > +	[_id] = {						\
+> > > +		.name = (_name # _id),				\
+> > > +		.id = (_id),					\
+> > > +		.ops = &pmbus_regulator_regulator_ops,		\
+> > > +		.owner = THIS_MODULE,				\
+> > > +	}
+> > > +
+> > 
+> > Any idea how/if we can get rid of the resulting checkpatch error ?
+> 
+> I banged my head on that for a while.  I'll try some more.
+> 
+Don't spend too much time on it. I'll accept it either way.
 
+> > 
+> > >  /* Function declarations */
+> > >  
+> > >  void pmbus_clear_cache(struct i2c_client *client);
+> > > diff --git a/drivers/hwmon/pmbus/pmbus_core.c b/drivers/hwmon/pmbus/pmbus_core.c
+> > > index d6c3701..9ab8bd4 100644
+> > > --- a/drivers/hwmon/pmbus/pmbus_core.c
+> > > +++ b/drivers/hwmon/pmbus/pmbus_core.c
+> > > @@ -29,6 +29,9 @@
+> > >  #include <linux/hwmon-sysfs.h>
+> > >  #include <linux/jiffies.h>
+> > >  #include <linux/i2c/pmbus.h>
+> > > +#include <linux/regulator/of_regulator.h>
+> > > +#include <linux/regulator/driver.h>
+> > > +#include <linux/regulator/machine.h>
+> > >  #include "pmbus.h"
+> > >  
+> > >  /*
+> > > @@ -1758,6 +1761,125 @@ static int pmbus_init_common(struct i2c_client *client, struct pmbus_data *data,
+> > >  	return 0;
+> > >  }
+> > >  
+> > > +#if IS_ENABLED(CONFIG_REGULATOR)
+> > > +static int pmbus_regulator_is_enabled(struct regulator_dev *rdev)
+> > > +{
+> > > +	struct device *dev = rdev_get_dev(rdev);
+> > > +	struct i2c_client *client = to_i2c_client(dev->parent);
+> > > +	u8 page = rdev_get_id(rdev);
+> > > +	int ret;
+> > > +
+> > > +	ret = pmbus_read_byte_data(client, page, PMBUS_OPERATION);
+> > > +	if (ret < 0)
+> > > +		return ret;
+> > > +
+> > > +	return !!(ret & PB_OPERATION_CONTROL_ON);
+> > > +}
+> > > +
+> > > +static int _pmbus_regulator_enable(struct regulator_dev *rdev, bool enable)
+> > > +{
+> > 
+> > Can you find a better name for this function ? After all,
+> > it doesn't just enable the regulator, it also disables it.
+> 
+> _pmbus_regulator_on_off?
+> 
+Ok.
 
-> I'm dropping it from my TODO list, then.
+> > 
+> > > +	struct device *dev = rdev_get_dev(rdev);
+> > > +	struct i2c_client *client = to_i2c_client(dev->parent);
+> > > +	u8 val, page = rdev_get_id(rdev);
+> > > +
+> > > +	if (enable)
+> > > +		val = PB_OPERATION_CONTROL_ON;
+> > > +	else
+> > > +		val = 0;
+> > > +
+> > > +	return pmbus_update_byte_data(client, page, PMBUS_OPERATION,
+> > > +				      PB_OPERATION_CONTROL_ON, val);
+> > 
+> > 					enable ? PB_OPERATION_CONTROL_ON : 0
+> > 
+> > would be much simpler here.
+> 
+> OK
+> 
+> > 
+> > > +}
+> > > +
+> > > +static int pmbus_regulator_enable(struct regulator_dev *rdev)
+> > > +{
+> > > +	return _pmbus_regulator_enable(rdev, 1);
+> > > +}
+> > > +
+> > > +static int pmbus_regulator_disable(struct regulator_dev *rdev)
+> > > +{
+> > > +	return _pmbus_regulator_enable(rdev, 0);
+> > > +}
+> > > +
+> > > +struct regulator_ops pmbus_regulator_regulator_ops = {
+> > > +	.enable = pmbus_regulator_enable,
+> > > +	.disable = pmbus_regulator_disable,
+> > > +	.is_enabled = pmbus_regulator_is_enabled,
+> > 
+> > No get_voltage support ?
+> > 
+> > [ Guess it isn't mandatory. We can add it later to get this going. ]
+> 
+> Yep, no voltage support for now.  But it will be straightforward for
+> someone to insert here and probably won't require rewriting any of
+> this.
+> 
+That is true.
 
-Yup. Thanks for the heads up!
+> > 
+> > > +};
+> > > +EXPORT_SYMBOL_GPL(pmbus_regulator_regulator_ops);
+> > > +
+> > > +#if IS_ENABLED(CONFIG_OF)
+> > > +static int pmbus_regulator_parse_dt(struct device *dev,
+> > > +				    const struct pmbus_driver_info *info)
+> > > +{
+> > > +	struct device_node *np_regulators;
+> > > +	int ret;
+> > > +
+> > > +	if (!info->num_regulators)
+> > > +		return 0;
+> > > +
+> > > +	if (!info->reg_matches || !info->reg_desc)
+> > > +		return -EINVAL;
+> > > +
+> > > +	np_regulators = of_get_child_by_name(dev->of_node, "regulators");
+> > > +	if (!np_regulators)
+> > > +		return 0;
+> > > +
+> > > +	ret = of_regulator_match(dev, np_regulators, info->reg_matches,
+> > > +				 info->num_regulators);
+> > > +	of_node_put(np_regulators);
+> > > +	if (ret < 0)
+> > > +		return ret;
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +#else
+> > > +static int pmbus_regulator_parse_dt(struct device *dev,
+> > > +				    const struct pmbus_driver_info *info)
+> > > +{
+> > > +	return 0;
+> > > +}
+> > > +#endif
+> > > +
+> > > +static int pmbus_regulator_register(struct pmbus_data *data)
+> > > +{
+> > > +	struct device *dev = data->dev;
+> > > +	const struct pmbus_driver_info *info = data->info;
+> > > +	const struct pmbus_platform_data *pdata = dev_get_platdata(dev);
+> > > +	struct regulator_dev *rdev;
+> > > +	int i;
+> > > +
+> > > +	for (i = 0; i < info->num_regulators; i++) {
+> > > +		struct regulator_config config = { };
+> > > +
+> > > +		config.dev = dev;
+> > > +		config.driver_data = data;
+> > > +
+> > > +		if (pdata && pdata->reg_init_data) {
+> > > +			config.init_data = &pdata->reg_init_data[i];
+> > > +		} else {
+> > > +			config.init_data = info->reg_matches[i].init_data;
+> > > +			config.of_node = info->reg_matches[i].of_node;
+> > > +		}
+> > > +
+> > > +		rdev = devm_regulator_register(dev, &info->reg_desc[i],
+> > > +					       &config);
+> > > +		if (IS_ERR(rdev)) {
+> > > +			dev_err(dev, "Failed to register %s regulator\n",
+> > > +				info->reg_desc[i].name);
+> > > +			return PTR_ERR(rdev);
+> > > +		}
+> > > +	}
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +#else
+> > > +static int pmbus_regulator_register(struct pmbus_data *data)
+> > > +{
+> > > +	return 0;
+> > > +}
+> > > +#endif
+> > > +
+> > >  int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
+> > >  		   struct pmbus_driver_info *info)
+> > >  {
+> > > @@ -1769,6 +1891,10 @@ int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
+> > >  	if (!info)
+> > >  		return -ENODEV;
+> > >  
+> > > +	ret = pmbus_regulator_parse_dt(dev, info);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > 
+> > You have the conditions wrong above.
+> > 
+> > If CONFIG_REGULATOR is not enabled, this will fail to build,
+> > since pmbus_regulator_parse_dt is not declared at all in this case.
+> > 
+> > I can understand that you want to parse the dt early, but it would be
+> > simpler to just parse it from pmbus_regulator_register(). It is only
+> > relevant if regulators are configured anyway, and we don't really need
+> > to optimize the code for the error case.
+> 
+> I was thinking of adding the flags to the device tree parsing code.  That
+> is the only other thing this driver is taking from the platform data. If I
+> do that, this driver will be completely done for device tree. I could do
+> that by adding a 'pmbus-skip-status-check' device tree property.   That
+> would be a small change, but I would still need to parse the dt early. 
+> Otherwise I can redo the code as you are recommending above.
+> 
+Guess we can do that if/when it is needed. So far there is only one flag bit,
+and that isn't widely needed. I am not even sure if it is needed anymore in the
+first place - I'll have to go back to my notes to find out which chips actually
+need it. We may have other means today to accomplish the same, via an explicit
+chip driver.
 
+> What do you think? 
+> 
+I'd keep it simple for now, and only parse reglator data.
 
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIzVRAAoJEBQN5MwUoCm2gFUQAKsZm4Tu3GJHHH2xHGb65fSl
-Y4Xse9xH5sSywUse9Ljh0w9/UYxqdmvd3Z2Eex7CpLLq99zwNQvsZtnt3vuAB4ne
-MkWLmSgrLRYqPwDkpK/mYIRvpRXiQRFB4nT7XtlxrBSrrVPEzQmRZXhbqDTDuClj
-x7SxwiJuLljbad6RF2rqfm1V1qFXOSY3g+Y5AXozfaSqMhc2WYzeg0PFtjQ5yVb3
-TP4rHzMB1yACN6fQnsCIAQrN9ffmH4BresFLk8S/7AbRBskrjgRVHuY+chxdtdhf
-7eoleDfQBFnBwOD2Rlz+pHtWX+erYrKRghvwA5bmm5I+mLuAkv6BdMR2o3k7NtNA
-c0eL2GTsg6HDtdDwhdr1EcpYqwQLHOIbtZmcBdv0eoNrpT0Aa48p3Zy8JdJzRe65
-aGathy/4aThdyms+P9Iot1ThX/UVAMDkTtUualaAShMGqS2zf55TKp1nLo87hfXY
-fssFM/aZVbCEhSl2uP911z47YBfRsWHNUN0tyAy4v4YZz17Hoi0vZvRF4S5PSUGz
-gmy27qnlPyVQEkqADWZSlChIMFAI/GoE8dAAkKyqdpfCATgb9ZchqGJY77UAivSa
-MC8M6q2v3K0UwWmvtf7HYSJjSEiPqbv7tuJMZX+JHAZR3os729hlNL56xwWeKt5V
-7kLmvMqz/m9KQzXrdLvp
-=2+KW
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
+Guenter
