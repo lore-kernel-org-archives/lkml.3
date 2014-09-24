@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaIXBlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 21:41:25 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:46345 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaIXBlX (ORCPT
+	id S1752654AbaIXBl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 21:41:59 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:33495 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262AbaIXBlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 21:41:23 -0400
-Message-ID: <54222123.2050703@roeck-us.net>
-Date: Tue, 23 Sep 2014 18:40:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 23 Sep 2014 21:41:55 -0400
 MIME-Version: 1.0
-To: Jisheng Zhang <jszhang@marvell.com>
-CC: "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] watchdog: dw_wdt: add restart handler support
-References: <1411458132-5410-1-git-send-email-jszhang@marvell.com>	<1411458132-5410-3-git-send-email-jszhang@marvell.com>	<20140923183159.GB24930@roeck-us.net> <20140924091101.60e065cd@xhacker>
-In-Reply-To: <20140924091101.60e065cd@xhacker>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.54222143.0045,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20140924011851.GD32643@bart.dudau.co.uk>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-11-git-send-email-Liviu.Dudau@arm.com> <20140924011851.GD32643@bart.dudau.co.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 23 Sep 2014 19:41:35 -0600
+Message-ID: <CAErSpo5DR+TPYXBWGKRj9SRPjsbJ6kjZmAH1AXT12txEjGdZGQ@mail.gmail.com>
+Subject: Re: [PATCH v12 10/12] PCI: Assign unassigned bus resources in pci_scan_root_bus()
+To: Liviu Dudau <liviu@dudau.co.uk>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 06:11 PM, Jisheng Zhang wrote:
-[ ... ]
->>> +	dw_wdt.restart_handler.notifier_call = dw_wdt_restart_handle;
->>> +	dw_wdt.restart_handler.priority = 128;
->>> +	ret = register_restart_handler(&dw_wdt.restart_handler);
->>> +	if (ret)
->>> +		pr_warn("cannot register restart handler\n");
+On Tue, Sep 23, 2014 at 7:18 PM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+> On Tue, Sep 23, 2014 at 08:01:12PM +0100, Liviu Dudau wrote:
+>> If the firmware has not assigned all the bus resources and
+>> we are not just probing the PCIe busses, it makes sense to
+>> assign the unassigned resources in pci_scan_root_bus().
 >>
->> Please use dev_warn(&pdev->dev, ...).
+>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>> ---
+>>  drivers/pci/probe.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index ef891d2..508cf61 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -1953,6 +1953,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+>>       if (!found)
+>>               pci_bus_update_busn_res_end(b, max);
+>>
+>> +     if (!pci_has_flag(PCI_PROBE_ONLY))
+>> +             pci_assign_unassigned_bus_resources(b);
+>> +
+>>       pci_bus_add_devices(b);
+>>       return b;
+>>  }
+>> --
+>> 2.1.0
+>>
 >
-> Yep, that's what I thought when patching the code. But the original source is
-> using pr_*(), so I use pr_warn() to keep unification. Is there any better
-> solution?
+> Bjorn,
 >
+> If you are OK with this patch, can you let me know how do you feel about
+> making pci_scan_root_bus() set up the bus->msi pointer as well?
 
-Good point. Makes sense, then, to leave that as cleanup.
+I'm not opposed to it, but I have the same question as for setting up
+the domain: how does pci_scan_root_bus() learn what to assign to
+bus->msi?  It currently only gets a "void *sysdata" so there's no
+obvious place to put it there.  You could add a pcibios interface to
+retrieve it, I suppose, but I'm starting to get uncomfortable with
+adding more of those because we have such a mess of them already.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Bjorn
 
+> Side note: I don't know exactly how to do it now, but setting bus->msi is
+> needed by platforms that are based on my patches and want to use MSI,
+> otherwise they have to open code pci_scan_root_bus() to set it. I haven't
+> made any attempts to do it in this series as the GICv2m patches are not
+> ready yet, but I can see the need arriving soon.
+>
+> Best regards,
+> Liviu
+>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> --
+> -------------------
+>    .oooO
+>    (   )
+>     \ (  Oooo.
+>      \_) (   )
+>           ) /
+>          (_/
+>
+>  One small step
+>    for me ...
+>
