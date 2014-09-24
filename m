@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaIXR3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:29:33 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:55148 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbaIXR3c (ORCPT
+	id S1754003AbaIXRae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:30:34 -0400
+Received: from 71-19-161-253.dedicated.allstream.net ([71.19.161.253]:59755
+	"EHLO nsa.nbspaymentsolutions.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751987AbaIXRad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:29:32 -0400
-Date: Wed, 24 Sep 2014 17:28:36 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Daniel Mack <daniel@caiaq.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] usb: core: log more general message on malformed
- LANGID descriptor
-In-Reply-To: <20140924052759.GB20986@kroah.com>
-Message-ID: <alpine.DEB.2.11.1409241632160.2600@localhost.localdomain>
-References: <alpine.DEB.2.11.1409232013320.2145@localhost.localdomain> <20140924052759.GB20986@kroah.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 24 Sep 2014 13:30:33 -0400
+X-Greylist: delayed 1439 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 13:30:33 EDT
+From: Bill Pringlemeir <bpringlemeir@nbsps.com>
+To: Stefan Agner <stefan@agner.ch>
+Cc: shawn.guo@freescale.com, kernel@pengutronix.de, daniel.lezcano@linaro.org,
+        tglx@linutronix.de, festevam@gmail.com, jingchang.lu@freescale.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] ARM: vf610: Fix/add clocksource
+Organization: NBS Payment Solutions
+References: <1411575610-20895-1-git-send-email-stefan@agner.ch>
+Date: Wed, 24 Sep 2014 13:06:13 -0400
+In-Reply-To: <1411575610-20895-1-git-send-email-stefan@agner.ch> (Stefan
+	Agner's message of "Wed, 24 Sep 2014 18:20:07 +0200")
+Message-ID: <87tx3xkkxm.fsf@nbsps.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Sep 2014, Greg Kroah-Hartman wrote:
 
-> On Tue, Sep 23, 2014 at 10:28:49PM +0000, Scot Doyle wrote:
->> I'd like to change this error message:
->> [    3.325837] usb 1-4: string descriptor 0 malformed (err = -61), defaulting to 0x0409
->>
->> into an error message followed by a debug message:
->> [    3.324726] usb 1-4: malformed string descriptor; unknown language, defaulting to English
->> [    3.327514] usb 1-4: string descriptor 0 malformed (err = -61), defaulting to 0x0409
->>
->> in order to communicate more information from the log itself. Are there
->> any problems with this approach? Would it be better to put all the
->> information on a single line? Something else?
+On 24 Sep 2014, stefan@agner.ch wrote:
+
+> This patchset came out of need for a clocksource which supports
+> shutdown.  In the first version I proposed to just replace the current
+> clocksource with the ARM Global Timer and even proposed to remove the
+> PIT clocksource driver. But Bill Pringlemeir brought up a reasonable
+> point why we should keep the PIT clocksource.
 >
-> How about just one line, why two?
+> Since we need shutdown support for suspend/resume, I added another
+> patch which fixes shutdown functionality for the PIT driver. Now it's
+> possible to use suspend/resume functionality with each of the two
+> clocksources.
 >
-> And something like "device not implementing langid specifier, defaulting
-> to English", but cleaned up to sound a bit better?
+> Changes in v2:
+> - Added shutdown support for PIT clocksource (and hence clocksource
+> maintainers as receipient).
+> - Create Kconfig entries which allow to choose between the two
+> clocksources
+> - Clarified commit message
+> - Renamed device tree node to "timer"
+>
+> Stefan Agner (3):
+> clocksource: vf_pit_timer: Support shutdown mode
+> ARM: dts: vf610: Add ARM Global Timer
+> ARM: vf610: Add ARM Global Timer clocksource option
+>
+> arch/arm/boot/dts/vf610.dtsi       |  8 ++++++++
+> arch/arm/mach-imx/Kconfig          | 19 ++++++++++++++++++-
+> drivers/clocksource/vf_pit_timer.c |  5 +++++
+> 3 files changed, 31 insertions(+), 1 deletion(-)
 
-That sounds good, I plan to submit this patch tomorrow unless anyone 
-prefers different wording.
-
----
-diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
-index 0c8a7fc..5317081 100644
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -770,9 +770,7 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
- 		dev->string_langid = 0x0409;
- 		dev->have_langid = 1;
- 		dev_err(&dev->dev,
--			"string descriptor 0 malformed (err = %d), "
--			"defaulting to 0x%04x\n",
--				err, dev->string_langid);
-+			"language id specifier not provided by device, defaulting to English");
- 		return 0;
- 	}
-
+Acked-by: Bill Pringlemeir <bpringlemeir@nbsps.com>
