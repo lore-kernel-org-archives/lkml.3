@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbaIXCbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 22:31:13 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42872 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238AbaIXCbK (ORCPT
+	id S1757407AbaIXCwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 22:52:05 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:56343 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179AbaIXCwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 22:31:10 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        linux-kernel@vger.kernel.org (open list:PERFORMANCE EVENT...)
-Subject: Re: [PATCH] perf: Use ACCESS_ONCE() instead of volatile cast
-References: <1411484109-10442-1-git-send-email-bobby.prani@gmail.com>
-Date: Wed, 24 Sep 2014 11:31:07 +0900
-In-Reply-To: <1411484109-10442-1-git-send-email-bobby.prani@gmail.com>
-	(Pranith Kumar's message of "Tue, 23 Sep 2014 10:55:08 -0400")
-Message-ID: <87zjdpkavo.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 23 Sep 2014 22:52:03 -0400
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: dianders@chromium.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <cfaf007e0ec53282fda3bfcd8e27fdbd>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <542231C9.1060903@rock-chips.com>
+Date: Wed, 24 Sep 2014 10:51:53 +0800
+From: Chris Zhong <zyw@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Doug Anderson <dianders@chromium.org>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        linux-rockchip@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v6 1/2] regulator: st-pwm: get voltage and duty table
+ from dts
+References: <1411487622-10881-1-git-send-email-zyw@rock-chips.com>	<1411487622-10881-2-git-send-email-zyw@rock-chips.com>	<CAD=FV=Vhejf4JoEPUGwmBJdO+zfHgE5hgoT6V1DGtva7r_1Etg@mail.gmail.com>	<542222BC.4060203@rock-chips.com> <CAD=FV=Umjmrp5grqvYnMe0=EjpH8++i4JL-5fOquyU+SGt95Fw@mail.gmail.com>
+In-Reply-To: <CAD=FV=Umjmrp5grqvYnMe0=EjpH8++i4JL-5fOquyU+SGt95Fw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pranith,
 
-On Tue, 23 Sep 2014 10:55:08 -0400, Pranith Kumar wrote:
-> Use ACCESS_ONCE() instead of the cast to volatile and read. This is just a style
-> change which is reader friendly.
+On 09/24/2014 10:13 AM, Doug Anderson wrote:
+> Chris,
 >
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-
-Thanks,
-Namhyung
-
-
-> ---
->  tools/perf/util/session.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> On Tue, Sep 23, 2014 at 6:47 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+>> On 09/24/2014 07:43 AM, Doug Anderson wrote:
+>>> Chris,
+>>>
+>>> On Tue, Sep 23, 2014 at 8:53 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+>>>> Get voltage & duty table from device tree might be better, other
+>>>> platforms can also use this
+>>>> driver without any modify.
+>>>>
+>>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>>>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>>> I finally managed to get everything setup and I've now tested this
+>>> myself on an rk3288-based board.
+>>>
+>>> Tested-by: Doug Anderson <dianders@chromium.org>
+>>>
+>>> I'd imagine the next step is for Lee to comment on the patch and when
+>>> he's happy with it Mark Brown will land it?
+>>>
+>>>
+>>> One thing that's still a bit odd (though no different than the
+>>> behavior of the driver from before you touched it, so it shouldn't
+>>> block landing IMHO) is that at boot time this regulator will report
+>>> that it's at the highest voltage but the voltage won't actually change
+>>> until the first client sets the voltage.
+>> Yes, I knew this problem, since the default of duty cycle is 0, not a true
+>> value.
+>> If we can get duty from pwm, this regulator will report a correct voltage.
+> I don't think it's possible in all cases to figure out what the
+> voltage was before this regulator was probed.
 >
-> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-> index 8dd41ca..ffb4404 100644
-> --- a/tools/perf/util/session.h
-> +++ b/tools/perf/util/session.h
-> @@ -126,5 +126,5 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
->  
->  extern volatile int session_done;
->  
-> -#define session_done()	(*(volatile int *)(&session_done))
-> +#define session_done()	ACCESS_ONCE(session_done)
->  #endif /* __PERF_SESSION_H */
+> * pin might have been input w/ pullup, pulldown, or no pull
+> * pin might have been driven high or driven low
+>
+> In that case trying to read the duty from the pwm wouldn't make sense.
+> ...but I guess you could add a property to the PWM driver to say that
+> it stays enabled at boot if the FW left it enabled (and keep the same
+> duty cycle / clocks?).  That would at least solve the problem where
+> the firmware configured the PWM and left it in a specific state even
+> if it doesn't solve the above problem...
+>
+>
+> -Doug
+>
+If we want pwm stay enabled at boot(FW left it), needn't to modify 
+anything, only need to init pwm duty in FW.
+And now reading the duty from pwm would make sense.
+
+
+
