@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaIXShV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:37:21 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:45708 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbaIXShS (ORCPT
+	id S1753362AbaIXSlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:41:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:53403 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaIXSk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:37:18 -0400
-Date: Wed, 24 Sep 2014 12:37:14 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Ashok Raj <ashok.raj@intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, iommu@lists.linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: Re: [Patch Part3 V6 8/8] pci, ACPI, iommu: Enhance pci_root to
- support DMAR device hotplug
-Message-ID: <20140924183714.GE20416@google.com>
-References: <1411103935-31301-1-git-send-email-jiang.liu@linux.intel.com>
- <1411103935-31301-9-git-send-email-jiang.liu@linux.intel.com>
+	Wed, 24 Sep 2014 14:40:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Robert Richter <robert.richter@caviumnetworks.com>,
+        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Sunil Goutham <sgoutham@cavium.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] arm64, defconfig: Enable PCI
+Date: Wed, 24 Sep 2014 20:40:18 +0200
+Message-ID: <3120493.DIoQFCi5Am@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140924171047.GO15842@e104818-lin.cambridge.arm.com>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org> <20140924162631.GI31556@rric.localhost> <20140924171047.GO15842@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411103935-31301-9-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LaG0AJOHT5G7TodyJbAFURKUz51wtc+X9nnziy2UN/0
+ UIGr1UJRRnATjTk60bcOyK+pewHbCokF7zu+psT456gZBxYGDy
+ VS/MpnkM8j2DnNmTyrAICNsygeSMI7XmkGZ1o+UBD3tTc/21/z
+ syBa/MYvM2LVJcK5oqPbOP83enobStkq8UliGQXdOlAzQSxASd
+ 66KHgbnXED3K/X3ry7uB5I7+hXWDgMn17FEPzdirPcsdw6r25s
+ AnANJwaRnyDcFylDYXYclnbNn+rBI7tNB/9z4bTg6FZqQRYWq0
+ AbYEYq9TydgNrNP1ZZLKir29R5OkJUmUBOQAJg2Mk0mHyqXy8f
+ B7/xC59yCvJQ7ycKYQDQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 01:18:55PM +0800, Jiang Liu wrote:
-> Finally enhance pci_root driver to support DMAR device hotplug when
-> hot-plugging PCI host bridges.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Reviewed-by: Yijing Wang <wangyijing@huawei.com>
+On Wednesday 24 September 2014 18:10:48 Catalin Marinas wrote:
+> On Wed, Sep 24, 2014 at 05:26:31PM +0100, Robert Richter wrote:
+> > On 24.09.14 18:14:11, Arnd Bergmann wrote:
+> > > On Wednesday 24 September 2014 17:37:47 Robert Richter wrote:
+> > > >  config PCI
+> > > >         bool "PCI support"
+> > > > +       default y
+> > > >         help
+> > > >           This feature enables support for PCIe bus system. If you say Y
+> > > >           here, the kernel will include drivers and infrastructure code
+> > > >           to support PCIe bus devices.
+> > > >  
+> > > > +config PCI_MSI
+> > > > +       def_bool PCI
+> > > > +
+> > > >  config PCI_DOMAINS
+> > > >         def_bool PCI
+> > > 
+> > > There is already a PCI_MSI symbol in drivers/pci/Kconfig. Just select that
+> > > from the PCI symbol above rather than defining a second one.
+> > 
+> > The intention is not to have a second definition, instead this should
+> > enable the default value just for arm64. Thus I put it to
+> > arch/arm64/Kconfig. Otherwise it would be enabled per default on all
+> > archs.
 
-I assume this will be merged via a non-PCI tree, so:
+I don't think other architectures actually see the PCI symbol that is
+defined in the arm64 Kconfig file, but I might be wrong.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> > We could have used select in config ARM64, but I tried to avoid using
+> > select due to the dependency issue and instead implement this with
+> > default-y/depends-on. Doing so it can be manually disabled too.
 
-Looks OK to me, but I expect you'll want Rafael's ack as well.
+How about adding a new symbol like
 
-> ---
->  drivers/acpi/pci_root.c |   16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index e6ae603ed1a1..4e177daa18e3 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -33,6 +33,7 @@
->  #include <linux/pci.h>
->  #include <linux/pci-acpi.h>
->  #include <linux/pci-aspm.h>
-> +#include <linux/dmar.h>
->  #include <linux/acpi.h>
->  #include <linux/slab.h>
->  #include <acpi/apei.h>	/* for acpi_hest_init() */
-> @@ -511,6 +512,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	struct acpi_pci_root *root;
->  	acpi_handle handle = device->handle;
->  	int no_aspm = 0, clear_aspm = 0;
-> +	bool hotadd = system_state != SYSTEM_BOOTING;
->  
->  	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
->  	if (!root)
-> @@ -557,6 +559,11 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
->  	device->driver_data = root;
->  
-> +	if (hotadd && dmar_device_add(handle)) {
-> +		result = -ENXIO;
-> +		goto end;
-> +	}
-> +
->  	pr_info(PREFIX "%s [%s] (domain %04x %pR)\n",
->  	       acpi_device_name(device), acpi_device_bid(device),
->  	       root->segment, &root->secondary);
-> @@ -583,7 +590,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  			root->segment, (unsigned int)root->secondary.start);
->  		device->driver_data = NULL;
->  		result = -ENODEV;
-> -		goto end;
-> +		goto remove_dmar;
->  	}
->  
->  	if (clear_aspm) {
-> @@ -597,7 +604,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	if (device->wakeup.flags.run_wake)
->  		device_set_run_wake(root->bus->bridge, true);
->  
-> -	if (system_state != SYSTEM_BOOTING) {
-> +	if (hotadd) {
->  		pcibios_resource_survey_bus(root->bus);
->  		pci_assign_unassigned_root_bus_resources(root->bus);
->  	}
-> @@ -607,6 +614,9 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	pci_unlock_rescan_remove();
->  	return 1;
->  
-> +remove_dmar:
-> +	if (hotadd)
-> +		dmar_device_remove(handle);
->  end:
->  	kfree(root);
->  	return result;
-> @@ -625,6 +635,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
->  
->  	pci_remove_root_bus(root->bus);
->  
-> +	dmar_device_remove(device->handle);
-> +
->  	pci_unlock_rescan_remove();
->  
->  	kfree(root);
-> -- 
-> 1.7.10.4
-> 
+config ARM64_PCI
+	def_bool PCI
+	select PCI_MSI
+
+
+> It may be better to simply set PCI and PCI_MSI as defaults in defconfig
+> rather than "default y" and an additional config PCI_MSI entry.
+
+Selecting PCI_MSI unconditionally seems fine to me. We won't have any
+ARM64 systems that only do classic PCI, and MSI is mandatory for PCIe.
+
+	Arnd
