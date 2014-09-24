@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaIXQ4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:56:19 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:32391 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753877AbaIXQ4R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:56:17 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiUOALr2IlRbtBU3/2dsb2JhbABggw63NgUBcpsRgQcXAXqEYCOBGjeIQgGzaZA0hhKJKGQdhDUFnSGVVINkOy+BBoFEAQEB
-From: Fabian Frederick <fabf@skynet.be>
+	id S1753352AbaIXQ4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:56:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49463 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877AbaIXQqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:46:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
+   d="scan'208";a="604749297"
+From: Vinod Koul <vinod.koul@intel.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, trond.myklebust@primarydata.com,
-        ebiederm@xmission.com, Fabian Frederick <fabf@skynet.be>
-Subject: [PATCH 1/1 linux-next] nfs: fix duplicate proc entries
-Date: Wed, 24 Sep 2014 18:56:11 +0200
-Message-Id: <1411577771-9474-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 07/27] vga_switcheroo: use pm_runtime_last_busy_and_autosuspend helper
+Date: Wed, 24 Sep 2014 21:44:57 +0530
+Message-Id: <1411575342-31048-8-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 65b38851a174
-("NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes")
+Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+coding the same code
 
-updated the following function:
-static int nfs_volume_list_open(struct inode *inode, struct file *file)
-
-it used &nfs_server_list_ops instead of &nfs_volume_list_ops
-which means cat /proc/fs/nfsfs/volumes = /proc/fs/nfsfs/servers
-
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 ---
- fs/nfs/client.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/vga/vga_switcheroo.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 8052020..f9f4845 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1320,7 +1320,7 @@ static int nfs_server_list_show(struct seq_file *m, void *v)
-  */
- static int nfs_volume_list_open(struct inode *inode, struct file *file)
- {
--	return seq_open_net(inode, file, &nfs_server_list_ops,
-+	return seq_open_net(inode, file, &nfs_volume_list_ops,
- 			   sizeof(struct seq_net_private));
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+index 6866448..697ffbd 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -682,10 +682,9 @@ static int vga_switcheroo_runtime_resume_hdmi_audio(struct device *dev)
+ 	ret = dev->bus->pm->runtime_resume(dev);
+ 
+ 	/* put the reference for the gpu */
+-	if (found) {
+-		pm_runtime_mark_last_busy(&found->pdev->dev);
+-		pm_runtime_put_autosuspend(&found->pdev->dev);
+-	}
++	if (found)
++		pm_runtime_last_busy_and_autosuspend(&found->pdev->dev);
++
+ 	return ret;
  }
  
 -- 
-1.9.3
+1.7.0.4
 
