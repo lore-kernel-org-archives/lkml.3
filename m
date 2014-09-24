@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728AbaIXVEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:04:38 -0400
-Received: from mail-by2on0114.outbound.protection.outlook.com ([207.46.100.114]:42880
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1753807AbaIXVEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:04:54 -0400
+Received: from mail-bn1on0148.outbound.protection.outlook.com ([157.56.110.148]:61704
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753590AbaIXVEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:04:35 -0400
-X-WSS-ID: 0NCFB6I-07-TA2-02
+	id S1753755AbaIXVEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:04:51 -0400
+X-WSS-ID: 0NCFB61-08-8K6-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -18,9 +18,9 @@ CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
         Joerg Roedel <joro@8bytes.org>, Ben Goz <ben.goz@amd.com>,
         Oded Gabbay <oded.gabbay@amd.com>,
         =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH v4 16/23] amdkfd: Add packet manager module
-Date: Wed, 24 Sep 2014 23:45:30 +0300
-Message-ID: <1411591537-31636-17-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH v4 13/23] amdkfd: Add mqd_manager module
+Date: Wed, 24 Sep 2014 23:45:27 +0300
+Message-ID: <1411591537-31636-14-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
 References: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
@@ -28,11 +28,11 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.20.0.84]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(51234002)(189002)(77156001)(74662003)(21056001)(36756003)(64706001)(50466002)(90102001)(101416001)(33646002)(86362001)(46102003)(48376002)(107046002)(99396003)(93916002)(20776003)(81342003)(4396001)(92726001)(229853001)(47776003)(92566001)(81542003)(87286001)(89996001)(50226001)(79102003)(62966002)(97736003)(80022003)(88136002)(77096002)(87936001)(85852003)(83072002)(74502003)(106466001)(19580405001)(68736004)(84676001)(31966008)(76482002)(102836001)(77982003)(83322001)(44976005)(105586002)(19580395003)(85306004)(95666004)(50986999)(104166001)(76176999)(10300001)(120916001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0201MB1084;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(92566001)(92726001)(33646002)(90102001)(85852003)(83072002)(102836001)(88136002)(89996001)(36756003)(77156001)(101416001)(120916001)(20776003)(64706001)(31966008)(99396003)(47776003)(10300001)(62966002)(104166001)(97736003)(229853001)(93916002)(87286001)(107046002)(87936001)(85306004)(86362001)(77096002)(106466001)(76176999)(44976005)(83322001)(50466002)(50226001)(4396001)(48376002)(77982003)(19580395003)(50986999)(84676001)(19580405001)(68736004)(105586002)(21056001)(74662003)(80022003)(79102003)(81342003)(74502003)(81542003)(46102003)(76482002)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1084;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
 X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,43 +41,286 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Goz <ben.goz@amd.com>
 
-The packet manager module builds PM4 packets for the sole use of the CP
-scheduler. Those packets are used by the HIQ to submit runlists to the CP.
+The mqd_manager module handles MQD data structures.
+MQD stands for Memory Queue Descriptor, which is used by the H/W to
+keep the usermode queue state in memory.
 
 v3:
 
-Removed include of cik_mqds.h
+Removed new typedefs
+Removed pragma pack 4
+Remove cik_mqds.h file
 Changed lower_32/upper_32 calls to use linux macros
 Used new gart allocation functions
 Added documentation
 
+v4:
+
+Added missing initialization of the addr field in init_mqd()
+
+Setting the hqd persistent.preload_req bit ON so that when queues switches
+on/off, their context will kept and read from the mqd when the cp reassign
+them, and thus the dispatched workload context kept consistent without any
+interrupts.
+
 Signed-off-by: Ben Goz <ben.goz@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/radeon/amdkfd/Makefile             |   2 +-
- drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c | 495 +++++++++++++++++++++
- drivers/gpu/drm/radeon/amdkfd/kfd_priv.h           |  72 +++
- 3 files changed, 568 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c
+ drivers/gpu/drm/radeon/amdkfd/Makefile          |   2 +-
+ drivers/gpu/drm/radeon/amdkfd/cik_regs.h        | 221 +++++++++++++++++
+ drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c | 312 ++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h |  88 +++++++
+ drivers/gpu/drm/radeon/amdkfd/kfd_priv.h        |  11 +
+ 5 files changed, 633 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+ create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+ create mode 100644 drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
 
 diff --git a/drivers/gpu/drm/radeon/amdkfd/Makefile b/drivers/gpu/drm/radeon/amdkfd/Makefile
-index 020d6c7..b88e637 100644
+index 392728a..9f8de8d 100644
 --- a/drivers/gpu/drm/radeon/amdkfd/Makefile
 +++ b/drivers/gpu/drm/radeon/amdkfd/Makefile
-@@ -7,6 +7,6 @@ ccflags-y := -Iinclude/drm
+@@ -6,6 +6,6 @@ ccflags-y := -Iinclude/drm
+ 
  amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o \
  		kfd_pasid.o kfd_doorbell.o kfd_aperture.o \
- 		kfd_process.o kfd_queue.o kfd_mqd_manager.o \
--		kfd_kernel_queue.o
-+		kfd_kernel_queue.o kfd_packet_manager.o
+-		kfd_process.o kfd_queue.o
++		kfd_process.o kfd_queue.o kfd_mqd_manager.o
  
  obj-$(CONFIG_HSA_RADEON)	+= amdkfd.o
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c b/drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c
+diff --git a/drivers/gpu/drm/radeon/amdkfd/cik_regs.h b/drivers/gpu/drm/radeon/amdkfd/cik_regs.h
 new file mode 100644
-index 0000000..aabc17e
+index 0000000..607fc5c
 --- /dev/null
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_packet_manager.c
-@@ -0,0 +1,495 @@
++++ b/drivers/gpu/drm/radeon/amdkfd/cik_regs.h
+@@ -0,0 +1,221 @@
++/*
++ * Copyright 2014 Advanced Micro Devices, Inc.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ * OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#ifndef CIK_REGS_H
++#define CIK_REGS_H
++
++#define IH_VMID_0_LUT					0x3D40u
++
++#define BIF_DOORBELL_CNTL				0x530Cu
++
++#define	SRBM_GFX_CNTL					0xE44
++#define	PIPEID(x)					((x) << 0)
++#define	MEID(x)						((x) << 2)
++#define	VMID(x)						((x) << 4)
++#define	QUEUEID(x)					((x) << 8)
++
++#define	SQ_CONFIG					0x8C00
++
++#define	SH_MEM_BASES					0x8C28
++/* if PTR32, these are the bases for scratch and lds */
++#define	PRIVATE_BASE(x)					((x) << 0) /* scratch */
++#define	SHARED_BASE(x)					((x) << 16) /* LDS */
++#define	SH_MEM_APE1_BASE				0x8C2C
++/* if PTR32, this is the base location of GPUVM */
++#define	SH_MEM_APE1_LIMIT				0x8C30
++/* if PTR32, this is the upper limit of GPUVM */
++#define	SH_MEM_CONFIG					0x8C34
++#define	PTR32						(1 << 0)
++#define PRIVATE_ATC					(1 << 1)
++#define	ALIGNMENT_MODE(x)				((x) << 2)
++#define	SH_MEM_ALIGNMENT_MODE_DWORD			0
++#define	SH_MEM_ALIGNMENT_MODE_DWORD_STRICT		1
++#define	SH_MEM_ALIGNMENT_MODE_STRICT			2
++#define	SH_MEM_ALIGNMENT_MODE_UNALIGNED			3
++#define	DEFAULT_MTYPE(x)				((x) << 4)
++#define	APE1_MTYPE(x)					((x) << 7)
++
++/* valid for both DEFAULT_MTYPE and APE1_MTYPE */
++#define	MTYPE_CACHED					0
++#define	MTYPE_NONCACHED					3
++
++
++#define SH_STATIC_MEM_CONFIG				0x9604u
++
++#define	TC_CFG_L1_LOAD_POLICY0				0xAC68
++#define	TC_CFG_L1_LOAD_POLICY1				0xAC6C
++#define	TC_CFG_L1_STORE_POLICY				0xAC70
++#define	TC_CFG_L2_LOAD_POLICY0				0xAC74
++#define	TC_CFG_L2_LOAD_POLICY1				0xAC78
++#define	TC_CFG_L2_STORE_POLICY0				0xAC7C
++#define	TC_CFG_L2_STORE_POLICY1				0xAC80
++#define	TC_CFG_L2_ATOMIC_POLICY				0xAC84
++#define	TC_CFG_L1_VOLATILE				0xAC88
++#define	TC_CFG_L2_VOLATILE				0xAC8C
++
++#define CP_PQ_WPTR_POLL_CNTL				0xC20C
++#define	WPTR_POLL_EN					(1 << 31)
++
++#define CPC_INT_CNTL					0xC2D0
++#define CP_ME1_PIPE0_INT_CNTL				0xC214
++#define CP_ME1_PIPE1_INT_CNTL				0xC218
++#define CP_ME1_PIPE2_INT_CNTL				0xC21C
++#define CP_ME1_PIPE3_INT_CNTL				0xC220
++#define CP_ME2_PIPE0_INT_CNTL				0xC224
++#define CP_ME2_PIPE1_INT_CNTL				0xC228
++#define CP_ME2_PIPE2_INT_CNTL				0xC22C
++#define CP_ME2_PIPE3_INT_CNTL				0xC230
++#define DEQUEUE_REQUEST_INT_ENABLE			(1 << 13)
++#define WRM_POLL_TIMEOUT_INT_ENABLE			(1 << 17)
++#define PRIV_REG_INT_ENABLE				(1 << 23)
++#define TIME_STAMP_INT_ENABLE				(1 << 26)
++#define GENERIC2_INT_ENABLE				(1 << 29)
++#define GENERIC1_INT_ENABLE				(1 << 30)
++#define GENERIC0_INT_ENABLE				(1 << 31)
++#define CP_ME1_PIPE0_INT_STATUS				0xC214
++#define CP_ME1_PIPE1_INT_STATUS				0xC218
++#define CP_ME1_PIPE2_INT_STATUS				0xC21C
++#define CP_ME1_PIPE3_INT_STATUS				0xC220
++#define CP_ME2_PIPE0_INT_STATUS				0xC224
++#define CP_ME2_PIPE1_INT_STATUS				0xC228
++#define CP_ME2_PIPE2_INT_STATUS				0xC22C
++#define CP_ME2_PIPE3_INT_STATUS				0xC230
++#define DEQUEUE_REQUEST_INT_STATUS			(1 << 13)
++#define WRM_POLL_TIMEOUT_INT_STATUS			(1 << 17)
++#define PRIV_REG_INT_STATUS				(1 << 23)
++#define TIME_STAMP_INT_STATUS				(1 << 26)
++#define GENERIC2_INT_STATUS				(1 << 29)
++#define GENERIC1_INT_STATUS				(1 << 30)
++#define GENERIC0_INT_STATUS				(1 << 31)
++
++#define CP_HPD_EOP_BASE_ADDR				0xC904
++#define CP_HPD_EOP_BASE_ADDR_HI				0xC908
++#define CP_HPD_EOP_VMID					0xC90C
++#define CP_HPD_EOP_CONTROL				0xC910
++#define	EOP_SIZE(x)					((x) << 0)
++#define	EOP_SIZE_MASK					(0x3f << 0)
++#define CP_MQD_BASE_ADDR				0xC914
++#define CP_MQD_BASE_ADDR_HI				0xC918
++#define CP_HQD_ACTIVE					0xC91C
++#define CP_HQD_VMID					0xC920
++
++#define CP_HQD_PERSISTENT_STATE				0xC924u
++#define	DEFAULT_CP_HQD_PERSISTENT_STATE			(0x33U << 8)
++#define	PRELOAD_REQ					(1 << 0)
++
++#define CP_HQD_PIPE_PRIORITY				0xC928u
++#define CP_HQD_QUEUE_PRIORITY				0xC92Cu
++#define CP_HQD_QUANTUM					0xC930u
++#define	QUANTUM_EN					1U
++#define	QUANTUM_SCALE_1MS				(1U << 4)
++#define	QUANTUM_DURATION(x)				((x) << 8)
++
++#define CP_HQD_PQ_BASE					0xC934
++#define CP_HQD_PQ_BASE_HI				0xC938
++#define CP_HQD_PQ_RPTR					0xC93C
++#define CP_HQD_PQ_RPTR_REPORT_ADDR			0xC940
++#define CP_HQD_PQ_RPTR_REPORT_ADDR_HI			0xC944
++#define CP_HQD_PQ_WPTR_POLL_ADDR			0xC948
++#define CP_HQD_PQ_WPTR_POLL_ADDR_HI			0xC94C
++#define CP_HQD_PQ_DOORBELL_CONTROL			0xC950
++#define	DOORBELL_OFFSET(x)				((x) << 2)
++#define	DOORBELL_OFFSET_MASK				(0x1fffff << 2)
++#define	DOORBELL_SOURCE					(1 << 28)
++#define	DOORBELL_SCHD_HIT				(1 << 29)
++#define	DOORBELL_EN					(1 << 30)
++#define	DOORBELL_HIT					(1 << 31)
++#define CP_HQD_PQ_WPTR					0xC954
++#define CP_HQD_PQ_CONTROL				0xC958
++#define	QUEUE_SIZE(x)					((x) << 0)
++#define	QUEUE_SIZE_MASK					(0x3f << 0)
++#define	RPTR_BLOCK_SIZE(x)				((x) << 8)
++#define	RPTR_BLOCK_SIZE_MASK				(0x3f << 8)
++#define	MIN_AVAIL_SIZE(x)				((x) << 20)
++#define	PQ_ATC_EN					(1 << 23)
++#define	PQ_VOLATILE					(1 << 26)
++#define	NO_UPDATE_RPTR					(1 << 27)
++#define	UNORD_DISPATCH					(1 << 28)
++#define	ROQ_PQ_IB_FLIP					(1 << 29)
++#define	PRIV_STATE					(1 << 30)
++#define	KMD_QUEUE					(1 << 31)
++
++#define	DEFAULT_RPTR_BLOCK_SIZE				RPTR_BLOCK_SIZE(5)
++#define	DEFAULT_MIN_AVAIL_SIZE				MIN_AVAIL_SIZE(3)
++
++#define CP_HQD_IB_BASE_ADDR				0xC95Cu
++#define CP_HQD_IB_BASE_ADDR_HI				0xC960u
++#define CP_HQD_IB_RPTR					0xC964u
++#define CP_HQD_IB_CONTROL				0xC968u
++#define	IB_ATC_EN					(1U << 23)
++#define	DEFAULT_MIN_IB_AVAIL_SIZE			(3U << 20)
++
++#define CP_HQD_DEQUEUE_REQUEST				0xC974
++#define	DEQUEUE_REQUEST_DRAIN				1
++#define DEQUEUE_REQUEST_RESET				2
++#define		DEQUEUE_INT					(1U << 8)
++
++#define CP_HQD_SEMA_CMD					0xC97Cu
++#define CP_HQD_MSG_TYPE					0xC980u
++#define CP_HQD_ATOMIC0_PREOP_LO				0xC984u
++#define CP_HQD_ATOMIC0_PREOP_HI				0xC988u
++#define CP_HQD_ATOMIC1_PREOP_LO				0xC98Cu
++#define CP_HQD_ATOMIC1_PREOP_HI				0xC990u
++#define CP_HQD_HQ_SCHEDULER0				0xC994u
++#define CP_HQD_HQ_SCHEDULER1				0xC998u
++
++
++#define CP_MQD_CONTROL					0xC99C
++#define	MQD_VMID(x)					((x) << 0)
++#define	MQD_VMID_MASK					(0xf << 0)
++#define	MQD_CONTROL_PRIV_STATE_EN			(1U << 8)
++
++#define GRBM_GFX_INDEX					0x30800
++#define	INSTANCE_INDEX(x)				((x) << 0)
++#define	SH_INDEX(x)					((x) << 8)
++#define	SE_INDEX(x)					((x) << 16)
++#define	SH_BROADCAST_WRITES				(1 << 29)
++#define	INSTANCE_BROADCAST_WRITES			(1 << 30)
++#define	SE_BROADCAST_WRITES				(1 << 31)
++
++#define SQC_CACHES					0x30d20
++#define SQC_POLICY					0x8C38u
++#define SQC_VOLATILE					0x8C3Cu
++
++#define CP_PERFMON_CNTL					0x36020
++
++#define ATC_VMID0_PASID_MAPPING				0x339Cu
++#define	ATC_VMID_PASID_MAPPING_UPDATE_STATUS		0x3398u
++#define	ATC_VMID_PASID_MAPPING_VALID			(1U << 31)
++
++#define ATC_VM_APERTURE0_CNTL				0x3310u
++#define	ATS_ACCESS_MODE_NEVER				0
++#define	ATS_ACCESS_MODE_ALWAYS				1
++
++#define ATC_VM_APERTURE0_CNTL2				0x3318u
++#define ATC_VM_APERTURE0_HIGH_ADDR			0x3308u
++#define ATC_VM_APERTURE0_LOW_ADDR			0x3300u
++#define ATC_VM_APERTURE1_CNTL				0x3314u
++#define ATC_VM_APERTURE1_CNTL2				0x331Cu
++#define ATC_VM_APERTURE1_HIGH_ADDR			0x330Cu
++#define ATC_VM_APERTURE1_LOW_ADDR			0x3304u
++
++#endif
+diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+new file mode 100644
+index 0000000..3bd3b01
+--- /dev/null
++++ b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.c
+@@ -0,0 +1,312 @@
 +/*
 + * Copyright 2014 Advanced Micro Devices, Inc.
 + *
@@ -101,588 +344,411 @@ index 0000000..aabc17e
 + *
 + */
 +
++#include <linux/printk.h>
 +#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include "kfd_device_queue_manager.h"
-+#include "kfd_kernel_queue.h"
 +#include "kfd_priv.h"
-+#include "kfd_pm4_headers.h"
-+#include "kfd_pm4_opcodes.h"
++#include "kfd_mqd_manager.h"
++#include "cik_regs.h"
++#include "../cik_reg.h"
 +
-+static inline void inc_wptr(unsigned int *wptr, unsigned int increment_bytes, unsigned int buffer_size_bytes)
++inline void busy_wait(unsigned long ms)
 +{
-+	unsigned int temp = *wptr + increment_bytes / sizeof(uint32_t);
-+
-+	BUG_ON((temp * sizeof(uint32_t)) > buffer_size_bytes);
-+	*wptr = temp;
++	while (time_before(jiffies, ms))
++		cpu_relax();
 +}
 +
-+static unsigned int build_pm4_header(unsigned int opcode, size_t packet_size)
++static inline struct cik_mqd *get_mqd(void *mqd)
 +{
-+	union PM4_TYPE_3_HEADER header;
-+
-+	header.u32all = 0;
-+	header.opcode = opcode;
-+	header.count = packet_size/sizeof(uint32_t) - 2;
-+	header.type = PM4_TYPE_3;
-+
-+	return header.u32all;
++	return (struct cik_mqd *)mqd;
 +}
 +
-+static void pm_calc_rlib_size(struct packet_manager *pm, unsigned int *rlib_size, bool *over_subscription)
++static int init_mqd(struct mqd_manager *mm, void **mqd,
++		struct kfd_mem_obj **mqd_mem_obj, uint64_t *gart_addr,
++		struct queue_properties *q)
 +{
-+	unsigned int process_count, queue_count;
-+
-+	BUG_ON(!pm || !rlib_size || !over_subscription);
-+
-+	process_count = pm->dqm->processes_count;
-+	queue_count = pm->dqm->queue_count;
-+
-+	/* check if there is over subscription*/
-+	*over_subscription = false;
-+	if ((process_count >= VMID_PER_DEVICE) ||
-+			queue_count > PIPE_PER_ME_CP_SCHEDULING * QUEUES_PER_PIPE) {
-+		*over_subscription = true;
-+		pr_debug("kfd: over subscribed runlist\n");
-+	}
-+
-+	/* calculate run list ib allocation size */
-+	*rlib_size = process_count * sizeof(struct pm4_map_process) +
-+		     queue_count * sizeof(struct pm4_map_queues);
-+
-+	/* increase the allocation size in case we need a chained run list when over subscription */
-+	if (*over_subscription)
-+		*rlib_size += sizeof(struct pm4_runlist);
-+
-+	pr_debug("kfd: runlist ib size %d\n", *rlib_size);
-+}
-+
-+static int pm_allocate_runlist_ib(struct packet_manager *pm, unsigned int **rl_buffer, uint64_t *rl_gpu_buffer,
-+		unsigned int *rl_buffer_size, bool *is_over_subscription)
-+{
++	uint64_t addr;
++	struct cik_mqd *m;
 +	int retval;
 +
-+	BUG_ON(!pm);
-+	BUG_ON(pm->allocated == true);
-+	BUG_ON(is_over_subscription == NULL);
++	BUG_ON(!mm || !q || !mqd);
 +
-+	pm_calc_rlib_size(pm, rl_buffer_size, is_over_subscription);
++	pr_debug("kfd: In func %s\n", __func__);
 +
-+	retval = kfd2kgd->allocate_mem(pm->dqm->dev->kgd,
-+					*rl_buffer_size,
-+					PAGE_SIZE,
++	retval = kfd2kgd->allocate_mem(mm->dev->kgd,
++					sizeof(struct cik_mqd),
++					256,
 +					KFD_MEMPOOL_SYSTEM_WRITECOMBINE,
-+					(struct kgd_mem **) &pm->ib_buffer_obj);
++					(struct kgd_mem **) mqd_mem_obj);
 +
-+	if (retval != 0) {
-+		pr_err("kfd: failed to allocate runlist IB\n");
-+		return retval;
-+	}
-+
-+	*(void **)rl_buffer = pm->ib_buffer_obj->ptr;
-+	*rl_gpu_buffer = pm->ib_buffer_obj->gpu_addr;
-+
-+	memset(*rl_buffer, 0, *rl_buffer_size);
-+	pm->allocated = true;
-+	return retval;
-+}
-+
-+static int pm_create_runlist(struct packet_manager *pm, uint32_t *buffer,
-+			uint64_t ib, size_t ib_size_in_dwords, bool chain)
-+{
-+	struct pm4_runlist *packet;
-+
-+	BUG_ON(!pm || !buffer || !ib);
-+
-+	packet = (struct pm4_runlist *)buffer;
-+
-+	memset(buffer, 0, sizeof(struct pm4_runlist));
-+	packet->header.u32all = build_pm4_header(IT_RUN_LIST, sizeof(struct pm4_runlist));
-+
-+	packet->bitfields4.ib_size = ib_size_in_dwords;
-+	packet->bitfields4.chain = chain ? 1 : 0;
-+	packet->bitfields4.offload_polling = 0;
-+	packet->bitfields4.valid = 1;
-+	packet->bitfields4.vmid = 0;
-+	packet->ordinal2 = lower_32_bits(ib);
-+	packet->bitfields3.ib_base_hi = upper_32_bits(ib);
-+
-+	return 0;
-+}
-+
-+static int pm_create_map_process(struct packet_manager *pm, uint32_t *buffer, struct qcm_process_device *qpd)
-+{
-+	struct pm4_map_process *packet;
-+
-+	BUG_ON(!pm || !buffer || !qpd);
-+
-+	packet = (struct pm4_map_process *)buffer;
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+
-+	memset(buffer, 0, sizeof(struct pm4_map_process));
-+
-+	packet->header.u32all = build_pm4_header(IT_MAP_PROCESS, sizeof(struct pm4_map_process));
-+	packet->bitfields2.diq_enable = (qpd->is_debug) ? 1 : 0;
-+	packet->bitfields2.pasid = qpd->pqm->process->pasid;
-+	packet->bitfields3.page_table_base = qpd->page_table_base;
-+	packet->bitfields4.gds_size = qpd->gds_size;
-+	packet->bitfields4.num_gws = qpd->num_gws;
-+	packet->bitfields4.num_oac = qpd->num_oac;
-+
-+	packet->sh_mem_config = qpd->sh_mem_config;
-+	packet->sh_mem_bases = qpd->sh_mem_bases;
-+	packet->sh_mem_ape1_base = qpd->sh_mem_ape1_base;
-+	packet->sh_mem_ape1_limit = qpd->sh_mem_ape1_limit;
-+
-+	packet->gds_addr_lo = lower_32_bits(qpd->gds_context_area);
-+	packet->gds_addr_hi = upper_32_bits(qpd->gds_context_area);
-+
-+	return 0;
-+}
-+
-+static int pm_create_map_queue(struct packet_manager *pm, uint32_t *buffer, struct queue *q)
-+{
-+	struct pm4_map_queues *packet;
-+
-+	BUG_ON(!pm || !buffer || !q);
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+
-+	packet = (struct pm4_map_queues *)buffer;
-+	memset(buffer, 0, sizeof(struct pm4_map_queues));
-+
-+	packet->header.u32all = build_pm4_header(IT_MAP_QUEUES, sizeof(struct pm4_map_queues));
-+	packet->bitfields2.alloc_format = alloc_format___map_queues__one_per_pipe;
-+	packet->bitfields2.num_queues = 1;
-+	packet->bitfields2.queue_sel = queue_sel___map_queues__map_to_hws_determined_queue_slots;
-+	packet->bitfields2.vidmem = (q->properties.is_interop) ? vidmem___map_queues__uses_video_memory :
-+			vidmem___map_queues__uses_no_video_memory;
-+
-+	switch (q->properties.type) {
-+	case KFD_QUEUE_TYPE_COMPUTE:
-+	case KFD_QUEUE_TYPE_DIQ:
-+		packet->bitfields2.engine_sel = engine_sel___map_queues__compute;
-+		break;
-+	case KFD_QUEUE_TYPE_SDMA:
-+		packet->bitfields2.engine_sel = engine_sel___map_queues__sdma0_queue;
-+		break;
-+	default:
-+		BUG();
-+		break;
-+	}
-+
-+	packet->_map_queues_ordinals[0].bitfields3.doorbell_offset = q->properties.doorbell_off;
-+	packet->_map_queues_ordinals[0].mqd_addr_lo = lower_32_bits(q->gart_mqd_addr);
-+	packet->_map_queues_ordinals[0].mqd_addr_hi = upper_32_bits(q->gart_mqd_addr);
-+	packet->_map_queues_ordinals[0].wptr_addr_lo = lower_32_bits((uint64_t)q->properties.write_ptr);
-+	packet->_map_queues_ordinals[0].wptr_addr_hi = upper_32_bits((uint64_t)q->properties.write_ptr);
-+
-+	return 0;
-+}
-+
-+static int pm_create_runlist_ib(struct packet_manager *pm, struct list_head *queues,
-+				uint64_t *rl_gpu_addr, size_t *rl_size_bytes)
-+{
-+	unsigned int alloc_size_bytes;
-+	unsigned int *rl_buffer, rl_wptr, i;
-+	int retval, proccesses_mapped;
-+	struct device_process_node *cur;
-+	struct qcm_process_device *qpd;
-+	struct queue *q;
-+	struct kernel_queue *kq;
-+	bool is_over_subscription;
-+
-+	BUG_ON(!pm || !queues || !rl_size_bytes || !rl_gpu_addr);
-+
-+	rl_wptr = retval = proccesses_mapped = 0;
-+
-+	retval = pm_allocate_runlist_ib(pm, &rl_buffer, rl_gpu_addr, &alloc_size_bytes, &is_over_subscription);
 +	if (retval != 0)
-+		return retval;
-+
-+	*rl_size_bytes = alloc_size_bytes;
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+	pr_debug("kfd: building runlist ib process count: %d queues count %d\n", pm->dqm->processes_count,
-+			pm->dqm->queue_count);
-+
-+	/* build the run list ib packet */
-+	list_for_each_entry(cur, queues, list) {
-+		qpd = cur->qpd;
-+		/* build map process packet */
-+		if (proccesses_mapped >= pm->dqm->processes_count) {
-+			pr_debug("kfd: not enough space left in runlist IB\n");
-+			pm_release_ib(pm);
-+			return -ENOMEM;
-+		}
-+		retval = pm_create_map_process(pm, &rl_buffer[rl_wptr], qpd);
-+		if (retval != 0)
-+			return retval;
-+		proccesses_mapped++;
-+		inc_wptr(&rl_wptr, sizeof(struct pm4_map_process), alloc_size_bytes);
-+		list_for_each_entry(kq, &qpd->priv_queue_list, list) {
-+			if (kq->queue->properties.is_active != true)
-+				continue;
-+			retval = pm_create_map_queue(pm, &rl_buffer[rl_wptr], kq->queue);
-+			if (retval != 0)
-+				return retval;
-+			inc_wptr(&rl_wptr, sizeof(struct pm4_map_queues), alloc_size_bytes);
-+		}
-+
-+		list_for_each_entry(q, &qpd->queues_list, list) {
-+			if (q->properties.is_active != true)
-+				continue;
-+			retval = pm_create_map_queue(pm, &rl_buffer[rl_wptr], q);
-+			if (retval != 0)
-+				return retval;
-+			inc_wptr(&rl_wptr, sizeof(struct pm4_map_queues), alloc_size_bytes);
-+		}
-+	}
-+
-+	pr_debug("kfd: finished map process and queues to runlist\n");
-+
-+	if (is_over_subscription)
-+		pm_create_runlist(pm, &rl_buffer[rl_wptr], *rl_gpu_addr, alloc_size_bytes / sizeof(uint32_t), true);
-+
-+	for (i = 0; i < alloc_size_bytes / sizeof(uint32_t); i++)
-+		pr_debug("0x%2X ", rl_buffer[i]);
-+	pr_debug("\n");
-+
-+	return 0;
-+}
-+
-+int pm_init(struct packet_manager *pm, struct device_queue_manager *dqm)
-+{
-+	BUG_ON(!dqm);
-+
-+	pm->dqm = dqm;
-+	mutex_init(&pm->lock);
-+	pm->priv_queue = kernel_queue_init(dqm->dev, KFD_QUEUE_TYPE_HIQ);
-+	if (pm->priv_queue == NULL) {
-+		mutex_destroy(&pm->lock);
 +		return -ENOMEM;
-+	}
-+	pm->allocated = false;
 +
-+	return 0;
++	m = (struct cik_mqd *) (*mqd_mem_obj)->ptr;
++	addr = (*mqd_mem_obj)->gpu_addr;
++
++	memset(m, 0, sizeof(struct cik_mqd));
++
++	m->header = 0xC0310800;
++	m->pipeline_stat_enable = 1;
++	m->static_thread_mgmt01[0] = 0xFFFFFFFF;
++	m->static_thread_mgmt01[1] = 0xFFFFFFFF;
++	m->static_thread_mgmt23[0] = 0xFFFFFFFF;
++	m->static_thread_mgmt23[1] = 0xFFFFFFFF;
++
++	/*
++	 * Make sure to use the last queue state saved on mqd when the cp
++	 * reassigns the queue, so when queue is switched on/off (e.g over
++	 * subscription or quantum timeout) the context will be consistent
++	 */
++	m->queue_state.cp_hqd_persistent_state = DEFAULT_CP_HQD_PERSISTENT_STATE |
++					PRELOAD_REQ;
++
++	m->queue_state.cp_mqd_control             = MQD_CONTROL_PRIV_STATE_EN;
++	m->queue_state.cp_mqd_base_addr           = lower_32_bits(addr);
++	m->queue_state.cp_mqd_base_addr_hi        = upper_32_bits(addr);
++
++	m->queue_state.cp_hqd_ib_control = DEFAULT_MIN_IB_AVAIL_SIZE | IB_ATC_EN;
++	/* Although WinKFD writes this, I suspect it should not be necessary. */
++	m->queue_state.cp_hqd_ib_control = IB_ATC_EN | DEFAULT_MIN_IB_AVAIL_SIZE;
++
++	m->queue_state.cp_hqd_quantum = QUANTUM_EN | QUANTUM_SCALE_1MS | QUANTUM_DURATION(10);
++
++	/*
++	 * Pipe Priority
++	 * Identifies the pipe relative priority when this queue is connected
++	 * to the pipeline. The pipe priority is against the GFX pipe and HP3D.
++	 * In KFD we are using a fixed pipe priority set to CS_MEDIUM.
++	 * 0 = CS_LOW (typically below GFX)
++	 * 1 = CS_MEDIUM (typically between HP3D and GFX
++	 * 2 = CS_HIGH (typically above HP3D)
++	 */
++	m->queue_state.cp_hqd_pipe_priority = 1;
++	m->queue_state.cp_hqd_queue_priority = 15;
++
++	*mqd = m;
++	if (gart_addr != NULL)
++		*gart_addr = addr;
++	retval = mm->update_mqd(mm, m, q);
++
++	return retval;
 +}
 +
-+void pm_uninit(struct packet_manager *pm)
++static void uninit_mqd(struct mqd_manager *mm, void *mqd,
++			struct kfd_mem_obj *mqd_mem_obj)
 +{
-+	BUG_ON(!pm);
-+
-+	mutex_destroy(&pm->lock);
-+	kernel_queue_uninit(pm->priv_queue);
++	BUG_ON(!mm || !mqd);
++	kfd2kgd->free_mem(mm->dev->kgd, (struct kgd_mem *) mqd_mem_obj);
 +}
 +
-+int pm_send_set_resources(struct packet_manager *pm, struct scheduling_resources *res)
++static int load_mqd(struct mqd_manager *mm, void *mqd, uint32_t pipe_id, uint32_t queue_id, uint32_t __user *wptr)
 +{
-+	struct pm4_set_resources *packet;
++	return kfd2kgd->hqd_load(mm->dev->kgd, mqd, pipe_id, queue_id, wptr);
 +
-+	BUG_ON(!pm || !res);
++}
++
++static int update_mqd(struct mqd_manager *mm, void *mqd, struct queue_properties *q)
++{
++	struct cik_mqd *m;
++
++	BUG_ON(!mm || !q || !mqd);
 +
 +	pr_debug("kfd: In func %s\n", __func__);
 +
-+	mutex_lock(&pm->lock);
-+	pm->priv_queue->acquire_packet_buffer(pm->priv_queue, sizeof(*packet) / sizeof(uint32_t),
-+			(unsigned int **)&packet);
-+	if (packet == NULL) {
-+		mutex_unlock(&pm->lock);
-+		pr_err("kfd: failed to allocate buffer on kernel queue\n");
-+		return -ENOMEM;
++	m = get_mqd(mqd);
++	m->queue_state.cp_hqd_pq_control = DEFAULT_RPTR_BLOCK_SIZE | DEFAULT_MIN_AVAIL_SIZE | PQ_ATC_EN;
++	/* calculating queue size which is log base 2 of actual queue size -1 dwords and another -1 for ffs */
++	m->queue_state.cp_hqd_pq_control |= ffs(q->queue_size / sizeof(unsigned int)) - 1 - 1;
++	m->queue_state.cp_hqd_pq_base = lower_32_bits((uint64_t)q->queue_address >> 8);
++	m->queue_state.cp_hqd_pq_base_hi = upper_32_bits((uint64_t)q->queue_address >> 8);
++	m->queue_state.cp_hqd_pq_rptr_report_addr = lower_32_bits((uint64_t)q->read_ptr);
++	m->queue_state.cp_hqd_pq_rptr_report_addr_hi = upper_32_bits((uint64_t)q->read_ptr);
++	m->queue_state.cp_hqd_pq_doorbell_control = DOORBELL_EN | DOORBELL_OFFSET(q->doorbell_off);
++
++	m->queue_state.cp_hqd_vmid = q->vmid;
++
++	m->queue_state.cp_hqd_active = 0;
++	q->is_active = false;
++	if (q->queue_size > 0 &&
++			q->queue_address != 0 &&
++			q->queue_percent > 0) {
++		m->queue_state.cp_hqd_active = 1;
++		q->is_active = true;
 +	}
 +
-+	memset(packet, 0, sizeof(struct pm4_set_resources));
-+	packet->header.u32all = build_pm4_header(IT_SET_RESOURCES, sizeof(struct pm4_set_resources));
++	return 0;
++}
 +
-+	packet->bitfields2.queue_type = queue_type___set_resources__hsa_interface_queue_hiq;
-+	packet->bitfields2.vmid_mask = res->vmid_mask;
-+	packet->bitfields2.unmap_latency = KFD_UNMAP_LATENCY;
-+	packet->bitfields3.oac_mask = res->oac_mask;
-+	packet->bitfields4.gds_heap_base = res->gds_heap_base;
-+	packet->bitfields4.gds_heap_size = res->gds_heap_size;
++static int destroy_mqd(struct mqd_manager *mm, bool is_reset, unsigned int timeout, uint32_t pipe_id, uint32_t queue_id)
++{
++	return kfd2kgd->hqd_destroy(mm->dev->kgd, is_reset, timeout, pipe_id, queue_id);
++}
 +
-+	packet->gws_mask_lo = lower_32_bits(res->gws_mask);
-+	packet->gws_mask_hi = upper_32_bits(res->gws_mask);
++bool is_occupied(struct mqd_manager *mm, uint64_t queue_address, uint32_t pipe_id, uint32_t queue_id)
++{
 +
-+	packet->queue_mask_lo = lower_32_bits(res->queue_mask);
-+	packet->queue_mask_hi = upper_32_bits(res->queue_mask);
++	return kfd2kgd->hqd_is_occupies(mm->dev->kgd, queue_address, pipe_id, queue_id);
 +
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
++}
 +
-+	mutex_unlock(&pm->lock);
++/*
++ * HIQ MQD Implementation, concrete implementation for HIQ MQD implementation.
++ * The HIQ queue in Kaveri is using the same MQD structure as all the user mode
++ * queues but with different initial values.
++ */
++
++static int init_mqd_hiq(struct mqd_manager *mm, void **mqd,
++		struct kfd_mem_obj **mqd_mem_obj, uint64_t *gart_addr,
++		struct queue_properties *q)
++{
++	uint64_t addr;
++	struct cik_mqd *m;
++	int retval;
++
++	BUG_ON(!mm || !q || !mqd || !mqd_mem_obj);
++
++	pr_debug("kfd: In func %s\n", __func__);
++
++	retval = kfd2kgd->allocate_mem(mm->dev->kgd,
++					sizeof(struct cik_mqd),
++					256,
++					KFD_MEMPOOL_SYSTEM_WRITECOMBINE,
++					(struct kgd_mem **) mqd_mem_obj);
++
++	if (retval != 0)
++		return -ENOMEM;
++
++	m = (struct cik_mqd *) (*mqd_mem_obj)->ptr;
++	addr = (*mqd_mem_obj)->gpu_addr;
++
++	memset(m, 0, sizeof(struct cik_mqd));
++
++	m->header = 0xC0310800;
++	m->pipeline_stat_enable = 1;
++	m->static_thread_mgmt01[0] = 0xFFFFFFFF;
++	m->static_thread_mgmt01[1] = 0xFFFFFFFF;
++	m->static_thread_mgmt23[0] = 0xFFFFFFFF;
++	m->static_thread_mgmt23[1] = 0xFFFFFFFF;
++
++	m->queue_state.cp_hqd_persistent_state = DEFAULT_CP_HQD_PERSISTENT_STATE;
++
++	m->queue_state.cp_mqd_control             = MQD_CONTROL_PRIV_STATE_EN;
++	m->queue_state.cp_mqd_base_addr           = lower_32_bits(addr);
++	m->queue_state.cp_mqd_base_addr_hi        = upper_32_bits(addr);
++
++	m->queue_state.cp_hqd_ib_control = DEFAULT_MIN_IB_AVAIL_SIZE;
++
++	m->queue_state.cp_hqd_quantum = QUANTUM_EN | QUANTUM_SCALE_1MS | QUANTUM_DURATION(10);
++
++	/*
++	 * Pipe Priority
++	 * Identifies the pipe relative priority when this queue is connected
++	 * to the pipeline. The pipe priority is against the GFX pipe and HP3D.
++	 * In KFD we are using a fixed pipe priority set to CS_MEDIUM.
++	 * 0 = CS_LOW (typically below GFX)
++	 * 1 = CS_MEDIUM (typically between HP3D and GFX
++	 * 2 = CS_HIGH (typically above HP3D)
++	 */
++	m->queue_state.cp_hqd_pipe_priority = 1;
++	m->queue_state.cp_hqd_queue_priority = 15;
++
++	*mqd = m;
++	if (gart_addr)
++		*gart_addr = addr;
++	retval = mm->update_mqd(mm, m, q);
++
++	return retval;
++}
++
++static int update_mqd_hiq(struct mqd_manager *mm, void *mqd, struct queue_properties *q)
++{
++	struct cik_mqd *m;
++
++	BUG_ON(!mm || !q || !mqd);
++
++	pr_debug("kfd: In func %s\n", __func__);
++
++	m = get_mqd(mqd);
++	m->queue_state.cp_hqd_pq_control = DEFAULT_RPTR_BLOCK_SIZE | DEFAULT_MIN_AVAIL_SIZE | PRIV_STATE | KMD_QUEUE;
++	/* calculating queue size which is log base 2 of actual queue size -1 dwords */
++	m->queue_state.cp_hqd_pq_control |= ffs(q->queue_size / sizeof(unsigned int)) - 1 - 1;
++	m->queue_state.cp_hqd_pq_base = lower_32_bits((uint64_t)q->queue_address >> 8);
++	m->queue_state.cp_hqd_pq_base_hi = upper_32_bits((uint64_t)q->queue_address >> 8);
++	m->queue_state.cp_hqd_pq_rptr_report_addr = lower_32_bits((uint64_t)q->read_ptr);
++	m->queue_state.cp_hqd_pq_rptr_report_addr_hi = upper_32_bits((uint64_t)q->read_ptr);
++	m->queue_state.cp_hqd_pq_doorbell_control = DOORBELL_EN | DOORBELL_OFFSET(q->doorbell_off);
++
++	m->queue_state.cp_hqd_vmid = q->vmid;
++
++	m->queue_state.cp_hqd_active = 0;
++	q->is_active = false;
++	if (q->queue_size > 0 &&
++			q->queue_address != 0 &&
++			q->queue_percent > 0) {
++		m->queue_state.cp_hqd_active = 1;
++		q->is_active = true;
++	}
 +
 +	return 0;
 +}
 +
-+int pm_send_runlist(struct packet_manager *pm, struct list_head *dqm_queues)
++struct mqd_manager *mqd_manager_init(enum KFD_MQD_TYPE type, struct kfd_dev *dev)
 +{
-+	uint64_t rl_gpu_ib_addr;
-+	uint32_t *rl_buffer;
-+	size_t rl_ib_size, packet_size_dwords;
-+	int retval;
++	struct mqd_manager *mqd;
 +
-+	BUG_ON(!pm || !dqm_queues);
++	BUG_ON(!dev);
++	BUG_ON(type >= KFD_MQD_TYPE_MAX);
 +
-+	retval = pm_create_runlist_ib(pm, dqm_queues, &rl_gpu_ib_addr, &rl_ib_size);
-+	if (retval != 0)
-+		goto fail_create_runlist_ib;
++	pr_debug("kfd: In func %s\n", __func__);
 +
-+	pr_debug("kfd: runlist IB address: 0x%llX\n", rl_gpu_ib_addr);
++	mqd = kzalloc(sizeof(struct mqd_manager), GFP_KERNEL);
++	if (!mqd)
++		return NULL;
 +
-+	packet_size_dwords = sizeof(struct pm4_runlist) / sizeof(uint32_t);
-+	mutex_lock(&pm->lock);
++	mqd->dev = dev;
 +
-+	retval = pm->priv_queue->acquire_packet_buffer(pm->priv_queue, packet_size_dwords, &rl_buffer);
-+	if (retval != 0)
-+		goto fail_acquire_packet_buffer;
-+
-+	retval = pm_create_runlist(pm, rl_buffer, rl_gpu_ib_addr, rl_ib_size / sizeof(uint32_t), false);
-+	if (retval != 0)
-+		goto fail_create_runlist;
-+
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
-+
-+	mutex_unlock(&pm->lock);
-+
-+	return retval;
-+
-+fail_create_runlist:
-+	pm->priv_queue->rollback_packet(pm->priv_queue);
-+fail_acquire_packet_buffer:
-+	mutex_unlock(&pm->lock);
-+fail_create_runlist_ib:
-+	if (pm->allocated == true)
-+		pm_release_ib(pm);
-+	return retval;
-+}
-+
-+int pm_send_query_status(struct packet_manager *pm, uint64_t fence_address, uint32_t fence_value)
-+{
-+	int retval;
-+	struct pm4_query_status *packet;
-+
-+	BUG_ON(!pm || !fence_address);
-+
-+	mutex_lock(&pm->lock);
-+	retval = pm->priv_queue->acquire_packet_buffer(pm->priv_queue,
-+			sizeof(struct pm4_query_status) / sizeof(uint32_t), (unsigned int **)&packet);
-+	if (retval != 0)
-+		goto fail_acquire_packet_buffer;
-+
-+	packet->header.u32all = build_pm4_header(IT_QUERY_STATUS, sizeof(struct pm4_query_status));
-+
-+	packet->bitfields2.context_id = 0;
-+	packet->bitfields2.interrupt_sel = interrupt_sel___query_status__completion_status;
-+	packet->bitfields2.command = command___query_status__fence_only_after_write_ack;
-+
-+	packet->addr_hi = upper_32_bits((uint64_t)fence_address);
-+	packet->addr_lo = lower_32_bits((uint64_t)fence_address);
-+	packet->data_hi = upper_32_bits((uint64_t)fence_value);
-+	packet->data_lo = lower_32_bits((uint64_t)fence_value);
-+
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
-+	mutex_unlock(&pm->lock);
-+
-+	return 0;
-+
-+fail_acquire_packet_buffer:
-+	mutex_unlock(&pm->lock);
-+	return retval;
-+}
-+
-+int pm_send_unmap_queue(struct packet_manager *pm, enum kfd_queue_type type,
-+			enum kfd_preempt_type_filter mode, uint32_t filter_param, bool reset)
-+{
-+	int retval;
-+	uint32_t *buffer;
-+	struct pm4_unmap_queues *packet;
-+
-+	BUG_ON(!pm);
-+
-+	mutex_lock(&pm->lock);
-+	retval = pm->priv_queue->acquire_packet_buffer(pm->priv_queue,
-+				sizeof(struct pm4_unmap_queues) / sizeof(uint32_t), &buffer);
-+	if (retval != 0)
-+		goto err_acquire_packet_buffer;
-+
-+	packet = (struct pm4_unmap_queues *)buffer;
-+	memset(buffer, 0, sizeof(struct pm4_unmap_queues));
-+
-+	packet->header.u32all = build_pm4_header(IT_UNMAP_QUEUES, sizeof(struct pm4_unmap_queues));
 +	switch (type) {
-+	case KFD_QUEUE_TYPE_COMPUTE:
-+	case KFD_QUEUE_TYPE_DIQ:
-+		packet->bitfields2.engine_sel = engine_sel___unmap_queues__compute;
++	case KFD_MQD_TYPE_CIK_CP:
++	case KFD_MQD_TYPE_CIK_COMPUTE:
++		mqd->init_mqd = init_mqd;
++		mqd->uninit_mqd = uninit_mqd;
++		mqd->load_mqd = load_mqd;
++		mqd->update_mqd = update_mqd;
++		mqd->destroy_mqd = destroy_mqd;
++		mqd->is_occupied = is_occupied;
 +		break;
-+	case KFD_QUEUE_TYPE_SDMA:
-+		packet->bitfields2.engine_sel = engine_sel___unmap_queues__sdma0;
++	case KFD_MQD_TYPE_CIK_HIQ:
++		mqd->init_mqd = init_mqd_hiq;
++		mqd->uninit_mqd = uninit_mqd;
++		mqd->load_mqd = load_mqd;
++		mqd->update_mqd = update_mqd_hiq;
++		mqd->destroy_mqd = destroy_mqd;
++		mqd->is_occupied = is_occupied;
 +		break;
 +	default:
-+		BUG();
-+		break;
++		kfree(mqd);
++		return NULL;
 +	}
 +
-+	if (reset)
-+		packet->bitfields2.action = action___unmap_queues__reset_queues;
-+	else
-+		packet->bitfields2.action = action___unmap_queues__preempt_queues;
-+
-+	switch (mode) {
-+	case KFD_PREEMPT_TYPE_FILTER_SINGLE_QUEUE:
-+	    packet->bitfields2.queue_sel = queue_sel___unmap_queues__perform_request_on_specified_queues;
-+	    packet->bitfields2.num_queues = 1;
-+	    packet->bitfields4.doorbell_offset0 = filter_param;
-+	    break;
-+	case KFD_PRERMPT_TYPE_FILTER_BY_PASID:
-+	    packet->bitfields2.queue_sel = queue_sel___unmap_queues__perform_request_on_pasid_queues;
-+	    packet->bitfields3.pasid = filter_param;
-+	    break;
-+	case KFD_PRERMPT_TYPE_FILTER_ALL_QUEUES:
-+	    packet->bitfields2.queue_sel = queue_sel___unmap_queues__perform_request_on_all_active_queues;
-+	    break;
-+	default:
-+	    BUG();
-+	    break;
-+	};
-+
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
-+
-+	mutex_unlock(&pm->lock);
-+	return 0;
-+
-+err_acquire_packet_buffer:
-+	mutex_unlock(&pm->lock);
-+	return retval;
++	return mqd;
 +}
 +
-+void pm_release_ib(struct packet_manager *pm)
-+{
-+	BUG_ON(!pm);
-+
-+	mutex_lock(&pm->lock);
-+	if (pm->allocated) {
-+		kfd2kgd->free_mem(pm->dqm->dev->kgd,
-+				(struct kgd_mem *) pm->ib_buffer_obj);
-+		pm->allocated = false;
-+	}
-+	mutex_unlock(&pm->lock);
-+}
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-index 5835d07..34028f8 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-@@ -159,6 +159,21 @@ int kfd_chardev_init(void);
- void kfd_chardev_exit(void);
- struct device *kfd_chardev(void);
- 
-+/**
-+ * enum kfd_preempt_type_filter
++/* SDMA queues should be implemented here when the cp will supports them */
+diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+new file mode 100644
+index 0000000..19593f2
+--- /dev/null
++++ b/drivers/gpu/drm/radeon/amdkfd/kfd_mqd_manager.h
+@@ -0,0 +1,88 @@
++/*
++ * Copyright 2014 Advanced Micro Devices, Inc.
 + *
-+ * @KFD_PREEMPT_TYPE_FILTER_SINGLE_QUEUE: Preempts single queue.
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
 + *
-+ * @KFD_PRERMPT_TYPE_FILTER_ALL_QUEUES: Preempts all queues in the running queues list.
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
 + *
-+ * @KFD_PRERMPT_TYPE_FILTER_BY_PASID: Preempts queues that belongs to specific process.
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
++ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
++ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ * OTHER DEALINGS IN THE SOFTWARE.
 + *
 + */
-+enum kfd_preempt_type_filter {
-+	KFD_PREEMPT_TYPE_FILTER_SINGLE_QUEUE,
-+	KFD_PRERMPT_TYPE_FILTER_ALL_QUEUES,
-+	KFD_PRERMPT_TYPE_FILTER_BY_PASID
++
++#ifndef KFD_MQD_MANAGER_H_
++#define KFD_MQD_MANAGER_H_
++
++#include "kfd_priv.h"
++
++/**
++ * struct mqd_manager
++ *
++ * @init_mqd: Allocates the mqd buffer on local gpu memory and initialize it.
++ *
++ * @load_mqd: Loads the mqd to a concrete hqd slot. Used only for no cp
++ * scheduling mode.
++ *
++ * @update_mqd: Handles a update call for the MQD
++ *
++ * @destroy_mqd: Destroys the HQD slot and by that preempt the relevant queue.
++ * Used only for no cp scheduling.
++ *
++ * @uninit_mqd: Releases the mqd buffer from local gpu memory.
++ *
++ * @is_occupied: Checks if the relevant HQD slot is occupied.
++ *
++ * @mqd_mutex: Mqd manager mutex.
++ *
++ * @dev: The kfd device structure coupled with this module.
++ *
++ * MQD stands for Memory Queue Descriptor which represents the current queue
++ * state in the memory and initiate the HQD (Hardware Queue Descriptor) state.
++ * This structure is actually a base class for the different types of MQDs
++ * structures for the variant ASICs that should be supported in the future.
++ * This base class is also contains all the MQD specific operations.
++ * Another important thing to mention is that each queue has a MQD that keeps
++ * his state (or context) after each preemption or reassignment.
++ * Basically there are a instances of the mqd manager class per MQD type per ASIC,
++ * Currently the kfd driver supports only Kaveri so there are instances per
++ * KFD_MQD_TYPE for each device.
++ *
++ */
++
++struct mqd_manager {
++	int	(*init_mqd)(struct mqd_manager *mm, void **mqd,
++			struct kfd_mem_obj **mqd_mem_obj, uint64_t *gart_addr,
++			struct queue_properties *q);
++
++	int	(*load_mqd)(struct mqd_manager *mm, void *mqd,
++				uint32_t pipe_id, uint32_t queue_id,
++				uint32_t __user *wptr);
++
++	int	(*update_mqd)(struct mqd_manager *mm, void *mqd,
++				struct queue_properties *q);
++
++	int	(*destroy_mqd)(struct mqd_manager *mm, bool is_reset,
++				unsigned int timeout, uint32_t pipe_id,
++				uint32_t queue_id);
++
++	void	(*uninit_mqd)(struct mqd_manager *mm, void *mqd,
++				struct kfd_mem_obj *mqd_mem_obj);
++	bool	(*is_occupied)(struct mqd_manager *mm, uint64_t queue_address,
++				uint32_t pipe_id, uint32_t queue_id);
++
++	struct mutex	mqd_mutex;
++	struct kfd_dev	*dev;
 +};
- 
- /**
-  * enum kfd_queue_type
-@@ -293,6 +308,51 @@ enum KFD_MQD_TYPE {
- 	KFD_MQD_TYPE_MAX
++
++#endif /* KFD_MQD_MANAGER_H_ */
+diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+index cf6d40d..ca8f081 100644
+--- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
++++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
+@@ -237,6 +237,17 @@ struct queue {
+ 	struct kfd_dev		*device;
  };
  
-+struct scheduling_resources {
-+	unsigned int vmid_mask;
-+	enum kfd_queue_type type;
-+	uint64_t queue_mask;
-+	uint64_t gws_mask;
-+	uint32_t oac_mask;
-+	uint32_t gds_heap_base;
-+	uint32_t gds_heap_size;
-+};
-+
-+struct process_queue_manager {
-+	/* data */
-+	struct kfd_process	*process;
-+	unsigned int		num_concurrent_processes;
-+	struct list_head	queues;
-+	unsigned long		*queue_slot_bitmap;
-+};
-+
-+struct qcm_process_device {
-+	/* The Device Queue Manager that owns this data */
-+	struct device_queue_manager *dqm;
-+	struct process_queue_manager *pqm;
-+	/* Device Queue Manager lock */
-+	struct mutex *lock;
-+	/* Queues list */
-+	struct list_head queues_list;
-+	struct list_head priv_queue_list;
-+
-+	unsigned int queue_count;
-+	unsigned int vmid;
-+	bool is_debug;
-+	/*
-+	 * All the memory management data should be here too
-+	 */
-+	uint64_t gds_context_area;
-+	uint32_t sh_mem_config;
-+	uint32_t sh_mem_bases;
-+	uint32_t sh_mem_ape1_base;
-+	uint32_t sh_mem_ape1_limit;
-+	uint32_t page_table_base;
-+	uint32_t gds_size;
-+	uint32_t num_gws;
-+	uint32_t num_oac;
++/*
++ * Please read the kfd_mqd_manager.h description.
++ */
++enum KFD_MQD_TYPE {
++	KFD_MQD_TYPE_CIK_COMPUTE = 0, /* for no cp scheduling */
++	KFD_MQD_TYPE_CIK_HIQ, /* for hiq */
++	KFD_MQD_TYPE_CIK_CP, /* for cp queues and diq */
++	KFD_MQD_TYPE_CIK_SDMA, /* for sdma queues */
++	KFD_MQD_TYPE_MAX
 +};
 +
  /* Data that is per-process-per device. */
  struct kfd_process_device {
  	/*
-@@ -412,12 +472,22 @@ int kgd2kfd_resume(struct kfd_dev *dev);
- int kfd_init_apertures(struct kfd_process *process);
- 
- /* Queue Context Management */
-+inline uint32_t lower_32(uint64_t x);
-+inline uint32_t upper_32(uint64_t x);
-+
- int init_queue(struct queue **q, struct queue_properties properties);
- void uninit_queue(struct queue *q);
- void print_queue(struct queue *q);
- 
-+struct kernel_queue *kernel_queue_init(struct kfd_dev *dev, enum kfd_queue_type type);
-+void kernel_queue_uninit(struct kernel_queue *kq);
-+
- /* Packet Manager */
- 
-+#define KFD_HIQ_TIMEOUT (500)
-+
-+#define KFD_UNMAP_LATENCY (15)
-+
- struct packet_manager {
- 	struct device_queue_manager *dqm;
- 	struct kernel_queue *priv_queue;
-@@ -426,6 +496,8 @@ struct packet_manager {
- 	struct kfd_mem_obj *ib_buffer_obj;
- };
- 
-+void pm_release_ib(struct packet_manager *pm);
-+
- uint64_t kfd_get_number_elems(struct kfd_dev *kfd);
- phys_addr_t kfd_get_process_doorbells(struct kfd_dev *dev,
- 					struct kfd_process *process);
 -- 
 1.9.1
 
