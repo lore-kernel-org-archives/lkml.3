@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaIXSu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:50:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48346 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbaIXSu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:50:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
-   d="scan'208";a="479770845"
-Date: Wed, 24 Sep 2014 21:50:14 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v1 12/12] tpm: TPM2 sysfs attributes
-Message-ID: <20140924185014.GA6801@intel.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20140924171338.GG8898@obsidianresearch.com>
- <54230093.2060303@linux.vnet.ibm.com>
- <20140924175940.GI8898@obsidianresearch.com>
+	id S1753967AbaIXSu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:50:58 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:47445 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574AbaIXSu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 14:50:57 -0400
+Message-ID: <5423128D.8070708@converseincode.com>
+Date: Wed, 24 Sep 2014 11:50:53 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924175940.GI8898@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michal Marek <mmarek@suse.cz>
+CC: ak@linux.intel.com, yamada.m@jp.panasonic.com, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support
+ clang
+References: <1411500522-11480-1-git-send-email-behanw@converseincode.com> <5422B3EF.4000800@suse.cz>
+In-Reply-To: <5422B3EF.4000800@suse.cz>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 11:59:40AM -0600, Jason Gunthorpe wrote:
-> On Wed, Sep 24, 2014 at 01:34:11PM -0400, Stefan Berger wrote:
-> > On 09/24/2014 01:13 PM, Jason Gunthorpe wrote:
-> > >On Wed, Sep 24, 2014 at 12:06:02PM +0300, Jarkko Sakkinen wrote:
-> > >>+static ssize_t durations_show(struct device *dev, struct device_attribute *attr,
-> > >>+			      char *buf)
-> > >>+{
-> > >>+	struct tpm_chip *chip = dev_get_drvdata(dev);
-> > >>+
-> > >>+	if (chip->vendor.duration[TPM_LONG] == 0)
-> > >>+		return 0;
-> > >>+
-> > >>+	return sprintf(buf, "%d %d %d [%s]\n",
-> > >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-> > >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
-> > >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
-> > >>+		       chip->vendor.duration_adjusted
-> > >>+		       ? "adjusted" : "original");
-> > >>+}
-> > >>+static DEVICE_ATTR_RO(durations);
-> > >Seem useless since the durations are constant, drop it?
-> > 
-> > We show them for TPM 1.2 as well, so I'd keep them fo TPM2.
-> 
-> The durations are constant and hardwired in the driver for TPM2, and
-> the sysfs file format does not follow the one-value-per-file
-> rule.
-> 
-> So it doesn't display anything useful. In TPM2 mode all the timeouts
-> are constant and known, so I'd rather see it go away.
-> 
-> > With all the problems we had with TPM 1.2 TPM's wrong timeouts and
-> > showing them in sysfs, why not show them for TPM2 as well?
-> 
-> We had problems with devices reporting the wrong timeout from their
-> cap queries - that isn't possible in TPM2.
-> 
-> Both of these values should live in debugfs anyhow.
-> 
-> It would be nice to start with a fresh set of correct sysfs files for
-> TPM2, since essentially everything is different about the userspace
-> interface we can safely make a breaking change here.
+On 09/24/14 05:07, Michal Marek wrote:
+> On 2014-09-23 21:28, behanw@converseincode.com wrote:
+>> From: Mark Charlebois <charlebm@gmail.com>
+>>
+>> Clang will warn about unknown warnings but will not return false
+> You mean unknown options, right?
+2 kinds of options: flags and warnings. clang used to merely warn about 
+unused/unsupported flags/warnings. It now returns errors for unknown 
+flags, but not warnings (unless you specify -Werror).
 
-I'll drop timeouts and durations. It's easy to add them later if they
-are needed.
+The issue is that a lot of existing projects which use clang expect the 
+former behaviour (I agree that makes no sense, but there you go).
 
-> Jason
+>> unless -Werror is set. GCC will return false if an unknown
+>> warning is passed.
+>>
+>> Adding -Werror make both compiler behave the same.
+> Can you please limit it to the clang case? Add an internal variable that
+> either contains -Werror or nothing, depending on the compiler.
+I can do that. Will fix.
 
-/Jarkko
+>   What I
+> fear is that if we use -Werror unconditionally and the user (or some
+> automated build system) decides to add some silly option to KCFLAGS, we
+> will get silent failures in the cc-option tests.
+A valid concern for sure.
+
+> BTW, is there a chance that this would be fixed in some later clang
+> version? Accepting unknown commandline options is a rather unusual
+> behavior. How are all the ./configure scripts going to cope with it?
+Again, clang does error out on unknown compiler flags (as opposed to 
+warnings).
+
+Getting clang to error on unused flags wasn't trivial (this change broke 
+a lot of builds apparently). Fortunately we weren't the only ones who 
+wanted it to behave like gcc in this case. I think it's going to be 
+*much* harder to do the same for warnings. The argument given by 
+supporters of the current situation is that if a warning isn't 
+supported, why break the build? *sigh*
+
+The LLVMLinux project is pushing hard to fix these sorts of things in 
+clang, but some changes are more likely than others.
+
+Thanks,
+
+Behan
+
+-- 
+Behan Webster
+behanw@converseincode.com
+
