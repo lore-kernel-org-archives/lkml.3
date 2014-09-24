@@ -1,139 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaIXIN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:13:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34187 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753178AbaIXINR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:13:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
-   d="scan'208";a="607688126"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v6] sched: fix llc shared map unreleased during cpu hotplug
-Date: Wed, 24 Sep 2014 16:13:08 +0800
-Message-Id: <1411546388-48111-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754382AbaIXIN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:13:26 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:47632 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbaIXIMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:12:06 -0400
+Message-ID: <54227CD2.5020705@linaro.org>
+Date: Wed, 24 Sep 2014 09:12:02 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Peter Griffin <peter.griffin@linaro.org>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org
+Subject: Re: [STLinux Kernel] [PATCH 1/3] media: st-rc: move to using reset_control_get_optional
+References: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org> <1411424546-12718-1-git-send-email-srinivas.kandagatla@linaro.org> <20140923180255.GA3430@griffinp-ThinkPad-X1-Carbon-2nd>
+In-Reply-To: <20140923180255.GA3430@griffinp-ThinkPad-X1-Carbon-2nd>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-IP: [..] find_busiest_group
-PGD 5a9d5067 PUD 13067 PMD 0
-Oops: 0000 [#3] SMP
-[...]
-Call Trace:
-load_balance
-? _raw_spin_unlock_irqrestore
-idle_balance
-__schedule
-schedule
-schedule_timeout
-? lock_timer_base
-schedule_timeout_uninterruptible
-msleep
-lock_device_hotplug_sysfs
-online_store
-dev_attr_store
-sysfs_write_file
-vfs_write
-SyS_write
-system_call_fastpath
+Hi Pete,
 
-This bug can be triggered by hot add and remove large number of xen
-domain0's vcpus repeatly.
+On 23/09/14 19:02, Peter Griffin wrote:
+> Hi Srini,
+>
+> On Mon, 22 Sep 2014, Srinivas Kandagatla wrote:
+>
+>> This patch fixes a compilation error while building with the
+>> random kernel configuration.
+>>
+>> drivers/media/rc/st_rc.c: In function 'st_rc_probe':
+>> drivers/media/rc/st_rc.c:281:2: error: implicit declaration of
+>> function 'reset_control_get' [-Werror=implicit-function-declaration]
+>>    rc_dev->rstc = reset_control_get(dev, NULL);
+>>
+>> drivers/media/rc/st_rc.c:281:15: warning: assignment makes pointer
+>> from integer without a cast [enabled by default]
+>>    rc_dev->rstc = reset_control_get(dev, NULL);
+>
+> Is managing the reset line actually optional though? I can't test atm as I don't have
+> access to my board, but quite often if the IP's aren't taken out of reset reads / writes
+> to the perhpiheral will hang the SoC.
+>
+Yes and No.
+AFAIK reset line is optional on SOCs like 7108, 7141.
+I think having the driver function without reset might is a value add in 
+case we plan to reuse the mainline driver for these SOCs.
 
-Last level cache shared map is built during cpu up and build sched domain 
-routine takes advantage of it to setup sched domain cpu topology, however, 
-llc shared map is unreleased during cpu disable which lead to invalid sched 
-domain cpu topology. This patch fix it by release llc shared map correctly
-during cpu disable.
+On latest ARM SOCs with SBC the IRB IP is moved to SBC and held in reset.
+Am not sure, if the reset line is optional in next generation SOCs?
 
-Yasuaki also reported this can happen on their real hardware. 
-https://lkml.org/lkml/2014/7/22/1018
+> If managing the reset line isn't optional then I think the correct fix is to add
+> depends on RESET_CONTROLLER in the kconfig.
+I agree.
+This would make the COMPILE_TEST less useful though.
 
-His case is here.
-==
-Here is a example on my system.
-My system has 4 sockets and each socket has 15 cores and HT is enabled.
-In this case, each core of sockes is numbered as follows:
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-44, 90-104
-Socket#3 | 45-59, 105-119
-Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-It means that last level cache of Socket#2 is shared with
-CPU#30-44 and 90-104.
-When hot-removing socket#2 and #3, each core of sockets is numbered
-as follows:
-
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-having 0x3fff80000001fffc0000000.
-After that, when hot-adding socket#2 and #3, each core of sockets is
-numbered as follows:
-
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-59
-Socket#3 | 90-119
-Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-It means that last level cache of Socket#2 is shared with CPU#30-59
-and 90-104. So the mask has wrong value.
-At first, I cleared hot-removed CPU number's bit from llc_shared_map
-when hot removing CPU. But Borislav suggested that the problem will
-disappear if readded CPU is assigned same CPU number. And llc_shared_map
-must not be changed.
-
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
-v5 -> v6:
- * add the real-hardware reports to the changelog
-v4 -> v5:
- * add the description when the bug can occur
-v3 -> v4:
- * simplify backtrace
-v2 -> v3:
- * simplify backtrace 
-v1 -> v2:
- * fix subject line
-
- arch/x86/kernel/smpboot.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 5492798..0134ec7 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
- 
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
--- 
-1.9.1
-
+thanks,
+srini
+>
+> This will then do the right thing for randconfig builds as well.
+>
+> regards,
+>
+> Peter.
+>
