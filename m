@@ -1,183 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaIXIIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:08:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42458 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920AbaIXIIb (ORCPT
+	id S1753978AbaIXIJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:09:16 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:35158 "EHLO
+	homiemail-a1.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752813AbaIXIJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:08:31 -0400
-Date: Tue, 23 Sep 2014 22:45:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pratik Patel <pratikp@codeaurora.org>,
-        Vikas Varshney <varshney@ti.com>, Al Grant <Al.Grant@arm.com>,
-        Jonas Svennebring <jonas.svennebring@avagotech.com>,
-        James King <james.king@linaro.org>,
-        Panchaxari Prasannamurthy Tumkur 
-	<panchaxari.prasannamurthy@linaro.org>,
-        Kaixu Xia <kaixu.xia@linaro.org>,
-        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
-        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
-        Robert Marklund <robbelibobban@gmail.com>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deepak Saxena <dsaxena@linaro.org>
-Subject: Re: [PATCH 01/11 v6] coresight: add CoreSight core layer framework
-Message-ID: <20140924054514.GA10275@kroah.com>
-References: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
- <1410450558-12358-2-git-send-email-mathieu.poirier@linaro.org>
- <20140911203344.GA7593@kroah.com>
- <CANLsYkyPFvOnqRJaWZrvw1aVjBWG=tHuv+V9Tj5RhMy_gD_oiA@mail.gmail.com>
- <20140912181601.GA21033@kroah.com>
- <CANLsYkz1DhJ-DCgaUHFgmtUB+QfGDKrnbGRJQDBp=PkKvg9RMA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANLsYkz1DhJ-DCgaUHFgmtUB+QfGDKrnbGRJQDBp=PkKvg9RMA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 24 Sep 2014 04:09:08 -0400
+X-Greylist: delayed 141685 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 04:09:08 EDT
+Message-ID: <1411546144.30630.10.camel@linux-t7sj.site>
+Subject: Re: [PATCH v2 1/7] selftests: add kselftest framework for uniform
+ test reporting
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
+        luto@amacapital.net, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 24 Sep 2014 10:09:04 +0200
+In-Reply-To: <0b1961bd4d2104beafd2e8c1a17690f6efe14a61.1411506121.git.shuahkh@osg.samsung.com>
+References: <cover.1411506121.git.shuahkh@osg.samsung.com>
+	 <0b1961bd4d2104beafd2e8c1a17690f6efe14a61.1411506121.git.shuahkh@osg.samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 05:09:11PM -0600, Mathieu Poirier wrote:
-> On 12 September 2014 12:16, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Sep 12, 2014 at 11:41:44AM -0600, Mathieu Poirier wrote:
-> >> Good morning and thanks for the review.  Pls see comments below.
-> >>
-> >> Mathieu
-> >>
-> >> On 11 September 2014 14:33, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > Some first impressions in glancing at the code, not a complete review at
-> >> > all:
-> >> >
-> >> > On Thu, Sep 11, 2014 at 09:49:08AM -0600, mathieu.poirier@linaro.org wrote:
-> >> >> --- /dev/null
-> >> >> +++ b/drivers/coresight/coresight.c
-> >> >> @@ -0,0 +1,663 @@
-> >> >> +/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-> >> >> + *
-> >> >> + * This program is free software; you can redistribute it and/or modify
-> >> >> + * it under the terms of the GNU General Public License version 2 and
-> >> >> + * only version 2 as published by the Free Software Foundation.
-> >> >> + *
-> >> >> + * This program is distributed in the hope that it will be useful,
-> >> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >> >> + * GNU General Public License for more details.
-> >> >> + */
-> >> >> +
-> >> >> +#define pr_fmt(fmt) "coresight: " fmt
-> >> >
-> >> > MODULE_NAME ?
-> >>
-> >> Is this what you had in mind?
-> >>
-> >> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> >
-> > Sorry, yes, that's much better and "portable".
-> >
-> > But as you are using the driver model, the odds of you ever using a pr_*
-> > call is all but none, so why do you even need this?
+On Tue, 2014-09-23 at 15:32 -0600, Shuah Khan wrote:
+> Add kselftest framework for tests to use. This is a light
+> weight framework provides a set of interfaces to report test
+> results. Tests can use these interfaces to report pass, and
+> fail cases as well as when failure is due to configuration
+> problems such as missing modules, or when a test that is should
+> fail, fails as expected, and a test that should fail, passes.
+> The framework uses POSIX standard return codes for reporting
+> results to address the needs of users that want to run the kernel
+> selftests from their user-space test suites and want to know why a
+> test failed. In addition, the framework includes interfaces to use
+> to report test statistics on number of tests passed and failed.
 > 
-> You suggest to use dev_* instead?  My (perhaps flawed) logic was that
-> the framework ins't associated with a single device but a set of them.
-
-Yes, but a single device is causing a message to be emitted, so
-reference that please.
-
-> >> >> +     struct coresight_connection *conns;
-> >> >> +     int nr_conns;
-> >> >> +     enum coresight_dev_type type;
-> >> >> +     struct coresight_dev_subtype subtype;
-> >> >> +     const struct coresight_ops *ops;
-> >> >> +     struct dentry *de;
-> >> >
-> >> > All devices have a dentry?  in debugfs?  isn't that overkill?
-> >>
-> >> All devices along a "path" can require specific configuration, which
-> >> can only be made by a user.  Exposing the registers via debugfs seemed
-> >> like the most plausible solution.
-> >
-> > configuration is not to be done through debugfs, especially as that is
-> > restricted to root, and lots of systems don't even have it.  debugfs is
-> > always optional, don't make your code depend on it to work properly.
+> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+> ---
+>  tools/testing/selftests/kselftest.h | 41 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+>  create mode 100644 tools/testing/selftests/kselftest.h
 > 
-> Humm... You are the first one to be of the opinion that debugfs
-> shouldn't be used for coresight configuration - other reviewers have
-> unequivocally requested that configurables be moved under debugfs.
-> Debugfs seemed to be a good fit, specifically since ftrace is already
-> in there.  We could enable CONFIG_DEBUG_FS automatically (the same way
-> I do it for AMBA) when coresight gets enabled in the kernel config...
-> 
-> If not debugfs, where then?  I'd welcome a suggestion.
+> diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
+> new file mode 100644
+> index 0000000..c73fc2c
+> --- /dev/null
+> +++ b/tools/testing/selftests/kselftest.h
+> @@ -0,0 +1,41 @@
+> +/*
+> + * kselftest.h: kselftest framework return codes to include from
+> + *		 selftests.
+> + *
+> + * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
+> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+> + *
+> + * This file is released under the GPLv2.
+> + */
+> +#ifndef __KSELFTEST_H
+> +#define __KSELFTEST_H
+> +
+> +#include <stdlib.h>
+> +#include <unistd.h>
+> +
+> +/* counters */
+> +static int ksft_pass;
+> +static int ksft_fail;
+> +static int ksft_xfail;
+> +static int ksft_xpass;
+> +static int ksft_xskip;
 
-It is a mistake that ftrace is in debugfs, the developers of that code
-admit it.
+unsigned int?
 
-Your system should be able to run just fine if debugfs is disabled, if
-your interface is "optional" like that, great, put it in debugfs,
-otherwise put it somewhere else.
+> +static inline void ksft_inc_pass_cnt(void) { ksft_pass++; }
+> +static inline void ksft_inc_fail_cnt(void) { ksft_fail++; }
+> +static inline void ksft_inc_xfail_cnt(void) { ksft_xfail++; }
+> +static inline void ksft_inc_xpass_cnt(void) { ksft_xpass++; }
+> +static inline void ksft_inc_xskip_cnt(void) { ksft_xskip++; }
 
-As to where else to put it, what exactly are you trying to do here?
-What do you want to export / import?  Who would use it?  How would they
-use it?  When would they use it?
+It would probably make sense to have the counters in a structures,
+something like: struct ksft_counter { ... } ksft_cnt;
 
-> >> >> +     struct device dev;
-> >> >> +     struct kref kref;
-> >> >
-> >> > You CAN NOT have two reference counts in the same structure, that's a
-> >> > huge design mistake.  Stick with one reference count, otherwise they are
-> >> > guaranteed to get out of sync and bad things will happen.
-> >>
-> >> In this case the additional @kref is for accounting of components
-> >> within the coresight framework only.  When the amba framework calls
-> >> the driver's _probe() routine the kref count is already equal to '2'
-> >> (as expected), even if no other coresight components have used that
-> >> device.  Knowing when a component is no longer in use by the framework
-> >> (but still available in the system) is important for coresight cleanup
-> >> consideration, i.e switch off the component to save power.
-> >>
-> >> The kref helpers don't expose the refcount and @kref_sub will only
-> >> call the cleanup method when refcount is '1'.  How else should I
-> >> proceed?
-> >
-> > Don't use a kref at all, you should never need to "know" a refcount
-> > value.  If you do, your logic is incorrect, sorry.  Just use the normal
-> > driver core functions for when to cleanup memory and the like and you
-> > will be fine.
-> 
-> I completely agree with you on the fact that the driver core alone
-> should be the one doing the memory cleanup for a device.  What those
-> krefs are doing is to keep track of what is happening in the
-> framework, nothing else.
+Then just pass it around the proposed functions as arguments. That also
+minimizes a bit the global variables and would allow you to easily
+change it in the future.
 
-That's not what a kref is for, don't abuse it that way.  You shouldn't
-care what is "happening in the framework" if the driver core is handling
-the reference counting properly, right?
+> +static inline void ksft_print_cnts(void)
+> +{
+> +	printf("Pass: %d Fail: %d Xfail: %d Xpass: %d, Xskip: %d\n",
+> +		ksft_pass, ksft_fail, ksft_xfail, ksft_xpass, ksft_xskip);
+> +}
 
-> The framework needs to keep track of component usage by other
-> components...
+Same here, just do:
 
-No it should not.
+static inline void ksft_print_cnts(struct ksft_counter counters)
+{ 
+	... 
+}
 
-> Say we have a sink that is used by multiple sources.
-> The framework can't call sink->disable() for as long as a coresight
-> source is using it and this is exactly what those krefs are for.
-> Disabling a device in the framework doesn't mean the kernel should be
-> reclaiming resources for the device.  That device should still be
-> there for future processing if need be.
+Otherwise looks good.
 
-What do you mean "if need be"?  How could the resource come back?  Why
-do you need to care if a device is "disabled" or not?
+> +static inline int ksft_exit_pass(void) { exit(0); }
+> +static inline int ksft_exit_fail(void) { exit(1); }
+> +static inline int ksft_exit_xfail(void) { exit(2); }
+> +static inline int ksft_exit_xpass(void) { exit(3); }
+> +static inline int ksft_exit_skip(void) { exit(4); }
+> +
+> +#endif /* __KSELFTEST_H */
 
-> On the flip side if a component isn't used by the framework there is
-> no point using resources for it i.e, clock, pinout lines, channels...
 
-Make up your mind :)
-
-greg k-h
