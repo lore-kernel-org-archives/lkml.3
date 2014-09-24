@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaIXPWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:22:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40406 "EHLO mx2.suse.de"
+	id S1754134AbaIXPXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:23:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44644 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753874AbaIXPWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:22:34 -0400
-Message-ID: <5422E1B8.9000100@suse.cz>
-Date: Wed, 24 Sep 2014 17:22:32 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751958AbaIXPXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:23:02 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: arm@kernel.org, agross@codeaurora.org, galak@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] soc: qcom: do not disable the iface clock in probe
+References: <1411500054-13600-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Wed, 24 Sep 2014 08:22:58 -0700
+In-Reply-To: <1411500054-13600-1-git-send-email-srinivas.kandagatla@linaro.org>
+	(Srinivas Kandagatla's message of "Tue, 23 Sep 2014 20:20:54 +0100")
+Message-ID: <7hbnq5m4a5.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC] mm: show deferred_compaction state in page alloc fail
-References: <1409038219-21483-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1409038219-21483-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2014 09:30 AM, Minchan Kim wrote:
-> Recently, I saw several reports that high order allocation failed
-> although there were many freeable pages but it's hard to reproduce
-> so asking them to reproduce the problem several time is really painful.
+Srinivas Kandagatla <srinivas.kandagatla@linaro.org> writes:
+
+> since commit 31964ffebbb9 ("tty: serial: msm: Remove direct access to GSBI")'
+> serial hangs if earlyprintk are enabled.
 >
-> A culprit I doubt is compaction deferring logic which prevent
-> compaction for a while so high order allocation could be fail.
+> This hang is noticed only when the GSBI driver is probed and all the
+> earlyprintks before gsbi probe are seen on the console.
+> The reason why it hangs is because GSBI driver disables hclk in its
+> probe function without realizing that the serial IP might be in use by
+> a bootconsole. As gsbi driver disables the clock in probe the
+> bootconsole locks up.
 
-Could be that, but also the non-determinism of watermark checking, where 
-compaction thinks allocation should succeed, but in the end it won't.
+> Turning off hclk's could be dangerous if there are system components
+> like earlyprintk using the hclk.
 
-> It would be more clear if we can see the stat which can show
-> current zone's compaction deferred state when allocatil fail.
->
-> It's a RFC and never test it. I just get an idea with
-> handling another strange high order allocation fail.
-> Any comments are welcome.
+This seems rather fragile.  Isn't the right fix for these other
+components to use the clk api to ensure the clock does not get enabled?
 
-It's quite large patch. Maybe it could be much simpler if you did not 
-print just true/false but:
-
-1) true/false based on zone->compact_considered < defer_limit, ignoring
-    zone->compact_order_failed
-
-2) zone->compact_order_failed value itself
-
-Then you wouldn't need to pass the allocation order around like you do.
-The "allocation failed" message tells you the order which was attempted, 
-and then it's easy for the user to compare with the reported
-zone->compact_order_failed and decide if the defer status actually 
-applies or not.
-
-
+Kevin
