@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaIXR7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:59:45 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:46404 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940AbaIXR7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:59:44 -0400
-Date: Wed, 24 Sep 2014 11:59:40 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v1 12/12] tpm: TPM2 sysfs attributes
-Message-ID: <20140924175940.GI8898@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20140924171338.GG8898@obsidianresearch.com>
- <54230093.2060303@linux.vnet.ibm.com>
+	id S1753015AbaIXSBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:01:20 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42856 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751110AbaIXSBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 14:01:17 -0400
+Date: Wed, 24 Sep 2014 19:01:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Robert Richter <rrichter@cavium.com>
+Subject: Re: [PATCH v12 09/12] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+Message-ID: <20140924180119.GN16244@arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-10-git-send-email-Liviu.Dudau@arm.com>
+ <20140924164304.GF1994@e106497-lin.cambridge.arm.com>
+ <20140924173109.GA20416@google.com>
+ <20140924175330.GI1994@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54230093.2060303@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <20140924175330.GI1994@e106497-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 01:34:11PM -0400, Stefan Berger wrote:
-> On 09/24/2014 01:13 PM, Jason Gunthorpe wrote:
-> >On Wed, Sep 24, 2014 at 12:06:02PM +0300, Jarkko Sakkinen wrote:
-> >>+static ssize_t durations_show(struct device *dev, struct device_attribute *attr,
-> >>+			      char *buf)
-> >>+{
-> >>+	struct tpm_chip *chip = dev_get_drvdata(dev);
-> >>+
-> >>+	if (chip->vendor.duration[TPM_LONG] == 0)
-> >>+		return 0;
-> >>+
-> >>+	return sprintf(buf, "%d %d %d [%s]\n",
-> >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-> >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
-> >>+		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
-> >>+		       chip->vendor.duration_adjusted
-> >>+		       ? "adjusted" : "original");
-> >>+}
-> >>+static DEVICE_ATTR_RO(durations);
-> >Seem useless since the durations are constant, drop it?
+On Wed, Sep 24, 2014 at 06:53:31PM +0100, Liviu Dudau wrote:
+> On Wed, Sep 24, 2014 at 06:31:09PM +0100, Bjorn Helgaas wrote:
+> > On Wed, Sep 24, 2014 at 05:43:04PM +0100, Liviu Dudau wrote:
+> > > Provide a function to parse the PCI DT ranges that can be used to
+> > > create a pci_host_bridge structure together with its associated
+> > > bus.
+> > > 
+> > > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > Cc: Grant Likely <grant.likely@linaro.org>
+> > > Cc: Rob Herring <robh+dt@kernel.org>
+> > > Cc: Catalin Marinas <catalin.marinas@arm.com>
+> > > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > > [make io_base parameter optional]
+> > > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > > ---
+> > > Hi Bjorn,
+> > > 
+> > > I have fixed the compilation error that this patch was triggering. I
+> > > have validated that the patch applies to your pci/host-generic branch
+> > > as well as to my series.
+> > 
+> > I applied this to pci/host-generic along with the following patches and
+> > pushed the branch, thanks!
 > 
-> We show them for TPM 1.2 as well, so I'd keep them fo TPM2.
+> Thanks again and sorry for lack of thorough testing. I still haven't managed
+> to get a cross compiler for sparc and as I don't run Ubuntu or debian the
+> make.cross script doesn't work for me.
 
-The durations are constant and hardwired in the driver for TPM2, and
-the sysfs file format does not follow the one-value-per-file
-rule.
+  https://www.kernel.org/pub/tools/crosstool/
 
-So it doesn't display anything useful. In TPM2 mode all the timeouts
-are constant and known, so I'd rather see it go away.
+No libc, but good enough for building the kernel. I've asked for an aarch64
+compiler there for a while, but it didn't materialise for some reason.
 
-> With all the problems we had with TPM 1.2 TPM's wrong timeouts and
-> showing them in sysfs, why not show them for TPM2 as well?
-
-We had problems with devices reporting the wrong timeout from their
-cap queries - that isn't possible in TPM2.
-
-Both of these values should live in debugfs anyhow.
-
-It would be nice to start with a fresh set of correct sysfs files for
-TPM2, since essentially everything is different about the userspace
-interface we can safely make a breaking change here.
-
-Jason
+Will
