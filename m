@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaIXOvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:51:09 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:43078 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaIXOvE (ORCPT
+	id S1753137AbaIXOtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:49:25 -0400
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:41471 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaIXOtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:51:04 -0400
-Message-ID: <5422DA54.4020806@linaro.org>
-Date: Wed, 24 Sep 2014 15:51:00 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of: fdt: fix memory range check
-References: <1411466349-14166-1-git-send-email-srinivas.kandagatla@linaro.org> <20140924143844.B2218C40738@trevor.secretlab.ca>
-In-Reply-To: <20140924143844.B2218C40738@trevor.secretlab.ca>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Sep 2014 10:49:22 -0400
+From: Chen-Yu Tsai <wens@csie.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        ctl@merrii.com, Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH v2 5/7] devicetree: bindings: Add vendor prefix for Merrii Technology Co., Ltd.
+Date: Wed, 24 Sep 2014 22:48:59 +0800
+Message-Id: <1411570141-29960-6-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411570141-29960-1-git-send-email-wens@csie.org>
+References: <1411570141-29960-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Merrii Technology Co., Ltd. is a Chinese ARM integration developer that
+specializes in Allwinner SoC based designs.
 
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-On 24/09/14 15:38, Grant Likely wrote:
->> --- a/drivers/of/fdt.c
->> >+++ b/drivers/of/fdt.c
->> >@@ -937,7 +937,7 @@ void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
->> >  		return;
->> >  	}
->> >
->> >-	if (base + size > MAX_PHYS_ADDR) {
->> >+	if (base + size - 1 > MAX_PHYS_ADDR) {
->> >  		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
->> >  				ULONG_MAX, base + size);
->> >  		size = MAX_PHYS_ADDR - base;
-> By that logic, the above two lines need to be repaired also:
-Thanks for fixing this too.
->
-> 		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
-> 				MAX_PHYS_ADDR + 1, base + size);
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index ac7269f..d3a96ac 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -81,6 +81,7 @@ lltc	Linear Technology Corporation
+ marvell	Marvell Technology Group Ltd.
+ maxim	Maxim Integrated Products
+ mediatek	MediaTek Inc.
++merrii	Merrii Technology Co., Ltd.
+ micrel	Micrel Inc.
+ microchip	Microchip Technology Inc.
+ mosaixtech	Mosaix Technologies, Inc.
+-- 
+2.1.0
 
-I think the first argument should be printed in 0x%llx format as there 
-would be a 32bit overflow for MAX_PHYS_ADDR + 1.
-
-> 		size = MAX_PHYS_ADDR - base + 1;
->
-> I've fixed it up and applied, thanks.
-
---srini
