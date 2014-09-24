@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaIXI5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:57:22 -0400
+	id S1753518AbaIXI5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:57:38 -0400
 Received: from mga01.intel.com ([192.55.52.88]:18034 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753072AbaIXI5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:57:17 -0400
+	id S1752598AbaIXI5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:57:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390840540"
+   d="scan'208";a="390840635"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -17,16 +17,17 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
         Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch v6 03/15] ACPI: Fix minor syntax issues in processor_core.c
-Date: Wed, 24 Sep 2014 16:59:24 +0800
-Message-Id: <1411549176-30780-4-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [Patch v6 07/15] x86, irq: Prefer assigned ID in APIC ID register for x86_64
+Date: Wed, 24 Sep 2014 16:59:28 +0800
+Message-Id: <1411549176-30780-8-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,43 +35,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix minor syntax issues in processor_core.c to follow coding styles.
+From: Yinghai Lu <yinghai@kernel.org>
 
+Perfer the assigned ID in APIC ID register for x86_64 if it's still
+available.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/acpi/processor_core.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   35 ++++++++++++++++++++++++++++++-----
+ 1 file changed, 30 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index e32321ce9a5c..b048f3752c2b 100644
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -125,13 +125,12 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 003945e71616..9011c5fa5aad 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3575,26 +3575,51 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+ 	return apic_id;
+ }
+ 
+-static u8 __init io_apic_unique_id(u8 id)
++static u8 __init io_apic_unique_id(int idx, u8 id)
+ {
+ 	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+ 	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+-		return io_apic_get_unique_id(nr_ioapics, id);
++		return io_apic_get_unique_id(idx, id);
+ 	else
+ 		return id;
+ }
+ #else
+-static u8 __init io_apic_unique_id(u8 id)
++static u8 __init io_apic_unique_id(int idx, u8 id)
+ {
+ 	int i;
++	u8 new_id;
++	unsigned long flags;
+ 	DECLARE_BITMAP(used, 256);
++	union IO_APIC_reg_00 reg_00;
+ 
+ 	bitmap_zero(used, 256);
+ 	for_each_ioapic(i)
+ 		__set_bit(mpc_ioapic_id(i), used);
+ 	if (!test_bit(id, used))
+ 		return id;
+-	return find_first_zero_bit(used, 256);
++
++	/* check register at first */
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	reg_00.raw = io_apic_read(idx, 0);
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++	new_id = reg_00.bits.ID;
++	if (!test_bit(new_id, used)) {
++		apic_printk(APIC_VERBOSE, KERN_INFO
++			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
++			 idx, new_id, id);
++		return new_id;
++	}
++
++	new_id = find_first_zero_bit(used, 256);
++	reg_00.bits.ID = new_id;
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	io_apic_write(idx, 0, reg_00.raw);
++	reg_00.raw = io_apic_read(idx, 0);
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++	/* Sanity check */
++	BUG_ON(reg_00.bits.ID != new_id);
++
++	return new_id;
+ }
+ #endif
+ 
+@@ -3860,7 +3885,7 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 		return;
  	}
  
- 	header = (struct acpi_subtable_header *)obj->buffer.pointer;
--	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC) {
-+	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC)
- 		map_lapic_id(header, acpi_id, &apic_id);
--	} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
-+	else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC)
- 		map_lsapic_id(header, type, acpi_id, &apic_id);
--	} else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC) {
-+	else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC)
- 		map_x2apic_id(header, type, acpi_id, &apic_id);
--	}
+-	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
++	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
+ 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
  
- exit:
- 	kfree(buffer.pointer);
-@@ -164,7 +163,7 @@ int acpi_map_cpuid(int apic_id, u32 acpi_id)
- 		 * For example,
- 		 *
- 		 * Scope (_PR)
--                 * {
-+		 * {
- 		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
- 		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
- 		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+ 	/*
 -- 
 1.7.10.4
 
