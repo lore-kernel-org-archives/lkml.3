@@ -1,101 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaIXI1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:27:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38720 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaIXI1L (ORCPT
+	id S1754520AbaIXIfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:35:32 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40689 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664AbaIXIfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:27:11 -0400
-Message-Id: <20140924082242.186408915@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 24 Sep 2014 10:18:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org
-Cc: tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 04/11] exit: Deal with nested sleeps
-References: <20140924081845.572814794@infradead.org>
-Content-Disposition: inline; filename=peterz-might_sleep-exit.patch
+	Wed, 24 Sep 2014 04:35:00 -0400
+Message-ID: <54228225.2060509@gmail.com>
+Date: Wed, 24 Sep 2014 16:34:45 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6] sched: fix llc shared map unreleased during cpu hotplug
+References: <1411546388-48111-1-git-send-email-wanpeng.li@linux.intel.com> <54227FC8.5040801@jp.fujitsu.com>
+In-Reply-To: <54227FC8.5040801@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_wait() is a big wait loop, but we set TASK_RUNNING too late; we end
-up calling potential sleeps before we reset it.
 
-Not strictly a bug since we're guaranteed to exit the loop and not
-call schedule(); put in annotations to quiet might_sleep().
+于 9/24/14, 4:24 PM, Yasuaki Ishimatsu 写道:
+> (2014/09/24 17:13), Wanpeng Li wrote:
+>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+>> IP: [..] find_busiest_group
+>> PGD 5a9d5067 PUD 13067 PMD 0
+>> Oops: 0000 [#3] SMP
+>> [...]
+>> Call Trace:
+>> load_balance
+>> ? _raw_spin_unlock_irqrestore
+>> idle_balance
+>> __schedule
+>> schedule
+>> schedule_timeout
+>> ? lock_timer_base
+>> schedule_timeout_uninterruptible
+>> msleep
+>> lock_device_hotplug_sysfs
+>> online_store
+>> dev_attr_store
+>> sysfs_write_file
+>> vfs_write
+>> SyS_write
+>> system_call_fastpath
+>>
+>> This bug can be triggered by hot add and remove large number of xen
+>> domain0's vcpus repeatly.
+>>
+>> Last level cache shared map is built during cpu up and build sched domain
+>> routine takes advantage of it to setup sched domain cpu topology, however,
+>> llc shared map is unreleased during cpu disable which lead to invalid sched
+>> domain cpu topology. This patch fix it by release llc shared map correctly
+>> during cpu disable.
+>>
+>> Yasuaki also reported this can happen on their real hardware.
+>> https://lkml.org/lkml/2014/7/22/1018
+>>
+>> His case is here.
+>> ==
+>> Here is a example on my system.
+>> My system has 4 sockets and each socket has 15 cores and HT is enabled.
+>> In this case, each core of sockes is numbered as follows:
+>>
+>>            | CPU#
+>> Socket#0 | 0-14 , 60-74
+>> Socket#1 | 15-29, 75-89
+>> Socket#2 | 30-44, 90-104
+>> Socket#3 | 45-59, 105-119
+>> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+>> It means that last level cache of Socket#2 is shared with
+>> CPU#30-44 and 90-104.
+>> When hot-removing socket#2 and #3, each core of sockets is numbered
+>> as follows:
+>>
+>>            | CPU#
+>> Socket#0 | 0-14 , 60-74
+>> Socket#1 | 15-29, 75-89
+>> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+>> having 0x3fff80000001fffc0000000.
+>> After that, when hot-adding socket#2 and #3, each core of sockets is
+>> numbered as follows:
+>>
+>>            | CPU#
+>> Socket#0 | 0-14 , 60-74
+>> Socket#1 | 15-29, 75-89
+>> Socket#2 | 30-59
+>> Socket#3 | 90-119
+>> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+>> It means that last level cache of Socket#2 is shared with CPU#30-59
+>> and 90-104. So the mask has wrong value.
+>> At first, I cleared hot-removed CPU number's bit from llc_shared_map
+>> when hot removing CPU. But Borislav suggested that the problem will
+>> disappear if readded CPU is assigned same CPU number. And llc_shared_map
+>> must not be changed.
+> Please remove it. The description is not explanation for your patch.
 
- WARNING: CPU: 0 PID: 1 at ../kernel/sched/core.c:7123 __might_sleep+0x7e/0x90()
- do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff8109a788>] do_wait+0x88/0x270
+Ok， ；-）
 
- Call Trace:
-  [<ffffffff81694991>] dump_stack+0x4e/0x7a
-  [<ffffffff8109877c>] warn_slowpath_common+0x8c/0xc0
-  [<ffffffff8109886c>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff810bca6e>] __might_sleep+0x7e/0x90
-  [<ffffffff811a1c15>] might_fault+0x55/0xb0
-  [<ffffffff8109a3fb>] wait_consider_task+0x90b/0xc10
-  [<ffffffff8109a804>] do_wait+0x104/0x270
-  [<ffffffff8109b837>] SyS_wait4+0x77/0x100
-  [<ffffffff8169d692>] system_call_fastpath+0x16/0x1b
+Regards,
+Wanpeng Li
 
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
----
- include/linux/kernel.h |    2 ++
- kernel/exit.c          |    5 +++++
- 2 files changed, 7 insertions(+)
-
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -175,10 +175,12 @@ extern int _cond_resched(void);
-  */
- # define might_sleep() \
- 	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
-+# define fixup_sleep()	__set_current_state(TASK_RUNNING)
- #else
-   static inline void __might_sleep(const char *file, int line,
- 				   int preempt_offset) { }
- # define might_sleep() do { might_resched(); } while (0)
-+# define fixup_sleep() do { } while (0)
- #endif
- 
- #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -997,6 +997,8 @@ static int wait_task_zombie(struct wait_
- 
- 		get_task_struct(p);
- 		read_unlock(&tasklist_lock);
-+		fixup_sleep();
-+
- 		if ((exit_code & 0x7f) == 0) {
- 			why = CLD_EXITED;
- 			status = exit_code >> 8;
-@@ -1079,6 +1081,7 @@ static int wait_task_zombie(struct wait_
- 	 * thread can reap it because we its state == DEAD/TRACE.
- 	 */
- 	read_unlock(&tasklist_lock);
-+	fixup_sleep();
- 
- 	retval = wo->wo_rusage
- 		? getrusage(p, RUSAGE_BOTH, wo->wo_rusage) : 0;
-@@ -1210,6 +1213,7 @@ static int wait_task_stopped(struct wait
- 	pid = task_pid_vnr(p);
- 	why = ptrace ? CLD_TRAPPED : CLD_STOPPED;
- 	read_unlock(&tasklist_lock);
-+	fixup_sleep();
- 
- 	if (unlikely(wo->wo_flags & WNOWAIT))
- 		return wait_noreap_copyout(wo, p, pid, uid, why, exit_code);
-@@ -1272,6 +1276,7 @@ static int wait_task_continued(struct wa
- 	pid = task_pid_vnr(p);
- 	get_task_struct(p);
- 	read_unlock(&tasklist_lock);
-+	fixup_sleep();
- 
- 	if (!wo->wo_info) {
- 		retval = wo->wo_rusage
-
+>
+> Thanks,
+> Yasuaki Ishimatsu
+>
+>> Reviewed-by: Borislav Petkov <bp@suse.de>
+>> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+>> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> Tested-by: Linn Crosetto <linn@hp.com>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>> v5 -> v6:
+>>   * add the real-hardware reports to the changelog
+>> v4 -> v5:
+>>   * add the description when the bug can occur
+>> v3 -> v4:
+>>   * simplify backtrace
+>> v2 -> v3:
+>>   * simplify backtrace
+>> v1 -> v2:
+>>   * fix subject line
+>>
+>>   arch/x86/kernel/smpboot.c | 3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+>> index 5492798..0134ec7 100644
+>> --- a/arch/x86/kernel/smpboot.c
+>> +++ b/arch/x86/kernel/smpboot.c
+>> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+>>   
+>>   	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+>>   		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
+>> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
+>> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
+>> +	cpumask_clear(cpu_llc_shared_mask(cpu));
+>>   	cpumask_clear(cpu_sibling_mask(cpu));
+>>   	cpumask_clear(cpu_core_mask(cpu));
+>>   	c->phys_proc_id = 0;
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
