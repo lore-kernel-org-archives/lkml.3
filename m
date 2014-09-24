@@ -1,185 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309AbaIXKbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:31:41 -0400
-Received: from regular3.263xmail.com ([211.157.153.3]:58211 "EHLO
-	regular3.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105AbaIXKbf (ORCPT
+	id S1753880AbaIXKbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:31:32 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:38087 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaIXKb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:31:35 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: jeff.chen@rock-chips.com
-X-FST-TO: olof@lixom.net
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: jeff.chen@rock-chips.com
-X-UNIQUE-TAG: <fe0a253db5f1c7ed1acd31f289b24a11>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54229D49.4070008@rock-chips.com>
-Date: Wed, 24 Sep 2014 18:30:33 +0800
-From: jeff chen <jeff.chen@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 06:31:27 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Wed, 24 Sep 2014 12:28:53 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Octavian Purdila <octavian.purdila@intel.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        johan@kernel.org
+Subject: Re: [PATCH v2 1/2] mfd: viperboard: allocate I/O buffer separately
+Message-ID: <20140924102853.GA17019@localhost>
+References: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
+ <1411414759-7056-2-git-send-email-octavian.purdila@intel.com>
+ <20140924101206.GD19999@lee--X1>
 MIME-Version: 1.0
-To: Rob Clark <robdclark@gmail.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        linux-doc@vger.kernel.org, Kever Yang <kever.yang@rock-chips.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jianqun Xu <xjq@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
-        linux-api@vger.kernel.org, David Airlie <airlied@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        simon xue <xxm@rock-chips.com>, linux-rockchip@lists.infradead.org,
-        kfx@rock-chips.com, Grant Likely <grant.likely@linaro.org>,
-        =?UTF-8?B?546L5pmT6IW+?= <wxt@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>, dbehr@chromium.org,
-        yxj@rock-chips.com, Eddie Cai <cf@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
-        Mark yao <mark.yao@rock-chips.com>, Rom Lemarchand <romlem@google.com>,
-        xw@rock-chips.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Douglas Anderson <dianders@chromium.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 5/5] drm/rockchip: Add support for Rockchip Soc EDP
-References: <1411382820-1615-1-git-send-email-mark.yao@rock-chips.com> <1411383728-2075-1-git-send-email-mark.yao@rock-chips.com> <CAF6AEGtxUGr2i+mK7dtfTXaf2SxHkokxw2sNCviwRR6Hn7RE2w@mail.gmail.com> <5421338B.3020302@rock-chips.com> <CAF6AEGuGKitXGE8S-fE-d+-MWDBxU-XqG_AH7q9FD0y5YkBFVQ@mail.gmail.com> <CAF6AEGtZGypyV4EnWZr4LziEnOriKZr1ggn+AtkuPnf2ud5gBw@mail.gmail.com>
-In-Reply-To: <CAF6AEGtZGypyV4EnWZr4LziEnOriKZr1ggn+AtkuPnf2ud5gBw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924101206.GD19999@lee--X1>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 11:12:06AM +0100, Lee Jones wrote:
+> On Mon, 22 Sep 2014, Octavian Purdila wrote:
+> 
+> > Currently the I/O buffer is allocated part of the device status
+> > structure, potentially sharing the same cache line with other members
+> > in this structure.
+> > 
+> > Allocate the buffer separately, to avoid the I/O operations corrupting
+> > the device status structure due to cache line sharing.
+> > 
+> > Compiled tested only as I don't have access to hardware.
+> > 
+> > Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> > ---
+> >  drivers/mfd/viperboard.c       | 8 ++++++++
+> >  include/linux/mfd/viperboard.h | 2 +-
+> >  2 files changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+> > index e00f534..5f62f4e 100644
+> > --- a/drivers/mfd/viperboard.c
+> > +++ b/drivers/mfd/viperboard.c
+> > @@ -64,6 +64,12 @@ static int vprbrd_probe(struct usb_interface *interface,
+> >  		return -ENOMEM;
+> >  	}
+> >  
+> > +	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
+> 
+> Can you obtain the 'struct device' first then use managed resources
+> (devm_*)?
 
-On 2014/9/24 7:35, Rob Clark wrote:
-> On Tue, Sep 23, 2014 at 9:56 AM, Rob Clark <robdclark@gmail.com> wrote:
->> On Tue, Sep 23, 2014 at 4:47 AM, cym <cym@rock-chips.com> wrote:
->>> On Tuesday, September 23, 2014 03:20 AM, Rob Clark wrote:
->>>> On Mon, Sep 22, 2014 at 7:02 AM, Mark yao <mark.yao@rock-chips.com> wrote:
->>>>> This adds support for Rockchip soc edp found on rk3288
->>>>>
->>>>> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
->>>>> Signed-off-by: Jeff Chen <jeff.chen@rock-chips.com>
->>>>> ---
->>>>> Changes in v2:
->>>>> - fix code sytle
->>>>> - use some define from drm_dp_helper.h
->>>>> - use panel-simple driver for primary display.
->>>>> - remove unnecessary clock clk_24m_parent.
->>>>>
->>>>> Changes in v3: None
->>>>>
->>>>> Changes in v4: None
->>>>>
->>>>>    drivers/gpu/drm/rockchip/Kconfig             |    9 +
->>>>>    drivers/gpu/drm/rockchip/Makefile            |    2 +
->>>>>    drivers/gpu/drm/rockchip/rockchip_edp_core.c |  853 ++++++++++++++++++
->>>>>    drivers/gpu/drm/rockchip/rockchip_edp_core.h |  309 +++++++
->>>>>    drivers/gpu/drm/rockchip/rockchip_edp_reg.c  | 1202
->>>>> ++++++++++++++++++++++++++
->>>>>    drivers/gpu/drm/rockchip/rockchip_edp_reg.h  |  345 ++++++++
->>>>>    6 files changed, 2720 insertions(+)
->>>>>    create mode 100644 drivers/gpu/drm/rockchip/rockchip_edp_core.c
->>>>>    create mode 100644 drivers/gpu/drm/rockchip/rockchip_edp_core.h
->>>>>    create mode 100644 drivers/gpu/drm/rockchip/rockchip_edp_reg.c
->>>>>    create mode 100644 drivers/gpu/drm/rockchip/rockchip_edp_reg.h
->>>>>
->>>>> diff --git a/drivers/gpu/drm/rockchip/Kconfig
->>>>> b/drivers/gpu/drm/rockchip/Kconfig
->>>>> index 7146c80..04b1f8c 100644
->>>>> --- a/drivers/gpu/drm/rockchip/Kconfig
->>>>> +++ b/drivers/gpu/drm/rockchip/Kconfig
->>>>> @@ -17,3 +17,12 @@ config DRM_ROCKCHIP
->>>>>             management to userspace. This driver does not provides
->>>>>             2D or 3D acceleration; acceleration is performed by other
->>>>>             IP found on the SoC.
->>>>> +
->>>>> +config ROCKCHIP_EDP
->>>>> +       bool "Rockchip edp support"
->>>>> +       depends on DRM_ROCKCHIP
->>>>> +       help
->>>>> +         Choose this option if you have a Rockchip eDP.
->>>>> +         Rockchip rk3288 SoC has eDP TX Controller can be used.
->>>>> +         If you have an Embedded DisplayPort Panel, say Y to enable its
->>>>> +         driver.
->>>>> diff --git a/drivers/gpu/drm/rockchip/Makefile
->>>>> b/drivers/gpu/drm/rockchip/Makefile
->>>>> index 6e6d468..a0fc3a1 100644
->>>>> --- a/drivers/gpu/drm/rockchip/Makefile
->>>>> +++ b/drivers/gpu/drm/rockchip/Makefile
->>>>> @@ -7,4 +7,6 @@ ccflags-y := -Iinclude/drm -Idrivers/gpu/drm/rockchip
->>>>>    rockchipdrm-y := rockchip_drm_drv.o rockchip_drm_fb.o
->>>>> rockchip_drm_fbdev.o \
->>>>>                   rockchip_drm_gem.o rockchip_drm_vop.o
->>>>>
->>>>> +rockchipdrm-$(CONFIG_ROCKCHIP_EDP) += rockchip_edp_core.o
->>>>> rockchip_edp_reg.o
->>>>> +
->>>>>    obj-$(CONFIG_DRM_ROCKCHIP) += rockchipdrm.o
->>>>> diff --git a/drivers/gpu/drm/rockchip/rockchip_edp_core.c
->>>>> b/drivers/gpu/drm/rockchip/rockchip_edp_core.c
->>>>> new file mode 100644
->>>>> index 0000000..5450d1fa
->>>>> --- /dev/null
->>>>> +++ b/drivers/gpu/drm/rockchip/rockchip_edp_core.c
->>>>> @@ -0,0 +1,853 @@
->>>>> +/*
->>>>> +* Copyright (C) Fuzhou Rockchip Electronics Co.Ltd
->>>>> +* Author:
->>>>> +*      Andy yan <andy.yan@rock-chips.com>
->>>>> +*      Jeff chen <jeff.chen@rock-chips.com>
->>>>> +*
->>>>> +* based on exynos_dp_core.c
->>>>> +*
->>>> hmm, did you look at all at drm_dp_helpers?  The exynos code probably
->>>> pre-dates the helpers, so might not be the best example to work off
->>>> of..
->>>>
->>>> If there is actually a valid reason not to use the dp-helpers, then
->>>> you should mention the reasons, at least in the commit msg if not the
->>>> code
->>>>
->>>> BR,
->>>> -R
->>> Thanks Rob,Because RK3288 eDP controller IP design is similar to exynos.They
->>> from same IP vendors but have some difference.
->>> So we choosed exynos_dp as example to work off of.exynos_dp only used some
->>> defines from drm_dp_helper.h like DPCD.
->>>
->>
->> Hmm, it sounds like it perhaps should be refactored out into a
->> drm_bridge so more of it can be shared between rockchip and exynos.
->>
->> Either way, it should be using the drm_dp_helpers..  That "the code I
->> copied did it wrong" isn't a terribly good reason for new drivers to
->> do it wrong.
->>
->> So NAK for the eDP part until you use the helpers.
-> and btw, if it wasn't clear, go ahead and at least repost the core
-> part of the driver.. the first patch just needed a few small tweaks to
-> get my r-b even if it takes longer to sort out something sane for the
-> DP part..
->
-> BR,
-> -R
-thanks,I will modify the core part of the driver.
+I think any devres conversion should be done in a follow-up patch and
+not be included in the fix (e.g. in order to facilitate backporting). We
+also don't want to mix allocation schemes.
 
-BR,
--Jeff
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
->
->
->
-
-
+Johan
