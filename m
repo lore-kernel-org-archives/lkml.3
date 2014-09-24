@@ -1,228 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaIXLtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:49:15 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:49994 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaIXLtM (ORCPT
+	id S1753457AbaIXLtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:49:22 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:46492 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324AbaIXLtU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:49:12 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        acme@redhat.com, cebbert.lkml@gmail.com
-Subject: [PATCH v7 1/6] perf: add ability to sample machine state on interrupt
-Date: Wed, 24 Sep 2014 13:48:37 +0200
-Message-Id: <1411559322-16548-2-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411559322-16548-1-git-send-email-eranian@google.com>
-References: <1411559322-16548-1-git-send-email-eranian@google.com>
+	Wed, 24 Sep 2014 07:49:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140924110602.GI19999@lee--X1>
+References: <5439652.jHp5aCCfrZ@lenovobook>
+	<20140924110602.GI19999@lee--X1>
+Date: Wed, 24 Sep 2014 13:49:18 +0200
+Message-ID: <CAJKbBDDpAULVFjr058qRz7rV3y5DEnnxeA9n5xtGW1Fu6YLr=A@mail.gmail.com>
+Subject: Re: [PATCH] mfd: tps65217: add compatible string for subdevices
+From: Johannes Pointner <johannes.pointner@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, AnilKumar Ch <anilkumar@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable capture of interrupted machine state for each
-sample.
+2014-09-24 13:06 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
+> On Mon, 22 Sep 2014, Johannes Pointner wrote:
+>
+>> The TPS65217 is missing of_compatible string in the mfd_cell for its
+>> subdevices. This compatible string is necessary to use functions like
+>> of_find_backlight_by_node in backlight.c.
+>>
+>> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+>> ---
+>>  Documentation/devicetree/bindings/regulator/tps65217.txt            | 5 ++++-
+>>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt      | 6 +++---
+>>  drivers/mfd/tps65217.c                                              | 2 ++
+>>  3 files changed, 9 insertions(+), 4 deletions(-)
+>
+> [...]
+>
+>> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+>> index 5fb9279..c3fb649 100644
+>> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+>> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+>> @@ -7,18 +7,18 @@ Required properties:
+>>  - compatible: "ti,tps65217"
+>>  - reg: I2C slave address
+>>  - backlight: node for specifying WLED1 and WLED2 lines in TPS65217
+>> +- compatible: "ti,tps65217-bl"
+>
+> This is now confusing.  Please make it clear that this part of the
+> documentation is now referencing the sub-node.
 
-Registers to sample are passed per event in the
-sample_regs_intr bitmask.
+I will add a Subnode properties label, to make it clearer.
 
-To sample interrupt machine state, the
-PERF_SAMPLE_INTR_REGS must be passed in
-sample_type.
+>
+>>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+>>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+>>  - default-brightness: valid values: 0-100
+>>
+>> -Each regulator is defined using the standard binding for regulators.
+>> -
+>>  Example:
+>>
+>>       tps: tps@24 {
+>>               reg = <0x24>;
+>>               compatible = "ti,tps65217";
+>> -             backlight {
+>> +             tps_bl: backlight {
+>> +                     compatible = "ti,tps65217-bl";
+>>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+>>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+>>                       default-brightness = <50>;
+>> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+>
+> This shouldn't be in this patch.
+>
+> Please adhere to: Documentation/devicetree/bindings/submitting-patches.txt
 
-The list of available registers is arch
-dependent and provided by asm/perf_regs.h
+I will split the patch.
+>
+>> index 3cc4c70..77708f9 100644
+>> --- a/drivers/mfd/tps65217.c
+>> +++ b/drivers/mfd/tps65217.c
+>> @@ -33,9 +33,11 @@
+>>  static const struct mfd_cell tps65217s[] = {
+>>       {
+>>               .name = "tps65217-pmic",
+>> +             .of_compatible = "ti,tps65217-pmic",
+>>       },
+>>       {
+>>               .name = "tps65217-bl",
+>> +             .of_compatible = "ti,tps65217-bl",
+>>       },
+>>  };
+>>
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
 
-Registers are laid out as u64 in the order
-of the bit order of sample_intr_regs.
-
-This patch also adds a new ABI version
-PERF_ATTR_SIZE_VER4 because we extend
-the perf_event_attr struct with a new u64
-field.
-
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- include/linux/perf_event.h      |    7 ++++--
- include/uapi/linux/perf_event.h |   15 ++++++++++++-
- kernel/events/core.c            |   46 +++++++++++++++++++++++++++++++++++++--
- 3 files changed, 63 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 893a0d0..68d46d5 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -79,7 +79,7 @@ struct perf_branch_stack {
- 	struct perf_branch_entry	entries[0];
- };
- 
--struct perf_regs_user {
-+struct perf_regs {
- 	__u64		abi;
- 	struct pt_regs	*regs;
- };
-@@ -600,7 +600,8 @@ struct perf_sample_data {
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
--	struct perf_regs_user		regs_user;
-+	struct perf_regs		regs_user;
-+	struct perf_regs		regs_intr;
- 	u64				stack_user_size;
- 	u64				weight;
- 	/*
-@@ -630,6 +631,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->weight = 0;
- 	data->data_src.val = PERF_MEM_NA;
- 	data->txn = 0;
-+	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
-+	data->regs_intr.regs = NULL;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9269de2..48d4a01 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -137,8 +137,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
- 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
- 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
-+	PERF_SAMPLE_REGS_INTR			= 1U << 18,
- 
--	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
- };
- 
- /*
-@@ -238,6 +239,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
- #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
- 					/* add: sample_stack_user */
-+#define PERF_ATTR_SIZE_VER4	104	/* add: sample_regs_intr */
- 
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -334,6 +336,15 @@ struct perf_event_attr {
- 
- 	/* Align to u64. */
- 	__u32	__reserved_2;
-+	/*
-+	 * Defines set of regs to dump for each sample
-+	 * state captured on:
-+	 *  - precise = 0: PMU interrupt
-+	 *  - precise > 0: sampled instruction
-+	 *
-+	 * See asm/perf_regs.h for details.
-+	 */
-+	__u64	sample_regs_intr;
- };
- 
- #define perf_flags(attr)	(*(&(attr)->read_format + 1))
-@@ -686,6 +697,8 @@ enum perf_event_type {
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
-+	 *	{ u64			abi; # enum perf_sample_regs_abi
-+	 *	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_INTR
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index eaa636e..7941343 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4430,7 +4430,7 @@ perf_output_sample_regs(struct perf_output_handle *handle,
- 	}
- }
- 
--static void perf_sample_regs_user(struct perf_regs_user *regs_user,
-+static void perf_sample_regs_user(struct perf_regs *regs_user,
- 				  struct pt_regs *regs)
- {
- 	if (!user_mode(regs)) {
-@@ -4446,6 +4446,14 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
- 	}
- }
- 
-+static void perf_sample_regs_intr(struct perf_regs *regs_intr,
-+				  struct pt_regs *regs)
-+{
-+	regs_intr->regs = regs;
-+	regs_intr->abi  = perf_reg_abi(current);
-+}
-+
-+
- /*
-  * Get remaining task size from user stack pointer.
-  *
-@@ -4827,6 +4835,23 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_TRANSACTION)
- 		perf_output_put(handle, data->txn);
- 
-+	if (sample_type & PERF_SAMPLE_REGS_INTR) {
-+		u64 abi = data->regs_intr.abi;
-+		/*
-+		 * If there are no regs to dump, notice it through
-+		 * first u64 being zero (PERF_SAMPLE_REGS_ABI_NONE).
-+		 */
-+		perf_output_put(handle, abi);
-+
-+		if (abi) {
-+			u64 mask = event->attr.sample_regs_intr;
-+
-+			perf_output_sample_regs(handle,
-+						data->regs_intr.regs,
-+						mask);
-+		}
-+	}
-+
- 	if (!event->attr.watermark) {
- 		int wakeup_events = event->attr.wakeup_events;
- 
-@@ -4913,7 +4938,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		 * in case new sample type is added, because we could eat
- 		 * up the rest of the sample size.
- 		 */
--		struct perf_regs_user *uregs = &data->regs_user;
-+		struct perf_regs *uregs = &data->regs_user;
- 		u16 stack_size = event->attr.sample_stack_user;
- 		u16 size = sizeof(u64);
- 
-@@ -4934,6 +4959,21 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		data->stack_user_size = stack_size;
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_REGS_INTR) {
-+		/* regs dump ABI info */
-+		int size = sizeof(u64);
-+
-+		perf_sample_regs_intr(&data->regs_intr, regs);
-+
-+		if (data->regs_intr.regs) {
-+			u64 mask = event->attr.sample_regs_intr;
-+
-+			size += hweight64(mask) * sizeof(u64);
-+		}
-+
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -7134,6 +7174,8 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 			ret = -EINVAL;
- 	}
- 
-+	if (attr->sample_type & PERF_SAMPLE_REGS_INTR)
-+		ret = perf_reg_validate(attr->sample_regs_intr);
- out:
- 	return ret;
- 
--- 
-1.7.9.5
-
+Thank you for your feedback. I'll resend the patches with the modifications.
