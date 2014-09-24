@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaIXV1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:27:23 -0400
-Received: from sauhun.de ([89.238.76.85]:43288 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165AbaIXV1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:27:21 -0400
-Date: Wed, 24 Sep 2014 23:27:51 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [REGRESSION] i2c-acpi: Fix NULL Pointer dereference
-Message-ID: <20140924212751.GB1947@katana>
-References: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
+	id S1752174AbaIXV2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:28:16 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41404 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751568AbaIXV2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:28:15 -0400
+Date: Wed, 24 Sep 2014 22:28:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: atull@opensource.altera.com
+Cc: dinguyen@opensource.altera.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH 1/2] socfpga: hotplug: put cpu1 in wfi
+Message-ID: <20140924212803.GD5182@n2100.arm.linux.org.uk>
+References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <1411590449-9794-2-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A6N2fC+uXW/VQSAv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411590449-9794-2-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 03:27:28PM -0500, atull@opensource.altera.com wrote:
+> diff --git a/arch/arm/mach-socfpga/platsmp.c b/arch/arm/mach-socfpga/platsmp.c
+> index 5356a72..1d5f8ad 100644
+> --- a/arch/arm/mach-socfpga/platsmp.c
+> +++ b/arch/arm/mach-socfpga/platsmp.c
+> @@ -34,6 +34,10 @@ static int socfpga_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  	int trampoline_size = &secondary_trampoline_end - &secondary_trampoline;
+>  
+>  	if (cpu1start_addr) {
+> +		/* This will put CPU #1 into reset.*/
+> +		__raw_writel(RSTMGR_MPUMODRST_CPU1,
+> +			     rst_manager_base_addr + 0x10);
 
---A6N2fC+uXW/VQSAv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If you can place CPU1 into reset, then why not place it into reset during
+hot unplug?
 
-On Fri, Sep 12, 2014 at 09:09:47PM +0200, Peter Huewe wrote:
-> If adapter->dev.parent =3D=3D NULL there is a NULL pointer dereference in
-> acpi_i2c_install_space_handler and acpi_i2c_remove_space_handler.
->=20
-> This is present since introduction of this code:
-> 366047515c6e "i2c: rework kernel config I2C_ACPI" or even
-> da3c6647ee08 "I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI"
->=20
-> The adapter->dev.parent =3D=3D NULL case is valid for the i2c_stub,
-> so loading i2c_stub with ACPI_I2C_OPREGION enabled results in an oops.
-> This is also valid at least for i2c_tiny_usb and i2c_robotfuzz_osif.
->=20
-> Fix by checking whether it is null before calling ACPI_HANDLE.
->=20
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> @@ -86,10 +90,12 @@ static void __init socfpga_smp_prepare_cpus(unsigned int max_cpus)
+>   */
+>  static void socfpga_cpu_die(unsigned int cpu)
+>  {
+> -	cpu_do_idle();
+> +	/* Flush the L1 data cache. */
+> +	flush_cache_all();
 
-Applied to for-current, thanks!
+Why do you think that's necessary?
 
+This potentially flushes *all* levels of the cache, including L2, which
+is not a nice thing to do if you have another CPU running.  Secondly,
+the core code has already called flush_cache_louis() _twice_ for you
+immediately prior to calling your cpu_die() function explicitly to
+remove any L1 data.
 
---A6N2fC+uXW/VQSAv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The only data which should remain are speculative prefetches and stack
+data specific to _this_ CPU (which could include dirty cache lines
+associated with the stack frame to enter your cpu_die function.)
+None of these cache lines are of any interest to other CPUs in the
+system, so there's no need for them to be written back prior to the
+CPU being reset or powered down for hot unplug.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIzdXAAoJEBQN5MwUoCm2OTQQAKJ0941rmfFm3+tOic0u/Shy
-lLxFULNHQ/q2scOWcAqTN1+iN8CgBRoUJ3zVP+LZaZo95MQQfwJRfwXG2Xh6WbU8
-V+N7+DdGL0dODGdp+P6f0wNOocGhGA6K8ykafSsTMnvLrkfIwjzBesgHH5+h+h4b
-6ObLr9F/77UfZJWsp+DII25MzzpmMI7SLOPYO2tzogFY/Bld4S5B8f/+WGlfBIaK
-H0zb3jjBircMKpy+6WNlyWqmWKuHHWnBarW4N3stfvKJgRD8sikMgR7XbkFbdjLH
-4IZubAh6KwahruJOiufvjQTOp9kdY0TDWrf1PnJkJU/JTgckg587ZqF5VXcQWs9O
-0tLuNyj4reGgrvW66itQDPVxk5fiTPfVQb1vuASGEkY8Zo0Ww/IBKYyqAhWIwyLG
-+icgiZlbDZTdstCcmCTiRMcHZfyiCx3JkuE3H0Tm7kelVZGW17PDRK6VKvWlFLbs
-ZXg0765imkwuSi62QlTdUZiVxJveAVTmThiwvXznjVFSTu5R7+4TL+CYbcW3XWyV
-Pw742M0UJXEB+rgqZmiv3ZUUTvB7QZgWj0HYx/TVGHY+tiKNAmx9ghWgOxtn4+J0
-kKZkBf22Ph0YKDIqIgH5jNH2jq0HTYLBCIoAE5D9iWvs+pi8Jxq2ZuR0JSx/nhJz
-n2XmZtQFSdkC48hKKfdg
-=DHEV
------END PGP SIGNATURE-----
-
---A6N2fC+uXW/VQSAv--
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
