@@ -1,96 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaIXRnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:43:37 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:40022 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686AbaIXRng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:43:36 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: riya khanna <riyakhanna1983@gmail.com>
-Cc: LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
-        linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@ubuntu.com>
-References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com>
-	<87bnq5vcbl.fsf@x220.int.ebiederm.org>
-	<CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com>
-	<20140924163740.GD3865@ubuntumail>
-Date: Wed, 24 Sep 2014 10:43:12 -0700
-In-Reply-To: <20140924163740.GD3865@ubuntumail> (Serge Hallyn's message of
-	"Wed, 24 Sep 2014 16:37:40 +0000")
-Message-ID: <8738bglxsf.fsf_-_@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753426AbaIXRpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:45:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301AbaIXRpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:45:47 -0400
+Date: Wed, 24 Sep 2014 19:45:28 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+Subject: Re: [PATCHv3 1/2] procfs: show hierarchy of pid namespace
+Message-ID: <20140924174527.GF10474@mguzik>
+References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1411552827-31056-2-git-send-email-chenhanxiao@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/C/rZjEcu0WEOey0z+qdJAN/5Fbm6+xXs=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.4 XM_Superlative01 Best-rated language
-	*  0.7 XMSubLong Long Subject
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4762]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;riya khanna <riyakhanna1983@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Using devices in Containers (was: [lxc-devel] device namespaces)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1411552827-31056-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+On Wed, Sep 24, 2014 at 06:00:26PM +0800, Chen Hanxiao wrote:
+> +static int
+> +pidns_list_filter(void)
+> +{
+> +	struct pidns_list *pos, *pos_t;
+> +	struct pid_namespace *ns0, *ns1;
+> +	struct pid *pid0, *pid1;
+> +	int flag = 0;
+> +	int rc;
+> +
+> +	/* screen pid with relationship
+> +	 * in pidns_list, we may add pids like
+> +	 * ns0   ns1   ns2
+> +	 * pid1->pid2->pid3
+> +	 * we should screen pid1, pid2 and keep pid3
+> +	 */
+> +	list_for_each_entry(pos, &pidns_list, list) {
+> +		list_for_each_entry(pos_t, &pidns_list, list) {
 
-> Isolation is provided by the devices cgroup.  You want something more
-> than isolation.
->
-> Quoting riya khanna (riyakhanna1983@gmail.com):
->> My use case for having device namespaces is device isolation. Isn't what
->> namespaces are there for (as I understand)?
+In the previous thread I tried to note this will be terribly inefficient
+to use and adding a list of children to pid_namespace struct would deal
+with the problem.
 
-Namespaces fundamentally provide for using the same ``global'' name
-in different contexts.  This allows them to be used for isolation
-and process migration (because you can take the same name from
-machine to machine).
+> +			flag = 0;
+> +			pid0 = pos->pid;
+> +			pid1 = pos_t->pid;
+> +			ns0 = pid0->numbers[pid0->level].ns;
+> +			ns1 = pid1->numbers[pid1->level].ns;
+> +			if (pos->pid->level < pos_t->pid->level)
+> +				for (; ns1 != NULL; ns1 = ns1->parent)
+> +					if (ns0 == ns1) {
+> +						flag = 1;
+> +						break;
+> +					}
+> +			if (flag == 1)
+> +				break;
+> +		}
+> +
+> +		if (flag == 0) {
+> +			rc = pidns_list_add(pos->pid, &pidns_tree);
+> +			if (rc)
+> +				goto out;
+> +		}
+> +	}
+> +
+> +	/* Now all usefull stuff are in pidns_tree, free pidns_list*/
+> +	free_pidns_list(&pidns_list);
+> +
+> +	return 0;
+> +
+> +out:
+> +	free_pidns_list(&pidns_tree);
+> +	return rc;
+> +}
+> +
+> +/* collect pids in pidns_list,
+> + * then remove duplicated ones,
+> + * add the rest to pidns_tree
+> + */
+> +static int proc_pidns_list_refresh(void)
+> +{
+> +	struct pid *pid;
+> +	struct task_struct *p;
+> +	int rc;
+> +
+> +	/* collect pid in differet ns */
+> +	rcu_read_lock();
+> +	for_each_process(p) {
+> +		pid = task_pid(p);
+> +		if (pid && (pid->level > 0)) {
+> +			rc = pidns_list_add(pid, &pidns_list);
+> +			if (rc)
+> +				goto out;
+> +		}
+> +	}
+> +
+> +	/* screen duplicate pids from list pidns_list
+> +	* and form a new list pidns_tree
+> +	*/
+> +	rc = pidns_list_filter();
+> +	if (rc)
+> +		goto out;
+> +	rcu_read_unlock();
+> +
+> +	return 0;
+> +
+> +out:
+> +	free_pidns_list(&pidns_list);
+> +	rcu_read_unlock();
+> +	return rc;
+> +}
+> +
+> +static int nslist_proc_show(struct seq_file *m, void *v)
+> +{
+> +	struct pidns_list *pos;
+> +	struct pid_namespace *ns, *curr_ns;
+> +	struct pid *pid;
+> +	char pid_buf[32];
+> +	int i, curr_level;
+> +	int rc;
+> +
+> +	curr_ns = task_active_pid_ns(current);
+> +
+> +	mutex_lock(&pidns_list_lock);
+> +	rc = proc_pidns_list_refresh();
+> +	if (rc) {
+> +		mutex_unlock(&pidns_list_lock);
+> +		return rc;
+> +	}
+> +
+> +	/* print pid namespace hierarchy */
+> +	list_for_each_entry(pos, &pidns_tree, list) {
 
-Unless someone cares about device numbers at a namespace level
-the work is done.
+What keeps pid_namespace's safe to use? Similarly to previous patch,
+here we hit a place where the code is not protected with rcu and
+structures were just plugged into the list.
 
-The mount namespace provides exsits to deal with file names.
-The devices cgroup will limit which devices you can access (although
-I can't ever imagine a case where the mout namespace would be
-insufficient).
+Recreating the list for each open seems quite unnecessary as well.
 
->> Not everything should be
->> accessible (or even visible) from a container all the time (we have seen
->> people come up with different use cases for this). However, bind-mounting
->> takes away this flexibility.
+One could work around that by caching generated output and having a
+generation counter for namespaces to know whether the content is stale.
+But that still does not seem right.
 
-I don't see how.  If they are mounts that propogate into the container
-and are controlled from outside you can do whatever you want.  (I am
-imagining device by device bind mounts here).  It should be trivial
-to have a a directory tree that propogates into a container and works.
+It looks like in the original thread someone suggested hooking this up
+under proc as a directory tree which sounds much better to me.
 
->> I agree that assigning fixed device numbers is
->> clearly not a long-term solution. Emulation for safe and flexible
->> multiplexing, like you suggested either using CUSE/FUSE or something like
->> devpts, is what I'm exploring.
+Just my $0,03.
 
-Is the problem you actually care about multiplexing devices?
+> +		pid = pos->pid;
+> +		curr_level = -1;
+> +		ns = pid->numbers[pid->level].ns;
+> +		/* Check whether a pid has relationship with current ns */
+> +		for (; ns != NULL; ns = ns->parent)
+> +			if (ns == curr_ns)
+> +				curr_level = curr_ns->level;
+> +
+> +		if (curr_level == -1)
+> +			continue;
+> +
+> +		for (i = curr_level + 1; i <= pid->level; i++) {
+> +			ns = pid->numbers[i].ns;
+> +			/* show PID '1' in specific pid ns */
+> +			snprintf(pid_buf, 32, "/proc/%u/ns/pid",
+> +				pid_vnr(find_pid_ns(1, ns)));
+> +			seq_printf(m, "%s ", pid_buf);
+> +		}
+> +
+> +		seq_putc(m, '\n');
+> +	}
+> +
+> +	free_pidns_list(&pidns_tree);
+> +	mutex_unlock(&pidns_list_lock);
+> +
+> +	return 0;
+> +}
 
-I think there is quite a bit of room to talk about how to safely
-and effectively use devices in containers.   So let's make that the
-discussion.  No one actually wants device number namespaces and talking
-about them only muddies the watters.
-
-Eric
+-- 
+Mateusz Guzik
