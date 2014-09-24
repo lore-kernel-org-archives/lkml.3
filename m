@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaIXHoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:44:54 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3240 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaIXHov (ORCPT
+	id S1753055AbaIXHqB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:46:01 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:36588 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaIXHqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:44:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 24 Sep 2014 00:44:50 -0700
-Date: Wed, 24 Sep 2014 10:44:39 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Wed, 24 Sep 2014 03:46:00 -0400
+Date: Wed, 24 Sep 2014 09:45:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH 0/3] Introduce of_match_machine() helper
-Message-ID: <20140924074439.GA25537@tbergstrom-lnx.Nvidia.com>
-References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>
- <53FB7642.1000808@wwwdotorg.org>
- <20140919131245.GQ26779@tbergstrom-lnx.Nvidia.com>
+        x86-ml <x86@kernel.org>
+Subject: Re: [PATCHv2 2/3] x86, ptdump: Simplify page flag evaluation code
+Message-ID: <20140924074555.GA3797@gmail.com>
+References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
+ <1411313216-2641-3-git-send-email-minipli@googlemail.com>
+ <541F2BCD.2040007@linux.intel.com>
+ <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140919131245.GQ26779@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 04:12:45PM +0300, Peter De Schrijver wrote:
-> On Mon, Aug 25, 2014 at 07:45:38PM +0200, Stephen Warren wrote:
-> > On 08/07/2014 05:01 PM, Tuomas Tynkkynen wrote:
-> > > Some mach-specific drivers that don't require their own node in the device tree
-> > > (for example drivers/soc/*, cpufreq, cpuidle etc.) want to match on the device
-> > > tree root compatible property instead. Instead of open-coding (and forgetting
-> > > to call of_node_put on the root node) everywhere, add a helper to the OF core.
-> > 
-> > Tuomas, I assume there will be a new version of this series to address 
-> > the review comments? For now, I'm not intending on applying this.
+
+* Mathias Krause <minipli@googlemail.com> wrote:
+
+> On 21 September 2014 21:49, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> > On 9/21/2014 8:26 AM, Mathias Krause wrote:
+> >>
+> >> -               if (pr & _PAGE_PCD)
+> >> -                       pt_dump_cont_printf(m, dmsg, "PCD ");
+> >> -               else
+> >> -                       pt_dump_cont_printf(m, dmsg, "    ");
+> >> +               pt_dump_cont(m, dmsg, "%-4s", pr & _PAGE_USER ? "USR" :
+> >> "");
+> >
+> >
+> > while you have some nice cleanups in your patch, I can't say I consider this
+> > an improvement.
+> > Yes the C standard allows ? to be used like this
+> > but no, I don't think it improves readability in general.
 > 
-> Given that Tuomas's internship ended, I'm willing to push this patch set
-> forward, if there is interest. So are people still interested in this idea
-> or should we drop it?
+> Not in general, but in this case, it does, IMHO.
+> 
+> > (I think for me the main exception is NULL pointer cases, but this is not
+> > one of these)
+> 
+> Apparently such a pattern (using the question mark operator combined
+> with a bit test to choose string constants) is used quite often in the
+> linux kernel as a simple grep tells me (probably catches a few false
+> positives but still a representative number):
 
-Seems there's no interest. I won't bother with this then.
+Both can be used (although I too find the original version easier 
+to read), and it's usually the taste/opinion of the original 
+author whose choice we prefer.
 
-Cheers,
+Thanks,
 
-Peter.
+	Ingo
