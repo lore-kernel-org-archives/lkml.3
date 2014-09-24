@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271AbaIXRUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:20:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41727 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753619AbaIXRUq (ORCPT
+	id S1754438AbaIXRU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:20:59 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:42868 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917AbaIXRUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:20:46 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, benh@kernel.crashing.org, chris@zankel.net,
-        cmetcalf@tilera.com, davem@davemloft.net, deller@gmx.de,
-        dhowells@redhat.com, geert@linux-m68k.org, heiko.carstens@de.ibm.com,
-        hpa@zytor.com, jcmvbkbc@gmail.com, jesper.nilsson@axis.com,
-        mingo@redhat.com, monstr@monstr.eu, paulmck@linux.vnet.ibm.com,
-        rdunlap@infradead.org, sam@ravnborg.org, schwidefsky@de.ibm.com,
-        starvik@axis.com, takata@linux-m32r.org, tglx@linutronix.de,
-        tony.luck@intel.com, daniel.thompson@linaro.org, broonie@linaro.org,
-        linux@arm.linux.org.uk, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v3 16/17] documentation: memory-barriers: clarify relaxed io accessor semantics
-Date: Wed, 24 Sep 2014 18:17:35 +0100
-Message-Id: <1411579056-16966-17-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
+	Wed, 24 Sep 2014 13:20:55 -0400
+Date: Wed, 24 Sep 2014 13:20:51 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH percpu/for-3.18] Revert "blk-mq, percpu_ref: implement a
+ kludge for SCSI blk-mq stall during probe"
+Message-ID: <20140924172051.GA29067@mtj.dyndns.org>
+References: <20140923055924.GA10295@lst.de>
+ <20140923060141.GF11740@mtj.dyndns.org>
+ <20140923060906.GA10547@lst.de>
+ <20140923061152.GI11740@mtj.dyndns.org>
+ <5421968B.7080309@kernel.dk>
+ <20140923192432.GA24441@mtj.dyndns.org>
+ <20140924082348.GB8894@lst.de>
+ <5422D589.5070009@kernel.dk>
+ <20140924143320.GG16555@htj.dyndns.org>
+ <5422D656.7020006@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5422D656.7020006@kernel.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends the paragraph describing the relaxed read io accessors
-so that the relaxed accessors are defined to be:
+>From 9eca80461a45177e456219a9cd944c27675d6512 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 24 Sep 2014 13:07:33 -0400
 
- - Ordered with respect to each other if accessing the same peripheral
+This reverts commit 0a30288da1aec914e158c2d7a3482a85f632750f, which
+was a temporary fix for SCSI blk-mq stall issue.  The following
+patches will fix the issue properly by introducing atomic mode to
+percpu_ref.
 
- - Unordered with respect to normal memory accesses
-
- - Unordered with respect to LOCK/UNLOCK operations
-
-Whilst many architectures will provide stricter semantics, ARM, Alpha and
-PPC can achieve significant performance gains by taking advantage of some
-or all of the above relaxations.
-
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@lst.de>
 ---
- Documentation/memory-barriers.txt | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+Hello,
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index a4de88fb55f0..6b2b4d735a5b 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -2461,10 +2461,15 @@ functions:
-      Please refer to the PCI specification for more information on interactions
-      between PCI transactions.
+I pulled in block/for-linus into percpu/for-3.18 and reverted the temp
+fix.  Will apply the patchset to implement the proper fix on top of
+it.
+
+Thanks.
+
+ block/blk-mq.c                  | 11 +----------
+ include/linux/percpu-refcount.h |  1 -
+ lib/percpu-refcount.c           | 16 ----------------
+ 3 files changed, 1 insertion(+), 27 deletions(-)
+
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 255d79c..44a78ae 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -119,16 +119,7 @@ void blk_mq_freeze_queue(struct request_queue *q)
+ 	spin_unlock_irq(q->queue_lock);
  
-- (*) readX_relaxed()
+ 	if (freeze) {
+-		/*
+-		 * XXX: Temporary kludge to work around SCSI blk-mq stall.
+-		 * SCSI synchronously creates and destroys many queues
+-		 * back-to-back during probe leading to lengthy stalls.
+-		 * This will be fixed by keeping ->mq_usage_counter in
+-		 * atomic mode until genhd registration, but, for now,
+-		 * let's work around using expedited synchronization.
+-		 */
+-		__percpu_ref_kill_expedited(&q->mq_usage_counter);
 -
--     These are similar to readX(), but are not guaranteed to be ordered in any
--     way. Be aware that there is no I/O read barrier available.
-+ (*) readX_relaxed(), writeX_relaxed()
-+
-+     These are similar to readX() and writeX(), but provide weaker memory
-+     ordering guarantees. Specifically, they do not guarantee ordering with
-+     respect to normal memory accesses (e.g. DMA buffers) nor do they guarantee
-+     ordering with respect to LOCK or UNLOCK operations. If the latter is
-+     required, an mmiowb() barrier can be used. Note that relaxed accesses to
-+     the same peripheral are guaranteed to be ordered with respect to each
-+     other.
++		percpu_ref_kill(&q->mq_usage_counter);
+ 		blk_mq_run_queues(q, false);
+ 	}
+ 	wait_event(q->mq_freeze_wq, percpu_ref_is_zero(&q->mq_usage_counter));
+diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+index 11b38ce..5df6784 100644
+--- a/include/linux/percpu-refcount.h
++++ b/include/linux/percpu-refcount.h
+@@ -72,7 +72,6 @@ void percpu_ref_reinit(struct percpu_ref *ref);
+ void percpu_ref_exit(struct percpu_ref *ref);
+ void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+ 				 percpu_ref_func_t *confirm_kill);
+-void __percpu_ref_kill_expedited(struct percpu_ref *ref);
  
-  (*) ioreadX(), iowriteX()
- 
+ /**
+  * percpu_ref_kill - drop the initial ref
+diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+index c6c31e2..559ee0b 100644
+--- a/lib/percpu-refcount.c
++++ b/lib/percpu-refcount.c
+@@ -189,19 +189,3 @@ void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+ 	call_rcu_sched(&ref->rcu, percpu_ref_kill_rcu);
+ }
+ EXPORT_SYMBOL_GPL(percpu_ref_kill_and_confirm);
+-
+-/*
+- * XXX: Temporary kludge to work around SCSI blk-mq stall.  Used only by
+- * block/blk-mq.c::blk_mq_freeze_queue().  Will be removed during v3.18
+- * devel cycle.  Do not use anywhere else.
+- */
+-void __percpu_ref_kill_expedited(struct percpu_ref *ref)
+-{
+-	WARN_ONCE(ref->pcpu_count_ptr & PCPU_REF_DEAD,
+-		  "percpu_ref_kill() called more than once on %pf!",
+-		  ref->release);
+-
+-	ref->pcpu_count_ptr |= PCPU_REF_DEAD;
+-	synchronize_sched_expedited();
+-	percpu_ref_kill_rcu(&ref->rcu);
+-}
 -- 
-2.1.0
+1.9.3
 
