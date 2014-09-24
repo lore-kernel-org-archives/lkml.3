@@ -1,82 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaIXPl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:41:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38994 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753498AbaIXPl4 (ORCPT
+	id S1754256AbaIXPmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:42:40 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:14948 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753249AbaIXPmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:41:56 -0400
-Date: Wed, 24 Sep 2014 11:41:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Simek <michal.simek@xilinx.com>
-cc: Chen Gang <gang.chen.5i5j@gmail.com>, <monstr@monstr.eu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/usb/host/ehci-xilinx-of.c: Include "linux/of_irq.h"
- to avoid compiling error
-In-Reply-To: <e0dec78e-193e-43ee-bdb0-fa776a6dd044@BY2FFO11FD030.protection.gbl>
-Message-ID: <Pine.LNX.4.44L0.1409241141260.1580-100000@iolanthe.rowland.org>
+	Wed, 24 Sep 2014 11:42:38 -0400
+Date: Wed, 24 Sep 2014 11:42:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
+Message-ID: <20140924114235.4287f4a1@gandalf.local.home>
+In-Reply-To: <5422336A.6030304@hitachi.com>
+References: <20140923173846.603cb49c@gandalf.local.home>
+	<5422336A.6030304@hitachi.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Michal Simek wrote:
+On Wed, 24 Sep 2014 11:58:50 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> Hi Alan and Greg,
+> (2014/09/24 6:38), Steven Rostedt wrote:
+ 
+> >   to them and copied them pretty much unchanged into a ftrace directory
+> >   under test.d. Is this fine, or is there more massaging I need to do
+> >   to them?
 > 
-> On 09/20/2014 06:19 AM, Chen Gang wrote:
-> > Hello Maintainers:
-> > 
-> > Please help check this patch, when you have time.
-> > 
-> > Thanks.
-> > 
-> > On 09/08/2014 01:20 PM, Michal Simek wrote:
-> >> On 09/03/2014 05:50 PM, Chen Gang wrote:
-> >>> Need include it for irq_of_parse_and_map(), the related error with
-> >>> allmodconfig under microblaze:
-> >>>
-> >>>   drivers/usb/host/ehci-xilinx-of.c: In function ‘ehci_hcd_xilinx_of_probe’:
-> >>>   drivers/usb/host/ehci-xilinx-of.c:156:2: error: implicit declaration of function ‘irq_of_parse_and_map’ [-Werror=implicit-function-declaration]
-> >>>     irq = irq_of_parse_and_map(dn, 0);
-> >>>     ^
-> >>>
-> >>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> >>> ---
-> >>>  drivers/usb/host/ehci-xilinx-of.c | 1 +
-> >>>  1 file changed, 1 insertion(+)
-> >>>
-> >>> diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-> >>> index fe57710..a232836 100644
-> >>> --- a/drivers/usb/host/ehci-xilinx-of.c
-> >>> +++ b/drivers/usb/host/ehci-xilinx-of.c
-> >>> @@ -31,6 +31,7 @@
-> >>>  #include <linux/of.h>
-> >>>  #include <linux/of_platform.h>
-> >>>  #include <linux/of_address.h>
-> >>> +#include <linux/of_irq.h>
-> >>>  
-> >>>  /**
-> >>>   * ehci_xilinx_port_handed_over - hand the port out if failed to enable it
-> >>>
-> >>
-> >> Acked-by: Michal Simek <monstr@monstr.eu>
-> 
-> Alan: Can you please add this patch to your queue?
-> Greg: If Alan is not maintaining this part of kernel, is this patch in your queue?
-> 
-> I have also not a problem to add this patch through my microblaze tree
-> but I think it will be much better to use any USB tree.
+> Yeah, ftrace has a double meaning :), so test.d/ftrace is fine to me.
 
-Greg should be able to accept a trivial patch like this one directly.
+I was thinking that more complex tests can go into ftrace, and simple
+tests can go into basic.
 
-Alan Stern
+> 
+> > 
+> >   I know the echos don't show up, but I kept them anyway. What should
+> >   happen with them?
+> 
+> I think you'd better use exit_unsupported/exit_xfail to notify
+> that the test target is not configured, or expected to fail.
+
+OK, that answers the exit codes (as you also stated below), but what
+about the echos themselves?
+
+> Then the user can reconfigure that. Maybe we should keep the
+> detailed log of such results. (you can do it with --keep option)
+
+You mean keep the echos, as they are ignored anyway, but if we add
+--keep, then the echos will show?  Maybe that option should be -v, like
+other tools use for "verbose".
+
+
+> > --- /dev/null
+> > +++ b/tools/testing/selftests/ftrace/test.d/ftrace/fgraph-filter.tc
+> > @@ -0,0 +1,111 @@
+> > +#!/bin/sh
+> > +# description: ftrace - function graph filters
+> > +
+> > +# Make sure that function graph filtering works, and is not
+> > +# affected by other tracers enabled (like stack tracer)
+> > +
+> > +if ! grep -q function_graph available_tracers; then
+> > +    echo "no function graph tracer configured"
+> > +    exit 0;
+> 
+> This should call exit_unsupported, because the test is not passed.
+
+Will update this and others.
+
+
+> > +# Make sure we did find something
+> > +count=`cat trace | grep 'schedule()' | wc -l` 
+> > +if [ $count -eq 0 ]; then
+> > +    echo "No schedule traces found?"
+> > +    exit -1
+> > +fi
+> > +
+> > +echo "Graph filtering works by itself"
+> > +
+> 
+> I think the following part should be a separated test for
+> stack trace.
+
+Good point. A lot of my test scripts do multiple tests. I think for
+putting them into tools/testing/selftests/ftrace, I'll break them up
+and make them separate tests. For example, the simple graph filtering
+above is an example of something that can go into the basic directory,
+but the test against stack tracer should be in ftrace. What do you
+think?
+
+
+> > +
+> > +echo "Now filter on just schedule"
+> > +echo '*schedule' > set_ftrace_filter
+> > +> trace
+> 
+> echo > trace?
+
+OK. Hmm, I wonder if we should make a bunch of functions that the tests
+can use. Like a "clear_trace" call that does this. Can we export
+functions that this shell will be able to use? When we see lots of
+duplicate code we may want to have something like that. Well, for this,
+it may not be that big of a deal, because "echo > trace" is rather
+simple. But I do have other operations that are a bit more intrusive.
+
+-- Steve
 
