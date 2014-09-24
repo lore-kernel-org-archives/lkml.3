@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaIXMZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:25:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:31549 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaIXMZV (ORCPT
+	id S1753380AbaIXMZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:25:37 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:12840 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaIXMZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:25:21 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-8c-5422b82f455a
+	Wed, 24 Sep 2014 08:25:33 -0400
+X-AuditID: cbfee61b-f79d76d0000024d6-a4-5422b83a2f15
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -23,116 +23,145 @@ Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         b.zolnierkie@samsung.com
-Subject: [PATCH v7 2/5] ARM: add AFTR mode support to firmware do_idle method
-Date: Wed, 24 Sep 2014 14:24:45 +0200
-Message-id: <1411561488-1739-3-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v7 3/5] ARM: EXYNOS: cpuidle: add secure firmware support to
+ AFTR mode code
+Date: Wed, 24 Sep 2014 14:24:46 +0200
+Message-id: <1411561488-1739-4-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1411561488-1739-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1411561488-1739-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jQV2DHUohBo+vMltsnLGe1WLeZ1mL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9jQV2rHUohBrOmG1hsnLGe1WLeZ1mL
 	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLDq/zGKzuH2Z1+LM6UusFif/
 	9DJavDrYxmLxc9c8FotVu/4wWmz86uEg6NHS3MPmsXPWXXaPO9f2sHlsXlLvcfvfY2aPLVfb
-	WTz6tqxi9Pi8Sc5j49zQAM4oLpuU1JzMstQifbsEroytT26xFrwVq7g22byBcZJwFyMnh4SA
-	icSD1wtZIWwxiQv31rN1MXJxCAlMZ5TYc6adBcLpYpKY8fguC0gVm4CVxMT2VYwgtoiAmkTP
-	4q1gNrPAbRaJhusRILawgK9E59R1zCA2i4CqxOWtX8A28Aq4S/Q+38oGsU1RovvZBDCbU8BD
-	4sX9HnYQWwio5tjJK6wTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAgO62fSOxhX
-	NVgcYhTgYFTi4e1YphQixJpYVlyZe4hRgoNZSYTXahtQiDclsbIqtSg/vqg0J7X4EKM0B4uS
-	OO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA6Ou6sLNz03THfMtnZIim+cv5DQ5cKpFgm0C17MP
-	bxoe9ZnKxu4U25fxffbeBs4y+8nqEzt3vNC3rLmbG+DldvHPme+b3x2S0jq6uF5nd6k7V2nF
-	MUXDNK5Xdn3zufVCDto4p7PpHntz63pK/dQDss+tGFSuVaesc0pibO4M29xVXVM9n+HUXyWW
-	4oxEQy3mouJEAGUKomVnAgAA
+	WTz6tqxi9Pi8Sc5j49zQAM4oLpuU1JzMstQifbsErozbr5rZC2bIVjy/tJmxgXGSRBcjJ4eE
+	gInE3/mLmCBsMYkL99azdTFycQgJTGeU+L57NjuE08Uk8fheKztIFZuAlcTE9lWMILaIgJpE
+	z+KtYDazwG0WiYbrESC2sECsxINlB1hBbBYBVYn3vY/AenkF3CUWPfjDArFNUaL72QQ2EJtT
+	wEPixf0esBohoJpjJ6+wTmDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOLCfSe9g
+	XNVgcYhRgINRiYe3Y5lSiBBrYllxZe4hRgkOZiURXqttQCHelMTKqtSi/Pii0pzU4kOM0hws
+	SuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2MusrdWxRPr47sLxdkuXWCx2Omlar6vDVSdVw5
+	ijW3GzQmrFD7F7dkxcfS9qAsfvPkk/X9Rq1XDYUK39X+sI18Ou3PZxWOu0sa673M0jfET35S
+	NcGB92jXx5y589cuCj/svnWXxxPfDQ/Dps2oWPOw9faO9Zfl+VP+MVi3t0jetPJI/8/4jXWr
+	EktxRqKhFnNRcSIArz0/RmgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms (i.e. EXYNOS ones) more than one idle mode is
-available and we need to distinguish them in firmware do_idle method.
+* Move cp15 registers saving to exynos_save_cp15() helper and add
+  additional helper usage to do_idle firmware method.
 
-Add mode parameter to do_idle firmware method and AFTR mode support
-to EXYNOS do_idle implementation.
+* Use resume firmware method instead of exynos_cpu_restore_register()
+  and skip exynos_cpu_save_register() on boards with secure firmware
+  enabled.
 
-This change is a preparation for adding secure firmware support to
-EXYNOS cpuidle driver.
+* Use sysram_ns_base_addr + 0x24/0x20 addresses instead of the default
+  ones used by exynos_cpu_set_boot_vector() on boards with secure
+  firmware enabled.
 
-This patch shouldn't cause any functionality changes.
+* Use do_idle firmware method instead of cpu_do_idle() on boards with
+  secure firmware enabled.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
 v7:
-- fixed build on Tegra
-- updated summary line
+- no changes
 
- arch/arm/include/asm/firmware.h        |  2 +-
- arch/arm/mach-exynos/common.h          |  5 +++++
- arch/arm/mach-exynos/firmware.c        | 10 ++++++++--
- arch/arm/mach-tegra/cpuidle-tegra114.c |  2 +-
- 4 files changed, 15 insertions(+), 4 deletions(-)
+ arch/arm/mach-exynos/firmware.c | 24 +++++++++++++++++-------
+ arch/arm/mach-exynos/pm.c       | 17 ++++++++++++-----
+ 2 files changed, 29 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
-index 5904f59..89aefe1 100644
---- a/arch/arm/include/asm/firmware.h
-+++ b/arch/arm/include/asm/firmware.h
-@@ -28,7 +28,7 @@ struct firmware_ops {
- 	/*
- 	 * Enters CPU idle mode
- 	 */
--	int (*do_idle)(void);
-+	int (*do_idle)(unsigned long mode);
- 	/*
- 	 * Sets boot address of specified physical CPU
- 	 */
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index c218200..2d830df 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -119,6 +119,11 @@ extern void __iomem *sysram_base_addr;
- extern void __iomem *pmu_base_addr;
- void exynos_sysram_init(void);
- 
-+enum {
-+	FW_DO_IDLE_SLEEP,
-+	FW_DO_IDLE_AFTR,
-+};
-+
- void exynos_firmware_init(void);
- 
- extern u32 exynos_get_eint_wake_mask(void);
 diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index f5e626d..e57b7c3 100644
+index e57b7c3..2c5bc6b 100644
 --- a/arch/arm/mach-exynos/firmware.c
 +++ b/arch/arm/mach-exynos/firmware.c
-@@ -28,9 +28,15 @@
+@@ -25,13 +25,28 @@
+ #include "smc.h"
+ 
+ #define EXYNOS_SLEEP_MAGIC	0x00000bad
++#define EXYNOS_AFTR_MAGIC	0xfcba0d10
  #define EXYNOS_BOOT_ADDR	0x8
  #define EXYNOS_BOOT_FLAG	0xc
  
--static int exynos_do_idle(void)
-+static int exynos_do_idle(unsigned long mode)
++static void exynos_save_cp15(void)
++{
++	/* Save Power control and Diagnostic registers */
++	asm ("mrc p15, 0, %0, c15, c0, 0\n"
++	     "mrc p15, 0, %1, c15, c0, 1\n"
++	     : "=r" (cp15_save_power), "=r" (cp15_save_diag)
++	     : : "cc");
++}
++
+ static int exynos_do_idle(unsigned long mode)
  {
--	exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
-+	switch (mode) {
-+	case FW_DO_IDLE_AFTR:
-+		exynos_smc(SMC_CMD_CPU0AFTR, 0, 0, 0);
-+		break;
-+	case FW_DO_IDLE_SLEEP:
-+		exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
+ 	switch (mode) {
+ 	case FW_DO_IDLE_AFTR:
++		if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
++			exynos_save_cp15();
++		__raw_writel(virt_to_phys(exynos_cpu_resume_ns),
++			     sysram_ns_base_addr + 0x24);
++		__raw_writel(EXYNOS_AFTR_MAGIC, sysram_ns_base_addr + 0x20);
+ 		exynos_smc(SMC_CMD_CPU0AFTR, 0, 0, 0);
+ 		break;
+ 	case FW_DO_IDLE_SLEEP:
+@@ -96,13 +111,8 @@ static int exynos_cpu_suspend(unsigned long arg)
+ 
+ static int exynos_suspend(void)
+ {
+-	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
+-		/* Save Power control and Diagnostic registers */
+-		asm ("mrc p15, 0, %0, c15, c0, 0\n"
+-			"mrc p15, 0, %1, c15, c0, 1\n"
+-			: "=r" (cp15_save_power), "=r" (cp15_save_diag)
+-			: : "cc");
+-	}
++	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
++		exynos_save_cp15();
+ 
+ 	writel(EXYNOS_SLEEP_MAGIC, sysram_ns_base_addr + EXYNOS_BOOT_FLAG);
+ 	writel(virt_to_phys(exynos_cpu_resume_ns),
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index 3407fc1..6796fce 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -236,11 +236,19 @@ static void exynos_cpu_set_boot_vector(long flags)
+ 
+ static int exynos_aftr_finisher(unsigned long flags)
+ {
++	int ret;
++
+ 	exynos_set_wakeupmask(0x0000ff3e);
+-	exynos_cpu_set_boot_vector(S5P_CHECK_AFTR);
+ 	/* Set value of power down register for aftr mode */
+ 	exynos_sys_powerdown_conf(SYS_AFTR);
+-	cpu_do_idle();
++
++	ret = call_firmware_op(do_idle, FW_DO_IDLE_AFTR);
++	if (ret == -ENOSYS) {
++		if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
++			exynos_cpu_save_register();
++		exynos_cpu_set_boot_vector(S5P_CHECK_AFTR);
++		cpu_do_idle();
 +	}
- 	return 0;
+ 
+ 	return 1;
  }
+@@ -250,14 +258,13 @@ void exynos_enter_aftr(void)
+ 	cpu_pm_enter();
  
-diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
-index e3ebdce..425b6c8 100644
---- a/arch/arm/mach-tegra/cpuidle-tegra114.c
-+++ b/arch/arm/mach-tegra/cpuidle-tegra114.c
-@@ -49,7 +49,7 @@ static int tegra114_idle_power_down(struct cpuidle_device *dev,
- 	call_firmware_op(prepare_idle);
+ 	exynos_pm_central_suspend();
+-	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
+-		exynos_cpu_save_register();
  
- 	/* Do suspend by ourselves if the firmware does not implement it */
--	if (call_firmware_op(do_idle) == -ENOSYS)
-+	if (call_firmware_op(do_idle, 0) == -ENOSYS)
- 		cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
+ 	cpu_suspend(0, exynos_aftr_finisher);
  
- 	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+ 	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
+ 		scu_enable(S5P_VA_SCU);
+-		exynos_cpu_restore_register();
++		if (call_firmware_op(resume) == -ENOSYS)
++			exynos_cpu_restore_register();
+ 	}
+ 
+ 	exynos_pm_central_resume();
 -- 
 1.8.2.3
 
