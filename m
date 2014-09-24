@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaIXKpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:45:00 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:57735 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaIXKo6 (ORCPT
+	id S1752931AbaIXKsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:48:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32544 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595AbaIXKsP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:44:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] watchdog: qcom: document device tree bindings
-Date: Wed, 24 Sep 2014 12:44:44 +0200
-Message-ID: <2941802.u7NP2737aD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <337231c0fc8b16b4f37e1e3b85cb0246f357a64d.1411513109.git.joshc@codeaurora.org>
-References: <cover.1411513109.git.joshc@codeaurora.org> <337231c0fc8b16b4f37e1e3b85cb0246f357a64d.1411513109.git.joshc@codeaurora.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Wed, 24 Sep 2014 06:48:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,588,1406617200"; 
+   d="scan'208";a="578143643"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>,
+        David Miller <davem@davemloft.net>
+CC: "rayagond@vayavyalabs.com" <rayagond@vayavyalabs.com>,
+        "vbridgers2013@gmail.com" <vbridgers2013@gmail.com>,
+        "wens@csie.org" <wens@csie.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "tobias.johannes.klausmann@mni.thm.de" 
+	<tobias.johannes.klausmann@mni.thm.de>
+Subject: RE: [PATCH] net: stmmac: fix stmmac_pci_probe failed when
+ CONFIG_HAVE_CLK is selected
+Thread-Topic: [PATCH] net: stmmac: fix stmmac_pci_probe failed when
+ CONFIG_HAVE_CLK is selected
+Thread-Index: AQHP1pHhFepY2RdQhkeVpgdU2wwwn5wN2aRw///dKYCAAIehAIABCo0AgADI8ZA=
+Date: Wed, 24 Sep 2014 10:48:09 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7EB35E@PGSMSX102.gar.corp.intel.com>
+References: <1411043650-31712-1-git-send-email-hock.leong.kweh@intel.com>
+ <20140922.141921.577008114679288180.davem@davemloft.net>
+ <F54AEECA5E2B9541821D670476DAE19C2B7EAE19@PGSMSX102.gar.corp.intel.com>
+ <54210EC1.9070507@st.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B7EAF23@PGSMSX102.gar.corp.intel.com>
+ <54226020.50008@st.com>
+In-Reply-To: <54226020.50008@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:sPfXWOwwGqHoikgg2WgWr/gx/lsg36OEdBYAH9goafL
- 82f8dCxBF+6phT3FCUwhWABEXVw/mUYAwx2010RYdv2dmUHQNu
- htwnH9ZGSxF9hgD117E7H+TN7gKHF7KC9Q1a6Vu5jD0w4eIihR
- lT/vB0OLuZMqUDmPI1GpIV8YdpK6Fu6BLbUbu7XObHuKiqz8Jd
- KPxGHxJKt3u3n5DH5gsABzx7hPPycu3grFWB0hXi8g0VLNRNKM
- DkDARc+APbRxTjSCv5ad5S5TzoMMFFCcXAMQEV9/QD05ixnu86
- WNaczELoF6tapwPYQYrvgjM85eVa2LAVsYPSbiO5oFGI1tk9AW
- YcPzLRQzqJHb3nl9Pk0Y=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 18:04:37 Josh Cartwright wrote:
-> +- clocks : shall contain the input clock phandle
+> -----Original Message-----
+> From: Giuseppe CAVALLARO [mailto:peppe.cavallaro@st.com]
+> Sent: Wednesday, September 24, 2014 2:10 PM
+> >
+> > Hi peppe,
+> >
+> > Appreciate for the explanation. Just to clarify that I am not asking not to
+> pass in the priv->stmmac_clk.
+> > In fact, the fix will fail at case 2 if driver cannot obtain the priv->stmmac_clk,
+> but just not the case 1.
+> > For case 1, seem like it does not require the stmmac_clk then I think
+> > it should be OK not to fail it when driver did not get stmmac_clk but have
+> the clk_csr set.
+> 
+> ok we can do that but this clock is also managed when the iface is down.
+> Maybe it could be convenient to manage it for power consumption.
+> What do you think?
 
-Just nitpicking, but this is not just a phandle, it's a clock
-descriptor, which is a phandle followed by a set of arguments,
-which may be empty, depending the on the clock controller
-implementation.
+Hi peppe,
 
-I would just call it 'the input clock', rather than 'input clock
-phandle'.
+I don't really get what you mean here. Are you telling that you are OK with the fix?
+Or you are referring to the bottom idea which introduce clock registration APIs to
+stmmac_pci driver?
 
-	Arnd
+Regarding the power management, isn't this taking care by the PCI framework itself
+for the PCI devices / PCI cards?
+
+Sorry, may be would need you to provide a big picture to this. Thanks. :)
+
+> 
+> > Anyway, I can change the fix by adding the clock registration APIs
+> > being call at the stmmac_pci.c probe there before calling
+> > stmmac_dvr_probe. By doing this, it created a dependency to the pci
+> > driver that must have CONFIG_HAVE_CLK to be turned on. Besides, I
+> would need you guys to provide me information on other platforms about
+> what is the best value to set? Can I just set to zero since the stmmac_pci
+> driver is always using the priv->plat->clk_csr?
+> >
+
+
