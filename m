@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaIXUWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:22:42 -0400
-Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:47511 "EHLO
+	id S1752089AbaIXU0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:26:09 -0400
+Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:47931 "EHLO
 	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751505AbaIXUWl (ORCPT
+	by vger.kernel.org with ESMTP id S1751020AbaIXU0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:22:41 -0400
-Message-ID: <54232807.20909@nexus-software.ie>
-Date: Wed, 24 Sep 2014 21:22:31 +0100
+	Wed, 24 Sep 2014 16:26:07 -0400
 From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Reply-To: pure.logic@nexus-software.ie
-Organization: Nexus Software
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        stable@vger.kernel.org, bp@alien8.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/platform] x86/intel/quark: Switch off CR4.PGE so TLB
- flush uses CR3 instead
-References: <1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie> <tip-ee1b5b165c0a2f04d2107e634e51f05d0eb107de@git.kernel.org> <5422E8D0.5080705@zytor.com> <5422EA13.1080706@nexus-software.ie> <5422EC30.10206@nexus-software.ie> <54231088.8030000@zytor.com> <542310E3.90803@zytor.com>
-In-Reply-To: <542310E3.90803@zytor.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, pure.logic@nexus-software.ie
+Subject: [PATCH] x86: Quark: Add comment on TLB flush to setup_arch
+Date: Wed, 24 Sep 2014 21:26:03 +0100
+Message-Id: <1411590363-8052-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quark X1000 requires CR3 to be rewritten to flush TLB entries
+irrespective of the PGE bits in CR4 or PTE.PGE
 
->> Well, we need a comment at least.
->>
->
-> And certainly we don't need an if/else as we can just do it.
->
-> 	-hpa
+Add a comment to setup_arch to indicate that the code
 
-OK.
+load_cr3(swapper_pg_dir);
+__flush_tlb_all();
 
-No problem.
+Will already have flushed the TLB @ the CR3 reload allowing us
+to skip over a potential if/else for Quark
 
-BOD
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+---
+ arch/x86/kernel/setup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 41ead8d..e7d7f6e 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -878,6 +878,11 @@ void __init setup_arch(char **cmdline_p)
+ 			initial_page_table + KERNEL_PGD_BOUNDARY,
+ 			KERNEL_PGD_PTRS);
+ 
++	/*
++	 * Locate the page directory and flush the TLB.
++	 * On Quark X1000 rewriting CR3 flushes the TLB no if/else is required
++	 * to choose between __flush_tlb() and __flush_tlb_all()
++	 */
+ 	load_cr3(swapper_pg_dir);
+ 	__flush_tlb_all();
+ #else
+-- 
+1.9.1
+
