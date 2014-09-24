@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaIXPVN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:21:13 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:40464 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaIXPVL (ORCPT
+	id S1753474AbaIXPVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:21:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49469 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239AbaIXPVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:21:11 -0400
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-To: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] fs: sysfs: return EGBIG on write if offset is larger than file size
-Date: Wed, 24 Sep 2014 18:21:04 +0300
-Message-ID: <1411572064-2871-1-git-send-email-vladimir_zapolskiy@mentor.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 24 Sep 2014 11:21:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [137.202.0.76]
+In-Reply-To: <20140924102632.GE19078@lst.de>
+References: <1410786675-7761-1-git-send-email-ming.lei@canonical.com>
+	<1410786675-7761-11-git-send-email-ming.lei@canonical.com>
+	<20140924102632.GE19078@lst.de>
+Date: Wed, 24 Sep 2014 23:21:13 +0800
+Message-ID: <CACVXFVOM_K_9ogwsBJ+2wTK-D-wbVVkOK3=60tgoTKsnTS+33g@mail.gmail.com>
+Subject: Re: [PATCH v4 10/10] blk-mq: support per-distpatch_queue flush machinery
+From: Ming Lei <ming.lei@canonical.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the user expectations common utilities like dd or sh
-redirection operator > should work correctly over binary files from
-sysfs. At the moment doing excessive write can not be completed:
+On Wed, Sep 24, 2014 at 6:26 PM, Christoph Hellwig <hch@lst.de> wrote:
+>> +struct blk_flush_queue *blk_alloc_flush_queue(struct request_queue *q,
+>> +             struct blk_mq_hw_ctx *hctx, int cmd_size)
+>
+> I still think this should pass in the numa node instead of the hctx, and
+> allow node-local allocation for the old code as well.
 
-  write(1, "\0\0\0\0\0\0\0\0", 8)         = 4
-  write(1, "\0\0\0\0", 4)                 = 0
-  write(1, "\0\0\0\0", 4)                 = 0
-  write(1, "\0\0\0\0", 4)                 = 0
-  ...
+We can do that, but have to pass NUMA_NO_NODE for old code
+since blk_init_allocated_queue() doesn't provide node information
+yet.
 
-Fix the problem by returning EFBIG described in man 2 write.
+> As mentioned earlier
+> initializing mq_flush_lock for the !mq case is harmless.
 
-Signed-off-by: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/sysfs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+q->mq_ops is another friend for the purpose, :-)
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index e9ef59b..589abee 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -125,7 +125,7 @@ static ssize_t sysfs_kf_bin_write(struct kernfs_open_file *of, char *buf,
- 
- 	if (size) {
- 		if (size <= pos)
--			return 0;
-+			return -EFBIG;
- 		count = min_t(ssize_t, count, size - pos);
- 	}
- 	if (!count)
--- 
-1.7.10.4
+>
+> We also should document it where cleary somewhere that for devices that
+> have flushes enabled ->init_request can be called for more requests than
+> the queue depth, as drivers might allocate some sort of pool for them.
 
+That does make sense.
+
+Thanks,
