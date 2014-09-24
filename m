@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040AbaIXJBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:01:10 -0400
-Received: from 80-229-23-162.plus.com ([80.229.23.162]:38817 "EHLO
-	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaIXJBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:01:08 -0400
-Date: Wed, 24 Sep 2014 10:00:05 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: gregkh@linuxfoundation.org, davem@davemloft.net, angus@agibson.me,
-        tklauser@distanz.ch, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH v2] et131x: Promote staging et131x driver to drivers/net
-Message-ID: <20140924090004.GA5097@leicester.auvation.com>
-References: <1411421283-25073-1-git-send-email-mark.einon@gmail.com>
- <1411502723-4628-1-git-send-email-mark.einon@gmail.com>
- <1411506437.29268.13.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411506437.29268.13.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753451AbaIXI5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:57:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18034 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275AbaIXI5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:57:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="390840607"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [Patch v6 06/15] x86, irq: Split out alloc_ioapic_save_registers()
+Date: Wed, 24 Sep 2014 16:59:27 +0800
+Message-Id: <1411549176-30780-7-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:07:17PM -0700, Joe Perches wrote:
-> On Tue, 2014-09-23 at 21:05 +0100, Mark Einon wrote:
-> > This patch moves the et131x gigabit ethernet driver from drivers/staging
-> > to drivers/net/ethernet/agere.
-> 
-> checkpatch type modification you might consider:
-> 
-> Reduce logging line count by consolidating repeated dev_warn
-> Use ether_addr_copy
-> Line wrapping for 80 columns
-> Remove unnecessary parentheses
-> Remove unnecessary OOM message
+From: Yinghai Lu <yinghai@kernel.org>
 
-Considered and done, thanks.
+Split out alloc_ioapic_save_registers() from early_irq_init(),
+so it could be used for ioapic hotplug later.
 
-Mark
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ arch/x86/kernel/apic/io_apic.c |   22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 337ce5a9b15c..003945e71616 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -237,6 +237,19 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+ 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
+ }
+ 
++static void alloc_ioapic_saved_registers(int idx)
++{
++	size_t size;
++
++	if (ioapics[idx].saved_registers)
++		return;
++
++	size = sizeof(struct IO_APIC_route_entry) * ioapics[idx].nr_registers;
++	ioapics[idx].saved_registers = kzalloc(size, GFP_KERNEL);
++	if (!ioapics[idx].saved_registers)
++		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
++}
++
+ int __init arch_early_irq_init(void)
+ {
+ 	struct irq_cfg *cfg;
+@@ -245,13 +258,8 @@ int __init arch_early_irq_init(void)
+ 	if (!nr_legacy_irqs())
+ 		io_apic_irqs = ~0UL;
+ 
+-	for_each_ioapic(i) {
+-		ioapics[i].saved_registers =
+-			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				ioapics[i].nr_registers, GFP_KERNEL);
+-		if (!ioapics[i].saved_registers)
+-			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+-	}
++	for_each_ioapic(i)
++		alloc_ioapic_saved_registers(i);
+ 
+ 	/*
+ 	 * For legacy IRQ's, start with assigning irq0 to irq15 to
+-- 
+1.7.10.4
+
