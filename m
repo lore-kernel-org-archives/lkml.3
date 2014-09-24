@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaIXPAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:00:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59837 "EHLO
+	id S1753839AbaIXPAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:00:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59858 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbaIXPAV (ORCPT
+	with ESMTP id S1751435AbaIXPAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:00:21 -0400
-Date: Wed, 24 Sep 2014 07:59:28 -0700
+	Wed, 24 Sep 2014 11:00:47 -0400
+Date: Wed, 24 Sep 2014 07:59:43 -0700
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-86a349a28b249bf4c3b396af3cc550760dedb456@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1409683455-29168-3-git-send-email-andi@firstfloor.org>
-References: <1409683455-29168-3-git-send-email-andi@firstfloor.org>
+Message-ID: <tip-c46e665f037743bbce7887e7c55750713eb7fb09@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, maria.n.dimakopoulou@gmail.com,
+        acme@kernel.org, kan.liang@intel.com, ak@linux.intel.com,
+        junk@eslaf.co.uk, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, acme@kernel.org,
+        maria.n.dimakopoulou@gmail.com, kan.liang@intel.com,
+        ak@linux.intel.com, tglx@linutronix.de, junk@eslaf.co.uk
+In-Reply-To: <1409683455-29168-4-git-send-email-andi@firstfloor.org>
+References: <1409683455-29168-4-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Add Broadwell core support
-Git-Commit-ID: 86a349a28b249bf4c3b396af3cc550760dedb456
+Subject: [tip:perf/core] perf/x86: Add INST_RETIRED.ALL workarounds
+Git-Commit-ID: c46e665f037743bbce7887e7c55750713eb7fb09
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,206 +35,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  86a349a28b249bf4c3b396af3cc550760dedb456
-Gitweb:     http://git.kernel.org/tip/86a349a28b249bf4c3b396af3cc550760dedb456
+Commit-ID:  c46e665f037743bbce7887e7c55750713eb7fb09
+Gitweb:     http://git.kernel.org/tip/c46e665f037743bbce7887e7c55750713eb7fb09
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Tue, 2 Sep 2014 11:44:13 -0700
+AuthorDate: Tue, 2 Sep 2014 11:44:14 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 14:48:18 +0200
+CommitDate: Wed, 24 Sep 2014 14:48:19 +0200
 
-perf/x86/intel: Add Broadwell core support
+perf/x86: Add INST_RETIRED.ALL workarounds
 
-Add Broadwell support for Broadwell Client to perf.  This is very
-similar to Haswell.  It uses a new cache event table, because there
-were various changes there.
+On Broadwell INST_RETIRED.ALL cannot be used with any period
+that doesn't have the lowest 6 bits cleared. And the period
+should not be smaller than 128.
 
-The constraint list has one new event that needs to be handled over
-Haswell.
+Add a new callback to enforce this, and set it for Broadwell.
 
-The PEBS event list is the same, so we reuse Haswell's.
+This is erratum BDM57 and BDM11.
 
-[fengguang.wu: make intel_bdw_event_constraints[] static]
+How does this handle the case when an app requests a specific
+period with some of the bottom bits set
+
+The apps thinks it is sampling at X occurences per sample, when it is
+in fact at X - 63 (worst case).
+
+Short answer:
+
+Any useful instruction sampling period needs to be 4-6 orders
+of magnitude larger than 128, as an PMI every 128 instructions
+would instantly overwhelm the system and be throttled.
+So the +-64 error from this is really small compared to the
+period, much smaller than normal system jitter.
+
+Long answer:
+
+<write up by Peter:>
+
+IFF we guarantee perf_event_attr::sample_period >= 128.
+
+Suppose we start out with sample_period=192; then we'll set period_left
+to 192, we'll end up with left = 128 (we truncate the lower bits). We
+get an interrupt, find that period_left = 64 (>0 so we return 0 and
+don't get an overflow handler), up that to 128. Then we trigger again,
+at n=256. Then we find period_left = -64 (<=0 so we return 1 and do get
+an overflow). We increment with sample_period so we get left = 128. We
+fire again, at n=384, period_left = 0 (<=0 so we return 1 and get an
+overflow). And on and on.
+
+So while the individual interrupts are 'wrong' we get then with
+interval=256,128 in exactly the right ratio to average out at 192. And
+this works for everything >=128.
+
+So the num_samples*fixed_period thing is still entirely correct +- 127,
+which is good enough I'd say, as you already have that error anyhow.
+
+So no need to 'fix' the tools, al we need to do is refuse to create
+INST_RETIRED:ALL events with sample_period < 128.
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/1409683455-29168-3-git-send-email-andi@firstfloor.org
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Kan Liang <kan.liang@intel.com>
+Cc: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Cc: Mark Davies <junk@eslaf.co.uk>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1409683455-29168-4-git-send-email-andi@firstfloor.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 150 +++++++++++++++++++++++++++++++++
- 1 file changed, 150 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c       |  9 +++++++++
+ arch/x86/kernel/cpu/perf_event.h       |  1 +
+ arch/x86/kernel/cpu/perf_event_intel.c | 19 +++++++++++++++++++
+ 3 files changed, 29 insertions(+)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 0646d3b..918d75f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -443,6 +443,12 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 	if (event->attr.type == PERF_TYPE_RAW)
+ 		event->hw.config |= event->attr.config & X86_RAW_EVENT_MASK;
+ 
++	if (event->attr.sample_period && x86_pmu.limit_period) {
++		if (x86_pmu.limit_period(event, event->attr.sample_period) >
++				event->attr.sample_period)
++			return -EINVAL;
++	}
++
+ 	return x86_setup_perfctr(event);
+ }
+ 
+@@ -980,6 +986,9 @@ int x86_perf_event_set_period(struct perf_event *event)
+ 	if (left > x86_pmu.max_period)
+ 		left = x86_pmu.max_period;
+ 
++	if (x86_pmu.limit_period)
++		left = x86_pmu.limit_period(event, left);
++
+ 	per_cpu(pmc_prev_left[idx], smp_processor_id()) = left;
+ 
+ 	/*
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fc5eb39..d98a34d 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -445,6 +445,7 @@ struct x86_pmu {
+ 	struct x86_pmu_quirk *quirks;
+ 	int		perfctr_second_write;
+ 	bool		late_ack;
++	unsigned	(*limit_period)(struct perf_event *event, unsigned l);
+ 
+ 	/*
+ 	 * sysfs attrs
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 7c9f78e..5671566 100644
+index 5671566..bbcd0d2 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -220,6 +220,15 @@ static struct event_constraint intel_hsw_event_constraints[] = {
- 	EVENT_CONSTRAINT_END
- };
+@@ -2034,6 +2034,24 @@ hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	return c;
+ }
  
-+static struct event_constraint intel_bdw_event_constraints[] = {
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0),	/* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1),	/* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2),	/* CPU_CLK_UNHALTED.REF */
-+	INTEL_UEVENT_CONSTRAINT(0x148, 0x4),	/* L1D_PEND_MISS.PENDING */
-+	INTEL_EVENT_CONSTRAINT(0xa3, 0x4),	/* CYCLE_ACTIVITY.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static u64 intel_pmu_event_map(int hw_event)
- {
- 	return intel_perfmon_event_map[hw_event];
-@@ -415,6 +424,126 @@ static __initconst const u64 snb_hw_cache_event_ids
- 
- };
- 
-+static __initconst const u64 hsw_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
++/*
++ * Broadwell:
++ * The INST_RETIRED.ALL period always needs to have lowest
++ * 6bits cleared (BDM57). It shall not use a period smaller
++ * than 100 (BDM11). We combine the two to enforce
++ * a min-period of 128.
++ */
++static unsigned bdw_limit_period(struct perf_event *event, unsigned left)
 +{
-+ [ C(L1D ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x151, 	/* L1D.REPLACEMENT */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x280, 	/* ICACHE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
-+		[ C(RESULT_ACCESS) ] = 0x1b7,
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
-+                   L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x1b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x1b7, 	/* OFFCORE_RESPONSE:ALL_RFO */
-+		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x1b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x108, 	/* DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x149, 	/* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x6085, 	/* ITLB_MISSES.STLB_HIT */
-+		[ C(RESULT_MISS)   ] = 0x185, 	/* ITLB_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xc4, 	/* BR_INST_RETIRED.ALL_BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0xc5, 	/* BR_MISP_RETIRED.ALL_BRANCHES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
++	if ((event->hw.config & INTEL_ARCH_EVENT_MASK) ==
++			X86_CONFIG(.event=0xc0, .umask=0x01)) {
++		if (left < 128)
++			left = 128;
++		left &= ~0x3fu;
++	}
++	return left;
++}
 +
-+static __initconst const u64 hsw_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
-+		[ C(RESULT_ACCESS) ] = 0x2d5,
-+		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
-+                   L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x3fbc0202d5ull,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x122, 	/* OFFCORE_RESPONSE:ALL_RFO */
-+		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
-+		[ C(RESULT_MISS)   ] = 0x3fbc020122ull,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+};
-+
- static __initconst const u64 westmere_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -2565,6 +2694,27 @@ __init int intel_pmu_init(void)
- 		pr_cont("Haswell events, ");
+ PMU_FORMAT_ATTR(event,	"config:0-7"	);
+ PMU_FORMAT_ATTR(umask,	"config:8-15"	);
+ PMU_FORMAT_ATTR(edge,	"config:18"	);
+@@ -2712,6 +2730,7 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.hw_config = hsw_hw_config;
+ 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 		x86_pmu.cpu_events = hsw_events_attrs;
++		x86_pmu.limit_period = bdw_limit_period;
+ 		pr_cont("Broadwell events, ");
  		break;
  
-+	case 61: /* 14nm Broadwell Core-M */
-+		x86_pmu.late_ack = true;
-+		memcpy(hw_cache_event_ids, hsw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, hsw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
-+
-+		intel_pmu_lbr_init_snb();
-+
-+		x86_pmu.event_constraints = intel_bdw_event_constraints;
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
-+		x86_pmu.extra_regs = intel_snbep_extra_regs;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
-+		/* all extra regs are per-cpu when HT is on */
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+
-+		x86_pmu.hw_config = hsw_hw_config;
-+		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		x86_pmu.cpu_events = hsw_events_attrs;
-+		pr_cont("Broadwell events, ");
-+		break;
-+
- 	default:
- 		switch (x86_pmu.version) {
- 		case 1:
