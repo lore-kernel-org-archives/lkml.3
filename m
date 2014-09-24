@@ -1,60 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaIXFi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 01:38:56 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:37855 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaIXFiy (ORCPT
+	id S1751620AbaIXFlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 01:41:51 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60525 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaIXFlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 01:38:54 -0400
-Date: Tue, 23 Sep 2014 22:26:47 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Georgi Djakov <gdjakov@mm-sol.com>, pramod.gurav@smartplayin.com,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [GIT PULL] qcom DT changes for v3.18
-Message-ID: <20140924052647.GE30340@localhost>
-References: <13536005-9FFF-4362-8B87-5F0DC9930D29@codeaurora.org>
+	Wed, 24 Sep 2014 01:41:49 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
+References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
+	<1411491787-25938-2-git-send-email-pawel.moll@arm.com>
+Date: Wed, 24 Sep 2014 14:41:46 +0900
+In-Reply-To: <1411491787-25938-2-git-send-email-pawel.moll@arm.com> (Pawel
+	Moll's message of "Tue, 23 Sep 2014 18:03:06 +0100")
+Message-ID: <87sijhk21x.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13536005-9FFF-4362-8B87-5F0DC9930D29@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 02:40:41PM -0500, Kumar Gala wrote:
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.18
-> 
-> for you to fetch changes up to edb81ca3bf586ad526ee67b245cb87f7c7142a87:
-> 
->   ARM: DT: QCOM: apq8064: Add dma support for sdcc node (2014-09-11 12:07:40 -0500)
-> 
-> ----------------------------------------------------------------
-> Qualcomm ARM Based Device Tree Updates for v3.18
-> 
-> * Added APQ8084 dt support for clocks, serial, pinctrl, and IFC6540 board
-> * Added IPQ8064 dt support for basic SoC and AP148 board
-> * Added APQ8064 dt support for pinctrl, reset, SDHC, and multimedia clocks
-> * Added PMIC 8058 dt support on MSM8660, enables PMIC based power key,
->   keypad, rtc, and vibrator
-> * Added PMIC 8921 dt support on MSM8960, enables PMIC based power key,
->   keypad, and rtc
+Hi Pawel,
 
-Merged, thanks.
+On Tue, 23 Sep 2014 18:03:06 +0100, Pawel Moll wrote:
+> This patch adds an option to sample raw monotonic clock
+> value with any perf event, with the the aim of allowing
+> time correlation between data coming from perf and
+> additional performance-related information generated in
+> userspace.
+>
+> In order to correlate timestamps in perf data stream
+> with events happening in userspace (be it JITed debug
+> symbols or hwmon-originating environment data), user
+> requests a more or less periodic event (sched_switch
+> trace event of a hrtimer-based cpu-clock being the
+> most obvious examples) with PERF_SAMPLE_TIME *and*
+> PERF_SAMPLE_CLOCK_RAW_MONOTONIC and stamps
+> user-originating data with values obtained from
+> clock_gettime(CLOCK_MONOTONIC_RAW). Then, during
+> analysis, one looks at the perf events immediately
+> preceding and following (in terms of the
+> clock_raw_monotonic sample) the userspace event and
+> does simple linear approximation to get the equivalent
+> perf time.
+>
+>         perf event     user event
+>        -----O--------------+-------------O------> t_mono
+>             :              |             :
+>             :              V             :
+>        -----O----------------------------O------> t_perf
+
+Probably a dumb question: why not make PERF_SAMPLE_TIME being monotonic
+clock instead of adding a new PERF_SAMPLE_CLOCK_XXX flag?  Maybe we can
+add a new ioctl command like PERF_EVENT_IOC_SET_CLOCK so that one can
+pass a clock id.
+
+Thanks,
+Namhyung
 
 
--Olof
+>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> ---
+> Changes since v1:
+>
+> - none
+>
+>  include/linux/perf_event.h      |  2 ++
+>  include/uapi/linux/perf_event.h |  4 +++-
+>  kernel/events/core.c            | 13 +++++++++++++
+>  3 files changed, 18 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 707617a..28b73b2 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -602,6 +602,8 @@ struct perf_sample_data {
+>  	 * Transaction flags for abort events:
+>  	 */
+>  	u64				txn;
+> +	/* Raw monotonic timestamp, for userspace time correlation */
+> +	u64				clock_raw_monotonic;
+>  };
+>  
+>  static inline void perf_sample_data_init(struct perf_sample_data *data,
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 9269de2..e5a75c5 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -137,8 +137,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_DATA_SRC			= 1U << 15,
+>  	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+>  	PERF_SAMPLE_TRANSACTION			= 1U << 17,
+> +	PERF_SAMPLE_CLOCK_RAW_MONOTONIC		= 1U << 18,
+>  
+> -	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
+> +	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
+>  };
+>  
+>  /*
+> @@ -686,6 +687,7 @@ enum perf_event_type {
+>  	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+>  	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
+>  	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
+> +	 *	{ u64			clock_raw_monotonic; } && PERF_SAMPLE_CLOCK_RAW_MONOTONIC
+>  	 * };
+>  	 */
+>  	PERF_RECORD_SAMPLE			= 9,
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index f9c1ed0..f6df547 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -1216,6 +1216,9 @@ static void perf_event__header_size(struct perf_event *event)
+>  	if (sample_type & PERF_SAMPLE_TRANSACTION)
+>  		size += sizeof(data->txn);
+>  
+> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC)
+> +		size += sizeof(data->clock_raw_monotonic);
+> +
+>  	event->header_size = size;
+>  }
+>  
+> @@ -4456,6 +4459,13 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+>  		data->cpu_entry.cpu	 = raw_smp_processor_id();
+>  		data->cpu_entry.reserved = 0;
+>  	}
+> +
+> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC) {
+> +		struct timespec now;
+> +
+> +		getrawmonotonic(&now);
+> +		data->clock_raw_monotonic = timespec_to_ns(&now);
+> +	}
+>  }
+>  
+>  void perf_event_header__init_id(struct perf_event_header *header,
+> @@ -4714,6 +4724,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+>  	if (sample_type & PERF_SAMPLE_TRANSACTION)
+>  		perf_output_put(handle, data->txn);
+>  
+> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC)
+> +		perf_output_put(handle, data->clock_raw_monotonic);
+> +
+>  	if (!event->attr.watermark) {
+>  		int wakeup_events = event->attr.wakeup_events;
