@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaIXNrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:47:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38810 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554AbaIXNrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753553AbaIXNrl (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 24 Sep 2014 09:47:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50993 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630AbaIXNri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:47:38 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/22] phy: phy-omap-control: Remove unncessary site specific OOM messages
-Date: Wed, 24 Sep 2014 19:17:00 +0530
-Message-ID: <1411566440-19169-3-git-send-email-kishon@ti.com>
+Subject: [PATCH 10/22] usb: phy: twl4030-usb: Remove unused irq_enabled
+Date: Wed, 24 Sep 2014 19:17:08 +0530
+Message-ID: <1411566440-19169-11-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411566440-19169-1-git-send-email-kishon@ti.com>
 References: <1411566440-19169-1-git-send-email-kishon@ti.com>
@@ -22,38 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Griffin <peter.griffin@linaro.org>
+From: Tony Lindgren <tony@atomide.com>
 
-The site specific OOM messages are unncessary, because they duplicate
-messages from the memory subsystem which include dump_stack().
+It's not being used any longer.
 
-Removing these superflous messages makes the kernel smaller. A discussion
-here http://patchwork.ozlabs.org/patch/324158/ found that all error paths
-from kzalloc will print a error message, and that any error path which maybe
-found which doesn't would be considered a bug in kzalloc.
-
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-omap-control.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/phy/phy-twl4030-usb.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
-index 9487bf1..cb2f4d1 100644
---- a/drivers/phy/phy-omap-control.c
-+++ b/drivers/phy/phy-omap-control.c
-@@ -295,10 +295,8 @@ static int omap_control_phy_probe(struct platform_device *pdev)
+diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
+index 9cd33a4..bc28ecc 100644
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -164,7 +164,6 @@ struct twl4030_usb {
+ 	enum omap_musb_vbus_id_status linkstat;
+ 	bool			vbus_supplied;
+ 	u8			asleep;
+-	bool			irq_enabled;
  
- 	control_phy = devm_kzalloc(&pdev->dev, sizeof(*control_phy),
- 		GFP_KERNEL);
--	if (!control_phy) {
--		dev_err(&pdev->dev, "unable to alloc memory for control phy\n");
-+	if (!control_phy)
- 		return -ENOMEM;
--	}
- 
- 	control_phy->dev = &pdev->dev;
- 	control_phy->type = *(enum omap_control_phy_type *)of_id->data;
+ 	struct delayed_work	id_workaround_work;
+ };
+@@ -755,7 +754,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	 * set_host() and/or set_peripheral() ... OTG_capable boards
+ 	 * need both handles, otherwise just one suffices.
+ 	 */
+-	twl->irq_enabled = true;
+ 	status = devm_request_threaded_irq(twl->dev, twl->irq, NULL,
+ 			twl4030_usb_irq, IRQF_TRIGGER_FALLING |
+ 			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "twl4030_usb", twl);
 -- 
 1.7.9.5
 
