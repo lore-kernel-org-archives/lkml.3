@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaIXKd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:33:27 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:59278 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaIXKdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:33:21 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 3.17-rc4 v2 1/2] trace: kdb: Fix kernel panic during ftdump
-Date: Wed, 24 Sep 2014 11:33:00 +0100
-Message-Id: <1411554781-16751-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
-References: <1410360247-13791-1-git-send-email-daniel.thompson@linaro.org>
- <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
+	id S1753096AbaIXKd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:33:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772AbaIXKdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:33:22 -0400
+Date: Wed, 24 Sep 2014 11:42:15 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20140924104213.GA2695@agordeev.usersys.redhat.com>
+References: <cover.1411297686.git.agordeev@redhat.com>
+ <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+ <20140923205710.GB17332@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923205710.GB17332@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kdb's ftdump command unconditionally crashes due to a null
-pointer de-reference whenever the command is run. This in turn causes
-the kernel to panic.
+On Tue, Sep 23, 2014 at 04:57:10PM -0400, Tejun Heo wrote:
+> Hmmm... how does it affect single device operation tho?  It does make
+> individual interrupt handling heavier, no?
 
-The abridged stacktrace (gathered with ARCH=arm) is:
---- cut here ---
-[<c09535ac>] (panic) from [<c02132dc>] (die+0x264/0x440)
-[<c02132dc>] (die) from [<c0952eb8>]
-(__do_kernel_fault.part.11+0x74/0x84)
-[<c0952eb8>] (__do_kernel_fault.part.11) from [<c021f954>]
-(do_page_fault+0x1d0/0x3c4)
-[<c021f954>] (do_page_fault) from [<c020846c>] (do_DataAbort+0x48/0xac)
+I think it is difficult to assess "individual interrupt handling", since
+it depends from both the hardware and device access pattern. On the system
+I use the results are rather counter-intuitive: ahci_thread_fn() does not
+show up in perf report at all, nor ahci_single_irq_intr(). While before
+the change ahci_single_irq_intr() reported 0.00%.
 
-[<c020846c>] (do_DataAbort) from [<c0213c58>] (__dabt_svc+0x38/0x60)
-Exception stack(0xc0deba88 to 0xc0debad0)
-ba80:                   e8c29180 00000001 e9854304 e9854300 c0f567d8
-c0df2580
-baa0: 00000000 00000000 00000000 c0f117b8 c0e3a3c0 c0debb0c 00000000
-c0debad0
-bac0: 0000672e c02f4d60 60000193 ffffffff
-[<c0213c58>] (__dabt_svc) from [<c02f4d60>] (kdb_ftdump+0x1e4/0x3d8)
-[<c02f4d60>] (kdb_ftdump) from [<c02ce328>] (kdb_parse+0x2b8/0x698)
-[<c02ce328>] (kdb_parse) from [<c02ceef0>] (kdb_main_loop+0x52c/0x784)
-[<c02ceef0>] (kdb_main_loop) from [<c02d1b0c>] (kdb_stub+0x238/0x490)
---- cut here ---
+But since the handling is split in two parts it is rather incorrect to
+apply the same metric to the threaded context. Obviously, the threaded
+handler is expected slowed down by other interrupts handlers, but the
+whole system should benefit from it, which is exactly the aim of this
+change.
 
-The NULL deref occurs due to the initialized use of struct trace_iter's
-buffer_iter member.
+> -- 
+> tejun
 
-This patch solves this by providing a collection of ring_buffer_iter(s)
-and using this to initialize buffer_iter. Note that static allocation
-is used solely because the trace_iter itself is also static allocated.
-Static allocation also means that we have to NULL-ify the pointer during
-cleanup to avoid use-after-free problems.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kdb.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index bd90e1b..8faa7ce 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -20,10 +20,12 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
- {
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static struct ring_buffer_iter *buffer_iter[CONFIG_NR_CPUS];
- 	unsigned int old_userobj;
- 	int cnt = 0, cpu;
- 
- 	trace_init_global_iter(&iter);
-+	iter.buffer_iter = buffer_iter;
- 
- 	for_each_tracing_cpu(cpu) {
- 		atomic_inc(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
-@@ -86,9 +88,12 @@ out:
- 		atomic_dec(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
- 	}
- 
--	for_each_tracing_cpu(cpu)
--		if (iter.buffer_iter[cpu])
-+	for_each_tracing_cpu(cpu) {
-+		if (iter.buffer_iter[cpu]) {
- 			ring_buffer_read_finish(iter.buffer_iter[cpu]);
-+			iter.buffer_iter[cpu] = NULL;
-+		}
-+	}
- }
- 
- /*
 -- 
-1.9.3
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
