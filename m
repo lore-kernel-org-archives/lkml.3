@@ -1,126 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbaIXScs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:32:48 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:11971 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718AbaIXScp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:32:45 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
-        linux-fsdevel@vger.kernel.org, stable@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: [PATCHv8 1/6] fanotify: enable close-on-exec on events' fd when requested in fanotify_init()
-Date: Wed, 24 Sep 2014 15:11:06 +0200
-Message-Id: <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1411562410.git.ydroneaud@opteya.com>
-References: <cover.1411562410.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1411562410.git.ydroneaud@opteya.com>
-References: <cover.1411562410.git.ydroneaud@opteya.com>
+	id S1753991AbaIXSeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:34:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40165 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240AbaIXSeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 14:34:04 -0400
+Message-ID: <54230E9A.7020109@codeaurora.org>
+Date: Wed, 24 Sep 2014 11:34:02 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: qcom: Update SoC compatibles we support
+References: <1411582838-24159-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1411582838-24159-1-git-send-email-galak@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to commit 80af258867648 ('fanotify: groups can specify
-their f_flags for new fd'), file descriptors created as part of
-file access notification events inherit flags from the
-event_f_flags argument passed to syscall fanotify_init(2).
+On 09/24/14 11:20, Kumar Gala wrote:
+> Move to just using the SoC name in the compatible list so we don't need
+> to update this for every board going forward.  Also added "qcom,msm8974"
+> to the list as we support "qcom,apq8074" already (the modemless version
+> of "qcom,msm8974").
+>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
 
-So while it is legal for userspace to call fanotify_init() with
-O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
-silently ignored.
+Or just remove the file entirely. Things work without having to add
+anything here anyway.
 
-Indeed event_f_flags are only given to dentry_open(), which only
-seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
-O_DIRECT in open_check_o_direct() and O_LARGEFILE in
-generic_file_open().
-
-More, there's no effective check on event_f_flags value that
-would catch unknown / unsupported values, unlike the one on
-f_flags argument of the syscall (see FAN_ALL_INIT_FLAGS in
-include/uapi/linux/fanotify.h).
-
-Reading article "Botching up ioctls"[1] by Daniel Vetter might
-make one feel uncomfortable when trying to add extension to an
-API that doesn't check for unrecognized values.
-
-But it seems logical to set close-on-exec flag on the file
-descriptor if userspace is allowed to request it with O_CLOEXEC.
-
-In fact, according to some lookup on http://codesearch.debian.net/
-and various search engine, there's already some userspace code
-requesting it:
-
-- in systemd's readahead[2]:
-
-    fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
-
-- in clsync[3]:
-
-    #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
-
-    int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
-
-- in examples [4] from "Filesystem monitoring in the Linux
-  kernel" article[5] by Aleksander Morgado:
-
-    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
-                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
-
-Lookup also returned some wrong usage of the syscall:
-
-- in Gonk HAL from Mozilla Firefox OS sources[6]:
-
-    mFd = fanotify_init(FAN_CLASS_NOTIF, FAN_CLOEXEC);
-
-Adding support for O_CLOEXEC in fanotify_init() won't magically
-enable it for Gonk since FAN_CLOEXEC is defined as 0x1, which
-is likely equal to O_WRONLY when used in open flag context. In
-the other hand, it won't hurt it either.
-
-So this patch replaces call to macro get_unused_fd() by a call
-to function get_unused_fd_flags() with event_f_flags value as
-argument. This way O_CLOEXEC flag in the second argument of
-fanotify_init(2) syscall is interpreted so that close-on-exec
-get enabled when requested.
-
-[1] http://blog.ffwll.ch/2013/11/botching-up-ioctls.html
-[2] http://cgit.freedesktop.org/systemd/systemd/tree/src/readahead/readahead-collect.c?id=v208#n294
-[3] https://github.com/xaionaro/clsync/blob/v0.2.1/sync.c#L1631
-    https://github.com/xaionaro/clsync/blob/v0.2.1/configuration.h#L38
-[4] http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
-[5] http://www.lanedo.com/2013/filesystem-monitoring-linux-kernel/
-[6] http://hg.mozilla.org/mozilla-central/file/325c74addeba/hal/gonk/GonkDiskSpaceWatcher.cpp#l167
-
-Link: http://lkml.kernel.org/r/cover.1411562410.git.ydroneaud@opteya.com
-Cc: Richard Guy Briggs <rgb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@vger.kernel.org
-Cc: linux-api@vger.kernel.org
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- fs/notify/fanotify/fanotify_user.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index b13992a41bd9..c991616acca9 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -78,7 +78,7 @@ static int create_fd(struct fsnotify_group *group,
- 
- 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
- 
--	client_fd = get_unused_fd();
-+	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
- 	if (client_fd < 0)
- 		return client_fd;
- 
 -- 
-1.9.3
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
