@@ -1,225 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaIXHBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:01:05 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:62388 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaIXHBD (ORCPT
+	id S1752592AbaIXHEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:04:22 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:61234 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaIXHEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:01:03 -0400
-Message-ID: <54226C26.1000605@redhat.com>
-Date: Wed, 24 Sep 2014 09:00:54 +0200
+	Wed, 24 Sep 2014 03:04:20 -0400
+Message-ID: <54226CEB.9080504@redhat.com>
+Date: Wed, 24 Sep 2014 09:04:11 +0200
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: gleb@kernel.org, mtosatti@redhat.com, nadav.amit@gmail.com,
-        jan.kiszka@web.de, kvm@vger.kernel.org, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] kvm, mem-hotplug: Add arch specific mmu notifier
- to handle apic access migration.
-References: <541FEC79.40209@redhat.com> <1411524563-17003-1-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1411524563-17003-1-git-send-email-tangchen@cn.fujitsu.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Andres Lagar-Cavilla <andreslc@google.com>
+CC: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v4] kvm: Fix page ageing bugs
+References: <1411410865-3603-1-git-send-email-andreslc@google.com> <1411422882-16245-1-git-send-email-andreslc@google.com> <20140924022729.GA2889@kernel>
+In-Reply-To: <20140924022729.GA2889@kernel>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/09/2014 04:09, Tang Chen ha scritto:
-> Hi Paolo, 
+Il 24/09/2014 04:27, Wanpeng Li ha scritto:
+> Hi Andres,
+> On Mon, Sep 22, 2014 at 02:54:42PM -0700, Andres Lagar-Cavilla wrote:
+>> 1. We were calling clear_flush_young_notify in unmap_one, but we are
+>> within an mmu notifier invalidate range scope. The spte exists no more
+>> (due to range_start) and the accessed bit info has already been
+>> propagated (due to kvm_pfn_set_accessed). Simply call
+>> clear_flush_young.
+>>
+>> 2. We clear_flush_young on a primary MMU PMD, but this may be mapped
+>> as a collection of PTEs by the secondary MMU (e.g. during log-dirty).
+>> This required expanding the interface of the clear_flush_young mmu
+>> notifier, so a lot of code has been trivially touched.
+>>
+>> 3. In the absence of shadow_accessed_mask (e.g. EPT A bit), we emulate
+>> the access bit by blowing the spte. This requires proper synchronizing
+>> with MMU notifier consumers, like every other removal of spte's does.
+>>
+> [...]
+>> ---
+>> +	BUG_ON(!shadow_accessed_mask);
+>>
+>> 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+>> 	     sptep = rmap_get_next(&iter)) {
+>> +		struct kvm_mmu_page *sp;
+>> +		gfn_t gfn;
+>> 		BUG_ON(!is_shadow_present_pte(*sptep));
+>> +		/* From spte to gfn. */
+>> +		sp = page_header(__pa(sptep));
+>> +		gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
+>>
+>> 		if (*sptep & shadow_accessed_mask) {
+>> 			young = 1;
+>> 			clear_bit((ffs(shadow_accessed_mask) - 1),
+>> 				 (unsigned long *)sptep);
+>> 		}
+>> +		trace_kvm_age_page(gfn, slot, young);
 > 
-> I'm not sure if this patch is following your comment. Please review.
-> And all the other comments are followed. If this patch is OK, I'll 
-> send v8 soon.
-> 
-> Thanks.
-> 
-> We are handling "L1 and L2 share one apic access page" situation when migrating
-> apic access page. We should do some handling when migration happens in the
-> following situations:
-> 
->    1) when L0 is running: Update L1's vmcs in the next L0->L1 entry and L2's
->       vmcs in the next L1->L2 entry.
-> 
->    2) when L1 is running: Force a L1->L0 exit, update L1's vmcs in the next
->       L0->L1 entry and L2's vmcs in the next L1->L2 entry.
-> 
->    3) when L2 is running: Force a L2->L0 exit, update L2's vmcs in the next
->       L0->L2 entry and L1's vmcs in the next L2->L1 exit.
-> 
-> This patch force a L1->L0 exit or L2->L0 exit when shared apic access page is
-> migrated using mmu notifier. Since apic access page is only used on intel x86,
-> this is arch specific code.
-> ---
->  arch/arm/include/asm/kvm_host.h     |  6 ++++++
->  arch/arm64/include/asm/kvm_host.h   |  6 ++++++
->  arch/ia64/include/asm/kvm_host.h    |  8 ++++++++
->  arch/mips/include/asm/kvm_host.h    |  7 +++++++
->  arch/powerpc/include/asm/kvm_host.h |  6 ++++++
->  arch/s390/include/asm/kvm_host.h    |  9 +++++++++
->  arch/x86/include/asm/kvm_host.h     |  2 ++
->  arch/x86/kvm/x86.c                  | 11 +++++++++++
->  virt/kvm/kvm_main.c                 |  3 +++
->  9 files changed, 58 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-> index 6dfb404..79bbf7d 100644
-> --- a/arch/arm/include/asm/kvm_host.h
-> +++ b/arch/arm/include/asm/kvm_host.h
-> @@ -182,6 +182,12 @@ static inline int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
->  	return 0;
->  }
->  
-> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +							 unsigned long address)
-> +{
-> +	return;
-> +}
-> +
->  struct kvm_vcpu *kvm_arm_get_running_vcpu(void);
->  struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
->  
-> diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
-> index e10c45a..ee89fad 100644
-> --- a/arch/arm64/include/asm/kvm_host.h
-> +++ b/arch/arm64/include/asm/kvm_host.h
-> @@ -192,6 +192,12 @@ static inline int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
->  	return 0;
->  }
->  
-> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +							 unsigned long address)
-> +{
-> +	return;
-> +}
-> +
->  struct kvm_vcpu *kvm_arm_get_running_vcpu(void);
->  struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
->  
-> diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-> index db95f57..326ac55 100644
-> --- a/arch/ia64/include/asm/kvm_host.h
-> +++ b/arch/ia64/include/asm/kvm_host.h
-> @@ -574,6 +574,14 @@ static inline struct kvm_pt_regs *vcpu_regs(struct kvm_vcpu *v)
->  	return (struct kvm_pt_regs *) ((unsigned long) v + KVM_STK_OFFSET) - 1;
->  }
->  
-> +#ifdef KVM_ARCH_WANT_MMU_NOTIFIER
-> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +							 unsigned long address)
-> +{
-> +	return;
-> +}
-> +#endif /* KVM_ARCH_WANT_MMU_NOTIFIER */
-> +
->  typedef int kvm_vmm_entry(void);
->  typedef void kvm_tramp_entry(union context *host, union context *guest);
->  
-> diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
-> index 7a3fc67..c392705 100644
-> --- a/arch/mips/include/asm/kvm_host.h
-> +++ b/arch/mips/include/asm/kvm_host.h
-> @@ -767,5 +767,12 @@ extern int kvm_mips_trans_mtc0(uint32_t inst, uint32_t *opc,
->  extern void kvm_mips_dump_stats(struct kvm_vcpu *vcpu);
->  extern unsigned long kvm_mips_get_ramsize(struct kvm *kvm);
->  
-> +#ifdef KVM_ARCH_WANT_MMU_NOTIFIER
-> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +							 unsigned long address)
-> +{
-> +	return;
-> +}
-> +#endif /* KVM_ARCH_WANT_MMU_NOTIFIER */
->  
->  #endif /* __MIPS_KVM_HOST_H__ */
-> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-> index 98d9dd5..c16a573 100644
-> --- a/arch/powerpc/include/asm/kvm_host.h
-> +++ b/arch/powerpc/include/asm/kvm_host.h
-> @@ -61,6 +61,12 @@ extern int kvm_age_hva(struct kvm *kvm, unsigned long hva);
->  extern int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
->  extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
->  
-> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +							 unsigned long address)
-> +{
-> +	return;
-> +}
-> +
->  #define HPTEG_CACHE_NUM			(1 << 15)
->  #define HPTEG_HASH_BITS_PTE		13
->  #define HPTEG_HASH_BITS_PTE_LONG	12
-> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-> index 773bef7..693290f 100644
-> --- a/arch/s390/include/asm/kvm_host.h
-> +++ b/arch/s390/include/asm/kvm_host.h
-> @@ -450,4 +450,13 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  
->  extern int sie64a(struct kvm_s390_sie_block *, u64 *);
->  extern char sie_exit;
-> +
-> +#ifdef KVM_ARCH_WANT_MMU_NOTIFIER
-> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +							 unsigned long address)
-> +{
-> +	return;
-> +}
-> +#endif /* KVM_ARCH_WANT_MMU_NOTIFIER */
-> +
->  #endif
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 66480fd..408b944 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -1047,6 +1047,8 @@ int kvm_arch_interrupt_allowed(struct kvm_vcpu *vcpu);
->  int kvm_cpu_get_interrupt(struct kvm_vcpu *v);
->  void kvm_vcpu_reset(struct kvm_vcpu *vcpu);
->  void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu);
-> +void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +					   unsigned long address);
->  
->  void kvm_define_shared_msr(unsigned index, u32 msr);
->  void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c064ca6..e042ef6 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6011,6 +6011,17 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
->  
-> +void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
-> +					   unsigned long address)
-> +{
-> +	/*
-> +	 * The physical address of apic access page is stored in VMCS.
-> +	 * Update it when it becomes invalid.
-> +	 */
-> +	if (address == gfn_to_hva(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT))
-> +		kvm_make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
-> +}
-> +
->  /*
->   * Returns 1 to let __vcpu_run() continue the guest execution loop without
->   * exiting to the userspace.  Otherwise, the value will be returned to the
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 0f8b6f6..5427973d 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -295,6 +295,9 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
->  		kvm_flush_remote_tlbs(kvm);
->  
->  	spin_unlock(&kvm->mmu_lock);
-> +
-> +	kvm_arch_mmu_notifier_invalidate_page(kvm, address);
-> +
->  	srcu_read_unlock(&kvm->srcu, idx);
->  }
->  
-> 
+> IIUC, all the rmapps in this for loop are against the same gfn which
+> results in the above trace point dump the message duplicated.
 
-Yes, this is it.
+You're right; Andres's patch "[PATCH] kvm/x86/mmu: Pass gfn and level to
+rmapp callback" helps avoiding that.
 
 Paolo
