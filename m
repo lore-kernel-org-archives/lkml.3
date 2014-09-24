@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaIXSXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:23:16 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:28543 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751134AbaIXSXO (ORCPT
+	id S1754105AbaIXSYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:24:15 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:64753 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaIXSYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:23:14 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiYOAFkLI1RbtBU3/2dsb2JhbABggw63NgUBcpsRgQkXAXqEMS8jgRo3iEIBs2iQNIYSigwdhDUFnSGMNYkfg2Q7L4JKAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
-        Fabian Frederick <fabf@skynet.be>
-Subject: [PATCH 1/1 linux-next] Btrfs: fix compilation errors under DEBUG
-Date: Wed, 24 Sep 2014 20:23:05 +0200
-Message-Id: <1411582985-17734-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Wed, 24 Sep 2014 14:24:13 -0400
+Date: Wed, 24 Sep 2014 14:24:12 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH RESEND] thermal: Add QPNP PMIC temperature alarm driver
+Message-ID: <20140924182410.GD27076@developer>
+References: <1410793383-30097-1-git-send-email-iivanov@mm-sol.com>
+ <20140915153052.GB27076@developer>
+ <1411570570.18580.72.camel@iivanov-dev>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411570570.18580.72.camel@iivanov-dev>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bi_sector and bi_size moved to bi_iter since commit 4f024f3797c4
-("block: Abstract out bvec iterator")
+Hello Ivan,
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/btrfs/volumes.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Wed, Sep 24, 2014 at 05:56:10PM +0300, Ivan T. Ivanov wrote:
+> On Mon, 2014-09-15 at 11:30 -0400, Eduardo Valentin wrote:
+> > Hey Ivan,
+> > 
+> > Please give us at least a two weeks time frame before resending your
+> > patches.
+> 
+> Hi Eduardo, 
+> 
+> Should I wait for more comments or I can post updated
+> version of this patch?
+> 
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 5b5a5c4..d47289c 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -5708,8 +5708,8 @@ static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
- 		name = rcu_dereference(dev->name);
- 		pr_debug("btrfs_map_bio: rw %d, sector=%llu, dev=%lu "
- 			 "(%s id %llu), size=%u\n", rw,
--			 (u64)bio->bi_sector, (u_long)dev->bdev->bd_dev,
--			 name->str, dev->devid, bio->bi_size);
-+			 (u64)bio->bi_iter.bi_sector, (u_long)dev->bdev->bd_dev,
-+			 name->str, dev->devid, bio->bi_iter.bi_size);
- 		rcu_read_unlock();
- 	}
- #endif
--- 
-1.9.3
+Please, if you have a new version, I would prefer you send it as V2. I
+am specially interested about the cooling parts of it, and the DT usage.
 
+> Regards,
+> Ivan
+> 
+
+Thanks for sharing your driver.
+
+Eduardo
