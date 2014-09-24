@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbaIXQsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:48:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49741 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537AbaIXQri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:47:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
-   d="scan'208";a="604750011"
-From: Vinod Koul <vinod.koul@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org
-Subject: [PATCH 27/27] video: fbdev: use pm_runtime_last_busy_and_autosuspend helper
-Date: Wed, 24 Sep 2014 21:45:17 +0530
-Message-Id: <1411575342-31048-28-git-send-email-vinod.koul@intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
-References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+	id S1754789AbaIXQsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:48:24 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:52960 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766AbaIXQsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:48:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <5422F1F7.8010308@6wind.com>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>
+	<54228D87.3070309@6wind.com>
+	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>
+	<CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
+	<5422F1F7.8010308@6wind.com>
+Date: Wed, 24 Sep 2014 09:48:11 -0700
+Message-ID: <CAHA+R7MM04ew=J8sHfSQERwoCAgEDfrGgtgRORqs3ePgtjVYWg@mail.gmail.com>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+From: Cong Wang <cwang@twopensource.com>
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
-coding the same code
+On Wed, Sep 24, 2014 at 9:31 AM, Nicolas Dichtel
+<nicolas.dichtel@6wind.com> wrote:
+>> I think in this case your ID's are still available, but aren't you
+>> providing a new way
+>> for the inner netns device to escape which we are trying to avoid?
+>
+> It's why the ids depend on user ns. Only if user ns are the same we allow to
+> get an id for a peer netns.
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- drivers/video/fbdev/auo_k190x.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/video/fbdev/auo_k190x.c b/drivers/video/fbdev/auo_k190x.c
-index 8d2499d..e12f513 100644
---- a/drivers/video/fbdev/auo_k190x.c
-+++ b/drivers/video/fbdev/auo_k190x.c
-@@ -354,8 +354,7 @@ static void auok190xfb_dpy_deferred_io(struct fb_info *info,
- 		par->update_partial(par, y1, min((u16) (y1 + h), yres));
- 
- out:
--	pm_runtime_mark_last_busy(info->device);
--	pm_runtime_put_autosuspend(info->device);
-+	pm_runtime_last_busy_and_autosuspend(info->device);
- }
- 
- /*
-@@ -591,8 +590,7 @@ static int auok190x_read_temperature(struct auok190xfb_par *par)
- 
- 	mutex_unlock(&(par->io_lock));
- 
--	pm_runtime_mark_last_busy(dev);
--	pm_runtime_put_autosuspend(dev);
-+	pm_runtime_last_busy_and_autosuspend(dev);
- 
- 	/* sanitize and split of half-degrees for now */
- 	temp = ((data[0] & AUOK190X_VERSION_TEMP_MASK) >> 1);
-@@ -630,8 +628,7 @@ static void auok190x_identify(struct auok190xfb_par *par)
- 		par->panel_size_int, par->panel_size_float, par->panel_model,
- 		par->epd_type, par->tcon_version, par->lut_version);
- 
--	pm_runtime_mark_last_busy(dev);
--	pm_runtime_put_autosuspend(dev);
-+	pm_runtime_last_busy_and_autosuspend(dev);
- }
- 
- /*
--- 
-1.7.0.4
-
+Too late, userns is relatively new, relying on it breaks our existing
+assumption.
