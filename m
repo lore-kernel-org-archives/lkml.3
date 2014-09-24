@@ -1,335 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaIXOwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:52:47 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:41466 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaIXOtW (ORCPT
+	id S1753750AbaIXOwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:52:55 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39092 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaIXOwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:49:22 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        ctl@merrii.com, Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v2 3/7] ARM: dts: sunxi: Add Allwinner A80 dtsi
-Date: Wed, 24 Sep 2014 22:48:57 +0800
-Message-Id: <1411570141-29960-4-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411570141-29960-1-git-send-email-wens@csie.org>
-References: <1411570141-29960-1-git-send-email-wens@csie.org>
+	Wed, 24 Sep 2014 10:52:54 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH -mm] memcg: zap memcg_can_account_kmem
+Date: Wed, 24 Sep 2014 18:52:41 +0400
+Message-ID: <1411570361-29361-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A80 is a new multi-purpose SoC with 4 Cortex-A7 and
-4 Cortex-A15 cores in a big.LITTLE architecture, and a 64-core
-PowerVR G6230 GPU.
+memcg_can_account_kmem() returns true iff
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+    !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+                                   memcg_kmem_is_active(memcg);
+
+To begin with the !mem_cgroup_is_root(memcg) check is useless, because
+one can't enable kmem accounting for the root cgroup (mem_cgroup_write()
+returns EINVAL on an attempt to set the limit on the root cgroup).
+
+Furthermore, the !mem_cgroup_disabled() check also seems to be
+redundant. The point is memcg_can_account_kmem() is called from three
+places: mem_cgroup_salbinfo_read(), __memcg_kmem_get_cache(), and
+__memcg_kmem_newpage_charge(). The latter two functions are only invoked
+if memcg_kmem_enabled() returns true, which implies that the memory
+cgroup subsystem is enabled. And mem_cgroup_slabinfo_read() shows the
+output of memory.kmem.slabinfo, which won't exist if the memory cgroup
+is completely disabled.
+
+So let's substitute all the calls to memcg_can_account_kmem() with plain
+memcg_kmem_is_active(), and kill the former.
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- arch/arm/boot/dts/sun9i-a80.dtsi | 287 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 287 insertions(+)
- create mode 100644 arch/arm/boot/dts/sun9i-a80.dtsi
+ mm/memcontrol.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/boot/dts/sun9i-a80.dtsi b/arch/arm/boot/dts/sun9i-a80.dtsi
-new file mode 100644
-index 0000000..34a0068
---- /dev/null
-+++ b/arch/arm/boot/dts/sun9i-a80.dtsi
-@@ -0,0 +1,287 @@
-+/*
-+ * Copyright 2014 Chen-Yu Tsai
-+ *
-+ * Chen-Yu Tsai <wens@csie.org>
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ *     You should have received a copy of the GNU General Public
-+ *     License along with this library; if not, write to the Free
-+ *     Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-+ *     MA 02110-1301 USA
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+/include/ "skeleton64.dtsi"
-+
-+/ {
-+	interrupt-parent = <&gic>;
-+
-+	aliases {
-+		serial0 = &uart0;
-+		serial1 = &uart1;
-+		serial2 = &uart2;
-+		serial3 = &uart3;
-+		serial4 = &uart4;
-+		serial5 = &uart5;
-+		serial6 = &r_uart;
-+	};
-+
-+	cpu-map {
-+		cluster0 {
-+			core0 {
-+				cpu = <&cpu0>;
-+			};
-+
-+			core1 {
-+				cpu = <&cpu1>;
-+			};
-+
-+			core2 {
-+				cpu = <&cpu2>;
-+			};
-+
-+			core3 {
-+				cpu = <&cpu3>;
-+			};
-+		};
-+
-+		cluster1 {
-+			core0 {
-+				cpu = <&cpu4>;
-+			};
-+
-+			core1 {
-+				cpu = <&cpu5>;
-+			};
-+
-+			core2 {
-+				cpu = <&cpu6>;
-+			};
-+
-+			core3 {
-+				cpu = <&cpu7>;
-+			};
-+		};
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu0: cpu@0 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <0x0>;
-+		};
-+
-+		cpu1: cpu@1 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <0x1>;
-+		};
-+
-+		cpu2: cpu@2 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <0x2>;
-+		};
-+
-+		cpu3: cpu@3 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <0x3>;
-+		};
-+
-+		cpu4: cpu@100 {
-+			compatible = "arm,cortex-a15";
-+			device_type = "cpu";
-+			reg = <0x100>;
-+		};
-+
-+		cpu5: cpu@101 {
-+			compatible = "arm,cortex-a15";
-+			device_type = "cpu";
-+			reg = <0x101>;
-+		};
-+
-+		cpu6: cpu@102 {
-+			compatible = "arm,cortex-a15";
-+			device_type = "cpu";
-+			reg = <0x102>;
-+		};
-+
-+		cpu7: cpu@103 {
-+			compatible = "arm,cortex-a15";
-+			device_type = "cpu";
-+			reg = <0x103>;
-+		};
-+	};
-+
-+	memory {
-+		/* 8GB max. with LPAE */
-+		reg = <0 0x20000000 0x02 0>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges = <0 0 0 0x20000000>;
-+
-+		osc24M: osc24M_clk {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <24000000>;
-+			clock-output-names = "osc24M";
-+		};
-+
-+		osc32k: osc32k_clk {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+			clock-output-names = "osc32k";
-+		};
-+	};
-+
-+	soc {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges = <0 0 0 0x20000000>;
-+
-+		gic: interrupt-controller@01c41000 {
-+			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
-+			reg = <0x01c41000 0x1000>,
-+			      <0x01c42000 0x1000>,
-+			      <0x01c44000 0x2000>,
-+			      <0x01c46000 0x2000>;
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			interrupts = <1 9 0xf04>;
-+		};
-+
-+		timer@06000c00 {
-+			compatible = "allwinner,sun4i-a10-timer";
-+			reg = <0x06000c00 0xa0>;
-+			interrupts = <0 18 4>,
-+				     <0 19 4>,
-+				     <0 20 4>,
-+				     <0 21 4>,
-+				     <0 22 4>,
-+				     <0 23 4>;
-+
-+			clocks = <&osc24M>;
-+		};
-+
-+		uart0: serial@07000000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x07000000 0x400>;
-+			interrupts = <0 0 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart1: serial@07000400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x07000400 0x400>;
-+			interrupts = <0 1 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart2: serial@07000800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x07000800 0x400>;
-+			interrupts = <0 2 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart3: serial@07000c00 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x07000c00 0x400>;
-+			interrupts = <0 3 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart4: serial@07001000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x07001000 0x400>;
-+			interrupts = <0 4 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart5: serial@07001400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x07001400 0x400>;
-+			interrupts = <0 5 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		r_wdt: watchdog@08001000 {
-+			compatible = "allwinner,sun6i-a31-wdt";
-+			reg = <0x08001000 0x20>;
-+			interrupts = <0 36 4>;
-+		};
-+
-+		r_uart: serial@08002800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x08002800 0x400>;
-+			interrupts = <0 38 4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+	};
-+};
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1ec22bf380d0..63d58d79470d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2786,12 +2786,6 @@ static DEFINE_MUTEX(memcg_slab_mutex);
+ 
+ static DEFINE_MUTEX(activate_kmem_mutex);
+ 
+-static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+-{
+-	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+-		memcg_kmem_is_active(memcg);
+-}
+-
+ /*
+  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
+  * in the memcg_cache_params struct.
+@@ -2811,7 +2805,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
+ 	struct memcg_cache_params *params;
+ 
+-	if (!memcg_can_account_kmem(memcg))
++	if (!memcg_kmem_is_active(memcg))
+ 		return -EIO;
+ 
+ 	print_slabinfo_header(m);
+@@ -3188,7 +3182,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
+ 
+-	if (!memcg_can_account_kmem(memcg))
++	if (!memcg_kmem_is_active(memcg))
+ 		goto out;
+ 
+ 	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
+@@ -3273,7 +3267,7 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
+ 
+ 	memcg = get_mem_cgroup_from_mm(current->mm);
+ 
+-	if (!memcg_can_account_kmem(memcg)) {
++	if (!memcg_kmem_is_active(memcg)) {
+ 		css_put(&memcg->css);
+ 		return true;
+ 	}
 -- 
-2.1.0
+1.7.10.4
 
