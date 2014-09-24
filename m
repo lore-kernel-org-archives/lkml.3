@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaIXHTr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:19:47 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56544 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaIXHTq (ORCPT
+	id S1752868AbaIXHUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:20:24 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:61381 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaIXHUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:19:46 -0400
-Message-ID: <5422708D.20601@parallels.com>
-Date: Wed, 24 Sep 2014 11:19:41 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 24 Sep 2014 03:20:22 -0400
+Date: Wed, 24 Sep 2014 09:20:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] perf: Userspace event
+Message-ID: <20140924072017.GC990@gmail.com>
+References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
+ <1411491787-25938-3-git-send-email-pawel.moll@arm.com>
+ <87oau5k0u9.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] fuse: fix synchronous case of fuse_file_put()
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160916.11005.37344.stgit@localhost.localdomain>	<CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>	<5411CA4F.7040006@parallels.com> <CAJfpegs3v9EVzoPMgX9_JV+-Y3qy7oWD8tceSi+tnmo=_b=a7A@mail.gmail.com>
-In-Reply-To: <CAJfpegs3v9EVzoPMgX9_JV+-Y3qy7oWD8tceSi+tnmo=_b=a7A@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87oau5k0u9.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 12:19 PM, Miklos Szeredi wrote:
-> On Thu, Sep 11, 2014 at 6:14 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
->
->> I really need your help to proceed with this patch. Could you please explain
->> what those places are where we should allow interruption.
->>
->> BTW, as for "just an optimization", I've recently noticed that __fput()
->> calls locks_remove_file(). So guarantees provided by the patch-set are on
->> the same level as flock(2) behaviour.
-> SIGKILL trumps that.  At least that's what I think, and that's what
-> NFS currently does as well, AFAICS.
->
->>> Also fuse really should distinguish fatal and non-fatal interruptions
->>> and handle them accordingly...
->>
->> And elaborate on this concern, please.
-> Requests have two states where they stay for any significant amount of
-> time: PENDING (queued to userspace) and SENT (in userspace).
->
-> Currently we do the following for interrupted requests:
->
-> PENDING:
->     - non-fatal signal: do nothing
->     - fatal signal: dequeue and return -EINTR, unless force is set
->
-> SENT:
->     - send INTERRUPT request to userspace
->
-> This is fine, but fatal interrupts should be able to abort SENT and
-> forced requests as well without having to wait for the userspace
-> reply.  This is what I was referring to.
 
-Thank you for detailed clarification, that's much clearer now. If I 
-understood it right, fatal signals must abort *any* request in *any* 
-state. The only difference between forced and not forced requests is 
-that forced ones must be eventually delivered to userspace in all cases 
-(even if they were in PENDING state when we were interrupted and we 
-returned -EINTR).
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-The thing that bothers me is the net result of these changes. Yes, 
-end-user will be able to interrupt its app by SIGKIILL if it is waiting 
-in request_wait_answer(). But there are many other places where kernel 
-fuse waits for something dependent on userspace. Do you think we have to 
-make those places interruptible as well?
+> On Tue, 23 Sep 2014 18:03:07 +0100, Pawel Moll wrote:
+> > This patch adds a new PERF_COUNT_SW_UEVENT software event
+> > and a related PERF_SAMPLE_UEVENT sample. User can now
+> > write to the the perf file descriptor, injecting such
+> > event in the perf buffer.
+> 
+> It seems the PERF_SAMPLE_UEVENT sample can be injected to any event.  So
+> why the PERF_COUNT_SW_UEVENT is needed?  At least one can use the
+> SW_DUMMY event for that purpose.
+> 
+> Also I think it'd be better to be a record type (PERF_RECORD_XXX)
+> instead of a sample flag (PERF_SAMPLE_XXX).  In perf tools, we already
+> use perf_user_event_type for synthesized userspace events.  This way it
+> can avoid unnecessary sample processing for userspace events.
+> 
+> For contents, I prefer to give complete control to users - kernel
+> doesn't need to care about it other than its size.  If one just wants to
+> use strings only, she can write them directly.  If others want to mix
+> different types of data, they might need to define a data format for
+> their use.
 
->
-> This would not be difficult, were it not for i_mutex and
-> s_vfs_rename_mutex being held by some operations.   For correctness,
-> we can't release these while a reply is not received, since the
-> locking expecations of the userspace filesystem would not be met.
-> This can be solved by adding shadow locks to fuse that we hold onto
-> even after the request is interrupted.
+It would also be nice to add support for this to tools/perf/ (so 
+that 'trace' displays such entries in a perf.data), with a 
+minimum testcase for 'perf test' as well.
 
-Shadow locking seems to be not enough. For example, we have to postpone 
-FUSE_RELEASE until all interrupted synchronous I/O is ACKed by 
-userspace. And similarly we shouldn't surprise userspace by FUSE_DESTROY 
-if any requests are still in-flight. May be there are other hidden 
-dependencies that don't come to mind now.
+Perhaps also add a small sub-utility to inject such events from 
+the command line, such as:
+
+  trace user-event "this is a test message"
+
+('trace' is a shortcut command for 'perf trace'.)
+
+It would have a usecase straight away: perf could be used to 
+easily trace script execution for example.
+
+For that probably another mode of user event generation would be 
+needed as well: a process that has no access to any perf fds 
+should still be able to generate user events, if the 
+profiling/tracing context has permitted that. In this case we'd 
+inject the event either into the first, or all currently active 
+events (but only once per output buffer, or so).
 
 Thanks,
-Maxim
 
+	Ingo
