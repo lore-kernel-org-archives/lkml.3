@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaIXRvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:51:13 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:23871 "EHLO smtp1-g21.free.fr"
+	id S1754022AbaIXRve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:51:34 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:25075 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595AbaIXRvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:51:09 -0400
+	id S1753015AbaIXRvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:51:33 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>,
+To: Jeremy Kerr <jk@ozlabs.org>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
+        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
         linux-fsdevel@vger.kernel.org
-Subject: [PATCHv8 4/6] binfmt_misc: trivial: replace get_unused_fd() by get_unused_fd_flags(0)
-Date: Wed, 24 Sep 2014 15:11:09 +0200
-Message-Id: <5982084ca18326c9c25e52933eaa9bceb0bbd718.1411562410.git.ydroneaud@opteya.com>
+Subject: [PATCHv8 3/6] ppc/cell: trivial: replace get_unused_fd() by get_unused_fd_flags(0)
+Date: Wed, 24 Sep 2014 15:11:08 +0200
+Message-Id: <ba382f03dc8e2f5ddbf9afd4633894cdb3090a48.1411562410.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1411562410.git.ydroneaud@opteya.com>
 References: <cover.1411562410.git.ydroneaud@opteya.com>
@@ -37,22 +42,31 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: trivial@kernel.org
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/binfmt_misc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index fd8beb9657a2..1cc5377ba955 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -153,7 +153,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
- 		/* if the binary should be opened on behalf of the
- 		 * interpreter than keep it open and assign descriptor
- 		 * to it */
-- 		fd_binary = get_unused_fd();
-+		fd_binary = get_unused_fd_flags(0);
-  		if (fd_binary < 0) {
-  			retval = fd_binary;
-  			goto _ret;
+diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
+index 87ba7cf99cd7..51effcec30d8 100644
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -301,7 +301,7 @@ static int spufs_context_open(struct path *path)
+ 	int ret;
+ 	struct file *filp;
+ 
+-	ret = get_unused_fd();
++	ret = get_unused_fd_flags(0);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -518,7 +518,7 @@ static int spufs_gang_open(struct path *path)
+ 	int ret;
+ 	struct file *filp;
+ 
+-	ret = get_unused_fd();
++	ret = get_unused_fd_flags(0);
+ 	if (ret < 0)
+ 		return ret;
+ 
 -- 
 1.9.3
 
