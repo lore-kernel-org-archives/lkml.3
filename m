@@ -1,151 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaIXIZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:25:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41317 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaIXIZ2 (ORCPT
+	id S1754458AbaIXIZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:25:52 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:12685 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753300AbaIXIZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:25:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <54227FC8.5040801@jp.fujitsu.com>
-Date: Wed, 24 Sep 2014 17:24:40 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 24 Sep 2014 04:25:48 -0400
+X-IronPort-AV: E=Sophos;i="5.04,587,1406563200"; 
+   d="scan'208";a="36387608"
+Message-ID: <54227FF6.10109@cn.fujitsu.com>
+Date: Wed, 24 Sep 2014 16:25:26 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, <x86@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6] sched: fix llc shared map unreleased during cpu hotplug
-References: <1411546388-48111-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1411546388-48111-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Paolo Bonzini <pbonzini@redhat.com>, <gleb@kernel.org>,
+        <mtosatti@redhat.com>, <nadav.amit@gmail.com>, <jan.kiszka@web.de>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH v8 0/8] kvm, mem-hotplug: Do not pin ept identity pagetable
+ and apic access page.
+References: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com> <54227EB4.7070608@redhat.com>
+In-Reply-To: <54227EB4.7070608@redhat.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/24 17:13), Wanpeng Li wrote:
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-> IP: [..] find_busiest_group
-> PGD 5a9d5067 PUD 13067 PMD 0
-> Oops: 0000 [#3] SMP
-> [...]
-> Call Trace:
-> load_balance
-> ? _raw_spin_unlock_irqrestore
-> idle_balance
-> __schedule
-> schedule
-> schedule_timeout
-> ? lock_timer_base
-> schedule_timeout_uninterruptible
-> msleep
-> lock_device_hotplug_sysfs
-> online_store
-> dev_attr_store
-> sysfs_write_file
-> vfs_write
-> SyS_write
-> system_call_fastpath
-> 
-> This bug can be triggered by hot add and remove large number of xen
-> domain0's vcpus repeatly.
-> 
-> Last level cache shared map is built during cpu up and build sched domain
-> routine takes advantage of it to setup sched domain cpu topology, however,
-> llc shared map is unreleased during cpu disable which lead to invalid sched
-> domain cpu topology. This patch fix it by release llc shared map correctly
-> during cpu disable.
-> 
-> Yasuaki also reported this can happen on their real hardware.
-> https://lkml.org/lkml/2014/7/22/1018
-> 
-> His case is here.
-> ==
-> Here is a example on my system.
-> My system has 4 sockets and each socket has 15 cores and HT is enabled.
-> In this case, each core of sockes is numbered as follows:
-> 
->            | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-44, 90-104
-> Socket#3 | 45-59, 105-119
-> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-> It means that last level cache of Socket#2 is shared with
-> CPU#30-44 and 90-104.
-> When hot-removing socket#2 and #3, each core of sockets is numbered
-> as follows:
-> 
->            | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-> having 0x3fff80000001fffc0000000.
-> After that, when hot-adding socket#2 and #3, each core of sockets is
-> numbered as follows:
-> 
->            | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-59
-> Socket#3 | 90-119
-> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-> It means that last level cache of Socket#2 is shared with CPU#30-59
-> and 90-104. So the mask has wrong value.
 
-> At first, I cleared hot-removed CPU number's bit from llc_shared_map
-> when hot removing CPU. But Borislav suggested that the problem will
-> disappear if readded CPU is assigned same CPU number. And llc_shared_map
-> must not be changed.
+On 09/24/2014 04:20 PM, Paolo Bonzini wrote:
+> Il 24/09/2014 09:57, Tang Chen ha scritto:
+>> ept identity pagetable and apic access page in kvm are pinned in memory.
+>> As a result, they cannot be migrated/hot-removed.
+>>
+>> But actually they don't need to be pinned in memory.
+>>
+>> [For ept identity page]
+>> Just do not pin it. When it is migrated, guest will be able to find the
+>> new page in the next ept violation.
+>>
+>> [For apic access page]
+>> The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+>> When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+>> for each vcpu in addition.
+>>
+>> This patch-set is based on Linux 3.17.0-rc5.
+>>
+>> NOTE: Tested with -cpu xxx,-x2apic option.
+>>        But since nested vm pins some other pages in memory, if user uses nested
+>>        vm, memory hot-remove will not work.
+>>
+>> Change log v7->v8:
+>> 1. Patch 1/9~3/9 were applied to kvm/queue by Paolo Bonzini <pbonzini@redhat.com>.
+>>     Just resend them, no changes.
+>> 2. Removed previous patch 4/9, which added unnecessary hook has_secondary_apic_access().
+>> 3. Set kvm_x86_ops->set_apic_access_page_addr to NULL when hardware had no flexpriority
+>>     functionality which actually exists only on x86.
+>> 4. Moved declaration of kvm_arch_mmu_notifier_invalidate_page() to arch/*/include/asm/kvm_host.h.
+>> 5. Removed useless set_apic_access_page_addr() hook for svm.
+>>
+>> Tang Chen (8):
+>>    kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+>>    kvm: Remove ept_identity_pagetable from struct kvm_arch.
+>>    kvm: Make init_rmode_identity_map() return 0 on success.
+>>    kvm, mem-hotplug: Reload L1's apic access page in vcpu_enter_guest().
+>>    kvm: Rename make_all_cpus_request() to kvm_make_all_cpus_request() and
+>>      make it non-static.
+>>    kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
+>>      running.
+>>    kvm, mem-hotplug: Add arch specific mmu notifier to handle apic access
+>>      migration.
+>>    kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
+>>
+>>   arch/arm/include/asm/kvm_host.h     |   5 ++
+>>   arch/arm64/include/asm/kvm_host.h   |   5 ++
+>>   arch/ia64/include/asm/kvm_host.h    |   7 ++
+>>   arch/mips/include/asm/kvm_host.h    |   6 ++
+>>   arch/powerpc/include/asm/kvm_host.h |   5 ++
+>>   arch/s390/include/asm/kvm_host.h    |   8 +++
+>>   arch/x86/include/asm/kvm_host.h     |   7 +-
+>>   arch/x86/kvm/svm.c                  |   3 +-
+>>   arch/x86/kvm/vmx.c                  | 130 ++++++++++++++++++++++++------------
+>>   arch/x86/kvm/x86.c                  |  45 +++++++++++--
+>>   include/linux/kvm_host.h            |   2 +
+>>   virt/kvm/kvm_main.c                 |  13 ++--
+>>   12 files changed, 180 insertions(+), 56 deletions(-)
+>>
+> Thanks for your persistence!  The patches look good, I'll test them and
+> apply to kvm/queue.
 
-Please remove it. The description is not explanation for your patch.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> 
-> Reviewed-by: Borislav Petkov <bp@suse.de>
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Tested-by: Linn Crosetto <linn@hp.com>
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v5 -> v6:
->   * add the real-hardware reports to the changelog
-> v4 -> v5:
->   * add the description when the bug can occur
-> v3 -> v4:
->   * simplify backtrace
-> v2 -> v3:
->   * simplify backtrace
-> v1 -> v2:
->   * fix subject line
-> 
->   arch/x86/kernel/smpboot.c | 3 +++
->   1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 5492798..0134ec7 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
->   
->   	for_each_cpu(sibling, cpu_sibling_mask(cpu))
->   		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-> +	cpumask_clear(cpu_llc_shared_mask(cpu));
->   	cpumask_clear(cpu_sibling_mask(cpu));
->   	cpumask_clear(cpu_core_mask(cpu));
->   	c->phys_proc_id = 0;
-> 
-
-
+Sure, thank you very much. :)
