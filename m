@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaIXItz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:49:55 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:38271 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaIXItV (ORCPT
+	id S1753568AbaIXIv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:51:28 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:59447 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006AbaIXIvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:49:21 -0400
+	Wed, 24 Sep 2014 04:51:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1411467606-13041-2-git-send-email-pramod.gurav@smartplayin.com>
-References: <1411467606-13041-1-git-send-email-pramod.gurav@smartplayin.com>
-	<1411467606-13041-2-git-send-email-pramod.gurav@smartplayin.com>
-Date: Wed, 24 Sep 2014 10:49:20 +0200
-Message-ID: <CAPDyKFrCSLvRXfqihwTc_68cfRROfA-m4sATL1p84ySqVoPJvw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] mmc: atmel-mci: Release mmc resources on failure
- in probe
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>
+In-Reply-To: <1409930524-1529-1-git-send-email-octavian.purdila@intel.com>
+References: <1409930524-1529-1-git-send-email-octavian.purdila@intel.com>
+Date: Wed, 24 Sep 2014 10:51:23 +0200
+Message-ID: <CACRpkdZGBe1UfazBUgtq=oHgRpFPkRcxYtJz++JgUbzUSiOsyg@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: fix a few issues with gpiochip_remove
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 September 2014 12:20, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
-> This change takes care of releasing mmc resources on error cases in
-> probe function which was missing. Also release timer in remove function.
->
-> Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
-> Cc: Chris Ball <chris@printf.net>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: linux-mmc@vger.kernel.org
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+On Fri, Sep 5, 2014 at 5:22 PM, Octavian Purdila
+<octavian.purdila@intel.com> wrote:
 
-Thanks! Applied for next.
+> The current implementation of gpiochip_remove() does not check to see
+> if the GPIO pins are busy before removing the associated irqchip and
+> this is causing the following warning:
+(...)
+> A retry operation is needed in the case of MFD devices that bundles a
+> GPIO device and another device that is an indirect consumer of the
+> GPIO device (typical an I2C bus).
 
-Kind regards
-Uffe
+We have just finalized a set of patches making gpiochip_remove()
+not return an error code, because it just must work.
 
-> ---
-> Changes since v1: None
->
->  drivers/mmc/host/atmel-mci.c |   11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index 36212fb..288bcc1 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -2376,7 +2376,7 @@ static int __init atmci_probe(struct platform_device *pdev)
->         struct resource                 *regs;
->         unsigned int                    nr_slots;
->         int                             irq;
-> -       int                             ret;
-> +       int                             ret, i;
->
->         regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->         if (!regs)
-> @@ -2482,7 +2482,7 @@ static int __init atmci_probe(struct platform_device *pdev)
->                 if (!host->buffer) {
->                         ret = -ENOMEM;
->                         dev_err(&pdev->dev, "buffer allocation failed\n");
-> -                       goto err_init_slot;
-> +                       goto err_dma_alloc;
->                 }
->         }
->
-> @@ -2492,7 +2492,13 @@ static int __init atmci_probe(struct platform_device *pdev)
->
->         return 0;
->
-> +err_dma_alloc:
-> +       for (i = 0; i < ATMCI_MAX_NR_SLOTS; i++) {
-> +               if (host->slot[i])
-> +                       atmci_cleanup_slot(host->slot[i], i);
-> +       }
->  err_init_slot:
-> +       del_timer_sync(&host->timer);
->         if (host->dma.chan)
->                 dma_release_channel(host->dma.chan);
->         free_irq(irq, host);
-> @@ -2519,6 +2525,7 @@ static int __exit atmci_remove(struct platform_device *pdev)
->         atmci_readl(host, ATMCI_SR);
->         clk_disable_unprepare(host->mck);
->
-> +       del_timer_sync(&host->timer);
->         if (host->dma.chan)
->                 dma_release_channel(host->dma.chan);
->
-> --
-> 1.7.9.5
->
+It seems like this patch want us to sort of reverse that whole train
+of work and go back to the old style of having gpiochip_remove()
+be able to fail :-/
+
+I would suggest that if this usecase is to be supported for thing
+like MFD devices, we need to introduce gpiochip_try_remove()
+in parallel with the current implementation, so that those drivers
+that actually want to retry the remove the chip can use that
+interface explicitly.
+
+Can you look into this option?
+
+Please also look over gpiochip_remove() as it looks right now
+in linux-next...
+
+Yours,
+Linus Walleij
