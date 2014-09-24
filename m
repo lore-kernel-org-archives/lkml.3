@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaIXUqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:46:38 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:37035 "EHLO quartz.orcorp.ca"
+	id S1751630AbaIXUuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:50:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35223 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753660AbaIXUqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 16:46:35 -0400
-Date: Wed, 24 Sep 2014 14:46:27 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 12/12] tpm: TPM2 sysfs attributes
-Message-ID: <20140924204627.GA12407@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20140924190234.GB6801@intel.com>
- <20140924201938.GC10887@obsidianresearch.com>
- <201409242235.42286.PeterHuewe@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201409242235.42286.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1750725AbaIXUux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 16:50:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391141998"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, eranian@google.com
+Subject: [PATCH] perf, tools: Fix perf stat --per-core on multi socket systems
+Date: Wed, 24 Sep 2014 13:50:46 -0700
+Message-Id: <1411591846-32736-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:35:42PM +0200, Peter Hüwe wrote:
-> Am Mittwoch, 24. September 2014, 22:19:38 schrieb Jason Gunthorpe:
-> > On Wed, Sep 24, 2014 at 10:02:34PM +0300, Jarkko Sakkinen wrote:
-> > > > The pcrs file never conformed to the sysfs rules, if TPM2 is getting a
-> > > > whole new file set, I wouldn't mind seeing it not include the
-> > > > non-conformant ones. What do you think?
-> > > 
-> > > I think that it's better to put extra focus on these sysfs attributes in
-> > > first patch set because it's user space visible. What's wrong in the
-> > > current pcrs file?
-> > 
-> > Each PCR should be a distinct sysfs file, probably with a
-> > directory. One Value Per File is the rule.
-> 
-> That would be 24*2 files only for pcrs...
+From: Andi Kleen <ak@linux.intel.com>
 
-Some subsystems do just that..
+On systems with more than one socket perf stat --per-core
+would either segfault or stop before outputting all cores.
+The problem was that the output code referenced the
+id including the socket number in the higher bits, which
+is far beyond any per cpu array.
 
-$ ls /sys/class/infiniband/qib0/ports/1/sl2vl/
-0  1  10  11  12  13  14  15  2  3  4  5  6  7  8  9
+Mask out the socket number before referencing cpus
+in abs_printout.
 
-> Documentation/filesystems/sysfs.txt says:
-> 
-> "
-> Attributes should be ASCII text files, preferably with only one value
-> per file. It is noted that it may not be efficient to contain only one
-> value per file, so it is socially acceptable to express an array of
-> values of the same type. "
-> 
-> So it would be more or less o.k. to have it in one file like we had.
-> 
-> Then however:
-> "Mixing types, expressing multiple lines of data, and doing fancy
-> formatting of data is heavily frowned upon. Doing these things may get
-> you publicly humiliated and your code rewritten without notice."
+I also renamed the variable in nsec_printout to be clear
+what it is, even though it doesn't reference cpus.
 
-I think taken together that says an array of 128 bit PCR hex values
-without new lines or other formatting would be OK. But the breakdown
-and fancy formatting we do is not OK.
+Cc: eranian@google.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/builtin-stat.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-> Do we really need the PCRs as sysfs files?  I know they are handy as
-> a dev, but does any application actually use this directly?
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 3e80aa1..6e636b9 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -732,7 +732,7 @@ static void aggr_printout(struct perf_evsel *evsel, int id, int nr)
+ 	}
+ }
+ 
+-static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
++static void nsec_printout(int id, int nr, struct perf_evsel *evsel, double avg)
+ {
+ 	double msecs = avg / 1e6;
+ 	const char *fmt_v, *fmt_n;
+@@ -741,7 +741,7 @@ static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 	fmt_v = csv_output ? "%.6f%s" : "%18.6f%s";
+ 	fmt_n = csv_output ? "%s" : "%-25s";
+ 
+-	aggr_printout(evsel, cpu, nr);
++	aggr_printout(evsel, id, nr);
+ 
+ 	scnprintf(name, sizeof(name), "%s%s",
+ 		  perf_evsel__name(evsel), csv_output ? "" : " (msec)");
+@@ -947,11 +947,12 @@ static void print_ll_cache_misses(int cpu,
+ 	fprintf(output, " of all LL-cache hits   ");
+ }
+ 
+-static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
++static void abs_printout(int id, int nr, struct perf_evsel *evsel, double avg)
+ {
+ 	double total, ratio = 0.0, total2;
+ 	double sc =  evsel->scale;
+ 	const char *fmt;
++	int cpu = cpu_map__id_to_cpu(id);
+ 
+ 	if (csv_output) {
+ 		fmt = sc != 1.0 ?  "%.2f%s" : "%.0f%s";
+@@ -962,7 +963,7 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 			fmt = sc != 1.0 ? "%18.2f%s" : "%18.0f%s";
+ 	}
+ 
+-	aggr_printout(evsel, cpu, nr);
++	aggr_printout(evsel, id, nr);
+ 
+ 	if (aggr_mode == AGGR_GLOBAL)
+ 		cpu = 0;
+-- 
+1.9.3
 
-No idea, but using tpm2 to find out seems like a reasonable idea,
-especially if the pcr meaning changes in some way with TPM2 ..
-
-Jason
