@@ -1,89 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaIXN7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:59:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaIXN7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:59:52 -0400
-Date: Wed, 24 Sep 2014 15:08:44 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
- processing
-Message-ID: <20140924140844.GB2695@agordeev.usersys.redhat.com>
-References: <cover.1411297686.git.agordeev@redhat.com>
- <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
- <20140923205710.GB17332@mtj.dyndns.org>
- <20140924104213.GA2695@agordeev.usersys.redhat.com>
- <20140924130444.GA16555@htj.dyndns.org>
+	id S1751649AbaIXOB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:01:26 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:59511 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaIXOBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:01:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924130444.GA16555@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411344191-2842-5-git-send-email-minchan@kernel.org>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org> <1411344191-2842-5-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 24 Sep 2014 10:01:03 -0400
+X-Google-Sender-Auth: -AzJYtjqJwRE1mP93AAsnBg3TJc
+Message-ID: <CALZtONB+NBMa8xf8xuAoeYHDoMtS56VLGP-a46LZgpppFyz7ag@mail.gmail.com>
+Subject: Re: [PATCH v1 4/5] zram: add swap full hint
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 09:04:44AM -0400, Tejun Heo wrote:
-> Hello, Alexander.
-> 
-> On Wed, Sep 24, 2014 at 11:42:15AM +0100, Alexander Gordeev wrote:
-> > On Tue, Sep 23, 2014 at 04:57:10PM -0400, Tejun Heo wrote:
-> > > Hmmm... how does it affect single device operation tho?  It does make
-> > > individual interrupt handling heavier, no?
-> > 
-> > I think it is difficult to assess "individual interrupt handling", since
-> > it depends from both the hardware and device access pattern. On the system
-> > I use the results are rather counter-intuitive: ahci_thread_fn() does not
-> > show up in perf report at all, nor ahci_single_irq_intr(). While before
-> > the change ahci_single_irq_intr() reported 0.00%.
-> > 
-> > But since the handling is split in two parts it is rather incorrect to
-> > apply the same metric to the threaded context. Obviously, the threaded
-> > handler is expected slowed down by other interrupts handlers, but the
-> > whole system should benefit from it, which is exactly the aim of this
-> > change.
-> 
-> Hmmm, how would the whole system benefit from it if there's only
-> single device?  Each individual servicing of the interrupt does more
-> now which includes scheduling which may end up adding to completion
-> latency.
+On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> This patch implement SWAP_FULL handler in zram so that VM can
+> know whether zram is full or not and use it to stop anonymous
+> page reclaim.
+>
+> How to judge fullness is below,
+>
+> fullness = (100 * used space / total space)
+>
+> It means the higher fullness is, the slower we reach zram full.
+> Now, default of fullness is 80 so that it biased more momory
+> consumption rather than early OOM kill.
+>
+> Above logic works only when used space of zram hit over the limit
+> but zram also pretend to be full once 32 consecutive allocation
+> fail happens. It's safe guard to prevent system hang caused by
+> fragment uncertainty.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/block/zram/zram_drv.c | 60 ++++++++++++++++++++++++++++++++++++++++---
+>  drivers/block/zram/zram_drv.h |  1 +
+>  2 files changed, 57 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 22a37764c409..649cad9d0b1c 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -43,6 +43,20 @@ static const char *default_compressor = "lzo";
+>  /* Module params (documentation at end) */
+>  static unsigned int num_devices = 1;
+>
+> +/*
+> + * If (100 * used_pages / total_pages) >= ZRAM_FULLNESS_PERCENT),
+> + * we regards it as zram-full. It means that the higher
+> + * ZRAM_FULLNESS_PERCENT is, the slower we reach zram full.
+> + */
+> +#define ZRAM_FULLNESS_PERCENT 80
 
-As Chuck noticed, non-AHCI hardware context handlers will benefit.
+As Andrew said, this (or the user-configurable fullness param from the
+next patch) should have more detail about exactly why it's needed and
+what it does.  The details of how zram considers itself "full" should
+be clear, which probably includes explaining zsmalloc fragmentation.
+It should be also clear this param only matters when limit_pages is
+set, and this param is only checked when zsmalloc's total size has
+reached that limit.
 
-> The thing I don't get is why multiple MSI handling and this patchset
-> are tied to threaded interrupt handling.
+Also, since the next patch changes it to be used only as a default,
+shouldn't it be DEFAULT_ZRAM_FULLNESS_PERCENT or similar?
 
-Multiple MSIs were implemented with the above aim (let's say aim #1)
-right away. Single MSI/IRQ handling is getting updated with this series.
+> +
+> +/*
+> + * If zram fails to allocate memory consecutively up to this,
+> + * we regard it as zram-full. It's safe guard to prevent too
+> + * many swap write fail due to lack of fragmentation uncertainty.
+> + */
+> +#define ALLOC_FAIL_MAX 32
+> +
+>  #define ZRAM_ATTR_RO(name)                                             \
+>  static ssize_t zram_attr_##name##_show(struct device *d,               \
+>                                 struct device_attribute *attr, char *b) \
+> @@ -148,6 +162,7 @@ static ssize_t mem_limit_store(struct device *dev,
+>
+>         down_write(&zram->init_lock);
+>         zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
+> +       atomic_set(&zram->alloc_fail, 0);
+>         up_write(&zram->init_lock);
+>
+>         return len;
+> @@ -410,6 +425,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+>         atomic64_sub(zram_get_obj_size(meta, index),
+>                         &zram->stats.compr_data_size);
+>         atomic64_dec(&zram->stats.pages_stored);
+> +       atomic_set(&zram->alloc_fail, 0);
+>
+>         meta->table[index].handle = 0;
+>         zram_set_obj_size(meta, index, 0);
+> @@ -597,10 +613,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>         }
+>
+>         alloced_pages = zs_get_total_pages(meta->mem_pool);
+> -       if (zram->limit_pages && alloced_pages > zram->limit_pages) {
+> -               zs_free(meta->mem_pool, handle);
+> -               ret = -ENOMEM;
+> -               goto out;
+> +       if (zram->limit_pages) {
+> +               if (alloced_pages > zram->limit_pages) {
+> +                       zs_free(meta->mem_pool, handle);
+> +                       atomic_inc(&zram->alloc_fail);
+> +                       ret = -ENOMEM;
+> +                       goto out;
+> +               } else {
+> +                       atomic_set(&zram->alloc_fail, 0);
+> +               }
 
-> Splitting locks don't
-> necessarily have much to do with threaded handling and it's not like
-> ahci interrupt handling is heavy.  The hot path is pretty short
-> actually.  The meat of the work - completing requests and propagating
-> completions - is offloaded to softirq by block layer anyway.
+So, with zram_full() checking for alloced_pages >= limit_pages, this
+will need to be changed; the way it is now it prevents that from ever
+being true.
 
-So the aim (let's say aim #2) is to avoid any of those to compete with
-hardware context handler. IOW, not to wait on host/port spinlocks with
-local interrupts disabled unnecessarily.
+Instead I believe this check has to be moved to before zs_malloc(), so
+that alloced_pages > limit_pages is true.
 
-I assume, if at the time of writing of original handlers the two
-interrupt context existed, they were written the way I propose now :)
 
-> Just to be clear, I'm not against the proposed changes but wanna
-> understand the justifications behind them.
-
-Should I send the fixed series? ;)
-
-> Thanks.
-> 
-> -- 
-> tejun
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+>         }
+>
+>         update_used_max(zram, alloced_pages);
+> @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>         down_write(&zram->init_lock);
+>
+>         zram->limit_pages = 0;
+> +       atomic_set(&zram->alloc_fail, 0);
+>
+>         if (!init_done(zram)) {
+>                 up_write(&zram->init_lock);
+> @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
+>         return 0;
+>  }
+>
+> +static int zram_full(struct block_device *bdev, void *arg)
+> +{
+> +       struct zram *zram;
+> +       struct zram_meta *meta;
+> +       unsigned long total_pages, compr_pages;
+> +
+> +       zram = bdev->bd_disk->private_data;
+> +       if (!zram->limit_pages)
+> +               return 0;
+> +
+> +       meta = zram->meta;
+> +       total_pages = zs_get_total_pages(meta->mem_pool);
+> +
+> +       if (total_pages >= zram->limit_pages) {
+> +
+> +               compr_pages = atomic64_read(&zram->stats.compr_data_size)
+> +                                       >> PAGE_SHIFT;
+> +               if ((100 * compr_pages / total_pages)
+> +                       >= ZRAM_FULLNESS_PERCENT)
+> +                       return 1;
+> +       }
+> +
+> +       if (atomic_read(&zram->alloc_fail) > ALLOC_FAIL_MAX)
+> +               return 1;
+> +
+> +       return 0;
+> +}
+> +
+>  static int zram_swap_hint(struct block_device *bdev,
+>                                 unsigned int hint, void *arg)
+>  {
+> @@ -951,6 +1001,8 @@ static int zram_swap_hint(struct block_device *bdev,
+>
+>         if (hint == SWAP_FREE)
+>                 ret = zram_slot_free_notify(bdev, (unsigned long)arg);
+> +       else if (hint == SWAP_FULL)
+> +               ret = zram_full(bdev, arg);
+>
+>         return ret;
+>  }
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index c6ee271317f5..fcf3176a9f15 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -113,6 +113,7 @@ struct zram {
+>         u64 disksize;   /* bytes */
+>         int max_comp_streams;
+>         struct zram_stats stats;
+> +       atomic_t alloc_fail;
+>         /*
+>          * the number of pages zram can consume for storing compressed data
+>          */
+> --
+> 2.0.0
+>
