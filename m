@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaIXS7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:59:51 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58180 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754458AbaIXS7s (ORCPT
+	id S1752991AbaIXTBD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:01:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40542 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaIXTBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:59:48 -0400
-X-Sasl-enc: 1fi8a3diC2S3vsfNMAkt5tZJpQhQGFkElbIkoKu5d6+N 1411585188
-Date: Wed, 24 Sep 2014 15:59:34 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140924185934.GB16214@khazad-dum.debian.net>
-References: <20140919110014.GC29639@khazad-dum.debian.net>
- <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
- <20140919164217.GD17456@khazad-dum.debian.net>
- <20140923200054.GB16467@pd.tnic>
- <20140924145658.GB31678@khazad-dum.debian.net>
- <CALCETrU3-iNqCOT7EArtB91zAZC6ChuVN1wF6LbtdUqpoyJ+ig@mail.gmail.com>
- <20140924174557.GD31678@khazad-dum.debian.net>
- <CALCETrXz1aGqqUiczykeHhxSSRhEZ=qnj-RsyFhoz565YTKEpw@mail.gmail.com>
+	Wed, 24 Sep 2014 15:01:01 -0400
+Date: Wed, 24 Sep 2014 20:00:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix linkat error for unprivileged AT_EMPTY_PATH
+Message-ID: <20140924190058.GE7996@ZenIV.linux.org.uk>
+References: <20140924152523.GC7441@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrXz1aGqqUiczykeHhxSSRhEZ=qnj-RsyFhoz565YTKEpw@mail.gmail.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <20140924152523.GC7441@tucsk.piliscsaba.szeredi.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Andy Lutomirski wrote:
-> We can sort of fudge it if whatever control BIOS uses is available to
-> us, too, and we can reprogram it to "enabled" after a microcode update
-> disables TSX.
+On Wed, Sep 24, 2014 at 05:25:23PM +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Return proper error value for linkat(..., AT_EMPTY_PATH) without enough
+> privileges.
+> 
+> I guess ENOENT was used here, because without AT_EMPTY_PATH that's what
+> we'd return for an empty path.  But it is wrong for AT_EMPTY_PATH, since we
+> might not even be passing an empty path, we are simply complaining about
+> lack of privs for which EPERM is the proper error.
 
-Only for the early initramfs microcode update driver, and that's going to be
-useful only as a way to honor the "keep Intel TSX enabled even if it is
-badly broken" switch that was added by Intel for developer usage.
-
-For the runtime microcode update (regular microcode driver), an
-"enabled->disabled->enabled" transition would still disrupt the system:
-triggering a microcode update in a cpu can update other cpus, which might be
-running Intel TSX instructions.  Boom! processes running on these other cpus
-can crash with SIGILL, and we have data loss.
-
-The microcode update has to preserve the entire [visible] processor state,
-otherwise we cannot safely apply it "late".  Intel TSX included.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Umm...  Are you sure that nothing in userland is checking for that
+return value?  I agree that EPERM would make more sense, but...
