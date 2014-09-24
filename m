@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaIXW0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 18:26:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51185 "EHLO
+	id S1752735AbaIXW2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 18:28:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51202 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaIXW0I (ORCPT
+	with ESMTP id S1752425AbaIXW2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 18:26:08 -0400
-Date: Wed, 24 Sep 2014 15:26:06 -0700
+	Wed, 24 Sep 2014 18:28:30 -0400
+Date: Wed, 24 Sep 2014 15:28:28 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -20,7 +20,7 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Kyungmin Park <kyungmin.park@samsung.com>
 Subject: Re: [PATCH v2 2/3] drivers: dma-coherent: add initialization from
  device tree
-Message-Id: <20140924152606.4f4daa63d01c55b69b1ec617@linux-foundation.org>
+Message-Id: <20140924152828.9d4a4836ca25cadbb02a2f93@linux-foundation.org>
 In-Reply-To: <1410434561-9294-3-git-send-email-m.szyprowski@samsung.com>
 References: <1410434561-9294-1-git-send-email-m.szyprowski@samsung.com>
 	<1410434561-9294-3-git-send-email-m.szyprowski@samsung.com>
@@ -42,51 +42,54 @@ On Thu, 11 Sep 2014 13:22:40 +0200 Marek Szyprowski <m.szyprowski@samsung.com> w
 > structure. The last part of this patch adds support for handling
 > 'shared-dma-pool' reserved-memory device tree nodes.
 > 
-> --- a/drivers/base/dma-coherent.c
-> +++ b/drivers/base/dma-coherent.c
-> @@ -14,11 +14,14 @@ struct dma_coherent_mem {
->  	int		size;
->  	int		flags;
->  	unsigned long	*bitmap;
-> +	spinlock_t	spinlock;
+> ...
+>
+> +static int rmem_dma_device_init(struct reserved_mem *rmem, struct device *dev)
+> +{
+> +	struct dma_coherent_mem *mem = rmem->priv;
+> +	if (!mem &&
+> +	    dma_init_coherent_memory(rmem->base, rmem->base, rmem->size,
+> +				     DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE,
+> +				     &mem) != DMA_MEMORY_MAP) {
+> +		pr_info("Reserved memory: failed to init DMA memory pool at %pa, size %ld MiB\n",
+> +			&rmem->base, (unsigned long)rmem->size / SZ_1M);
 
-A bit of documentation would be nice: explain what the lock protects,
-that it is irq-safe, etc.
+pr_info() seems inappropriate here.  It's an error, so pr_err()?
 
->  };
->  
-> -int dma_declare_coherent_memory(struct device *dev, phys_addr_t phys_addr,
-> -				dma_addr_t device_addr, size_t size, int flags)
-> +static int dma_init_coherent_memory(phys_addr_t phys_addr, dma_addr_t device_addr,
-> +			     size_t size, int flags,
-> +			     struct dma_coherent_mem **mem)
->  {
-> +	struct dma_coherent_mem *dma_mem = NULL;
+> +		return -ENODEV;
+> +	}
+> +	rmem->priv = mem;
+> +	dma_assign_coherent_memory(dev, mem);
+> +	return 0;
+> +}
+>
+> ...
+>
+> +static int __init rmem_dma_setup(struct reserved_mem *rmem)
+> +{
+> +	unsigned long node = rmem->fdt_node;
+> +
+> +	if (of_get_flat_dt_prop(node, "reusable", NULL))
+> +		return -EINVAL;
+> +
+> +#ifdef CONFIG_ARM
+> +	if (!of_get_flat_dt_prop(node, "no-map", NULL)) {
+> +		pr_info("Reserved memory: regions without no-map are not yet supported\n");
 
-The only reason to initialise this is so we can kfree() it without
-checking.  In which case we don't need label free1_out?
+Same here.
 
---- a/drivers/base/dma-coherent.c~drivers-dma-coherent-add-initialization-from-device-tree-fix
-+++ a/drivers/base/dma-coherent.c
-@@ -40,7 +40,7 @@ static int dma_init_coherent_memory(phys
- 		goto out;
- 	dma_mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
- 	if (!dma_mem->bitmap)
--		goto free1_out;
-+		goto out;
- 
- 	dma_mem->virt_base = mem_base;
- 	dma_mem->device_base = device_addr;
-@@ -56,9 +56,8 @@ static int dma_init_coherent_memory(phys
- 
- 	return DMA_MEMORY_IO;
- 
-- free1_out:
-+out:
- 	kfree(dma_mem);
-- out:
- 	if (mem_base)
- 		iounmap(mem_base);
- 	return 0;
-_
+> +		return -EINVAL;
+> +	}
+> +#endif
+> +
+> +	rmem->ops = &rmem_dma_ops;
+> +	pr_info("Reserved memory: created DMA memory pool at %pa, size %ld MiB\n",
+> +		&rmem->base, (unsigned long)rmem->size / SZ_1M);
+
+This *is* an appropriate use of pr_info().
+
+> +	return 0;
+> +}
+> +RESERVEDMEM_OF_DECLARE(dma, "shared-dma-pool", rmem_dma_setup);
+> +#endif
 
