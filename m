@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287AbaIXKQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:16:57 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53108 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932AbaIXKQ4 (ORCPT
+	id S1754380AbaIXKRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:17:05 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:52632 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300AbaIXKQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:16:56 -0400
-Date: Wed, 24 Sep 2014 06:16:47 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Meelis Roos <mroos@linux.ee>
-Subject: Re: [PATCH] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
-Message-ID: <20140924101647.GA4651@hmsreliant.think-freely.org>
-References: <20140924093021.GA7929@erable>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924093021.GA7929@erable>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-Score: -2.9 (--)
+	Wed, 24 Sep 2014 06:16:59 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-36-54229a19401b
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 2/6 v2] f2fs: add a new mount option for inline dir
+Date: Wed, 24 Sep 2014 18:16:13 +0800
+Message-id: <003d01cfd7e0$ac6b40f0$0541c2d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/X344fvmvSTyOGThSAFlrIV5rCvw==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAV3JWUohBkt/KFpc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr48PCM8wF
+	37krjk38wdrA+IGzi5GTQ0LARGLXvjfsELaYxIV769m6GLk4hAQWMUocu/2bHcL5wSix/t5q
+	VpAqNgEVieUd/5lAbBEBL4lJ+0+wgNjMAh4SjR3fwWqEBXwl2s89Barh4GARUJW4cK4IJMwr
+	YCkx7dIhJghbUOLH5HtQrVoS63ceZ4Kw5SU2r3nLDHGQgsSOs68ZIVbpScyf+ZQVokZcYuOR
+	WywTGAVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcEg/k9rB
+	uLLB4hCjAAejEg/vBHGlECHWxLLiytxDjBIczEoivK96gEK8KYmVValF+fFFpTmpxYcYpTlY
+	lMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoYU10rfjJcDdvAbsJ0qv683c8fmWfqNif1sjR6
+	btyX+fZJhtMR7bYNs2fUPmQ0tZJg8zlTWLqxPsRA79ju/qP/dpXdvOb9ukd6xcX4iTLFgoIP
+	bi24tqFaNnXuugPc35nt11/mLc2pP9c3ob0hMjn/9gn7RgffUwsY/rnmTl98Y89XqQOhUavb
+	lFiKMxINtZiLihMBHjaQDWUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 09:30:21AM +0000, Sylvain 'ythier' Hitier wrote:
-> Author: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
-> Date:   Wed Sep 24 09:22:16 2014 +0000
-> 
->         3c59x: fix bad split of cpu_to_le32(pci_map_single())
->     
->         Change the #else branch like the #if DO_ZEROCOPY branch was changed.
->     
->         Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
->           # 3c59x: Add dma error checking and recovery
->     
->         Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
-> 
-> diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-> index 8ca49f04..0a3108b3 100644
-> --- a/drivers/net/ethernet/3com/3c59x.c
-> +++ b/drivers/net/ethernet/3com/3c59x.c
-> @@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
->  		}
->  	}
->  #else
-> -	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
-> +	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
->  	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
->  		goto out_dma_err;
->  	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
-> 
-Actually, scratch my last note.  Sorry, too early here.  This isn't about
-removing the cpu_to_le32 as its already preformed in the assignment to .addr.
-Thats actually somewhat broken for lots of reasons (previously we did 2
-cpu_to_le32 swaps, which seems completely wrong).  You do probably want to fixup
-the changelog to be a bit more clear as to whats going on here.
-Neil
+Adds a new mount option 'inline_dentry' for inline dir.
 
-> 
-> 
-> Regards,
-> Sylvain "ythier" Hitier
-> 
-> -- 
-> Business is about being busy, not being rich...
-> Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
-> There's THE room for ideals in this mechanical place!
-> 
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/super.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index bb6b568..9e03488 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -51,6 +51,7 @@ enum {
+ 	Opt_disable_ext_identify,
+ 	Opt_inline_xattr,
+ 	Opt_inline_data,
++	Opt_inline_dentry,
+ 	Opt_flush_merge,
+ 	Opt_nobarrier,
+ 	Opt_err,
+@@ -69,6 +70,7 @@ static match_table_t f2fs_tokens = {
+ 	{Opt_disable_ext_identify, "disable_ext_identify"},
+ 	{Opt_inline_xattr, "inline_xattr"},
+ 	{Opt_inline_data, "inline_data"},
++	{Opt_inline_dentry, "inline_dentry"},
+ 	{Opt_flush_merge, "flush_merge"},
+ 	{Opt_nobarrier, "nobarrier"},
+ 	{Opt_err, NULL},
+@@ -340,6 +342,9 @@ static int parse_options(struct super_block *sb, char *options)
+ 		case Opt_inline_data:
+ 			set_opt(sbi, INLINE_DATA);
+ 			break;
++		case Opt_inline_dentry:
++			set_opt(sbi, INLINE_DENTRY);
++			break;
+ 		case Opt_flush_merge:
+ 			set_opt(sbi, FLUSH_MERGE);
+ 			break;
+@@ -560,6 +565,8 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
+ 		seq_puts(seq, ",disable_ext_identify");
+ 	if (test_opt(sbi, INLINE_DATA))
+ 		seq_puts(seq, ",inline_data");
++	if (test_opt(sbi, INLINE_DENTRY))
++		seq_puts(seq, ",inline_dentry");
+ 	if (!f2fs_readonly(sbi->sb) && test_opt(sbi, FLUSH_MERGE))
+ 		seq_puts(seq, ",flush_merge");
+ 	if (test_opt(sbi, NOBARRIER))
+-- 
+2.0.1.474.g72c7794
+
+
