@@ -1,189 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaIXRpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:45:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48033 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301AbaIXRpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:45:47 -0400
-Date: Wed, 24 Sep 2014 19:45:28 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Subject: Re: [PATCHv3 1/2] procfs: show hierarchy of pid namespace
-Message-ID: <20140924174527.GF10474@mguzik>
-References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1411552827-31056-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+	id S1753540AbaIXRqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:46:08 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:56584 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752174AbaIXRqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:46:05 -0400
+X-Sasl-enc: c39eOcKzBVMUGvnW+hbuYahbft0EIzeHhSr4VuSMbOGq 1411580764
+Date: Wed, 24 Sep 2014 14:45:57 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140924174557.GD31678@khazad-dum.debian.net>
+References: <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+ <20140919110014.GC29639@khazad-dum.debian.net>
+ <20140919112953.GA3256@nazgul.tnic>
+ <20140919075415.5149d5f2@as>
+ <20140919150042.GC5318@nazgul.tnic>
+ <20140919164217.GD17456@khazad-dum.debian.net>
+ <20140923200054.GB16467@pd.tnic>
+ <20140924145658.GB31678@khazad-dum.debian.net>
+ <CALCETrU3-iNqCOT7EArtB91zAZC6ChuVN1wF6LbtdUqpoyJ+ig@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411552827-31056-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <CALCETrU3-iNqCOT7EArtB91zAZC6ChuVN1wF6LbtdUqpoyJ+ig@mail.gmail.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 06:00:26PM +0800, Chen Hanxiao wrote:
-> +static int
-> +pidns_list_filter(void)
-> +{
-> +	struct pidns_list *pos, *pos_t;
-> +	struct pid_namespace *ns0, *ns1;
-> +	struct pid *pid0, *pid1;
-> +	int flag = 0;
-> +	int rc;
-> +
-> +	/* screen pid with relationship
-> +	 * in pidns_list, we may add pids like
-> +	 * ns0   ns1   ns2
-> +	 * pid1->pid2->pid3
-> +	 * we should screen pid1, pid2 and keep pid3
-> +	 */
-> +	list_for_each_entry(pos, &pidns_list, list) {
-> +		list_for_each_entry(pos_t, &pidns_list, list) {
+On Wed, 24 Sep 2014, Andy Lutomirski wrote:
+> On Wed, Sep 24, 2014 at 7:56 AM, Henrique de Moraes Holschuh
+> <hmh@hmh.eng.br> wrote:
+> > And I'd really prefer it to be "update x86_capability, warn the user and
+> > carry on" for anything that is not going to crash the kernel.  Several
+> > distros will really want this backported to -stable, as the older kernels
+> > cannot do early microcode updates.
+> >
+> 
+> I'm trying to see if Intel is willing to document any additional
+> controls for the TSX bits in this ucode.  No word yet, but I might
+> hear something soon.
 
-In the previous thread I tried to note this will be terribly inefficient
-to use and adding a list of children to pid_namespace struct would deal
-with the problem.
+If they do document it, please make sure to ask what will happen in the
+following situation:
 
-> +			flag = 0;
-> +			pid0 = pos->pid;
-> +			pid1 = pos_t->pid;
-> +			ns0 = pid0->numbers[pid0->level].ns;
-> +			ns1 = pid1->numbers[pid1->level].ns;
-> +			if (pos->pid->level < pos_t->pid->level)
-> +				for (; ns1 != NULL; ns1 = ns1->parent)
-> +					if (ns0 == ns1) {
-> +						flag = 1;
-> +						break;
-> +					}
-> +			if (flag == 1)
-> +				break;
-> +		}
-> +
-> +		if (flag == 0) {
-> +			rc = pidns_list_add(pos->pid, &pidns_tree);
-> +			if (rc)
-> +				goto out;
-> +		}
-> +	}
-> +
-> +	/* Now all usefull stuff are in pidns_tree, free pidns_list*/
-> +	free_pidns_list(&pidns_list);
-> +
-> +	return 0;
-> +
-> +out:
-> +	free_pidns_list(&pidns_tree);
-> +	return rc;
-> +}
-> +
-> +/* collect pids in pidns_list,
-> + * then remove duplicated ones,
-> + * add the rest to pidns_tree
-> + */
-> +static int proc_pidns_list_refresh(void)
-> +{
-> +	struct pid *pid;
-> +	struct task_struct *p;
-> +	int rc;
-> +
-> +	/* collect pid in differet ns */
-> +	rcu_read_lock();
-> +	for_each_process(p) {
-> +		pid = task_pid(p);
-> +		if (pid && (pid->level > 0)) {
-> +			rc = pidns_list_add(pid, &pidns_list);
-> +			if (rc)
-> +				goto out;
-> +		}
-> +	}
-> +
-> +	/* screen duplicate pids from list pidns_list
-> +	* and form a new list pidns_tree
-> +	*/
-> +	rc = pidns_list_filter();
-> +	if (rc)
-> +		goto out;
-> +	rcu_read_unlock();
-> +
-> +	return 0;
-> +
-> +out:
-> +	free_pidns_list(&pidns_list);
-> +	rcu_read_unlock();
-> +	return rc;
-> +}
-> +
-> +static int nslist_proc_show(struct seq_file *m, void *v)
-> +{
-> +	struct pidns_list *pos;
-> +	struct pid_namespace *ns, *curr_ns;
-> +	struct pid *pid;
-> +	char pid_buf[32];
-> +	int i, curr_level;
-> +	int rc;
-> +
-> +	curr_ns = task_active_pid_ns(current);
-> +
-> +	mutex_lock(&pidns_list_lock);
-> +	rc = proc_pidns_list_refresh();
-> +	if (rc) {
-> +		mutex_unlock(&pidns_list_lock);
-> +		return rc;
-> +	}
-> +
-> +	/* print pid namespace hierarchy */
-> +	list_for_each_entry(pos, &pidns_tree, list) {
+   Assume there is a newer release of Intel microcode for these
+   processors, i.e. newer than the microcodes in the 2014-09-13 release.
+   IOW assume there are at least two public microcode updates in which the
+   Intel TSX feature has been disabled by default, but can be enabled by
+   the BIOS/UEFI.
 
-What keeps pid_namespace's safe to use? Similarly to previous patch,
-here we hit a place where the code is not protected with rcu and
-structures were just plugged into the list.
+   1. BIOS/UEFI has recent microcode (which has the Intel TSX on/off
+      switch), but it is not the latest microcode, and installed this
+      update on the processor.
 
-Recreating the list for each open seems quite unnecessary as well.
+   2. BIOS/UEFI has *enabled* Intel TSX on user request.
 
-One could work around that by caching generated output and having a
-generation counter for namespaces to know whether the content is stale.
-But that still does not seem right.
+   3. Microcode is updated to the latest microcode by the operating
+      system, newer than the one in BIOS/UEFI.
 
-It looks like in the original thread someone suggested hooking this up
-under proc as a directory tree which sounds much better to me.
+   After step 3, will Intel TSX be enabled, or disabled ?
 
-Just my $0,03.
+Or, to be more explicit: will future microcode updates preserve Intel TSX
+enabled/disabled state, or will they always reset it to disabled?
 
-> +		pid = pos->pid;
-> +		curr_level = -1;
-> +		ns = pid->numbers[pid->level].ns;
-> +		/* Check whether a pid has relationship with current ns */
-> +		for (; ns != NULL; ns = ns->parent)
-> +			if (ns == curr_ns)
-> +				curr_level = curr_ns->level;
-> +
-> +		if (curr_level == -1)
-> +			continue;
-> +
-> +		for (i = curr_level + 1; i <= pid->level; i++) {
-> +			ns = pid->numbers[i].ns;
-> +			/* show PID '1' in specific pid ns */
-> +			snprintf(pid_buf, 32, "/proc/%u/ns/pid",
-> +				pid_vnr(find_pid_ns(1, ns)));
-> +			seq_printf(m, "%s ", pid_buf);
-> +		}
-> +
-> +		seq_putc(m, '\n');
-> +	}
-> +
-> +	free_pidns_list(&pidns_tree);
-> +	mutex_unlock(&pidns_list_lock);
-> +
-> +	return 0;
-> +}
+This is really important, for obvious reasons.
 
 -- 
-Mateusz Guzik
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
