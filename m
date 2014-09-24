@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980AbaIXQxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:53:31 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:55254 "EHLO quartz.orcorp.ca"
+	id S1754290AbaIXQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:46:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49482 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754962AbaIXQx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:53:28 -0400
-Date: Wed, 24 Sep 2014 10:53:20 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 03/12] tpm: TPM2 support for tpm_pcr_read()
-Message-ID: <20140924165320.GD8898@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-4-git-send-email-jarkko.sakkinen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411549562-24242-4-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1754129AbaIXQql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:46:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
+   d="scan'208";a="604749338"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
+        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
+        linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: [PATCH 09/27] i2c: omap: use pm_runtime_last_busy_and_autosuspend helper
+Date: Wed, 24 Sep 2014 21:44:59 +0530
+Message-Id: <1411575342-31048-10-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:05:53PM +0300, Jarkko Sakkinen wrote:
+Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+coding the same code
 
-> +static struct tpm_input_header tpm2_pcrread_header = {
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/i2c/busses/i2c-omap.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Missing const - all of these static structures in tpm2-cmds.c are missing the
-const, please fix them all.
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 0dffb0e..8a7de50 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -661,8 +661,7 @@ omap_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 		dev->set_mpu_wkup_lat(dev->dev, -1);
+ 
+ out:
+-	pm_runtime_mark_last_busy(dev->dev);
+-	pm_runtime_put_autosuspend(dev->dev);
++	pm_runtime_last_busy_and_autosuspend(dev->dev);
+ 	return r;
+ }
+ 
+@@ -1253,8 +1252,7 @@ omap_i2c_probe(struct platform_device *pdev)
+ 	dev_info(dev->dev, "bus %d rev%d.%d at %d kHz\n", adap->nr,
+ 		 major, minor, dev->speed);
+ 
+-	pm_runtime_mark_last_busy(dev->dev);
+-	pm_runtime_put_autosuspend(dev->dev);
++	pm_runtime_last_busy_and_autosuspend(dev->dev);
+ 
+ 	return 0;
+ 
+-- 
+1.7.0.4
 
-> +	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-> +	.length = cpu_to_be32(TPM2_PCR_READ_IN_SIZE),
-> +	.ordinal = cpu_to_be32(TPM2_CC_PCR_READ)
-> +};
-
-BTW, I always thought this was a goofy and very expensive way to store
-3 values and zero initialize. If you want to do something different in
-the tpm2-cmds.c that would be great too...
-
-Jason
