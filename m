@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaIXOOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:14:52 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:34271 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIXOOv (ORCPT
+	id S1753543AbaIXOPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:15:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46455 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaIXOPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:14:51 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Wed, 24 Sep 2014 10:14:49 -0400
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: string.c:  Added a funktion function strzcpy
-Message-ID: <20140924141449.GA13319@csclub.uwaterloo.ca>
-References: <1411510416-16655-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1411510416-16655-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140924011753.GG28253@tassilo.jf.intel.com>
- <20140924075206.GC5865@mwanda>
+	Wed, 24 Sep 2014 10:15:13 -0400
+Date: Wed, 24 Sep 2014 16:15:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: kan.liang@intel.com
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        paulus@samba.org, acme@kernel.org, ak@linux.intel.com,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH V5 11/16] perf, core: Pass perf_sample_data to
+ perf_callchain()
+Message-ID: <20140924141507.GF2805@worktop.programming.kicks-ass.net>
+References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
+ <1410358153-421-12-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140924075206.GC5865@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410358153-421-12-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:52:06AM +0300, Dan Carpenter wrote:
-> On Tue, Sep 23, 2014 at 06:17:53PM -0700, Andi Kleen wrote:
-> > Do we really need the bizarre strncpy padding semantics for anything?
-> > Why not just use strlcpy?
+On Wed, Sep 10, 2014 at 10:09:08AM -0400, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
 > 
-> We do need the padding in many places to prevent information leaks.
+> Haswell has a new feature that utilizes the existing Last Branch Record
+> facility to record call chains. When the feature is enabled, function
+> call will be collected as normal, but as return instructions are
+> executed the last captured branch record is popped from the on-chip LBR
+> registers.
+> The LBR call stack facility can help perf to get call chains of progam
+> without frame pointer.
 > 
-> So we end up open coding the last NUL after so many of the strncpy()
-> calls.  And we're adding more NUL terminators all over the place now
-> just to make the code easier to audit.
+> This patch modifies various architectures' perf_callchain() to accept
+> perf sample data. Later patch will add code that use the sample data to
+> get call chains.
 
-I think the suggestion to use strlcpy makes sense too.  strlcpy seems
-to do exactly what is needed and has a known behaviour already.
-
--- 
-Len Sorensen
+So I don't like this. Why not use the regular PERF_SAMPLE_BRANCH_STACK
+output to generate the stuff from? We already have two different means,
+with different transport, for callchains anyhow, so a third really won't
+matter.
