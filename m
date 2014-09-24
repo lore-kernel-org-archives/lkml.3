@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581AbaIXI0E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:26:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42744 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953AbaIXIZ6 (ORCPT
+	id S1752988AbaIXI1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:27:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38730 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaIXI1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:25:58 -0400
-Date: Wed, 24 Sep 2014 01:08:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/2] tty: omap-serial: fix division by zero
-Message-ID: <20140924080852.GA28215@kroah.com>
-References: <1411545322-22940-1-git-send-email-frans.klaver@xsens.com>
- <1411545322-22940-2-git-send-email-frans.klaver@xsens.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411545322-22940-2-git-send-email-frans.klaver@xsens.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 24 Sep 2014 04:27:12 -0400
+Message-Id: <20140924082242.392279328@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 24 Sep 2014 10:18:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org
+Cc: tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 07/11] smp: Correctly deal with nested sleeps
+References: <20140924081845.572814794@infradead.org>
+Content-Disposition: inline; filename=peterz-might_sleep_smpboot.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 09:55:21AM +0200, Frans Klaver wrote:
-> If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
-> calculated n values in serial_omap_is_baud_mode16() may become 0. This
-> causes a division by zero when calculating the difference between
-> calculated and desired baud rates. To prevent this, cap the n13 and n16
-> values on 1.
-> 
-> Division by zero in kernel.
-> [<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
-> [<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
-> [<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
-> [<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
-> [<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
-> [<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
-> [<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
-> [<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
-> [<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
-> [<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
-> [<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
-> [<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
-> [<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
-> 
-> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-> ---
->  drivers/tty/serial/omap-serial.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
+smp_hotplug_thread::{setup,unpark} functions can sleep too, so be
+consistent and do the same for all callbacks.
 
-Should this go to the stable kernel trees as well?
+ __might_sleep+0x74/0x80
+ kmem_cache_alloc_trace+0x4e/0x1c0
+ perf_event_alloc+0x55/0x450
+ perf_event_create_kernel_counter+0x2f/0x100
+ watchdog_nmi_enable+0x8d/0x160
+ watchdog_enable+0x45/0x90
+ smpboot_thread_fn+0xec/0x2b0
+ kthread+0xe4/0x100
+ ret_from_fork+0x7c/0xb0
 
-thanks,
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ kernel/smpboot.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-greg k-h
+--- a/kernel/smpboot.c
++++ b/kernel/smpboot.c
+@@ -110,7 +110,7 @@ static int smpboot_thread_fn(void *data)
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		preempt_disable();
+ 		if (kthread_should_stop()) {
+-			set_current_state(TASK_RUNNING);
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			if (ht->cleanup)
+ 				ht->cleanup(td->cpu, cpu_online(td->cpu));
+@@ -136,26 +136,27 @@ static int smpboot_thread_fn(void *data)
+ 		/* Check for state change setup */
+ 		switch (td->status) {
+ 		case HP_THREAD_NONE:
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			if (ht->setup)
+ 				ht->setup(td->cpu);
+ 			td->status = HP_THREAD_ACTIVE;
+-			preempt_disable();
+-			break;
++			continue;
++
+ 		case HP_THREAD_PARKED:
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			if (ht->unpark)
+ 				ht->unpark(td->cpu);
+ 			td->status = HP_THREAD_ACTIVE;
+-			preempt_disable();
+-			break;
++			continue;
+ 		}
+ 
+ 		if (!ht->thread_should_run(td->cpu)) {
+-			preempt_enable();
++			preempt_enable_no_resched();
+ 			schedule();
+ 		} else {
+-			set_current_state(TASK_RUNNING);
++			__set_current_state(TASK_RUNNING);
+ 			preempt_enable();
+ 			ht->thread_fn(td->cpu);
+ 		}
+
+
