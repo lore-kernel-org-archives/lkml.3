@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaIXVqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:46:38 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:41453 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIXVqf (ORCPT
+	id S1753129AbaIXVqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:46:44 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:39922 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080AbaIXVqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:46:35 -0400
+	Wed, 24 Sep 2014 17:46:40 -0400
 From: Milosz Tanski <milosz@adfin.com>
 To: linux-kernel@vger.kernel.org
 Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
         Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC v3 2/4] vfs: Define new syscalls preadv2,pwritev2
-Date: Wed, 24 Sep 2014 21:46:24 +0000
-Message-Id: <109bfe20aaa150da847f6f6543f99a2eb90b6475.1411594645.git.milosz@adfin.com>
+Subject: [RFC v3 4/4] vfs: RWF_NONBLOCK flag for preadv2
+Date: Wed, 24 Sep 2014 21:46:26 +0000
+Message-Id: <4df5c9a56e8041bfeff037be179fa8ee1c04270a.1411594645.git.milosz@adfin.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1411594644.git.milosz@adfin.com>
 References: <cover.1410810247.git.milosz@adfin.com>
@@ -27,235 +27,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New syscalls that take an flag argument. This change does not add any specific
-flags.
+Filesystems that generic_file_read_iter will not be allowed to perform
+non-blocking reads. This only will read data if it's in the page cache and if
+there is no page error (causing a re-read).
+
+Christoph Hellwig wrote the filesystem specify code (cifs, ofs, shm, xfs).
 
 Signed-off-by: Milosz Tanski <milosz@adfin.com>
 ---
- fs/read_write.c                   | 82 ++++++++++++++++++++++++++++++++-------
- include/linux/syscalls.h          |  6 +++
- include/uapi/asm-generic/unistd.h |  6 ++-
- mm/filemap.c                      |  2 +-
- 4 files changed, 80 insertions(+), 16 deletions(-)
+ fs/cifs/file.c     |  6 ++++++
+ fs/ocfs2/file.c    |  6 ++++++
+ fs/pipe.c          |  3 ++-
+ fs/read_write.c    | 21 ++++++++++++++-------
+ fs/xfs/xfs_file.c  |  4 ++++
+ include/linux/fs.h |  3 +++
+ mm/filemap.c       | 18 ++++++++++++++++++
+ mm/shmem.c         |  4 ++++
+ 8 files changed, 57 insertions(+), 8 deletions(-)
 
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 7c018a1..e7169ba 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -3005,6 +3005,9 @@ ssize_t cifs_user_readv(struct kiocb *iocb, struct iov_iter *to)
+ 	struct cifs_readdata *rdata, *tmp;
+ 	struct list_head rdata_list;
+ 
++	if (iocb->ki_rwflags & RWF_NONBLOCK)
++		return -EAGAIN;
++
+ 	len = iov_iter_count(to);
+ 	if (!len)
+ 		return 0;
+@@ -3123,6 +3126,9 @@ cifs_strict_readv(struct kiocb *iocb, struct iov_iter *to)
+ 	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0))
+ 		return generic_file_read_iter(iocb, to);
+ 
++	if (iocb->ki_rwflags & RWF_NONBLOCK)
++		return -EAGAIN;
++
+ 	/*
+ 	 * We need to hold the sem to be sure nobody modifies lock list
+ 	 * with a brlock that prevents reading.
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 2930e23..d96f60d 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2473,6 +2473,12 @@ static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
+ 			filp->f_path.dentry->d_name.name,
+ 			to->nr_segs);	/* GRRRRR */
+ 
++	/*
++	 * No non-blocking reads for ocfs2 for now.  Might be doable with
++	 * non-blocking cluster lock helpers.
++	 */
++	if (iocb->ki_rwflags & RWF_NONBLOCK)
++		return -EAGAIN;
+ 
+ 	if (!inode) {
+ 		ret = -EINVAL;
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 21981e5..212bf68 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -302,7 +302,8 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+ 			 */
+ 			if (ret)
+ 				break;
+-			if (filp->f_flags & O_NONBLOCK) {
++			if ((filp->f_flags & O_NONBLOCK) ||
++			    (iocb->ki_rwflags & RWF_NONBLOCK)) {
+ 				ret = -EAGAIN;
+ 				break;
+ 			}
 diff --git a/fs/read_write.c b/fs/read_write.c
-index 9f6d13d..a983fc1 100644
+index a983fc1..5592a18 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
-@@ -864,6 +864,8 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+@@ -833,14 +833,19 @@ static ssize_t do_readv_writev(int type, struct file *file,
+ 		file_start_write(file);
+ 	}
+ 
+-	if (iter_fn)
++	if (iter_fn) {
+ 		ret = do_iter_readv_writev(file, type, iov, nr_segs, tot_len,
+ 						pos, iter_fn, flags);
+-	else if (fnv)
+-		ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
+-						pos, fnv);
+-	else
+-		ret = do_loop_readv_writev(file, iov, nr_segs, pos, fn);
++	} else {
++		if (type == READ && (flags & RWF_NONBLOCK))
++			return -EAGAIN;
++
++		if (fnv)
++			ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
++							pos, fnv);
++		else
++			ret = do_loop_readv_writev(file, iov, nr_segs, pos, fn);
++	}
+ 
+ 	if (type != READ)
+ 		file_end_write(file);
+@@ -864,8 +869,10 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
  		return -EBADF;
  	if (!(file->f_mode & FMODE_CAN_READ))
  		return -EINVAL;
-+	if (flags & ~0)
-+		return -EINVAL;
+-	if (flags & ~0)
++	if (flags & ~RWF_NONBLOCK)
+ 		return -EINVAL;
++	if ((file->f_flags & O_DIRECT) && (flags & RWF_NONBLOCK))
++		return -EAGAIN;
  
  	return do_readv_writev(READ, file, vec, vlen, pos, flags);
  }
-@@ -877,21 +879,23 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
- 		return -EBADF;
- 	if (!(file->f_mode & FMODE_CAN_WRITE))
- 		return -EINVAL;
-+	if (flags & ~0)
-+		return -EINVAL;
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index de5368c..cf61271 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -246,6 +246,10 @@ xfs_file_read_iter(
  
- 	return do_readv_writev(WRITE, file, vec, vlen, pos, flags);
- }
+ 	XFS_STATS_INC(xs_read_calls);
  
- EXPORT_SYMBOL(vfs_writev);
- 
--SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
--		unsigned long, vlen)
-+static ssize_t do_readv(unsigned long fd, const struct iovec __user *vec,
-+			unsigned long vlen, int flags)
- {
- 	struct fd f = fdget_pos(fd);
- 	ssize_t ret = -EBADF;
- 
- 	if (f.file) {
- 		loff_t pos = file_pos_read(f.file);
--		ret = vfs_readv(f.file, vec, vlen, &pos, 0);
-+		ret = vfs_readv(f.file, vec, vlen, &pos, flags);
- 		if (ret >= 0)
- 			file_pos_write(f.file, pos);
- 		fdput_pos(f);
-@@ -903,15 +907,15 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
- }
- 
--SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
--		unsigned long, vlen)
-+static ssize_t do_writev(unsigned long fd, const struct iovec __user *vec,
-+			 unsigned long vlen, int flags)
- {
- 	struct fd f = fdget_pos(fd);
- 	ssize_t ret = -EBADF;
- 
- 	if (f.file) {
- 		loff_t pos = file_pos_read(f.file);
--		ret = vfs_writev(f.file, vec, vlen, &pos, 0);
-+		ret = vfs_writev(f.file, vec, vlen, &pos, flags);
- 		if (ret >= 0)
- 			file_pos_write(f.file, pos);
- 		fdput_pos(f);
-@@ -929,10 +933,9 @@ static inline loff_t pos_from_hilo(unsigned long high, unsigned long low)
- 	return (((loff_t)high << HALF_LONG_BITS) << HALF_LONG_BITS) | low;
- }
- 
--SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
--		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-+static ssize_t do_preadv(unsigned long fd, const struct iovec __user *vec,
-+			 unsigned long vlen, loff_t pos, int flags)
- {
--	loff_t pos = pos_from_hilo(pos_h, pos_l);
- 	struct fd f;
- 	ssize_t ret = -EBADF;
- 
-@@ -943,7 +946,7 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
- 	if (f.file) {
- 		ret = -ESPIPE;
- 		if (f.file->f_mode & FMODE_PREAD)
--			ret = vfs_readv(f.file, vec, vlen, &pos, 0);
-+			ret = vfs_readv(f.file, vec, vlen, &pos, flags);
- 		fdput(f);
- 	}
- 
-@@ -953,10 +956,9 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
- }
- 
--SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
--		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-+static ssize_t do_pwritev(unsigned long fd, const struct iovec __user *vec,
-+			  unsigned long vlen, loff_t pos, int flags)
- {
--	loff_t pos = pos_from_hilo(pos_h, pos_l);
- 	struct fd f;
- 	ssize_t ret = -EBADF;
- 
-@@ -967,7 +969,7 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
- 	if (f.file) {
- 		ret = -ESPIPE;
- 		if (f.file->f_mode & FMODE_PWRITE)
--			ret = vfs_writev(f.file, vec, vlen, &pos, 0);
-+			ret = vfs_writev(f.file, vec, vlen, &pos, flags);
- 		fdput(f);
- 	}
- 
-@@ -977,6 +979,58 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
- }
- 
-+SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen)
-+{
-+	return do_readv(fd, vec, vlen, 0);
-+}
++	/* XXX: need a non-blocking iolock helper, shouldn't be too hard */
++	if (iocb->ki_rwflags & RWF_NONBLOCK)
++		return -EAGAIN;
 +
-+SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen)
-+{
-+	return do_writev(fd, vec, vlen, 0);
-+}
-+
-+SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-+{
-+	loff_t pos = pos_from_hilo(pos_h, pos_l);
-+
-+	return do_preadv(fd, vec, vlen, pos, 0);
-+}
-+
-+SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-+		int, flags)
-+{
-+	loff_t pos = pos_from_hilo(pos_h, pos_l);
-+
-+	if (pos == -1)
-+		return do_readv(fd, vec, vlen, flags);
-+
-+	return do_preadv(fd, vec, vlen, pos, flags);
-+}
-+
-+SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
-+{
-+	loff_t pos = pos_from_hilo(pos_h, pos_l);
-+
-+	return do_pwritev(fd, vec, vlen, pos, 0);
-+}
-+
-+SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-+		int, flags)
-+{
-+	loff_t pos = pos_from_hilo(pos_h, pos_l);
-+
-+	if (pos == -1)
-+		return do_writev(fd, vec, vlen, flags);
-+
-+	return do_pwritev(fd, vec, vlen, pos, flags);
-+}
-+
- #ifdef CONFIG_COMPAT
+ 	if (unlikely(file->f_flags & O_DIRECT))
+ 		ioflags |= XFS_IO_ISDIRECT;
+ 	if (file->f_mode & FMODE_NOCMTIME)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e9bea52..b884975 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1477,6 +1477,9 @@ struct block_device_operations;
+ #define HAVE_COMPAT_IOCTL 1
+ #define HAVE_UNLOCKED_IOCTL 1
  
- static ssize_t compat_do_readv_writev(int type, struct file *file,
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 0f86d85..830285f 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -570,8 +570,14 @@ asmlinkage long sys_pwrite64(unsigned int fd, const char __user *buf,
- 			     size_t count, loff_t pos);
- asmlinkage long sys_preadv(unsigned long fd, const struct iovec __user *vec,
- 			   unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
-+asmlinkage long sys_preadv2(unsigned long fd, const struct iovec __user *vec,
-+			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
-+			    int flags);
- asmlinkage long sys_pwritev(unsigned long fd, const struct iovec __user *vec,
- 			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
-+asmlinkage long sys_pwritev2(unsigned long fd, const struct iovec __user *vec,
-+			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
-+			    int flags);
- asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
- asmlinkage long sys_mkdir(const char __user *pathname, umode_t mode);
- asmlinkage long sys_chdir(const char __user *filename);
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 11d11bc..589add9 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -213,6 +213,10 @@ __SC_COMP(__NR_pwrite64, sys_pwrite64, compat_sys_pwrite64)
- __SC_COMP(__NR_preadv, sys_preadv, compat_sys_preadv)
- #define __NR_pwritev 70
- __SC_COMP(__NR_pwritev, sys_pwritev, compat_sys_pwritev)
-+#define __NR_preadv2 280
-+__SC_COMP(__NR_preadv2, sys_preadv2)
-+#define __NR_pwritev2 281
-+__SC_COMP(__NR_pwritev2, sys_pwritev2)
++/* These flags are used for the readv/writev syscalls with flags. */
++#define RWF_NONBLOCK 0x00000001
++
+ struct iov_iter;
  
- /* fs/sendfile.c */
- #define __NR3264_sendfile 71
-@@ -707,7 +711,7 @@ __SYSCALL(__NR_getrandom, sys_getrandom)
- __SYSCALL(__NR_memfd_create, sys_memfd_create)
- 
- #undef __NR_syscalls
--#define __NR_syscalls 280
-+#define __NR_syscalls 282
- 
- /*
-  * All syscalls below here should go away really,
+ struct file_operations {
 diff --git a/mm/filemap.c b/mm/filemap.c
-index 6e3ba07..e0919ba 100644
+index e0919ba..86ed6f7 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -1726,7 +1726,7 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+@@ -1484,6 +1484,8 @@ static ssize_t do_generic_file_read(struct file *filp, loff_t *ppos,
+ find_page:
+ 		page = find_get_page(mapping, index);
+ 		if (!page) {
++			if (flags & RWF_NONBLOCK)
++				goto would_block;
+ 			page_cache_sync_readahead(mapping,
+ 					ra, filp,
+ 					index, last_index - index);
+@@ -1575,6 +1577,11 @@ page_ok:
+ 		continue;
+ 
+ page_not_up_to_date:
++		if (flags & RWF_NONBLOCK) {
++			page_cache_release(page);
++			goto would_block;
++		}
++
+ 		/* Get exclusive access to the page ... */
+ 		error = lock_page_killable(page);
+ 		if (unlikely(error))
+@@ -1594,6 +1601,12 @@ page_not_up_to_date_locked:
+ 			goto page_ok;
  		}
+ 
++		if (flags & RWF_NONBLOCK) {
++			unlock_page(page);
++			page_cache_release(page);
++			goto would_block;
++		}
++
+ readpage:
+ 		/*
+ 		 * A previous I/O error may have been due to temporary
+@@ -1664,6 +1677,8 @@ no_cached_page:
+ 		goto readpage;
  	}
  
--	retval = do_generic_file_read(file, ppos, iter, retval);
-+	retval = do_generic_file_read(file, ppos, iter, retval, iocb->ki_rwflags);
++would_block:
++	error = -EAGAIN;
  out:
- 	return retval;
- }
+ 	ra->prev_pos = prev_index;
+ 	ra->prev_pos <<= PAGE_CACHE_SHIFT;
+@@ -1697,6 +1712,9 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+ 		size_t count = iov_iter_count(iter);
+ 		loff_t size;
+ 
++		if (iocb->ki_rwflags & RWF_NONBLOCK)
++			return -EAGAIN;
++
+ 		if (!count)
+ 			goto out; /* skip atime */
+ 		size = i_size_read(inode);
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 0e5fb22..ca2cae2 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1531,6 +1531,10 @@ static ssize_t shmem_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
+ 	ssize_t retval = 0;
+ 	loff_t *ppos = &iocb->ki_pos;
+ 
++	/* XXX: should be easily supportable */
++	if (iocb->ki_rwflags & RWF_NONBLOCK)
++		return -EAGAIN;
++
+ 	/*
+ 	 * Might this read be for a stacking filesystem?  Then when reading
+ 	 * holes of a sparse file, we actually need to allocate those pages,
 -- 
 2.1.0
 
