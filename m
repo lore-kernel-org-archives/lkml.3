@@ -1,133 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaIXTZP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:25:15 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:58129 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753043AbaIXTZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:25:08 -0400
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
-        Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
-        Paul Mackerras <paulus@samba.org>
-Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
-        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 1/4] powerpc/perf/hv-24x7: use kmem_cache instead of aligned stack allocations
-Date: Wed, 24 Sep 2014 12:24:38 -0700
-Message-Id: <1411586681-21262-2-git-send-email-sukadev@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411586681-21262-1-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1411586681-21262-1-git-send-email-sukadev@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092419-7182-0000-0000-0000008A509E
+	id S1753481AbaIXT0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:26:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57522 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747AbaIXT0C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:26:02 -0400
+Date: Wed, 24 Sep 2014 21:25:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC Part2 v1 00/21] Enable hierarchy irqdomian on x86
+ platforms
+In-Reply-To: <542279D0.1040603@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.10.1409242122380.4604@nanos>
+References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com> <542279D0.1040603@jp.fujitsu.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
+On Wed, 24 Sep 2014, Yasuaki Ishimatsu wrote:
+> I cannot imagine why the feature makes x86 irq architecture much more clear
+> and more easy to maintain in this description. Of course, I have read the
+> following threads:
+> 
+> https://lkml.org/lkml/2014/9/11/101
 
-Ian pointed out the use of __aligned(4096) caused rather large stack
-consumption in single_24x7_request(), so use the kmem_cache
-hv_page_cache (which we've already got set up for other allocations)
-insead of allocating locally.
+Here is the long version of the idea:
 
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-CC: Haren Myneni <hbabu@us.ibm.com>
-CC: Cody P Schafer <dev@codyps.com>
-Reported-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- arch/powerpc/perf/hv-24x7.c | 52 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 37 insertions(+), 15 deletions(-)
+     https://lkml.org/lkml/2014/8/26/707
 
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index 70d4f74..2f2215c 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -294,7 +294,7 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 					 u16 lpar, u64 *res,
- 					 bool success_expected)
- {
--	unsigned long ret;
-+	unsigned long ret = -ENOMEM;
- 
- 	/*
- 	 * request_buffer and result_buffer are not required to be 4k aligned,
-@@ -304,7 +304,27 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 	struct reqb {
- 		struct hv_24x7_request_buffer buf;
- 		struct hv_24x7_request req;
--	} __packed __aligned(4096) request_buffer = {
-+	} __packed * request_buffer;
-+	struct resb {
-+		struct hv_24x7_data_result_buffer buf;
-+		struct hv_24x7_result res;
-+		struct hv_24x7_result_element elem;
-+		__be64 result;
-+	} __packed * result_buffer;
-+
-+	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
-+	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
-+
-+	request_buffer = kmem_cache_alloc(hv_page_cache, GFP_USER);
-+
-+	if (!request_buffer)
-+		goto out_reqb;
-+
-+	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
-+	if (!result_buffer)
-+		goto out_resb;
-+
-+	*request_buffer = (struct reqb) {
- 		.buf = {
- 			.interface_version = HV_24X7_IF_VERSION_CURRENT,
- 			.num_requests = 1,
-@@ -320,28 +340,30 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 		}
- 	};
- 
--	struct resb {
--		struct hv_24x7_data_result_buffer buf;
--		struct hv_24x7_result res;
--		struct hv_24x7_result_element elem;
--		__be64 result;
--	} __packed __aligned(4096) result_buffer = {};
--
- 	ret = plpar_hcall_norets(H_GET_24X7_DATA,
--			virt_to_phys(&request_buffer), sizeof(request_buffer),
--			virt_to_phys(&result_buffer),  sizeof(result_buffer));
-+			virt_to_phys(request_buffer), sizeof(*request_buffer),
-+			virt_to_phys(result_buffer),  sizeof(*result_buffer));
- 
- 	if (ret) {
- 		if (success_expected)
- 			pr_err_ratelimited("hcall failed: %d %#x %#x %d => 0x%lx (%ld) detail=0x%x failing ix=%x\n",
- 					domain, offset, ix, lpar,
- 					ret, ret,
--					result_buffer.buf.detailed_rc,
--					result_buffer.buf.failing_request_ix);
--		return ret;
-+					result_buffer->buf.detailed_rc,
-+					result_buffer->buf.failing_request_ix);
-+		goto out_hcall;
- 	}
- 
--	*res = be64_to_cpu(result_buffer.result);
-+	*res = be64_to_cpu(result_buffer->result);
-+	kfree(result_buffer);
-+	kfree(request_buffer);
-+	return ret;
-+
-+out_hcall:
-+	kfree(result_buffer);
-+out_resb:
-+	kfree(request_buffer);
-+out_reqb:
- 	return ret;
- }
- 
--- 
-1.8.3.1
+Short version is:
+
+Separate the irq handling entities in a clear layered way instead of
+having vector/[io]apic specific knowledge/data in places like msi,
+remap etc.
+
+Thanks,
+
+	tglx
 
