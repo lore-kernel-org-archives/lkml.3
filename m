@@ -1,248 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbaIXVD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:03:29 -0400
-Received: from mail-bn1on0139.outbound.protection.outlook.com ([157.56.110.139]:64268
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751301AbaIXVD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:03:27 -0400
-X-WSS-ID: 0NCFB5S-07-T95-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        "John Bridgman" <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH v4 11/23] amdkfd: Add binding/unbinding calls to amd_iommu driver
-Date: Wed, 24 Sep 2014 23:45:25 +0300
-Message-ID: <1411591537-31636-12-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
-References: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
+	id S1753510AbaIXVDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:03:37 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48628 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068AbaIXVDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:03:34 -0400
+Date: Wed, 24 Sep 2014 17:03:22 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: memcontrol: do not kill uncharge batching in
+ free_pages_and_swap_cache
+Message-ID: <20140924210322.GA11017@cmpxchg.org>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+ <1411571338-8178-2-git-send-email-hannes@cmpxchg.org>
+ <20140924124234.3fdb59d6cdf7e9c4d6260adb@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.20.0.84]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(95666004)(47776003)(229853001)(77096002)(92566001)(105586002)(92726001)(76482002)(106466001)(97736003)(120916001)(99396003)(107046002)(31966008)(36756003)(83072002)(64706001)(20776003)(104166001)(4396001)(77156001)(101416001)(19580395003)(81542003)(68736004)(48376002)(83322001)(90102001)(74502003)(77982003)(93916002)(89996001)(44976005)(33646002)(80022003)(50226001)(46102003)(102836001)(62966002)(85306004)(87936001)(21056001)(50466002)(79102003)(84676001)(76176999)(19580405001)(74662003)(88136002)(81342003)(85852003)(50986999)(86362001)(10300001)(87286001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
-X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB076;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924124234.3fdb59d6cdf7e9c4d6260adb@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the functions to bind and unbind pasid
-from a device through the amd_iommu driver.
+On Wed, Sep 24, 2014 at 12:42:34PM -0700, Andrew Morton wrote:
+> On Wed, 24 Sep 2014 11:08:56 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > +}
+> > +/*
+> > + * Batched page_cache_release(). Frees and uncharges all given pages
+> > + * for which the reference count drops to 0.
+> > + */
+> > +void release_pages(struct page **pages, int nr, bool cold)
+> > +{
+> > +	LIST_HEAD(pages_to_free);
+> >  
+> > +	while (nr) {
+> > +		int batch = min(nr, PAGEVEC_SIZE);
+> > +
+> > +		release_lru_pages(pages, batch, &pages_to_free);
+> > +		pages += batch;
+> > +		nr -= batch;
+> > +	}
+> 
+> The use of PAGEVEC_SIZE here is pretty misleading - there are no
+> pagevecs in sight.  SWAP_CLUSTER_MAX would be more appropriate.
+> 
+> 
+> 
+> afaict the only reason for this loop is to limit the hold duration for
+> lru_lock.  And it does a suboptimal job of that because it treats all
+> lru_locks as one: if release_lru_pages() were to hold zoneA's lru_lock
+> for 8 pages and then were to drop that and hold zoneB's lru_lock for 8
+> pages, the logic would then force release_lru_pages() to drop the lock
+> and return to release_pages() even though it doesn't need to.
+> 
+> So I'm thinking it would be better to move the lock-busting logic into
+> release_lru_pages() itself.  With a suitable comment, natch ;) Only
+> bust the lock in the case where we really did hold a particular lru_lock
+> for 16 consecutive pages.  Then s/release_lru_pages/release_pages/ and
+> zap the old release_pages().
 
-The unbind function is called when the mm_struct of the
-process is released.
+Yeah, that's better.
 
-The bind function is not called here because it is called
-only in the IOCTLs which are not yet implemented at this
-stage of the patchset.
+> Obviously it's not very important - presumably the common case is that
+> the LRU contains lengthy sequences of pages from the same zone.  Maybe.
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+Even then, the end result is more concise and busts the lock where
+it's actually taken, making the whole thing a bit more obvious:
+
 ---
- drivers/gpu/drm/radeon/amdkfd/kfd_device.c  | 86 ++++++++++++++++++++++++++++-
- drivers/gpu/drm/radeon/amdkfd/kfd_priv.h    |  1 +
- drivers/gpu/drm/radeon/amdkfd/kfd_process.c | 12 ++++
- 3 files changed, 98 insertions(+), 1 deletion(-)
+>From 367f3dcf25141ff6c30400c00ec09cc3c5486f94 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 5 Sep 2014 11:16:17 +0200
+Subject: [patch] mm: memcontrol: do not kill uncharge batching in
+ free_pages_and_swap_cache
 
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-index 8e2b075..ce90592 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_device.c
-@@ -98,6 +98,63 @@ struct kfd_dev *kgd2kfd_probe(struct kgd_dev *kgd, struct pci_dev *pdev)
- 	return kfd;
+free_pages_and_swap_cache limits release_pages to PAGEVEC_SIZE chunks.
+This is not a big deal for the normal release path but it completely
+kills memcg uncharge batching which reduces res_counter spin_lock
+contention. Dave has noticed this with his page fault scalability test
+case on a large machine when the lock was basically dominating on all
+CPUs:
+    80.18%    80.18%  [kernel]               [k] _raw_spin_lock
+                  |
+                  --- _raw_spin_lock
+                     |
+                     |--66.59%-- res_counter_uncharge_until
+                     |          res_counter_uncharge
+                     |          uncharge_batch
+                     |          uncharge_list
+                     |          mem_cgroup_uncharge_list
+                     |          release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |
+                     |          |--90.12%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |
+                     |           --9.88%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
+
+In his case the load was running in the root memcg and that part
+has been handled by reverting 05b843012335 ("mm: memcontrol: use
+root_mem_cgroup res_counter") because this is a clear regression,
+but the problem remains inside dedicated memcgs.
+
+There is no reason to limit release_pages to PAGEVEC_SIZE batches other
+than lru_lock held times. This logic, however, can be moved inside the
+function. mem_cgroup_uncharge_list and free_hot_cold_page_list do not
+hold any lock for the whole pages_to_free list so it is safe to call
+them in a single run.
+
+In release_pages, break the lock at least every SWAP_CLUSTER_MAX (32)
+pages, then remove the batching from free_pages_and_swap_cache.
+
+Also update the grossly out-of-date release_pages documentation.
+
+Reported-by: Dave Hansen <dave@sr71.net>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/swap.c       | 31 ++++++++++++++++++++-----------
+ mm/swap_state.c | 14 ++++----------
+ 2 files changed, 24 insertions(+), 21 deletions(-)
+
+diff --git a/mm/swap.c b/mm/swap.c
+index 6b2dc3897cd5..39affa1932ce 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -887,18 +887,14 @@ void lru_add_drain_all(void)
+ 	mutex_unlock(&lock);
  }
  
-+static bool device_iommu_pasid_init(struct kfd_dev *kfd)
-+{
-+	const u32 required_iommu_flags = AMD_IOMMU_DEVICE_FLAG_ATS_SUP | AMD_IOMMU_DEVICE_FLAG_PRI_SUP
-+					| AMD_IOMMU_DEVICE_FLAG_PASID_SUP;
-+
-+	struct amd_iommu_device_info iommu_info;
-+	unsigned int pasid_limit;
-+	int err;
-+
-+	err = amd_iommu_device_info(kfd->pdev, &iommu_info);
-+	if (err < 0) {
-+		dev_err(kfd_device, "error getting iommu info. is the iommu enabled?\n");
-+		return false;
-+	}
-+
-+	if ((iommu_info.flags & required_iommu_flags) != required_iommu_flags) {
-+		dev_err(kfd_device, "error required iommu flags ats(%i), pri(%i), pasid(%i)\n",
-+		       (iommu_info.flags & AMD_IOMMU_DEVICE_FLAG_ATS_SUP) != 0,
-+		       (iommu_info.flags & AMD_IOMMU_DEVICE_FLAG_PRI_SUP) != 0,
-+		       (iommu_info.flags & AMD_IOMMU_DEVICE_FLAG_PASID_SUP) != 0);
-+		return false;
-+	}
-+
-+	pasid_limit = min_t(unsigned int,
-+			(unsigned int)1 << kfd->device_info->max_pasid_bits,
-+			iommu_info.max_pasids);
-+	/*
-+	 * last pasid is used for kernel queues doorbells
-+	 * in the future the last pasid might be used for a kernel thread.
-+	 */
-+	pasid_limit = min_t(unsigned int,
-+				pasid_limit,
-+				kfd->doorbell_process_limit - 1);
-+
-+	err = amd_iommu_init_device(kfd->pdev, pasid_limit);
-+	if (err < 0) {
-+		dev_err(kfd_device, "error initializing iommu device\n");
-+		return false;
-+	}
-+
-+	if (!kfd_set_pasid_limit(pasid_limit)) {
-+		dev_err(kfd_device, "error setting pasid limit\n");
-+		amd_iommu_free_device(kfd->pdev);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static void iommu_pasid_shutdown_callback(struct pci_dev *pdev, int pasid)
-+{
-+	struct kfd_dev *dev = kfd_device_by_pci_dev(pdev);
-+
-+	if (dev)
-+		kfd_unbind_process_from_device(dev, pasid);
-+}
-+
- bool kgd2kfd_device_init(struct kfd_dev *kfd,
- 			 const struct kgd2kfd_shared_resources *gpu_resources)
+-/*
+- * Batched page_cache_release().  Decrement the reference count on all the
+- * passed pages.  If it fell to zero then remove the page from the LRU and
+- * free it.
+- *
+- * Avoid taking zone->lru_lock if possible, but if it is taken, retain it
+- * for the remainder of the operation.
++/**
++ * release_pages - batched page_cache_release()
++ * @pages: array of pages to release
++ * @nr: number of pages
++ * @cold: whether the pages are cache cold
+  *
+- * The locking in this function is against shrink_inactive_list(): we recheck
+- * the page count inside the lock to see whether shrink_inactive_list()
+- * grabbed the page via the LRU.  If it did, give up: shrink_inactive_list()
+- * will free it.
++ * Decrement the reference count on all the pages in @pages.  If it
++ * fell to zero, remove the page from the LRU and free it.
+  */
+ void release_pages(struct page **pages, int nr, bool cold)
  {
-@@ -129,6 +186,13 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
- 		goto kfd_topology_add_device_error;
- 	}
+@@ -907,6 +903,7 @@ void release_pages(struct page **pages, int nr, bool cold)
+ 	struct zone *zone = NULL;
+ 	struct lruvec *lruvec;
+ 	unsigned long uninitialized_var(flags);
++	unsigned int uninitialized_var(lock_batch);
  
-+	if (!device_iommu_pasid_init(kfd)) {
-+		dev_err(kfd_device,
-+			"Error initializing iommuv2 for device (%x:%x)\n",
-+			kfd->pdev->vendor, kfd->pdev->device);
-+		goto device_iommu_pasid_error;
-+	}
-+	amd_iommu_set_invalidate_ctx_cb(kfd->pdev, iommu_pasid_shutdown_callback);
- 
- 	kfd->init_complete = true;
- 	dev_info(kfd_device, "added device (%x:%x)\n", kfd->pdev->vendor,
-@@ -136,6 +200,8 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
- 
- 	goto out;
- 
-+device_iommu_pasid_error:
-+	kfd_topology_remove_device(kfd);
- kfd_topology_add_device_error:
- 	kfd2kgd->fini_sa_manager(kfd->kgd);
- 	dev_err(kfd_device,
-@@ -147,7 +213,10 @@ out:
- 
- void kgd2kfd_device_exit(struct kfd_dev *kfd)
- {
--	kfd_topology_remove_device(kfd);
-+	if (kfd->init_complete) {
-+		amd_iommu_free_device(kfd->pdev);
-+		kfd_topology_remove_device(kfd);
-+	}
- 
- 	kfree(kfd);
- }
-@@ -155,12 +224,27 @@ void kgd2kfd_device_exit(struct kfd_dev *kfd)
- void kgd2kfd_suspend(struct kfd_dev *kfd)
- {
- 	BUG_ON(kfd == NULL);
+ 	for (i = 0; i < nr; i++) {
+ 		struct page *page = pages[i];
+@@ -914,6 +911,7 @@ void release_pages(struct page **pages, int nr, bool cold)
+ 		if (unlikely(PageCompound(page))) {
+ 			if (zone) {
+ 				spin_unlock_irqrestore(&zone->lru_lock, flags);
++				lock_batch = 0;
+ 				zone = NULL;
+ 			}
+ 			put_compound_page(page);
+@@ -930,6 +928,7 @@ void release_pages(struct page **pages, int nr, bool cold)
+ 				if (zone)
+ 					spin_unlock_irqrestore(&zone->lru_lock,
+ 									flags);
++				lock_batch = 0;
+ 				zone = pagezone;
+ 				spin_lock_irqsave(&zone->lru_lock, flags);
+ 			}
+@@ -938,6 +937,16 @@ void release_pages(struct page **pages, int nr, bool cold)
+ 			VM_BUG_ON_PAGE(!PageLRU(page), page);
+ 			__ClearPageLRU(page);
+ 			del_page_from_lru_list(page, lruvec, page_off_lru(page));
 +
-+	if (kfd->init_complete)
-+		amd_iommu_free_device(kfd->pdev);
++			/*
++			 * Make sure the IRQ-safe lock-holding time
++			 * does not get excessive with a continuous
++			 * string of pages from the same zone.
++			 */
++			if (++lock_batch == SWAP_CLUSTER_MAX) {
++				spin_unlock_irqrestore(&zone->lru_lock, flags);
++				zone = NULL;
++			}
+ 		}
+ 
+ 		/* Clear Active bit in case of parallel mark_page_accessed */
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index ef1f39139b71..154444918685 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -265,18 +265,12 @@ void free_page_and_swap_cache(struct page *page)
+ void free_pages_and_swap_cache(struct page **pages, int nr)
+ {
+ 	struct page **pagep = pages;
++	int i;
+ 
+ 	lru_add_drain();
+-	while (nr) {
+-		int todo = min(nr, PAGEVEC_SIZE);
+-		int i;
+-
+-		for (i = 0; i < todo; i++)
+-			free_swap_cache(pagep[i]);
+-		release_pages(pagep, todo, false);
+-		pagep += todo;
+-		nr -= todo;
+-	}
++	for (i = 0; i < nr; i++)
++		free_swap_cache(pagep[i]);
++	release_pages(pagep, nr, false);
  }
  
- int kgd2kfd_resume(struct kfd_dev *kfd)
- {
-+	unsigned int pasid_limit;
-+	int err;
-+
- 	BUG_ON(kfd == NULL);
- 
-+	pasid_limit = kfd_get_pasid_limit();
-+
-+	if (kfd->init_complete) {
-+		err = amd_iommu_init_device(kfd->pdev, pasid_limit);
-+		if (err < 0)
-+			return -ENXIO;
-+		amd_iommu_set_invalidate_ctx_cb(kfd->pdev, iommu_pasid_shutdown_callback);
-+	}
-+
- 	return 0;
- }
- 
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-index 43f4bd4..b55b1cb 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-@@ -188,6 +188,7 @@ struct kfd_process {
- struct kfd_process *kfd_create_process(const struct task_struct *);
- struct kfd_process *kfd_get_process(const struct task_struct *);
- 
-+void kfd_unbind_process_from_device(struct kfd_dev *dev, unsigned int pasid);
- struct kfd_process_device *kfd_get_process_device_data(struct kfd_dev *dev,
- 							struct kfd_process *p,
- 							int create_pdd);
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_process.c b/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
-index c95fd93..66a91b9 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_process.c
-@@ -24,6 +24,7 @@
- #include <linux/log2.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-+#include <linux/amd-iommu.h>
- #include <linux/notifier.h>
- struct mm_struct;
- 
-@@ -153,6 +154,7 @@ static void kfd_process_notifier_release(struct mmu_notifier *mn,
- 	mutex_lock(&p->mutex);
- 
- 	list_for_each_entry_safe(pdd, temp, &p->per_device_data, per_device_list) {
-+		amd_iommu_unbind_pasid(pdd->dev->pdev, p->pasid);
- 		list_del(&pdd->per_device_list);
- 		kfree(pdd);
- 	}
-@@ -258,6 +260,7 @@ struct kfd_process_device *kfd_bind_process_to_device(struct kfd_dev *dev,
- 							struct kfd_process *p)
- {
- 	struct kfd_process_device *pdd = kfd_get_process_device_data(dev, p, 1);
-+	int err;
- 
- 	if (pdd == NULL)
- 		return ERR_PTR(-ENOMEM);
-@@ -265,6 +268,15 @@ struct kfd_process_device *kfd_bind_process_to_device(struct kfd_dev *dev,
- 	if (pdd->bound)
- 		return pdd;
- 
-+	err = amd_iommu_bind_pasid(dev->pdev, p->pasid, p->lead_thread);
-+	if (err < 0)
-+		return ERR_PTR(err);
-+
-+	if (err < 0) {
-+		amd_iommu_unbind_pasid(dev->pdev, p->pasid);
-+		return ERR_PTR(err);
-+	}
-+
- 	pdd->bound = true;
- 
- 	return pdd;
+ /*
 -- 
-1.9.1
+2.1.0
 
