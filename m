@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaIXQ5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:57:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49437 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173AbaIXQqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:46:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
-   d="scan'208";a="604749217"
-From: Vinod Koul <vinod.koul@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH 01/27] PM: Add helper pm_runtime_last_busy_and_autosuspend()
-Date: Wed, 24 Sep 2014 21:44:51 +0530
-Message-Id: <1411575342-31048-2-git-send-email-vinod.koul@intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
-References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+	id S1754636AbaIXQ5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:57:46 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:33518 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568AbaIXQ5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:57:44 -0400
+Date: Wed, 24 Sep 2014 09:57:39 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Andreas Werner <andreas.werner@men.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140924165739.GA31578@roeck-us.net>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <20140924144829.GK32069@lee--X1>
+ <20140924154503.GA12403@roeck-us.net>
+ <20140924161837.GA7113@lee--X1>
+ <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
+On Wed, Sep 24, 2014 at 09:33:32AM -0700, Bryan Wu wrote:
+> On Wed, Sep 24, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Wed, 24 Sep 2014, Guenter Roeck wrote:
+> >
+> >> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
+> >> > Guenter, Bryan, Wim,
+> >> >
+> >> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> >> >
+> >> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> >> >
+> >> > are available in the git repository at:
+> >> >
+> >> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
+> >> >
+> >> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+> >> >
+> >> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+> >> >
+> >> > ----------------------------------------------------------------
+> >> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+> >> >
+> >> I assume you'll push it all through mfd, correct ?
+> >
+> > The idea is for all the affected Maintainers to pull this branch in to
+> > their own trees.  If you guys don't, there will be a good chance of
+> > conflict during the merge-window, which will subsequently upset Linus.
+> >
+> > So in answer to your question; yes I'll be taking this, but so should
+> > each of you.
+> >
+> 
+> Thanks for this, man. What am I going to do here? Need I pull in all
+> the patches here into my LED tree or just one LED patch? I think if
+> you push this for Linus through MFD tree, I don't need to pull it into
+> my tree, right?
+> 
+I did
 
-pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
-in quite a lot of places. Add a helper for these.
-Also updated Documentation for this
+git remote add mfd git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
+git fetch --tags mfd
+git merge mfd-hwmon-leds-watchdog-v3.18
 
-Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- Documentation/power/runtime_pm.txt |    4 ++++
- include/linux/pm_runtime.h         |    6 ++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+in both my hwmon-next and watchdog-next branches. Both are currently building,
+and already pushed into to my repository at kernel.org.
 
-diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
-index f32ce54..5d9565b 100644
---- a/Documentation/power/runtime_pm.txt
-+++ b/Documentation/power/runtime_pm.txt
-@@ -490,6 +490,10 @@ drivers/base/power/runtime.c and include/linux/pm_runtime.h:
-       power.use_autosuspend isn't set, otherwise returns the expiration time
-       in jiffies
- 
-+   int pm_runtime_last_busy_and_autosuspend(struct device *dev);
-+    - invoke pm_runtime_mark_last_busy(dev) and then run
-+      pm_runtime_put_autosuspend(dev) and return its result
-+
- It is safe to execute the following helper functions from interrupt context:
- 
- pm_request_idle()
-diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
-index 367f49b..256ec50 100644
---- a/include/linux/pm_runtime.h
-+++ b/include/linux/pm_runtime.h
-@@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
- 	__pm_runtime_use_autosuspend(dev, false);
- }
- 
-+static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
-+{
-+	pm_runtime_mark_last_busy(dev);
-+	return pm_runtime_put_autosuspend(dev);
-+}
-+
- #endif
--- 
-1.7.0.4
+So, effectively, when I send my pull request to Linus, all patches from
+mfd-hwmon-leds-watchdog-v3.18 will be included, ie the entire series.
+The same will happen when Lee sends his pull request, and Wim, and you. 
+I believe that is what Lee is asking for.
 
+Thanks,
+Guenter
