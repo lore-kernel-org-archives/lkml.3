@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaIXO61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:58:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59715 "EHLO
+	id S1753540AbaIXO6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:58:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59739 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaIXO6Y (ORCPT
+	with ESMTP id S1752591AbaIXO6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:58:24 -0400
-Date: Wed, 24 Sep 2014 07:57:33 -0700
+	Wed, 24 Sep 2014 10:58:43 -0400
+Date: Wed, 24 Sep 2014 07:57:48 -0700
 From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-f1e3a0932f3a9554371792a7daaf1e0eb19f66d5@git.kernel.org>
+Message-ID: <tip-8aa6f0ebf41b5fdd186276394bf07e7bd6884d94@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
         mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <20140922183636.11015.83611.stgit@localhost>
-References: <20140922183636.11015.83611.stgit@localhost>
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140922183642.11015.66039.stgit@localhost>
+References: <20140922183642.11015.66039.stgit@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Use rq->rd in sched_setaffinity()
-  under RCU read lock
-Git-Commit-ID: f1e3a0932f3a9554371792a7daaf1e0eb19f66d5
+Subject: [tip:sched/core] sched/rt: Use resched_curr() in task_tick_rt()
+Git-Commit-ID: 8aa6f0ebf41b5fdd186276394bf07e7bd6884d94
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,48 +33,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f1e3a0932f3a9554371792a7daaf1e0eb19f66d5
-Gitweb:     http://git.kernel.org/tip/f1e3a0932f3a9554371792a7daaf1e0eb19f66d5
+Commit-ID:  8aa6f0ebf41b5fdd186276394bf07e7bd6884d94
+Gitweb:     http://git.kernel.org/tip/8aa6f0ebf41b5fdd186276394bf07e7bd6884d94
 Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Mon, 22 Sep 2014 22:36:36 +0400
+AuthorDate: Mon, 22 Sep 2014 22:36:43 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 14:47:11 +0200
+CommitDate: Wed, 24 Sep 2014 14:47:12 +0200
 
-sched: Use rq->rd in sched_setaffinity() under RCU read lock
+sched/rt: Use resched_curr() in task_tick_rt()
 
-Probability of use-after-free isn't zero in this place.
+Some time ago PREEMPT_NEED_RESCHED was implemented,
+so reschedule technics is a little more difficult now.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: <stable@vger.kernel.org> # v3.14+
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140922183636.11015.83611.stgit@localhost
+Link: http://lkml.kernel.org/r/20140922183642.11015.66039.stgit@localhost
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ kernel/sched/rt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 316127a..b5349fe 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4049,13 +4049,14 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
- 	 * root_domain.
- 	 */
- #ifdef CONFIG_SMP
--	if (task_has_dl_policy(p)) {
--		const struct cpumask *span = task_rq(p)->rd->span;
--
--		if (dl_bandwidth_enabled() && !cpumask_subset(span, new_mask)) {
-+	if (task_has_dl_policy(p) && dl_bandwidth_enabled()) {
-+		rcu_read_lock();
-+		if (!cpumask_subset(task_rq(p)->rd->span, new_mask)) {
- 			retval = -EBUSY;
-+			rcu_read_unlock();
- 			goto out_free_new_mask;
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 2e6a774..87ea5bf 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -2072,7 +2072,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+ 	for_each_sched_rt_entity(rt_se) {
+ 		if (rt_se->run_list.prev != rt_se->run_list.next) {
+ 			requeue_task_rt(rq, p, 0);
+-			set_tsk_need_resched(p);
++			resched_curr(rq);
+ 			return;
  		}
-+		rcu_read_unlock();
  	}
- #endif
- again:
