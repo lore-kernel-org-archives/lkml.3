@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaIXTnB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:43:01 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:34525 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887AbaIXTmP (ORCPT
+	id S1752130AbaIXTrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:47:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39089 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750891AbaIXTrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:42:15 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickens <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Feiner <pfeiner@google.com>
-Subject: [PATCH v3 1/3] tools: add .gitignore entries for selftests
-Date: Wed, 24 Sep 2014 12:42:09 -0700
-Message-Id: <1411587731-25088-2-git-send-email-pfeiner@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1411587731-25088-1-git-send-email-pfeiner@google.com>
-References: <1411499027-17801-1-git-send-email-pfeiner@google.com>
- <1411587731-25088-1-git-send-email-pfeiner@google.com>
+	Wed, 24 Sep 2014 15:47:17 -0400
+Date: Wed, 24 Sep 2014 15:47:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pavel Machek <pavel@ucw.cz>
+cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@infradead.org>,
+        <linux-doc@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v7 1/5] PM / Runtime: Add getter for quering the IRQ safe
+ option
+In-Reply-To: <20140924175302.GB1231@amd>
+Message-ID: <Pine.LNX.4.44L0.1409241544070.1580-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignore the binaries built for selftests in 'git status' output to make
-development more pleasant. Without this patch, you see
+On Wed, 24 Sep 2014, Pavel Machek wrote:
 
-       tools/testing/selftests/breakpoints/breakpoint_test
-       tools/testing/selftests/efivarfs/create-read
-       tools/testing/selftests/efivarfs/open-unlink
-       tools/testing/selftests/kcmp/kcmp_test
-       tools/testing/selftests/memfd/memfd_test
-       tools/testing/selftests/mqueue/mq_open_tests
-       tools/testing/selftests/mqueue/mq_perf_tests
-       tools/testing/selftests/net/psock_fanout
-       tools/testing/selftests/net/psock_tpacket
-       tools/testing/selftests/net/socket
-       tools/testing/selftests/ptrace/peeksiginfo
-       tools/testing/selftests/timers/posix_timers
-       tools/testing/selftests/vm/hugepage-mmap
-       tools/testing/selftests/vm/hugepage-shm
-       tools/testing/selftests/vm/hugetlbfstest
-       tools/testing/selftests/vm/map_hugetlb
-       tools/testing/selftests/vm/thuge-gen
-       tools/testing/selftests/mount/unprivileged-remount-test
+> On Wed 2014-09-24 15:50:08, Krzysztof Kozlowski wrote:
+> > Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
+> > PM IRQ safe was set or not.
+> > 
+> > Various bus drivers implementing runtime PM may use choose to suspend
+> > differently based on IRQ safeness status of child driver (e.g. do not
+> > unprepare the clock if IRQ safe is not set).
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> 
+> Are you sure this is good interface?
+> 
+> "Tell me if another function works this or that way".
+> 
+> That's certainly not traditional interface, and it seems dangerous to
+> me. Callbacks now have different semantic requirements based on value
+> of some flag...
+> 
+> Would it be possible to have two sets of callbacks, one irq safe and
+> one not?
 
-in the list of untracked files.
+Or maybe add a flag to the bus-specific device structures, indicating
+specifically whether or not the clock should be unprepared during a
+runtime suspend.  Then individual drivers could set this flag or not, 
+independent of the irq-safe setting.
 
-Signed-off-by: Peter Feiner <pfeiner@google.com>
-
----
-
-v1 -> v2:
-	* added changelog blurb
-	* added mount/.gitignore for unprivileged-remount-test
----
- tools/testing/selftests/breakpoints/.gitignore | 1 +
- tools/testing/selftests/efivarfs/.gitignore    | 2 ++
- tools/testing/selftests/mount/.gitignore       | 1 +
- tools/testing/selftests/ptrace/.gitignore      | 1 +
- tools/testing/selftests/timers/.gitignore      | 1 +
- tools/testing/selftests/vm/.gitignore          | 9 +++++----
- 6 files changed, 11 insertions(+), 4 deletions(-)
- create mode 100644 tools/testing/selftests/breakpoints/.gitignore
- create mode 100644 tools/testing/selftests/efivarfs/.gitignore
- create mode 100644 tools/testing/selftests/mount/.gitignore
- create mode 100644 tools/testing/selftests/ptrace/.gitignore
- create mode 100644 tools/testing/selftests/timers/.gitignore
-
-diff --git a/tools/testing/selftests/breakpoints/.gitignore b/tools/testing/selftests/breakpoints/.gitignore
-new file mode 100644
-index 0000000..ad66922
---- /dev/null
-+++ b/tools/testing/selftests/breakpoints/.gitignore
-@@ -0,0 +1 @@
-+/breakpoint_test
-diff --git a/tools/testing/selftests/efivarfs/.gitignore b/tools/testing/selftests/efivarfs/.gitignore
-new file mode 100644
-index 0000000..66c6e85
---- /dev/null
-+++ b/tools/testing/selftests/efivarfs/.gitignore
-@@ -0,0 +1,2 @@
-+/create-read
-+/open-unlink
-diff --git a/tools/testing/selftests/mount/.gitignore b/tools/testing/selftests/mount/.gitignore
-new file mode 100644
-index 0000000..7ffb29f
---- /dev/null
-+++ b/tools/testing/selftests/mount/.gitignore
-@@ -0,0 +1 @@
-+/unprivileged-remount-test
-diff --git a/tools/testing/selftests/ptrace/.gitignore b/tools/testing/selftests/ptrace/.gitignore
-new file mode 100644
-index 0000000..d348b86
---- /dev/null
-+++ b/tools/testing/selftests/ptrace/.gitignore
-@@ -0,0 +1 @@
-+/peeksiginfo
-diff --git a/tools/testing/selftests/timers/.gitignore b/tools/testing/selftests/timers/.gitignore
-new file mode 100644
-index 0000000..ac85e5b
---- /dev/null
-+++ b/tools/testing/selftests/timers/.gitignore
-@@ -0,0 +1 @@
-+/posix_timers
-diff --git a/tools/testing/selftests/vm/.gitignore b/tools/testing/selftests/vm/.gitignore
-index ff1bb16..e57961f 100644
---- a/tools/testing/selftests/vm/.gitignore
-+++ b/tools/testing/selftests/vm/.gitignore
-@@ -1,4 +1,5 @@
--hugepage-mmap
--hugepage-shm
--map_hugetlb
--thuge-gen
-+/hugepage-mmap
-+/hugepage-shm
-+/map_hugetlb
-+/thuge-gen
-+/hugetlbfstest
--- 
-2.1.0.rc2.206.gedb03e5
+Alan Stern
 
