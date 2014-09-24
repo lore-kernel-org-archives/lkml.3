@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaIXMf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:35:56 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:50523 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaIXMfy (ORCPT
+	id S1753071AbaIXMgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:36:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49938 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751543AbaIXMgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:35:54 -0400
-Date: Wed, 24 Sep 2014 13:35:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v6 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-Message-ID: <20140924123548.GE32069@lee--X1>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de>
+	Wed, 24 Sep 2014 08:36:20 -0400
+Message-ID: <5422BABC.7020906@free-electrons.com>
+Date: Wed, 24 Sep 2014 14:36:12 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
+To: Chen-Yu Tsai <wens@csie.org>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        yhf <yhf@merrii.com>, ctl <ctl@merrii.com>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 3/6] ARM: dts: sunxi: Add Allwinner
+ A80 dtsi
+References: <1411311493-24344-1-git-send-email-wens@csie.org> <1411311493-24344-4-git-send-email-wens@csie.org> <20140924063738.GQ15315@lukather> <CAGb2v64voZpK_82wtkErRowR0vjEUALNUwvCx_sd8Q5wb4Hq-g@mail.gmail.com> <54227038.2020805@free-electrons.com> <CAGb2v64yGmdLeWmA=+nxD85DbQf_xxUNx3n3oedFZi51uc50+w@mail.gmail.com>
+In-Reply-To: <CAGb2v64yGmdLeWmA=+nxD85DbQf_xxUNx3n3oedFZi51uc50+w@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Aug 2014, Andreas Werner wrote:
+Hi Chen-Yu,
 
-> Added driver to support the 14F021P00 BMC Watchdog.
-> The BMC is a Board Management Controller including watchdog functionality.
+
 > 
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> ---
->  drivers/watchdog/Kconfig         |  10 ++
->  drivers/watchdog/Makefile        |   1 +
->  drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 214 insertions(+)
->  create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+> Thanks for the tip. Before I send v2, I do have a question. I'm using
+> 
+>     ranges = <0 0 0 0x20000000>;
+> 
+> in the clocks and soc node to avoid having to use 64bit values for all
+> addresses and sizes. Would this be undesirable, even bad practice maybe?
 
-I see no reason to keep this dragging on.  I'm going to apply this
-along with the remainder of the set and send a pull-request to all the
-other Maintainers.  This branch is currently under test.
+We did something like that for all the internal registers too as they are all
+under 4GB. In our case the use of a range really makes sens because the hardware
+addresses were configurable. You don't have such requirement so I can't say if
+it is a bad practice. From my point of view it seems sensible but I am not an
+DT expert.
 
-Any fix-ups for review comments can go in subsequently.
+
+Grégory
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
