@@ -1,76 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaIXMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:24:29 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:62795 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaIXMY1 (ORCPT
+	id S1752432AbaIXMZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:25:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31507 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaIXMZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:24:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: balbi@ti.com, Antoine Tenart <antoine.tenart@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, sebastian.hesselbarth@gmail.com,
-        p.zabel@pengutronix.de, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Date: Wed, 24 Sep 2014 14:23:38 +0200
-Message-ID: <2786668.t3YLqX5enD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140924112902.GA23331@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <2923729.dtX0WmHSV0@wuerfel> <20140924112902.GA23331@peterchendt>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:dVmv6kiRx/95nKOrApauZjhlN9c07dFJRUwv4i42pst
- iMWld1roUEWlpyrQkzusJX+16d4xdfrqZukrIbidzFPnLYAUYm
- S99pwJ7P3N7OhafuKJVYM6yYpEW+f2mtLmdJkWgSY/r3yyN8UP
- iG9OkMoydMENzsxhOJrEL7Fh3Co0Tjbd4rtXP59lMuyuvvXABr
- mhSpgO8Er1zgNDI7x3m5BStd9hyDgS4uoOYtZMOltzyry0a5qR
- SgdaE/V44BmFZnj793SijjhdqKy7AMuXpHQTCQ6NElPDRMc6s7
- cMO/yoMR/mgta8AEuyKaZ05i89q+aJbcR+nF8yQQfRYe4kA6r7
- WFT3+4gRDRJvRBZSvUt4=
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 24 Sep 2014 08:25:06 -0400
+X-AuditID: cbfee61b-f79d76d0000024d6-6a-5422b81f6a83
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH v7 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with
+ secure firmware enabled
+Date: Wed, 24 Sep 2014 14:24:43 +0200
+Message-id: <1411561488-1739-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t9jQV2FHUohBqtXsFhsnLGe1WLeZ1mL
+	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLDq/zGKzuH2Z1+LM6UusFif/
+	9DJavDrYxmLxc9c8FotVu/4wWmz86uEg6NHS3MPmsXPWXXaPO9f2sHlsXlLvcfvfY2aPLVfb
+	WTz6tqxi9Pi8Sc5j49zQAM4oLpuU1JzMstQifbsErox/B9exFsyUq9hy/ghTA+NiyS5GTg4J
+	AROJjqVfmSFsMYkL99azgdhCAtMZJXYs5eli5AKyu5gknvXeYgFJsAlYSUxsX8UIYosIqEn0
+	LN4KZjML3GaRaLgeAWILC6RI/PzbxQRiswioSmy9eYG9i5GDg1fAXeLDYweIXYoS3c8msE1g
+	5F7AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhIn0nvYFzVYHGIUYCDUYmHt2OZUogQ
+	a2JZcWXuIUYJDmYlEV6rbUAh3pTEyqrUovz4otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1ML
+	UotgskwcnFINjCK39A4mT2OY7fjIyJ+lyKKf4dyXjydu9S7kb/nFxjVv9t+g0jOs304c2e31
+	6FKMO9O3WAtGGy/VenkeRbPb8TxXXk5vdFz+fKpYz8z9G3ecWLE0fPPKoPQ1K19bflF5tHfe
+	2blzRKc9yD7u0mnfPe/um6ja1AbeH12Xpfk2pWacfygc/zr1b4ESS3FGoqEWc1FxIgDgtpp/
+	TgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
-> 
-> So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
-> (dwc3, musb, chipidea) you are talking about, right? Except for
-> creating another platform driver as well as related DT node (optional),
-> are there any advantages compared to current IP core driver structure?
+Hi,
 
-Having a library module usually requires less code, and is more consistent
-with other drivers, which helps new developers understand what the
-driver is doing.
+This patch series adds support for AFTR idle mode on boards with
+secure firmware enabled and allows EXYNOS cpuidle driver usage on
+Exynos4x12 SoCs.
 
-The most important aspect though is the DT binding: once the structure
-with separate kernel drivers leaks out into the DT format, you can't
-easily change the driver any more, e.g. to make a property that was
-introduced for one glue driver more general so it can get handled by
-the common part. Having a single node lets us convert to the library
-model later, so that would be a strong reason to keep the DT binding
-simple, without child nodes.
+It has been tested on Trats2 board (using Exynos4412 SoC with secure
+firmware enabled) on which AFTR mode reduces power consumption by ~12%
+when EXYNOS cpuidle driver is enabled (in both cases the default
+exynos_defconfig config is used and CPU1-3 are offlined).
 
-Following that logic, it turns into another reason for using the library
-model to start with, because otherwise the child device does not have
-any DT properties itself and has to rely on the parent device properties,
-which somewhat complicates the driver structure.
+Currently Exynos4412 SoC support is limited to Trats2 board.
 
-> In this thread, we are talking about creating common platform driver for glue
-> layer, its design purpose (adapt it for as many as platforms) should be the
-> same, no matter the IP core part is a LIB or platform driver, am I missing
-> something?
+Depends on:
+- for-next branch of linux-samsung.git kernel tree
+- [PATCH v3 0/5] Firmware-assisted suspend/resume of Exynos SoCs
+  (https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35921.html)
 
-No, you are absolutely right with that, introducing the generic glue
-driver is orthogonal to the structure of the core driver in principle.
+Changes since v6:
+- rebased on top of for-next branch of linux-samsung.git kernel tree +
+  [PATCH v3 0/5] Firmware-assisted suspend/resume of Exynos SoCs
+  (https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35921.html)
+- fixed build on Tegra
+- updated patch #2 summary line
 
-I mainly brought it up because I noticed how this patch could be done
-in a simpler way by combining the new generic glue with the move to
-a library driver model.
+Changes since v5:
+- rebased on top of next-20140904 +
+  "irqchip: Properly fetch the per cpu offset" patch
+  (https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg716674.html)
+  [PATCH v3 0/5] Firmware-assisted suspend/resume of Exynos SoCs
+  (https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35921.html)
+- limit Exynos4412 SoC support to Trats2 board for now
 
-	Arnd
+Changes since v4:
+- rebased on top of next-20140804 +
+  [PATCH v5][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35262.html)
+  [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+- call exynos_save_cp15() only on A9 type core (this is needed for the future
+  Exynos3250 SoC support)
+
+Changes since v3:
+- rebased on top of next-20140804 +
+  [PATCH v4][next-20140804] ARM: EXYNOS: Fix suspend/resume sequences
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35192.html)
+  [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34282.html)
+- (re-)added patch fixing S5P_CENTRAL_SEQ_OPTION register setup
+
+Changes since v2:
+- rebased on top of next-20140708 +
+  [PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html)
+  [with rejects fixed]
+  [PATCH 6/6] ARM: EXYNOS: Register cpuidle device only on Exynos4210 and 5250
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html)
+  [PATCH 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+  (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html)
+  [with rejects fixed in patch #2]
+- addressed review comments from Tomasz Figa and Daniel Lezcano
+
+Changes since v1:
+- synced against next-20140602
+- added missing Acked-by-s
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+Bartlomiej Zolnierkiewicz (5):
+  ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+  ARM: add AFTR mode support to firmware do_idle method
+  ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
+  ARM: EXYNOS: PM: fix register setup for AFTR mode code
+  ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
+
+ arch/arm/include/asm/firmware.h        |  2 +-
+ arch/arm/mach-exynos/common.h          |  5 +++
+ arch/arm/mach-exynos/exynos.c          |  5 ++-
+ arch/arm/mach-exynos/firmware.c        | 34 ++++++++++++++-----
+ arch/arm/mach-exynos/pm.c              | 60 ++++++++++++++++++++--------------
+ arch/arm/mach-tegra/cpuidle-tegra114.c |  2 +-
+ 6 files changed, 72 insertions(+), 36 deletions(-)
+
+-- 
+1.8.2.3
+
