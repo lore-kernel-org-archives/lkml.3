@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaIXSEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:04:09 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43214 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaIXSEG (ORCPT
+	id S1753181AbaIXSGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:06:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42766 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaIXSGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:04:06 -0400
+	Wed, 24 Sep 2014 14:06:31 -0400
+Date: Wed, 24 Sep 2014 20:06:23 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 00/20] arch atomic 'cleanup'
+Message-ID: <20140924180623.GY6758@twins.programming.kicks-ass.net>
+References: <20140508135840.956784204@infradead.org>
+ <20140924165405.GJ16244@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <3082935.e3X4GsVUDn@wuerfel>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org>
-	<1411573068-12952-4-git-send-email-rric@kernel.org>
-	<3082935.e3X4GsVUDn@wuerfel>
-Date: Wed, 24 Sep 2014 23:34:04 +0530
-Message-ID: <CA+sq2Ce8sb=YGma05qEk_992Mc9M92TxCk+RWsyi6tY-FVOCXw@mail.gmail.com>
-Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree bindings
-From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: LAKML <linux-arm-kernel@lists.infradead.org>,
-        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Liviu Dudau <liviu.dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>,
-        Sunil Goutham <sgoutham@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924165405.GJ16244@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 9:36 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 24 September 2014 17:37:45 Robert Richter wrote:
->>
->> +       pcie0@0x8480,00000000 {
->
-> The name should be pci, not pci0.
+On Wed, Sep 24, 2014 at 05:54:06PM +0100, Will Deacon wrote:
+> Hi Peter,
+> 
+> On Thu, May 08, 2014 at 02:58:40PM +0100, Peter Zijlstra wrote:
+> > This series continues the arch atomic rework started with the smp_mb__
+> > interface cleanup.
+> > 
+> > In this series we (mostly) reduce the atomic implementations by eliminating
+> > repetition through use of CPP macros.
+> > 
+> > A future series will use these macros to implement more atomic ops. With these
+> > macros we can end up with more atomic ops while the total LoC still shrinks.
+> > 
+> > Furthermore, rewrite the asm-generic/atomic implementations to require less and
+> > provide more.
+> > 
+> > This series is compile tested on a number of archs, but only boot tested on
+> > x86_64.
+> 
+> What's the status on this series? I'm currently fleshing out an extension to
+> the atomic API that allows more flexible acquire/release semantics and it
+> doesn't make sense for me to copy-paste a bunch of code when I could build
+> it on top of this instead.
 
-Thanks, will change.
+Its in tip/locking/arch and I suppose its headed for the next merge
+window.
 
->
->> +               compatible = "cavium,thunder-pcie";
->> +               device_type = "pci";
->> +               msi-parent = <&its>;
->> +               bus-range = <0 255>;
->> +               #size-cells = <2>;
->> +               #address-cells = <3>;
->> +               reg = <0x8480 0x00000000 0 0x10000000>;  /* Configuration space */
->> +               ranges = <0x03000000 0x8010 0x00000000 0x8010 0x00000000 0x70 0x00000000>, /* mem ranges */
->> +                       <0x03000000 0x8300 0x00000000 0x8300 0x00000000 0x80 0x00000000>,
->> +                       <0x03000000 0x87e0 0x00000000 0x87e0 0x00000000 0x01 0x00000000>;
->> +        };
->
-> If you claim the entire 0-255 bus range, I think you should also
-> specify a domain, otherwise it's not predictable which domain you
-> get.
->
-> The interrupt-map and interrupt-map-mask properties are required for PCI,
-> otherwise you can't do LSI interrupts.
+> Also, do you have any other patches pending in this area? I've lost track...
 
-This PCI controller supports only MSIx interrupts which are edge triggered.
+I do, I have (hopefully) one more series sweeping all archs introducing:
+atomic_{or,and,xor,nand}() and then a few patches killing
+atomic_{set,clear}_mask(). I just need to find time to write changelogs
+and compile test them..
 
->
-> If your hardware can support it, you should also list I/O space and prefetchable
-> memory spaces. Can you explain why you have multiple non-prefetchable ranges?
+After that I need to go write that gcc-ll/sc proposal so we can pretend
+to do generic composite atomic ops in C.
 
-Our hardware is an ECAM based host controller and doesn't support I/O
-and prefetchable memory spaces.
-All on-board PCI devices connected to this PCI controller have fixed resources
-and doesn't have to be allocated/reassigned. Some of these devices are
-SRIOV based.
-Kernel's SRIOV (pci/iov.c) is expecting 'resource->parent' hierarchy
-to be set, otherwise doesn't
-enable SRIOV device. So, here multiple non-prefetchable ranges of root bus
-aid in resource claiming and setting res->parent hierarchy.
+Oh, and like you pointed out, we need to do an audit of the barrier
+semantics on some of our atomic functions like add_unless etc.
 
-We do call "pci_claim_resource" in controller driver code.
-"[PATCH 1/6] pci, thunder: Add support for Thunder PCIe host controller."
-
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+In other word, plenty to keep entertained.
