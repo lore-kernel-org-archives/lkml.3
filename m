@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaIXMAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:00:10 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:37755 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIXMAI (ORCPT
+	id S1753505AbaIXMAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:00:22 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:52295 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaIXMAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:00:08 -0400
-Date: Wed, 24 Sep 2014 13:00:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johan Hovold <johan@kernel.org>
-Cc: Octavian Purdila <octavian.purdila@intel.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mfd: viperboard: allocate I/O buffer separately
-Message-ID: <20140924120002.GA32069@lee--X1>
-References: <1411414759-7056-1-git-send-email-octavian.purdila@intel.com>
- <1411414759-7056-2-git-send-email-octavian.purdila@intel.com>
- <20140924101206.GD19999@lee--X1>
- <20140924102853.GA17019@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140924102853.GA17019@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Sep 2014 08:00:18 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f156d0000063c7-92-5422b24fd05a
+Content-transfer-encoding: 8BIT
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH on mfd-regulator-power-v3.17] charger: max14577: Fix build
+ breakage when compiled as module
+Date: Wed, 24 Sep 2014 14:00:06 +0200
+Message-id: <1411560006-16471-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xy7r+m5RCDHYdkrWY+vAJm8WkJ++Z
+	LSaunMxs8fqFocX9r0cZLS7vmsNm8bn3CKPF6d0lDhweO2fdZffYvELLY9OqTjaPO9f2sHn0
+	bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXRtOCTtaCtxwVq3esZGxgvM3excjJISFgItE/tZ8J
+	whaTuHBvPVsXIxeHkMBSRonG2TfAErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoC4xad4iZoj6
+	PiaJvv0PGEESbALGEpuXLwEbJCJwF2jQounsEB0hEpcu/QGzhQVyJQ79/QU2lEVAVWLuYmmI
+	Xe4Sx/5OZ4M4SE7i5LHJrBMY+WYhOWMWwhmzkJyxgJF5FaNoamlyQXFSeq6hXnFibnFpXrpe
+	cn7uJkZIAH/Zwbj4mNUhRgEORiUe3gniSiFCrIllxZW5hxglOJiVRHi/rQMK8aYkVlalFuXH
+	F5XmpBYfYmTi4JRqYOTxc7NcfHRTJn+rTMvFmF9/v90JXHGyT3lV4qSylC1P2tbKnrsdEfL3
+	R5Hu+SdNX9ckZGzx2LrP5YgQ7/q1QrvLnz4qeJ+zJL3rKCvj0iwHnRmJmZPEpeZ5bJ53vSCr
+	v0u69tukSXELWGPVwp7zTvjxpiWyRDSrUOZW29qtk3wyqqbo5vQ6XFdiKc5INNRiLipOBACl
+	0svjPgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Johan Hovold wrote:
+The charger's module device table used the same name as regulator driver
+causing a build break when charger was compiled as a module:
 
-> On Wed, Sep 24, 2014 at 11:12:06AM +0100, Lee Jones wrote:
-> > On Mon, 22 Sep 2014, Octavian Purdila wrote:
-> > 
-> > > Currently the I/O buffer is allocated part of the device status
-> > > structure, potentially sharing the same cache line with other members
-> > > in this structure.
-> > > 
-> > > Allocate the buffer separately, to avoid the I/O operations corrupting
-> > > the device status structure due to cache line sharing.
-> > > 
-> > > Compiled tested only as I don't have access to hardware.
-> > > 
-> > > Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> > > ---
-> > >  drivers/mfd/viperboard.c       | 8 ++++++++
-> > >  include/linux/mfd/viperboard.h | 2 +-
-> > >  2 files changed, 9 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
-> > > index e00f534..5f62f4e 100644
-> > > --- a/drivers/mfd/viperboard.c
-> > > +++ b/drivers/mfd/viperboard.c
-> > > @@ -64,6 +64,12 @@ static int vprbrd_probe(struct usb_interface *interface,
-> > >  		return -ENOMEM;
-> > >  	}
-> > >  
-> > > +	vb->buf = kzalloc(sizeof(struct vprbrd_i2c_write_msg), GFP_KERNEL);
-> > 
-> > Can you obtain the 'struct device' first then use managed resources
-> > (devm_*)?
-> 
-> I think any devres conversion should be done in a follow-up patch and
-> not be included in the fix (e.g. in order to facilitate backporting). We
-> also don't want to mix allocation schemes.
+drivers/power/max14577_charger.c:598:1: error: ‘__mod_platform__max14577_regulator_id_device_table’ aliased to undefined symbol ‘max14577_regulator_id’
+make[2]: *** [drivers/power/max14577_charger.o] Error 1
 
-I agree, but equally I'm not keen on accepting this patch as I believe
-it could be done better.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+---
+ drivers/power/max14577_charger.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Please submit two patches, one converting to shared resources and this
-being the subsequent one, fixed up to do the right thing.
-
+diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
+index c2e87c41d853..0a2bc7277026 100644
+--- a/drivers/power/max14577_charger.c
++++ b/drivers/power/max14577_charger.c
+@@ -595,7 +595,7 @@ static const struct platform_device_id max14577_charger_id[] = {
+ 	{ "max77836-charger", MAXIM_DEVICE_TYPE_MAX77836, },
+ 	{ }
+ };
+-MODULE_DEVICE_TABLE(platform, max14577_regulator_id);
++MODULE_DEVICE_TABLE(platform, max14577_charger_id);
+ 
+ static struct platform_driver max14577_charger_driver = {
+ 	.driver = {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
