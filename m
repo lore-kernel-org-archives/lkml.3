@@ -1,158 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaIXFlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 01:41:51 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:60525 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaIXFlt (ORCPT
+	id S1751677AbaIXFoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 01:44:54 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:57017 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750783AbaIXFox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 01:41:49 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
-References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
-	<1411491787-25938-2-git-send-email-pawel.moll@arm.com>
-Date: Wed, 24 Sep 2014 14:41:46 +0900
-In-Reply-To: <1411491787-25938-2-git-send-email-pawel.moll@arm.com> (Pawel
-	Moll's message of "Tue, 23 Sep 2014 18:03:06 +0100")
-Message-ID: <87sijhk21x.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 24 Sep 2014 01:44:53 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+Message-ID: <542259CA.5080002@smartplayin.com>
+Date: Wed, 24 Sep 2014 11:12:34 +0530
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Vinod Koul <vinod.koul@intel.com>
+CC: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: cppi41: Switch to using managed resource in probe
+References: <1411476646-16902-1-git-send-email-kiran.padwal@smartplayin.com> <20140923154035.GP24663@intel.com>
+In-Reply-To: <20140923154035.GP24663@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pawel,
+On Tuesday 23 September 2014 09:10 PM, Vinod Koul wrote:
+> On Tue, Sep 23, 2014 at 06:20:46PM +0530, Kiran Padwal wrote:
+>> This change uses managed resource APIs to allocate resources such as,
+>> mem, irq in order to simplify the driver unload or failure cases.
+>>
+>> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+>> ---
+>>  drivers/dma/cppi41.c |   15 ++++-----------
+>>  1 file changed, 4 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
+>> index 5921ce3..d3700fb 100644
+>> --- a/drivers/dma/cppi41.c
+>> +++ b/drivers/dma/cppi41.c
+>> @@ -938,7 +938,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+>>  	if (!glue_info)
+>>  		return -EINVAL;
+>>  
+>> -	cdd = kzalloc(sizeof(*cdd), GFP_KERNEL);
+>> +	cdd = devm_kzalloc(&pdev->dev, sizeof(*cdd), GFP_KERNEL);
+>>  	if (!cdd)
+>>  		return -ENOMEM;
+>>  
+>> @@ -959,10 +959,8 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+>>  	cdd->qmgr_mem = of_iomap(dev->of_node, 3);
+>>  
+>>  	if (!cdd->usbss_mem || !cdd->ctrl_mem || !cdd->sched_mem ||
+>> -			!cdd->qmgr_mem) {
+>> -		ret = -ENXIO;
+>> -		goto err_remap;
+>> -	}
+>> +			!cdd->qmgr_mem)
+>> +		return -ENXIO;
+>>  
+>>  	pm_runtime_enable(dev);
+>>  	ret = pm_runtime_get_sync(dev);
+>> @@ -989,7 +987,7 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+>>  
+>>  	cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
+>>  
+>> -	ret = request_irq(irq, glue_info->isr, IRQF_SHARED,
+>> +	ret = devm_request_irq(&pdev->dev, irq, glue_info->isr, IRQF_SHARED,
+>>  			dev_name(dev), cdd);
+>>  	if (ret)
+>>  		goto err_irq;
+>> @@ -1009,7 +1007,6 @@ static int cppi41_dma_probe(struct platform_device *pdev)
+>>  err_of:
+>>  	dma_async_device_unregister(&cdd->ddev);
+>>  err_dma_reg:
+>> -	free_irq(irq, cdd);
+>>  err_irq:
+>>  	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
+>>  	cleanup_chans(cdd);
+>> @@ -1023,8 +1020,6 @@ err_get_sync:
+>>  	iounmap(cdd->ctrl_mem);
+>>  	iounmap(cdd->sched_mem);
+>>  	iounmap(cdd->qmgr_mem);
+>> -err_remap:
+>> -	kfree(cdd);
+>>  	return ret;
+>>  }
+>>  
+>> @@ -1036,7 +1031,6 @@ static int cppi41_dma_remove(struct platform_device *pdev)
+>>  	dma_async_device_unregister(&cdd->ddev);
+>>  
+>>  	cppi_writel(0, cdd->usbss_mem + USBSS_IRQ_CLEARR);
+>> -	free_irq(cdd->irq, cdd);
+> pls use devm_free_irq() explicitly here, other wise your controller is active and able
+> to send interrupts and driver object is getting removed. It is the role of
+> driver to quiesce device before releasing
+> 
 
-On Tue, 23 Sep 2014 18:03:06 +0100, Pawel Moll wrote:
-> This patch adds an option to sample raw monotonic clock
-> value with any perf event, with the the aim of allowing
-> time correlation between data coming from perf and
-> additional performance-related information generated in
-> userspace.
->
-> In order to correlate timestamps in perf data stream
-> with events happening in userspace (be it JITed debug
-> symbols or hwmon-originating environment data), user
-> requests a more or less periodic event (sched_switch
-> trace event of a hrtimer-based cpu-clock being the
-> most obvious examples) with PERF_SAMPLE_TIME *and*
-> PERF_SAMPLE_CLOCK_RAW_MONOTONIC and stamps
-> user-originating data with values obtained from
-> clock_gettime(CLOCK_MONOTONIC_RAW). Then, during
-> analysis, one looks at the perf events immediately
-> preceding and following (in terms of the
-> clock_raw_monotonic sample) the userspace event and
-> does simple linear approximation to get the equivalent
-> perf time.
->
->         perf event     user event
->        -----O--------------+-------------O------> t_mono
->             :              |             :
->             :              V             :
->        -----O----------------------------O------> t_perf
-
-Probably a dumb question: why not make PERF_SAMPLE_TIME being monotonic
-clock instead of adding a new PERF_SAMPLE_CLOCK_XXX flag?  Maybe we can
-add a new ioctl command like PERF_EVENT_IOC_SET_CLOCK so that one can
-pass a clock id.
-
-Thanks,
-Namhyung
+Thanks, I will take care of that and resend the patch.
 
 
->
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> ---
-> Changes since v1:
->
-> - none
->
->  include/linux/perf_event.h      |  2 ++
->  include/uapi/linux/perf_event.h |  4 +++-
->  kernel/events/core.c            | 13 +++++++++++++
->  3 files changed, 18 insertions(+), 1 deletion(-)
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 707617a..28b73b2 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -602,6 +602,8 @@ struct perf_sample_data {
->  	 * Transaction flags for abort events:
->  	 */
->  	u64				txn;
-> +	/* Raw monotonic timestamp, for userspace time correlation */
-> +	u64				clock_raw_monotonic;
->  };
->  
->  static inline void perf_sample_data_init(struct perf_sample_data *data,
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 9269de2..e5a75c5 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -137,8 +137,9 @@ enum perf_event_sample_format {
->  	PERF_SAMPLE_DATA_SRC			= 1U << 15,
->  	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
->  	PERF_SAMPLE_TRANSACTION			= 1U << 17,
-> +	PERF_SAMPLE_CLOCK_RAW_MONOTONIC		= 1U << 18,
->  
-> -	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
-> +	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
->  };
->  
->  /*
-> @@ -686,6 +687,7 @@ enum perf_event_type {
->  	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
->  	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
->  	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
-> +	 *	{ u64			clock_raw_monotonic; } && PERF_SAMPLE_CLOCK_RAW_MONOTONIC
->  	 * };
->  	 */
->  	PERF_RECORD_SAMPLE			= 9,
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index f9c1ed0..f6df547 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -1216,6 +1216,9 @@ static void perf_event__header_size(struct perf_event *event)
->  	if (sample_type & PERF_SAMPLE_TRANSACTION)
->  		size += sizeof(data->txn);
->  
-> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC)
-> +		size += sizeof(data->clock_raw_monotonic);
-> +
->  	event->header_size = size;
->  }
->  
-> @@ -4456,6 +4459,13 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
->  		data->cpu_entry.cpu	 = raw_smp_processor_id();
->  		data->cpu_entry.reserved = 0;
->  	}
-> +
-> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC) {
-> +		struct timespec now;
-> +
-> +		getrawmonotonic(&now);
-> +		data->clock_raw_monotonic = timespec_to_ns(&now);
-> +	}
->  }
->  
->  void perf_event_header__init_id(struct perf_event_header *header,
-> @@ -4714,6 +4724,9 @@ void perf_output_sample(struct perf_output_handle *handle,
->  	if (sample_type & PERF_SAMPLE_TRANSACTION)
->  		perf_output_put(handle, data->txn);
->  
-> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC)
-> +		perf_output_put(handle, data->clock_raw_monotonic);
-> +
->  	if (!event->attr.watermark) {
->  		int wakeup_events = event->attr.wakeup_events;
+
