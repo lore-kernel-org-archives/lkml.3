@@ -1,208 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371AbaIXEKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 00:10:38 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:59056 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaIXEKh (ORCPT
+	id S1751650AbaIXEL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 00:11:56 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44541 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaIXELy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 00:10:37 -0400
+	Wed, 24 Sep 2014 00:11:54 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Thomas Graf <tgraf@suug.ch>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net,
+        paulmck@linux.vnet.ibm.com, john.r.fastabend@intel.com,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <cover.1410782841.git.tgraf@suug.ch>
+	<bd3aa4282e89b022620225101ab491e344852f5f.1410782841.git.tgraf@suug.ch>
+	<1410784535.7106.164.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140915124937.GB21541@casper.infradead.org>
+Date: Tue, 23 Sep 2014 21:11:31 -0700
+In-Reply-To: <20140915124937.GB21541@casper.infradead.org> (Thomas Graf's
+	message of "Mon, 15 Sep 2014 13:49:37 +0100")
+Message-ID: <87sijhwtcc.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
-References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
-Date: Tue, 23 Sep 2014 21:10:35 -0700
-X-Google-Sender-Auth: n-ejzIHdXadXm88_RA5NpqDGDLQ
-Message-ID: <CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
- characteristics of SCL
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19S8vdg3XVuruZVyPNTzVvlI3dFMLVJMbY=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.4 XM_Superlative01 Best-rated language
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1359]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Thomas Graf <tgraf@suug.ch>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/5] rhashtable: Remove gfp_flags from insert and remove functions
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+Thomas Graf <tgraf@suug.ch> writes:
 
-On Tue, Sep 23, 2014 at 6:55 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> As show in I2C specification:
-> - Standard-mode:
->   the minimum HIGH period of the scl clock is 4.0us
->   the minimum LOW period of the scl clock is 4.7us
-> - Fast-mode:
->   the minimum HIGH period of the scl clock is 0.6us
->   the minimum LOW period of the scl clock is 1.3us
-> - Fast-mode plus:
->   the minimum HIGH period of the scl clock is 0.26us
->   the minimum LOW period of the scl clock is 0.5us
-> - HS-mode(<1.7MHz):
->   the minimum HIGH period of the scl clock is 0.12us
->   the minimum LOW period of the scl clock is 0.32us
-> - HS-mode(<3.4MHz):
->   the minimum HIGH period of the scl clock is 0.06us
->   the minimum LOW period of the scl clock is 0.16us
+> On 09/15/14 at 05:35am, Eric Dumazet wrote:
+>> On Mon, 2014-09-15 at 14:18 +0200, Thomas Graf wrote:
+>> > As the expansion/shrinking is moved to a worker thread, no allocations
+>> > will be performed anymore.
+>> > 
+>> 
+>> You meant : no GFP_ATOMIC allocations ?
+>> 
+>> I would rephrase using something like :
+>> 
+>> Because hash resizes are potentially time consuming, they'll be
+>> performed in process context where GFP_KERNEL allocations are preferred.
 >
-> I have measured i2c SCL waveforms in fast-mode by oscilloscope
-> on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
-> It is so critical that we must adjust LOW division to increase
-> the LOW period of the scl clock.
+> I meant to say no allocations in insert/remove anymore but your wording
+> is even clearer. I'll update it.
 >
-> Thanks Doug for the suggestion about division formula.
+>> > -	tbl = kzalloc(size, flags);
+>> > +	tbl = kzalloc(size, GFP_KERNEL);
+>> 
+>> Add __GFP_NOWARN, as you fallback to vzalloc ?
 >
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> ---
->  drivers/i2c/busses/i2c-rk3x.c | 79 +++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 72 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> index 93cfc83..49d67b7 100644
-> --- a/drivers/i2c/busses/i2c-rk3x.c
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -428,18 +428,83 @@ out:
->         return IRQ_HANDLED;
->  }
->
-> +static void rk3x_i2c_get_ratios(unsigned long scl_rate,
-> +                               unsigned long *high_ratio,
-> +                               unsigned long *low_ratio)
-> +{
-> +       /* As show in I2C specification:
-> +        * - Standard-mode:
-> +        *   the minimum HIGH period of the scl clock is 4.0us
-> +        *   the minimum LOW period of the scl clock is 4.7us
-> +        * - Fast-mode:
-> +        *   the minimum HIGH period of the scl clock is 0.6us
-> +        *   the minimum LOW period of the scl clock is 1.3us
-> +        * - Fast-mode plus:
-> +        *   the minimum HIGH period of the scl clock is 0.26us
-> +        *   the minimum LOW period of the scl clock is 0.5us
-> +        * - HS-mode(<1.7MHz):
-> +        *   the minimum HIGH period of the scl clock is 0.12us
-> +        *   the minimum LOW period of the scl clock is 0.32us
-> +        * - HS-mode(<3.4MHz):
-> +        *   the minimum HIGH period of the scl clock is 0.06us
-> +        *   the minimum LOW period of the scl clock is 0.16us
+> Good point.
 
-Is the rest of the driver ready for Fast-mode plus or HS mode?  If not
-then maybe leave those off?  If nothing else the commit message should
-indicate that this is just being forward thinking.
+It needs to be both __GFP_NOWARN and __GFP_NORETRY.
 
-> +        */
-> +       if (scl_rate <= 100000) {
-> +               *high_ratio = 40;
-> +               *low_ratio = 47;
-> +       } else if (scl_rate <= 400000) {
-> +               *high_ratio = 6;
-> +               *low_ratio = 13;
-> +       } else if (scl_rate <= 1000000) {
-> +               *high_ratio = 26;
-> +               *low_ratio = 50;
-> +       } else if (scl_rate <= 1700000) {
-> +               *high_ratio = 12;
-> +               *low_ratio = 32;
-> +       } else {
-> +               *high_ratio = 6;
-> +               *low_ratio = 16;
+Otherwise the system will kick in the OOM killer before it falls back to
+vzalloc.  Which I can't imagine anyone wanting.
 
-Since it's only the ratio of high to low that matters, you can combine
-the last two.  12 : 32 == 6 : 16
+Look at the history of alloc_fdmem in fs/file.c for the real world
+reasoning.
 
-> +       }
-> +}
-> +
-> +static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
-> +                              unsigned long *divh, unsigned long *divl)
-> +{
-> +       unsigned long high_ratio, low_ratio;
-> +       unsigned long ratio_sum;
-> +
-> +       rk3x_i2c_get_ratios(scl_rate, &high_ratio, &low_ratio);
-> +       ratio_sum = high_ratio + low_ratio;
-> +
-> +       /* T_high = T_clk * (divh + 1) * 8
-> +        * T_low = T_clk * (divl + 1) * 8
-> +        * T_scl = T_high + T_low
-> +        * T_scl = 1 / scl_rate
-> +        * T_clk = 1 / i2c_rate
-> +        * T_high : T_low = high_ratio : low_ratio
-> +        * ratio_sum = high_ratio + low_ratio
-> +        *
-> +        * so:
-> +        * divh = (i2c_rate * high_ratio) / (scl_rate * ratio_sum * 8) - 1
-> +        * divl = (i2c_rate * low_ratio) / (scl_rate * ratio_sum * 8) - 1
-> +        */
-> +       *divh = DIV_ROUND_UP(i2c_rate * high_ratio, scl_rate * ratio_sum * 8);
-> +       if (*divh)
-> +               *divh = *divh - 1;
-> +
-> +       *divl = DIV_ROUND_UP(i2c_rate * low_ratio, scl_rate * ratio_sum * 8);
-> +       if (*divl)
-> +               *divl = *divl - 1;
-
-When I sent you the sample formulas I purposely did it differently
-than this.  Any reason you changed from my formulas?
-
-  div_low = DIV_ROUND_UP(clk_rate * low_ratio, scl_rate * 8 * ratio_sum)
-  div_high = DIV_ROUND_UP(clk_rate, scl_rate * 8) - div_low
-
-  div_low -= 1
-  if div_high:
-    div_high -= 1
-
-Why did I do it that way?
-
-* Assuming i2c_rate and the ratio is non-zero then you can assume that
-DIV_ROUND_UP gives a value that is >= 1.  No need to test the result
-against 0.
-
-* (I think) you'll get a more accurate clock rate by subtracting.
-
-Try running your formula vs. my formula with a ratio of 13 : 6, an i2c
-rate of 12800000, and an scl rate of 400000
-
-Mine will get:
-  Req = 400000, act = 400000, 1.88 us low, 0.62 us high, low/high = 3.00
-
-Yours will get:
-  Req = 400000, act = 320000, 1.88 us low, 1.25 us high, low/high = 1.50
-
-
-> +}
-> +
->  static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
->  {
->         unsigned long i2c_rate = clk_get_rate(i2c->clk);
-> -       unsigned int div;
-> +       unsigned long divh, divl;
->
-> -       /* set DIV = DIVH = DIVL
-> -        * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
-> -        *          = (clk rate) / (16 * (DIV + 1))
-> -        */
-> -       div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
-> +       rk3x_i2c_calc_divs(i2c_rate, scl_rate, &divh, &divl);
->
-> -       i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
-> +       i2c_writel(i2c, (divh << 16) | (divl & 0xffff), REG_CLKDIV);
->  }
->
->  /**
-> --
-> 1.8.3.2
->
->
+Eric
