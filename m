@@ -1,260 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359AbaIXPDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:03:51 -0400
-Received: from relay05.mycloudmailbox.com ([199.244.76.204]:49191 "EHLO
-	relay05.mycloudmailbox.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754287AbaIXPDO (ORCPT
+	id S1754386AbaIXPEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:04:23 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36749 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990AbaIXPEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:03:14 -0400
-From: David Barksdale <dbarksdale@uplogix.com>
-To: Jonathan Cameron <jic23@kernel.org>
-CC: David Barksdale <dbarksdale@uplogix.com>, <linux-kernel@vger.kernel.org>,
-        <linux-iio@vger.kernel.org>
-Subject: [PATCH v3] IIO: add si7020 driver
-Date: Wed, 24 Sep 2014 10:02:59 -0500
-Message-ID: <1411570979-19473-1-git-send-email-dbarksdale@uplogix.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 24 Sep 2014 11:04:21 -0400
+Date: Wed, 24 Sep 2014 16:04:09 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <Will.Deacon@arm.com>, Nathan Lynch <nathan_lynch@mentor.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code
+ consolidation
+Message-ID: <20140924150408.GK15842@e104818-lin.cambridge.arm.com>
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
+ <20140922153919.GQ25809@arm.com>
+ <20140922223022.GO5182@n2100.arm.linux.org.uk>
+ <20140924144541.GJ15842@e104818-lin.cambridge.arm.com>
+ <20140924145257.GY5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-ClientProxiedBy: S05-CAS002.S05.local (10.30.32.23) To
- S05-MLT01-07.S05.local (10.30.32.218)
-X-RoutingAgent: Treated
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924145257.GY5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support to the Industrial IO subsystem
-for the Silicon Labs Si7013/20/21 Relative Humidity and
-Temperature Sensors.
+On Wed, Sep 24, 2014 at 03:52:57PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Sep 24, 2014 at 03:45:41PM +0100, Catalin Marinas wrote:
+> > On Mon, Sep 22, 2014 at 11:30:23PM +0100, Russell King - ARM Linux wrote:
+> > > I raised a while back with Will whether there's much point to having
+> > > this on ARM.  While it's useful for virtualisation, the majority of
+> > > 32-bit ARM doesn't run virtualised.
+> > 
+> > This has nothing to do with virtualisation. The main reason we use
+> > CNTVCT is to not require kernel binary differences when running the OS
+> > as host or guest. But it does _not_ mean that it is only used when
+> > running as a guest.
+> > 
+> > > So there's little point in having the VDSO on the majority of
+> > > platforms - it will just add additional unnecessary cycles slowing
+> > > down the system calls that the VDSO is designed to try to speed up.
+> > 
+> > A good reason for VDSO is to avoid a system call for gettimeofday when
+> > you can read the clocks source from user space. That's a significant
+> > improvement on CPUs like A7, A15.
+> 
+> I'm *not* arguing against having a VDSO to speed up that crap.  What
+> I'm trying to get to the bottom of - something which has been totally
+> lost sight of - is what the friggin effect of this stuff is on CPUs
+> *without* the architected timer.
+> 
+> Until I get an answer to what the measured effect is, I'm saying no to
+> VDSO on ARM, because - as seems to be the norm - the evaluation job is
+> only half done.
 
-Website: http://www.silabs.com/products/sensors/humidity-sensors/Pages/si7013-20-21.aspx
+I agree.
 
-These are i2c devices which measure relative humidity
-and temperature and all use the same protocol. The
-Si7013 has an additional input with programmable
-linearization which is not supported because that's
-complicated and I didn't need it.
+If there is an overhead (possibly), I think it can be solved in software
+maybe by having two VDSO images, one with gettimeofday and one without.
+If it's only gettimeofday in VDSO (and signal return still via the
+vectors page), we could just avoid inserting it into the user address
+space when arch timers aren't present.
 
-Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
+On arm64 we expect the presence of the arch timer and didn't bother with
+such scenarios.
 
---
-Changes since v1:
-* Renamed to si7020 and replaced Si701x/2x with Si7013/20/21.
-* Removed unneeded mutex.
-* Pre-computed floating-point constant expressions.
-* Removed address_list and I2C_CLASS_HWMON.
-
-Changes since v2:
-* Return correct raw sensor values.
-* Rename dev variable to indio_dev.
-* Issue a software reset command during probe.
-* Un-broke string literal.
-
----
- drivers/iio/humidity/Kconfig  |  10 +++
- drivers/iio/humidity/Makefile |   1 +
- drivers/iio/humidity/si7020.c | 165 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 176 insertions(+)
-
-diff --git a/drivers/iio/humidity/Kconfig b/drivers/iio/humidity/Kconfig
-index e116bd8..4813b79 100644
---- a/drivers/iio/humidity/Kconfig
-+++ b/drivers/iio/humidity/Kconfig
-@@ -22,4 +22,14 @@ config SI7005
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called si7005.
- 
-+config SI7020
-+	tristate "Si7013/20/21 Relative Humidity and Temperature Sensors"
-+	depends on I2C
-+	help
-+	  Say yes here to build support for the Silicon Labs Si7013/20/21
-+	  Relative Humidity and Temperature Sensors.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called si7020.
-+
- endmenu
-diff --git a/drivers/iio/humidity/Makefile b/drivers/iio/humidity/Makefile
-index e3f3d94..86e2d26 100644
---- a/drivers/iio/humidity/Makefile
-+++ b/drivers/iio/humidity/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_DHT11) += dht11.o
- obj-$(CONFIG_SI7005) += si7005.o
-+obj-$(CONFIG_SI7020) += si7020.o
-diff --git a/drivers/iio/humidity/si7020.c b/drivers/iio/humidity/si7020.c
-new file mode 100644
-index 0000000..4aacb55
---- /dev/null
-+++ b/drivers/iio/humidity/si7020.c
-@@ -0,0 +1,165 @@
-+/*
-+ * si7020.c - Silicon Labs Si7013/20/21 Relative Humidity and Temp Sensors
-+ * Copyright (c) 2013,2014  Uplogix, Inc.
-+ * David Barksdale <dbarksdale@uplogix.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/*
-+ * The Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors
-+ * are i2c devices which have an identical programming interface for
-+ * measuring relative humidity and temperature. The Si7013 has an additional
-+ * temperature input which this driver does not support.
-+ *
-+ * Data Sheets:
-+ *   Si7013: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7013.pdf
-+ *   Si7020: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7020.pdf
-+ *   Si7021: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7021.pdf
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/sysfs.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+
-+enum {
-+	/* Measure Relative Humidity, Hold Master Mode */
-+	SI7020CMD_RH_HOLD	= 0xE5,
-+	/* Measure Temperature, Hold Master Mode */
-+	SI7020CMD_TEMP_HOLD	= 0xE3,
-+	/* Software Reset */
-+	SI7020CMD_RESET		= 0xFE,
-+};
-+
-+static int si7020_read_raw(struct iio_dev *indio_dev,
-+			   struct iio_chan_spec const *chan, int *val,
-+			   int *val2, long mask)
-+{
-+	struct i2c_client **client = iio_priv(indio_dev);
-+	int ret;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		ret = i2c_smbus_read_word_data(*client,
-+					       chan->type == IIO_TEMP ?
-+					       SI7020CMD_TEMP_HOLD :
-+					       SI7020CMD_RH_HOLD);
-+		if (ret < 0)
-+			return ret;
-+		if (chan->type == IIO_TEMP)
-+			*val = ret >> 2;
-+		else
-+			*val = (ret & 0x3FFF) >> 2;
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		if (chan->type == IIO_TEMP)
-+			*val = 175720; /* = 175.72 * 1000 */
-+		else
-+			*val = 125 * 1000;
-+		*val2 = 65536 >> 2;
-+		return IIO_VAL_FRACTIONAL;
-+	case IIO_CHAN_INFO_OFFSET:
-+		/* Since iio_convert_raw_to_processed_unlocked assumes offset
-+		 * is an integer we have to round these values and lose
-+		 * accuracy.
-+		 * Relative humidity will be 0.0032959% too high and
-+		 * temperature will be 0.00277344 degrees too high.
-+		 * This is no big deal because it's within the accuracy of the
-+		 * sensor.
-+		 */
-+		if (chan->type == IIO_TEMP)
-+			*val = -4368; /* = -46.85 * (65536 >> 2) / 175.72 */
-+		else
-+			*val = -786; /* = -6 * (65536 >> 2) / 125 */
-+		return IIO_VAL_INT;
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static const struct iio_chan_spec si7020_channels[] = {
-+	{
-+		.type = IIO_HUMIDITYRELATIVE,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
-+			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
-+	},
-+	{
-+		.type = IIO_TEMP,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
-+			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
-+	}
-+};
-+
-+static const struct iio_info si7020_info = {
-+	.read_raw = si7020_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static int si7020_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct iio_dev *indio_dev;
-+	struct i2c_client **data;
-+	int ret;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_WRITE_BYTE |
-+				     I2C_FUNC_SMBUS_READ_WORD_DATA))
-+		return -ENODEV;
-+
-+	/* Reset device, loads default settings. */
-+	ret = i2c_smbus_write_byte(client, SI7020CMD_RESET);
-+	if (ret < 0)
-+		return ret;
-+	/* Wait the maximum power-up time after software reset. */
-+	msleep(15);
-+
-+	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*client));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	data = iio_priv(indio_dev);
-+	*data = client;
-+	i2c_set_clientdata(client, indio_dev);
-+
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->name = dev_name(&client->dev);
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->info = &si7020_info;
-+	indio_dev->channels = si7020_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(si7020_channels);
-+
-+	return devm_iio_device_register(&client->dev, indio_dev);
-+}
-+
-+static const struct i2c_device_id si7020_id[] = {
-+	{ "si7020", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, si7020_id);
-+
-+static struct i2c_driver si7020_driver = {
-+	.driver.name	= "si7020",
-+	.probe		= si7020_probe,
-+	.id_table	= si7020_id,
-+};
-+
-+module_i2c_driver(si7020_driver);
-+MODULE_DESCRIPTION("Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors");
-+MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
-+MODULE_LICENSE("GPL");
-+
 -- 
-tg: (0f33be0..) upstream/si7020 (depends on: upstream/master)
+Catalin
