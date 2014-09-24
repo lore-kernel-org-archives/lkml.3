@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaIXKd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:33:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48336 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751772AbaIXKdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:33:22 -0400
-Date: Wed, 24 Sep 2014 11:42:15 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
- processing
-Message-ID: <20140924104213.GA2695@agordeev.usersys.redhat.com>
-References: <cover.1411297686.git.agordeev@redhat.com>
- <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
- <20140923205710.GB17332@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923205710.GB17332@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753386AbaIXKdy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:33:54 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:44081 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792AbaIXKdX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:33:23 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 3.17-rc4 v2 2/2] trace: kdb: Fix kernel livelock with empty buffers
+Date: Wed, 24 Sep 2014 11:33:01 +0100
+Message-Id: <1411554781-16751-3-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
+References: <1410360247-13791-1-git-send-email-daniel.thompson@linaro.org>
+ <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 04:57:10PM -0400, Tejun Heo wrote:
-> Hmmm... how does it affect single device operation tho?  It does make
-> individual interrupt handling heavier, no?
+Currently kdb's ftdump command will livelock by constantly printk'ing
+the empty string at KERN_EMERG level if it run when the ftrace system is
+not in use. This occurs because trace_empty() never returns false when
+the ring buffers are left at the start of a non-consuming read [launched
+by ring_buffer_read_start()].
 
-I think it is difficult to assess "individual interrupt handling", since
-it depends from both the hardware and device access pattern. On the system
-I use the results are rather counter-intuitive: ahci_thread_fn() does not
-show up in perf report at all, nor ahci_single_irq_intr(). While before
-the change ahci_single_irq_intr() reported 0.00%.
+This patch changes the loop exit condition to use the result of
+trace_find_next_entry_inc(). Effectively this switches the non-consuming
+kdb dumper to follow the approach of the non-consuming userspace
+interface [s_next()] rather than the consuming ftrace_dump().
 
-But since the handling is split in two parts it is rather incorrect to
-apply the same metric to the threaded context. Obviously, the threaded
-handler is expected slowed down by other interrupts handlers, but the
-whole system should benefit from it, which is exactly the aim of this
-change.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ kernel/trace/trace_kdb.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-> -- 
-> tejun
-
+diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
+index 8faa7ce..b0b1c44 100644
+--- a/kernel/trace/trace_kdb.c
++++ b/kernel/trace/trace_kdb.c
+@@ -59,19 +59,19 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
+ 		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
+ 		tracing_iter_reset(&iter, cpu_file);
+ 	}
+-	if (!trace_empty(&iter))
+-		trace_find_next_entry_inc(&iter);
+-	while (!trace_empty(&iter)) {
++
++	while (trace_find_next_entry_inc(&iter)) {
+ 		if (!cnt)
+ 			kdb_printf("---------------------------------\n");
+ 		cnt++;
+ 
+-		if (trace_find_next_entry_inc(&iter) != NULL && !skip_lines)
++		if (!skip_lines) {
+ 			print_trace_line(&iter);
+-		if (!skip_lines)
+ 			trace_printk_seq(&iter.seq);
+-		else
++		} else {
+ 			skip_lines--;
++		}
++
+ 		if (KDB_FLAG(CMD_INTERRUPT))
+ 			goto out;
+ 	}
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.9.3
+
