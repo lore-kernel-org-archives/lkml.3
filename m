@@ -1,35 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287AbaIXS6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:58:53 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40537 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653AbaIXS6w (ORCPT
+	id S1754372AbaIXS7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:59:16 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54982 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754316AbaIXS7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:58:52 -0400
-Date: Wed, 24 Sep 2014 19:58:49 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] shmem: fix nlink for rename overwrite directory
-Message-ID: <20140924185849.GD7996@ZenIV.linux.org.uk>
-References: <20140924155617.GD7441@tucsk.piliscsaba.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924155617.GD7441@tucsk.piliscsaba.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Sep 2014 14:59:14 -0400
+Message-ID: <1411585151.19525.29.camel@x220>
+Subject: [PATCH] ARM: efm32: drop selecting NO_DMA
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 24 Sep 2014 20:59:11 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Sep 2014 18:59:12.0366 (UTC) FILETIME=[A10398E0:01CFD829]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 05:56:17PM +0200, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> If overwriting an empty directory with rename, then need to drop the extra
-> nlink.
+The Kconfig entry for ARCH_EFM32 selects NO_DMA. But that doesn't have
+any effect as arm doesn't have a Kconfig entry for NO_DMA. This select
+is a nop. Drop it.
 
-Hmm...  OK, point.  It doesn't actually check for ->i_nlink for directories,
-and it only affects the sucker while it (a directory) is opened-but-rmdired,
-but yes, it's visible to userland, so...  Applied.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested by playing with arch/arm/configs/efm32_defconfig. After "make
+oldconfig" the .config contains CONFIG_HAS_DMA=y both before and after
+this patch, as is expected.
+
+Actually, the only difference I found in the .config file was that after
+this patch the .config file contained
+    CONFIG_ARCH_EFM32=y
+
+I have no idea why. Did I botch my test?
+
+ arch/arm/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d63e50615e9c..804ddc134c3c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -426,7 +426,6 @@ config ARCH_EFM32
+ 	select COMMON_CLK
+ 	select CPU_V7M
+ 	select GENERIC_CLOCKEVENTS
+-	select NO_DMA
+ 	select NO_IOPORT_MAP
+ 	select SPARSE_IRQ
+ 	select USE_OF
+-- 
+1.9.3
+
