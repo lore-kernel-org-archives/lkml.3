@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaIXVqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:46:34 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:59694 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIXVqc (ORCPT
+	id S1753071AbaIXVqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:46:38 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:41453 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaIXVqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:46:32 -0400
+	Wed, 24 Sep 2014 17:46:35 -0400
 From: Milosz Tanski <milosz@adfin.com>
 To: linux-kernel@vger.kernel.org
 Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
@@ -14,141 +14,248 @@ Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
         Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC v3 0/4] vfs: Non-blockling buffered fs read (page cache only)
-Date: Wed, 24 Sep 2014 21:46:22 +0000
-Message-Id: <cover.1411594644.git.milosz@adfin.com>
+Subject: [RFC v3 2/4] vfs: Define new syscalls preadv2,pwritev2
+Date: Wed, 24 Sep 2014 21:46:24 +0000
+Message-Id: <109bfe20aaa150da847f6f6543f99a2eb90b6475.1411594645.git.milosz@adfin.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1410810247.git.milosz@adfin.com>
+In-Reply-To: <cover.1411594644.git.milosz@adfin.com>
 References: <cover.1410810247.git.milosz@adfin.com>
+ <cover.1411594644.git.milosz@adfin.com>
+In-Reply-To: <cover.1411594644.git.milosz@adfin.com>
+References: <cover.1411594644.git.milosz@adfin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patcheset introduces an ability to perform a non-blocking read from
-regular files in buffered IO mode. This works by only for those filesystems
-that have data in the page cache.
+New syscalls that take an flag argument. This change does not add any specific
+flags.
 
-It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
-new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
-extra flag argument (RWF_NONBLOCK).
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
+---
+ fs/read_write.c                   | 82 ++++++++++++++++++++++++++++++++-------
+ include/linux/syscalls.h          |  6 +++
+ include/uapi/asm-generic/unistd.h |  6 ++-
+ mm/filemap.c                      |  2 +-
+ 4 files changed, 80 insertions(+), 16 deletions(-)
 
-It's a very common patern today (samba, libuv, etc..) use a large threadpool to
-perform buffered IO operations. They submit the work form another thread
-that performs network IO and epoll or other threads that perform CPU work. This
-leads to increased latency for processing, esp. in the case of data that's
-already cached in the page cache.
-
-With the new interface the applications will now be able to fetch the data in
-their network / cpu bound thread(s) and only defer to a threadpool if it's not
-there. In our own application (VLDB) we've observed a decrease in latency for
-"fast" request by avoiding unnecessary queuing and having to swap out current
-tasks in IO bound work threads.
-
-
-Version 3 highlights:
- - Down to 2 syscalls from 4; can user fp or argument position.
- - RWF_NONBLOCK value flag is not the same O_NONBLOCK, per Jeff.
-
-Version 2 highlights:
- - Put the flags argument into kiocb (less noise), per. Al Viro
- - O_DIRECT checking early in the process, per. Jeff Moyer
- - Resolved duplicate (c&p) code in syscall code, per. Jeff
- - Included perf data in thread cover letter, per. Jeff
- - Created a new flag (not O_NONBLOCK) for readv2, perf Jeff
-
-
-Some perf data generated using fio comparing the posix aio engine to a version
-of the posix AIO engine that attempts to performs "fast" reads before
-submitting the operations to the queue. This workflow is on ext4 partition on
-raid0 (test / build-rig.) Simulating our database access patern workload using
-16kb read accesses. Our database uses a home-spun posix aio like queue (samba
-does the same thing.)
-
-f1: ~73% rand read over mostly cached data (zipf med-size dataset)
-f2: ~18% rand read over mostly un-cached data (uniform large-dataset)
-f3: ~9% seq-read over large dataset
-
-before:
-
-f1:
-    bw (KB  /s): min=   11, max= 9088, per=0.56%, avg=969.54, stdev=827.99
-    lat (msec) : 50=0.01%, 100=1.06%, 250=5.88%, 500=4.08%, 750=12.48%
-    lat (msec) : 1000=17.27%, 2000=49.86%, >=2000=9.42%
-f2:
-    bw (KB  /s): min=    2, max= 1882, per=0.16%, avg=273.28, stdev=220.26
-    lat (msec) : 250=5.65%, 500=3.31%, 750=15.64%, 1000=24.59%, 2000=46.56%
-    lat (msec) : >=2000=4.33%
-f3:
-    bw (KB  /s): min=    0, max=265568, per=99.95%, avg=174575.10,
-                 stdev=34526.89
-    lat (usec) : 2=0.01%, 4=0.01%, 10=0.02%, 20=0.27%, 50=10.82%
-    lat (usec) : 100=50.34%, 250=5.05%, 500=7.12%, 750=6.60%, 1000=4.55%
-    lat (msec) : 2=8.73%, 4=3.49%, 10=1.83%, 20=0.89%, 50=0.22%
-    lat (msec) : 100=0.05%, 250=0.02%, 500=0.01%
-total:
-   READ: io=102365MB, aggrb=174669KB/s, minb=240KB/s, maxb=173599KB/s,
-         mint=600001msec, maxt=600113msec
-
-after (with fast read using preadv2 before submit):
-
-f1:
-    bw (KB  /s): min=    3, max=14897, per=1.28%, avg=2276.69, stdev=2930.39
-    lat (usec) : 2=70.63%, 4=0.01%
-    lat (msec) : 250=0.20%, 500=2.26%, 750=1.18%, 2000=0.22%, >=2000=25.53%
-f2:
-    bw (KB  /s): min=    2, max= 2362, per=0.14%, avg=249.83, stdev=222.00
-    lat (msec) : 250=6.35%, 500=1.78%, 750=9.29%, 1000=20.49%, 2000=52.18%
-    lat (msec) : >=2000=9.99%
-f3:
-    bw (KB  /s): min=    1, max=245448, per=100.00%, avg=177366.50,
-                 stdev=35995.60
-    lat (usec) : 2=64.04%, 4=0.01%, 10=0.01%, 20=0.06%, 50=0.43%
-    lat (usec) : 100=0.20%, 250=1.27%, 500=2.93%, 750=3.93%, 1000=7.35%
-    lat (msec) : 2=14.27%, 4=2.88%, 10=1.54%, 20=0.81%, 50=0.22%
-    lat (msec) : 100=0.05%, 250=0.02%
-total:
-   READ: io=103941MB, aggrb=177339KB/s, minb=213KB/s, maxb=176375KB/s,
-         mint=600020msec, maxt=600178msec
-
-Interpreting the results you can see total bandwidth stays the same but overall
-request latency is decreased in f1 (random, mostly cached) and f3 (sequential)
-workloads. There is a slight bump in latency for since it's random data that's
-unlikely to be cached but we're always trying "fast read".
-
-In our application we have starting keeping track of "fast read" hits/misses
-and for files / requests that have a lot hit ratio we don't do "fast reads"
-mostly getting rid of extra latency in the uncached cases.
-
-I've performed other benchmarks and I have no observed any perf regressions in
-any of the normal (old) code paths.
-
-
-I have co-developed these changes with Christoph Hellwig.
-
-Milosz Tanski (4):
-  vfs: Prepare for adding a new preadv/pwritev with user flags.
-  vfs: Define new syscalls preadv2,pwritev2
-  vfs: Export new vector IO syscalls (with flags) to userland
-  vfs: RWF_NONBLOCK flag for preadv2
-
- arch/x86/syscalls/syscall_32.tbl  |   2 +
- arch/x86/syscalls/syscall_64.tbl  |   2 +
- drivers/target/target_core_file.c |   6 +-
- fs/cifs/file.c                    |   6 ++
- fs/nfsd/vfs.c                     |   4 +-
- fs/ocfs2/file.c                   |   6 ++
- fs/pipe.c                         |   3 +-
- fs/read_write.c                   | 121 +++++++++++++++++++++++++++++---------
- fs/splice.c                       |   2 +-
- fs/xfs/xfs_file.c                 |   4 ++
- include/linux/aio.h               |   2 +
- include/linux/fs.h                |   7 ++-
- include/linux/syscalls.h          |   6 ++
- include/uapi/asm-generic/unistd.h |   6 +-
- mm/filemap.c                      |  22 ++++++-
- mm/shmem.c                        |   4 ++
- 16 files changed, 163 insertions(+), 40 deletions(-)
-
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 9f6d13d..a983fc1 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -864,6 +864,8 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_READ))
+ 		return -EINVAL;
++	if (flags & ~0)
++		return -EINVAL;
+ 
+ 	return do_readv_writev(READ, file, vec, vlen, pos, flags);
+ }
+@@ -877,21 +879,23 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_WRITE))
+ 		return -EINVAL;
++	if (flags & ~0)
++		return -EINVAL;
+ 
+ 	return do_readv_writev(WRITE, file, vec, vlen, pos, flags);
+ }
+ 
+ EXPORT_SYMBOL(vfs_writev);
+ 
+-SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
+-		unsigned long, vlen)
++static ssize_t do_readv(unsigned long fd, const struct iovec __user *vec,
++			unsigned long vlen, int flags)
+ {
+ 	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
+ 
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+-		ret = vfs_readv(f.file, vec, vlen, &pos, 0);
++		ret = vfs_readv(f.file, vec, vlen, &pos, flags);
+ 		if (ret >= 0)
+ 			file_pos_write(f.file, pos);
+ 		fdput_pos(f);
+@@ -903,15 +907,15 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
+ 	return ret;
+ }
+ 
+-SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
+-		unsigned long, vlen)
++static ssize_t do_writev(unsigned long fd, const struct iovec __user *vec,
++			 unsigned long vlen, int flags)
+ {
+ 	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
+ 
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+-		ret = vfs_writev(f.file, vec, vlen, &pos, 0);
++		ret = vfs_writev(f.file, vec, vlen, &pos, flags);
+ 		if (ret >= 0)
+ 			file_pos_write(f.file, pos);
+ 		fdput_pos(f);
+@@ -929,10 +933,9 @@ static inline loff_t pos_from_hilo(unsigned long high, unsigned long low)
+ 	return (((loff_t)high << HALF_LONG_BITS) << HALF_LONG_BITS) | low;
+ }
+ 
+-SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
+-		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
++static ssize_t do_preadv(unsigned long fd, const struct iovec __user *vec,
++			 unsigned long vlen, loff_t pos, int flags)
+ {
+-	loff_t pos = pos_from_hilo(pos_h, pos_l);
+ 	struct fd f;
+ 	ssize_t ret = -EBADF;
+ 
+@@ -943,7 +946,7 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
+ 	if (f.file) {
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PREAD)
+-			ret = vfs_readv(f.file, vec, vlen, &pos, 0);
++			ret = vfs_readv(f.file, vec, vlen, &pos, flags);
+ 		fdput(f);
+ 	}
+ 
+@@ -953,10 +956,9 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
+ 	return ret;
+ }
+ 
+-SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
+-		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
++static ssize_t do_pwritev(unsigned long fd, const struct iovec __user *vec,
++			  unsigned long vlen, loff_t pos, int flags)
+ {
+-	loff_t pos = pos_from_hilo(pos_h, pos_l);
+ 	struct fd f;
+ 	ssize_t ret = -EBADF;
+ 
+@@ -967,7 +969,7 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
+ 	if (f.file) {
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PWRITE)
+-			ret = vfs_writev(f.file, vec, vlen, &pos, 0);
++			ret = vfs_writev(f.file, vec, vlen, &pos, flags);
+ 		fdput(f);
+ 	}
+ 
+@@ -977,6 +979,58 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
+ 	return ret;
+ }
+ 
++SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen)
++{
++	return do_readv(fd, vec, vlen, 0);
++}
++
++SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen)
++{
++	return do_writev(fd, vec, vlen, 0);
++}
++
++SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
++{
++	loff_t pos = pos_from_hilo(pos_h, pos_l);
++
++	return do_preadv(fd, vec, vlen, pos, 0);
++}
++
++SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
++		int, flags)
++{
++	loff_t pos = pos_from_hilo(pos_h, pos_l);
++
++	if (pos == -1)
++		return do_readv(fd, vec, vlen, flags);
++
++	return do_preadv(fd, vec, vlen, pos, flags);
++}
++
++SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
++{
++	loff_t pos = pos_from_hilo(pos_h, pos_l);
++
++	return do_pwritev(fd, vec, vlen, pos, 0);
++}
++
++SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
++		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
++		int, flags)
++{
++	loff_t pos = pos_from_hilo(pos_h, pos_l);
++
++	if (pos == -1)
++		return do_writev(fd, vec, vlen, flags);
++
++	return do_pwritev(fd, vec, vlen, pos, flags);
++}
++
+ #ifdef CONFIG_COMPAT
+ 
+ static ssize_t compat_do_readv_writev(int type, struct file *file,
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 0f86d85..830285f 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -570,8 +570,14 @@ asmlinkage long sys_pwrite64(unsigned int fd, const char __user *buf,
+ 			     size_t count, loff_t pos);
+ asmlinkage long sys_preadv(unsigned long fd, const struct iovec __user *vec,
+ 			   unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
++asmlinkage long sys_preadv2(unsigned long fd, const struct iovec __user *vec,
++			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
++			    int flags);
+ asmlinkage long sys_pwritev(unsigned long fd, const struct iovec __user *vec,
+ 			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
++asmlinkage long sys_pwritev2(unsigned long fd, const struct iovec __user *vec,
++			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
++			    int flags);
+ asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
+ asmlinkage long sys_mkdir(const char __user *pathname, umode_t mode);
+ asmlinkage long sys_chdir(const char __user *filename);
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 11d11bc..589add9 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -213,6 +213,10 @@ __SC_COMP(__NR_pwrite64, sys_pwrite64, compat_sys_pwrite64)
+ __SC_COMP(__NR_preadv, sys_preadv, compat_sys_preadv)
+ #define __NR_pwritev 70
+ __SC_COMP(__NR_pwritev, sys_pwritev, compat_sys_pwritev)
++#define __NR_preadv2 280
++__SC_COMP(__NR_preadv2, sys_preadv2)
++#define __NR_pwritev2 281
++__SC_COMP(__NR_pwritev2, sys_pwritev2)
+ 
+ /* fs/sendfile.c */
+ #define __NR3264_sendfile 71
+@@ -707,7 +711,7 @@ __SYSCALL(__NR_getrandom, sys_getrandom)
+ __SYSCALL(__NR_memfd_create, sys_memfd_create)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 280
++#define __NR_syscalls 282
+ 
+ /*
+  * All syscalls below here should go away really,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 6e3ba07..e0919ba 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1726,7 +1726,7 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+ 		}
+ 	}
+ 
+-	retval = do_generic_file_read(file, ppos, iter, retval);
++	retval = do_generic_file_read(file, ppos, iter, retval, iocb->ki_rwflags);
+ out:
+ 	return retval;
+ }
 -- 
 2.1.0
 
