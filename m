@@ -1,185 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaIXWlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 18:41:46 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:43403 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaIXWlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 18:41:45 -0400
-Date: Wed, 24 Sep 2014 22:41:10 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-cc: Michael Mullin <masmullin@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net
-Subject: [PATCH v10] tpm_tis: verify interrupt during init
-In-Reply-To: <54231E52.2030501@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1409242234220.2311@localhost.localdomain>
-References: <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com> <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com>
- <alpine.LNX.2.11.1408302229001.579@localhost.localdomain> <20140902172015.GD13956@obsidianresearch.com> <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain> <20140908220238.GB6204@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
- <20140922171338.GB28082@obsidianresearch.com> <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain> <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain> <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain> <5421A9F8.9070301@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409241936270.3152@localhost.localdomain> <54231E52.2030501@linux.vnet.ibm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1751281AbaIXWzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 18:55:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19116 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871AbaIXWzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 18:55:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,591,1406617200"; 
+   d="scan'208";a="596418884"
+Date: Wed, 24 Sep 2014 15:55:08 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib: string.c: Added a funktion function strzcpy
+Message-ID: <20140924225508.GO28253@tassilo.jf.intel.com>
+References: <1411510416-16655-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1411510416-16655-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20140924011753.GG28253@tassilo.jf.intel.com>
+ <20140924075206.GC5865@mwanda>
+ <20140924143555.GJ28253@tassilo.jf.intel.com>
+ <20140924154142.GG5865@mwanda>
+ <CAFo99gbGoyf6GEt4ST_Q_WfYe39j+ke7t7XL6QZBYvMesMNZQg@mail.gmail.com>
+ <20140924142632.7fe876ce1e743753581160a9@linux-foundation.org>
+ <CAFo99gY8PAxTAourZpRDBosX9qWiOq_fS1xOHPAzujOwEhfCFw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFo99gY8PAxTAourZpRDBosX9qWiOq_fS1xOHPAzujOwEhfCFw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some machines, such as the Acer C720 and Toshiba CB35, have TPMs that do
-not send IRQs while also having an ACPI TPM entry indicating that they
-will be sent. These machines freeze on resume while the tpm_tis module
-waits for an IRQ, eventually timing out.
+> Thought that I was still fairly clear, or that I just assumed that
+> everyone was more or less familiar with the problems between strncpy
+> strlcpy etc.
+> Did not think all that should be includerad in chang log.
 
-When in interrupt mode, the tpm_tis module should receive an IRQ during
-module init. Fall back to polling mode if none is received when expected.
+I don't think you need to write a novel. 
 
-Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-Tested-by: Michael Mullin <masmullin@gmail.com>
----
- drivers/char/tpm/tpm_tis.c | 75 +++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 61 insertions(+), 14 deletions(-)
+So the basic issue is that you're not sure if you can replace
+strncpy with strlcpy (due to not knowing what the padding 
+requirements are), but you still want to make sure everything
+is zero terminated.
 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 2c46734..cbef80e 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -75,6 +75,10 @@ enum tis_defaults {
- #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
- #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
+That should have been in the changelog.
 
-+struct priv_data {
-+	bool irq_tested;
-+};
-+
- static LIST_HEAD(tis_chips);
- static DEFINE_MUTEX(tis_lock);
-
-@@ -338,12 +342,26 @@ out_err:
- 	return rc;
- }
-
-+static void disable_interrupts(struct tpm_chip *chip)
-+{
-+	u32 intmask;
-+	intmask =
-+	    ioread32(chip->vendor.iobase +
-+		     TPM_INT_ENABLE(chip->vendor.locality));
-+	intmask &= ~TPM_GLOBAL_INT_ENABLE;
-+	iowrite32(intmask,
-+		  chip->vendor.iobase +
-+		  TPM_INT_ENABLE(chip->vendor.locality));
-+	free_irq(chip->vendor.irq, chip);
-+	chip->vendor.irq = 0;
-+}
-+
- /*
-  * If interrupts are used (signaled by an irq set in the vendor structure)
-  * tpm.c can skip polling for the data to be available as the interrupt is
-  * waited for here
-  */
--static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-+static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
- {
- 	int rc;
- 	u32 ordinal;
-@@ -373,6 +391,30 @@ out_err:
- 	return rc;
- }
-
-+static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-+{
-+	int rc, irq;
-+	struct priv_data *priv = chip->vendor.priv;
-+
-+	if (!chip->vendor.irq || priv->irq_tested)
-+		return tpm_tis_send_main(chip, buf, len);
-+
-+	/* Verify receipt of the expected IRQ */
-+	irq = chip->vendor.irq;
-+	chip->vendor.irq = 0;
-+	rc = tpm_tis_send_main(chip, buf, len);
-+	chip->vendor.irq = irq;
-+	if (!priv->irq_tested)
-+		msleep(1);
-+	if (!priv->irq_tested) {
-+		disable_interrupts(chip);
-+		dev_err(chip->dev,
-+			FW_BUG "TPM interrupt not working, polling instead\n");
-+	}
-+	priv->irq_tested = true;
-+	return rc;
-+}
-+
- struct tis_vendor_timeout_override {
- 	u32 did_vid;
- 	unsigned long timeout_us[4];
-@@ -505,6 +547,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
- 	if (interrupt == 0)
- 		return IRQ_NONE;
-
-+	((struct priv_data*)chip->vendor.priv)->irq_tested = true;
- 	if (interrupt & TPM_INTF_DATA_AVAIL_INT)
- 		wake_up_interruptible(&chip->vendor.read_queue);
- 	if (interrupt & TPM_INTF_LOCALITY_CHANGE_INT)
-@@ -534,9 +577,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
- 	struct tpm_chip *chip;
-+	struct priv_data *priv;
-
-+	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
-+	if (priv == NULL)
-+		return -ENOMEM;
- 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
- 		return -ENODEV;
-+	chip->vendor.priv = priv;
-
- 	chip->vendor.iobase = ioremap(start, len);
- 	if (!chip->vendor.iobase) {
-@@ -605,19 +653,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
- 		dev_dbg(dev, "\tData Avail Int Support\n");
-
--	/* get the timeouts before testing for irqs */
--	if (tpm_get_timeouts(chip)) {
--		dev_err(dev, "Could not get TPM timeouts and durations\n");
--		rc = -ENODEV;
--		goto out_err;
--	}
--
--	if (tpm_do_selftest(chip)) {
--		dev_err(dev, "TPM self test failed\n");
--		rc = -ENODEV;
--		goto out_err;
--	}
--
- 	/* INTERRUPT Setup */
- 	init_waitqueue_head(&chip->vendor.read_queue);
- 	init_waitqueue_head(&chip->vendor.int_queue);
-@@ -719,6 +754,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 		}
- 	}
-
-+	if (tpm_get_timeouts(chip)) {
-+		dev_err(dev, "Could not get TPM timeouts and durations\n");
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	if (tpm_do_selftest(chip)) {
-+		dev_err(dev, "TPM self test failed\n");
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
- 	INIT_LIST_HEAD(&chip->vendor.list);
- 	mutex_lock(&tis_lock);
- 	list_add(&chip->vendor.list, &tis_chips);
--- 
-2.1.0
+-Andi
 
