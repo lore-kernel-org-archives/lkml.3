@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaIXHqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:46:01 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:36588 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaIXHqA (ORCPT
+	id S1753181AbaIXHsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:48:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38381 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaIXHsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:46:00 -0400
-Date: Wed, 24 Sep 2014 09:45:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86-ml <x86@kernel.org>
-Subject: Re: [PATCHv2 2/3] x86, ptdump: Simplify page flag evaluation code
-Message-ID: <20140924074555.GA3797@gmail.com>
-References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
- <1411313216-2641-3-git-send-email-minipli@googlemail.com>
- <541F2BCD.2040007@linux.intel.com>
- <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
+	Wed, 24 Sep 2014 03:48:00 -0400
+Date: Wed, 24 Sep 2014 09:47:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, x86: Disallow flags for most
+ Core2/Atom/Nehalem/Westmere events
+Message-ID: <20140924074753.GR16043@twins.programming.kicks-ass.net>
+References: <1411509264-18135-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411509264-18135-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mathias Krause <minipli@googlemail.com> wrote:
-
-> On 21 September 2014 21:49, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> > On 9/21/2014 8:26 AM, Mathias Krause wrote:
-> >>
-> >> -               if (pr & _PAGE_PCD)
-> >> -                       pt_dump_cont_printf(m, dmsg, "PCD ");
-> >> -               else
-> >> -                       pt_dump_cont_printf(m, dmsg, "    ");
-> >> +               pt_dump_cont(m, dmsg, "%-4s", pr & _PAGE_USER ? "USR" :
-> >> "");
-> >
-> >
-> > while you have some nice cleanups in your patch, I can't say I consider this
-> > an improvement.
-> > Yes the C standard allows ? to be used like this
-> > but no, I don't think it improves readability in general.
+On Tue, Sep 23, 2014 at 02:54:24PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Not in general, but in this case, it does, IMHO.
+> Disallow setting inv/cmask/etc. flags for all PEBS events
+> on these CPUs, except for the UOPS_RETIRED.* events on Nehalem/Westmere,
+> which are needed for cycles:p. This avoids an undefined situation
+> strongly discouraged by the Intle SDM. The PLD_* events were already
+> covered. This follows the earlier changes for Sandy Bridge and alter.
 > 
-> > (I think for me the main exception is NULL pointer cases, but this is not
-> > one of these)
-> 
-> Apparently such a pattern (using the question mark operator combined
-> with a bit test to choose string constants) is used quite often in the
-> linux kernel as a simple grep tells me (probably catches a few false
-> positives but still a representative number):
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Both can be used (although I too find the original version easier 
-to read), and it's usually the taste/opinion of the original 
-author whose choice we prefer.
+>From the compile before sending dept:
 
-Thanks,
+../arch/x86/kernel/cpu/perf_event_intel_ds.c:555:2: error: implicit declaration of function ‘INTEL_FLAGS_UEVENT_CONSTRAINT’ [-Werror=implicit-function-declaration]
 
-	Ingo
