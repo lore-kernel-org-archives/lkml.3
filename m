@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaIXQ4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:56:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49437 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753872AbaIXQqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:46:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
-   d="scan'208";a="604749270"
-From: Vinod Koul <vinod.koul@intel.com>
+	id S1754218AbaIXQ4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:56:19 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:32391 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753877AbaIXQ4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:56:17 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiUOALr2IlRbtBU3/2dsb2JhbABggw63NgUBcpsRgQcXAXqEYCOBGjeIQgGzaZA0hhKJKGQdhDUFnSGVVINkOy+BBoFEAQEB
+From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Rob Clark <robdclark@gmail.com>, Thierry Reding <treding@nvidia.com>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 05/27] drm/nouveau: use pm_runtime_last_busy_and_autosuspend helper
-Date: Wed, 24 Sep 2014 21:44:55 +0530
-Message-Id: <1411575342-31048-6-git-send-email-vinod.koul@intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
-References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+Cc: linux-nfs@vger.kernel.org, trond.myklebust@primarydata.com,
+        ebiederm@xmission.com, Fabian Frederick <fabf@skynet.be>
+Subject: [PATCH 1/1 linux-next] nfs: fix duplicate proc entries
+Date: Wed, 24 Sep 2014 18:56:11 +0200
+Message-Id: <1411577771-9474-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
-coding the same code
+Commit 65b38851a174
+("NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes")
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+updated the following function:
+static int nfs_volume_list_open(struct inode *inode, struct file *file)
+
+it used &nfs_server_list_ops instead of &nfs_volume_list_ops
+which means cat /proc/fs/nfsfs/volumes = /proc/fs/nfsfs/servers
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/gpu/drm/nouveau/nouveau_connector.c |    3 +--
- drivers/gpu/drm/nouveau/nouveau_drm.c       |    9 +++------
- 2 files changed, 4 insertions(+), 8 deletions(-)
+ fs/nfs/client.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
-index 1ec44c8..0e3108a 100644
---- a/drivers/gpu/drm/nouveau/nouveau_connector.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
-@@ -323,8 +323,7 @@ detect_analog:
- 
-  out:
- 
--	pm_runtime_mark_last_busy(connector->dev->dev);
--	pm_runtime_put_autosuspend(connector->dev->dev);
-+	pm_runtime_last_busy_and_autosuspend(connector->dev->dev);
- 
- 	return conn_status;
- }
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-index 250a5e8..719eabf 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -766,8 +766,7 @@ nouveau_drm_open(struct drm_device *dev, struct drm_file *fpriv)
- 	mutex_unlock(&drm->client.mutex);
- 
- out_suspend:
--	pm_runtime_mark_last_busy(dev->dev);
--	pm_runtime_put_autosuspend(dev->dev);
-+	pm_runtime_last_busy_and_autosuspend(dev->dev);
- 
- 	return ret;
- }
-@@ -794,8 +793,7 @@ nouveau_drm_postclose(struct drm_device *dev, struct drm_file *fpriv)
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index 8052020..f9f4845 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -1320,7 +1320,7 @@ static int nfs_server_list_show(struct seq_file *m, void *v)
+  */
+ static int nfs_volume_list_open(struct inode *inode, struct file *file)
  {
- 	struct nouveau_cli *cli = nouveau_cli(fpriv);
- 	nouveau_cli_destroy(cli);
--	pm_runtime_mark_last_busy(dev->dev);
--	pm_runtime_put_autosuspend(dev->dev);
-+	pm_runtime_last_busy_and_autosuspend(dev->dev);
- }
- 
- static const struct drm_ioctl_desc
-@@ -834,8 +832,7 @@ nouveau_drm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		break;
- 	}
- 
--	pm_runtime_mark_last_busy(dev->dev);
--	pm_runtime_put_autosuspend(dev->dev);
-+	pm_runtime_last_busy_and_autosuspend(dev->dev);
- 	return ret;
+-	return seq_open_net(inode, file, &nfs_server_list_ops,
++	return seq_open_net(inode, file, &nfs_volume_list_ops,
+ 			   sizeof(struct seq_net_private));
  }
  
 -- 
-1.7.0.4
+1.9.3
 
