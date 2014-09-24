@@ -1,116 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaIXPLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:11:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116AbaIXPK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:10:58 -0400
-Message-ID: <5422DEDE.1060004@redhat.com>
-Date: Wed, 24 Sep 2014 17:10:22 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754710AbaIXPLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:11:37 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:41794 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102AbaIXPJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:09:16 -0400
+Date: Wed, 24 Sep 2014 17:09:11 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] fuse: honour max_read and max_write in direct_io mode
+Message-ID: <20140924150911.GB7441@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Subject: Re: [PATCH v1 4/5] zram: add swap full hint
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>	<1411344191-2842-5-git-send-email-minchan@kernel.org>	<20140922141118.de46ae5e54099cf2b39c8c5b@linux-foundation.org>	<20140923045602.GC8325@bbox> <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
-In-Reply-To: <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="EmHDdKerlwaUAa7w9h7n2fPu1bvmAkW9v"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---EmHDdKerlwaUAa7w9h7n2fPu1bvmAkW9v
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-On 09/23/2014 11:17 PM, Andrew Morton wrote:
-> On Tue, 23 Sep 2014 13:56:02 +0900 Minchan Kim <minchan@kernel.org> wro=
-te:
->=20
->>>
->>>> +#define ZRAM_FULLNESS_PERCENT 80
->>>
->>> We've had problems in the past where 1% is just too large an incremen=
-t
->>> for large systems.
->>
->> So, do you want fullness_bytes like dirty_bytes?
->=20
-> Firstly I'd like you to think about whether we're ever likely to have
-> similar granularity problems with this tunable.  If not then forget
-> about it.
->=20
-> If yes then we should do something.  I don't like the "bytes" thing
-> much because it requires that the operator know the pool size
-> beforehand, and any time that changes, the "bytes" needs hanging too.=20
-> Ratios are nice but percent is too coarse.  Maybe kernel should start
-> using "ppm" for ratios, parts per million.  hrm.
+The third argument of fuse_get_user_pages() "nbytesp" refers to the number of
+bytes a caller asked to pack into fuse request. This value may be lesser
+than capacity of fuse request or iov_iter.  So fuse_get_user_pages() must
+ensure that *nbytesp won't grow.
 
-An other possibility is to use decimal fractions. AFAIK, lustre fs uses
-them already for its procfs entries.
+Now, when helper iov_iter_get_pages() performs all hard work of extracting
+pages from iov_iter, it can be done by passing properly calculated
+"maxsize" to the helper.
 
->=20
->>>> @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram,=
- bool reset_capacity)
->>>>  	down_write(&zram->init_lock);
->>>> =20
->>>>  	zram->limit_pages =3D 0;
->>>> +	atomic_set(&zram->alloc_fail, 0);
->>>> =20
->>>>  	if (!init_done(zram)) {
->>>>  		up_write(&zram->init_lock);
->>>> @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_d=
-evice *bdev,
->>>>  	return 0;
->>>>  }
->>>> =20
->>>> +static int zram_full(struct block_device *bdev, void *arg)
->>>
->>> This could return a bool.  That implies that zram_swap_hint should
->>> return bool too, but as we haven't been told what the zram_swap_hint
->>> return value does, I'm a bit stumped.
->>
->> Hmm, currently, SWAP_FREE doesn't use return and SWAP_FULL uses return=
+The other caller of iov_iter_get_pages() (dio_refill_pages()) doesn't need
+this capability, so pass LONG_MAX as the maxsize argument here.
 
->> as bool so in the end, we can change it as bool but I want to remain i=
-t
->> as int for the future. At least, we might use it as propagating error
->> in future. Instead, I will use *arg to return the result instead of
->> return val. But I'm not strong so if you want to remove return val,
->> I will do it. For clarifictaion, please tell me again if you want.
->=20
-> I'm easy, as long as it makes sense, is understandable by people other
-> than he-who-wrote-it and doesn't use argument names such as "arg".
->=20
->=20
+Fixes: c9c37e2e6378 ("fuse: switch to iov_iter_get_pages()")
+Reported-by: Werner Baumann <werner.baumann@onlinehome.de>
+Tested-by: Maxim Patlasov <mpatlasov@parallels.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+This touches non-fuse files too, that's why I'm not sending this as regular PULL
+request.
 
+ fs/direct-io.c      |    2 +-
+ fs/fuse/file.c      |    1 +
+ include/linux/uio.h |    2 +-
+ mm/iov_iter.c       |   14 +++++++++-----
+ 4 files changed, 12 insertions(+), 7 deletions(-)
 
-
---EmHDdKerlwaUAa7w9h7n2fPu1bvmAkW9v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUIt7eAAoJEHTzHJCtsuoCc1gH+QGCqyId6qZj+DM0/AunjLCs
-ufVK4Prb7RPScj6TTYK1XA2BDuiy3Qdkcef6ZJzJp+qQHWOkcL6GTr+C+xNt3Zd+
-V+EDc7pSd55l/Ej9NpxhbOBOX3opT4OkuOSjp8Y6zuvLKHaa2ffjMQcBruwuQySB
-o4bQ1RE96OfeVXBeLXkzZCzmF8RHwIQnMNSAvhbxq7aONwD6CGPt++YkJXSPS9/k
-ZYAPbKFnEpb8VqkpXE5BZ9dxUMXB9UZTuIfOXDDmtqLc9oXUozCjXK0habgoieBP
-ldyKjnxS/l9QHFRjiy2SaQxNBKtjLAsdmLOWIjH8xjdHhbzOGFsoPYBcLfwbgT0=
-=VF1L
------END PGP SIGNATURE-----
-
---EmHDdKerlwaUAa7w9h7n2fPu1bvmAkW9v--
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -158,7 +158,7 @@ static inline int dio_refill_pages(struc
+ {
+ 	ssize_t ret;
+ 
+-	ret = iov_iter_get_pages(sdio->iter, dio->pages, DIO_PAGES,
++	ret = iov_iter_get_pages(sdio->iter, dio->pages, LONG_MAX, DIO_PAGES,
+ 				&sdio->from);
+ 
+ 	if (ret < 0 && sdio->blocks_available && (dio->rw & WRITE)) {
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1305,6 +1305,7 @@ static int fuse_get_user_pages(struct fu
+ 		size_t start;
+ 		ssize_t ret = iov_iter_get_pages(ii,
+ 					&req->pages[req->num_pages],
++					*nbytesp - nbytes,
+ 					req->max_pages - req->num_pages,
+ 					&start);
+ 		if (ret < 0)
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -84,7 +84,7 @@ unsigned long iov_iter_alignment(const s
+ void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
+ 			unsigned long nr_segs, size_t count);
+ ssize_t iov_iter_get_pages(struct iov_iter *i, struct page **pages,
+-			unsigned maxpages, size_t *start);
++			size_t maxsize, unsigned maxpages, size_t *start);
+ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i, struct page ***pages,
+ 			size_t maxsize, size_t *start);
+ int iov_iter_npages(const struct iov_iter *i, int maxpages);
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -310,7 +310,7 @@ void iov_iter_init(struct iov_iter *i, i
+ EXPORT_SYMBOL(iov_iter_init);
+ 
+ static ssize_t get_pages_iovec(struct iov_iter *i,
+-		   struct page **pages, unsigned maxpages,
++		   struct page **pages, size_t maxsize, unsigned maxpages,
+ 		   size_t *start)
+ {
+ 	size_t offset = i->iov_offset;
+@@ -323,6 +323,8 @@ static ssize_t get_pages_iovec(struct io
+ 	len = iov->iov_len - offset;
+ 	if (len > i->count)
+ 		len = i->count;
++	if (len > maxsize)
++		len = maxsize;
+ 	addr = (unsigned long)iov->iov_base + offset;
+ 	len += *start = addr & (PAGE_SIZE - 1);
+ 	if (len > maxpages * PAGE_SIZE)
+@@ -588,13 +590,15 @@ static unsigned long alignment_bvec(cons
+ }
+ 
+ static ssize_t get_pages_bvec(struct iov_iter *i,
+-		   struct page **pages, unsigned maxpages,
++		   struct page **pages, size_t maxsize, unsigned maxpages,
+ 		   size_t *start)
+ {
+ 	const struct bio_vec *bvec = i->bvec;
+ 	size_t len = bvec->bv_len - i->iov_offset;
+ 	if (len > i->count)
+ 		len = i->count;
++	if (len > maxsize)
++		len = maxsize;
+ 	/* can't be more than PAGE_SIZE */
+ 	*start = bvec->bv_offset + i->iov_offset;
+ 
+@@ -711,13 +715,13 @@ unsigned long iov_iter_alignment(const s
+ EXPORT_SYMBOL(iov_iter_alignment);
+ 
+ ssize_t iov_iter_get_pages(struct iov_iter *i,
+-		   struct page **pages, unsigned maxpages,
++		   struct page **pages, size_t maxsize, unsigned maxpages,
+ 		   size_t *start)
+ {
+ 	if (i->type & ITER_BVEC)
+-		return get_pages_bvec(i, pages, maxpages, start);
++		return get_pages_bvec(i, pages, maxsize, maxpages, start);
+ 	else
+-		return get_pages_iovec(i, pages, maxpages, start);
++		return get_pages_iovec(i, pages, maxsize, maxpages, start);
+ }
+ EXPORT_SYMBOL(iov_iter_get_pages);
+ 
