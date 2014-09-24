@@ -1,233 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaIXIWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:22:38 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:34788 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154AbaIXIWf (ORCPT
+	id S1753988AbaIXIXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:23:33 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:9676 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbaIXIX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:22:35 -0400
-Date: Wed, 24 Sep 2014 09:22:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
+	Wed, 24 Sep 2014 04:23:28 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-30-54227f7d1d7a
+Message-id: <54227F7B.80702@samsung.com>
+Date: Wed, 24 Sep 2014 10:23:23 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.1
+MIME-version: 1.0
+To: Kukjin Kim <kgene.kim@samsung.com>, Kukjin Kim <kgene@kernel.org>
+Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v7 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
- binding
-Message-ID: <20140924082228.GF17801@lee--X1>
-References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, swarren@nvidia.com,
+        acourbot@nvidia.com, "'Olof Johansson'" <olof@lixom.net>,
+        drake@endlessm.com, tomeu@tomeuvizoso.net
+Subject: Re: [PATCH v3 0/5] Firmware-assisted suspend/resume of Exynos SoCs
+References: <1409062228-14690-1-git-send-email-t.figa@samsung.com>
+ <5415D4A8.4010304@gmail.com> <0d2401cfd07b$0e21e190$2a65a4b0$@kernel.org>
+ <54227893.7020808@samsung.com>
+In-reply-to: <54227893.7020808@samsung.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/xy7q19UohBo3neC2+PzzFavF30jF2
+	i0fzHzNb9C64ymbR//g1s8Wmx9dYLS7vmsNmMeP8PiaL25d5LU5d/8xmcWN6C6vFql1/GC0u
+	N5o58Hq0NPewefz+NYnRY9H3LI+ds+6ye2xa1cnmsXlJvceVE02sHr3N79g8+rasYvQ4+pfN
+	4/MmuQDuKC6blNSczLLUIn27BK6M2fe9CpaoVHSs/c/cwHhCpouRk0NCwERixdGHzBC2mMSF
+	e+vZuhi5OIQEljJKHHr0khXC+cQo8fDEC6YuRg4OXgENiY3XFEAaWARUJaYv+MoOYrMJGEp0
+	ve1iA7FFBWIkln7cwwJi8woISvyYfA/MFhFwlZhzZRIjyExmgadMEp0vdzGCJIQFvCVe9f+E
+	WraeUWLGpt1gHZwC2hLrdr9gBbGZBcwkvrw8DGXLS2xe85Z5AqPALCRLZiEpm4WkbAEj8ypG
+	0dTS5ILipPRcI73ixNzi0rx0veT83E2MkKj6uoNx6TGrQ4wCHIxKPLwTxZVChFgTy4orcw8x
+	SnAwK4nwnigFCvGmJFZWpRblxxeV5qQWH2Jk4uCUamAstW6/WLVFyF96b5jdcz2L9Z766r+T
+	v+8Wurteke9Uw3Vd3sMbJh2oyey9smHvzqnf4q780HsjPbHhVLfPrb8LD9VrqWi7Kgbee+Xr
+	t2eR+X1et7J7Is1rnx9Xk+ssFLM9Z7F0v0vR33kLrptE/tgww/qkz93npkdFnmw7LPY9NaBR
+	JNf3u81TJZbijERDLeai4kQARXMrr4gCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Sep 2014, Bjorn Andersson wrote:
+Hi Kukjin,
 
-> Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660,
-> 8960 and 8064 based devices. The binding currently describes the rpm
-> itself and the regulator subnodes.
-> 
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
->  Documentation/devicetree/bindings/mfd/qcom-rpm.txt |  246 ++++++++++++++++++++
+On 2014-09-24 09:53, Kukjin Kim wrote:
+>
+> On 09/15/14 09:21, Kukjin Kim wrote:
+>>
+>>> On 26.08.2014 16:10, Tomasz Figa wrote:
+>>>> On Exynos-based boards running secure firmware the sequence of low 
+>>>> level
+>>>> operations to enter and leave system-wide sleep mode is different than
+>>>> on those without the firmware. Namely:
+>>>>   - CP15 power control and diagnostic registers cannot be written 
+>>>> directly,
+>>>>   - the way of setting boot address and boot flag is different,
+>>>>   - different resume handler needs to be used,
+>>>>   - dedicated SMC call needs to be performed instead of letting the 
+>>>> CPU enter
+>>>>     WFI.
+>>>>
+>>>> This series introduces .suspend() and .resume() firmware operations to
+>>>> perform low level firmware-specific suspend and resume and then 
+>>>> leverages
+>>>> them to provide suspend-resume path meeting the above requirements. 
+>>>> Three
+>>>> additional patches extend device tree sources of Trats2 board with 
+>>>> necessary
+>>>> setup to enable suspend/resume support.
+>>>>
+>>>> This series has been tested on Exynos4412-based Trats2 board, 
+>>>> without any
+>>>> additional patches. Unfortunately v3.17-rc1 regressed ODROID 
+>>>> support and
+>>>> suspend stopped working on those boards, due to unknown reasons 
+>>>> still being
+>>>> investigated. It does not seem to be related to anything in this 
+>>>> series,
+>>>> though, so I would not consider this as a stopper.
+>>>>
+>>>> Changes since v2:
+>>>> (https://lkml.org/lkml/2014/7/17/431)
+>>>>   - added board-specific fixes for device tree sources of Trats2 
+>>>> board,
+>>>>   - rebased on next-20140826 of linux-next tree.
+>>>>
+>>>> Changes since v1:
+>>>>   - dropped outer_resume() - will be handled in assembly in further 
+>>>> patches,
+>>>>     as support for L2C in non-secure mode gets added,
+>>>>   - moved CP15 resume to assembly as it needs to be done before MMU 
+>>>> is enabled,
+>>>>   - surrounded CP15 save with a check for cpuid part, because it is 
+>>>> valid only
+>>>>     on Cortex A9,
+>>>>   - rebased on next-20140717 tag of linux-next tree.
+>>>>
+>>>> Tomasz Figa (5):
+>>>>    ARM: firmware: Introduce suspend and resume operations
+>>>>    ARM: EXYNOS: Add support for firmware-assisted suspend/resume
+>>>>    ARM: dts: exynos4412-trats2: Keep eMMC regulators soft-disabled
+>>>>    ARM: dts: exynos4x12: Add utility macro to define pin sleep states
+>>>>    ARM: dts: exynos4412-trats2: Add sleep mode pin configuration
+>>>>
+>>>>   Documentation/arm/firmware.txt            |  28 +--
+>>>>   arch/arm/boot/dts/exynos4412-trats2.dts   | 320 
+>>>> +++++++++++++++++++++++++++++-
+>>>>   arch/arm/boot/dts/exynos4x12-pinctrl.dtsi |  16 ++
+>>>>   arch/arm/include/asm/firmware.h           |   8 +
+>>>>   arch/arm/mach-exynos/Makefile             |   1 +
+>>>>   arch/arm/mach-exynos/common.h             |   4 +
+>>>>   arch/arm/mach-exynos/firmware.c           |  45 +++++
+>>>>   arch/arm/mach-exynos/pm.c                 |  16 +-
+>>>>   arch/arm/mach-exynos/sleep.S              |  28 +++
+>>>>   arch/arm/mach-exynos/smc.h                |   4 +
+>>>>   10 files changed, 438 insertions(+), 32 deletions(-)
+>>>>
+>>>
+>>> Would you consider applying this series? It has been waiting on the ML
+>>> long enough (note no changes in core patches since last revision, just
+>>> few more board specific patches). Thanks in advance.
+>>>
+>> Sure, I will. Thanks for your gentle reminder.
+>>
+> I've reverted this series because of following.
+>
+> In file included from arch/arm/mach-tegra/cpuidle-tegra114.c:17:0:
+> arch/arm/mach-tegra/cpuidle-tegra114.c: In function 
+> 'tegra114_idle_power_down':
+> arch/arm/include/asm/firmware.h:64:24: error: too few arguments to 
+> function 'firmware_ops->do_idle'
+>   ((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
+>                         ^
+> arch/arm/mach-tegra/cpuidle-tegra114.c:52:6: note: in expansion of 
+> macro 'call_firmware_op'
+>   if (call_firmware_op(do_idle) == -ENOSYS)
+>       ^
+>
+> Caused by commit f5217f3b9332 ("ARM: EXYNOS: add AFTR mode support to
+> firmware do_idle method").
+>
+> Need to fix...
 
-Please adhere to: Documentation/devicetree/bindings/submitting-patches.txt
+I don't get why you have reverted the main feature of "Firmware-assisted 
+suspend/resume
+of Exynos SoCs" because of an issue on the completely independent 
+patchset which adds
+AFTR idle mode support. Could you please keep the "ARM: firmware: 
+Introduce suspend
+and resume operations" and "ARM: EXYNOS: Add support for firmware-assisted
+suspend/resume" patches?
 
->  include/dt-bindings/mfd/qcom-rpm.h                 |  154 ++++++++++++
->  2 files changed, 400 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm.txt
->  create mode 100644 include/dt-bindings/mfd/qcom-rpm.h
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-> new file mode 100644
-> index 0000000..4264021
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-
-This requires a DT Ack.
-
-[...]
-
-> +++ b/include/dt-bindings/mfd/qcom-rpm.h
-
-Please split this into a separate patch.
-
-When you do, for this file only, please apply my:
-
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> @@ -0,0 +1,154 @@
-> +/*
-> + * This header provides constants for the Qualcomm RPM bindings.
-> + */
-> +
-> +#ifndef _DT_BINDINGS_MFD_QCOM_RPM_H
-> +#define _DT_BINDINGS_MFD_QCOM_RPM_H
-> +
-> +/*
-> + * Constants use to identify individual resources in the RPM.
-> + */
-> +#define QCOM_RPM_APPS_FABRIC_ARB		1
-> +#define QCOM_RPM_APPS_FABRIC_CLK		2
-> +#define QCOM_RPM_APPS_FABRIC_HALT		3
-> +#define QCOM_RPM_APPS_FABRIC_IOCTL		4
-> +#define QCOM_RPM_APPS_FABRIC_MODE		5
-> +#define QCOM_RPM_APPS_L2_CACHE_CTL		6
-> +#define QCOM_RPM_CFPB_CLK			7
-> +#define QCOM_RPM_CXO_BUFFERS			8
-> +#define QCOM_RPM_CXO_CLK			9
-> +#define QCOM_RPM_DAYTONA_FABRIC_CLK		10
-> +#define QCOM_RPM_DDR_DMM			11
-> +#define QCOM_RPM_EBI1_CLK			12
-> +#define QCOM_RPM_HDMI_SWITCH			13
-> +#define QCOM_RPM_MMFPB_CLK			14
-> +#define QCOM_RPM_MM_FABRIC_ARB			15
-> +#define QCOM_RPM_MM_FABRIC_CLK			16
-> +#define QCOM_RPM_MM_FABRIC_HALT			17
-> +#define QCOM_RPM_MM_FABRIC_IOCTL		18
-> +#define QCOM_RPM_MM_FABRIC_MODE			19
-> +#define QCOM_RPM_PLL_4				20
-> +#define QCOM_RPM_PM8058_LDO0			21
-> +#define QCOM_RPM_PM8058_LDO1			22
-> +#define QCOM_RPM_PM8058_LDO2			23
-> +#define QCOM_RPM_PM8058_LDO3			24
-> +#define QCOM_RPM_PM8058_LDO4			25
-> +#define QCOM_RPM_PM8058_LDO5			26
-> +#define QCOM_RPM_PM8058_LDO6			27
-> +#define QCOM_RPM_PM8058_LDO7			28
-> +#define QCOM_RPM_PM8058_LDO8			29
-> +#define QCOM_RPM_PM8058_LDO9			30
-> +#define QCOM_RPM_PM8058_LDO10			31
-> +#define QCOM_RPM_PM8058_LDO11			32
-> +#define QCOM_RPM_PM8058_LDO12			33
-> +#define QCOM_RPM_PM8058_LDO13			34
-> +#define QCOM_RPM_PM8058_LDO14			35
-> +#define QCOM_RPM_PM8058_LDO15			36
-> +#define QCOM_RPM_PM8058_LDO16			37
-> +#define QCOM_RPM_PM8058_LDO17			38
-> +#define QCOM_RPM_PM8058_LDO18			39
-> +#define QCOM_RPM_PM8058_LDO19			40
-> +#define QCOM_RPM_PM8058_LDO20			41
-> +#define QCOM_RPM_PM8058_LDO21			42
-> +#define QCOM_RPM_PM8058_LDO22			43
-> +#define QCOM_RPM_PM8058_LDO23			44
-> +#define QCOM_RPM_PM8058_LDO24			45
-> +#define QCOM_RPM_PM8058_LDO25			46
-> +#define QCOM_RPM_PM8058_LVS0			47
-> +#define QCOM_RPM_PM8058_LVS1			48
-> +#define QCOM_RPM_PM8058_NCP			49
-> +#define QCOM_RPM_PM8058_SMPS0			50
-> +#define QCOM_RPM_PM8058_SMPS1			51
-> +#define QCOM_RPM_PM8058_SMPS2			52
-> +#define QCOM_RPM_PM8058_SMPS3			53
-> +#define QCOM_RPM_PM8058_SMPS4			54
-> +#define QCOM_RPM_PM8821_LDO1			55
-> +#define QCOM_RPM_PM8821_SMPS1			56
-> +#define QCOM_RPM_PM8821_SMPS2			57
-> +#define QCOM_RPM_PM8901_LDO0			58
-> +#define QCOM_RPM_PM8901_LDO1			59
-> +#define QCOM_RPM_PM8901_LDO2			60
-> +#define QCOM_RPM_PM8901_LDO3			61
-> +#define QCOM_RPM_PM8901_LDO4			62
-> +#define QCOM_RPM_PM8901_LDO5			63
-> +#define QCOM_RPM_PM8901_LDO6			64
-> +#define QCOM_RPM_PM8901_LVS0			65
-> +#define QCOM_RPM_PM8901_LVS1			66
-> +#define QCOM_RPM_PM8901_LVS2			67
-> +#define QCOM_RPM_PM8901_LVS3			68
-> +#define QCOM_RPM_PM8901_MVS			69
-> +#define QCOM_RPM_PM8901_SMPS0			70
-> +#define QCOM_RPM_PM8901_SMPS1			71
-> +#define QCOM_RPM_PM8901_SMPS2			72
-> +#define QCOM_RPM_PM8901_SMPS3			73
-> +#define QCOM_RPM_PM8901_SMPS4			74
-> +#define QCOM_RPM_PM8921_CLK1			75
-> +#define QCOM_RPM_PM8921_CLK2			76
-> +#define QCOM_RPM_PM8921_LDO1			77
-> +#define QCOM_RPM_PM8921_LDO2			78
-> +#define QCOM_RPM_PM8921_LDO3			79
-> +#define QCOM_RPM_PM8921_LDO4			80
-> +#define QCOM_RPM_PM8921_LDO5			81
-> +#define QCOM_RPM_PM8921_LDO6			82
-> +#define QCOM_RPM_PM8921_LDO7			83
-> +#define QCOM_RPM_PM8921_LDO8			84
-> +#define QCOM_RPM_PM8921_LDO9			85
-> +#define QCOM_RPM_PM8921_LDO10			86
-> +#define QCOM_RPM_PM8921_LDO11			87
-> +#define QCOM_RPM_PM8921_LDO12			88
-> +#define QCOM_RPM_PM8921_LDO13			89
-> +#define QCOM_RPM_PM8921_LDO14			90
-> +#define QCOM_RPM_PM8921_LDO15			91
-> +#define QCOM_RPM_PM8921_LDO16			92
-> +#define QCOM_RPM_PM8921_LDO17			93
-> +#define QCOM_RPM_PM8921_LDO18			94
-> +#define QCOM_RPM_PM8921_LDO19			95
-> +#define QCOM_RPM_PM8921_LDO20			96
-> +#define QCOM_RPM_PM8921_LDO21			97
-> +#define QCOM_RPM_PM8921_LDO22			98
-> +#define QCOM_RPM_PM8921_LDO23			99
-> +#define QCOM_RPM_PM8921_LDO24			100
-> +#define QCOM_RPM_PM8921_LDO25			101
-> +#define QCOM_RPM_PM8921_LDO26			102
-> +#define QCOM_RPM_PM8921_LDO27			103
-> +#define QCOM_RPM_PM8921_LDO28			104
-> +#define QCOM_RPM_PM8921_LDO29			105
-> +#define QCOM_RPM_PM8921_LVS1			106
-> +#define QCOM_RPM_PM8921_LVS2			107
-> +#define QCOM_RPM_PM8921_LVS3			108
-> +#define QCOM_RPM_PM8921_LVS4			109
-> +#define QCOM_RPM_PM8921_LVS5			110
-> +#define QCOM_RPM_PM8921_LVS6			111
-> +#define QCOM_RPM_PM8921_LVS7			112
-> +#define QCOM_RPM_PM8921_MVS			113
-> +#define QCOM_RPM_PM8921_NCP			114
-> +#define QCOM_RPM_PM8921_SMPS1			115
-> +#define QCOM_RPM_PM8921_SMPS2			116
-> +#define QCOM_RPM_PM8921_SMPS3			117
-> +#define QCOM_RPM_PM8921_SMPS4			118
-> +#define QCOM_RPM_PM8921_SMPS5			119
-> +#define QCOM_RPM_PM8921_SMPS6			120
-> +#define QCOM_RPM_PM8921_SMPS7			121
-> +#define QCOM_RPM_PM8921_SMPS8			122
-> +#define QCOM_RPM_PXO_CLK			123
-> +#define QCOM_RPM_QDSS_CLK			124
-> +#define QCOM_RPM_SFPB_CLK			125
-> +#define QCOM_RPM_SMI_CLK			126
-> +#define QCOM_RPM_SYS_FABRIC_ARB			127
-> +#define QCOM_RPM_SYS_FABRIC_CLK			128
-> +#define QCOM_RPM_SYS_FABRIC_HALT		129
-> +#define QCOM_RPM_SYS_FABRIC_IOCTL		130
-> +#define QCOM_RPM_SYS_FABRIC_MODE		131
-> +#define QCOM_RPM_USB_OTG_SWITCH			132
-> +#define QCOM_RPM_VDDMIN_GPIO			133
-> +
-> +/*
-> + * Constants used to select force mode for regulators.
-> + */
-> +#define QCOM_RPM_FORCE_MODE_NONE		0
-> +#define QCOM_RPM_FORCE_MODE_LPM			1
-> +#define QCOM_RPM_FORCE_MODE_HPM			2
-> +#define QCOM_RPM_FORCE_MODE_AUTO		3
-> +#define QCOM_RPM_FORCE_MODE_BYPASS		4
-> +
-> +#endif
-> -- 
-> 1.7.9.5
-> 
-
+Best regards
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
+
