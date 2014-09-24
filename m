@@ -1,139 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaIXTCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:02:03 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:57079 "EHLO mail.kapsi.fi"
+	id S1751500AbaIXTDW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:03:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5685 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753441AbaIXTCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:02:00 -0400
-Message-ID: <54231523.9050502@kapsi.fi>
-Date: Wed, 24 Sep 2014 22:01:55 +0300
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1750772AbaIXTDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:03:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
+   d="scan'208";a="608014662"
+Date: Wed, 24 Sep 2014 22:02:34 +0300
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 12/12] tpm: TPM2 sysfs attributes
+Message-ID: <20140924190234.GB6801@intel.com>
+References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20140924171338.GG8898@obsidianresearch.com>
 MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
-        swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        juha-matti.tilli@iki.fi
-Subject: Re: [PATCH v5 3/4] ARM: tegra: Add thermal trip points for Jetson
- TK1
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com> <1408616242-21009-4-git-send-email-mperttunen@nvidia.com> <20140924183204.GE27076@developer> <54230EA8.7080604@kapsi.fi> <20140924184157.GB7593@developer> <542310EB.7050802@kapsi.fi> <20140924184843.GA15798@developer>
-In-Reply-To: <20140924184843.GA15798@developer>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924171338.GG8898@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 09:48 PM, Eduardo Valentin wrote:
-> Hello Mikko,
->
-> On Wed, Sep 24, 2014 at 09:43:55PM +0300, Mikko Perttunen wrote:
->> On 09/24/2014 09:41 PM, Eduardo Valentin wrote:
->>> On Wed, Sep 24, 2014 at 09:34:16PM +0300, Mikko Perttunen wrote:
->>>> On 09/24/2014 09:32 PM, Eduardo Valentin wrote:
->>>>> Hello Mikko,
->>>>>
->>>>> On Thu, Aug 21, 2014 at 01:17:21PM +0300, Mikko Perttunen wrote:
->>>>>> This adds critical trip points to the Jetson TK1 device tree.
->>>>>> The device will do a controlled shutdown when either the CPU, GPU
->>>>>> or MEM thermal zone reaches 101 degrees Celsius.
->>>>>>
->>>>>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
->>>>>> ---
->>>>>> v5: added cooling-maps nodes
->>>>>>
->>>>>
->>>>> OK. But no cooling map entry in it. What was the reason again you don't
->>>>> need/want to add the maps?
->>>>
->>>> There is currently no cooling device to map to.
->>>
->>> Not even cpufreq cooling? Is CPUfreq operational in Tegra?
->>
->> Indeed, it is not currently operational (except on Tegra20). There is a
->> series for Tegra124 but it needs more work. Not going in during this cycle.
->>
->
-> OK. Now I understand. In this case, can you please explain the situation
-> with a TODO comment inside the cooling-maps?
->
-> The way it is now, looks awkwards.
+On Wed, Sep 24, 2014 at 11:13:38AM -0600, Jason Gunthorpe wrote:
+> On Wed, Sep 24, 2014 at 12:06:02PM +0300, Jarkko Sakkinen wrote:
+> > Added tpm2-sysfs.c that implements sysfs attributes for a TPM2
+> > device.
+> 
+> You need to document in Documentation every new sysfs that is added.
+> 
+> The existing ones are not documented :(
 
-OK, I will add a comment.
+This came up in Peters reply (you probably saw that).
 
->
->>>
->>>>
->>>> Mikko
->>>>
->>>>>
->>>>>>     arch/arm/boot/dts/tegra124-jetson-tk1.dts | 41 +++++++++++++++++++++++++++++++
->>>>>>     1 file changed, 41 insertions(+)
->>>>>>
->>>>>> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
->>>>>> index 0cdb5cf..bcdab7f 100644
->>>>>> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
->>>>>> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
->>>>>> @@ -1876,4 +1876,45 @@
->>>>>>     			 <&tegra_car TEGRA124_CLK_EXTERN1>;
->>>>>>     		clock-names = "pll_a", "pll_a_out0", "mclk";
->>>>>>     	};
->>>>>> +
->>>>>> +	thermal-zones {
->>>>>> +		cpu {
->>>>>> +			trips {
->>>>>> +				trip@0 {
->>>>>> +					temperature = <101000>;
->>>>>> +					hysteresis = <0>;
->>>>>> +					type = "critical";
->>>>>> +				};
->>>>>> +			};
->>>>>> +
->>>>>> +			cooling-maps {
->>>>>> +			};
->>>>>> +		};
->>>>>> +
->>>>>> +		mem {
->>>>>> +			trips {
->>>>>> +				trip@0 {
->>>>>> +					temperature = <101000>;
->>>>>> +					hysteresis = <0>;
->>>>>> +					type = "critical";
->>>>>> +				};
->>>>>> +			};
->>>>>> +
->>>>>> +			cooling-maps {
->>>>>> +			};
->>>>>> +		};
->>>>>> +
->>>>>> +		gpu {
->>>>>> +			trips {
->>>>>> +				trip@0 {
->>>>>> +					temperature = <101000>;
->>>>>> +					hysteresis = <0>;
->>>>>> +					type = "critical";
->>>>>> +				};
->>>>>> +			};
->>>>>> +
->>>>>> +			cooling-maps {
->>>>>> +			};
->>>>>> +		};
->>>>>> +	};
->>>>>>     };
->>>>>> --
->>>>>> 1.8.1.5
->>>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>
->>>>
->>
+https://www.kernel.org/doc/Documentation/ABI/stable/sysfs-class-tpm
 
+> > +++ b/drivers/char/tpm/tpm-interface.c
+> > @@ -899,6 +899,7 @@ void tpm_remove_hardware(struct device *dev)
+> >  
+> >  	tpm_chip_unregister(chip);
+> >  
+> > +
+> >  	/* write it this way to be explicit (chip->dev == dev) */
+> >  	put_device(chip->dev);
+> >  }
+> 
+> Hunk does not belong in this patch
+
+Ack (thanks).
+
+> > diff --git a/drivers/char/tpm/tpm2-commands.c b/drivers/char/tpm/tpm2-commands.c
+> > index a21dfd5..6365087 100644
+> > +++ b/drivers/char/tpm/tpm2-commands.c
+> > @@ -195,7 +195,7 @@ ssize_t tpm2_get_tpm_pt(struct device *dev, u32 property_id,  u32* value,
+> >  	cmd.header.in = tpm2_get_tpm_pt_header;
+> >  	cmd.params.tpm2_get_tpm_pt_in.cap_id =
+> >  		cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
+> > -	cmd.params.tpm2_get_tpm_pt_in.property_id = property_id;
+> > +	cmd.params.tpm2_get_tpm_pt_in.property_id = cpu_to_be32(property_id);
+> >  	cmd.params.tpm2_get_tpm_pt_in.property_cnt = cpu_to_be32(1);
+> 
+> Hunk does not belong in this patch
+
+Ack (thanks).
+
+> > +static ssize_t pcrs_show(struct device *dev, struct device_attribute *attr,
+> > +			 char *buf)
+> > +{
+> 
+> The pcrs file never conformed to the sysfs rules, if TPM2 is getting a
+> whole new file set, I wouldn't mind seeing it not include the
+> non-conformant ones. What do you think?
+
+I think that it's better to put extra focus on these sysfs attributes in
+first patch set because it's user space visible. What's wrong in the
+current pcrs file?
+
+> > +static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
+> > +			 char *buf)
+> > +{
+> 
+> Ditto.. The manfacturer number should probably be its own file
+
+Maybe here would make sense to have three files:
+
+- manufacturer
+- firmware_1
+- firmware_2
+
+More or less following the name of the TPM properties in the
+specification.
+
+> > +static ssize_t durations_show(struct device *dev, struct device_attribute *attr,
+> > +			      char *buf)
+> > +{
+> > +	struct tpm_chip *chip = dev_get_drvdata(dev);
+> > +
+> > +	if (chip->vendor.duration[TPM_LONG] == 0)
+> > +		return 0;
+> > +
+> > +	return sprintf(buf, "%d %d %d [%s]\n",
+> > +		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
+> > +		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
+> > +		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
+> > +		       chip->vendor.duration_adjusted
+> > +		       ? "adjusted" : "original");
+> > +}
+> > +static DEVICE_ATTR_RO(durations);
+> 
+> Seem useless since the durations are constant, drop it?
+> 
+> > +static ssize_t timeouts_show(struct device *dev, struct device_attribute *attr,
+> > +			     char *buf)
+> > +{
+> > +	struct tpm_chip *chip = dev_get_drvdata(dev);
+> > +
+> > +	return sprintf(buf, "%d %d %d %d [%s]\n",
+> > +		       jiffies_to_usecs(chip->vendor.timeout_a),
+> > +		       jiffies_to_usecs(chip->vendor.timeout_b),
+> > +		       jiffies_to_usecs(chip->vendor.timeout_c),
+> > +		       jiffies_to_usecs(chip->vendor.timeout_d),
+> > +		       chip->vendor.timeout_adjusted
+> > +		       ? "adjusted" : "original");
+> > +}
+> > +static DEVICE_ATTR_RO(timeouts);
+> 
+> Ditto
+> 
+> > +static ssize_t version_show(struct device *dev, struct device_attribute *attr,
+> > +			   char *buf)
+> > +{
+> > +	char *str = buf;
+> > +
+> > +	str += sprintf(str, "2.0\n");
+> > +
+> > +	return str - buf;
+> > +}
+> > +
+> > +static DEVICE_ATTR_RO(version);
+> > +
+> > +
+> > +static ssize_t tpm2_show(struct device *dev, struct device_attribute *attr,
+> > +			 char *buf)
+> > +{
+> > +	struct tpm_chip *chip = dev_get_drvdata(dev);
+> > +
+> > +	return sprintf(buf, "%d\n", chip->tpm2);
+> > +}
+> > +static DEVICE_ATTR_RO(tpm2);
+> 
+> Two things for the same report? Drop one?
+> 
+> Also, I think some thought is needed for the char interface - some
+> kind of ioctl to enter TPM2 mode and EINVAL access until that is done?
+> 
+> Finally, this is in the wrong place in sysfs, I suspect it should be
+> attached to the char device node, not the platform device node? We
+> should at least investigate this...
+
+This was forgotten. Should not be here at all. Instead we have the
+variable 'version' to state specification family and level.
+
+I did not fully understand the comment about tpm2 flag. Why driver
+cannot set it when it initializes the device like with this based
+on value of the STS3?
+
+> > +struct tpm2_permanent {
+> > +	unsigned int owner_auth_set		: 1;
+> > +	unsigned int endorsement_auth_set	: 1;
+> > +	unsigned int lockout_auth_set		: 1;
+> > +	unsigned int reserved1			: 5;
+> > +	unsigned int disable_clear		: 1;
+> > +	unsigned int in_lockout			: 1;
+> > +	unsigned int tpm_generated_eps		: 1;
+> > +	unsigned int reserved2			: 21;
+> > +};
+> > +
+> > +struct tpm2_startup_clear {
+> > +	unsigned int ph_enable			: 1;
+> > +	unsigned int sh_enable			: 1;
+> > +	unsigned int eh_enable			: 1;
+> > +	unsigned int ph_enable_nv		: 1;
+> > +	unsigned int reserved			: 27;
+> > +	unsigned int orderly			: 1;
+> > +};
+> 
+> This idea is not portable, you cannot use bitfields to index bits in a
+> word like this. Please use constants defined with BIT(xx)
+
+Thanks, I'll change this.
+
+> Next posting can you include a github link? Thanks
+
+Yup sure. I do everything for v2 in tpm2-v1 by adding fixes on top of 
+these patches. When things look good there I'll create a new branch
+tpm2-v2 and prepare the next patch set.
+
+> Jason
+
+/Jarkko
