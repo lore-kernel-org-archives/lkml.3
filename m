@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192AbaIXT2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:28:06 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:47693 "EHLO e7.ny.us.ibm.com"
+	id S1754522AbaIXT3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:29:51 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58703 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039AbaIXT2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:28:01 -0400
+	id S1754147AbaIXT2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:28:04 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
         Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
@@ -13,233 +13,113 @@ To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
 Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v4 07/10] powerpc/perf/hv-gpci: add the remaining gpci requests
-Date: Wed, 24 Sep 2014 12:27:21 -0700
-Message-Id: <1411586844-21381-8-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v4 09/10] tools/perf: Document parameterized and symbolic events
+Date: Wed, 24 Sep 2014 12:27:23 -0700
+Message-Id: <1411586844-21381-10-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411586844-21381-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1411586844-21381-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092419-5806-0000-0000-000000951C98
+x-cbid: 14092419-7182-0000-0000-0000008A51D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Add the remaining gpci requests that contain counters suitable for use
-by perf. Omit those that don't contain any counters (but note their
-ommision).
+Changelog[v6]:
+	- [Sukadev Bhattiprolu]: Update documentation of perf-list and
+	  perf-record; Added documentation for perf-stat.
 
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- arch/powerpc/perf/hv-gpci-requests.h | 183 +++++++++++++++++++++++++++++++++++
- 1 file changed, 183 insertions(+)
+ tools/perf/Documentation/perf-list.txt   | 13 +++++++++++++
+ tools/perf/Documentation/perf-record.txt | 12 ++++++++++++
+ tools/perf/Documentation/perf-stat.txt   | 20 ++++++++++++++++----
+ 3 files changed, 41 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/perf/hv-gpci-requests.h b/arch/powerpc/perf/hv-gpci-requests.h
-index 0dfc4d9..a908b08 100644
---- a/arch/powerpc/perf/hv-gpci-requests.h
-+++ b/arch/powerpc/perf/hv-gpci-requests.h
-@@ -65,6 +65,33 @@ REQUEST(__count(0,	8,	processor_time_in_timebase_cycles)
- )
- #include I(REQUEST_END)
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 6fce6a6..c405da24 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -89,6 +89,19 @@ raw encoding of 0x1A8 can be used:
+ You should refer to the processor specific documentation for getting these
+ details. Some of them are referenced in the SEE ALSO section below.
  
-+#define REQUEST_NAME entitled_capped_uncapped_donated_idle_timebase_by_partition
-+#define REQUEST_NUM 0x20
-+#define REQUEST_IDX_KIND sibling_part_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	8,	partition_id)
-+	__count(0x8,	8,	entitled_cycles)
-+	__count(0x10,	8,	consumed_capped_cycles)
-+	__count(0x18,	8,	consumed_uncapped_cycles)
-+	__count(0x20,	8,	cycles_donated)
-+	__count(0x28,	8,	purr_idle_cycles)
-+)
-+#include I(REQUEST_END)
++PARAMETERIZED EVENTS
++--------------------
 +
-+/*
-+ * Not avaliable for counter_info_version >= 0x8, use
-+ * run_instruction_cycles_by_partition(0x100) instead.
-+ */
-+#define REQUEST_NAME run_instructions_run_cycles_by_partition
-+#define REQUEST_NUM 0x30
-+#define REQUEST_IDX_KIND sibling_part_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	8,	partition_id)
-+	__count(0x8,	8,	instructions_completed)
-+	__count(0x10,	8,	cycles)
-+)
-+#include I(REQUEST_END)
++Some pmu events listed by 'perf-list' will be displayed with '?' in them. For
++example:
 +
- #define REQUEST_NAME system_performance_capabilities
- #define REQUEST_NUM 0x40
- #define REQUEST_IDX_KIND M1
-@@ -75,5 +102,161 @@ REQUEST(__field(0,	1,	perf_collect_privileged)
- )
- #include I(REQUEST_END)
++  hv_gpci/dtbp_ptitc,starting_index=?/
++
++This means that when provided as an event, a value for 'starting_index' must
++also be supplied. For example:
++
++  perf stat -C 0 -e 'hv_gpci/dtbp_ptitc,starting_index=0x2/' ...
++
+ OPTIONS
+ -------
  
-+#define REQUEST_NAME processor_bus_utilization_abc_links
-+#define REQUEST_NUM 0x50
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	total_link_cycles)
-+	__count(0x18,	8,	idle_cycles_for_a_link)
-+	__count(0x20,	8,	idle_cycles_for_b_link)
-+	__count(0x28,	8,	idle_cycles_for_c_link)
-+	__array(0x30,	0x20,	reserved2)
-+)
-+#include I(REQUEST_END)
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..a6a2f9c 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -33,6 +33,18 @@ OPTIONS
+         - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
+ 	  hexadecimal event descriptor.
+ 
++	- a symbolically formed PMU event like 'pmu/param1=0x3,param2/' where
++	  'param1', 'param2', etc are defined as formats for the PMU in
++	  /sys/bus/event_sources/devices/<pmu>/format/*.
 +
-+#define REQUEST_NAME processor_bus_utilization_wxyz_links
-+#define REQUEST_NUM 0x60
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	total_link_cycles)
-+	__count(0x18,	8,	idle_cycles_for_w_link)
-+	__count(0x20,	8,	idle_cycles_for_x_link)
-+	__count(0x28,	8,	idle_cycles_for_y_link)
-+	__count(0x30,	8,	idle_cycles_for_z_link)
-+	__array(0x38,	0x28,	reserved2)
-+)
-+#include I(REQUEST_END)
++	- a symbolically formed event like 'pmu/config=M,config1=N,config3=K/'
 +
-+#define REQUEST_NAME processor_bus_utilization_gx_links
-+#define REQUEST_NUM 0x70
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	gx0_in_address_cycles)
-+	__count(0x18,	8,	gx0_in_data_cycles)
-+	__count(0x20,	8,	gx0_in_retries)
-+	__count(0x28,	8,	gx0_in_bus_cycles)
-+	__count(0x30,	8,	gx0_in_cycles_total)
-+	__count(0x38,	8,	gx0_out_address_cycles)
-+	__count(0x40,	8,	gx0_out_data_cycles)
-+	__count(0x48,	8,	gx0_out_retries)
-+	__count(0x50,	8,	gx0_out_bus_cycles)
-+	__count(0x58,	8,	gx0_out_cycles_total)
-+	__count(0x60,	8,	gx1_in_address_cycles)
-+	__count(0x68,	8,	gx1_in_data_cycles)
-+	__count(0x70,	8,	gx1_in_retries)
-+	__count(0x78,	8,	gx1_in_bus_cycles)
-+	__count(0x80,	8,	gx1_in_cycles_total)
-+	__count(0x88,	8,	gx1_out_address_cycles)
-+	__count(0x90,	8,	gx1_out_data_cycles)
-+	__count(0x98,	8,	gx1_out_retries)
-+	__count(0xA0,	8,	gx1_out_bus_cycles)
-+	__count(0xA8,	8,	gx1_out_cycles_total)
-+)
-+#include I(REQUEST_END)
++          where M, N, K are numbers (in decimal, hex, octal format). Acceptable
++          values for each of 'config', 'config1' and 'config2' are defined by
++          corresponding entries in /sys/bus/event_sources/devices/<pmu>/format/*
++          param1 and param2 are defined as formats for the PMU in:
++	  /sys/bus/event_sources/devices/<pmu>/format/*
 +
-+#define REQUEST_NAME processor_bus_utilization_mc_links
-+#define REQUEST_NUM 0x80
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	mc0_frames)
-+	__count(0x18,	8,	mc0_reads)
-+	__count(0x20,	8,	mc0_write)
-+	__count(0x28,	8,	mc0_total_cycles)
-+	__count(0x30,	8,	mc1_frames)
-+	__count(0x38,	8,	mc1_reads)
-+	__count(0x40,	8,	mc1_writes)
-+	__count(0x48,	8,	mc1_total_cycles)
-+)
-+#include I(REQUEST_END)
+         - a hardware breakpoint event in the form of '\mem:addr[:access]'
+           where addr is the address in memory you want to break in.
+           Access is the memory access type (read, write, execute) it can
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 29ee857..04e150d 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -25,10 +25,22 @@ OPTIONS
+ 
+ -e::
+ --event=::
+-	Select the PMU event. Selection can be a symbolic event name
+-	(use 'perf list' to list all events) or a raw PMU
+-	event (eventsel+umask) in the form of rNNN where NNN is a
+-	 hexadecimal event descriptor.
++	Select the PMU event. Selection can be:
 +
-+/* Processor_config (0x90) skipped, no counters */
-+/* Current_processor_frequency (0x91) skipped, no counters */
++	- a symbolic event name (use 'perf list' to list all events)
 +
-+#define REQUEST_NAME processor_core_utilization
-+#define REQUEST_NUM 0x94
-+#define REQUEST_IDX_KIND phys_processor_idx
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	phys_processor_idx)
-+	__field(0x4,	4,	hw_processor_id)
-+	__count(0x8,	8,	cycles_across_any_thread)
-+	__count(0x10,	8,	timebase_at_collection)
-+	__count(0x18,	8,	purr_cycles)
-+	__count(0x20,	8,	sum_of_cycles_across_all_threads)
-+	__count(0x28,	8,	instructions_completed)
-+)
-+#include I(REQUEST_END)
++	- a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
++	  hexadecimal event descriptor.
 +
-+/* Processor_core_power_mode (0x95) skipped, no counters */
-+/* Affinity_domain_information_by_virtual_processor (0xA0) skipped,
-+ *	no counters */
-+/* Affinity_domain_information_by_domain (0xB0) skipped, no counters */
-+/* Affinity_domain_information_by_partition (0xB1) skipped, no counters */
-+/* Physical_memory_info (0xC0) skipped, no counters */
-+/* Processor_bus_topology (0xD0) skipped, no counters */
++	- a symbolically formed event like 'pmu/param1=0x3,param2/' where
++	  param1 and param2 are defined as formats for the PMU in
++	  /sys/bus/event_sources/devices/<pmu>/format/*
 +
-+#define REQUEST_NAME partition_hypervisor_queuing_times
-+#define REQUEST_NUM 0xE0
-+#define REQUEST_IDX_KIND partition_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	2, partition_id)
-+	__array(0x2,	6, reserved1)
-+	__count(0x8,	8, time_waiting_for_entitlement)
-+	__count(0x10,	8, times_waited_for_entitlement)
-+	__count(0x18,	8, time_waiting_for_phys_processor)
-+	__count(0x20,	8, times_waited_for_phys_processor)
-+	__count(0x28,	8, dispatches_on_home_core)
-+	__count(0x30,	8, dispatches_on_home_primary_affinity_domain)
-+	__count(0x38,	8, dispatches_on_home_secondary_affinity_domain)
-+	__count(0x40,	8, dispatches_off_home_secondary_affinity_domain)
-+	__count(0x48,	8, dispatches_on_dedicated_processor_donating_cycles)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME system_hypervisor_times
-+#define REQUEST_NUM 0xF0
-+#define REQUEST_IDX_KIND M1
-+#include I(REQUEST_BEGIN)
-+REQUEST(__count(0,	8,	time_spent_to_dispatch_virtual_processors)
-+	__count(0x8,	8,	time_spent_processing_virtual_processor_timers)
-+	__count(0x10,	8,	time_spent_managing_partitions_over_entitlement)
-+	__count(0x18,	8,	time_spent_on_system_managment)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME system_tlbie_count_and_time
-+#define REQUEST_NUM 0xF4
-+#define REQUEST_IDX_KIND M1
-+#include I(REQUEST_BEGIN)
-+REQUEST(__count(0,	8,	tlbie_instructions_issued)
-+	/*
-+	 * FIXME: The spec says the offset here is 0x10, which I suspect
-+	 *	  is wrong.
-+	 */
-+	__count(0x8,	8,	time_spent_issuing_tlbies)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME partition_instruction_count_and_time
-+#define REQUEST_NUM 0x100
-+#define REQUEST_IDX_KIND partition_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	2,	partition_id)
-+	__array(0x2,	0x6,	reserved1)
-+	__count(0x8,	8,	instructions_performed)
-+	__count(0x10,	8,	time_collected)
-+)
-+#include I(REQUEST_END)
-+
-+/* set_mmcrh (0x80001000) skipped, no counters */
-+/* retrieve_hpmcx (0x80002000) skipped, no counters */
-+
- #undef M1
- #include "req-gen/_end.h"
++	- a symbolically formed event like 'pmu/config=M,config1=N,config2=K/'
++	  where M, N, K are numbers (in decimal, hex, octal format).
++	  Acceptable values for each of 'config', 'config1' and 'config2'
++	  parameters are defined by corresponding entries in
++	  /sys/bus/event_sources/devices/<pmu>/format/*
+ 
+ -i::
+ --no-inherit::
 -- 
 1.8.3.1
 
