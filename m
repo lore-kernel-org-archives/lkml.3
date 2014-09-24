@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaIXRgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:36:08 -0400
-Received: from mx.aristanetworks.com ([162.210.130.12]:46481 "EHLO
-	prod-mx.aristanetworks.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751600AbaIXRgG (ORCPT
+	id S1752602AbaIXRmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:42:10 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:46176 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaIXRmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:36:06 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 13:36:06 EDT
-Date: Wed, 24 Sep 2014 10:29:23 -0700
-To: linux-pci@vger.kernel.org
-Subject: [PATCH 1/1] pci: move PCI_VENDOR_ID_VMWARE to pci_ids.h
-Cc: sbhatewara@vmware.com, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, pv-drivers@vmware.com
-User-Agent: Heirloom mailx 12.5 7/5/10
+	Wed, 24 Sep 2014 13:42:05 -0400
+Date: Wed, 24 Sep 2014 11:42:01 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Scott Murray <scott@spiteful.org>, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] Extending the first version of the patch to the
+ entire directory
+Message-ID: <20140924174201.GB20416@google.com>
+References: <20140907180023.GA1849@greed>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140924172923.D112148565B@fruggeri-Arora18.sjc.aristanetworks.com>
-From: fruggeri@aristanetworks.com (Francesco Ruggeri)
+Content-Disposition: inline
+In-Reply-To: <20140907180023.GA1849@greed>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b99b1ec156ab351668eb77a00a57a4ae095eec28 Mon Sep 17 00:00:00 2001
-From: Francesco Ruggeri <fruggeri@arista.com>
-Date: Wed, 24 Sep 2014 10:12:41 -0700
-Subject: [PATCH 1/1] pci: move PCI_VENDOR_ID_VMWARE to pci_ids.h
+On Sun, Sep 07, 2014 at 08:00:23PM +0200, Quentin Lambert wrote:
+> Patch 1 and 2 are straight forward extension from the previous version
+> of the patch.
+> 
+> Patch 3 introduces checkpatch warning due to lines surpassing 80
+> characters. Another warning concerning too many preceding tabs
+> is not fixed either.
+> 
+> Patch 4 are less straight forward similar modifications
+> the modification made to ibmphp_res.c change the value of len_tmp
+> when the first condition in if statement is not met.
+> I wasn't quite sure how to solve elegantly the checkpatch error for
+> slot.c, I chose to use a label and gotos since it was already used
+> and allowed for a slight code factorisation. This being my first patch I
+> understand that this may not be the best solution.
 
-Moving PCI_VENDOR_ID_VMWARE from device specific files to pci_ids.h.
-It is useful to always have access to it, especially when accessing
-subsystem_vendor_id on emulated devices.
+Thanks for splitting out patch 4 from 3; it definitely made it easier to
+review.
 
-Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
----
- drivers/gpu/drm/vmwgfx/svga_reg.h  | 1 -
- drivers/misc/vmw_vmci/vmci_guest.c | 1 -
- drivers/net/vmxnet3/vmxnet3_int.h  | 1 -
- drivers/scsi/vmw_pvscsi.h          | 1 -
- include/linux/pci_ids.h            | 2 ++
- 5 files changed, 2 insertions(+), 4 deletions(-)
+I dropped a couple bits from patch 4 that I'll mention in a reply to that patch.
 
-diff --git a/drivers/gpu/drm/vmwgfx/svga_reg.h b/drivers/gpu/drm/vmwgfx/svga_reg.h
-index 11323dd..e4259c2 100644
---- a/drivers/gpu/drm/vmwgfx/svga_reg.h
-+++ b/drivers/gpu/drm/vmwgfx/svga_reg.h
-@@ -35,7 +35,6 @@
- /*
-  * PCI device IDs.
-  */
--#define PCI_VENDOR_ID_VMWARE            0x15AD
- #define PCI_DEVICE_ID_VMWARE_SVGA2      0x0405
- 
- /*
-diff --git a/drivers/misc/vmw_vmci/vmci_guest.c b/drivers/misc/vmw_vmci/vmci_guest.c
-index 248399a..189b325 100644
---- a/drivers/misc/vmw_vmci/vmci_guest.c
-+++ b/drivers/misc/vmw_vmci/vmci_guest.c
-@@ -35,7 +35,6 @@
- #include "vmci_driver.h"
- #include "vmci_event.h"
- 
--#define PCI_VENDOR_ID_VMWARE		0x15AD
- #define PCI_DEVICE_ID_VMWARE_VMCI	0x0740
- 
- #define VMCI_UTIL_NUM_RESOURCES 1
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 3759479..5f0199f 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -117,7 +117,6 @@ enum {
- /*
-  * PCI vendor and device IDs.
-  */
--#define PCI_VENDOR_ID_VMWARE            0x15AD
- #define PCI_DEVICE_ID_VMWARE_VMXNET3    0x07B0
- #define MAX_ETHERNET_CARDS		10
- #define MAX_PCI_PASSTHRU_DEVICE		6
-diff --git a/drivers/scsi/vmw_pvscsi.h b/drivers/scsi/vmw_pvscsi.h
-index ce45888..ee16f0c 100644
---- a/drivers/scsi/vmw_pvscsi.h
-+++ b/drivers/scsi/vmw_pvscsi.h
-@@ -32,7 +32,6 @@
- 
- #define MASK(n)        ((1 << (n)) - 1)        /* make an n-bit mask */
- 
--#define PCI_VENDOR_ID_VMWARE		0x15AD
- #define PCI_DEVICE_ID_VMWARE_PVSCSI	0x07C0
- 
- /*
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 6ed0bb7..e62b20a 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2971,4 +2971,6 @@
- 
- #define PCI_VENDOR_ID_OCZ		0x1b85
- 
-+#define PCI_VENDOR_ID_VMWARE		0x15AD
-+
- #endif /* _LINUX_PCI_IDS_H */
--- 
-1.8.1.4
+I applied the rest to pci/cleanup and plan to merge it toward the end of
+the v3.18 merge window, thanks!
 
+Bjorn
+
+> Quentin Lambert (4):
+>   PCI: fix a missing space coding style issue
+>   PCI: fix a simple if coding style issue
+>   PCI: remove assignement from if conditions
+>   PCI: remove assignement in non straight forward if condition
+> 
+>  drivers/pci/hotplug/acpi_pcihp.c        |  3 ++-
+>  drivers/pci/hotplug/acpiphp_ibm.c       |  2 +-
+>  drivers/pci/hotplug/cpci_hotplug_core.c | 13 ++++++----
+>  drivers/pci/hotplug/cpcihp_generic.c    | 28 ++++++++++-----------
+>  drivers/pci/hotplug/cpcihp_zt5550.c     | 44 ++++++++++++++++-----------------
+>  drivers/pci/hotplug/cpqphp.h            |  2 +-
+>  drivers/pci/hotplug/cpqphp_core.c       |  3 +--
+>  drivers/pci/hotplug/cpqphp_ctrl.c       | 19 ++++++--------
+>  drivers/pci/hotplug/cpqphp_nvram.c      | 13 ++++------
+>  drivers/pci/hotplug/ibmphp_core.c       | 19 ++++++++------
+>  drivers/pci/hotplug/ibmphp_ebda.c       |  3 +--
+>  drivers/pci/hotplug/ibmphp_hpc.c        |  3 +--
+>  drivers/pci/hotplug/ibmphp_pci.c        |  6 +++--
+>  drivers/pci/hotplug/ibmphp_res.c        | 43 ++++++++++++++++++++++----------
+>  drivers/pci/hotplug/shpchp_ctrl.c       | 12 ++++++---
+>  drivers/pci/hotplug/shpchp_hpc.c        |  3 ++-
+>  drivers/pci/pci.c                       | 19 +++++++++++---
+>  drivers/pci/slot.c                      | 12 +++++++--
+>  18 files changed, 143 insertions(+), 104 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
