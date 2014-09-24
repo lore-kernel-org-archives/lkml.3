@@ -1,471 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432AbaIXMvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:51:35 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:47903 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaIXMvX (ORCPT
+	id S1753619AbaIXMxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:53:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:49039 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553AbaIXMxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:51:23 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-e9-5422be48cab6
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v3 04/13] x86_64: add KASan support
-Date: Wed, 24 Sep 2014 16:44:00 +0400
-Message-id: <1411562649-28231-5-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.1
-In-reply-to: <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t/xy7oe+5RCDLqXWFps+/WIzeL33pms
-	FnPWr2GzOHLtO7vF9W9vGC0+vXzAaLHlehOTxfOHD9ktJjxsY7eYtlHcYmV3M5vF9mdvmSxW
-	dj5gtbi8aw6bxb01/1ktLh1YwGSx+MhtZot3zyYzW2zeNJXZ4uqqg+wWPzY8ZnUQ9Zi/8yOj
-	x85Zd9k9Fmwq9Vi85yWTx6ZVnWwemz5NYvfoenuFyePduXPsHidm/GbxeHJlOpPHx6e3WDze
-	77vK5tG3ZRWjx+dNch4nWr6wBvBHcdmkpOZklqUW6dslcGVM2jGNpeBCYsW9xVNYGxivB3Qx
-	cnJICJhIXF3Swg5hi0lcuLeeDcQWEljKKDFrkXkXIxeQ3cck8fbufxaQBJuAnsS/WdvBikQE
-	FCQ29z5jBSliFrjDKnH48TZGkISwgLHEtxXvmUFsFgFVid1rnoA18Aq4Sfw53c4GsU1OYu/k
-	1WBDOQXcJQ78eMEOsa2JUWLZ3t9MExh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQI
-	iaKvOxiXHrM6xCjAwajEwztRXClEiDWxrLgy9xCjBAezkghv2B6gEG9KYmVValF+fFFpTmrx
-	IUYmDk6pBkZ3blujg3omVSXMN860e7bfaM60mfM18rzO15n2Nyex3figrrH/zoEpf/xWR8yc
-	d/HNH4HiIqPj+w49OX65PvS58KSYVZtUogruakx3c4gRtZhWKLny+5wTZX4F6QtSpFnq+ZXM
-	O8LXnamJdFvprHfq7nk1vWelVqv/5a44skz1q8bZxedOHHdUYinOSDTUYi4qTgQA5vmPuIAC	AAA=
+	Wed, 24 Sep 2014 08:53:50 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude E6440
+Date: Wed, 24 Sep 2014 14:53:46 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.13.2; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+References: <201409232206.02819@pali> <201409241114.11604@pali> <5422B354.4010005@redhat.com>
+In-Reply-To: <5422B354.4010005@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2488852.DsYfoNt7dD";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409241453.46756@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds arch specific code for kernel address sanitizer.
+--nextPart2488852.DsYfoNt7dD
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-16TB of virtual addressed used for shadow memory.
-It's located in range [0xffffd90000000000 - 0xffffe90000000000]
-which belongs to vmalloc area.
+On Wednesday 24 September 2014 14:04:36 Hans de Goede wrote:
+> Hi,
+>=20
+> On 09/24/2014 11:14 AM, Pali Roh=C3=A1r wrote:
+> > On Wednesday 24 September 2014 10:59:41 Pali Roh=C3=A1r wrote:
+> >> On Wednesday 24 September 2014 10:19:38 Hans de Goede wrote:
+> >>> Hi,
+> >>>=20
+> >>> On 09/23/2014 10:44 PM, Pali Roh=C3=A1r wrote:
+> >>>> On Tuesday 23 September 2014 22:31:31 you wrote:
+> >>>>> Hi,
+> >>>>>=20
+> >>>>> On 09/23/2014 10:06 PM, Pali Roh=C3=A1r wrote:
+> >>>>>> Hello,
+> >>>>>>=20
+> >>>>>> after big changes in acpi video/i915 code I cannot
+> >>>>>> change display brightness on my Dell Latitude E6440
+> >>>>>> with kernel 3.17-rc6. With kernel 3.13 everything
+> >>>>>> worked fine.
+> >>>>>>=20
+> >>>>>> More information about this problem:
+> >>>>>>=20
+> >>>>>> For configuring brightness on Dell laptops there are 4
+> >>>>>> ways: 1) via acpi video driver
+> >>>>>> 2) via dell-laptop driver
+> >>>>>> 3) via i915 drm driver
+> >>>>>> 4) from userspace with special dell SMI call
+> >>>>>>=20
+> >>>>>>     (e.g with program dellLcdBrightness from libsmbios
+> >>>>>>     package)
+> >>>>>>=20
+> >>>>>> Methods 2) and 4) are same, both making special SMI
+> >>>>>> call and Bios handing this request (just 2 is from
+> >>>>>> kernel and 4 from userspace)
+> >>>>>>=20
+> >>>>>> Method 1) via acpi video driver working, but is not
+> >>>>>> perfect. Driver can be used to change brightness (but
+> >>>>>> only some levels, probably this depends on acpi/DSDT
+> >>>>>> tables), but cannot be used to retrieve current
+> >>>>>> brightness (when BIOS/SMI change brightness acpi driver
+> >>>>>> report old incorrect value). So I prefer dell-laptop
+> >>>>>> driver instead acpi video.
+> >>>>>>=20
+> >>>>>> Method 3) working even with 3.17-rc6 kernel but because
+> >>>>>> that backlight device exported by i915 is marked as
+> >>>>>> raw, desktop programs prefer to use other devices.
+> >>>>>>=20
+> >>>>>> Moreover it looks like that methods 1) 2) and 4) just
+> >>>>>> forward request to method 3). So in any cased
+> >>>>>> brightness is changed by i915 drm driver.
+> >>>>>>=20
+> >>>>>> I'm not sure (correct me if I'm wrong!) but I think
+> >>>>>> that intel i915 drm driver accept changes (file
+> >>>>>> intel_opregion.c) only if acpi function
+> >>>>>> acpi_video_verify_backlight_support() returns true.
+> >>>>>>=20
+> >>>>>> Function acpi_video_verify_backlight_support() returns
+> >>>>>> true iff: function acpi_video_backlight_support()
+> >>>>>> returns true AND at least one of these functions
+> >>>>>> returns false: acpi_osi_is_win8()
+> >>>>>> acpi_video_use_native_backlight()
+> >>>>>> backlight_device_registered(BACKLIGHT_RAW)
+> >>>>>>=20
+> >>>>>> On my notebook acpi_osi_is_win8() returns true (as is
+> >>>>>> win8 compliant),
+> >>>>>> backlight_device_registered(BACKLIGHT_RAW) returns true
+> >>>>>> as I'm using intel i915 drm driver with raw backlight
+> >>>>>> device and acpi_video_use_native_backlight() returns
+> >>>>>> true/false depending on
+> >>>>>> "video.use_native_backlight" kernel param. Default is
+> >>>>>> true.
+> >>>>>>=20
+> >>>>>> So if I want to have working acpi video driver with
+> >>>>>> display brightness support I need to boot kernel with
+> >>>>>> param: "video.use_native_backlight=3D0". I tested it with
+> >>>>>> kernel 3.17-rc6 and this param really enabled display
+> >>>>>> brightness support via acpi video driver -- which is
+> >>>>>> good.
+> >>>>>>=20
+> >>>>>> Driver dell-laptop creating backligh device for
+> >>>>>> brightness control only if
+> >>>>>> acpi_video_backlight_support() returns false. There is
+> >>>>>> complicated condition for it and when kernel is booted
+> >>>>>> with "video.use_native_backlight=3D0" that function
+> >>>>>> returns true.
+> >>>>>>=20
+> >>>>>> So conclusion is: With current code in kernel 3.17-rc6
+> >>>>>> it is not possible to control brightness of display
+> >>>>>> with native driver dell-laptop on Dell Latitude E6440
+> >>>>>> (and probably on others too)!!!
+> >>>>>>=20
+> >>>>>> And Because laptop is win8 compliant and you create
+> >>>>>> decision to use native driver (instead acpi one) it is
+> >>>>>> not possible to control display brightness without
+> >>>>>> tweeks in kernel cmdline.
+> >>>>>>=20
+> >>>>>> As I wrote I would rather to use native dell-laptop
+> >>>>>> driver for controlling brightness, but it is not
+> >>>>>> possible.
+> >>>>>>=20
+> >>>>>> So how to solve this problem?
+> >>>>>>=20
+> >>>>>> Quick solution would be to set use_native_backlight
+> >>>>>> false for some Dell laptops which means, that acpi
+> >>>>>> video will be used and in this case intel i915 driver
+> >>>>>> will *not* drop backlight change request.
+> >>>>>>=20
+> >>>>>> Another solution could be to disable check in
+> >>>>>> dell_laptop driver and add use_native_backlight=3D0 to
+> >>>>>> hooks. But this create two backlight interfaces (which
+> >>>>>> is not good), but only way (for now) how to make
+> >>>>>> dell_laptop working again.
+> >>>>>>=20
+> >>>>>> Better and maybe only one proper solution would be to
+> >>>>>> teach intel drm i915 driver to not drop backlight
+> >>>>>> change request for Dell laptops (or all??). (This
+> >>>>>> allows to work both acpi video and dell_laptop drivers
+> >>>>>> without any change and with *any* value in param
+> >>>>>> use_native_backlight). I think that problematic code is
+> >>>>>> in function asle_set_backlight() in file
+> >>>>>> intel_opregion.c (but I'm not sure). My idea is that
+> >>>>>> "drop" event function it is caused by this commit
+> >>>>>> 0b9f7d93ca6109048a4eb06332b666b6e29df4fe (but I'm not
+> >>>>>> sure).
+> >>>>>>=20
+> >>>>>> At least something must be done as I think that I'm not
+> >>>>>> only one who has Dell laptop and brightness
+> >>>>>> configuration is really important...
+> >>>>>=20
+> >>>>> I don't understand your problem, the kernel is selecting
+> >>>>> the i915 backlight driver, making that the only one
+> >>>>> available to userspace, so the one problem you state
+> >>>>> with the i915 driver, that it is "raw" is not an issue,
+> >>>>> as userspace will pick it when it is the only one.
+> >>>>=20
+> >>>> It is not only one.
+> >>>=20
+> >>> Are you sure, if you do not specify any commandline
+> >>> parameters, then neither dell-laptop nor acpi-video should
+> >>> register a backlight interface.
+> >>>=20
+> >>> dell-laptop.c has:
+> >>>=20
+> >>> #ifdef CONFIG_ACPI
+> >>>=20
+> >>>         /* In the event of an ACPI backlight being
+> >>>         available,
+> >>>=20
+> >>> don't * register the platform controller.
+> >>>=20
+> >>>          */
+> >>>        =20
+> >>>         if (acpi_video_backlight_support())
+> >>>        =20
+> >>>                 return 0;
+> >>>=20
+> >>> #endif
+> >>>=20
+> >>> And acpi_video_backlight_support() will (normally) return
+> >>> true on acpi-backlight capable systems independent of
+> >>> use_native_backlight.
+> >>>=20
+> >>> And drivers/acpi/video.c has this:
+> >>>         /* no warning message if acpi_backlight=3Dvendor or
+> >>>         a
+> >>>=20
+> >>> quirk is used */ if
+> >>> (!acpi_video_verify_backlight_support())
+> >>>=20
+> >>>                 return;
+> >>>=20
+> >>> ...
+> >>>=20
+> >>> bool acpi_video_verify_backlight_support(void)
+> >>> {
+> >>>=20
+> >>>         if (acpi_osi_is_win8() &&
+> >>>=20
+> >>> acpi_video_use_native_backlight() &&
+> >>> backlight_device_registered(BACKLIGHT_RAW)) return false;
+> >>>=20
+> >>>         return acpi_video_backlight_support();
+> >>>=20
+> >>> }
+> >>>=20
+> >>> So unlike the check in dell-laptop this one does depend on
+> >>> the use_native_backlight setting.
+> >>=20
+> >> It depends (see my previous mail). Here is code:
+> >>=20
+> >> static bool acpi_video_use_native_backlight(void)
+> >> {
+> >>=20
+> >> 	if (use_native_backlight_param !=3D -1)
+> >> =09
+> >> 		return use_native_backlight_param;
+> >> =09
+> >> 	else
+> >> =09
+> >> 		return use_native_backlight_dmi;
+> >>=20
+> >> }
+>=20
+> Not sure what you're trying to say here, the default for
+> this is 1, so if you don't specify anything, then this:
+>=20
+> bool acpi_video_verify_backlight_support(void)
+> {
+>         if (acpi_osi_is_win8() &&
+> acpi_video_use_native_backlight() &&
+> backlight_device_registered(BACKLIGHT_RAW)) return false;
+>         return acpi_video_backlight_support();
+> }
+>=20
+> Will return false, and you won't get an acpi_video0 backlight
+> interface, only the intel_backlight one, and everything
+> should just work (except for the turning off on low
+> settings).
+>=20
 
-At early stage we map whole shadow region with zero page.
-Latter, after pages mapped to direct mapping address range
-we unmap zero pages from corresponding shadow (see kasan_map_shadow())
-and allocate and map a real shadow memory reusing vmemmap_populate()
-function.
+When I do not specify param acpi_video_verify_backlight_support()=20
+will return false because acpi_osi_is_win8() returns true.
 
-Also replace __pa with __pa_nodebug before shadow initialized.
-__pa with CONFIG_DEBUG_VIRTUAL=y make external function call (__phys_addr)
-__phys_addr is instrumented, so __asan_load could be called before
-shadow area initialized.
+> Have you tried not using any kernel commandline options? What
+> happens?
+>=20
 
-Change-Id: I289ea19eab98e572df7f80cacec661813ea61281
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- arch/x86/Kconfig                  |  1 +
- arch/x86/boot/Makefile            |  2 +
- arch/x86/boot/compressed/Makefile |  2 +
- arch/x86/include/asm/kasan.h      | 27 ++++++++++++
- arch/x86/kernel/Makefile          |  2 +
- arch/x86/kernel/dumpstack.c       |  5 ++-
- arch/x86/kernel/head64.c          |  9 +++-
- arch/x86/kernel/head_64.S         | 28 +++++++++++++
- arch/x86/mm/Makefile              |  3 ++
- arch/x86/mm/init.c                |  3 ++
- arch/x86/mm/kasan_init_64.c       | 87 +++++++++++++++++++++++++++++++++++++++
- arch/x86/realmode/Makefile        |  2 +-
- arch/x86/realmode/rm/Makefile     |  1 +
- arch/x86/vdso/Makefile            |  1 +
- lib/Kconfig.kasan                 |  6 +++
- 15 files changed, 175 insertions(+), 4 deletions(-)
- create mode 100644 arch/x86/include/asm/kasan.h
- create mode 100644 arch/x86/mm/kasan_init_64.c
+Yes, then kernel create two backlight devices: one raw from i915=20
+module and one normal from dell-laptop module. Userspace will=20
+pick dell-laptop for using. And due to commit 0b9f7d93 (which=20
+disabling events when acpi_video_verify_backlight_support returns=20
+false) dell-laptop backlight not working. So controlling=20
+brightness from userspace does not work.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 2872aaa..cec0c26 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -136,6 +136,7 @@ config X86
- 	select HAVE_ACPI_APEI if ACPI
- 	select HAVE_ACPI_APEI_NMI if ACPI
- 	select ACPI_LEGACY_TABLES_LOOKUP if ACPI
-+	select HAVE_ARCH_KASAN if X86_64
- 
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index dbe8dd2..9204cc0 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -14,6 +14,8 @@
- # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
- # The number is the same as you would ordinarily press at bootup.
- 
-+KASAN_SANITIZE := n
-+
- SVGA_MODE	:= -DSVGA_MODE=NORMAL_VGA
- 
- targets		:= vmlinux.bin setup.bin setup.elf bzImage
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 7a801a3..8e5b9b3 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -4,6 +4,8 @@
- # create a compressed vmlinux image from the original vmlinux
- #
- 
-+KASAN_SANITIZE := n
-+
- targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
- 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
- 
-diff --git a/arch/x86/include/asm/kasan.h b/arch/x86/include/asm/kasan.h
-new file mode 100644
-index 0000000..056c943
---- /dev/null
-+++ b/arch/x86/include/asm/kasan.h
-@@ -0,0 +1,27 @@
-+#ifndef _ASM_X86_KASAN_H
-+#define _ASM_X86_KASAN_H
-+
-+#define KASAN_SHADOW_START	0xffffd90000000000UL
-+#define KASAN_SHADOW_END	0xffffe90000000000UL
-+
-+#ifndef __ASSEMBLY__
-+
-+extern pte_t zero_pte[];
-+extern pte_t zero_pmd[];
-+extern pte_t zero_pud[];
-+
-+extern pte_t poisoned_pte[];
-+extern pte_t poisoned_pmd[];
-+extern pte_t poisoned_pud[];
-+
-+#ifdef CONFIG_KASAN
-+void __init kasan_map_zero_shadow(pgd_t *pgd);
-+void __init kasan_map_shadow(void);
-+#else
-+static inline void kasan_map_zero_shadow(pgd_t *pgd) { }
-+static inline void kasan_map_shadow(void) { }
-+#endif
-+
-+#endif
-+
-+#endif
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index ada2e2d..4c59d7f 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -16,6 +16,8 @@ CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
- 
-+KASAN_SANITIZE_head$(BITS).o := n
-+
- CFLAGS_irq.o := -I$(src)/../include/asm/trace
- 
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index b74ebc7..cf3df1d 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -265,7 +265,10 @@ int __die(const char *str, struct pt_regs *regs, long err)
- 	printk("SMP ");
- #endif
- #ifdef CONFIG_DEBUG_PAGEALLOC
--	printk("DEBUG_PAGEALLOC");
-+	printk("DEBUG_PAGEALLOC ");
-+#endif
-+#ifdef CONFIG_KASAN
-+	printk("KASAN");
- #endif
- 	printk("\n");
- 	if (notify_die(DIE_OOPS, str, regs, err,
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index eda1a86..b9e4e50 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -27,6 +27,7 @@
- #include <asm/bios_ebda.h>
- #include <asm/bootparam_utils.h>
- #include <asm/microcode.h>
-+#include <asm/kasan.h>
- 
- /*
-  * Manage page tables very early on.
-@@ -46,7 +47,7 @@ static void __init reset_early_page_tables(void)
- 
- 	next_early_pgt = 0;
- 
--	write_cr3(__pa(early_level4_pgt));
-+	write_cr3(__pa_nodebug(early_level4_pgt));
- }
- 
- /* Create a new PMD entry */
-@@ -59,7 +60,7 @@ int __init early_make_pgtable(unsigned long address)
- 	pmdval_t pmd, *pmd_p;
- 
- 	/* Invalid address or early pgt is done ?  */
--	if (physaddr >= MAXMEM || read_cr3() != __pa(early_level4_pgt))
-+	if (physaddr >= MAXMEM || read_cr3() != __pa_nodebug(early_level4_pgt))
- 		return -1;
- 
- again:
-@@ -158,6 +159,8 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	/* Kill off the identity-map trampoline */
- 	reset_early_page_tables();
- 
-+	kasan_map_zero_shadow(early_level4_pgt);
-+
- 	/* clear bss before set_intr_gate with early_idt_handler */
- 	clear_bss();
- 
-@@ -179,6 +182,8 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	/* set init_level4_pgt kernel high mapping*/
- 	init_level4_pgt[511] = early_level4_pgt[511];
- 
-+	kasan_map_zero_shadow(init_level4_pgt);
-+
- 	x86_64_start_reservations(real_mode_data);
- }
- 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index a468c0a..444105c 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -514,8 +514,36 @@ ENTRY(phys_base)
- 	/* This must match the first entry in level2_kernel_pgt */
- 	.quad   0x0000000000000000
- 
-+#ifdef CONFIG_KASAN
-+#define FILL(VAL, COUNT)				\
-+	.rept (COUNT) ;					\
-+	.quad	(VAL) ;					\
-+	.endr
-+
-+NEXT_PAGE(zero_pte)
-+	FILL(empty_zero_page - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+NEXT_PAGE(zero_pmd)
-+	FILL(zero_pte - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+NEXT_PAGE(zero_pud)
-+	FILL(zero_pmd - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+
-+NEXT_PAGE(poisoned_pte)
-+	FILL(poisoned_page - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+NEXT_PAGE(poisoned_pmd)
-+	FILL(poisoned_pte - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+NEXT_PAGE(poisoned_pud)
-+	FILL(poisoned_pmd - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+
-+#undef FILL
-+#endif
-+
-+
- #include "../../x86/xen/xen-head.S"
- 	
- 	__PAGE_ALIGNED_BSS
- NEXT_PAGE(empty_zero_page)
- 	.skip PAGE_SIZE
-+#ifdef CONFIG_KASAN
-+NEXT_PAGE(poisoned_page)
-+	.fill PAGE_SIZE,1,0xF9
-+#endif
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index 6a19ad9..b6c5168 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -8,6 +8,8 @@ CFLAGS_setup_nx.o		:= $(nostackp)
- 
- CFLAGS_fault.o := -I$(src)/../include/asm/trace
- 
-+KASAN_SANITIZE_kasan_init_$(BITS).o := n
-+
- obj-$(CONFIG_X86_PAT)		+= pat_rbtree.o
- obj-$(CONFIG_SMP)		+= tlb.o
- 
-@@ -30,3 +32,4 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
- obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
- 
- obj-$(CONFIG_MEMTEST)		+= memtest.o
-+obj-$(CONFIG_KASAN)		+= kasan_init_$(BITS).o
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 66dba36..4a5a597 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -8,6 +8,7 @@
- #include <asm/cacheflush.h>
- #include <asm/e820.h>
- #include <asm/init.h>
-+#include <asm/kasan.h>
- #include <asm/page.h>
- #include <asm/page_types.h>
- #include <asm/sections.h>
-@@ -685,5 +686,7 @@ void __init zone_sizes_init(void)
- #endif
- 
- 	free_area_init_nodes(max_zone_pfns);
-+
-+	kasan_map_shadow();
- }
- 
-diff --git a/arch/x86/mm/kasan_init_64.c b/arch/x86/mm/kasan_init_64.c
-new file mode 100644
-index 0000000..c6ea8a4
---- /dev/null
-+++ b/arch/x86/mm/kasan_init_64.c
-@@ -0,0 +1,87 @@
-+#include <linux/bootmem.h>
-+#include <linux/kasan.h>
-+#include <linux/mm.h>
-+#include <linux/sched.h>
-+#include <linux/vmalloc.h>
-+
-+#include <asm/tlbflush.h>
-+
-+extern pgd_t early_level4_pgt[PTRS_PER_PGD];
-+extern struct range pfn_mapped[E820_X_MAX];
-+
-+struct vm_struct kasan_vm __initdata = {
-+	.addr = (void *)KASAN_SHADOW_START,
-+	.size = (16UL << 40),
-+};
-+
-+
-+static int __init map_range(struct range *range)
-+{
-+	unsigned long start = kasan_mem_to_shadow(
-+		(unsigned long)pfn_to_kaddr(range->start));
-+	unsigned long end = kasan_mem_to_shadow(
-+		(unsigned long)pfn_to_kaddr(range->end));
-+
-+	/*
-+	 * end + 1 here is intentional. We check several shadow bytes in advance
-+	 * to slightly speed up fastpath. In some rare cases we could cross
-+	 * boundary of mapped shadow, so we just map some more here.
-+	 */
-+	return vmemmap_populate(start, end + 1, NUMA_NO_NODE);
-+}
-+
-+static void __init clear_zero_shadow_mapping(unsigned long start,
-+					unsigned long end)
-+{
-+	for (; start < end; start += PGDIR_SIZE)
-+		pgd_clear(pgd_offset_k(start));
-+}
-+
-+void __init kasan_map_zero_shadow(pgd_t *pgd)
-+{
-+	int i;
-+	unsigned long start = KASAN_SHADOW_START;
-+	unsigned long end = kasan_mem_to_shadow(KASAN_SHADOW_START);
-+
-+	for (i = pgd_index(start); start < end; i++) {
-+		pgd[i] = __pgd(__pa_nodebug(zero_pud) | __PAGE_KERNEL_RO);
-+		start += PGDIR_SIZE;
-+	}
-+
-+	start = end;
-+	end = kasan_mem_to_shadow(KASAN_SHADOW_END);
-+	for (i = pgd_index(start); start < end; i++) {
-+		pgd[i] = __pgd(__pa_nodebug(poisoned_pud) | __PAGE_KERNEL_RO);
-+		start += PGDIR_SIZE;
-+	}
-+
-+	start = end;
-+	end = KASAN_SHADOW_END;
-+	for (i = pgd_index(start); start < end; i++) {
-+		pgd[i] = __pgd(__pa_nodebug(zero_pud) | __PAGE_KERNEL_RO);
-+		start += PGDIR_SIZE;
-+	}
-+
-+}
-+
-+void __init kasan_map_shadow(void)
-+{
-+	int i;
-+
-+	vm_area_add_early(&kasan_vm);
-+
-+	memcpy(early_level4_pgt, init_level4_pgt, sizeof(early_level4_pgt));
-+	load_cr3(early_level4_pgt);
-+
-+	clear_zero_shadow_mapping(kasan_mem_to_shadow(PAGE_OFFSET),
-+				kasan_mem_to_shadow(PAGE_OFFSET + MAXMEM));
-+
-+	for (i = 0; i < E820_X_MAX; i++) {
-+		if (pfn_mapped[i].end == 0)
-+			break;
-+
-+		if (map_range(&pfn_mapped[i]))
-+			panic("kasan: unable to allocate shadow!");
-+	}
-+	load_cr3(init_level4_pgt);
-+}
-diff --git a/arch/x86/realmode/Makefile b/arch/x86/realmode/Makefile
-index 94f7fbe..e02c2c6 100644
---- a/arch/x86/realmode/Makefile
-+++ b/arch/x86/realmode/Makefile
-@@ -6,7 +6,7 @@
- # for more details.
- #
- #
--
-+KASAN_SANITIZE := n
- subdir- := rm
- 
- obj-y += init.o
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 7c0d7be..2730d77 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -6,6 +6,7 @@
- # for more details.
- #
- #
-+KASAN_SANITIZE := n
- 
- always := realmode.bin realmode.relocs
- 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 5a4affe..2aacd7c 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -3,6 +3,7 @@
- #
- 
- KBUILD_CFLAGS += $(DISABLE_LTO)
-+KASAN_SANITIZE := n
- 
- VDSO64-$(CONFIG_X86_64)		:= y
- VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
-diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-index 54cf44f..b458a00 100644
---- a/lib/Kconfig.kasan
-+++ b/lib/Kconfig.kasan
-@@ -5,6 +5,7 @@ if HAVE_ARCH_KASAN
- 
- config KASAN
- 	bool "AddressSanitizer: runtime memory debugger"
-+	depends on !MEMORY_HOTPLUG
- 	help
- 	  Enables address sanitizer - runtime memory debugger,
- 	  designed to find out-of-bounds accesses and use-after-free bugs.
-@@ -12,4 +13,9 @@ config KASAN
- 	  of available memory and brings about ~x3 performance slowdown.
- 	  For better error detection enable CONFIG_STACKTRACE,
- 	  and add slub_debug=U to boot cmdline.
-+
-+config KASAN_SHADOW_OFFSET
-+	hex
-+	default 0xdfffe90000000000 if X86_64
-+
- endif
--- 
-2.1.1
+> >>> I've just checked 3.17 on my E6430 and there this works as
+> >>> it should, I only get the intel_backlight in
+> >>> /sys/class/backlight
+> >>>=20
+> >>>> Also dell-laptop (or acpi video) backlight
+> >>>> interface is created (depends on use_native_backlight
+> >>>> param). And userspace will pick dell-laptop (or acpi
+> >>>> video) to use (which cannot change brightness).
+> >>>>=20
+> >>>>> Why would you want to use dell-laptop despite the i915
+> >>>>> driver working fine ?
+> >>>>=20
+> >>>> i915 working only if I compile kernel without acpi video
+> >>>> dell- laptop support (distributions compile kernel with
+> >>>> these drivers) and i915 is not good for usage. First it
+> >>>> provides more then thousand brightness levels and lot of
+> >>>> (with low numbers) completely turn display off. And if
+> >>>> userspace map these thousand levels into 5-10 levels (as
+> >>>> nobody want to press brightness key up/down 1000x) two
+> >>>> lowest levels cause display off.
+> >>>=20
+> >>> More and more laptops will only have working backlight
+> >>> control at all when using i915, so userspace will need to
+> >>> learn to better deal with backlight controls with these
+> >>> ranges. And low pwm levels turning the backlight of is
+> >>> normal for raw interfaces, if userspace does not want
+> >>> this, then they should not go so low.
+> >>=20
+> >> So then kernel should report which low levels turn
+> >> backlight off so userspace will know which levels should
+> >> avoid. But this is not implemented yet.
+> >>=20
+> >>> I suggest that you file a bug against your desktop
+> >>> environment that it is not using the backlight controls in
+> >>> an optimal manner, from the kernel pov everything is
+> >>> working fine.
+> >>=20
+> >> Once I will know which levels should not DE use I can
+> >> report bug.
+> >>=20
+> >>>> With acpi
+> >>>> video and dell-laptop driver levels are mapped into small
+> >>>> level space in perfect way. So this is reason I want to
+> >>>> use dell-laptop for controlling brightness.
+> >>>=20
+> >>> If you want to use dell-laptop, specify
+> >>> acpi_backlight=3Dvendor on the kernel commandline, that will
+> >>> give you dell_laptop + intel_backlight as backlight
+> >>> interfaces, and userspace should prefer dell_laptop.
+> >>=20
+> >> With acpi_backlight=3Dvendor dell-laptop is not working, see
+> >> my previous mail. In this case intel i915 drm driver
+> >> ignore bios events for changing brightness. And userspace
+> >> prefer to use dell_laptop which do nothing!
+> >=20
+> > Ok, that problematic commit is:
+> >=20
+> > ACPI / i915: ignore firmware requests for backlight change
+> > 0b9f7d93ca6109048a4eb06332b666b6e29df4fe
+> >=20
+> > When I reverted it acpi_backlight=3Dvendor started working
+> > again (via dell_laptop). Without reverting that commit
+> > dell_laptop simply do nothing.
+> >=20
+> > Tested and on my laptop Dell Latitude E6440 driver
+> > dell_laptop does not work with above commit.
+>=20
+> Hmm, interesting, so when dell-laptop registers and makes a
+> few calls using the dell-laptop acpi interface,
 
+No, dell-laptop is *not* acpi driver. See my first mail. It uses=20
+dell dcdbas driver which makes SMI calls for SMBIOS. But it (on=20
+my machine! no idea about other older once) just forward=20
+brightness change to intel driver. And it has useful brightness=20
+levels (no lot of levels which turning display off).
+
+And making SMI calls can be done also from userspace. There is=20
+tool dellLcdBrightness in libsmbios package which for brightness.=20
+And commit 0b9f7d93ca6109048a4eb06332b666b6e29df4fe broke=20
+functionality of that tool.
+
+> then you either stop getting key press events through the
+> acpi-video-bus, or dell-laptop is just a shim around the i915
+> interface with the firmware calling into itself on these
+> models. Given that dell-laptop is ancient, the shim story is
+> not that far fetched.
+>=20
+
+Brightness Fn keys are reported by WMI (dell-wmi driver), so they=20
+working without dell-laptop and acpi video drivers perfectly.
+
+> Do you still get an on screen display showing the brightness
+> when using a kernel without this patch +
+> acpi_backlight=3Dvendor ?
+>=20
+
+Brightness Fn keys are reported to userspace (from WMI input=20
+device) with any combination of video.use_native_backlight and=20
+acpi_backlight kernel params.
+
+> Regards,
+>=20
+> Hans
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2488852.DsYfoNt7dD
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlQivtoACgkQi/DJPQPkQ1JFdgCgqUkrnFhzKb/8im+qbyYe5qHL
+46sAoJ2DrRwqXaPd3mhlKVPzK0tU/+ZU
+=AdH1
+-----END PGP SIGNATURE-----
+
+--nextPart2488852.DsYfoNt7dD--
