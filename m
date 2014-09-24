@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaIXLtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:49:22 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:46492 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324AbaIXLtU convert rfc822-to-8bit (ORCPT
+	id S1753475AbaIXLt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:49:29 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:41958 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaIXLtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:49:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140924110602.GI19999@lee--X1>
-References: <5439652.jHp5aCCfrZ@lenovobook>
-	<20140924110602.GI19999@lee--X1>
-Date: Wed, 24 Sep 2014 13:49:18 +0200
-Message-ID: <CAJKbBDDpAULVFjr058qRz7rV3y5DEnnxeA9n5xtGW1Fu6YLr=A@mail.gmail.com>
-Subject: Re: [PATCH] mfd: tps65217: add compatible string for subdevices
-From: Johannes Pointner <johannes.pointner@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, AnilKumar Ch <anilkumar@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Sep 2014 07:49:25 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, cebbert.lkml@gmail.com
+Subject: [PATCH v7 2/6] perf/x86: add support for sampling PEBS machine state registers
+Date: Wed, 24 Sep 2014 13:48:38 +0200
+Message-Id: <1411559322-16548-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411559322-16548-1-git-send-email-eranian@google.com>
+References: <1411559322-16548-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-24 13:06 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
-> On Mon, 22 Sep 2014, Johannes Pointner wrote:
->
->> The TPS65217 is missing of_compatible string in the mfd_cell for its
->> subdevices. This compatible string is necessary to use functions like
->> of_find_backlight_by_node in backlight.c.
->>
->> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
->> ---
->>  Documentation/devicetree/bindings/regulator/tps65217.txt            | 5 ++++-
->>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt      | 6 +++---
->>  drivers/mfd/tps65217.c                                              | 2 ++
->>  3 files changed, 9 insertions(+), 4 deletions(-)
->
-> [...]
->
->> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
->> index 5fb9279..c3fb649 100644
->> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
->> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
->> @@ -7,18 +7,18 @@ Required properties:
->>  - compatible: "ti,tps65217"
->>  - reg: I2C slave address
->>  - backlight: node for specifying WLED1 and WLED2 lines in TPS65217
->> +- compatible: "ti,tps65217-bl"
->
-> This is now confusing.  Please make it clear that this part of the
-> documentation is now referencing the sub-node.
+PEBS can capture machine state regs at retiremnt of the sampled
+instructions. When precise sampling is enabled on an event, PEBS
+is used, so substitute the interrupted state with the PEBS state.
+Note that not all registers are captured by PEBS. Those missing
+are replaced by the interrupt state counter-parts.
 
-I will add a Subnode properties label, to make it clearer.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
->
->>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
->>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
->>  - default-brightness: valid values: 0-100
->>
->> -Each regulator is defined using the standard binding for regulators.
->> -
->>  Example:
->>
->>       tps: tps@24 {
->>               reg = <0x24>;
->>               compatible = "ti,tps65217";
->> -             backlight {
->> +             tps_bl: backlight {
->> +                     compatible = "ti,tps65217-bl";
->>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
->>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
->>                       default-brightness = <50>;
->> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
->
-> This shouldn't be in this patch.
->
-> Please adhere to: Documentation/devicetree/bindings/submitting-patches.txt
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index b1553d0..ce439f7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -886,6 +886,29 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
+ 
++	if (sample_type & PERF_SAMPLE_REGS_INTR) {
++		regs.ax = pebs->ax;
++		regs.bx = pebs->bx;
++		regs.cx = pebs->cx;
++		regs.dx = pebs->dx;
++		regs.si = pebs->si;
++		regs.di = pebs->di;
++		regs.bp = pebs->bp;
++		regs.sp = pebs->sp;
++
++		regs.flags = pebs->flags;
++#ifndef CONFIG_X86_32
++		regs.r8 = pebs->r8;
++		regs.r9 = pebs->r9;
++		regs.r10 = pebs->r10;
++		regs.r11 = pebs->r11;
++		regs.r12 = pebs->r12;
++		regs.r13 = pebs->r13;
++		regs.r14 = pebs->r14;
++		regs.r15 = pebs->r15;
++#endif
++	}
++
+ 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+ 		regs.ip = pebs->real_ip;
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+-- 
+1.7.9.5
 
-I will split the patch.
->
->> index 3cc4c70..77708f9 100644
->> --- a/drivers/mfd/tps65217.c
->> +++ b/drivers/mfd/tps65217.c
->> @@ -33,9 +33,11 @@
->>  static const struct mfd_cell tps65217s[] = {
->>       {
->>               .name = "tps65217-pmic",
->> +             .of_compatible = "ti,tps65217-pmic",
->>       },
->>       {
->>               .name = "tps65217-bl",
->> +             .of_compatible = "ti,tps65217-bl",
->>       },
->>  };
->>
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-
-Thank you for your feedback. I'll resend the patches with the modifications.
