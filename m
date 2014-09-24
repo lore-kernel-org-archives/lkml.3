@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaIXOwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:52:46 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:41470 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaIXOtW (ORCPT
+	id S1753825AbaIXOxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:53:38 -0400
+Received: from smtprelay06.ispgateway.de ([80.67.31.95]:49040 "EHLO
+	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747AbaIXOxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:49:22 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        ctl@merrii.com, Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v2 1/7] ARM: sunxi: Introduce Allwinner A80 support
-Date: Wed, 24 Sep 2014 22:48:55 +0800
-Message-Id: <1411570141-29960-2-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411570141-29960-1-git-send-email-wens@csie.org>
-References: <1411570141-29960-1-git-send-email-wens@csie.org>
+	Wed, 24 Sep 2014 10:53:35 -0400
+From: Christoph Jaeger <cj@linux.com>
+To: petr@vandrovec.name, akpm@linux-foundation.org, joe@perches.com
+Cc: linux-kernel@vger.kernel.org, Christoph Jaeger <cj@linux.com>
+Subject: [PATCH RESEND] ncpfs: use list_for_each_entry() for list iteration
+Date: Wed, 24 Sep 2014 10:53:24 -0400
+Message-Id: <1411570404-13428-1-git-send-email-cj@linux.com>
+X-Mailer: git-send-email 1.9.3
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A80 is a new Cortex octo-core A7/A15 big.LITTLE SoC.
-While it's processor cores and interconnecting bus are new, it
-re-uses many peripherals found in earlier Allwinner SoCs.
+Use list_for_each_entry() for the sake of simplicity and readability.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Signed-off-by: Christoph Jaeger <cj@linux.com>
 ---
- arch/arm/mach-sunxi/Kconfig | 5 +++++
- arch/arm/mach-sunxi/sunxi.c | 9 +++++++++
- 2 files changed, 14 insertions(+)
+ fs/ncpfs/dir.c           |  6 +-----
+ fs/ncpfs/ncplib_kernel.h | 14 ++------------
+ 2 files changed, 3 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 1aaa1e1..72f222b 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -42,4 +42,9 @@ config MACH_SUN8I
- 	select MFD_SUN6I_PRCM
- 	select RESET_CONTROLLER
+diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
+index 08b8ea8..314e7ad 100644
+--- a/fs/ncpfs/dir.c
++++ b/fs/ncpfs/dir.c
+@@ -388,7 +388,6 @@ static struct dentry *
+ ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
+ {
+ 	struct dentry *dent = dentry;
+-	struct list_head *next;
  
-+config MACH_SUN9I
-+	bool "Allwinner A80 (sun9i) SoCs support"
-+	default ARCH_SUNXI
-+	select ARM_GIC
-+
- endif
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 42d4753..4bd2117 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -139,3 +139,12 @@ static const char * const sun8i_board_dt_compat[] = {
- DT_MACHINE_START(SUN8I_DT, "Allwinner sun8i (A23) Family")
- 	.dt_compat	= sun8i_board_dt_compat,
- MACHINE_END
-+
-+static const char * const sun9i_board_dt_compat[] = {
-+	"allwinner,sun9i-a80",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(SUN9I_DT, "Allwinner sun9i (A80) Family")
-+	.dt_compat	= sun9i_board_dt_compat,
-+MACHINE_END
+ 	if (d_validate(dent, parent)) {
+ 		if (dent->d_name.len <= NCP_MAXPATHLEN &&
+@@ -404,9 +403,7 @@ ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
+ 
+ 	/* If a pointer is invalid, we search the dentry. */
+ 	spin_lock(&parent->d_lock);
+-	next = parent->d_subdirs.next;
+-	while (next != &parent->d_subdirs) {
+-		dent = list_entry(next, struct dentry, d_u.d_child);
++	list_for_each_entry(dent, &parent->d_subdirs, d_u.d_child) {
+ 		if ((unsigned long)dent->d_fsdata == fpos) {
+ 			if (dent->d_inode)
+ 				dget(dent);
+@@ -415,7 +412,6 @@ ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
+ 			spin_unlock(&parent->d_lock);
+ 			goto out;
+ 		}
+-		next = next->next;
+ 	}
+ 	spin_unlock(&parent->d_lock);
+ 	return NULL;
+diff --git a/fs/ncpfs/ncplib_kernel.h b/fs/ncpfs/ncplib_kernel.h
+index 32c0658..52cb19d 100644
+--- a/fs/ncpfs/ncplib_kernel.h
++++ b/fs/ncpfs/ncplib_kernel.h
+@@ -188,20 +188,14 @@ static inline void
+ ncp_renew_dentries(struct dentry *parent)
+ {
+ 	struct ncp_server *server = NCP_SERVER(parent->d_inode);
+-	struct list_head *next;
+ 	struct dentry *dentry;
+ 
+ 	spin_lock(&parent->d_lock);
+-	next = parent->d_subdirs.next;
+-	while (next != &parent->d_subdirs) {
+-		dentry = list_entry(next, struct dentry, d_u.d_child);
+-
++	list_for_each_entry(dentry, &parent->d_subdirs, d_u.d_child) {
+ 		if (dentry->d_fsdata == NULL)
+ 			ncp_age_dentry(server, dentry);
+ 		else
+ 			ncp_new_dentry(dentry);
+-
+-		next = next->next;
+ 	}
+ 	spin_unlock(&parent->d_lock);
+ }
+@@ -210,16 +204,12 @@ static inline void
+ ncp_invalidate_dircache_entries(struct dentry *parent)
+ {
+ 	struct ncp_server *server = NCP_SERVER(parent->d_inode);
+-	struct list_head *next;
+ 	struct dentry *dentry;
+ 
+ 	spin_lock(&parent->d_lock);
+-	next = parent->d_subdirs.next;
+-	while (next != &parent->d_subdirs) {
+-		dentry = list_entry(next, struct dentry, d_u.d_child);
++	list_for_each_entry(dentry, &parent->d_subdirs, d_u.d_child) {
+ 		dentry->d_fsdata = NULL;
+ 		ncp_age_dentry(server, dentry);
+-		next = next->next;
+ 	}
+ 	spin_unlock(&parent->d_lock);
+ }
 -- 
-2.1.0
+1.9.3
 
