@@ -1,87 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaIXQtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:49:55 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:1087 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753465AbaIXQtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:49:52 -0400
-Message-ID: <5422F62C.30205@fb.com>
-Date: Wed, 24 Sep 2014 12:49:48 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754837AbaIXQuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:50:01 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:42579 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753465AbaIXQt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:49:58 -0400
+Date: Wed, 24 Sep 2014 10:49:49 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 01/12] tpm: prepare TPM driver for adding TPM2 support
+Message-ID: <20140924164949.GC8898@obsidianresearch.com>
+References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1411549562-24242-2-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] trace-cmd: add helper to read kernel_stack functions
-References: <1411574609-12129-1-git-send-email-jbacik@fb.com> <20140924121234.066bd249@gandalf.local.home>
-In-Reply-To: <20140924121234.066bd249@gandalf.local.home>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-24_07:2014-09-24,2014-09-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=3.05312336523755e-09 kscore.compositescore=0
- circleOfTrustscore=22.6900859407804 compositescore=0.997695897463551
- urlsuspect_oldscore=0.997695897463551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1409240168
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411549562-24242-2-git-send-email-jarkko.sakkinen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 12:12 PM, Steven Rostedt wrote:
-> On Wed, 24 Sep 2014 12:03:29 -0400
-> Josef Bacik <jbacik@fb.com> wrote:
->
->> The way the ftrace kernel_stack event is handled doesn't work right with the
->> normal event reading stuff in python.  The raw buffer read stuff expects the
->> size of the event to be non-zero, but in the case of kernel_stack the caller
->> array is 0 and we are given a size field
->>
->> 	field:int size;	offset:8;	size:4;	signed:1;
->> 	field:unsigned long caller;	offset:16;	size:0;	signed:0;
->>
->> This screws up python becuase it uses the size field to indicate how much of the
->> memory buffer is there to read, which in this case is 0.  This makes it
->> impossible to actually read the caller array from python.  So add a new c
->> binding to specially read the addr array and go ahead and look up the function
->> names for the addr and return those strings.  With this I can now pull the
->> function names for a kernel_stack event from the python library.  Thanks,
->
-> No need to add "Thanks" to a change log ;-)
+On Wed, Sep 24, 2014 at 12:05:51PM +0300, Jarkko Sakkinen wrote:
+> * Separated allocation and registeration into two functions:
+>   * tpm_chip_alloc()
+>   * tpm_chip_register()
 
-git log --author="Josef Bacik" --author="Josef Whiter" \
-	| grep "Thanks," | wc -l
-540
-git log --author="Josef Bacik" --author="Josef Whiter" --oneline \
-	| wc -l
-688
+Okay, this is a nice start!
 
-Old habits ;).
+I had intended tpm-interface.c to hold these 'chip' functions and the
+other cmd related functions to be moved out into tpm-cmds.c (or
+tpm1-cmds?), which is more symmetrical with what you are doing with
+tpm2-cmds. Does that seem reasonable?
 
->
-> Will this still work if we convert the kernel_stack to be the same as
-> the other dynamic_arrays?
->
-> I'm assuming so, as there doesn't seem to be anything here that looks
-> specific to the kernel_stack event, and we wouldn't want to break the
-> other events.
->
-> I just want to make sure you are testing both formats.
->
+It doesn't make sense to leave some chip related stuff in
+tpm-interface mixed with cmd stuff, I'd prefer to see a clean split if
+you are going to split them.
 
-It should work which is why I went ahead and sent it, but I'm fixing to 
-do the kernel side now and I'll test with that and if it doesn't work 
-I'll send a v2.  Thanks,
+> +struct tpm_chip *tpm_chip_alloc(struct device *dev,
+> +                               const struct tpm_class_ops *ops)
+> +{
 
-Josef
+I want to see a clear description of what the unwind procedures are
+for each step using the new API, and kdoc on all the new API functions
+drivers are expected to use.
 
+> +int tpm_chip_register(struct tpm_chip *chip)
+> +{
+> +	int rc;
+
+All the common startup functions need to be done here too: get
+timeouts, self test, etc.
+
+> +	rc = tpm_dev_add_device(chip);
+> +	if (rc)
+> +		return rc;
+> +
+> +	rc = tpm_sysfs_add_device(chip);
+> +	if (rc)
+> +		goto del_misc;
+> +
+> +	rc = tpm_add_ppi(&chip->dev->kobj);
+> +	if (rc)
+> +		goto del_sysfs;
+> +
+> +	if (!chip->tpm2)
+> +		chip->bios_dir = tpm_bios_log_setup(chip->devname);
+
+What about failure of tpm_bios_log_setup?
+
+>  /*
+>   * Called from tpm_<specific>.c probe function only for devices
+>   * the driver has determined it should claim.  Prior to calling
+> @@ -1081,61 +1019,19 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+>  				       const struct tpm_class_ops *ops)
+>  {
+>  	struct tpm_chip *chip;
+> +	int rc;
+>  
+> -	/* Driver specific per-device data */
+> -	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+> -
+> -	if (chip == NULL)
+> +	chip = tpm_chip_alloc(dev, ops);
+> +	if (!chip)
+>  		return NULL;
+
+I think tpm_chip_alloc should return an ERR_PTR..
+
+> -	mutex_init(&chip->tpm_mutex);
+> -	INIT_LIST_HEAD(&chip->list);
+> -
+> -	chip->ops = ops;
+> -	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+> -
+> -	if (chip->dev_num >= TPM_NUM_DEVICES) {
+> -		dev_err(dev, "No available tpm device numbers\n");
+> -		goto out_free;
+> +	rc = tpm_chip_register(chip);
+> +	if (rc) {
+> +		put_device(chip->dev);
+> +		kfree(chip);
+
+No, open coding this is not a good unwind, and this is not correct
+anyhow, it looks like it will double free chip...
+
+This is where things got stuck for me too, the unwind is where all the
+problems are and I think the solution is to make the alloc paths
+completely different between new and old.
+
+We really want tpmm_chip_alloc for the new style path (so drivers have
+no unwind) and the old style path .. I don't know what is correct
+there, but the safest thing is to stay exactly the same.
+
+Also, please split this patch into moving stuff into tmp1-cmds.c and
+then patching to add functionality.
+
+Jason
