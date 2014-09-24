@@ -1,103 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaIXDEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 23:04:46 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30561 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883AbaIXDEo (ORCPT
+	id S1755416AbaIXDPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 23:15:50 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1384 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaIXDPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 23:04:44 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-4d-542234c4bcd2
-From: Kukjin Kim <kgene@kernel.org>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Mike Turquette'" <mturquette@linaro.org>
-References: <20140924110836.209bc8e2@canb.auug.org.au>
-In-reply-to: <20140924110836.209bc8e2@canb.auug.org.au>
-Subject: RE: linux-next: build failure after merge of the samsung tree
-Date: Wed, 24 Sep 2014 12:04:36 +0900
-Message-id: <00fb01cfd7a4$45eb4a50$d1c1def0$@kernel.org>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHv9Y7pls0ew4DeOAaPdZa0uXmLbJvPXEaQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zI90jJkohBhMua1lsnLGe1eLo7wKL
-	y7vmsFkcXNjGaPF0wkU2i617r7I7sHk03rjB5vH3+XUWjzvX9rB59G1ZxejxeZNcAGsUl01K
-	ak5mWWqRvl0CV8b3Bx1sBee4Kt7OfsbWwLico4uRk0NCwETi9OpJjBC2mMSFe+vZuhi5OIQE
-	ljFKbHjxnQmm6PPR58wQiUWMEp+mTQPrEBL4yyjxtK+0i5GDg01AWaKxSR8kLCygJbFwSxML
-	iC0ioCvR928+E0gvs8AjRol9a5pZQeqFBMwkuldWg9RwCphL7JxyiAWi103i8f91LCAlLAKq
-	EhPWSoKEeQUsJDYuesMCYQtK/Jh8D8xmBlq1eVsTK4QtL7F5zVtmiJMVJHacfc0IcYKRxM7X
-	D6BqRCT2vXjHCHKOhMBbdonrq3rAilgEBCS+TT4EtldCQFZi0wGoOZISB1fcYJnAKDkLyepZ
-	SFbPQrJ6FpIVCxhZVjGKphYkFxQnpReZ6hUn5haX5qXrJefnbmKExPHEHYz3D1gfYhTgYFTi
-	4Z0grhQixJpYVlyZe4jRFOiiicxSosn5wGSRVxJvaGxmZGFqYmpsZG5ppiTOqyP9M1hIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QDY+DXPVe+1BjNCgxeIu7DF2IVw3Qx46S/3ZaspTqXPq36
-	yVr/nePJaX/bDbP21yzg+y2SHDAlw7xzSvYv29Dg9fJNm1ieZibInz3WajsvOYqhOe+0Educ
-	Dbe1uMp6IhPZnu+8k6ylV9783/fM75AGrqf6VSYndY/tOPDwc0ZK2EGt2W/lslMfKrEUZyQa
-	ajEXFScCADnV0/neAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jAd0jJkohBj/vqVlsnLGe1eLo7wKL
-	y7vmsFkcXNjGaPF0wkU2i617r7I7sHk03rjB5vH3+XUWjzvX9rB59G1ZxejxeZNcAGtUA6NN
-	RmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAFSgpliTml
-	QKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaM7w862ArOcVW8nf2MrYFxOUcXIyeH
-	hICJxOejz5khbDGJC/fWs3UxcnEICSxilPg0bRojSEJI4C+jxNO+0i5GDg42AWWJxiZ9kLCw
-	gJbEwi1NLCC2iICuRN+/+UwgvcwCjxgl9q1pZgWpFxIwk+heWQ1SwylgLrFzyiEWiF43icf/
-	17GAlLAIqEpMWCsJEuYVsJDYuOgNC4QtKPFj8j0wmxlo1eZtTawQtrzE5jVvoU5WkNhx9jUj
-	xAlGEjtfP4CqEZHY9+Id4wRG4VlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1ya
-	l66XnJ+7iRGcJJ5J72Bc1WBxiFGAg1GJh3eCuFKIEGtiWXFl7iFGCQ5mJRHefapAId6UxMqq
-	1KL8+KLSnNTiQ4ymQI9OZJYSTc4HJrC8knhDYxMzI0sjMwsjE3NzJXHeg63WgUIC6Yklqdmp
-	qQWpRTB9TBycUg2M2pvM+LoFbsvVhaxa8P8iA0PZ8geS3Svfxvw7weAX9HXu3Oq7u2XN8y7+
-	jWkuuPNA9qD/dYWdb6wXXFhRLiLPVKzto5JWtvAWX7f/VO0a4QINR8464cg31UypH491/PBZ
-	crC1L/ZpNfvr05PSOIM2NG+bcEDo8tfWB2I9h3j1dkbdF/YP8a5XYinOSDTUYi4qTgQA0hZE
-	jSgDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
+	Tue, 23 Sep 2014 23:15:48 -0400
+Message-ID: <54223758.4070300@huawei.com>
+Date: Wed, 24 Sep 2014 11:15:36 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar" <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        Miao Xie <miaox@cn.fujitsu.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v3 3/3] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should
+ be atomic flags
+References: <542124D3.9000007@huawei.com> <54212509.1030809@huawei.com> <alpine.DEB.2.02.1409231508590.22630@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1409231508590.22630@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.18.230]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
+于 2014/9/24 6:10, David Rientjes wrote:
+> On Tue, 23 Sep 2014, Zefan Li wrote:
 > 
-> Hi Kukjin,
+>> When we change cpuset.memory_spread_{page,slab}, cpuset will flip
+>> PF_SPREAD_{PAGE,SLAB} bit of tsk->flags for each task in that cpuset.
+>> This should be done using atomic bitops, but currently we don't,
+>> which is broken.
+>>
+>> Tetsuo reported a hard-to-reproduce kernel crash on RHEL6, which happend
+>> when one thread tried to clear PF_USED_MATH while at the same time another
+>> thread tried to flip PF_SPREAD_PAGE/PF_SPREAD_SLAB. They both operate on
+>> the same task.
+>>
+>> Here's the full report:
+>> https://lkml.org/lkml/2014/9/19/230
+>>
+>> To fix this, we make PF_SPREAD_PAGE and PF_SPARED_SLAB atomic flags.
+>>
 > 
-Hi Stephen,
-
-> After merging the samsung tree, today's linux-next build (arm multi_v7_defconfig)
-> failed like this:
+> s/SPARED/SPREAD/
 > 
-> arch/arm/boot/dts/exynos5250-snow.dts:13:46: fatal error: dt-bindings/clock/maxim,max77686.h: No such
-> file or directory
->  #include <dt-bindings/clock/maxim,max77686.h>
->                                               ^
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Miao Xie <miaox@cn.fujitsu.com>
+>> Cc: Kees Cook <keescook@chromium.org>
+>> Fixes: 950592f7b991 ("cpusets: update tasks' page/slab spread flags in time")
+>> Cc: <stable@vger.kernel.org> # 2.6.31+
+>> Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+>> Signed-off-by: Zefan Li <lizefan@huawei.com>
+>> ---
+>>  include/linux/cpuset.h |  4 ++--
+>>  include/linux/sched.h  | 13 +++++++++++--
+>>  kernel/cpuset.c        |  9 +++++----
+>>  3 files changed, 18 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+>> index 0d4e067..2f073db 100644
+>> --- a/include/linux/cpuset.h
+>> +++ b/include/linux/cpuset.h
+>> @@ -94,12 +94,12 @@ extern int cpuset_slab_spread_node(void);
+>>  
+>>  static inline int cpuset_do_page_mem_spread(void)
+>>  {
+>> -	return current->flags & PF_SPREAD_PAGE;
+>> +	return task_spread_page(current);
+>>  }
+>>  
+>>  static inline int cpuset_do_slab_mem_spread(void)
+>>  {
+>> -	return current->flags & PF_SPREAD_SLAB;
+>> +	return task_spread_slab(current);
+>>  }
+>>  
+>>  extern int current_cpuset_is_being_rebound(void);
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index 5630763..7b1cafe 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1903,8 +1903,6 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+>>  #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
+>>  #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
+>>  #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+>> -#define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+>> -#define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+>>  #define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
+>>  #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+>>  #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+>> @@ -1958,6 +1956,9 @@ static inline void memalloc_noio_restore(unsigned int flags)
+>>  
+>>  /* Per-process atomic flags. */
+>>  #define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+>> +#define PFA_SPREAD_PAGE  1      /* Spread page cache over cpuset */
+>> +#define PFA_SPREAD_SLAB  2      /* Spread some slab caches over cpuset */
+>> +
+>>  
+>>  #define TASK_PFA_TEST(name, func)					\
+>>  	static inline bool task_##func(struct task_struct *p)		\
+>> @@ -1972,6 +1973,14 @@ static inline void memalloc_noio_restore(unsigned int flags)
+>>  TASK_PFA_TEST(NO_NEW_PRIVS, no_new_privs)
+>>  TASK_PFA_SET(NO_NEW_PRIVS, no_new_privs)
+>>  
+>> +TASK_PFA_TEST(SPREAD_PAGE, spread_page)
+>> +TASK_PFA_SET(SPREAD_PAGE, spread_page)
+>> +TASK_PFA_CLEAR(SPREAD_PAGE, spread_page)
+>> +
+>> +TASK_PFA_TEST(SPREAD_SLAB, spread_slab)
+>> +TASK_PFA_SET(SPREAD_SLAB, spread_slab)
+>> +TASK_PFA_CLEAR(SPREAD_SLAB, spread_slab)
+>> +
+>>  /*
+>>   * task->jobctl flags
+>>   */
+>> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+>> index a37f4ed..1f107c7 100644
+>> --- a/kernel/cpuset.c
+>> +++ b/kernel/cpuset.c
+>> @@ -365,13 +365,14 @@ static void cpuset_update_task_spread_flag(struct cpuset *cs,
+>>  					struct task_struct *tsk)
+>>  {
+>>  	if (is_spread_page(cs))
+>> -		tsk->flags |= PF_SPREAD_PAGE;
+>> +		task_set_spread_page(tsk);
+>>  	else
+>> -		tsk->flags &= ~PF_SPREAD_PAGE;
+>> +		task_clear_spread_page(tsk);
+>> +
+>>  	if (is_spread_slab(cs))
+>> -		tsk->flags |= PF_SPREAD_SLAB;
+>> +		task_set_spread_slab(tsk);
+>>  	else
+>> -		tsk->flags &= ~PF_SPREAD_SLAB;
+>> +		task_clear_spread_slab(tsk);
+>>  }
+>>  
+>>  /*
 > 
-+ Mike
+> This most certainly needs commentary to specify why these have to be 
+> atomic ops.
+> .
 
-Hmm... I think, inclusion of the header file should be included in Mike's clk
-tree...What's wrong?
+It won't hurt to add more comment, but I don't think it's necessary, because
+the reason to use atomic bitops seems obvious to me. Besides there's no such
+comment for no_new_privs, which was tsk->atomic_flags introduced for.
 
-> Caused by commit c04c92ed5614 ("ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow").
-> 
-> In file included from arch/arm/mach-tegra/cpuidle-tegra114.c:17:0:
-> arch/arm/mach-tegra/cpuidle-tegra114.c: In function 'tegra114_idle_power_down':
-> arch/arm/include/asm/firmware.h:64:24: error: too few arguments to function 'firmware_ops->do_idle'
->   ((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
->                         ^
-> arch/arm/mach-tegra/cpuidle-tegra114.c:52:6: note: in expansion of macro 'call_firmware_op'
->   if (call_firmware_op(do_idle) == -ENOSYS)
->       ^
-> 
-> Caused by commit f5217f3b9332 ("ARM: EXYNOS: add AFTR mode support to
-> firmware do_idle method").
-
-OK, I'll revert it firstly. Thanks.
-
-> 
-> I have used the samsung tree from next-20140923 for today.
-
-OK.
-
-- Kukjin
 
