@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaIXROa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:14:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:52594 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaIXRO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:14:29 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes-non-critical for 3.18 #1
-Date: Wed, 24 Sep 2014 19:14:25 +0200
-Message-ID: <1411578865-27232-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	id S1752180AbaIXRRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:17:04 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48607 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaIXRRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:17:01 -0400
+Date: Wed, 24 Sep 2014 13:16:53 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] mm: memcontrol: convert reclaim iterator to simple
+ css refcounting
+Message-ID: <20140924171653.GA10082@cmpxchg.org>
+References: <1411161059-16552-1-git-send-email-hannes@cmpxchg.org>
+ <20140919212843.GA23861@cmpxchg.org>
+ <20140924164739.GA15897@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924164739.GA15897@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Wed, Sep 24, 2014 at 06:47:39PM +0200, Michal Hocko wrote:
+> On Fri 19-09-14 17:28:43, Johannes Weiner wrote:
+> > From: Johannes Weiner <hannes@cmpxchg.org>
+> > Date: Fri, 19 Sep 2014 12:39:18 -0400
+> > Subject: [patch v2] mm: memcontrol: convert reclaim iterator to simple css
+> >  refcounting
+> > 
+> > The memcg reclaim iterators use a complicated weak reference scheme to
+> > prevent pinning cgroups indefinitely in the absence of memory pressure.
+> > 
+> > However, during the ongoing cgroup core rework, css lifetime has been
+> > decoupled such that a pinned css no longer interferes with removal of
+> > the user-visible cgroup, and all this complexity is now unnecessary.
+> 
+> I very much welcome simplification in this area but I would also very much
+> appreciate more details why some checks are no longer needed. Why don't
+> we need ->generation or (next_css->flags & CSS_ONLINE) check anymore?
 
-If you can still pull thing before 3.18-rc1, here are some non-critical fixes.
-Otherwise, they certainly can be applied during 3.18-rc phase.
+Vladimir pointed out that the generation was still needed, I added it
+back and will submit version 2 after the lockless counters have been
+sorted out.
 
-Thanks, best regards,
+Argh, I thought CSS_ONLINE was an artifact obsoleted by the
+css_tryget_online() conversion.  That's quite the handgrenade.
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+Tejun, should maybe the iterators not return css before they have
+CSS_ONLINE set?  It seems odd to have memcg reach into cgroup like
+that to check if published objects are actually fully initialized.
+Background is this patch:
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+commit d8ad30559715ce97afb7d1a93a12fd90e8fff312
+Author: Hugh Dickins <hughd@google.com>
+Date:   Thu Jan 23 15:53:32 2014 -0800
 
-are available in the git repository at:
+    mm/memcg: iteration skip memcgs not yet fully initialized
+    
+    It is surprising that the mem_cgroup iterator can return memcgs which
+    have not yet been fully initialized.  By accident (or trial and error?)
+    this appears not to present an actual problem; but it may be better to
+    prevent such surprises, by skipping memcgs not yet online.
+    
+    Signed-off-by: Hugh Dickins <hughd@google.com>
+    Cc: Tejun Heo <tj@kernel.org>
+    Acked-by: Michal Hocko <mhocko@suse.cz>
+    Cc: Johannes Weiner <hannes@cmpxchg.org>
+    Cc: <stable@vger.kernel.org>        [3.12+]
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes-non-critical
+> >  	rcu_read_lock();
+> > -	while (!memcg) {
+> > -		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+> > -		int uninitialized_var(seq);
+> >  
+> > -		if (reclaim) {
+> > -			struct mem_cgroup_per_zone *mz;
+> > +	if (reclaim) {
+> > +		mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
+> > +		priority = reclaim->priority;
+> >  
+> > -			mz = mem_cgroup_zone_zoneinfo(root, reclaim->zone);
+> > -			iter = &mz->reclaim_iter[reclaim->priority];
+> > -			if (prev && reclaim->generation != iter->generation) {
+> > -				iter->last_visited = NULL;
+> > -				goto out_unlock;
+> > -			}
+> > -
+> > -			last_visited = mem_cgroup_iter_load(iter, root, &seq);
+> > -		}
+> > -
+> > -		memcg = __mem_cgroup_iter_next(root, last_visited);
+> > +		do {
+> > +			pos = ACCESS_ONCE(mz->reclaim_iter[priority]);
+> > +		} while (pos && !css_tryget(&pos->css));
+> 
+> This is a bit confusing. AFAIU css_tryget fails only when the current
+> ref count is zero already. When do we keep cached memcg with zero count
+> behind? We always do css_get after cmpxchg.
+> 
+> Hmm, there is a small window between cmpxchg and css_get when we store
+> the current memcg into the reclaim_iter[priority]. If the current memcg
+> is root then we do not take any css reference before cmpxchg and so it
+> might drop down to zero in the mean time so other CPU might see zero I
+> guess. But I do not see how css_get after cmpxchg on such css works.
+> I guess I should go and check the css reference counting again.
 
-for you to fetch changes up to cfa1950e6c6b72251e80adc736af3c3d2907ab0e:
+It's not about root or the newly stored memcg, it's that you might
+read the position right before it's replaced and css_put(), at which
+point the css_tryget() may fail and you have to reload the position.
 
-  ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks (2014-09-24 18:00:42 +0200)
-
-----------------------------------------------------------------
-Fixes non critical for AT91:
-- mmc pinmux for at91sam9263 was missing
-- little fix of the old clock implementation
-
-----------------------------------------------------------------
-Andreas Henriksson (1):
-      ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
-
-Ludovic Desroches (1):
-      ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks
-
- arch/arm/boot/dts/at91sam9263.dtsi | 2 ++
- arch/arm/mach-at91/clock.c         | 1 +
- 2 files changed, 3 insertions(+)
-
--- 
-Nicolas Ferre
+I'll add a comment.
