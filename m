@@ -1,144 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaIXPCl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:02:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59992 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaIXPCj (ORCPT
+	id S1754208AbaIXPC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:02:56 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:37867 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245AbaIXPBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:02:39 -0400
-Date: Wed, 24 Sep 2014 08:01:24 -0700
-From: tip-bot for Lan Tianyu <tipbot@zytor.com>
-Message-ID: <tip-2ed53c0d6cc99fc712f7c037e41d9ec4eb8d6b08@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tianyu.lan@intel.com, tglx@linutronix.de, prarit@redhat.com,
-        bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tianyu.lan@intel.com, tglx@linutronix.de, bp@suse.de,
-        prarit@redhat.com
-In-Reply-To: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
-References: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86/smpboot: Speed up suspend/
- resume by avoiding 100ms sleep for CPU offline during S3
-Git-Commit-ID: 2ed53c0d6cc99fc712f7c037e41d9ec4eb8d6b08
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 24 Sep 2014 11:01:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140924145658.GB31678@khazad-dum.debian.net>
+References: <9c84cde6-3d70-4337-8738-0283d06d8cf0@email.android.com>
+ <20140918200659.GA5331@khazad-dum.debian.net> <20140919001311.GB5331@khazad-dum.debian.net>
+ <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
+ <20140919110014.GC29639@khazad-dum.debian.net> <20140919112953.GA3256@nazgul.tnic>
+ <20140919075415.5149d5f2@as> <20140919150042.GC5318@nazgul.tnic>
+ <20140919164217.GD17456@khazad-dum.debian.net> <20140923200054.GB16467@pd.tnic>
+ <20140924145658.GB31678@khazad-dum.debian.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 24 Sep 2014 08:00:43 -0700
+Message-ID: <CALCETrU3-iNqCOT7EArtB91zAZC6ChuVN1wF6LbtdUqpoyJ+ig@mail.gmail.com>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Borislav Petkov <bp@alien8.de>, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2ed53c0d6cc99fc712f7c037e41d9ec4eb8d6b08
-Gitweb:     http://git.kernel.org/tip/2ed53c0d6cc99fc712f7c037e41d9ec4eb8d6b08
-Author:     Lan Tianyu <tianyu.lan@intel.com>
-AuthorDate: Tue, 26 Aug 2014 15:43:45 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 15:02:06 +0200
+On Wed, Sep 24, 2014 at 7:56 AM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Tue, 23 Sep 2014, Borislav Petkov wrote:
+>> On Fri, Sep 19, 2014 at 01:42:17PM -0300, Henrique de Moraes Holschuh wrote:
+>> > 1. offline a "guinea pig" group of "cpus", i.e. an entire "microcode update
+>> > unit" that doesn't include the BSP.  This is going to be a pain, as what
+>> > composes a "microcode update unit" is not set in stone, and could change in
+>> > a future microarch.
+>>
+>> I'm pretty sure it is very dangerous to run with different microcode
+>> revisions on different cores. Your plan won't fly and I have hard time
+>> understanding why one would do such thing even if it did work.
+>
+> I don't want that plan to fly, it is too complex and I wrote as much at
+> the end of that email.  I won't bother with the situations where it would
+> be helpful, they're not very interesting.
+>
+>
+> On the topic of microcode revision skew in a multi-processor system:
+>
+> For a long time we had an Extremely Bad userspace interface that required
+> userspace to trigger the microcode update once per cpu, and it fetched the
+> microcode from userspace once per cpu.
+>
+> This made for an absurdly large time window during which we'd have
+> microcode revision skew across cpus, and yet nothing blew up sky-high.  If
+> microcode revision skew was not generally safe, we'd have had a lot of
+> trouble already.
+>
+> In fact, we still run the system with microcode revision skew while the
+> microcode update is taking place through the regular microcode driver, as
+> it is serialized one cpu at a time, and the other cpus are active and
+> running.
+>
+> I don't know about AMD, but on Intel, the time it takes to update the
+> microcode on a core is anything but negligible[1], so the microcode
+> version skew window still exists, and it is not small.  It is much smaller
+> than it once was, but it is still there.
+>
+> The only way to really minimize the risk of microcode version skew is to
+> limit oneself to firmware and early initramfs microcode updates.
+>
+>> If we're going to have to hide stuff which software might be using, I
+>> don't see a way around rebooting.
+>
+> Nor do I.
+>
+> But IMHO we still need to detect and do something smart when
+> x86_capability changes due to a microcode update.
+>
+> And I'd really prefer it to be "update x86_capability, warn the user and
+> carry on" for anything that is not going to crash the kernel.  Several
+> distros will really want this backported to -stable, as the older kernels
+> cannot do early microcode updates.
+>
 
-x86/smpboot: Speed up suspend/resume by avoiding 100ms sleep for CPU offline during S3
+I'm trying to see if Intel is willing to document any additional
+controls for the TSX bits in this ucode.  No word yet, but I might
+hear something soon.
 
-With certain kernel configurations, CPU offline consumes more than
-100ms during S3.
+--Andy
 
-It's a timing related issue: native_cpu_die() would occasionally fall
-into a 100ms sleep when the CPU idle loop thread marked the CPU state
-to DEAD too slowly.
+>
+> [1] Intel processors take from 200 thousand cycles to several million
+>     cycles per core to sucessfully apply a microcode update.  Verified
+>     using get_cycles() right before and right after the WRMSR 0x79.
+>     Variance was really high, about 10%.  My limited testing matched what
+>     has been previously reported by Ben Hawkes.
+>
+> --
+>   "One disk to rule them all, One disk to find them. One disk to bring
+>   them all and in the darkness grind them. In the Land of Redmond
+>   where the shadows lie." -- The Silicon Valley Tarot
+>   Henrique Holschuh
 
-What native_cpu_die() does is that it polls the CPU state and waits
-for 100ms if CPU state hasn't been marked to DEAD. The 100ms sleep
-doesn't make sense and is purely historic.
 
-To avoid such long sleeping, this patch adds a 'struct completion'
-to each CPU, waits for the completion in native_cpu_die() and wakes
-up the completion when the CPU state is marked to DEAD.
 
-Tested on an Intel Xeon server with 48 cores, Ivybridge and on
-Haswell laptops. The CPU offlining cost on these machines is
-reduced from more than 100ms to less than 5ms. The system
-suspend time is reduced by 2.3s on the servers.
-
-Borislav and Prarit also helped to test the patch on an AMD
-machine and a few systems of various sizes and configurations
-(multi-socket, single-socket, no hyper threading, etc.). No
-issues were seen.
-
-Tested-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: srostedt@redhat.com
-Cc: toshi.kani@hp.com
-Cc: imammedo@redhat.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409039025-32310-1-git-send-email-tianyu.lan@intel.com
-[ Improved a few minor details in the code, cleaned up the changelog. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/smpboot.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 2d872e0..fdbc5fc 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -102,6 +102,8 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
- EXPORT_PER_CPU_SYMBOL(cpu_info);
- 
-+static DEFINE_PER_CPU(struct completion, die_complete);
-+
- atomic_t init_deasserted;
- 
- /*
-@@ -1323,26 +1325,24 @@ int native_cpu_disable(void)
- 		return ret;
- 
- 	clear_local_APIC();
--
-+	init_completion(&per_cpu(die_complete, smp_processor_id()));
- 	cpu_disable_common();
-+
- 	return 0;
- }
- 
- void native_cpu_die(unsigned int cpu)
- {
- 	/* We don't do anything here: idle task is faking death itself. */
--	unsigned int i;
-+	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
- 
--	for (i = 0; i < 10; i++) {
--		/* They ack this in play_dead by setting CPU_DEAD */
--		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
--			if (system_state == SYSTEM_RUNNING)
--				pr_info("CPU %u is now offline\n", cpu);
--			return;
--		}
--		msleep(100);
-+	/* They ack this in play_dead() by setting CPU_DEAD */
-+	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
-+		if (system_state == SYSTEM_RUNNING)
-+			pr_info("CPU %u is now offline\n", cpu);
-+	} else {
-+		pr_err("CPU %u didn't die...\n", cpu);
- 	}
--	pr_err("CPU %u didn't die...\n", cpu);
- }
- 
- void play_dead_common(void)
-@@ -1354,6 +1354,7 @@ void play_dead_common(void)
- 	mb();
- 	/* Ack it */
- 	__this_cpu_write(cpu_state, CPU_DEAD);
-+	complete(&per_cpu(die_complete, smp_processor_id()));
- 
- 	/*
- 	 * With physical CPU hotplug, we should halt the cpu
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
