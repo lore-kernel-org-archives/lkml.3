@@ -1,110 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaIXDyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 23:54:10 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:40142 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaIXDyH (ORCPT
+	id S1751371AbaIXEKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 00:10:38 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:59056 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaIXEKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 23:54:07 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-85-5422405d8030
-From: Kukjin Kim <kgene@kernel.org>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Mike Turquette'" <mturquette@linaro.org>
-References: <20140924110836.209bc8e2@canb.auug.org.au>
-In-reply-to: 
-Subject: RE: linux-next: build failure after merge of the samsung tree
-Date: Wed, 24 Sep 2014 12:54:05 +0900
-Message-id: <010701cfd7ab$2f7acc30$8e706490$@kernel.org>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHv9Y7pls0ew4DeOAaPdZa0uXmLbJvPXEaQgAAOZVA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd1YB6UQg9fz5C02zljPanH0d4HF
-	5V1z2CwOLmxjtHg64SKbxda9V9kd2Dwab9xg8/j7/DqLx51re9g8+rasYvT4vEkugDWKyyYl
-	NSezLLVI3y6BK6P/+RnWgnaeinfnWxkbGBdxdjFycEgImEj0/azoYuQEMsUkLtxbz9bFyMUh
-	JLCMUWLavdssEAkTiUern7NAJKYzSjy/eZMVwvnLKPHtWA8byCQ2AWWJxiZ9kAZhAS2JhVua
-	wJpFBHQl+v7NZwKpZxZ4xCixb00zK0i9kICZRPfKapAaTgEeiXV/Opkhet0kHv9fB9bLIqAq
-	sXzWeTYQm1fAQmLO4R52CFtQ4sfke2A1zEC7Nm9rYoWw5SU2r3nLDHG0gsSOs68ZIW6wkvi2
-	eiYbRI2IxL4X7xghat6yS6z4ZQGxS0Di2+RDLJBAkZXYdABqjKTEwRU3WCYwSs5CsnkWks2z
-	kGyehWTDAkaWVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxghcTxxB+P9A9aHGAU4GJV4eCeI
-	K4UIsSaWFVfmHmI0BbpoIrOUaHI+MFnklcQbGpsZWZiamBobmVuaKYnz6kj/DBYSSE8sSc1O
-	TS1ILYovKs1JLT7EyMTBKdXAuOqn3O1JmzIur992tFCcaaPyMRe2FRzpV4sEFy3Ncvj2U5ux
-	z/6C4onrPUEWu7xbFr34pmJa2H0vb6LkExszWYEbycstNCZP3yd+zq69PONPkoEKQ7NAzq33
-	cq3nFrM+ftG6alaZ5ebjPqVhl3yb/x/t31hgcU3i5mKphTzFcg9MDSxfzAvlUmIpzkg01GIu
-	Kk4EAAx2p+jeAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jQd1YB6UQg0PTpC02zljPanH0d4HF
-	5V1z2CwOLmxjtHg64SKbxda9V9kd2Dwab9xg8/j7/DqLx51re9g8+rasYvT4vEkugDWqgdEm
-	IzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB+gCJYWyxJxS
-	oFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWNG//MzrAXtPBXvzrcyNjAu4uxi5OSQ
-	EDCReLT6OQuELSZx4d56ti5GLg4hgemMEs9v3mSFcP4ySnw71gOU4eBgE1CWaGzSB2kQFtCS
-	WLilCaxZREBXou/ffCaQemaBR4wS+9Y0s4LUCwmYSXSvrAap4RTgkVj3p5MZotdN4vH/dWC9
-	LAKqEstnnWcDsXkFLCTmHO5hh7AFJX5MvgdWwwy0a/O2JlYIW15i85q3zBBHK0jsOPuaEeIG
-	K4lvq2eyQdSISOx78Y5xAqPwLCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L
-	10vOz93ECE4Uz6R3MK5qsDjEKMDBqMTDO0FcKUSINbGsuDL3EKMEB7OSCO8+VaAQb0piZVVq
-	UX58UWlOavEhRlOgTycyS4km5wOTWF5JvKGxiZmRpZGZhZGJubmSOO/BVutAIYH0xJLU7NTU
-	gtQimD4mDk6pBkbTnTJ/ti5w55mw8Qi76w+ejFlPXJs7mZvvli1eUPbAMeh/E2etQ90V04cR
-	89mf3P0jmGR2l8fjQTvvvIKJPgnCLzYwOlyaWyQ/3f3Jrc97d3kn/WgsZujclrK9meV5o1WX
-	eO+Hi++Nl3wPX3rrjVyDwlMfv8MZSndExdqfT51/NPLtL/7gL3JKLMUZiYZazEXFiQBSrv6Q
-	KgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 24 Sep 2014 00:10:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
+References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
+Date: Tue, 23 Sep 2014 21:10:35 -0700
+X-Google-Sender-Auth: n-ejzIHdXadXm88_RA5NpqDGDLQ
+Message-ID: <CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
+ characteristics of SCL
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin Kim wrote:
-> 
-> Stephen Rothwell wrote:
-> >
-> > Hi Kukjin,
-> >
-> Hi Stephen,
-> 
-> > After merging the samsung tree, today's linux-next build (arm multi_v7_defconfig)
-> > failed like this:
-> >
-> > arch/arm/boot/dts/exynos5250-snow.dts:13:46: fatal error: dt-bindings/clock/maxim,max77686.h: No
-> such
-> > file or directory
-> >  #include <dt-bindings/clock/maxim,max77686.h>
-> >                                               ^
-> >
-> + Mike
-> 
-> Hmm... I think, inclusion of the header file should be included in Mike's clk
-> tree...What's wrong?
-> 
-Just note, I've merged Mike's clk-next into my -next tree.
+Addy,
 
-> > Caused by commit c04c92ed5614 ("ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow").
-> >
-> > In file included from arch/arm/mach-tegra/cpuidle-tegra114.c:17:0:
-> > arch/arm/mach-tegra/cpuidle-tegra114.c: In function 'tegra114_idle_power_down':
-> > arch/arm/include/asm/firmware.h:64:24: error: too few arguments to function 'firmware_ops->do_idle'
-> >   ((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
-> >                         ^
-> > arch/arm/mach-tegra/cpuidle-tegra114.c:52:6: note: in expansion of macro 'call_firmware_op'
-> >   if (call_firmware_op(do_idle) == -ENOSYS)
-> >       ^
-> >
-> > Caused by commit f5217f3b9332 ("ARM: EXYNOS: add AFTR mode support to
-> > firmware do_idle method").
-> 
-> OK, I'll revert it firstly. Thanks.
-> 
-Reverted just now.
+On Tue, Sep 23, 2014 at 6:55 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+> As show in I2C specification:
+> - Standard-mode:
+>   the minimum HIGH period of the scl clock is 4.0us
+>   the minimum LOW period of the scl clock is 4.7us
+> - Fast-mode:
+>   the minimum HIGH period of the scl clock is 0.6us
+>   the minimum LOW period of the scl clock is 1.3us
+> - Fast-mode plus:
+>   the minimum HIGH period of the scl clock is 0.26us
+>   the minimum LOW period of the scl clock is 0.5us
+> - HS-mode(<1.7MHz):
+>   the minimum HIGH period of the scl clock is 0.12us
+>   the minimum LOW period of the scl clock is 0.32us
+> - HS-mode(<3.4MHz):
+>   the minimum HIGH period of the scl clock is 0.06us
+>   the minimum LOW period of the scl clock is 0.16us
+>
+> I have measured i2c SCL waveforms in fast-mode by oscilloscope
+> on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
+> It is so critical that we must adjust LOW division to increase
+> the LOW period of the scl clock.
+>
+> Thanks Doug for the suggestion about division formula.
+>
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+>  drivers/i2c/busses/i2c-rk3x.c | 79 +++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 72 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+> index 93cfc83..49d67b7 100644
+> --- a/drivers/i2c/busses/i2c-rk3x.c
+> +++ b/drivers/i2c/busses/i2c-rk3x.c
+> @@ -428,18 +428,83 @@ out:
+>         return IRQ_HANDLED;
+>  }
+>
+> +static void rk3x_i2c_get_ratios(unsigned long scl_rate,
+> +                               unsigned long *high_ratio,
+> +                               unsigned long *low_ratio)
+> +{
+> +       /* As show in I2C specification:
+> +        * - Standard-mode:
+> +        *   the minimum HIGH period of the scl clock is 4.0us
+> +        *   the minimum LOW period of the scl clock is 4.7us
+> +        * - Fast-mode:
+> +        *   the minimum HIGH period of the scl clock is 0.6us
+> +        *   the minimum LOW period of the scl clock is 1.3us
+> +        * - Fast-mode plus:
+> +        *   the minimum HIGH period of the scl clock is 0.26us
+> +        *   the minimum LOW period of the scl clock is 0.5us
+> +        * - HS-mode(<1.7MHz):
+> +        *   the minimum HIGH period of the scl clock is 0.12us
+> +        *   the minimum LOW period of the scl clock is 0.32us
+> +        * - HS-mode(<3.4MHz):
+> +        *   the minimum HIGH period of the scl clock is 0.06us
+> +        *   the minimum LOW period of the scl clock is 0.16us
 
-> >
-> > I have used the samsung tree from next-20140923 for today.
-> 
-> OK.
-> 
-> - Kukjin
+Is the rest of the driver ready for Fast-mode plus or HS mode?  If not
+then maybe leave those off?  If nothing else the commit message should
+indicate that this is just being forward thinking.
 
+> +        */
+> +       if (scl_rate <= 100000) {
+> +               *high_ratio = 40;
+> +               *low_ratio = 47;
+> +       } else if (scl_rate <= 400000) {
+> +               *high_ratio = 6;
+> +               *low_ratio = 13;
+> +       } else if (scl_rate <= 1000000) {
+> +               *high_ratio = 26;
+> +               *low_ratio = 50;
+> +       } else if (scl_rate <= 1700000) {
+> +               *high_ratio = 12;
+> +               *low_ratio = 32;
+> +       } else {
+> +               *high_ratio = 6;
+> +               *low_ratio = 16;
+
+Since it's only the ratio of high to low that matters, you can combine
+the last two.  12 : 32 == 6 : 16
+
+> +       }
+> +}
+> +
+> +static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
+> +                              unsigned long *divh, unsigned long *divl)
+> +{
+> +       unsigned long high_ratio, low_ratio;
+> +       unsigned long ratio_sum;
+> +
+> +       rk3x_i2c_get_ratios(scl_rate, &high_ratio, &low_ratio);
+> +       ratio_sum = high_ratio + low_ratio;
+> +
+> +       /* T_high = T_clk * (divh + 1) * 8
+> +        * T_low = T_clk * (divl + 1) * 8
+> +        * T_scl = T_high + T_low
+> +        * T_scl = 1 / scl_rate
+> +        * T_clk = 1 / i2c_rate
+> +        * T_high : T_low = high_ratio : low_ratio
+> +        * ratio_sum = high_ratio + low_ratio
+> +        *
+> +        * so:
+> +        * divh = (i2c_rate * high_ratio) / (scl_rate * ratio_sum * 8) - 1
+> +        * divl = (i2c_rate * low_ratio) / (scl_rate * ratio_sum * 8) - 1
+> +        */
+> +       *divh = DIV_ROUND_UP(i2c_rate * high_ratio, scl_rate * ratio_sum * 8);
+> +       if (*divh)
+> +               *divh = *divh - 1;
+> +
+> +       *divl = DIV_ROUND_UP(i2c_rate * low_ratio, scl_rate * ratio_sum * 8);
+> +       if (*divl)
+> +               *divl = *divl - 1;
+
+When I sent you the sample formulas I purposely did it differently
+than this.  Any reason you changed from my formulas?
+
+  div_low = DIV_ROUND_UP(clk_rate * low_ratio, scl_rate * 8 * ratio_sum)
+  div_high = DIV_ROUND_UP(clk_rate, scl_rate * 8) - div_low
+
+  div_low -= 1
+  if div_high:
+    div_high -= 1
+
+Why did I do it that way?
+
+* Assuming i2c_rate and the ratio is non-zero then you can assume that
+DIV_ROUND_UP gives a value that is >= 1.  No need to test the result
+against 0.
+
+* (I think) you'll get a more accurate clock rate by subtracting.
+
+Try running your formula vs. my formula with a ratio of 13 : 6, an i2c
+rate of 12800000, and an scl rate of 400000
+
+Mine will get:
+  Req = 400000, act = 400000, 1.88 us low, 0.62 us high, low/high = 3.00
+
+Yours will get:
+  Req = 400000, act = 320000, 1.88 us low, 1.25 us high, low/high = 1.50
+
+
+> +}
+> +
+>  static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
+>  {
+>         unsigned long i2c_rate = clk_get_rate(i2c->clk);
+> -       unsigned int div;
+> +       unsigned long divh, divl;
+>
+> -       /* set DIV = DIVH = DIVL
+> -        * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
+> -        *          = (clk rate) / (16 * (DIV + 1))
+> -        */
+> -       div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
+> +       rk3x_i2c_calc_divs(i2c_rate, scl_rate, &divh, &divl);
+>
+> -       i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
+> +       i2c_writel(i2c, (divh << 16) | (divl & 0xffff), REG_CLKDIV);
+>  }
+>
+>  /**
+> --
+> 1.8.3.2
+>
+>
