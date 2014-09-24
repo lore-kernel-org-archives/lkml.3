@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbaIXNMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:12:38 -0400
-Received: from submit2.sa.ew.hu ([212.108.200.72]:38606 "EHLO submit2.sa.ew.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbaIXNMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:12:36 -0400
-Message-ID: <5422C33F.400@denx.de>
-Date: Wed, 24 Sep 2014 15:12:31 +0200
-From: Heiko Schocher <hs@denx.de>
-Reply-To: hs@denx.de
-Organization: DENX Software Engineering
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	id S1753664AbaIXNNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:13:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57018 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753531AbaIXNNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:13:08 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>,
+        linux-pm@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [REPOST PATCH v4 1/2] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
+Date: Wed, 24 Sep 2014 15:32:56 +0200
+Message-ID: <1960419.9oqpSxvdev@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAAObsKD1R_s2JkUgS+W+HBZe2hBTs=Co+d6o63YkmDMHXJCf=g@mail.gmail.com>
+References: <1409759373-22696-1-git-send-email-tomeu.vizoso@collabora.com> <3009588.qOkltIoajF@vostro.rjw.lan> <CAAObsKD1R_s2JkUgS+W+HBZe2hBTs=Co+d6o63YkmDMHXJCf=g@mail.gmail.com>
 MIME-Version: 1.0
-To: Lars Melin <larsm17@gmail.com>
-CC: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Macpaul Lin <macpaul@gmail.com>
-Subject: Re: [PATCH] usb: gadget: f_rndis: fix usb_interface_descriptor for
- rndis
-References: <1411541339-32400-1-git-send-email-hs@denx.de> <5422B83A.8030406@gmail.com>
-In-Reply-To: <5422B83A.8030406@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-PMX-Spam: Gauge=XXIIIIIIII, Probability=28%, Report='
- SXL_IP_DYNAMIC 3, MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1100_1199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, RDNS_GENERIC_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __C230066_P3_2 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FORWARDED_MSG 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __IN_REP_TO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __STOCK_SYMBOL1 0, __STOCK_SYMBOL_X1 0, __SUBJ_ALPHA_END 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NS , __USER_AGENT 0'
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lars,
+On Wednesday, September 24, 2014 10:42:13 AM Tomeu Vizoso wrote:
+> On 14 September 2014 19:06, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Friday, September 12, 2014 11:11:25 AM Tomeu Vizoso wrote:
+> >> On 3 September 2014 17:49, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+> >> > Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
+> >> >
+> >> > It can be used by memory controllers to calculate the optimum clock frequency
+> >> > based on the bandwidth needs of the different memory clients.
+> >> >
+> >> > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> >> > Acked-by: Pavel Machek <pavel@ucw.cz>
+> >>
+> >> Hi Rafael,
+> >>
+> >> will you take this one for 3.18?
+> >
+> > Quite likely, but I'm traveling now, so I'll do that after I'm back home
+> > in a few days.  I'll write to you if there are any problems.
+> 
+> Don't want to be annoying, but thought I might ping you just in case
+> this fell through the cracks.
 
-Am 24.09.2014 14:25, schrieb Lars Melin:
-> On 2014-09-24 13:48, Heiko Schocher wrote:
->> use the values for RNDIS over Ethernet as defined in
->> http://www.usb.org/developers/defined_class
->> (search for RDNIS):
->>
->> - baseclass: 0xef (miscellaneous)
->> - subclass: 0x04
->> - protocol: 0x01
->>
-> That is usb class, it is not the same thing as communication device class.
->> --- a/include/uapi/linux/usb/cdc.h
->> +++ b/include/uapi/linux/usb/cdc.h
->> @@ -12,6 +12,7 @@
->> #include <linux/types.h>
->> #define USB_CDC_SUBCLASS_ACM 0x02
->> +#define USB_CDC_SUBCLASS_RNDIS 0x04
-> No, no, no.
-> There is no CDC_SUBCLASS_RNDIS and you can not define one over an already used cdc subclass number, 0x04 is Multi-Channel Control Model
+No, it didn't.
 
-Ah, ok, so I have to define this values in a new header file, as there
-is no current file for the USB_CLASS_MISC defines? Or is there a proper
-place for them?
+I'm wondering about patch [2/2], though.  I'm assuming that you'll push you
+later through the Tegra DRM driver, right?
 
-BTW: where do I find the "cdc subclass number, 0x04 is Multi-Channel
-Control Model" define?
-
-bye,
-Heiko
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
