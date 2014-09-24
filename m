@@ -1,137 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaIXG6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 02:58:09 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:61218 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaIXG6F (ORCPT
+	id S1752389AbaIXHBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:01:05 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:62388 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaIXHBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 02:58:05 -0400
-X-AuditID: cbfee68e-f79b46d000002b74-81-54226b791fd5
-Date: Wed, 24 Sep 2014 06:58:01 +0000 (GMT)
-From: Priya Bansal <p.bansal@samsung.com>
-Subject: [PATCH] NULL pointer dereference in ecryptfs (ecryptfs_setxattr)
-To: ecryptfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, p.bansal@samsung.com
-Reply-to: p.bansal@samsung.com
-MIME-version: 1.0
-X-MTR: 20140924063455530@p.bansal
-Msgkey: 20140924063455530@p.bansal
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20140924063455530@p.bansal
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <1630743052.107781411541880641.JavaMail.weblogic@epmlwas02d>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsWyRsSkVrcyWynE4PNGa4vLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJWxsfcFS8EN6YpZXb1MDYw/pLoYOTmEBJQlln7+yQxiSwiYSNy5
-	3swKYYtJXLi3nq2LkQuoZimjREv7IUaYoiute9khEnMYJb5vnw3WwSKgKnHp8y4gm4ODTUBL
-	4nmTL0hYWMBT4mT3GUaQehGBTkaJi409TBCb5STO7trDDmLzCghKnJz5hAVigaLEt5snWSDi
-	ShJ3F99lg4jLSSyZepkJwuaVmNH+lAUmPu3rGqgPpCXOz9rACPPB4u+PoeL8Esdu74DqFZCY
-	euYgI8idEgJqErNvBEOE+STWLHzLAlO+69RyZphV97fMhWqVkNja8gTsXWagM6d0P2SHsA0k
-	jiyaw4ruFV4BD4l1V2+ygvwuIdDKITHjyCQmSFgJSHybfIhlAqPiLCQ9s5DMnYVkLrKaBYws
-	qxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzECU8Ppf8/6djDePGB9iFGAg1GJh3eCuFKIEGti
-	WXFl7iFGU6DVE5mlRJPzgQkoryTe0NjMyMLUxNTYyNzSTEmcN0HqZ7CQQHpiSWp2ampBalF8
-	UWlOavEhRiYOTqkGxuIq4SYtbcNNU85dlnrY9uHW6ij+kCmO0x23Fq3mYhPXknrB/3HqRp78
-	n2ya3h/11WyNTs9b92Jxuo9Dypq9795cE1/u1+xoZCqrFlJd+Xrhjvh/szdukPqa3tI37cz2
-	6hn2t/Z8PlQ6u+Pi/5u5x3zuq0vcnXZTwrKz69Di0lmC1+c/nfQ8lkuJpTgj0VCLuag4EQC0
-	izUCCAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t/tPt3KbKUQg5O/dSwu75rD5sDo8XmT
-	XABjVJpNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrShuZGekYGeqZGeoWmslaGBgZEpUE1CWsbG
-	3hcsBTekK2Z19TI1MP6Q6mLk5BASUJZY+vknM4gtIWAicaV1LzuELSZx4d56ti5GLqCaOYwS
-	37fPZgVJsAioSlz6vAvI5uBgE9CSeN7kCxIWFvCUONl9hhGkXkSgk1HiYmMPE8QCOYmzu/aA
-	DeUVEJQ4OfMJC8QCRYlvN0+yQMSVJO4uvssGEZeTWDL1MhOEzSsxo/0pC0x82tc1UIdKS5yf
-	tYER5tDF3x9Dxfkljt3eAdUrIDH1zEFGkDslBNQkZt8IhgjzSaxZ+JYFpnzXqeXMMKvub5kL
-	1SohsbXlCdi7zEBnTul+yA5hG0gcWTSHFd0rvAIeEuuu3mSdwCgzC0lqFpL2WUjakdUsYGRZ
-	xSiaWpBcUJyUXmGsV5yYW1yal66XnJ+7iRGcbp4t3sH4/7z1IUYBDkYlHt4J4kohQqyJZcWV
-	uYcYJTiYlUR4LeKAQrwpiZVVqUX58UWlOanFhxhNgRE1kVlKNDkfmArzSuINjU3MTY1NLQwM
-	zc3NlMR5428lBQkJpCeWpGanphakFsH0MXFwSjUwsuzqmcyvH/96i/aiRQsWxuyWPt/mZ+uo
-	Md23rKCyzCKoIn1SoenVOfNi7u19d8RslvE8uwJTwYZ/6sHZR2PaFu+aIR9450/f0fzNU3uu
-	Fr4X/17Nt/jmxZt9rEb7DZ35/gsneZlsXrX7D9uxMPO2uzMKzp9PlVm15qjYxl9rn1xc0HNY
-	kM0iW4mlOCPRUIu5qDgRABCciWZNAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Wed, 24 Sep 2014 03:01:03 -0400
+Message-ID: <54226C26.1000605@redhat.com>
+Date: Wed, 24 Sep 2014 09:00:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: gleb@kernel.org, mtosatti@redhat.com, nadav.amit@gmail.com,
+        jan.kiszka@web.de, kvm@vger.kernel.org, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] kvm, mem-hotplug: Add arch specific mmu notifier
+ to handle apic access migration.
+References: <541FEC79.40209@redhat.com> <1411524563-17003-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1411524563-17003-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8O6wF2m010623
 
-This patch fixes the issue which was found in
- ecryptfs_setxattr(). Previously, while trying to create a file when ecryptfs
- is mounted over ext4 filesystem  with  encrypted view enabled, the kernel
- crashes. the reason being the function fsstack_copy_attr_all was trying to
- access dentry->d_inode which was null hence the kernel crashes with NULL
- pointer dereference. Now a check has been applied which prevents such
- condition.
+Il 24/09/2014 04:09, Tang Chen ha scritto:
+> Hi Paolo, 
+> 
+> I'm not sure if this patch is following your comment. Please review.
+> And all the other comments are followed. If this patch is OK, I'll 
+> send v8 soon.
+> 
+> Thanks.
+> 
+> We are handling "L1 and L2 share one apic access page" situation when migrating
+> apic access page. We should do some handling when migration happens in the
+> following situations:
+> 
+>    1) when L0 is running: Update L1's vmcs in the next L0->L1 entry and L2's
+>       vmcs in the next L1->L2 entry.
+> 
+>    2) when L1 is running: Force a L1->L0 exit, update L1's vmcs in the next
+>       L0->L1 entry and L2's vmcs in the next L1->L2 entry.
+> 
+>    3) when L2 is running: Force a L2->L0 exit, update L2's vmcs in the next
+>       L0->L2 entry and L1's vmcs in the next L2->L1 exit.
+> 
+> This patch force a L1->L0 exit or L2->L0 exit when shared apic access page is
+> migrated using mmu notifier. Since apic access page is only used on intel x86,
+> this is arch specific code.
+> ---
+>  arch/arm/include/asm/kvm_host.h     |  6 ++++++
+>  arch/arm64/include/asm/kvm_host.h   |  6 ++++++
+>  arch/ia64/include/asm/kvm_host.h    |  8 ++++++++
+>  arch/mips/include/asm/kvm_host.h    |  7 +++++++
+>  arch/powerpc/include/asm/kvm_host.h |  6 ++++++
+>  arch/s390/include/asm/kvm_host.h    |  9 +++++++++
+>  arch/x86/include/asm/kvm_host.h     |  2 ++
+>  arch/x86/kvm/x86.c                  | 11 +++++++++++
+>  virt/kvm/kvm_main.c                 |  3 +++
+>  9 files changed, 58 insertions(+)
+> 
+> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+> index 6dfb404..79bbf7d 100644
+> --- a/arch/arm/include/asm/kvm_host.h
+> +++ b/arch/arm/include/asm/kvm_host.h
+> @@ -182,6 +182,12 @@ static inline int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
+>  	return 0;
+>  }
+>  
+> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +							 unsigned long address)
+> +{
+> +	return;
+> +}
+> +
+>  struct kvm_vcpu *kvm_arm_get_running_vcpu(void);
+>  struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
+>  
+> diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+> index e10c45a..ee89fad 100644
+> --- a/arch/arm64/include/asm/kvm_host.h
+> +++ b/arch/arm64/include/asm/kvm_host.h
+> @@ -192,6 +192,12 @@ static inline int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
+>  	return 0;
+>  }
+>  
+> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +							 unsigned long address)
+> +{
+> +	return;
+> +}
+> +
+>  struct kvm_vcpu *kvm_arm_get_running_vcpu(void);
+>  struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
+>  
+> diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
+> index db95f57..326ac55 100644
+> --- a/arch/ia64/include/asm/kvm_host.h
+> +++ b/arch/ia64/include/asm/kvm_host.h
+> @@ -574,6 +574,14 @@ static inline struct kvm_pt_regs *vcpu_regs(struct kvm_vcpu *v)
+>  	return (struct kvm_pt_regs *) ((unsigned long) v + KVM_STK_OFFSET) - 1;
+>  }
+>  
+> +#ifdef KVM_ARCH_WANT_MMU_NOTIFIER
+> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +							 unsigned long address)
+> +{
+> +	return;
+> +}
+> +#endif /* KVM_ARCH_WANT_MMU_NOTIFIER */
+> +
+>  typedef int kvm_vmm_entry(void);
+>  typedef void kvm_tramp_entry(union context *host, union context *guest);
+>  
+> diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
+> index 7a3fc67..c392705 100644
+> --- a/arch/mips/include/asm/kvm_host.h
+> +++ b/arch/mips/include/asm/kvm_host.h
+> @@ -767,5 +767,12 @@ extern int kvm_mips_trans_mtc0(uint32_t inst, uint32_t *opc,
+>  extern void kvm_mips_dump_stats(struct kvm_vcpu *vcpu);
+>  extern unsigned long kvm_mips_get_ramsize(struct kvm *kvm);
+>  
+> +#ifdef KVM_ARCH_WANT_MMU_NOTIFIER
+> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +							 unsigned long address)
+> +{
+> +	return;
+> +}
+> +#endif /* KVM_ARCH_WANT_MMU_NOTIFIER */
+>  
+>  #endif /* __MIPS_KVM_HOST_H__ */
+> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+> index 98d9dd5..c16a573 100644
+> --- a/arch/powerpc/include/asm/kvm_host.h
+> +++ b/arch/powerpc/include/asm/kvm_host.h
+> @@ -61,6 +61,12 @@ extern int kvm_age_hva(struct kvm *kvm, unsigned long hva);
+>  extern int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+>  extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+>  
+> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +							 unsigned long address)
+> +{
+> +	return;
+> +}
+> +
+>  #define HPTEG_CACHE_NUM			(1 << 15)
+>  #define HPTEG_HASH_BITS_PTE		13
+>  #define HPTEG_HASH_BITS_PTE_LONG	12
+> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
+> index 773bef7..693290f 100644
+> --- a/arch/s390/include/asm/kvm_host.h
+> +++ b/arch/s390/include/asm/kvm_host.h
+> @@ -450,4 +450,13 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  
+>  extern int sie64a(struct kvm_s390_sie_block *, u64 *);
+>  extern char sie_exit;
+> +
+> +#ifdef KVM_ARCH_WANT_MMU_NOTIFIER
+> +static inline void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +							 unsigned long address)
+> +{
+> +	return;
+> +}
+> +#endif /* KVM_ARCH_WANT_MMU_NOTIFIER */
+> +
+>  #endif
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 66480fd..408b944 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -1047,6 +1047,8 @@ int kvm_arch_interrupt_allowed(struct kvm_vcpu *vcpu);
+>  int kvm_cpu_get_interrupt(struct kvm_vcpu *v);
+>  void kvm_vcpu_reset(struct kvm_vcpu *vcpu);
+>  void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu);
+> +void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +					   unsigned long address);
+>  
+>  void kvm_define_shared_msr(unsigned index, u32 msr);
+>  void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c064ca6..e042ef6 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6011,6 +6011,17 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
+>  
+> +void kvm_arch_mmu_notifier_invalidate_page(struct kvm *kvm,
+> +					   unsigned long address)
+> +{
+> +	/*
+> +	 * The physical address of apic access page is stored in VMCS.
+> +	 * Update it when it becomes invalid.
+> +	 */
+> +	if (address == gfn_to_hva(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT))
+> +		kvm_make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
+> +}
+> +
+>  /*
+>   * Returns 1 to let __vcpu_run() continue the guest execution loop without
+>   * exiting to the userspace.  Otherwise, the value will be returned to the
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 0f8b6f6..5427973d 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -295,6 +295,9 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
+>  		kvm_flush_remote_tlbs(kvm);
+>  
+>  	spin_unlock(&kvm->mmu_lock);
+> +
+> +	kvm_arch_mmu_notifier_invalidate_page(kvm, address);
+> +
+>  	srcu_read_unlock(&kvm->srcu, idx);
+>  }
+>  
+> 
 
->From 74856445756aba18f98aa5b98ad46e7d98f54737 Mon Sep 17 00:00:00 2001
-From: Priya Bansal <p.bansal@samsung.com>
-Date: Fri, 29 Aug 2014 10:27:27 +0530
-Subject: [PATCH] Fix in ecryptfs_setxattr for NULL check before calling
- fsstack_copy_attr_all. This patch fixes the issue which was found in
- ecryptfs_setxattr(). Previously, while trying to create a file when ecryptfs
- is mounted over ext4 filesystem  with  encrypted view enabled, the kernel
- crashes. the reason being the function fsstack_copy_attr_all was trying to
- access dentry->d_inode which was null hence the kernel crashes with NULL
- pointer dereference. Now a check has been applied which prevents such
- condition.
-Signed-off-by: Priya Bansal <p.bansal@samsung.com>
----
- linux-3.16.1/fs/ecryptfs/inode.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-diff --git a/linux-3.16.1/fs/ecryptfs/inode.c b/linux-3.16.1/fs/ecryptfs/inode.c
-index d4a9431..7da03e5 100644
---- a/linux-3.16.1/fs/ecryptfs/inode.c
-+++ b/linux-3.16.1/fs/ecryptfs/inode.c
-@@ -1031,6 +1031,8 @@ ecryptfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- {
-  int rc = 0;
-  struct dentry *lower_dentry;
-+ struct ecryptfs_mount_crypt_stat *mount_crypt_stat =
-+  &ecryptfs_superblock_to_private(dentry->d_sb)->mount_crypt_stat;
- 
-  lower_dentry = ecryptfs_dentry_to_lower(dentry);
-  if (!lower_dentry->d_inode->i_op->setxattr) {
-@@ -1039,8 +1041,20 @@ ecryptfs_setxattr(struct dentry *dentry, const char *name, const void *value,
-  }
- 
-  rc = vfs_setxattr(lower_dentry, name, value, size, flags);
-- if (!rc)
--  fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
-+ if (!rc) {
-+  if (dentry->d_inode == NULL) {
-+   if (mount_crypt_stat->flags
-+     & ECRYPTFS_ENCRYPTED_VIEW_ENABLED)
-+    rc = -EPERM;
-+   else if (mount_crypt_stat->flags
-+     & ECRYPTFS_XATTR_METADATA_ENABLED)
-+    goto out;
-+  } else {
-+   fsstack_copy_attr_all(dentry->d_inode,
-+     lower_dentry->d_inode);
-+  }
-+ }
-+
- out:
-  return rc;
- }
--- 
-1.8.3.2
+Yes, this is it.
 
-If you need any other details regarding this contribution, please contact me.  
-
-Thanks & Regards 
-Priya Bansal. 
-E-mail: p.bansal@samsung.com
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Paolo
