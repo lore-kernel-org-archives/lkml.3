@@ -1,167 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaIXRNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:13:48 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:47724 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753328AbaIXRNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:13:46 -0400
-Date: Wed, 24 Sep 2014 11:13:38 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 12/12] tpm: TPM2 sysfs attributes
-Message-ID: <20140924171338.GG8898@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754317AbaIXROa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:14:30 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:52594 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaIXRO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 13:14:29 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes-non-critical for 3.18 #1
+Date: Wed, 24 Sep 2014 19:14:25 +0200
+Message-ID: <1411578865-27232-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411549562-24242-13-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:06:02PM +0300, Jarkko Sakkinen wrote:
-> Added tpm2-sysfs.c that implements sysfs attributes for a TPM2
-> device.
+Arnd, Olof, Kevin,
 
-You need to document in Documentation every new sysfs that is added.
+If you can still pull thing before 3.18-rc1, here are some non-critical fixes.
+Otherwise, they certainly can be applied during 3.18-rc phase.
 
-The existing ones are not documented :(
+Thanks, best regards,
 
-> +++ b/drivers/char/tpm/tpm-interface.c
-> @@ -899,6 +899,7 @@ void tpm_remove_hardware(struct device *dev)
->  
->  	tpm_chip_unregister(chip);
->  
-> +
->  	/* write it this way to be explicit (chip->dev == dev) */
->  	put_device(chip->dev);
->  }
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-Hunk does not belong in this patch
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-> diff --git a/drivers/char/tpm/tpm2-commands.c b/drivers/char/tpm/tpm2-commands.c
-> index a21dfd5..6365087 100644
-> +++ b/drivers/char/tpm/tpm2-commands.c
-> @@ -195,7 +195,7 @@ ssize_t tpm2_get_tpm_pt(struct device *dev, u32 property_id,  u32* value,
->  	cmd.header.in = tpm2_get_tpm_pt_header;
->  	cmd.params.tpm2_get_tpm_pt_in.cap_id =
->  		cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
-> -	cmd.params.tpm2_get_tpm_pt_in.property_id = property_id;
-> +	cmd.params.tpm2_get_tpm_pt_in.property_id = cpu_to_be32(property_id);
->  	cmd.params.tpm2_get_tpm_pt_in.property_cnt = cpu_to_be32(1);
+are available in the git repository at:
 
-Hunk does not belong in this patch
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes-non-critical
 
-> +static ssize_t pcrs_show(struct device *dev, struct device_attribute *attr,
-> +			 char *buf)
-> +{
+for you to fetch changes up to cfa1950e6c6b72251e80adc736af3c3d2907ab0e:
 
-The pcrs file never conformed to the sysfs rules, if TPM2 is getting a
-whole new file set, I wouldn't mind seeing it not include the
-non-conformant ones. What do you think?
+  ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks (2014-09-24 18:00:42 +0200)
 
-> +static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
-> +			 char *buf)
-> +{
+----------------------------------------------------------------
+Fixes non critical for AT91:
+- mmc pinmux for at91sam9263 was missing
+- little fix of the old clock implementation
 
-Ditto.. The manfacturer number should probably be its own file
+----------------------------------------------------------------
+Andreas Henriksson (1):
+      ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
 
-> +static ssize_t durations_show(struct device *dev, struct device_attribute *attr,
-> +			      char *buf)
-> +{
-> +	struct tpm_chip *chip = dev_get_drvdata(dev);
-> +
-> +	if (chip->vendor.duration[TPM_LONG] == 0)
-> +		return 0;
-> +
-> +	return sprintf(buf, "%d %d %d [%s]\n",
-> +		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-> +		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
-> +		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
-> +		       chip->vendor.duration_adjusted
-> +		       ? "adjusted" : "original");
-> +}
-> +static DEVICE_ATTR_RO(durations);
+Ludovic Desroches (1):
+      ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks
 
-Seem useless since the durations are constant, drop it?
+ arch/arm/boot/dts/at91sam9263.dtsi | 2 ++
+ arch/arm/mach-at91/clock.c         | 1 +
+ 2 files changed, 3 insertions(+)
 
-> +static ssize_t timeouts_show(struct device *dev, struct device_attribute *attr,
-> +			     char *buf)
-> +{
-> +	struct tpm_chip *chip = dev_get_drvdata(dev);
-> +
-> +	return sprintf(buf, "%d %d %d %d [%s]\n",
-> +		       jiffies_to_usecs(chip->vendor.timeout_a),
-> +		       jiffies_to_usecs(chip->vendor.timeout_b),
-> +		       jiffies_to_usecs(chip->vendor.timeout_c),
-> +		       jiffies_to_usecs(chip->vendor.timeout_d),
-> +		       chip->vendor.timeout_adjusted
-> +		       ? "adjusted" : "original");
-> +}
-> +static DEVICE_ATTR_RO(timeouts);
-
-Ditto
-
-> +static ssize_t version_show(struct device *dev, struct device_attribute *attr,
-> +			   char *buf)
-> +{
-> +	char *str = buf;
-> +
-> +	str += sprintf(str, "2.0\n");
-> +
-> +	return str - buf;
-> +}
-> +
-> +static DEVICE_ATTR_RO(version);
-> +
-> +
-> +static ssize_t tpm2_show(struct device *dev, struct device_attribute *attr,
-> +			 char *buf)
-> +{
-> +	struct tpm_chip *chip = dev_get_drvdata(dev);
-> +
-> +	return sprintf(buf, "%d\n", chip->tpm2);
-> +}
-> +static DEVICE_ATTR_RO(tpm2);
-
-Two things for the same report? Drop one?
-
-Also, I think some thought is needed for the char interface - some
-kind of ioctl to enter TPM2 mode and EINVAL access until that is done?
-
-Finally, this is in the wrong place in sysfs, I suspect it should be
-attached to the char device node, not the platform device node? We
-should at least investigate this...
-
-> +struct tpm2_permanent {
-> +	unsigned int owner_auth_set		: 1;
-> +	unsigned int endorsement_auth_set	: 1;
-> +	unsigned int lockout_auth_set		: 1;
-> +	unsigned int reserved1			: 5;
-> +	unsigned int disable_clear		: 1;
-> +	unsigned int in_lockout			: 1;
-> +	unsigned int tpm_generated_eps		: 1;
-> +	unsigned int reserved2			: 21;
-> +};
-> +
-> +struct tpm2_startup_clear {
-> +	unsigned int ph_enable			: 1;
-> +	unsigned int sh_enable			: 1;
-> +	unsigned int eh_enable			: 1;
-> +	unsigned int ph_enable_nv		: 1;
-> +	unsigned int reserved			: 27;
-> +	unsigned int orderly			: 1;
-> +};
-
-This idea is not portable, you cannot use bitfields to index bits in a
-word like this. Please use constants defined with BIT(xx)
-
-Next posting can you include a github link? Thanks
-
-Jason
+-- 
+Nicolas Ferre
