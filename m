@@ -1,257 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaIXRxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:53:38 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41730 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164AbaIXRxg convert rfc822-to-8bit (ORCPT
+	id S1754298AbaIXRyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:54:14 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40730 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932AbaIXRyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:53:36 -0400
-Date: Wed, 24 Sep 2014 18:53:31 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Robert Richter <rrichter@cavium.com>
-Subject: Re: [PATCH v12 09/12] OF: PCI: Add support for parsing PCI host
- bridge resources from DT
-Message-ID: <20140924175330.GI1994@e106497-lin.cambridge.arm.com>
-References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
- <1411498874-9864-10-git-send-email-Liviu.Dudau@arm.com>
- <20140924164304.GF1994@e106497-lin.cambridge.arm.com>
- <20140924173109.GA20416@google.com>
+	Wed, 24 Sep 2014 13:54:12 -0400
+Date: Wed, 24 Sep 2014 19:54:10 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, subhransu.s.prusty@intel.com,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 01/27] PM: Add helper
+ pm_runtime_last_busy_and_autosuspend()
+Message-ID: <20140924175410.GC1231@amd>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+ <1411575342-31048-2-git-send-email-vinod.koul@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140924173109.GA20416@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 24 Sep 2014 17:53:32.0275 (UTC) FILETIME=[74896C30:01CFD820]
-X-MC-Unique: 114092418533400701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1411575342-31048-2-git-send-email-vinod.koul@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 06:31:09PM +0100, Bjorn Helgaas wrote:
-> On Wed, Sep 24, 2014 at 05:43:04PM +0100, Liviu Dudau wrote:
-> > Provide a function to parse the PCI DT ranges that can be used to
-> > create a pci_host_bridge structure together with its associated
-> > bus.
-> > 
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Cc: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > [make io_base parameter optional]
-> > Signed-off-by: Robert Richter <rrichter@cavium.com>
-> > ---
-> > Hi Bjorn,
-> > 
-> > I have fixed the compilation error that this patch was triggering. I
-> > have validated that the patch applies to your pci/host-generic branch
-> > as well as to my series.
+On Wed 2014-09-24 21:44:51, Vinod Koul wrote:
+> From: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
 > 
-> I applied this to pci/host-generic along with the following patches and
-> pushed the branch, thanks!
+> pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
+> in quite a lot of places. Add a helper for these.
+> Also updated Documentation for this
 
-Thanks again and sorry for lack of thorough testing. I still haven't managed
-to get a cross compiler for sparc and as I don't run Ubuntu or debian the
-make.cross script doesn't work for me.
+With function name as long as the implementation... I'm not sure if
+this is good helper :-).
+									Pavel
 
-Best regards,
-Liviu
-
-> 
-> Bjorn
-> 
-> >  drivers/of/of_pci.c    | 117 +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/of_pci.h |   6 +++
-> >  2 files changed, 123 insertions(+)
-> > 
-> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> > index 82d172f..3cad1af 100644
-> > --- a/drivers/of/of_pci.c
-> > +++ b/drivers/of/of_pci.c
-> > @@ -1,7 +1,9 @@
-> >  #include <linux/kernel.h>
-> >  #include <linux/export.h>
-> >  #include <linux/of.h>
-> > +#include <linux/of_address.h>
-> >  #include <linux/of_pci.h>
-> > +#include <linux/slab.h>
-> >  
-> >  static inline int __of_pci_pci_compare(struct device_node *node,
-> >  				       unsigned int data)
-> > @@ -114,6 +116,121 @@ int of_get_pci_domain_nr(struct device_node *node)
-> >  }
-> >  EXPORT_SYMBOL_GPL(of_get_pci_domain_nr);
-> >  
-> > +#if defined(CONFIG_OF_ADDRESS)
-> > +/**
-> > + * of_pci_get_host_bridge_resources - Parse PCI host bridge resources from DT
-> > + * @dev: device node of the host bridge having the range property
-> > + * @busno: bus number associated with the bridge root bus
-> > + * @bus_max: maximum number of busses for this bridge
-> > + * @resources: list where the range of resources will be added after DT parsing
-> > + * @io_base: pointer to a variable that will contain on return the physical
-> > + * address for the start of the I/O range. Can be NULL if the caller doesn't
-> > + * expect IO ranges to be present in the device tree.
-> > + *
-> > + * It is the callers job to free the @resources list.
-> > + *
-> > + * This function will parse the "ranges" property of a PCI host bridge device
-> > + * node and setup the resource mapping based on its content. It is expected
-> > + * that the property conforms with the Power ePAPR document.
-> > + *
-> > + * It returns zero if the range parsing has been successful or a standard error
-> > + * value if it failed.
-> > + */
-> > +int of_pci_get_host_bridge_resources(struct device_node *dev,
-> > +			unsigned char busno, unsigned char bus_max,
-> > +			struct list_head *resources, resource_size_t *io_base)
-> > +{
-> > +	struct resource *res;
-> > +	struct resource *bus_range;
-> > +	struct of_pci_range range;
-> > +	struct of_pci_range_parser parser;
-> > +	char range_type[4];
-> > +	int err;
-> > +
-> > +	if (io_base)
-> > +		*io_base = (resource_size_t)OF_BAD_ADDR;
-> > +
-> > +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-> > +	if (!bus_range)
-> > +		return -ENOMEM;
-> > +
-> > +	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
-> > +
-> > +	err = of_pci_parse_bus_range(dev, bus_range);
-> > +	if (err) {
-> > +		bus_range->start = busno;
-> > +		bus_range->end = bus_max;
-> > +		bus_range->flags = IORESOURCE_BUS;
-> > +		pr_info("  No bus range found for %s, using %pR\n",
-> > +			dev->full_name, bus_range);
-> > +	} else {
-> > +		if (bus_range->end > bus_range->start + bus_max)
-> > +			bus_range->end = bus_range->start + bus_max;
-> > +	}
-> > +	pci_add_resource(resources, bus_range);
-> > +
-> > +	/* Check for ranges property */
-> > +	err = of_pci_range_parser_init(&parser, dev);
-> > +	if (err)
-> > +		goto parse_failed;
-> > +
-> > +	pr_debug("Parsing ranges property...\n");
-> > +	for_each_of_pci_range(&parser, &range) {
-> > +		/* Read next ranges element */
-> > +		if ((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO)
-> > +			snprintf(range_type, 4, " IO");
-> > +		else if ((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_MEM)
-> > +			snprintf(range_type, 4, "MEM");
-> > +		else
-> > +			snprintf(range_type, 4, "err");
-> > +		pr_info("  %s %#010llx..%#010llx -> %#010llx\n", range_type,
-> > +			range.cpu_addr, range.cpu_addr + range.size - 1,
-> > +			range.pci_addr);
-> > +
-> > +		/*
-> > +		 * If we failed translation or got a zero-sized region
-> > +		 * then skip this range
-> > +		 */
-> > +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
-> > +			continue;
-> > +
-> > +		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> > +		if (!res) {
-> > +			err = -ENOMEM;
-> > +			goto parse_failed;
-> > +		}
-> > +
-> > +		err = of_pci_range_to_resource(&range, dev, res);
-> > +		if (err)
-> > +			goto conversion_failed;
-> > +
-> > +		if (resource_type(res) == IORESOURCE_IO) {
-> > +			if (!io_base) {
-> > +				pr_err("I/O range found for %s. Please provide an io_base pointer to save CPU base address\n",
-> > +					dev->full_name);
-> > +				err = -EINVAL;
-> > +				goto conversion_failed;
-> > +			}
-> > +			if (*io_base != (resource_size_t)OF_BAD_ADDR)
-> > +				pr_warn("More than one I/O resource converted for %s. CPU base address for old range lost!\n",
-> > +					dev->full_name);
-> > +			*io_base = range.cpu_addr;
-> > +		}
-> > +
-> > +		pci_add_resource_offset(resources, res,	res->start - range.pci_addr);
-> > +	}
-> > +
-> > +	return 0;
-> > +
-> > +conversion_failed:
-> > +	kfree(res);
-> > +parse_failed:
-> > +	pci_free_resource_list(resources);
-> > +	return err;
-> > +}
-> > +EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
-> > +#endif /* CONFIG_OF_ADDRESS */
-> > +
-> >  #ifdef CONFIG_PCI_MSI
-> >  
-> >  static LIST_HEAD(of_pci_msi_chip_list);
-> > diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
-> > index 71062e9..1fd207e 100644
-> > --- a/include/linux/of_pci.h
-> > +++ b/include/linux/of_pci.h
-> > @@ -52,6 +52,12 @@ of_get_pci_domain_nr(struct device_node *node)
-> >  }
-> >  #endif
-> >  
-> > +#if defined(CONFIG_OF_ADDRESS)
-> > +int of_pci_get_host_bridge_resources(struct device_node *dev,
-> > +			unsigned char busno, unsigned char bus_max,
-> > +			struct list_head *resources, resource_size_t *io_base);
-> > +#endif
-> > +
-> >  #if defined(CONFIG_OF) && defined(CONFIG_PCI_MSI)
-> >  int of_pci_msi_chip_add(struct msi_chip *chip);
-> >  void of_pci_msi_chip_remove(struct msi_chip *chip);
-> > -- 
-> > 2.1.0
-> > 
-> > 
-> 
+> +static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
+> +{
+> +	pm_runtime_mark_last_busy(dev);
+> +	return pm_runtime_put_autosuspend(dev);
+> +}
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
