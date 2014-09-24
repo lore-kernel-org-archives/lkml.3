@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaIXPsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:48:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40178 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751088AbaIXPse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:48:34 -0400
-Date: Wed, 24 Sep 2014 16:48:02 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Sudeep Holla <Sudeep.Holla@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] clocksource: arm_arch_timer: discard unavailable
- timers correctly
-Message-ID: <20140924154802.GK5729@leverpostej>
-References: <1410911445-19067-1-git-send-email-sudeep.holla@arm.com>
- <1410982774-4724-1-git-send-email-sudeep.holla@arm.com>
- <5422E05F.4070405@arm.com>
+	id S1753622AbaIXPsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:48:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753343AbaIXPsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:48:45 -0400
+Message-ID: <5422E7BB.6090108@redhat.com>
+Date: Wed, 24 Sep 2014 17:48:11 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5422E05F.4070405@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org,
+        jbottomley@parallels.com, dan.carpenter@oracle.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/2] arcmsr: simplify ioctl data read/write
+References: <1411551214.4648.51.camel@Centos6.3-64>
+In-Reply-To: <1411551214.4648.51.camel@Centos6.3-64>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 04:16:47PM +0100, Sudeep Holla wrote:
-> Hi Mark,
-> 
-> On 17/09/14 20:39, Sudeep Holla wrote:
-> > Currently we wait until both cp15 and mem timers are probed if we
-> > have both timer device nodes present in the device tree without
-> > checking if the device is actually available. If one of the timer
-> > device node present is disabled, the system locks up on the boot
-> > as no timer gets registered.
-> >
-> > This patch adds the check for the availablity of the timer device
-> > so that we unavailable timers are discarded correctly. It also adds
-> > the missing of_node_put.
-> >
-> > Cc: Stephen Boyd <sboyd@codeaurora.org>
-> > Cc: Mark Rutland <mark.rutland@arm.com>
-> 
-> If your are fine with this, can I ask Daniel you pick this up ?
+On 09/24/2014 11:33 AM, Ching Huang wrote:
+> From: Ching Huang <ching2048@areca.com.tw>
+>
+> This patch is relative to:
+> http://git.infradead.org/users/hch/scsi-queue.git/tree/drivers-for-3.18:/drivers/scsi/arcmsr
+>
+> change in v5:
+> 1. rename firstindex to getIndex, lastindex to putIndex for readability
+> 2. define ARCMSR_API_DATA_BUFLEN as 1032
+> 3. simplify ioctl data read by marcro CIRC_CNT_TO_END and CIRC_CNT
+>
+> Signed-off-by: Ching Huang <ching 2048@areca.com.tw>
+> ---
+>
+...
+> +		pQbuffer = &acb->wqbuffer[acb->wqbuf_putIndex];
+> +		cnt2end = ARCMSR_MAX_QBUFFER - acb->wqbuf_putIndex;
+> +		if (user_len > cnt2end) {
+> +			memcpy(pQbuffer, ptmpuserbuffer, cnt2end);
+> +			ptmpuserbuffer += cnt2end;
+> +			user_len -= cnt2end;
+> +			acb->wqbuf_putIndex = 0;
+> +			pQbuffer = acb->wqbuffer;
+>  		}
+> +		memcpy(pQbuffer, ptmpuserbuffer, user_len);
+> +		acb->wqbuf_putIndex += user_len;
+> +		acb->wqbuf_putIndex %= ARCMSR_MAX_QBUFFER;
+> +		if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
+This test^ is most likely useless, it looks like you set the
+ACB_F_MESSAGE_WQBUFFER_CLEARED every time you have added some data to the buffer
+and clear it when the buffer gets empty. I think you could get rid of
+the ACB_F_MESSAGE_WQBUFFER_CLEARED completely. Also the ACB_F_MESSAGE_RQBUFFER_CLEARED doesn't
+seems to be ever evaluated.
+I'm not sure with the ACB_F_MESSAGE_WQBUFFER_READED, but that one probably is also
+a candidate for removal.
+...
+> @@ -678,15 +679,15 @@ struct AdapterControlBlock
+>  	unsigned int				uncache_size;
+>  	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
+>  	/* data collection buffer for read from 80331 */
+> -	int32_t				rqbuf_firstindex;
+> +	int32_t				rqbuf_getIndex;
+What is the reason for using an exact size int32 (instead of a plain int) here?
+>  	/* first of read buffer  */
+> -	int32_t				rqbuf_lastindex;
+> +	int32_t				rqbuf_putIndex;
+>  	/* last of read buffer   */
+>  	uint8_t				wqbuffer[ARCMSR_MAX_QBUFFER];
+>  	/* data collection buffer for write to 80331  */
+> -	int32_t				wqbuf_firstindex;
+> +	int32_t				wqbuf_getIndex;
+>  	/* first of write buffer */
+> -	int32_t				wqbuf_lastindex;
+> +	int32_t				wqbuf_putIndex;
+>  	/* last of write buffer  */
+>  	uint8_t				devstate[ARCMSR_MAX_TARGETID][ARCMSR_MAX_TARGETLUN];
+>  	/* id0 ..... id15, lun0...lun7 */
 
-While I'd prefer to see the cp15 and mmio timer driver pulled apart,
-that's not going to happen at any point soon. For the moment, this is
-far better than the current state of affairs. So:
+The comments I've added are not directly related to this patch,
+but you may still address them in a new patch
+so -
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
 
-Mark.
 
-> 
-> Regards,
-> Sudeep
-> 
-> > Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> > ---
-> >   drivers/clocksource/arm_arch_timer.c | 20 ++++++++++++++++----
-> >   1 file changed, 16 insertions(+), 4 deletions(-)
-> >
-> > Changes v1->v2:
-> > 	- Added missing of_node_put in the original code
-> > 	- Updated the commit log as suggested
-> >
-> > diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> > index 5163ec13429d..7e267e3990ab 100644
-> > --- a/drivers/clocksource/arm_arch_timer.c
-> > +++ b/drivers/clocksource/arm_arch_timer.c
-> > @@ -616,17 +616,29 @@ static const struct of_device_id arch_timer_mem_of_match[] __initconst = {
-> >   	{},
-> >   };
-> >
-> > +static bool __init
-> > +arch_timer_probed(int type, const struct of_device_id *matches)
-> > +{
-> > +	struct device_node *dn;
-> > +	bool probed = false;
-> > +
-> > +	dn = of_find_matching_node(NULL, matches);
-> > +	if (dn && of_device_is_available(dn) && (arch_timers_present & type))
-> > +		probed = true;
-> > +	of_node_put(dn);
-> > +
-> > +	return probed;
-> > +}
-> > +
-> >   static void __init arch_timer_common_init(void)
-> >   {
-> >   	unsigned mask = ARCH_CP15_TIMER | ARCH_MEM_TIMER;
-> >
-> >   	/* Wait until both nodes are probed if we have two timers */
-> >   	if ((arch_timers_present & mask) != mask) {
-> > -		if (of_find_matching_node(NULL, arch_timer_mem_of_match) &&
-> > -				!(arch_timers_present & ARCH_MEM_TIMER))
-> > +		if (!arch_timer_probed(ARCH_MEM_TIMER, arch_timer_mem_of_match))
-> >   			return;
-> > -		if (of_find_matching_node(NULL, arch_timer_of_match) &&
-> > -				!(arch_timers_present & ARCH_CP15_TIMER))
-> > +		if (!arch_timer_probed(ARCH_CP15_TIMER, arch_timer_of_match))
-> >   			return;
-> >   	}
-> >
-> >
