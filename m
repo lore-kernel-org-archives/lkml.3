@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaIXOsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:48:36 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:61684 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaIXOse (ORCPT
+	id S1753214AbaIXOsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:48:41 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:56324 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574AbaIXOsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:48:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-        gerg@uclinux.org, Olof Johansson <olof@lixom.net>,
-        ARM Maintainers <arm@kernel.org>, linux-kernel@vger.kernel.org,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [RFC PATCH] ARM: at91: remove no-MMU at91x40 support
-Date: Wed, 24 Sep 2014 16:47:47 +0200
-Message-ID: <3700375.DRR5iB2NGi@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411568281-3924-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1411568281-3924-1-git-send-email-nicolas.ferre@atmel.com>
+	Wed, 24 Sep 2014 10:48:38 -0400
+Date: Wed, 24 Sep 2014 15:48:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140924144829.GK32069@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:AmKTi+JY9vpRA3gSZ7yOOwXPejgxK6KQlCcVqR7D9eP
- 3YcJoMDlEa5iarONw6xQ7q+YYq4LKlYhcBvTYFP4186zJe69tV
- rUBnq5bfiNvShMIisctb1D+rvDUFo7UxbYM8S4M3HxV3Gy2nj5
- SwXtbP51OoC7XEic4sNdzbFlayHIlwJyyj9R6th9xxABMJMRPu
- id7EBen/ErxvKBwzSPafmWoMyM/yjCHuAhbIKnE6QGHkuFL3kY
- rRUBEx9+sZt/Fa3dAEyP3EdGoBs8J+weZ9POW+klU31inWyn2t
- wvLVAjJYNKobX5sE0YiFO0UVNjzrZZIKXtQ0vaEzXn5FleRYfY
- d9G/jpAeQUtrT31d/usc=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <cover.1409161615.git.andreas.werner@men.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 September 2014 16:18:01 Nicolas Ferre wrote:
-> As there is currently no-one to take care of this old !MMU target and as its
-> support in recent kernels is a bit rotten, remove this at91x40 support and the
-> board file associated with it (at91eb01).
-> There are modern ARM !MMU in Mainline now so this target is not interesting for
-> building tests anymore. It would be better to start from these modern ARM !MMU
-> platforms to reintroduce at91x40 support if needed.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Guenter, Bryan, Wim,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
 
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 807b22dadcb6..f3bd8abd25c0 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -18,26 +18,22 @@ config HAVE_AT91_DBGU2
->  config AT91_USE_OLD_CLK
->  	bool
->  
-> -config AT91_PMC_UNIT
-> -	bool
-> -	default !ARCH_AT91X40
-> -
->  config COMMON_CLK_AT91
->  	bool
-> -	default AT91_PMC_UNIT && USE_OF && !AT91_USE_OLD_CLK
-> +	default USE_OF && !AT91_USE_OLD_CLK
->  	select COMMON_CLK
->  
->  config OLD_CLK_AT91
->  	bool
-> -	default AT91_PMC_UNIT && AT91_USE_OLD_CLK
-> +	default AT91_USE_OLD_CLK
->  
->  config AT91_SAM9_ALT_RESET
->  	bool
-> -	default !ARCH_AT91X40
-> +	default y
->  
->  config AT91_SAM9G45_RESET
->  	bool
-> -	default !ARCH_AT91X40
-> +	default y
->  
->  config AT91_SAM9_TIME
->  	bool
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
 
-I think these can be simplified further: AT91_SAM9G45_RESET and
-AT91_SAM9_ALT_RESET can just go away and the files put into
-obj-y.
+are available in the git repository at:
 
-OLD_CLK_AT91 is the same as AT91_USE_OLD_CLK, so you could
-just use that instead. I suspect the 'USE_OF' dependency for
-COMMON_CLK_AT91 can also go away, since all platforms are
-either board file based and select AT91_USE_OLD_CLK, or they
-are DT based and don't.
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
 
-	Arnd
+for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+
+  hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+
+----------------------------------------------------------------
+Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+
+----------------------------------------------------------------
+Andreas Werner (4):
+      mfd: menf21bmc: Introduce MEN 14F021P00 BMC MFD Core driver
+      watchdog: menf21bmc_wdt: Introduce MEN 14F021P00 BMC Watchdog driver
+      leds: leds-menf21bmc: Introduce MEN 14F021P00 BMC LED driver
+      hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver
+
+ Documentation/hwmon/menf21bmc    |  50 +++++++++
+ drivers/hwmon/Kconfig            |  10 ++
+ drivers/hwmon/Makefile           |   1 +
+ drivers/hwmon/menf21bmc_hwmon.c  | 230 +++++++++++++++++++++++++++++++++++++++
+ drivers/leds/Kconfig             |   9 ++
+ drivers/leds/Makefile            |   1 +
+ drivers/leds/leds-menf21bmc.c    | 131 ++++++++++++++++++++++
+ drivers/mfd/Kconfig              |  15 +++
+ drivers/mfd/Makefile             |   1 +
+ drivers/mfd/menf21bmc.c          | 132 ++++++++++++++++++++++
+ drivers/watchdog/Kconfig         |  10 ++
+ drivers/watchdog/Makefile        |   1 +
+ drivers/watchdog/menf21bmc_wdt.c | 203 ++++++++++++++++++++++++++++++++++
+ 13 files changed, 794 insertions(+)
+ create mode 100644 Documentation/hwmon/menf21bmc
+ create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
+ create mode 100644 drivers/leds/leds-menf21bmc.c
+ create mode 100644 drivers/mfd/menf21bmc.c
+ create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
