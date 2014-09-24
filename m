@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaIXT1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:27:18 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10716 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753696AbaIXT1P (ORCPT
+	id S1753954AbaIXT1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:27:44 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:63564 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874AbaIXT1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:27:15 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19FEgzISDzAdXXmSYt3xCf6lLe0UGolOvU=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 06F1B5EB715
-Date: Wed, 24 Sep 2014 15:27:13 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Mike Roocroft <mike.linux@btinternet.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: Skein: skein_block: fixed 3 tab coding style
- isses
-Message-ID: <20140924192712.GM23926@titan.lakedaemon.net>
-References: <1411425935-867-1-git-send-email-mike.linux@btinternet.com>
+	Wed, 24 Sep 2014 15:27:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411425935-867-1-git-send-email-mike.linux@btinternet.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
+References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
+	<20140924185521.GC7996@ZenIV.linux.org.uk>
+	<CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
+Date: Wed, 24 Sep 2014 12:27:39 -0700
+X-Google-Sender-Auth: 078BetA2Zv75YeX2cFzcKdAEnqg
+Message-ID: <CA+55aFxhTu=PacQi4fB3qLBc29VXM7fAVS32+7K4M_CQsAzHTA@mail.gmail.com>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mikhail Efremov <sem@altlinux.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+On Wed, Sep 24, 2014 at 12:20 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> There's no way that patch is correct.
 
-On Mon, Sep 22, 2014 at 11:45:35PM +0100, Mike Roocroft wrote:
-> Fixed a coding style issue
-> 
-> Signed-off-by: Mike Roocroft <mike.linux@btinternet.com>
-> ---
->  drivers/staging/skein/skein_block.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-> index 04ce1d0..b969fe1 100644
-> --- a/drivers/staging/skein/skein_block.c
-> +++ b/drivers/staging/skein/skein_block.c
-> @@ -34,7 +34,7 @@
->  
->  #ifdef SKEIN_DEBUG
->  #define debug_save_tweak(ctx) { \
-> -                        ctx->h.tweak[0] = ts[0]; ctx->h.tweak[1] = ts[1]; }
-> +			ctx->h.tweak[0] = ts[0]; ctx->h.tweak[1] = ts[1]; }
+Something like the appended might be a good idea regardless. And might
+have made people notice that the len and the hash go together with the
+name.
 
-hmm, yes.  I somehow missed this during my original cleanup.
+             Linus
 
->  #else
->  #define debug_save_tweak(ctx)
->  #endif
-> @@ -378,7 +378,7 @@ do { \
->  	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
->  } while (0)
->  
-> -		for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
-> +	for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
->  #endif /* end of looped code definitions */
->  		{
->  #define R512_8_ROUNDS(R)  /* do 8 full rounds */  \
-> @@ -657,7 +657,7 @@ do { \
->  	skein_show_r_ptr(BLK_BITSi, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
->  } while (0)
->  
-> -		for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
-> +	for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
->  #endif
->  		{
->  #define R1024_8_ROUNDS(R) \
+----
 
-ugghh.  These two changes are conceptually fine, but they have reminded
-me that I need to completely rework this macro hell.
+    diff --git a/fs/dcache.c b/fs/dcache.c
+    index 7a5b51440afa..aa1b045b997c 100644
+    --- a/fs/dcache.c
+    +++ b/fs/dcache.c
+    @@ -2412,7 +2412,7 @@ static void switch_names(struct dentry
+*dentry, struct dentry *target)
+                            }
+                    }
+            }
+    -       swap(dentry->d_name.len, target->d_name.len);
+    +       swap(dentry->d_name.hash_len, target->d_name.hash_len);
+     }
 
-At any rate, the patch itself is fine for the staging tree.
+     static void dentry_lock_for_move(struct dentry *dentry, struct
+dentry *target)
+    @@ -2511,7 +2511,6 @@ static void __d_move(struct dentry *dentry,
+struct dentry *target,
 
-Please re-send with my:
+            /* Switch the names.. */
+            switch_names(dentry, target);
+    -       swap(dentry->d_name.hash, target->d_name.hash);
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+            /* ... and switch the parents */
+            if (IS_ROOT(dentry)) {
+    @@ -2650,7 +2649,6 @@ static void __d_materialise_dentry(struct
+dentry *dentry, struct dentry *anon)
+            dparent = dentry->d_parent;
 
-Make sure to include the staging ml and gregkh on the resend.
+            switch_names(dentry, anon);
+    -       swap(dentry->d_name.hash, anon->d_name.hash);
 
-thx,
-
-Jason.
+            dentry->d_parent = dentry;
+            list_del_init(&dentry->d_u.d_child);
