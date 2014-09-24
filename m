@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaIXNA0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:00:26 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:58322 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaIXNAY (ORCPT
+	id S1751237AbaIXNE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:04:58 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:62053 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaIXNE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:00:24 -0400
-Date: Wed, 24 Sep 2014 15:00:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de,
-        prarit@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        srostedt@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [Resend PATCH V2] X86/CPU: Avoid 100ms sleep for cpu offline
- during S3
-Message-ID: <20140924130019.GA3277@gmail.com>
-References: <1409039025-32310-1-git-send-email-tianyu.lan@intel.com>
- <54211EB6.3020306@intel.com>
+	Wed, 24 Sep 2014 09:04:56 -0400
+Date: Wed, 24 Sep 2014 09:04:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20140924130444.GA16555@htj.dyndns.org>
+References: <cover.1411297686.git.agordeev@redhat.com>
+ <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+ <20140923205710.GB17332@mtj.dyndns.org>
+ <20140924104213.GA2695@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54211EB6.3020306@intel.com>
+In-Reply-To: <20140924104213.GA2695@agordeev.usersys.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Alexander.
 
-* Lan Tianyu <tianyu.lan@intel.com> wrote:
-
-> On 2014年08月26日 15:43, Lan Tianyu wrote:
-> > With some bad kernel configures, cpu offline consumes more than 100ms
-> > during S3. This because native_cpu_die() would fall into 100ms
-> > sleep when cpu idle loop thread marked cpu state to DEAD slower. It's
-> > timing related issue. What native_cpu_die() does is that poll cpu
-> > state and wait for 100ms if cpu state hasn't been marked to DEAD.
-> > The 100ms sleep doesn't make sense. To avoid such long sleep, this
-> > patch is to add struct completion to each cpu, wait for the completion
-> > in the native_cpu_die() and wakeup the completion when the cpu state is
-> > marked to DEAD.
-> > 
-> > Tested on the Intel Xeon server with 48 cores, Ivbridge and Haswell laptops.
-> > the times of cpu offline on these machines are reduced from more than 100ms
-> > to less than 5ms. The system suspend time reduces 2.3s on the servers.
-> > 
-> > Borislav and Prarit also helped to test the patch on an AMD machine and
-> > a few systems of various sizes and configurations (multi-socket,
-> > single-socket, no hyper threading, etc.). No issues seen.
-> > 
-> > Acked-by: Borislav Petkov <bp@suse.de>
-> > Tested-by: Prarit Bhargava <prarit@redhat.com>
-> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> > ---
-> >  arch/x86/kernel/smpboot.c | 23 +++++++++++------------
-> >  1 file changed, 11 insertions(+), 12 deletions(-)
-> > 
+On Wed, Sep 24, 2014 at 11:42:15AM +0100, Alexander Gordeev wrote:
+> On Tue, Sep 23, 2014 at 04:57:10PM -0400, Tejun Heo wrote:
+> > Hmmm... how does it affect single device operation tho?  It does make
+> > individual interrupt handling heavier, no?
 > 
-> Hi HPA, Ingo, Thomas & Peter Z:
-> 	Is this patch ok for you?
+> I think it is difficult to assess "individual interrupt handling", since
+> it depends from both the hardware and device access pattern. On the system
+> I use the results are rather counter-intuitive: ahci_thread_fn() does not
+> show up in perf report at all, nor ahci_single_irq_intr(). While before
+> the change ahci_single_irq_intr() reported 0.00%.
+> 
+> But since the handling is split in two parts it is rather incorrect to
+> apply the same metric to the threaded context. Obviously, the threaded
+> handler is expected slowed down by other interrupts handlers, but the
+> whole system should benefit from it, which is exactly the aim of this
+> change.
 
-Nice patch!
+Hmmm, how would the whole system benefit from it if there's only
+single device?  Each individual servicing of the interrupt does more
+now which includes scheduling which may end up adding to completion
+latency.
 
-I cleaned up a few small details and will push it out if it 
-passes testing.
+The thing I don't get is why multiple MSI handling and this patchset
+are tied to threaded interrupt handling.  Splitting locks don't
+necessarily have much to do with threaded handling and it's not like
+ahci interrupt handling is heavy.  The hot path is pretty short
+actually.  The meat of the work - completing requests and propagating
+completions - is offloaded to softirq by block layer anyway.
 
-Thanks,
+Just to be clear, I'm not against the proposed changes but wanna
+understand the justifications behind them.
 
-	Ingo
+Thanks.
+
+-- 
+tejun
