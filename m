@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaIXN0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:26:09 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47949 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaIXN0G (ORCPT
+	id S1753337AbaIXN1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:27:19 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:45181 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067AbaIXN1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:26:06 -0400
-Message-ID: <5422C612.70906@roeck-us.net>
-Date: Wed, 24 Sep 2014 06:24:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 24 Sep 2014 09:27:17 -0400
+Date: Wed, 24 Sep 2014 08:27:12 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20140924082713.7ddd718e@as>
+In-Reply-To: <20140924130444.GA16555@htj.dyndns.org>
+References: <cover.1411297686.git.agordeev@redhat.com>
+	<b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+	<20140923205710.GB17332@mtj.dyndns.org>
+	<20140924104213.GA2695@agordeev.usersys.redhat.com>
+	<20140924130444.GA16555@htj.dyndns.org>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Andreas Werner <andreas.werner@men.de>
-CC: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        lm-sensors@lm-sensors.org, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v6 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-References: <cover.1409161615.git.andreas.werner@men.de> <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de> <20140924123548.GE32069@lee--X1>
-In-Reply-To: <20140924123548.GE32069@lee--X1>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.5422C66D.01E9,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 05:35 AM, Lee Jones wrote:
-> On Wed, 27 Aug 2014, Andreas Werner wrote:
->
->> Added driver to support the 14F021P00 BMC Watchdog.
->> The BMC is a Board Management Controller including watchdog functionality.
->>
->> Signed-off-by: Andreas Werner <andreas.werner@men.de>
->> ---
->>   drivers/watchdog/Kconfig         |  10 ++
->>   drivers/watchdog/Makefile        |   1 +
->>   drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 214 insertions(+)
->>   create mode 100644 drivers/watchdog/menf21bmc_wdt.c
->
-> I see no reason to keep this dragging on.  I'm going to apply this
-> along with the remainder of the set and send a pull-request to all the
-> other Maintainers.  This branch is currently under test.
->
-> Any fix-ups for review comments can go in subsequently.
->
-Tend to agree. I thought I sent it before, but in case I didn't
+On Wed, 24 Sep 2014 09:04:44 -0400
+Tejun Heo <tj@kernel.org> wrote:
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> Hello, Alexander.
+> 
+> On Wed, Sep 24, 2014 at 11:42:15AM +0100, Alexander Gordeev wrote:
+> > On Tue, Sep 23, 2014 at 04:57:10PM -0400, Tejun Heo wrote:
+> > > Hmmm... how does it affect single device operation tho?  It does make
+> > > individual interrupt handling heavier, no?
+> > 
+> > I think it is difficult to assess "individual interrupt handling", since
+> > it depends from both the hardware and device access pattern. On the system
+> > I use the results are rather counter-intuitive: ahci_thread_fn() does not
+> > show up in perf report at all, nor ahci_single_irq_intr(). While before
+> > the change ahci_single_irq_intr() reported 0.00%.
+> > 
+> > But since the handling is split in two parts it is rather incorrect to
+> > apply the same metric to the threaded context. Obviously, the threaded
+> > handler is expected slowed down by other interrupts handlers, but the
+> > whole system should benefit from it, which is exactly the aim of this
+> > change.
+> 
+> Hmmm, how would the whole system benefit from it if there's only
+> single device?  Each individual servicing of the interrupt does more
+> now which includes scheduling which may end up adding to completion
+> latency.
+> 
 
-[ for the watchdog driver ]
-
-Guenter
-
+I think he meant other, non-AHCI, interrupt handlers would benefit. A
+good test of this patch might be to stream 10Gb ethernet while also
+streaming writes to an AHCI device.
