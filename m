@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368AbaIXCYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 22:24:36 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56894 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757346AbaIXCY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 22:24:26 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arun Sharma <asharma@fb.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 2/2] perf callchain: Use global caching provided by libunwind
-References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
-	<1411453828-14832-2-git-send-email-namhyung@kernel.org>
-	<54217D09.40500@fb.com>
-Date: Wed, 24 Sep 2014 11:24:24 +0900
-In-Reply-To: <54217D09.40500@fb.com> (Arun Sharma's message of "Tue, 23 Sep
-	2014 14:01:22 +0000")
-Message-ID: <874mvxlprb.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757386AbaIXCZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 22:25:25 -0400
+Received: from mga14.intel.com ([192.55.52.115]:44529 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753499AbaIXCZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Sep 2014 22:25:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="390695619"
+Date: Wed, 24 Sep 2014 10:27:29 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Andres Lagar-Cavilla <andreslc@google.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v4] kvm: Fix page ageing bugs
+Message-ID: <20140924022729.GA2889@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1411410865-3603-1-git-send-email-andreslc@google.com>
+ <1411422882-16245-1-git-send-email-andreslc@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411422882-16245-1-git-send-email-andreslc@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arun,
-
-On Tue, 23 Sep 2014 14:01:22 +0000, Arun Sharma wrote:
-> On 9/23/14, 12:00 PM, Namhyung Kim wrote:
+Hi Andres,
+On Mon, Sep 22, 2014 at 02:54:42PM -0700, Andres Lagar-Cavilla wrote:
+>1. We were calling clear_flush_young_notify in unmap_one, but we are
+>within an mmu notifier invalidate range scope. The spte exists no more
+>(due to range_start) and the accessed bit info has already been
+>propagated (due to kvm_pfn_set_accessed). Simply call
+>clear_flush_young.
 >
->> +	unw_set_caching_policy(addr_space, UNW_CACHE_GLOBAL);
+>2. We clear_flush_young on a primary MMU PMD, but this may be mapped
+>as a collection of PTEs by the secondary MMU (e.g. during log-dirty).
+>This required expanding the interface of the clear_flush_young mmu
+>notifier, so a lot of code has been trivially touched.
 >
-> The result is a bit surprising for me. In micro benchmarking (eg:
-> Lperf-simple), the per-thread policy is generally faster because it
-> doesn't involve locking.
+>3. In the absence of shadow_accessed_mask (e.g. EPT A bit), we emulate
+>the access bit by blowing the spte. This requires proper synchronizing
+>with MMU notifier consumers, like every other removal of spte's does.
 >
-> libunwind/tests/Lperf-simple
-> unw_getcontext : cold avg=  109.673 nsec, warm avg=   28.610 nsec
-> unw_init_local : cold avg=  259.876 nsec, warm avg=    9.537 nsec
-> no cache        : unw_step : 1st= 3258.387 min= 2922.331 avg= 3002.384 nsec
-> global cache    : unw_step : 1st= 1192.093 min=  960.486 avg=  982.208 nsec
-> per-thread cache: unw_step : 1st=  429.153 min=  113.533 avg=  121.762 nsec
+[...]
+>---
+>+	BUG_ON(!shadow_accessed_mask);
+> 
+> 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+> 	     sptep = rmap_get_next(&iter)) {
+>+		struct kvm_mmu_page *sp;
+>+		gfn_t gfn;
+> 		BUG_ON(!is_shadow_present_pte(*sptep));
+>+		/* From spte to gfn. */
+>+		sp = page_header(__pa(sptep));
+>+		gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
+> 
+> 		if (*sptep & shadow_accessed_mask) {
+> 			young = 1;
+> 			clear_bit((ffs(shadow_accessed_mask) - 1),
+> 				 (unsigned long *)sptep);
+> 		}
+>+		trace_kvm_age_page(gfn, slot, young);
 
-Yes, per-thread policy is faster than global caching policy.  Below is my
-test result.  Note that I already run this several times before to
-remove an effect that file contents loaded in page cache.
+IIUC, all the rmapps in this for loop are against the same gfn which
+results in the above trace point dump the message duplicated.
 
- Performance counter stats for
-   'perf report -i /home/namhyung/tmp/perf-testing/perf.data.kbuild.dwarf --stdio' (3 runs):
+Regards,
+Wanpeng Li 
 
-                                 UNW_CACHE_NONE         UNW_CACHE_GLOBAL     UNW_CACHE_PER_THREAD
-  -----------------------------------------------------------------------------------------------
-  task-clock (msec)                14298.911947              7112.171928              6913.244797      
-  context-switches                        1,507                      762                      742      
-  cpu-migrations                              1                        2                        1      
-  page-faults                         2,924,889                1,101,380                1,101,380      
-  cycles                         53,895,784,665           26,798,627,423           26,070,728,349      
-  stalled-cycles-frontend        24,472,506,687           12,577,760,746           12,435,320,081      
-  stalled-cycles-backend         17,550,483,726            9,075,054,009            9,035,478,957      
-  instructions                   73,544,039,490           34,352,889,707           33,283,120,736      
-  branches                       14,969,890,371            7,139,469,848            6,926,994,151      
-  branch-misses                     193,852,116              100,455,431               99,757,213      
-  time elapsed                     14.905719730              7.455597356              7.242275972      
-
-
->
-> I can see how the global policy would involve less memory allocation
-> because of shared data structures. Curious about the reason for the
-> speedup (specifically if libunwind should change the defaults for the
-> non-local unwinding case).
-
-I don't see much difference between global and per-thread caching for
-remote unwind (besides rs_cache->lock you mentioned).  Also I'm curious
-that how rs_new() is protected from concurrent accesses in per-thread
-caching.  That's why I chose the global caching - yeah, it probably
-doesn't matter to a single thread, but... :)
-
-Thanks
-Namhyung
