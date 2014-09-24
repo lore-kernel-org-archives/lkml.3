@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaIXJmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:42:43 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27569 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaIXJml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:42:41 -0400
-Date: Wed, 24 Sep 2014 12:42:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: devel@driverdev.osuosl.org, lidza.louina@gmail.com,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 2/3] staging: dgap: adds missing iounmap for re_map_port
- in dgap_release_remap()
-Message-ID: <20140924094229.GB5811@mwanda>
-References: <20140923002208.GA20768@devel>
- <20140924093648.GA5811@mwanda>
+	id S1753266AbaIXJod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:44:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37062 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742AbaIXJoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 05:44:30 -0400
+Message-ID: <54229276.5050000@ti.com>
+Date: Wed, 24 Sep 2014 15:14:22 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924093648.GA5811@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/6] phy: improved lookup method
+References: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com> <1408620803-10464-3-git-send-email-heikki.krogerus@linux.intel.com> <5411C0B2.3060505@ti.com> <20140912140720.GC30816@xps8300> <54130729.5010206@ti.com> <20140915123508.GA16653@xps8300> <20140918102505.GB8567@xps8300> <54200A13.6050201@ti.com> <20140923105311.GB18814@xps8300> <5421536D.4050601@ti.com> <20140923114353.GC18814@xps8300>
+In-Reply-To: <20140923114353.GC18814@xps8300>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:36:48PM +0300, Dan Carpenter wrote:
-> On Tue, Sep 23, 2014 at 09:22:08AM +0900, Daeseok Youn wrote:
-> > Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> > ---
-> >  drivers/staging/dgap/dgap.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-> > index 779d144..637ea8a 100644
-> > --- a/drivers/staging/dgap/dgap.c
-> > +++ b/drivers/staging/dgap/dgap.c
-> > @@ -1026,6 +1026,7 @@ static void dgap_release_remap(struct board_t *brd)
-> >  	release_mem_region(brd->membase, 0x200000);
-> >  	release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
-> >  	iounmap(brd->re_map_membase);
-> > +	iounmap(brd->re_map_port);
+Hi,
+
+On Tuesday 23 September 2014 05:13 PM, Heikki Krogerus wrote:
+> On Tue, Sep 23, 2014 at 04:33:09PM +0530, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Tuesday 23 September 2014 04:23 PM, Heikki Krogerus wrote:
+>>> On Mon, Sep 22, 2014 at 05:07:55PM +0530, Kishon Vijay Abraham I wrote:
+>>>> On Thursday 18 September 2014 03:55 PM, Heikki Krogerus wrote:
+>>>>> On Mon, Sep 15, 2014 at 03:35:08PM +0300, Heikki Krogerus wrote:
+>>>>>> On Fri, Sep 12, 2014 at 08:16:01PM +0530, Kishon Vijay Abraham I wrote:
+>>>>>>> Assume you have 2 phys in your system..
+>>>>>>> static struct phy_lookup usb_lookup = {
+>>>>>>> 	.phy_name	= "phy-usb.0",
+>>>>>>> 	.dev_id		= "usb.0",
+>>>>>>> 	.con_id		= "usb",
+>>>>>>> };
+>>>>>>>
+>>>>>>> static struct phy_lookup sata_lookup = {
+>>>>>>> 	.phy_name	= "sata-usb.1",
+>>>>>>> 	.dev_id		= "sata.0",
+>>>>>>> 	.con_id		= "sata",
+>>>>>>> };
+>>>>>>>
+>>>>>>> First you do modprobe phy-usb, the probe of USB PHY driver gets invoked and it
+>>>>>>> creates the PHY. The phy-core will find a free id (now it will be 0) and then
+>>>>>>> name the phy as phy-usb.0.
+>>>>>>> Then with modprobe phy-sata, the phy-core will create phy-sata.1.
+>>>>>>>
+>>>>>>> This is an ideal case where the .phy_name in phy_lookup matches.
+>>>>>>>
+>>>>>>> Consider if the order is flipped and the user does modprobe phy-sata first. The
+>>>>>>> phy_names won't match anymore (the sata phy device name would be "sata-usb.0").
+>>>>>
+>>>>> Actually, I don't think there would be this problem if we used the
+>>>>> name of the actual device which is the parent of phy devices, right?
+>>>>
+>>>> hmm.. but if the parent is a multi-phy phy provider (like pipe3 PHY driver), we
+>>>> might end up with the same problem.
+>>>
+>>> I'm not completely sure what you mean? If you are talking about
+>>> platforms with multiple instances of a single phy, I don't see how
+>>> there could ever be a scenario where we did not know the order in
+>>> which they were enumerated. Can you give an example again?
+>>
+>> If a single IP implements multiple PHYs (phy-miphy365x.c in linux-phy next),
+>> the parent for all the phy devices would be the same.
 > 
-> 
-> I don't think it matters, but at least aesthetically it would be better
-> to unmap first and then release the regions.  (You can do this in a
-> different patch).
-> 
+> OK, got it. So I guess we need to match to the phy dev and to the phy
+> name. First to the dev and then in case the phy name is defined in the
+> lookup, to that as well. That should cover both cases.
 
-Also dgap_do_remap() unwinds in the wrong order and is sucky.  It should
-use gotos.
+So what would be the phy name? I mean it's completely user-defined or it's
+derived from device name?
 
-Also the name dgap_do_remap() isn't great.  Remap is a verb not a noun
-so the "_do" isn't needed.  Just dgap_remap() and dgap_release_remap()
-could be changed to dgap_unmap().
+Isn't making the PHY to be aware of it's user much simpler?
 
-regards,
-dan carpenter
-
+Thanks
+Kishon
