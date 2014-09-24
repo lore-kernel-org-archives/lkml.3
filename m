@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaIXNai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:30:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37228 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753762AbaIXNac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:30:32 -0400
-Message-ID: <5422C772.3080700@suse.cz>
-Date: Wed, 24 Sep 2014 15:30:26 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753890AbaIXNbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:31:05 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:37037 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828AbaIXNa7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:30:59 -0400
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/4] mm/page_alloc: fix incorrect isolation behavior
- by rechecking migratetype
-References: <1409040498-10148-1-git-send-email-iamjoonsoo.kim@lge.com> <1409040498-10148-2-git-send-email-iamjoonsoo.kim@lge.com> <540D6961.8060209@suse.cz> <20140915023106.GD2676@js1304-P5Q-DELUXE>
-In-Reply-To: <20140915023106.GD2676@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo5PBXSUeU_LP2m=9jxibmqxreL4tEeHBsc5To7D=_bAJA@mail.gmail.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140923215435.GD27117@google.com> <20140923224810.GA32643@bart.dudau.co.uk> <CAErSpo5PBXSUeU_LP2m=9jxibmqxreL4tEeHBsc5To7D=_bAJA@mail.gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 24 Sep 2014 08:30:37 -0500
+Message-ID: <CAL_Jsq+U=1JT0qqZgb=aR66Q4NYDyzOogspOmmpsp61pE+aCUg@mail.gmail.com>
+Subject: Re: [PATCH v12 00/12] Support for creating generic PCI host bridges
+ from DT
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Liviu Dudau <liviu@dudau.co.uk>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 04:31 AM, Joonsoo Kim wrote:
-> On Mon, Sep 08, 2014 at 10:31:29AM +0200, Vlastimil Babka wrote:
->> On 08/26/2014 10:08 AM, Joonsoo Kim wrote:
->>
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index f86023b..51e0d13 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -740,9 +740,15 @@ static void free_one_page(struct zone *zone,
->>>   	if (nr_scanned)
->>>   		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
->>>
->>> +	if (unlikely(has_isolate_pageblock(zone))) {
->>> +		migratetype = get_pfnblock_migratetype(page, pfn);
->>> +		if (is_migrate_isolate(migratetype))
->>> +			goto skip_counting;
->>> +	}
->>> +	__mod_zone_freepage_state(zone, 1 << order, migratetype);
->>> +
->>> +skip_counting:
->>
->> Here, wouldn't a simple 'else __mod_zone_freepage_state...' look
->> better than goto + label? (same for the following 2 patches). Or
->> does that generate worse code?
+On Tue, Sep 23, 2014 at 6:00 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Sep 23, 2014 at 4:48 PM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+>> ...
+>> While the next immediate target is converting pci-host-generic.c, pci-imx6.c
+>> and probably pcie-designware.c to my series, I would like to ask you what
+>> is your longer term plan. Now that I have got my head full of PCI code,
+>> I have some ideas but feel that meeting with you and all those involved
+>> in core PCI support would be a better venue than sending emails back and
+>> forth. When is your next plan to attend a Linux conference?
 >
-> To remove goto label, we need two __mod_zone_freepage_state() like
-> as below. On my system, it doesn't generate worse code, but, I am not
-> sure that this is true if more logic would be added. I think that
-> goto + label is better.
+> That would be nice.  Unfortunately, I don't know what the next
+> conference will be yet.
 
-Oh right, I missed that. It's a bit subtle, but I don't see a nicer 
-solution right now.
+Perhaps an irc meeting or Google hangout. These have been happening on
+several areas like DT and ARM KVM.
 
-> +	if (unlikely(has_isolate_pageblock(zone))) {
-> +		migratetype = get_pfnblock_migratetype(page, pfn);
-> +               if (!is_migrate_isolate(migratetype))
-> +                       __mod_zone_freepage_state(zone, 1 << order, migratetype);
-> +       } else {
-> +               __mod_zone_freepage_state(zone, 1 << order, migratetype);
->          }
->
-
-Yeah that would be uglier I guess.
-
-> Anyway, What do you think which one is better, either v2 or v3? Still, v3? :)
-
-Yeah v3 is much better than v1 was, and better for backporting than v2. 
-The changelogs also look quite clear. The overhead shouldn't be bad with 
-the per-zone flag guarding get_pfnblock_migratetype.
-
-I'm just not sure about patch 4 and potentially leaving unmerged budies 
-behind. How would it look if instead we made sure isolation works on 
-whole MAX_ORDER blocks instead?
-
-Vlastimil
-
-> Thanks.
->
-
+Rob
