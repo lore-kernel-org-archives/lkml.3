@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaIXHsB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:48:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38381 "EHLO
+	id S1752993AbaIXHte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:49:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38390 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaIXHsA (ORCPT
+	with ESMTP id S1750994AbaIXHtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:48:00 -0400
-Date: Wed, 24 Sep 2014 09:47:53 +0200
+	Wed, 24 Sep 2014 03:49:33 -0400
+Date: Wed, 24 Sep 2014 09:49:27 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, x86: Disallow flags for most
- Core2/Atom/Nehalem/Westmere events
-Message-ID: <20140924074753.GR16043@twins.programming.kicks-ass.net>
-References: <1411509264-18135-1-git-send-email-andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        jolsa@redhat.com, acme@redhat.com, cebbert.lkml@gmail.com
+Subject: Re: [PATCH v6 0/6] perf: add ability to sample interrupted machine
+ state
+Message-ID: <20140924074927.GS16043@twins.programming.kicks-ass.net>
+References: <1411484269-32311-1-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411509264-18135-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1411484269-32311-1-git-send-email-eranian@google.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 02:54:24PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Disallow setting inv/cmask/etc. flags for all PEBS events
-> on these CPUs, except for the UOPS_RETIRED.* events on Nehalem/Westmere,
-> which are needed for cycles:p. This avoids an undefined situation
-> strongly discouraged by the Intle SDM. The PLD_* events were already
-> covered. This follows the earlier changes for Sandy Bridge and alter.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On Tue, Sep 23, 2014 at 04:57:43PM +0200, Stephane Eranian wrote:
+> In V6, we added the missing copy of the eflags from the PEBS
+> mahcine state (reported by Andi). We fixed some formatting
+> issues. We rebased to 3.17-rc6.
 
->From the compile before sending dept:
+../arch/x86/kernel/cpu/perf_event_intel_ds.c: In function ‘__intel_pmu_pebs_event’:
+../arch/x86/kernel/cpu/perf_event_intel_ds.c:899:7: error: ‘struct pt_regs’ has no member named ‘eflags’
 
-../arch/x86/kernel/cpu/perf_event_intel_ds.c:555:2: error: implicit declaration of function ‘INTEL_FLAGS_UEVENT_CONSTRAINT’ [-Werror=implicit-function-declaration]
+You mean that?
+
 
