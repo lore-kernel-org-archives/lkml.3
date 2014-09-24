@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaIXOwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:52:55 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:39092 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708AbaIXOwy (ORCPT
+	id S1753801AbaIXOxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:53:16 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40970 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753772AbaIXOxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:52:54 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm] memcg: zap memcg_can_account_kmem
-Date: Wed, 24 Sep 2014 18:52:41 +0400
-Message-ID: <1411570361-29361-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 24 Sep 2014 10:53:13 -0400
+Date: Wed, 24 Sep 2014 15:52:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Nathan Lynch <nathan_lynch@mentor.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code
+	consolidation
+Message-ID: <20140924145257.GY5182@n2100.arm.linux.org.uk>
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <20140922223022.GO5182@n2100.arm.linux.org.uk> <20140924144541.GJ15842@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924144541.GJ15842@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memcg_can_account_kmem() returns true iff
+On Wed, Sep 24, 2014 at 03:45:41PM +0100, Catalin Marinas wrote:
+> On Mon, Sep 22, 2014 at 11:30:23PM +0100, Russell King - ARM Linux wrote:
+> > I raised a while back with Will whether there's much point to having
+> > this on ARM.  While it's useful for virtualisation, the majority of
+> > 32-bit ARM doesn't run virtualised.
+> 
+> This has nothing to do with virtualisation. The main reason we use
+> CNTVCT is to not require kernel binary differences when running the OS
+> as host or guest. But it does _not_ mean that it is only used when
+> running as a guest.
+> 
+> > So there's little point in having the VDSO on the majority of
+> > platforms - it will just add additional unnecessary cycles slowing
+> > down the system calls that the VDSO is designed to try to speed up.
+> 
+> A good reason for VDSO is to avoid a system call for gettimeofday when
+> you can read the clocks source from user space. That's a significant
+> improvement on CPUs like A7, A15.
 
-    !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
-                                   memcg_kmem_is_active(memcg);
+I'm *not* arguing against having a VDSO to speed up that crap.  What
+I'm trying to get to the bottom of - something which has been totally
+lost sight of - is what the friggin effect of this stuff is on CPUs
+*without* the architected timer.
 
-To begin with the !mem_cgroup_is_root(memcg) check is useless, because
-one can't enable kmem accounting for the root cgroup (mem_cgroup_write()
-returns EINVAL on an attempt to set the limit on the root cgroup).
+Until I get an answer to what the measured effect is, I'm saying no to
+VDSO on ARM, because - as seems to be the norm - the evaluation job is
+only half done.
 
-Furthermore, the !mem_cgroup_disabled() check also seems to be
-redundant. The point is memcg_can_account_kmem() is called from three
-places: mem_cgroup_salbinfo_read(), __memcg_kmem_get_cache(), and
-__memcg_kmem_newpage_charge(). The latter two functions are only invoked
-if memcg_kmem_enabled() returns true, which implies that the memory
-cgroup subsystem is enabled. And mem_cgroup_slabinfo_read() shows the
-output of memory.kmem.slabinfo, which won't exist if the memory cgroup
-is completely disabled.
-
-So let's substitute all the calls to memcg_can_account_kmem() with plain
-memcg_kmem_is_active(), and kill the former.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/memcontrol.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1ec22bf380d0..63d58d79470d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2786,12 +2786,6 @@ static DEFINE_MUTEX(memcg_slab_mutex);
- 
- static DEFINE_MUTEX(activate_kmem_mutex);
- 
--static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
--{
--	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
--		memcg_kmem_is_active(memcg);
--}
--
- /*
-  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-  * in the memcg_cache_params struct.
-@@ -2811,7 +2805,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
- 	struct memcg_cache_params *params;
- 
--	if (!memcg_can_account_kmem(memcg))
-+	if (!memcg_kmem_is_active(memcg))
- 		return -EIO;
- 
- 	print_slabinfo_header(m);
-@@ -3188,7 +3182,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 	rcu_read_lock();
- 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
- 
--	if (!memcg_can_account_kmem(memcg))
-+	if (!memcg_kmem_is_active(memcg))
- 		goto out;
- 
- 	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
-@@ -3273,7 +3267,7 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
- 
- 	memcg = get_mem_cgroup_from_mm(current->mm);
- 
--	if (!memcg_can_account_kmem(memcg)) {
-+	if (!memcg_kmem_is_active(memcg)) {
- 		css_put(&memcg->css);
- 		return true;
- 	}
 -- 
-1.7.10.4
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
