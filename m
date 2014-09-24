@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309AbaIXIa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:30:56 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36534 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271AbaIXIaq (ORCPT
+	id S1754382AbaIXIbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:31:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:62150 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404AbaIXIbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:30:46 -0400
-Date: Wed, 24 Sep 2014 09:30:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20140924083035.GY4015@sirena.org.uk>
-References: <1411360048-3388-1-git-send-email-agross@codeaurora.org>
- <1411464267.18580.46.camel@iivanov-dev>
- <20140923192613.GA5975@qualcomm.com>
+	Wed, 24 Sep 2014 04:31:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: balbi@ti.com, Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, sebastian.hesselbarth@gmail.com,
+        p.zabel@pengutronix.de, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Date: Wed, 24 Sep 2014 10:30:41 +0200
+Message-ID: <2923729.dtX0WmHSV0@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2990737.4KzKXPZhaB@wuerfel>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <20140924022736.GA5307@peterchendt> <2990737.4KzKXPZhaB@wuerfel>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7uidztUHYC105IRM"
-Content-Disposition: inline
-In-Reply-To: <20140923192613.GA5975@qualcomm.com>
-X-Cookie: See label for sequence.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: qup: Fix incorrect block transfers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ZIKU4AuMLkY3T2OXsfDhBPMgAeVNhKvZcH7r/Rl7U1L
+ IKTJ5iqTHVoDiJedRMiYSfrCfENbvy1efSN9xBkCTgxS/W0Z45
+ tqnoIvfJD2maqD5gYAU0nzP6BX/eAS8ENkdXOBxvYEn++/7Ozy
+ 1rjUAqbIZQg2MQKKv6zvI+8VarC1aDH3cgJKQb91sXs3oWFBIE
+ 8GiT/rWXaM+NU+rgtEUe26ykrketcuysKQl5UiTu7GZ8N3V8WF
+ 7LJtXWTRjwtnW72d4U0BSAb2oIF21tYXuU2dFJQf1xLxitBKBN
+ Mbc3XgY0OpLua9cot0sumrTfePcn4PpzNgHJfliHkyP2mwy2h3
+ uDHZR4/Ntpk7kQa8ATzU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 24 September 2014 09:44:19 Arnd Bergmann wrote:
+> 
+> We can also gradually move in some of the other glue drivers into
+> the main driver if the differences are small enough.
+> 
 
---7uidztUHYC105IRM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+FWIW, I've just looked at the other glue drivers that already
+exist:
 
-On Tue, Sep 23, 2014 at 02:26:13PM -0500, Andy Gross wrote:
-> On Tue, Sep 23, 2014 at 12:24:27PM +0300, Ivan T. Ivanov wrote:
-> > On Sun, 2014-09-21 at 23:27 -0500, Andy Gross wrote:
+- zevio can just get merged into the common driver, all that seems
+  to be needed for that is the additional compatible string, and
+  keying off the ci_default_zevio_platdata on the .data field of
+  the of_device_id table.
 
-> > > This patch fixes a number of errors with the QUP block transfer mode.  Errors
-> > > manifested themselves as input underruns, output overruns, and timed out
-> > > transactions.
+- msm has a custom notifier, which justifies leaving it in a separate
+  driver, but it's also small enough that it wouldn't hurt to have
+  that merged into the main driver too.
 
-> > At what speeds are you seeing those errors?
+- imx requires a lot of other things, in particular the dependency
+  on the usbmisc driver means we don't want to have that in the
+  core anyway, so we can't really merge that in.
 
-> We've tried 25MHz and 50MHz.  Both fail in the same way.  Keep in mind this is
-> definitely a timing / race issue and it probably also dependent on the latency
-> of the attached device.  I cannot reproduce this at all on my IPQ8064 based
-> board, but others can.
+- the proposed ar933x driver again looks almost trivial, so no reason
+  for a separate glue driver for that.
 
-With SPI everything is entirely clocked from the master - the attached
-device can't cause any of those issues unless there's an electrical
-problem that *really* upsets the master.
-
---7uidztUHYC105IRM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUIoEqAAoJECTWi3JdVIfQDH8H/3z5Kjor3KxMUlgCR7OOhlwb
-ww6ti3EsagIAQnUcIAazXFldKhjow7Y0cpHKz5cQuEnekxsqfX6TxiyVl+8V9cmq
-K/8mt6eI9SuW9+1tOlu7ra9z51VX7V2eSOzzn1laan56idKuEPvQHTc77zP9Hoxa
-imMTtOZOIWEYc9S57yvaHbIDIMYYYpaNoNBr0H1G+YXJDcZHsNjNxVcYUHrw0tge
-tEA85ExSRW6Sg3l94zH2PscWDH0YEXpdqLoFwbInxiyQ+jCm3oIPSVDcUZtiS1HD
-lhEwj93eMVgbKA1j9CjnxKCcsSy3r4RiLxe94MGNRealWXAq3ErBkpOWy86Cx4s=
-=dveO
------END PGP SIGNATURE-----
-
---7uidztUHYC105IRM--
+	Arnd
