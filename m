@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaIXMlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:41:06 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:54823 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaIXMlD (ORCPT
+	id S1751184AbaIXMlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:41:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60491 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095AbaIXMlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:41:03 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-99-5422bbdcf1b5
-Message-id: <5422BBDB.7050904@samsung.com>
-Date: Wed, 24 Sep 2014 14:40:59 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.1
-MIME-version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>, Fancy Fang <chen.fang@freescale.com>,
-        m.chehab@samsung.com, viro@ZenIV.linux.org.uk
-Cc: shawn.guo@freescale.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory()
- with remap_pfn_range().
-References: <1410326937-31140-1-git-send-email-chen.fang@freescale.com>
- <540FF70E.9050203@xs4all.nl>
-In-reply-to: <540FF70E.9050203@xs4all.nl>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t/xK7p3diuFGExfr2tx7NRaFotTk58x
-	WVzeNYfNomfDVlaLi+vkLZa1tLFYnP97nNWB3ePf4X4mj74tqxg9Pm+S8zj19TO7x6Ynb5kC
-	WKO4bFJSczLLUov07RK4Mo69/stccFK4ou3eL6YGxp/8XYwcHBICJhJfnmp2MXICmWISF+6t
-	Z+ti5OIQEljKKLFj8X1WkISQwCdGie/7y0DqeQW0JM48FwEJswioSuz/+ZwFxGYTMJToetvF
-	BmKLCsRILP24ByzOKyAo8WPyPTBbRKBGYuHBX0wgNrNAhMThm3/AbGGBVImTFzcwQaxKk5gz
-	6yE7yCpOAU2JFZNyIcrNJL68PMwKYctLbF7zlnkCo8AsJBtmISmbhaRsASPzKkbR1NLkguKk
-	9FwjveLE3OLSvHS95PzcTYyQ4P66g3HpMatDjAIcjEo8vBPFlUKEWBPLiitzDzFKcDArifCW
-	7gIK8aYkVlalFuXHF5XmpBYfYmTi4JRqYMyeEbU+scq+JPPJVSuu9feTlty+IG1lam7PzMR1
-	e/26/KyKXMNg/R3xtjuPrnH5uT3L4OyVVdFSOjunfVmZo8G5UF3WW+/frZgerdmTVlwsuvya
-	4+qs3bHHXr4rlpgYpZ/zMu6VnjNbrIREg4xTz+sr2z7cK5/evvPvPiGfv0W7D17oiJKSX6vE
-	UpyRaKjFXFScCABfBx1ETAIAAA==
+	Wed, 24 Sep 2014 08:41:13 -0400
+Date: Wed, 24 Sep 2014 14:40:44 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com
+Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
+Message-ID: <20140924124044.GC4992@pengutronix.de>
+References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
+ <1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
+ <CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:12:01 up 14 days,  4:59, 77 users,  load average: 0.08, 0.06,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Linus,
 
-On 2014-09-10 09:00, Hans Verkuil wrote:
-> On 09/10/14 07:28, Fancy Fang wrote:
->> When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
->> will assign the corresponding offset to the 'boff' field of the
->> videobuf_buffer for each requested buffer sequentially. Later, user
->> may call mmap() to map one or all of the buffers with the 'offset'
->> parameter which is equal to its 'boff' value. Obviously, the 'offset'
->> value is only used to find the matched buffer instead of to be the
->> real offset from the buffer's physical start address as used by
->> vm_iomap_memory(). So, in some case that if the offset is not zero,
->> vm_iomap_memory() will fail.
-> Is this just a fix for something that can fail theoretically, or do you
-> actually have a case where this happens? I am very reluctant to make
-> any changes to videobuf. Drivers should all migrate to vb2.
->
-> I have CC-ed Marek as well since he knows a lot more about this stuff
-> than I do.
+On Wed, Sep 24, 2014 at 01:23:09PM +0200, Linus Walleij wrote:
+> On Tue, Sep 23, 2014 at 5:39 AM, Hongzhou.Yang
+> <srv_hongzhou.yang@mediatek.com> wrote:
+> 
+> > From: Hongzhou Yang <hongzhou.yang@mediatek.com>
+> >
+> > Add pinctrl node to mt8135.dtsi.
+> >
+> > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+> (...)
+> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_GPIO0 (MT_PIN_NO(0) | 0)
+> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 (MT_PIN_NO(0) | 1)
+> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_EINT49 (MT_PIN_NO(0) | 2)
+> > +#define MT8135_PIN_0_MSDC0_DAT7__FUNC_I2SOUT_DAT (MT_PIN_NO(0) | 3)
+> 
+> I haven't got to reviewing the driver, but this looks just wrong.
+> 
+> Have the magic numbers in the driver.
+> 
+> Use strings to describe functions, not integers.
 
-I'm sorry for a delay, I was really busy with other things.
+Interrupts, clocks, gpios, dma channels, nearly everything in the device tree is
+arbitrarily numbered. Instead of "irq-i2c0" we have <0 36 IRQ_TYPE_LEVEL_HIGH>
+in the device tree. These numbers can be resolved efficiently in the
+driver by shifting them to get a bitmask or by adding them as offset to
+a register base.
+Why do you want to make pinctrl different? Thanks to the recently
+introduced defines in the device trees these numbers are not magic at
+all anymore.
 
->> Signed-off-by: Fancy Fang <chen.fang@freescale.com>
->> ---
->>   drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
->>   1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
->> index bf80f0f..8bd9889 100644
->> --- a/drivers/media/v4l2-core/videobuf-dma-contig.c
->> +++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
->> @@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
->>   	/* Try to remap memory */
->>   	size = vma->vm_end - vma->vm_start;
->>   	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->> -	retval = vm_iomap_memory(vma, mem->dma_handle, size);
->> +	retval = remap_pfn_range(vma, vma->vm_start,
->> +				 mem->dma_handle >> PAGE_SHIFT,
->> +				 size, vma->vm_page_prot);
->>   	if (retval) {
->>   		dev_err(q->dev, "mmap: remap failed with error %d. ",
->>   			retval);
+> 
+> We need to move toward standardized device tree bindings
+> for this stuff, and that means using strings, not magic
+> numbers.
 
-I think we don't need to revert the code to use remap_pfn_range() again 
-(like
-it was in pre v3.10 times). The simplest way will be to correctly fix
-vma->vm_pgoff and set it to zero before calling vm_iomap_memory(). It is
-done the same way in vb2_dma_contig.c:vb2_dc_mmap().
+Agreed for standardized device tree bindings, but not for using strings.
 
-To sum up - please change your patch: keep vm_iomap_memory() call and add
-"vma->vm_pgoff = 0;" line before it with suitable comment.
+Sascha
 
-Best regards
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
