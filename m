@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaIXNvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:51:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54041 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751746AbaIXNvo (ORCPT
+	id S1754145AbaIXNwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:52:07 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59103 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017AbaIXNuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:51:44 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Darren Hart <dvhart@infradead.org>,
-        David Woodhouse <david.woodhouse@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+	Wed, 24 Sep 2014 09:50:35 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-76-5422cc26bb26
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
-Date: Wed, 24 Sep 2014 16:11:33 +0200
-Message-ID: <1965808.H15Dedhqve@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140924093823.GW1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <6744174.JquHLt80n3@wuerfel> <20140924093823.GW1786@lahna.fi.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v7 5/5] amba: Remove unused amba_pclk_enable/disable macros
+Date: Wed, 24 Sep 2014 15:50:12 +0200
+Message-id: <1411566612-32277-6-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1411566612-32277-1-git-send-email-k.kozlowski@samsung.com>
+References: <1411566612-32277-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xy7pqZ5RCDN506lhsnLGe1WL61AuM
+	Fqun/mW1OPBnB6PF6xeGFmeb3rBbLJk8n9Vi1pS9TBYL25awWFzeNYfN4nPvEUaL25d5LdYe
+	uctu8e5lhMXdU0fZLN7emc5iceb0JVaLCb8vsFkcXxtu8bJvP4uDiEdLcw+bx+YVWh6L97xk
+	8rhzbQ+bx5I3h1g9tlxtZ/GYffcHo0ffllWMHitWf2f3+LxJzmPv598sAdxRXDYpqTmZZalF
+	+nYJXBm3mgUKlrBXPFp3nr2BcSZbFyMnh4SAicSj9UfYIWwxiQv31gPFuTiEBJYySjQte80O
+	4fQxSZzpnMUCUsUmYCyxefkSsCoRgSMsEs/uPQFzmAWOMkpM733LBFIlLOAt8fP6RaB2Dg4W
+	AVWJY7sDQcK8Au4Sj34vYoFYJydx8thkVpASTgEPibdbtUDCQkAlfb3P2SYw8i5gZFjFKJpa
+	mlxQnJSea6RXnJhbXJqXrpecn7uJERIJX3cwLj1mdYhRgINRiYd3orhSiBBrYllxZe4hRgkO
+	ZiUR3kOngEK8KYmVValF+fFFpTmpxYcYmTg4pRoYl6y+0qDz68nZ/05d9xM9JmiyHHiYZ/nG
+	oU/5acKGF19sw7uljrH8XNC8vz77x5sCiR5vzy89VtslDBY6ha7P1DRiXsLRz3d2Od+DuIJT
+	25v5FLZMiO0TC+CwuL3Y7f1sXV/5SckrfFwWvQhZ96zSRXnuH0+e68tFhfa1tjzbJHzS5oJE
+	NVeBEktxRqKhFnNRcSIAI+LBhmICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 24, 2014 12:38:23 PM Mika Westerberg wrote:
-> On Wed, Sep 24, 2014 at 11:12:36AM +0200, Arnd Bergmann wrote:
-> > As a start, we could probably take the proposed device_for_each_child_node
-> > and move that into the leds-core, changing the fw_dev_node argument
-> > for an led_classdev with the addition of the of_node and acpi_object
-> > members. It would still leave it up to the gpio-leds driver to do
-> > 
-> > 	if (led_cdev->of_node)
-> > 		gpiod = devm_of_get_gpiod(led_cdev->of_node, ...);
-> > 	else
-> > 		gpiod = devm_acpi_get_gpiod(led_cdev->acpi_object, ...);
-> > 
-> > but there seems little benefit in abstracting this because there is
-> > only one driver that needs it.
-> 
-> The same interface is used also in gpio_keys_polled.c driver so if we
-> want to avoid duplicating code this needs to be abstracted away from the
-> drivers.
+Remove the amba_pclk_enable and amba_pclk_disable macros because they
+are not used by the drivers.
 
-Well, precisely.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ include/linux/amba/bus.h | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Moving it to the leds-core doesn't buy us anything.
-
+diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+index fd0c0bfa1d38..275e4a346de7 100644
+--- a/include/linux/amba/bus.h
++++ b/include/linux/amba/bus.h
+@@ -87,12 +87,6 @@ struct amba_device *amba_find_device(const char *, struct device *, unsigned int
+ int amba_request_regions(struct amba_device *, const char *);
+ void amba_release_regions(struct amba_device *);
+ 
+-#define amba_pclk_enable(d)	\
+-	(IS_ERR((d)->pclk) ? 0 : clk_enable((d)->pclk))
+-
+-#define amba_pclk_disable(d)	\
+-	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
+-
+ static inline void amba_pclk_prepare(struct amba_device *dev)
+ {
+ 	clk_prepare(dev->pclk);
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.1
+
