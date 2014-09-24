@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbaIXQSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:18:45 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:62791 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaIXQSo (ORCPT
+	id S1753781AbaIXQTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:19:13 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:48701 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaIXQTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:18:44 -0400
-Date: Wed, 24 Sep 2014 17:18:37 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, lm-sensors@lm-sensors.org, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
-Message-ID: <20140924161837.GA7113@lee--X1>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <20140924144829.GK32069@lee--X1>
- <20140924154503.GA12403@roeck-us.net>
+	Wed, 24 Sep 2014 12:19:11 -0400
+Message-ID: <5422EEFA.7020303@atmel.com>
+Date: Wed, 24 Sep 2014 18:19:06 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140924154503.GA12403@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91: enable new AIC driver even if the old one
+ is selected
+References: <1410254099-24680-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1410254099-24680-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Guenter Roeck wrote:
+On 09/09/2014 11:14, Boris BREZILLON :
+> The new AIC driver is currently only selected when only DT board support
+> is enabled (and not when both DT and non-DT boards are supported), thus,
+> when booting a "DT + non-DT" kernel with a dtb, the irqchip is never
+> initialized/registered which then triggers a panic.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
-> > Guenter, Bryan, Wim,
-> > 
-> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-> > 
-> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
-> > 
-> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
-> > 
-> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
-> > 
-> > ----------------------------------------------------------------
-> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
-> > 
-> I assume you'll push it all through mfd, correct ?
+I'm not taking this right now. The Kconfig file is in flux. I'll try to
+queue it during the 3.18-rc phase.
 
-The idea is for all the affected Maintainers to pull this branch in to
-their own trees.  If you guys don't, there will be a good chance of
-conflict during the merge-window, which will subsequently upset Linus.
+Bye,
 
-So in answer to your question; yes I'll be taking this, but so should
-each of you.
+> ---
+>  arch/arm/mach-at91/Kconfig | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> index 7df2c9b..cd7c0cb 100644
+> --- a/arch/arm/mach-at91/Kconfig
+> +++ b/arch/arm/mach-at91/Kconfig
+> @@ -51,7 +51,7 @@ config HAVE_AT91_SMD
+>  config SOC_AT91SAM9
+>  	bool
+>  	select AT91_SAM9_TIME
+> -	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
+> +	select ATMEL_AIC_IRQ
+>  	select CPU_ARM926T
+>  	select GENERIC_CLOCKEVENTS
+>  
+> @@ -111,7 +111,7 @@ endif
+>  if SOC_SAM_V4_V5
+>  config SOC_AT91RM9200
+>  	bool "AT91RM9200"
+> -	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
+> +	select ATMEL_AIC_IRQ
+>  	select CPU_ARM920T
+>  	select GENERIC_CLOCKEVENTS
+>  	select HAVE_AT91_DBGU0
+> 
 
-> > ----------------------------------------------------------------
-> > Andreas Werner (4):
-> >       mfd: menf21bmc: Introduce MEN 14F021P00 BMC MFD Core driver
-> >       watchdog: menf21bmc_wdt: Introduce MEN 14F021P00 BMC Watchdog driver
-> >       leds: leds-menf21bmc: Introduce MEN 14F021P00 BMC LED driver
-> >       hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver
-> > 
-> >  Documentation/hwmon/menf21bmc    |  50 +++++++++
-> >  drivers/hwmon/Kconfig            |  10 ++
-> >  drivers/hwmon/Makefile           |   1 +
-> >  drivers/hwmon/menf21bmc_hwmon.c  | 230 +++++++++++++++++++++++++++++++++++++++
-> >  drivers/leds/Kconfig             |   9 ++
-> >  drivers/leds/Makefile            |   1 +
-> >  drivers/leds/leds-menf21bmc.c    | 131 ++++++++++++++++++++++
-> >  drivers/mfd/Kconfig              |  15 +++
-> >  drivers/mfd/Makefile             |   1 +
-> >  drivers/mfd/menf21bmc.c          | 132 ++++++++++++++++++++++
-> >  drivers/watchdog/Kconfig         |  10 ++
-> >  drivers/watchdog/Makefile        |   1 +
-> >  drivers/watchdog/menf21bmc_wdt.c | 203 ++++++++++++++++++++++++++++++++++
-> >  13 files changed, 794 insertions(+)
-> >  create mode 100644 Documentation/hwmon/menf21bmc
-> >  create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
-> >  create mode 100644 drivers/leds/leds-menf21bmc.c
-> >  create mode 100644 drivers/mfd/menf21bmc.c
-> >  create mode 100644 drivers/watchdog/menf21bmc_wdt.c
-> > 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Nicolas Ferre
