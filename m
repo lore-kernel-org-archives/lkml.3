@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaIXKFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:05:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620AbaIXKFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:05:36 -0400
-Message-ID: <54229758.5060109@redhat.com>
-Date: Wed, 24 Sep 2014 12:05:12 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753557AbaIXKGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:06:22 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:59215 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaIXKGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:06:20 -0400
+Date: Wed, 24 Sep 2014 11:06:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH] rtc: pm8xxx: rework to support pm8941 rtc
+Message-ID: <20140924100604.GC19999@lee--X1>
+References: <1410515044-31689-1-git-send-email-svarbanov@mm-sol.com>
+ <1411462245.20236.17.camel@x220>
+ <542143B2.1090707@mm-sol.com>
 MIME-Version: 1.0
-To: Christoffer Dall <cdall@cs.columbia.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Marc Zyngier <marc.zyngier@arm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eric Auger <eric.auger@linaro.org>
-Subject: Re: linux-next: build failure after merge of the kvm-arm tree
-References: <20140922140645.7c2ad9c8@canb.auug.org.au> <20140924165030.41c90baf@canb.auug.org.au> <20140924070612.GA15794@cbox>
-In-Reply-To: <20140924070612.GA15794@cbox>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <542143B2.1090707@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, 23 Sep 2014, Stanimir Varbanov wrote:
 
-Il 24/09/2014 09:06, Christoffer Dall ha scritto:
->>> Still getting this failure.
->>> 
-> Commit e9142e3b69c2ae8a699463e219e5b029ff0d652b in kvm/queue fixes
-> this, but it hasn't gone to next yet.
+> Hi Paul,
 > 
-> Paolo, I know there's a scary commit in queue but there's a bunch
-> of scary stuff in the kvmarm/next too that I'd like to see in next,
-> any chance you can put a subset of queue into next?
+> On 09/23/2014 11:50 AM, Paul Bolle wrote:
+> > Hi Stanimar,
+> > 
+> > On Fri, 2014-09-12 at 12:44 +0300, Stanimir Varbanov wrote:
+> >> Adds support for RTC device inside PM8941 PMIC. The RTC
+> >> in this PMIC have two register spaces. Thus the rtc-pm8xxx
+> >> is slightly reworked to reflect these differences.
+> >>
+> >> The register set for different PMIC chips are selected
+> >> on DT compatible string base.
+> >>
+> >> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> > 
+> > This patch just landed in next-20140923 as commit 99abd227988a
+> > ("drivers/rtc/rtc-pm8xxx.c: rework to support pm8941 rtc").
+> > 
+> >> --- a/drivers/rtc/Kconfig
+> >> +++ b/drivers/rtc/Kconfig
+> >> @@ -1283,7 +1283,7 @@ config RTC_DRV_LPC32XX
+> >>  
+> >>  config RTC_DRV_PM8XXX
+> >>  	tristate "Qualcomm PMIC8XXX RTC"
+> >> -	depends on MFD_PM8XXX
+> >> +	depends on MFD_PM8XXX || MFD_SPMI_PMIC
+> > 
+> > There's currently no Kconfig symbol MFD_SPMI_PMIC in linux-next. I guess
+> > it's currently queued somewhere. Is that correct?
+> 
+> The MFD driver which adds MFD_SPMI_PMIC symbol is still pending in the
+> mailing list. I will ask Lee Jones to add it to the MFD queue for 3.18.
 
-Yes, I will put the commit in next and rebase queue on top of it.
+MFD_SPMI_PMIC has now been merged.
 
-Paolo
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUIpdYAAoJEBvWZb6bTYbyAkwP/jwno7pOt/sHUaa+p45Uouse
-oFS2aej8ZVLz3LMy6KjFuIME1bJjQytIZrFaGn+UksGd6cfhECydVO8hlJxWUDbc
-PrWpnwzX/u4sorewmX+hq9EoFBfIEzC86NyrUaujiL6ojLjoJ4mkoRc9LRCm/K7j
-dPJFGEQqifs0HelWSQPxH4ei/YyHk/TcaKgepQGlG4Aw/crLHmEajbrnGLge7isW
-H/EtBW5iJToG8mxB+ipSwFCADUkXC+FUrEblX5Nxma/949roXg8LPuZUBxCxWwyr
-Voi5/lU1sZMRYixoCHhhKaWPDfoSspjPU4JNEUMj4qtrZrBD9W27+bjyQBTdLjU7
-erI1pQCmZsU52RdAtZiUBuSbRxb8is+WlRHJy7dhlb+SBcgXNWw/k9sxV2U6PZ+T
-Z4A0ngZM12ZTd6XWgiE+3mMR0XGBsjh7TYq+ybQReCgKeNy/Q3FL6fS4E9me7MWF
-CWIfqV327GYfH/eU8Bd1/VHGEZfDefDXZrdANa+A5FhaGTLIZbPHfEo2BCc85LhS
-RRlKjIg1LeByCHDRaQ8parl0xgZRLuENfHn5gso4ZsAKgLyUp8IIGanxH8GD2sRO
-F2AtAFfLSlXUo/FsxaW0bQOxnBB9L/UX5QmMT/YwG7QoP97Wa4fDBV1ruHTiJ9SO
-s/nkZE3pcbAFSv/0rXlG
-=ln4T
------END PGP SIGNATURE-----
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
