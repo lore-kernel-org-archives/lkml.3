@@ -1,261 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaIXLBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:01:05 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:52570 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaIXLBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:01:02 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 24 Sep 2014 12:58:28 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
-Message-ID: <20140924105828.GB17019@localhost>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
- <1411158165-25794-3-git-send-email-octavian.purdila@intel.com>
+	id S1752072AbaIXLB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:01:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33142 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751688AbaIXLBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 07:01:04 -0400
+Date: Wed, 24 Sep 2014 13:01:01 +0200
+From: Jan Kara <jack@suse.cz>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140924110101.GB24411@quack.suse.cz>
+References: <20140916170709.73ef2993@gandalf.local.home>
+ <20140916212250.GI1205@quack.suse.cz>
+ <20140916173328.6306a5c2@gandalf.local.home>
+ <20140917141816.GO2840@worktop.localdomain>
+ <20140917102255.5cd03071@gandalf.local.home>
+ <20140917223633.GE2848@worktop.localdomain>
+ <20140917203135.6db2ee5e@gandalf.local.home>
+ <20140918173414.GU2840@worktop.localdomain>
+ <20140920051224.GA5573@quack.suse.cz>
+ <20140920154733.GM2832@worktop.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411158165-25794-3-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140920154733.GM2832@worktop.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:22:43PM +0300, Octavian Purdila wrote:
+On Sat 20-09-14 17:47:33, Peter Zijlstra wrote:
+> On Sat, Sep 20, 2014 at 07:12:24AM +0200, Jan Kara wrote:
+> > On Thu 18-09-14 19:34:14, Peter Zijlstra wrote:
+> > > On Wed, Sep 17, 2014 at 08:31:35PM -0400, Steven Rostedt wrote:
+> > > > I totally didn't get what you wrote.
+> > > 
+> > > :-)
+> > > 
+> > > > We don't want to know if it got delayed, then the patch to remove that
+> > > > print seems correct.
+> > > 
+> > > Why would you not want to know that? Also was that the actual argument?
+> > > Lemme go check the earlier emails -- I cannot find that argument in the
+> > > first few emails.
+> >   Well, so what gets delayed is printing from kernel buffer to console.
+> > So this is the same as when you do printk() when console lock is taken by
+> > someone else. So it seems a bit strange to prepend [delayed] in some cases
+> > and not in others.
+> 
+> The difference is that when someone else has the console lock, he
+> guarantees it gets out. Whereas with the delayed thing it can take a
+> virtual forever to get out.
+> 
+> > Another question is what the [delayed] prefix would be useful for? If the
+> > message eventually gets printed to console I don't see why you would care
+> > it was printed few ms after it entered the kernel buffer (after all the
+> > time stamp before the line will be the time when it entered the kernel
+> > buffer). And if the kernel crashes in such a way that the message doesn't
+> > get printed, then bad luck but prefix in the kernel log buffer isn't going
+> > to make that any better :)
+> > 
+> > This all feels like bikeshedding, I don't deeply care what gets done but I
+> > wanted to point out I don't really see a use for [delayed]...
+> 
+> Sure, I was just pointing out that those arguments had not been made. I
+> think you're right, if you see the msg it obviously made it out. If you
+> don't see it, you don't know either way.
+> 
+> But a patch removing it _must_ make those arguments, it did not.
+  Markus, could you please resend the patch with Steven's ack and expanded
+changelog? Thanks!
 
-> +struct dln2_i2c {
-> +	struct platform_device *pdev;
-> +	struct i2c_adapter adapter;
-> +	u32 freq;
-> +	u32 min_freq;
-> +	u32 max_freq;
-> +	/*
-> +	 * Buffer to hold the packet for read or write transfers. One
-> +	 * is enough since we can't have multiple transfers in
-> +	 * parallel on the i2c adapter.
-> +	 */
-> +	union {
-> +		struct {
-> +			u8 port;
-> +			u8 addr;
-> +			u8 mem_addr_len;
-> +			__le32 mem_addr;
-> +			__le16 buf_len;
-> +			u8 buf[DLN2_I2C_MAX_XFER_SIZE];
-> +		} __packed tx;
-> +		struct {
-> +			__le16 buf_len;
-> +			u8 buf[DLN2_I2C_MAX_XFER_SIZE];
-> +		} __packed rx;
-> +	} *buf;
-
-Please declare these structs separately from the dln2_i2c struct so you
-can use temporary pointers below.
-
-Perhaps just allocate a large enough buffer (or page) here and keep you
-transfer-buffer declarations in the two functions where they are used if
-you prefer.
-
-> +};
->
-> +static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
-> +{
-> +	struct dln2_platform_data *pdata = dev_get_platdata(&dln2->pdev->dev);
-> +	int ret;
-> +	u8 port;
-> +	u16 cmd;
-> +
-> +	port = pdata->port;
-
-Store the port number in the dln2_i2c struct rather than access it
-through the platform data for every I/O operation.
-
-> +
-> +	if (enable)
-> +		cmd = DLN2_I2C_ENABLE;
-> +	else
-> +		cmd = DLN2_I2C_DISABLE;
-> +
-> +	ret = dln2_transfer(dln2->pdev, cmd, &port, sizeof(port), NULL, NULL);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int dln2_i2c_set_frequency(struct dln2_i2c *dln2, u32 freq)
-> +{
-> +	int ret;
-> +	struct tx_data {
-> +		u8 port;
-> +		__le32 freq;
-> +	} __packed tx;
-> +	struct dln2_platform_data *pdata = dev_get_platdata(&dln2->pdev->dev);
-> +
-> +	tx.port = pdata->port;
-> +	tx.freq = cpu_to_le32(freq);
-> +
-> +	ret = dln2_transfer(dln2->pdev, DLN2_I2C_SET_FREQUENCY, &tx, sizeof(tx),
-> +			    NULL, NULL);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	dln2->freq = freq;
-> +
-> +	return 0;
-> +}
-> +
-> +static int dln2_i2c_get_freq(struct dln2_i2c *dln2, u16 cmd, u32 *res)
-> +{
-> +	int ret;
-> +	struct dln2_platform_data *pdata = dev_get_platdata(&dln2->pdev->dev);
-> +	u8 port = pdata->port;
-> +	__le32 freq;
-> +	unsigned len = sizeof(freq);
-> +
-> +	ret = dln2_transfer(dln2->pdev, cmd, &port, sizeof(port),
-> +			    &freq, &len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (len < sizeof(freq))
-> +		return -EPROTO;
-> +
-> +	*res = le32_to_cpu(freq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int dln2_i2c_setup(struct dln2_i2c *dln2)
-> +{
-> +	int ret;
-> +
-> +	ret = dln2_i2c_enable(dln2, false);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = dln2_i2c_get_freq(dln2, DLN2_I2C_GET_MIN_FREQUENCY,
-> +				&dln2->min_freq);
-> +	if (ret < 0)
-> +		return 0;
-
-return ret
-
-> +
-> +	ret = dln2_i2c_get_freq(dln2, DLN2_I2C_GET_MAX_FREQUENCY,
-> +				&dln2->max_freq);
-> +	if (ret < 0)
-> +		return 0;
-
-return ret
-
-> +
-> +	ret = dln2_i2c_set_frequency(dln2, DLN2_I2C_FREQ_STD);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = dln2_i2c_enable(dln2, true);
-> +
-> +	return ret;
-> +}
-> +
-> +static int dln2_i2c_write(struct dln2_i2c *dln2, u8 addr,
-> +			  u8 *data, u16 data_len)
-> +{
-> +	struct dln2_platform_data *pdata = dev_get_platdata(&dln2->pdev->dev);
-> +	int ret;
-> +	unsigned len;
-> +
-> +	dln2->buf->tx.port = pdata->port;
-> +	dln2->buf->tx.addr = addr;
-> +	dln2->buf->tx.mem_addr_len = 0;
-> +	dln2->buf->tx.mem_addr = 0;
-> +	dln2->buf->tx.buf_len = cpu_to_le16(data_len);
-> +	memcpy(dln2->buf->tx.buf, data, data_len);
-> +
-> +	len = sizeof(dln2->buf->tx) + data_len - DLN2_I2C_MAX_XFER_SIZE;
-> +	ret = dln2_transfer(dln2->pdev, DLN2_I2C_WRITE, &dln2->buf->tx, len,
-> +			    NULL, NULL);
-
-Use a temporary pointer to the tx struct above for readability.
-
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return data_len;
-> +}
-> +
-> +static int dln2_i2c_read(struct dln2_i2c *dln2, u16 addr, u8 *data,
-> +			 u16 data_len)
-> +{
-> +	struct dln2_platform_data *pdata = dev_get_platdata(&dln2->pdev->dev);
-> +	int ret;
-> +	struct {
-> +		u8 port;
-> +		u8 addr;
-> +		u8 mem_addr_len;
-> +		__le32 mem_addr;
-> +		__le16 buf_len;
-> +	} __packed tx;
-> +	unsigned rx_len;
-> +
-> +	tx.port = pdata->port;
-> +	tx.addr = addr;
-> +	tx.mem_addr_len = 0;
-> +	tx.mem_addr = 0;
-> +	tx.buf_len = cpu_to_le16(data_len);
-> +
-> +	rx_len = sizeof(dln2->buf->rx);
-> +
-> +	ret = dln2_transfer(dln2->pdev, DLN2_I2C_READ, &tx, sizeof(tx),
-> +			    &dln2->buf->rx, &rx_len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (rx_len < sizeof(dln2->buf->rx.buf_len) + data_len)
-> +		return -EPROTO;
-> +	if (le16_to_cpu(dln2->buf->rx.buf_len) != data_len)
-> +		return -EPROTO;
-> +
-> +	memcpy(data, dln2->buf->rx.buf, data_len);'
-
-Use a temporary pointer to the rx struct above.
-
-> +
-> +	return data_len;
-> +}
-
-[...]
-
-> +static DEVICE_ATTR_RW(dln2_i2c_freq);
-
-Any new sysfs attribute must to be documented under Documentation/ABI.
-
-[...]
-
-> +static struct platform_driver dln2_i2c_driver = {
-> +	.driver.name	= "dln2-i2c",
-> +	.driver.owner	= THIS_MODULE,
-
-No need to set the owner field when using the module_platform_driver
-macro.
-
-> +	.probe		= dln2_i2c_probe,
-> +	.remove		= dln2_i2c_remove,
-> +};
-> +
-> +module_platform_driver(dln2_i2c_driver);
-> +
-> +MODULE_AUTHOR("Laurentiu Palcu <laurentiu.palcu@intel.com>");
-> +MODULE_DESCRIPTION("Driver for the Diolan DLN2 I2C master interface");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:dln2-i2c");
-
-Johan
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
