@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaIXX2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 19:28:07 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:33342 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbaIXX2F (ORCPT
+	id S1751418AbaIXXsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 19:48:25 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:60770 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaIXXsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 19:28:05 -0400
-Date: Wed, 24 Sep 2014 19:24:00 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
-        swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        juha-matti.tilli@iki.fi
-Subject: Re: [PATCH v5 4/4] thermal: Add Tegra SOCTHERM thermal management
- driver
-Message-ID: <20140924232347.GA16539@developer>
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
- <1408616242-21009-5-git-send-email-mperttunen@nvidia.com>
- <20140924191829.GA16529@developer>
- <54231C3D.6040900@kapsi.fi>
+	Wed, 24 Sep 2014 19:48:23 -0400
+Date: Wed, 24 Sep 2014 17:48:19 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has
+ 64bit mmio
+Message-ID: <20140924234819.GF20416@google.com>
+References: <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
+ <CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
+ <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
+ <52A8BAC5.70006@canonical.com>
+ <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+ <52D01D82.5070202@canonical.com>
+ <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
+ <54189BCE.2010206@canonical.com>
+ <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
+ <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54231C3D.6040900@kapsi.fi>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-
-On Wed, Sep 24, 2014 at 10:32:13PM +0300, Mikko Perttunen wrote:
-> On 09/24/2014 10:18 PM, Eduardo Valentin wrote:
+On Wed, Sep 17, 2014 at 12:46:24AM -0700, Yinghai Lu wrote:
+> On Tue, Sep 16, 2014 at 3:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
+> > <joseph.salisbury@canonical.com> wrote:
+> >>
+> >> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
+> >> is similar to the original bug[1] we discussed.
+> >>
+> >> Just wondering if there have been any additional ideas on realloc since
+> >> this was last discussed?
+> >>
+> >> [0] http://pad.lv/1363313
 > >
-> > Mikko,
+> > So the resource realloc do work as expected. but LSI firmware has some
+> > problem again?
 > >
-> > On Thu, Aug 21, 2014 at 01:17:22PM +0300, Mikko Perttunen wrote:
-> >> ...
-> >> +
-> >> +static int enable_tsensor(struct tegra_soctherm *tegra,
-> >> +			  const struct tegra_tsensor *sensor,
-> >> +			  struct tsensor_shared_calibration shared)
-> >> +{
-> >> +	void * __iomem base = tegra->regs + sensor->base;
-> >
-> > I get sparse complaining about this declaration. For the sake of keeping
-> > a clean static checks, can you please:
-> > -       void * __iomem base = tegra->regs + sensor->base;
-> > +       void __iomem * base = tegra->regs + sensor->base;
-> >
+> > We may need to add command after the reset the bridge resource.
 > 
-> Sure.
+> Can you try attached patch?
 
+This sitting in patchwork, but I'm dropping it because there's no changelog
+or signed-off-by.  I don't think the underlying bug has been resolved,
+though.
 
-Good.
+Bjorn
 
+> ---
+>  drivers/pci/setup-bus.c |   16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
 > 
-> >
-> > Can you also please check the remaining sparse errors?
-> >    CHECK   drivers/thermal/tegra_soctherm.c
-> >    drivers/thermal/tegra_soctherm.c:260:43: warning: incorrect type in
-> >    initializer (different address spaces)
-> >    drivers/thermal/tegra_soctherm.c:260:43:    expected void *[noderef]
-> >    <asn:2>base
-> >    drivers/thermal/tegra_soctherm.c:260:43:    got void [noderef]
-> >    <asn:2>*
-> >    drivers/thermal/tegra_soctherm.c:271:9: warning: incorrect type in
-> >    argument 2 (different address spaces)
-> >    drivers/thermal/tegra_soctherm.c:271:9:    expected void volatile
-> >    [noderef] <asn:2>*addr
-> >    drivers/thermal/tegra_soctherm.c:271:9:    got void *
-> >    drivers/thermal/tegra_soctherm.c:279:9: warning: incorrect type in
-> >    argument 2 (different address spaces)
-> >    drivers/thermal/tegra_soctherm.c:279:9:    expected void volatile
-> >    [noderef] <asn:2>*addr
-> >    drivers/thermal/tegra_soctherm.c:279:9:    got void *
-> >    drivers/thermal/tegra_soctherm.c:281:9: warning: incorrect type in
-> >    argument 2 (different address spaces)
-> >    drivers/thermal/tegra_soctherm.c:281:9:    expected void volatile
-> >    [noderef] <asn:2>*addr
-> >    drivers/thermal/tegra_soctherm.c:281:9:    got void *
-> >    drivers/thermal/tegra_soctherm.c:347:25: warning: incorrect type in
-> >    argument 1 (different address spaces)
-> >    drivers/thermal/tegra_soctherm.c:347:25:    expected void const *ptr
-> >    drivers/thermal/tegra_soctherm.c:347:25:    got void [noderef]
-> >    <asn:2>*regs
-> >    drivers/thermal/tegra_soctherm.c:349:37: warning: incorrect type in
-> >    argument 1 (different address spaces)
-> >    drivers/thermal/tegra_soctherm.c:349:37:    expected void const *ptr
-> >    drivers/thermal/tegra_soctherm.c:349:37:    got void [noderef]
-> >    <asn:2>*regs
-> >    drivers/thermal/tegra_soctherm.c:271:9: warning: dereference of
-> >    noderef expression
-> >    drivers/thermal/tegra_soctherm.c:279:9: warning: dereference of
-> >    noderef expression
-> >    drivers/thermal/tegra_soctherm.c:281:9: warning: dereference of
-> >    noderef expression
-> >
-> 
-> Most of these seem to be caused by the above-mentioned swapping of 
-> __iomem and *. The ones on lines 347 and 349 are more peculiar, though. 
-> Apparently sparse doesn't like using IS_ERR and PTR_ERR on the void 
-> __iomem * pointer returned by devm_ioremap_resource. Looks like this has 
-> been discussed before (https://lkml.org/lkml/2013/6/17/216) and sparse 
-> should have been patched to ignore this situation, so I'm not sure why 
-> it's complaining about it. Anyway, there shouldn't be any issue here.
+> Index: linux-2.6/drivers/pci/setup-bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/setup-bus.c
+> +++ linux-2.6/drivers/pci/setup-bus.c
+> @@ -1615,6 +1615,22 @@ again:
+>  						 fail_res->flags & type_mask,
+>  						 rel_type);
+>  
+> +	/* reset LSI device */
+> +	list_for_each_entry(fail_res, &fail_head, list) {
+> +		struct pci_dev *pdev;
+> +		struct pci_bus *pbus = fail_res->dev->bus;
+> +
+> +		if (pci_is_root_bus(pbus) || !pbus->self)
+> +			continue;
+> +
+> +		/* LSI device firmware is not happy with changing BAR value */
+> +		list_for_each_entry(pdev, &pbus->devices, bus_list)
+> +			if (pdev->vendor == PCI_VENDOR_ID_LSI_LOGIC) {
+> +				pci_reset_secondary_bus(pbus->self);
+> +				break;
+> +			}
+> +	}
+> +
+>  	/* restore size and flags */
+>  	list_for_each_entry(fail_res, &fail_head, list) {
+>  		struct resource *res = fail_res->res;
 
-Sounds good to me.
-
-> 
-> Mikko
-> 
