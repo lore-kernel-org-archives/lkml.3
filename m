@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaIXR5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:57:23 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:51970 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaIXR5V (ORCPT
+	id S1754386AbaIXR52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:57:28 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:33258 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234AbaIXR50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 13:57:21 -0400
+	Wed, 24 Sep 2014 13:57:26 -0400
+Date: Wed, 24 Sep 2014 17:56:52 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, Daniel Mack <daniel@caiaq.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] usb: core: downgrade log severity to info when
+ descriptor unavailable
+In-Reply-To: <20140924051851.GA6519@kroah.com>
+Message-ID: <alpine.DEB.2.11.1409241736520.2919@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1409231021190.1322-100000@iolanthe.rowland.org> <alpine.DEB.2.11.1409231905460.3223@localhost.localdomain> <alpine.DEB.2.11.1409231909590.7196@localhost.localdomain> <20140924051851.GA6519@kroah.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1411572802-22042-3-git-send-email-kever.yang@rock-chips.com>
-References: <1411572802-22042-1-git-send-email-kever.yang@rock-chips.com>
-	<1411572802-22042-3-git-send-email-kever.yang@rock-chips.com>
-Date: Wed, 24 Sep 2014 10:57:20 -0700
-X-Google-Sender-Auth: ZsriFer_SYXnINymhQX_abA_wJY
-Message-ID: <CAD=FV=X1A6zKsGzctS6_Ve_zuNRW6_5kyawPEK1VeBJTimXTwA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] clk: rockchip: use the clock id for nodes init
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        linux-rockchip@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On Tue, 23 Sep 2014, Greg Kroah-Hartman wrote:
+> On Tue, Sep 23, 2014 at 07:12:40PM +0000, Scot Doyle wrote:
+>> According to commit 0cce2eda19923e5e5ccc8b042dec5af87b3ffad0
+>>     USB: fix LANGID=0 regression
+>>
+>> usb devices are not required to report string descriptors. Since they are
+>> optional, log an info message instead of an error message.
+>>
+>> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+>> ---
+>>  drivers/usb/core/message.c | 8 ++++++--
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+>> index 0c8a7fc..da2f1f2 100644
+>> --- a/drivers/usb/core/message.c
+>> +++ b/drivers/usb/core/message.c
+>> @@ -780,8 +780,12 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
+>>  	 * deal with strings at all. Set string_langid to -1 in order to
+>>  	 * prevent any string to be retrieved from the device */
+>>  	if (err < 0) {
+>> -		dev_err(&dev->dev, "string descriptor 0 read error: %d\n",
+>> -					err);
+>> +		if (err == -EPIPE)
+>> +			dev_info(&dev->dev,
+>> +				 "string descriptor 0 read error: -EPIPE\n");
+>> +		else
+>> +			dev_err(&dev->dev,
+>> +				"string descriptor 0 read error: %d\n", err);
+>
+> What real difference does this patch make?  What would a user do with
+> -EPIPE?
 
-On Wed, Sep 24, 2014 at 8:33 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> This patch use the new defined clock ID to initial the clock nodes.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->
-> Changes in v2:
-> - split into two patches of add clock node in PD_VIDEO and
->   use new defined clock ID
->
->  drivers/clk/rockchip/clk-rk3288.c | 68 +++++++++++++++++++--------------------
->  1 file changed, 34 insertions(+), 34 deletions(-)
+Not much difference, except e.g. a log line that isn't red.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+> And USB devices _are_ required to provide a string descriptor if they
+> provide a string id, so your changelog body doesn't make much sense.  I
+> suggest rewriting it to say they aren't required to provide a string
+> descriptor for string "0".
+>
+> But even then, I don't understand the goal of this patch.
+
+I'm happy to drop this patch request, since in my case the return value is 
+-ENODATA, which is covered by the other patch: "[RFC PATCH] usb: core: log 
+more general message on malformed LANGID descriptor"
+
