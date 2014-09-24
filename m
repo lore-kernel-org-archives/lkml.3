@@ -1,172 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaIXIOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:14:07 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48012 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaIXIN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:13:59 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <54227CF1.6020305@jp.fujitsu.com>
-Date: Wed, 24 Sep 2014 17:12:33 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC Part2 v1 00/21] Enable hierarchy irqdomian on x86 platforms
-References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com> <542279D0.1040603@jp.fujitsu.com> <54227C7E.6060506@linux.intel.com>
-In-Reply-To: <54227C7E.6060506@linux.intel.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	id S1754452AbaIXIOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:14:20 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58894 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754193AbaIXIOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:14:16 -0400
+Message-ID: <1411546457.18580.50.camel@iivanov-dev>
+Subject: Re: [PATCH v4 3/4] pinctrl: Qualcomm SPMI PMIC GPIO pin controller
+ driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        David Collins <collinsd@codeaurora.org>,
+        Wu Fenglin <fenglinw@qti.qualcomm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Wed, 24 Sep 2014 11:14:17 +0300
+In-Reply-To: <20140924041852.GO10179@sonymobile.com>
+References: <1410792254-24126-1-git-send-email-iivanov@mm-sol.com>
+	 <1410792254-24126-4-git-send-email-iivanov@mm-sol.com>
+	 <20140924041852.GO10179@sonymobile.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/24 17:10), Jiang Liu wrote:
+On Tue, 2014-09-23 at 21:18 -0700, Bjorn Andersson wrote:
+> On Mon 15 Sep 07:44 PDT 2014, Ivan T. Ivanov wrote:
 > 
+> > This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+> > Qualcomm GPIO sub-function blocks found in the PMIC chips.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 > 
-> On 2014/9/24 15:59, Yasuaki Ishimatsu wrote:
->> (2014/09/11 23:03), Jiang Liu wrote:
->>> We plan to restructure x86 interrupt code based on hierarchy irqdomain,
->>> that is to build irqdomains for CPU vector, interrupt remapping unit,
->>> IOAPIC, MSI and HPET etc and organize those irqdomains in hierarchy mode.
->>> Each irqdomain manages corresponding interrupt controller and talks to
->>> parent interrupt controller through public irqdomain interfaces. We also
->>> support stacked irq_chip based on hierarchy irqdomain. It will make the
->>> x86 interrupt architecture much more clear and more easy to maintain
->>> with hierarchy irqdomain and stacked irq_chip. It may also help ARM
->>> interrupt management architecture too.
->>
->> Do you have a documentation which more detailed information is written?
->> I'm interested in this feature. And I want to know more detailed information.
->>
->> I cannot imagine why the feature makes x86 irq architecture much more clear
->> and more easy to maintain in this description. Of course, I have read the
->> following threads:
->>
->> https://lkml.org/lkml/2014/9/11/101
-> Hi Yasuaki,
-> 
-> Do these help?
-> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg729924.html
-> https://lkml.org/lkml/2014/8/1/67
+> I think this looks pretty good, just some minor comments. Mostly on the future
+> compatibility of the Kconfig and compatible.
 
-Thank you for the information. I'll read it.
-
-Thanks,
-Yasuaki Ishimatsu
+Thanks.
 
 > 
-> Regards!
-> Gerry
+> It's much in line with what I hacked up for pm8xxx, I was just hoping to get
+> something from Thomas regarding irq_read_line() before pushing it again...
 > 
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>>
->>> This is the second patch set to enable support of hierarchy irqdomain
->>> on x86 platforms. It depends on the first part at:
->>> https://lkml.org/lkml/2014/9/11/101
->>> And you may access it at:
->>> https://github.com/jiangliu/linux.git irqdomain/p2v1
->>>
->>> And there will be a third patch set to convert IOAPIC driver to support
->>> hierarchy irqdomain and clean up code.
->>>
->>> The first patch extends irqdomain interfaces to support hierarchy
->>> irqdomain. Hope this interface could be used by other architectures too,
->>> such as ARM/ARM64.
->>> The second patch introduces two helper functions to support stacked
->>> irq_chip.
->>> Patch 3-9 implements an irqdomain to manange CPU interrupt vectors, and
->>> it's the root irqdomain for x86 platforms.
->>> Patch 10-13 converts Intel and AMD interrupt remapping drivers to
->>> support hierarchy irqdomain.
->>> Patch 14-17 converts HPET, MSI and HT_IRQ drivers to support hierarchy
->>> irqdomain.
->>> Patch 18-21 cleans up unsued code in x86 arch and interrupt remapping
->>> drivers.
->>>
->>> We have tested this patchset on Intel 32-bit and 64-bit systems. But we
->>> have only done compilation tests for HT_IRQ and AMD interrupt remapping
->>> drivers due to hardware resource limitation. Tests on AMD platforms are
->>> warmly welcomed!
->>>
->>> Jiang Liu (21):
->>>     irqdomain: Introduce new interfaces to support hierarchy irqdomains
->>>     genirq: Introduce helper functions to support stacked irq_chip
->>>     x86, irq: Save destination CPU ID in irq_cfg
->>>     x86, irq: Use hierarchy irqdomain to manage CPU interrupt vectors
->>>     x86, hpet: Use new irqdomain interfaces to allocate/free IRQ
->>>     x86, MSI: Use new irqdomain interfaces to allocate/free IRQ
->>>     x86, uv: Use new irqdomain interfaces to allocate/free IRQ
->>>     x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
->>>     x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
->>>     x86: irq_remapping: Introduce new interfaces to support hierarchy
->>>       irqdomain
->>>     iommu/vt-d: Change prototypes to prepare for enabling hierarchy
->>>       irqdomain
->>>     iommu/vt-d: Enhance Intel IR driver to suppport hierarchy irqdomain
->>>     iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
->>>     x86, hpet: Enhance HPET IRQ to support hierarchy irqdomain
->>>     x86, MSI: Use hierarchy irqdomain to manage MSI interrupts
->>>     x86, irq: Directly call native_compose_msi_msg() for DMAR IRQ
->>>     x86, htirq: Use hierarchy irqdomain to manage Hypertransport
->>>       interrupts
->>>     iommu/vt-d: Clean up unused MSI related code
->>>     iommu/amd: Clean up unused MSI related code
->>>     x86: irq_remapping: Clean up unused MSI related code
->>>     x86, irq: Clean up unused MSI related code and interfaces
->>>
->>>    arch/x86/Kconfig                     |    3 +-
->>>    arch/x86/include/asm/hpet.h          |   16 +-
->>>    arch/x86/include/asm/hw_irq.h        |   64 +++++
->>>    arch/x86/include/asm/irq_remapping.h |   66 +++--
->>>    arch/x86/include/asm/pci.h           |    5 -
->>>    arch/x86/include/asm/x86_init.h      |    4 -
->>>    arch/x86/kernel/apic/htirq.c         |  179 +++++++++----
->>>    arch/x86/kernel/apic/io_apic.c       |    3 -
->>>    arch/x86/kernel/apic/msi.c           |  430 +++++++++++++++++++++++--------
->>>    arch/x86/kernel/apic/vector.c        |  158 +++++++++++-
->>>    arch/x86/kernel/hpet.c               |   57 ++---
->>>    arch/x86/kernel/x86_init.c           |    2 -
->>>    arch/x86/platform/uv/uv_irq.c        |   27 +-
->>>    drivers/iommu/amd_iommu.c            |  385 ++++++++++++++++++++++------
->>>    drivers/iommu/amd_iommu_init.c       |    4 +
->>>    drivers/iommu/amd_iommu_proto.h      |    9 +
->>>    drivers/iommu/amd_iommu_types.h      |    5 +
->>>    drivers/iommu/intel_irq_remapping.c  |  468 +++++++++++++++++++++++-----------
->>>    drivers/iommu/irq_remapping.c        |  221 ++++++----------
->>>    drivers/iommu/irq_remapping.h        |   22 +-
->>>    drivers/pci/htirq.c                  |   48 +---
->>>    include/linux/htirq.h                |   22 +-
->>>    include/linux/intel-iommu.h          |    4 +
->>>    include/linux/irq.h                  |    8 +
->>>    include/linux/irqdomain.h            |   60 +++++
->>>    kernel/irq/Kconfig                   |    3 +
->>>    kernel/irq/chip.c                    |   21 ++
->>>    kernel/irq/irqdomain.c               |  349 ++++++++++++++++++++++++-
->>>    28 files changed, 1934 insertions(+), 709 deletions(-)
->>>
->>
->>
+> > ---
+> >  drivers/pinctrl/qcom/Kconfig                  |  12 +
+> >  drivers/pinctrl/qcom/Makefile                 |   1 +
+> >  drivers/pinctrl/qcom/pinctrl-spmi-pmic-gpio.c | 942 ++++++++++++++++++++++++++
+> >  3 files changed, 955 insertions(+)
+> >  create mode 100644 drivers/pinctrl/qcom/pinctrl-spmi-pmic-gpio.c
 
+I am planing to remove pmic part from the file name.
+
+Comments will be fixed in next version.
+
+Thank you.
+Ivan
 
