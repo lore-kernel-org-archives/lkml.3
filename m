@@ -1,241 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaIXRFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:05:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41322 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751209AbaIXRF1 (ORCPT
+	id S1753735AbaIXRF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:05:29 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39635 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaIXRF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 13:05:27 -0400
-Date: Wed, 24 Sep 2014 18:05:22 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
-        Lee Jones <lee.jones@linaro.org>, Philippe Reynes <tremyfr@yahoo.fr>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v2] iio: iadc: Qualcomm SPMI PMIC current ADC driver
-Message-ID: <20140924170522.GL5729@leverpostej>
-References: <1411567103-2380-1-git-send-email-iivanov@mm-sol.com>
- <20140924145527.GI5729@leverpostej>
- <1411574442.18580.95.camel@iivanov-dev>
+Date: Wed, 24 Sep 2014 10:05:21 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] watchdog: qcom: register a restart notifier
+Message-ID: <20140924170521.GB31578@roeck-us.net>
+References: <cover.1411513109.git.joshc@codeaurora.org>
+ <2d539bc944f3e8fc70f39728b0f61fd171b2e5bf.1411513109.git.joshc@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411574442.18580.95.camel@iivanov-dev>
+In-Reply-To: <2d539bc944f3e8fc70f39728b0f61fd171b2e5bf.1411513109.git.joshc@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 05:00:42PM +0100, Ivan T. Ivanov wrote:
-> On Wed, 2014-09-24 at 15:55 +0100, Mark Rutland wrote:
-> > On Wed, Sep 24, 2014 at 02:58:23PM +0100, Ivan T. Ivanov wrote:
-> > > The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> > > 16 bits resolution and register space inside PMIC accessible across
-> > > SPMI bus.
-> > > 
-> > > The driver registers itself through IIO interface.
-> > > 
-> > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > ---
-> > > Changes:
-> > > - Fix Kconfig dependencies
-> > > - Reword Kconfig help text
-> > > - Replace IIO_CHAN_INFO_PROCESSED with IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE,
-> > >   This enable client drivers to use microampers precission, instead miliamps.
-> > > - Use const array for iio_schan_spec-fiers.
-> > > - Fix spelling errors and adress review comments.
-> > > 
-> > > Previous version:
-> > > https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg728360.html
-> > > 
-> > >  .../devicetree/bindings/iio/adc/qcom,spmi-iadc.txt |  61 ++
-> > >  drivers/iio/adc/Kconfig                            |  11 +
-> > >  drivers/iio/adc/Makefile                           |   1 +
-> > >  drivers/iio/adc/qcom-spmi-iadc.c                   | 691 +++++++++++++++++++++
-> > >  4 files changed, 764 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
-> > >  create mode 100644 drivers/iio/adc/qcom-spmi-iadc.c
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
-> > > new file mode 100644
-> > > index 0000000..06e58b6
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
-> > > @@ -0,0 +1,61 @@
-> > > +Qualcomm's SPMI PMIC current ADC
-> > > +
-> > > +QPNP PMIC current ADC (IADC) provides interface to clients to read current.
-> > > +A 16 bit ADC is used for current measurements.
-> > > +
-> > > +IADC node:
-> > > +
-> > > +- compatible:
-> > > +    Usage: required
-> > > +    Value type: <string>
-> > > +    Definition: Should contain "qcom,spmi-iadc".
-> > > +
-> > > +- reg:
-> > > +    Usage: required
-> > > +    Value type: <prop-encoded-array>
-> > > +    Definition: IADC base address and length in the SPMI PMIC register map.
-> > > +                TRIM_CNST_RDS register address and length(1)
-> > 
-> > Are these two register regions? Please make the order explicit somehow
-> > (either say first/second/third/etc, or use reg-names).
+On Tue, Sep 23, 2014 at 06:04:38PM -0500, Josh Cartwright wrote:
+> The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
+> resort mechanism for triggering chip reset.  Usually, other restart
+> methods (such as PS_HOLD) are preferrable for issuing a more complete
+> reset of the chip.  As such, keep the priority of the watchdog notifier
+> low.
 > 
-> Will make order explicit. 
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> ---
+>  drivers/watchdog/qcom-wdt.c | 28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
 > 
-> > 
-> > Are they both part of the IADC, or is one part of an external/shared
-> > component?
-> 
-> I think that this is shared component.
+> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
+> index d5e46e2..eba92ef 100644
+> --- a/drivers/watchdog/qcom-wdt.c
+> +++ b/drivers/watchdog/qcom-wdt.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/reboot.h>
+>  #include <linux/watchdog.h>
+>  
+>  #define WDT_RST		0x0
+> @@ -25,6 +26,7 @@
+>  struct qcom_wdt {
+>  	struct watchdog_device	wdd;
+>  	struct clk		*clk;
+> +	struct notifier_block	restart_nb;
+>  	void __iomem		*base;
+>  };
+>  
+> @@ -86,6 +88,23 @@ static const struct watchdog_info qcom_wdt_info = {
+>  	.identity	= KBUILD_MODNAME,
+>  };
+>  
+> +static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
+> +			    void *data)
+> +{
+> +	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
+> +
+> +	/*
+> +	 * Trigger watchdog bite:
+> +	 *    Setup BITE_TIME to be very low, and enable WDT.
+> +	 *      0x31F3 => 390ms @ 32kHz, also value at reset
 
-If it's not a portion of the ADC itself, then that should probably be
-described as a separate unit, and referred to by phandle. What else is
-that unit, and what else is said unit used by?
+What happens if you set it to a lower value ? If you set it to, say,
+0x100, would the timeout be ~8ms ? Wouldn't that make more sense ?
+Or at least something like 0x800, which should make it around 64 ms,
+or 0x400 for 32 ms.
 
-> 
-> > 
-> > > +
-> > > +- interrupts:
-> > > +    Usage: optional
-> > > +    Value type: <prop-encoded-array>
-> > > +    Definition: End of conversion interrupt number. If property is
-> > > +            missing driver will use polling to detect end of conversion
-> > > +            completion.
-> > 
-> > Driver details shouldn't be in the binding. If the driver can poll,
-> > that's good, but it should be dropped form this description.
-> > 
-> 
-> Will remove driver details.
-> 
-> > Is this the only interrupt?
-> > 
-> 
-> Yes.
-> 
-> > What do you mean be "End of conversion interrupt number"? Just describe
-> > what the interrupt logically is from the PoV of the device -- interrupts
-> > is a standard property so we don't need to be too explicit about the
-> > type.
-> 
-> Badly worded. Just, "End of conversion interrupt"?
+[ In other words, I don't really see the point for a 390 ms wait here ]
 
-The part I didn't understand was what was meant by "End of conversion",
-but dropping "number" is certainly better.
+> +	 */
+> +	writel(0, wdt->base + WDT_EN);
+> +	writel(1, wdt->base + WDT_RST);
+> +	writel(0x31F3, wdt->base + WDT_BITE_TIME);
+> +	writel(1, wdt->base + WDT_EN);
 
-> 
-> > 
-> > > +
-> > > +- qcom,rsense:
-> > > +    Usage: optional
-> > > +    Value type: <u32>
-> > > +    Definition: External sense register value in Ohm. Defining this
-> > > +            propery will instruct ADC to use external ADC sense channel.
-> > > +            If property is not defined ADC will use internal sense channel.
-> > 
-> > The latter two sentences sound like a driver description.
-> > 
-> > What exactly is the difference between the internal and external
-> > channels, and what exactly is the value in the sense register used for?
-> 
-> Internal - when using chip build-in resistor
-> External - when using off-chip resistor
-
-Would it be possible to use the internal channel when you have an
-external resistor?
-
-If so, does the device have a channel per resistor, or can either
-resistor be selected and applied to the single channel the device has?
-
-This might be better worded as "external-registor-ohms".
-
-> 
-> > 
-> > The binding should describe the logical properties of the device rather
-> > than the specific programming model details.
-> > 
-> > > +
-> > > +- qcom,rds-trim:
-> > > +    Usage: optional
-> > > +    Value type: <u32>
-> > > +    Definition: Calculate internal sense resistor value based TRIM_CNST_RDS,
-> > > +            IADC RDS and manufacturer.
-> > > +            0: Read the IADC and SMBB trim register and apply the default
-> > > +               RSENSE if conditions are met.
-> > > +            1: Read the IADC, SMBB trim register and manufacturer type and
-> > > +               apply the default RSENSE if conditions are met.
-> > > +            2: Read the IADC, SMBB trim register and apply the default RSENSE
-> > > +               if conditions are met.
-> > > +            If property is not defined driver will use qcom,rsense value if
-> > > +            defined or internal sense resistor value trimmed into register.
-> > 
-> > Having read this a few times, I still don't understand which I would use
-> > and when.
-> > 
-> > Which conditions need to be met in each of these cases?
-> > 
-> > When does the manufacturer need to be taken into account and what does
-> > it even mean for that to be the case? That sounds very much like a
-> > driver detail rather than a HW property.
-> > 
-> > Cases 0 and 2 seem to be the same, just with s/, / and /. I cannot
-> > figure out the intended difference between the two.
-> > 
-> > The last sentence is very much a driver description.
-> 
-> Sorry. I have tried to make it better. Now looking again DT files
-> in codeaurora tree I see that 0 is used in pm8941, 1 is used in
-> pm8110 and 2 is used for pm8226. So I will remove this property
-> and handle this inside driver based on chip version.
-
-Is this only to determine the value of the internal resistor?
-
-If that isn't probable in a standard way across all variations, would an
-"internal-resistor-ohms" property be sufficient?
-
-> 
-> > 
-> > > +
-> > > +Example:
-> > > +       /* IADC node */
-> > > +       pmic_iadc: iadc@3600 {
-> > > +               compatible = "qcom,spmi-iadc";
-> > > +               reg = <0x3600 0x100>,
-> > > +                         <0x12f1 0x1>;
-> > > +               interrupts = <0x0 0x36 0x0 IRQ_TYPE_EDGE_RISING>;
-> > > +               qcom,rds-trim = <0>;
-> > > +       };
-> > > +
-> > > +       /* IIO client node */
-> > > +       bat {
-> > > +               io-channels = <&pmic_iadc 0>;
-> > > +               io-channel-names = "iadc";
-> > > +       };
-> > 
-> > Surely you need #iio-cells on the IADC node?
-> 
-> Yes, I need to add it.
-> 
-> > 
-> > Given the client seems to pass a specifier value, does this have
-> > multiple channels, or only a single channel?
-> 
-> Driver register only one IIO channel, so #io-channel-cells 
-> should be <0>.
-
-Ok. Regardless of what the driver does, does the hardware have
-multi-channel capability?
+You should have some mdelay() here, larger than the expected timeout.
 
 Thanks,
-Mark.
+Guenter
+
+> +	return NOTIFY_DONE;
+> +}
+> +
+>  static int qcom_wdt_probe(struct platform_device *pdev)
+>  {
+>  	struct qcom_wdt *wdt;
+> @@ -141,6 +160,14 @@ static int qcom_wdt_probe(struct platform_device *pdev)
+>  		return ret;
+>  	}
+>  
+> +	/*
+> +	 * WDT restart notifier has priority 0 (use as a last resort)
+> +	 */
+> +	wdt->restart_nb.notifier_call = qcom_wdt_restart;
+> +	ret = register_restart_handler(&wdt->restart_nb);
+> +	if (ret)
+> +		dev_err(&pdev->dev, "failed to setup restart handler\n");
+> +
+>  	platform_set_drvdata(pdev, wdt);
+>  	return 0;
+>  }
+> @@ -149,6 +176,7 @@ static int qcom_wdt_remove(struct platform_device *pdev)
+>  {
+>  	struct qcom_wdt *wdt = platform_get_drvdata(pdev);
+>  
+> +	unregister_restart_handler(&wdt->restart_nb);
+>  	watchdog_unregister_device(&wdt->wdd);
+>  	clk_disable_unprepare(wdt->clk);
+>  	return 0;
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
