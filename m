@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113AbaIXQ2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:28:04 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:25439 "EHLO
+	id S1753946AbaIXQ2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:28:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:31246 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752194AbaIXQ2A (ORCPT
+	by vger.kernel.org with ESMTP id S1750742AbaIXQ2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 12:28:00 -0400
-Message-Id: <20140924162719.481050866@goodmis.org>
+Message-Id: <20140924162759.665391261@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 24 Sep 2014 12:27:19 -0400
+Date: Wed, 24 Sep 2014 12:27:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 0/3] ftracetest: Added tests for ftrace in the selftests directory
-X-RR-Connecting-IP: 107.14.168.118:25
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 2/3] ftracetest: Add ftrace basic testcases
+References: <20140924162719.481050866@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-ftracetest-Add-ftrace-basic-testcases.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Head SHA1: 7cbfb5eed9832e7c3ae58a17078f62396e7b55f8
+Add ftrace basic testcases. This just checks ftrace debugfs
+interface works as it is designed.
+
+Link: http://lkml.kernel.org/p/20140922234252.23415.62897.stgit@kbuild-f20.novalocal
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/selftests/ftrace/test.d/00basic/basic1.tc | 3 +++
+ tools/testing/selftests/ftrace/test.d/00basic/basic2.tc | 6 ++++++
+ tools/testing/selftests/ftrace/test.d/00basic/basic3.tc | 8 ++++++++
+ 3 files changed, 17 insertions(+)
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
+
+diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
+new file mode 100644
+index 000000000000..9980ff14ae44
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
+@@ -0,0 +1,3 @@
++#!/bin/sh
++# description: Basic trace file check
++test -f README -a -f trace -a -f tracing_on -a -f trace_pipe
+diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
+new file mode 100644
+index 000000000000..b04f30df0db3
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
+@@ -0,0 +1,6 @@
++#!/bin/sh
++# description: Basic test for tracers
++for t in `cat available_tracers`; do
++  echo $t > current_tracer || exit 1
++done
++echo nop > current_tracer
+diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
+new file mode 100644
+index 000000000000..0c1a3a207636
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
+@@ -0,0 +1,8 @@
++#!/bin/sh
++# description: Basic trace clock test
++[ -f trace_clock ] || exit 1
++for c in `cat trace_clock | tr  -d \[\]`; do
++  echo $c > trace_clock || exit 1
++  grep '\['$c'\]' trace_clock || exit 1
++done
++echo local > trace_clock
+-- 
+2.0.1
 
 
-Masami Hiramatsu (3):
-      ftracetest: Initial commit for ftracetest
-      ftracetest: Add ftrace basic testcases
-      ftracetest: Add kprobe basic testcases
-
-----
- MAINTAINERS                                        |   1 +
- tools/testing/selftests/Makefile                   |   1 +
- tools/testing/selftests/ftrace/Makefile            |   7 +
- tools/testing/selftests/ftrace/README              |  45 ++++++
- tools/testing/selftests/ftrace/ftracetest          | 159 +++++++++++++++++++++
- .../selftests/ftrace/test.d/00basic/basic1.tc      |   3 +
- .../selftests/ftrace/test.d/00basic/basic2.tc      |   6 +
- .../selftests/ftrace/test.d/00basic/basic3.tc      |   8 ++
- .../ftrace/test.d/kprobe/add_and_remove.tc         |  11 ++
- .../selftests/ftrace/test.d/kprobe/busy_check.tc   |  14 ++
- tools/testing/selftests/ftrace/test.d/template     |   4 +
- 11 files changed, 259 insertions(+)
