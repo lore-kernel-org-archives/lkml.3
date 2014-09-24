@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaIXPAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:00:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59858 "EHLO
+	id S1754045AbaIXPAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:00:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59865 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaIXPAr (ORCPT
+	with ESMTP id S1751435AbaIXPAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:00:47 -0400
-Date: Wed, 24 Sep 2014 07:59:43 -0700
+	Wed, 24 Sep 2014 11:00:50 -0400
+Date: Wed, 24 Sep 2014 07:59:56 -0700
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-c46e665f037743bbce7887e7c55750713eb7fb09@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, maria.n.dimakopoulou@gmail.com,
-        acme@kernel.org, kan.liang@intel.com, ak@linux.intel.com,
-        junk@eslaf.co.uk, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, acme@kernel.org,
-        maria.n.dimakopoulou@gmail.com, kan.liang@intel.com,
-        ak@linux.intel.com, tglx@linutronix.de, junk@eslaf.co.uk
-In-Reply-To: <1409683455-29168-4-git-send-email-andi@firstfloor.org>
-References: <1409683455-29168-4-git-send-email-andi@firstfloor.org>
+Message-ID: <tip-fdda3c4aacec30bdf3c10904d0c32409145dc1b6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1409683455-29168-5-git-send-email-andi@firstfloor.org>
+References: <1409683455-29168-5-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add INST_RETIRED.ALL workarounds
-Git-Commit-ID: c46e665f037743bbce7887e7c55750713eb7fb09
+Subject: [tip:perf/core] perf/x86/intel:
+  Use Broadwell cache event list for Haswell
+Git-Commit-ID: fdda3c4aacec30bdf3c10904d0c32409145dc1b6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,151 +32,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c46e665f037743bbce7887e7c55750713eb7fb09
-Gitweb:     http://git.kernel.org/tip/c46e665f037743bbce7887e7c55750713eb7fb09
+Commit-ID:  fdda3c4aacec30bdf3c10904d0c32409145dc1b6
+Gitweb:     http://git.kernel.org/tip/fdda3c4aacec30bdf3c10904d0c32409145dc1b6
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Tue, 2 Sep 2014 11:44:14 -0700
+AuthorDate: Tue, 2 Sep 2014 11:44:15 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 14:48:19 +0200
+CommitDate: Wed, 24 Sep 2014 14:48:20 +0200
 
-perf/x86: Add INST_RETIRED.ALL workarounds
+perf/x86/intel: Use Broadwell cache event list for Haswell
 
-On Broadwell INST_RETIRED.ALL cannot be used with any period
-that doesn't have the lowest 6 bits cleared. And the period
-should not be smaller than 128.
+Use the newly added Broadwell cache event list for Haswell too.
+All Haswell and Broadwell events and offcore masks used in these lists
+are identical.
 
-Add a new callback to enforce this, and set it for Broadwell.
+However Haswell is very different from the Sandy Bridge
+list that was used previously. That fixes a wide range of mis-counting
+cache events.
 
-This is erratum BDM57 and BDM11.
+The node events are now only for retired memory events, so prefetching
+and speculative memory accesses are not included. They are PEBS
+capable now, which makes it much easier to sample for them, plus it's
+possible to create address maps with -d.
 
-How does this handle the case when an app requests a specific
-period with some of the bottom bits set
-
-The apps thinks it is sampling at X occurences per sample, when it is
-in fact at X - 63 (worst case).
-
-Short answer:
-
-Any useful instruction sampling period needs to be 4-6 orders
-of magnitude larger than 128, as an PMI every 128 instructions
-would instantly overwhelm the system and be throttled.
-So the +-64 error from this is really small compared to the
-period, much smaller than normal system jitter.
-
-Long answer:
-
-<write up by Peter:>
-
-IFF we guarantee perf_event_attr::sample_period >= 128.
-
-Suppose we start out with sample_period=192; then we'll set period_left
-to 192, we'll end up with left = 128 (we truncate the lower bits). We
-get an interrupt, find that period_left = 64 (>0 so we return 0 and
-don't get an overflow handler), up that to 128. Then we trigger again,
-at n=256. Then we find period_left = -64 (<=0 so we return 1 and do get
-an overflow). We increment with sample_period so we get left = 128. We
-fire again, at n=384, period_left = 0 (<=0 so we return 1 and get an
-overflow). And on and on.
-
-So while the individual interrupts are 'wrong' we get then with
-interval=256,128 in exactly the right ratio to average out at 192. And
-this works for everything >=128.
-
-So the num_samples*fixed_period thing is still entirely correct +- 127,
-which is good enough I'd say, as you already have that error anyhow.
-
-So no need to 'fix' the tools, al we need to do is refuse to create
-INST_RETIRED:ALL events with sample_period < 128.
+The prefetch events are gone now. They way the hardware counts
+them is very misleading (some prefetches included, others not), so
+it seemed best to leave them out.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Kan Liang <kan.liang@intel.com>
-Cc: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Cc: Mark Davies <junk@eslaf.co.uk>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1409683455-29168-4-git-send-email-andi@firstfloor.org
+Cc: eranian@google.com
+Link: http://lkml.kernel.org/r/1409683455-29168-5-git-send-email-andi@firstfloor.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.c       |  9 +++++++++
- arch/x86/kernel/cpu/perf_event.h       |  1 +
- arch/x86/kernel/cpu/perf_event_intel.c | 19 +++++++++++++++++++
- 3 files changed, 29 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 0646d3b..918d75f 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -443,6 +443,12 @@ int x86_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.type == PERF_TYPE_RAW)
- 		event->hw.config |= event->attr.config & X86_RAW_EVENT_MASK;
- 
-+	if (event->attr.sample_period && x86_pmu.limit_period) {
-+		if (x86_pmu.limit_period(event, event->attr.sample_period) >
-+				event->attr.sample_period)
-+			return -EINVAL;
-+	}
-+
- 	return x86_setup_perfctr(event);
- }
- 
-@@ -980,6 +986,9 @@ int x86_perf_event_set_period(struct perf_event *event)
- 	if (left > x86_pmu.max_period)
- 		left = x86_pmu.max_period;
- 
-+	if (x86_pmu.limit_period)
-+		left = x86_pmu.limit_period(event, left);
-+
- 	per_cpu(pmc_prev_left[idx], smp_processor_id()) = left;
- 
- 	/*
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index fc5eb39..d98a34d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -445,6 +445,7 @@ struct x86_pmu {
- 	struct x86_pmu_quirk *quirks;
- 	int		perfctr_second_write;
- 	bool		late_ack;
-+	unsigned	(*limit_period)(struct perf_event *event, unsigned l);
- 
- 	/*
- 	 * sysfs attrs
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 5671566..bbcd0d2 100644
+index bbcd0d2..3851def 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2034,6 +2034,24 @@ hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 	return c;
- }
+@@ -2692,8 +2692,8 @@ __init int intel_pmu_init(void)
+ 	case 69: /* 22nm Haswell ULT */
+ 	case 70: /* 22nm Haswell + GT3e (Intel Iris Pro graphics) */
+ 		x86_pmu.late_ack = true;
+-		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+-		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
++		memcpy(hw_cache_event_ids, hsw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
++		memcpy(hw_cache_extra_regs, hsw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
  
-+/*
-+ * Broadwell:
-+ * The INST_RETIRED.ALL period always needs to have lowest
-+ * 6bits cleared (BDM57). It shall not use a period smaller
-+ * than 100 (BDM11). We combine the two to enforce
-+ * a min-period of 128.
-+ */
-+static unsigned bdw_limit_period(struct perf_event *event, unsigned left)
-+{
-+	if ((event->hw.config & INTEL_ARCH_EVENT_MASK) ==
-+			X86_CONFIG(.event=0xc0, .umask=0x01)) {
-+		if (left < 128)
-+			left = 128;
-+		left &= ~0x3fu;
-+	}
-+	return left;
-+}
-+
- PMU_FORMAT_ATTR(event,	"config:0-7"	);
- PMU_FORMAT_ATTR(umask,	"config:8-15"	);
- PMU_FORMAT_ATTR(edge,	"config:18"	);
-@@ -2712,6 +2730,7 @@ __init int intel_pmu_init(void)
- 		x86_pmu.hw_config = hsw_hw_config;
- 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
- 		x86_pmu.cpu_events = hsw_events_attrs;
-+		x86_pmu.limit_period = bdw_limit_period;
- 		pr_cont("Broadwell events, ");
- 		break;
+ 		intel_pmu_lbr_init_snb();
  
