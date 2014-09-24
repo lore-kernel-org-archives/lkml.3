@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaIXMll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:41:41 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:44159 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217AbaIXMli (ORCPT
+	id S1753361AbaIXMm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:42:58 -0400
+Received: from blu004-omc2s38.hotmail.com ([65.55.111.113]:49813 "EHLO
+	BLU004-OMC2S38.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750783AbaIXMm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:41:38 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 24 Sep 2014 14:39:05 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 4/4] gpio: add support for the Diolan DLN-2 USB GPIO
- driver
-Message-ID: <20140924123905.GB16198@localhost>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
- <1411158165-25794-5-git-send-email-octavian.purdila@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411158165-25794-5-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 24 Sep 2014 08:42:57 -0400
+X-TMN: [yfLf55Z+fGGSodFZJhIvjlLUJJOroNZR]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU437-SMTP36FDD8606D9D645C6428697B10@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: nick <yocto6@gmail.com>
+In-Reply-To: <5422AE20.3050702@gmail.com>
+Subject: Re: [PATCH] parisc:Remove unnecessary FIXMES in init.c
+References: <1411523383-9820-1-git-send-email-yocto6@gmail.com> <20140924053036.GA30405@roeck-us.net> <5422AE20.3050702@gmail.com>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Wed, 24 Sep 2014 08:42:37 -0400
+CC: Guenter Roeck <linux@roeck-us.net>, jejb@parisc-linux.org, deller@gmx.de,
+        akpm@linux-foundation.org, mgorman@suse.de, julia.lawall@lip6.fr,
+        himangi774@gmail.com, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 24 Sep 2014 12:42:55.0023 (UTC) FILETIME=[0FDE73F0:01CFD7F5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:22:45PM +0300, Octavian Purdila wrote:
+On 24-Sep-14, at 7:42 AM, nick wrote:
 
-> +struct dln2_gpio {
-> +	struct platform_device *pdev;
-> +	struct gpio_chip gpio;
-> +
-> +	/*
-> +	 * Cache pin direction to save us one transfer, since the
-> +	 * hardware has separate commands to read the in and out
-> +	 * values. Bit set for out, bit clear for in.
-> +	 */
-> +	DECLARE_BITMAP(pin_dir, DLN2_GPIO_MAX_PINS);
+>
+>
+> On 14-09-24 01:30 AM, Guenter Roeck wrote:
+>> On Tue, Sep 23, 2014 at 09:49:43PM -0400, Nicholas Krause wrote:
+>>> This removes the two fixmes in the file, init.c for compiler hints
+>>> for comments related to compiler hints in linux_gateway_page_addr
+>>> and map_hpux_gateway_page to change from FIXME to HINT in order
+>>> for people reading this code to understand that these are compiler
+>>> hints.
+>>>
+>>
+>> "* const" tells the compiler that a pointer is a constant.
+>> It doesn't tell the compiler that the data shall not be treated
+>> as DP-relative.
+>>
+>> FIXME as in: We should find a better way to tell the compiler to
+>> not treat this data as DP-relative.
+>>
+>> Can you please stop this ?
+>>
+>> Guenter
+>>
+>>> Signed-off-by: Nicholas Krause <yocto6@gmail.com>
+>>> ---
+>>> arch/parisc/mm/init.c | 4 ++--
+>>> 1 file changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+>>> index 0bef864..668102e 100644
+>>> --- a/arch/parisc/mm/init.c
+>>> +++ b/arch/parisc/mm/init.c
+>>> @@ -733,7 +733,7 @@ static void __init pagetable_init(void)
+>>> static void __init gateway_init(void)
+>>> {
+>>> 	unsigned long linux_gateway_page_addr;
+>>> -	/* FIXME: This is 'const' in order to trick the compiler
+>>> +	/* HINT: This is 'const' in order to trick the compiler
+>>> 	   into not treating it as DP-relative data. */
+>>> 	extern void * const linux_gateway_page;
+>>>
+>>> @@ -761,7 +761,7 @@ map_hpux_gateway_page(struct task_struct *tsk,  
+>>> struct mm_struct *mm)
+>>> 	unsigned long start_pte;
+>>> 	unsigned long address;
+>>> 	unsigned long hpux_gw_page_addr;
+>>> -	/* FIXME: This is 'const' in order to trick the compiler
+>>> +	/* HINT: This is 'const' in order to trick the compiler
+>>> 	   into not treating it as DP-relative data. */
+>>> 	extern void * const hpux_gateway_page;
+>>>
+>>> -- 
+>>> 1.9.1
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux- 
+>>> kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>>
+> Guenter,
+> I asked the maintainers and I got,
+> On 9/23/2014 4:48 PM, Helge Deller wrote:
+>> The FIXME: is misleading. It should maybe better read "HINT:" or  
+>> something like that.
+>> Trivially it's basically just casting the symbol so that the compiler
+>> will produce the correct code later on.
+>> There is nothing you could try to "fix".
+> Why not just remove "FIXME: " from these comments?
 
-Using the more common name output_enabled might be preferred? Then you
-can even get rid of (part of) the comment.
 
-> +
-> +	DECLARE_BITMAP(irqs_masked, DLN2_GPIO_MAX_PINS);
-> +	DECLARE_BITMAP(irqs_enabled, DLN2_GPIO_MAX_PINS);
-> +	DECLARE_BITMAP(irqs_pending, DLN2_GPIO_MAX_PINS);
-> +	struct dln2_irq_work *irq_work;
-> +};
+The wording of the comment is not good.  You can't "trick" the  
+compiler into not
+treating a constant as DP-relative data.  Whether or not a constant is  
+loaded as an
+immediate depends on its value.
 
-[...]
+Dave
+--
+John David Anglin	dave.anglin@bell.net
 
-> +#define DLN2_GPIO_DIRECTION_IN		0
-> +#define DLN2_GPIO_DIRECTION_OUT		1
-> +
-> +static int dln2_gpio_request(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-> +	struct dln2_gpio_pin req = {
-> +		.pin = cpu_to_le16(offset),
-> +	};
-> +	struct dln2_gpio_pin_val rsp;
-> +	int len = sizeof(rsp);
-> +	int ret;
-> +
-> +	ret = dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_ENABLE, offset);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* cache the pin direction */
-> +	ret = dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_GET_DIRECTION,
-> +			    &req, sizeof(req), &rsp, &len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (len < sizeof(rsp) || req.pin != rsp.pin)
-> +		return -EPROTO;
 
-Disable the pin?
 
-> +
-> +	switch (rsp.value) {
-> +	case DLN2_GPIO_DIRECTION_IN:
-> +		clear_bit(offset, dln2->pin_dir);
-> +		return 0;
-> +	case DLN2_GPIO_DIRECTION_OUT:
-> +		set_bit(offset, dln2->pin_dir);
-> +		return 0;
-> +	default:
-> +		return -EPROTO;
-
-Disable the pin?
-
-> +	}
-> +}
-
-[...]
-
-> +static struct platform_driver dln2_gpio_driver = {
-> +	.driver.name	= "dln2-gpio",
-> +	.driver.owner	= THIS_MODULE,
-
-No need to set the owner field when using the module_platform_driver
-macro.
-
-> +	.probe		= dln2_gpio_probe,
-> +	.remove		= dln2_gpio_remove,
-> +};
-> +
-> +module_platform_driver(dln2_gpio_driver);
-> +
-> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com");
-> +MODULE_DESCRIPTION("Driver for the Diolan DLN2 GPIO interface");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:dln2-gpio");
-
-Johan
