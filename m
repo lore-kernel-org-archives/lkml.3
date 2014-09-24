@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaIXPob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:44:31 -0400
-Received: from sauhun.de ([89.238.76.85]:41074 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753357AbaIXPo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:44:28 -0400
-Date: Wed, 24 Sep 2014 17:44:58 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean Delvare <jdelvare@suse.de>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>
-Subject: Re: [PATCH] i2c: move acpi code back into the core
-Message-ID: <20140924154457.GB1283@katana>
-References: <1411420006-4713-1-git-send-email-wsa@the-dreams.de>
- <5420CEC9.1030400@intel.com>
- <20140923053951.GA1411@katana>
- <54211C96.3030608@intel.com>
- <542139E6.2030806@intel.com>
+	id S1754616AbaIXPpL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:45:11 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:32770 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaIXPpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:45:09 -0400
+Date: Wed, 24 Sep 2014 08:45:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, lm-sensors@lm-sensors.org, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140924154503.GA12403@roeck-us.net>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <20140924144829.GK32069@lee--X1>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LpQ9ahxlCli8rRTG"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <542139E6.2030806@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140924144829.GK32069@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
+> Guenter, Bryan, Wim,
+> 
+> The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> 
+>   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
+> 
+> for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+> 
+>   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+> 
+> ----------------------------------------------------------------
+> Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+> 
+I assume you'll push it all through mfd, correct ?
 
---LpQ9ahxlCli8rRTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks,
+Guenter
 
-> Hi Wolfram:
-> The patch passed through the following 110 configure build test in the
-> 0-day build test system.
-
-Thanks, but my tree gets checked automatically anyhow. What I'd need is
-functional tests because I don't have hardware to test.
-
-
---LpQ9ahxlCli8rRTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIub5AAoJEBQN5MwUoCm2vkEP/3JCSxcOmGYXL9OOCFPDLk2h
-JsdsiTtfjMdb7Yrr6gM3OsK9Dp2N/06kOX+7c7SkvHe9mQW4OyfW3LYzHcC4Qmks
-VpIOT3RpWAbffGGpPXmcLizRHMP+irhhFhpNxTANKNHkCRmBEgSsAQuwjGnoJi8Q
-Riiz1udc1AviIdg0bpAINijwIeMliKN2H9dPSDRIOqebS+zEI0e86lPGcMa4ZkhV
-F2VDRF1B9jAg5kXJGi7XYtYovfBTPDhzPQcrSLzYwuADNGmBlNcazrlzB79Qo2ZH
-5T+wkvGpfyV1oletDaWmxanT1wDcwQIiaPUy7djPu30WRm0rqpto630uWhDgkIn6
-UJdeFd4QMdyzCxwhqR1LmfIoz7lST8B2JpzZvDfLB2of2oW9YKaTI3ZwQ2SxiYnA
-B/QEW/QJJVtKF4GFc7tBu75M+EdWy1hEHO3nmS+iljToaSx72Br8TR4J/6FUDwkh
-q4kOQfVr33ovYXAamVMqYFjbvDZzV9xV28+LvN3h8Gp/3B4nSmg9dVfE2USBUE2O
-ZNvbMINdyCHYYiG16Cz2xXEFtMbYOQk9xyVBCcPAhG8+FRKVIAHT/fTSk1J+ysrT
-mEZLRzK3MY+oz1l6YZTcjX4rkd+s9tx3kVMQ5UV+FLY7PzQHR651ffnDlPphZ8kX
-PKpZartgjc3dakoDos0U
-=NC45
------END PGP SIGNATURE-----
-
---LpQ9ahxlCli8rRTG--
+> ----------------------------------------------------------------
+> Andreas Werner (4):
+>       mfd: menf21bmc: Introduce MEN 14F021P00 BMC MFD Core driver
+>       watchdog: menf21bmc_wdt: Introduce MEN 14F021P00 BMC Watchdog driver
+>       leds: leds-menf21bmc: Introduce MEN 14F021P00 BMC LED driver
+>       hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver
+> 
+>  Documentation/hwmon/menf21bmc    |  50 +++++++++
+>  drivers/hwmon/Kconfig            |  10 ++
+>  drivers/hwmon/Makefile           |   1 +
+>  drivers/hwmon/menf21bmc_hwmon.c  | 230 +++++++++++++++++++++++++++++++++++++++
+>  drivers/leds/Kconfig             |   9 ++
+>  drivers/leds/Makefile            |   1 +
+>  drivers/leds/leds-menf21bmc.c    | 131 ++++++++++++++++++++++
+>  drivers/mfd/Kconfig              |  15 +++
+>  drivers/mfd/Makefile             |   1 +
+>  drivers/mfd/menf21bmc.c          | 132 ++++++++++++++++++++++
+>  drivers/watchdog/Kconfig         |  10 ++
+>  drivers/watchdog/Makefile        |   1 +
+>  drivers/watchdog/menf21bmc_wdt.c | 203 ++++++++++++++++++++++++++++++++++
+>  13 files changed, 794 insertions(+)
+>  create mode 100644 Documentation/hwmon/menf21bmc
+>  create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
+>  create mode 100644 drivers/leds/leds-menf21bmc.c
+>  create mode 100644 drivers/mfd/menf21bmc.c
+>  create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+> 
+> -- 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
