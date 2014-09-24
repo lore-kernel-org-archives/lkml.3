@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaIXTVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:21:55 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:62359 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750891AbaIXTVx (ORCPT
+	id S1752894AbaIXTZC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:25:02 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:55132 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaIXTZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:21:53 -0400
-Message-ID: <1411586511.19525.38.camel@x220>
-Subject: [PATCH] Hexagon: Remove useless select of NO_IOPORT_MAP
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 24 Sep 2014 21:21:51 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2014 19:21:52.0271 (UTC) FILETIME=[CB94A1F0:01CFD82C]
-X-RcptDomain: vger.kernel.org
+	Wed, 24 Sep 2014 15:25:00 -0400
+Date: Wed, 24 Sep 2014 15:24:56 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrey Wagin <avagin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: linux-next: cgroup_mount() falls asleep forever
+Message-ID: <20140924192456.GA1233@mtj.dyndns.org>
+References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+ <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
+ <20140924185213.GB7996@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924185213.GB7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hexagon's primary Kconfig entry has a select for NO_IOPORT_MAP. But
-because hexagon never defines a Kconfig symbol NO_IOPORT_MAP this select
-is a nop. It can be removed.
+Hey, Al.
 
-Perhaps hexagon should add its own Kconfig entry for NO_IOPORT_MAP and
-have it default to 'y'. But since no one apparently had any problems
-with HAS_IOPORT_MAP defaulting to 'y' on hexagon, as it currently does,
-that is unlikely.
+On Wed, Sep 24, 2014 at 07:52:14PM +0100, Al Viro wrote:
+> On Wed, Sep 24, 2014 at 06:29:27PM +0400, Andrey Wagin wrote:
+> > 2014-09-24 14:31 GMT+04:00 Andrey Wagin <avagin@gmail.com>:
+> > > Hi All,
+> > 
+> > The problem is in a following commit:
+> > 
+> > commit 0c7bf3e8cab7900e17ce7f97104c39927d835469
+> > Author: Zefan Li <lizefan@huawei.com>
+> > Date:   Sat Sep 20 14:49:10 2014 +0800
+> > 
+> >     cgroup: remove redundant variable in cgroup_mount()
+> > 
+> >     Both pinned_sb and new_sb indicate if a new superblock is needed,
+> >     so we can just remove new_sb.
+> > 
+> >     Note now we must check if kernfs_tryget_sb() returns NULL, because
+> >     when it returns NULL, kernfs_mount() may still re-use an existing
+> >     superblock, which is just allocated by another concurent mount.
+> > 
+> >     Suggested-by: Tejun Heo <tj@kernel.org>
+> >     Signed-off-by: Zefan Li <lizefan@huawei.com>
+> >     Signed-off-by: Tejun Heo <tj@kernel.org>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested by playing with arch/hexagon/configs/comet_defconfig. After "make
-oldconfig" the .config contains CONFIG_HAS_IOPORT_MAP=y both before and
-after this patch, as is expected.
+I'm gonna wait for Li's response for a couple days and then revert it
+if it can't be fixed differently.
 
-Actually, the only difference I found in the .config file was that after
-this patch the .config file contained
-    CONFIG_HEXAGON=y
+> Lovely...  First of all, that thing is obviously racy - there's nothing
+> to prevent another mount happening between these two places.  Moreover,
+> kernfs_mount() calling conventions are really atrocious - pointer to
+> bool just to indicate that superblock is new?
+> 
+> Could somebody explain WTF is the whole construction trying to do?  Not
+> to mention anything else, what *does* this pinning a superblock protect
+> from?  Suppose we have a superblock for the same root with non-NULL ns
+> and _that_ gets killed.  We get hit by the same
+> 	percpu_ref_kill(&root->cgrp.self.refcnt);
+> so what's the point of pinned_sb?  Might as well have just bumped the
+> refcount, superblock or no superblock.  And no, delaying that kernfs_kill_sb()
+> does you no good whatsoever - again, pinned_sb might have nothing to do with
+> the superblock we are after.
 
-I have no idea why. Did I botch my test?
+Yeah, it's an ugly thing to work around vfs interface not very
+conducive for filesystems which conditionally create or reuse
+superblocks during mount.  There was a thread explaining what's going
+on.  Looking up...
 
- arch/hexagon/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+  http://thread.gmane.org/gmane.linux.kernel.containers/27623/focus=10635
 
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index 4dc89d1f9c48..f1817eae107a 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -19,7 +19,6 @@ config HEXAGON
- 	select GENERIC_IRQ_SHOW
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_TRACEHOOK
--	select NO_IOPORT_MAP
- 	select GENERIC_IOMAP
- 	select GENERIC_SMP_IDLE_THREAD
- 	select STACKTRACE_SUPPORT
+Thanks.
+
 -- 
-1.9.3
-
+tejun
