@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaIXUok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 16:44:40 -0400
-Received: from max.feld.cvut.cz ([147.32.192.36]:34627 "EHLO max.feld.cvut.cz"
+	id S1753548AbaIXUo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 16:44:56 -0400
+Received: from max.feld.cvut.cz ([147.32.192.36]:34628 "EHLO max.feld.cvut.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753072AbaIXUoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753404AbaIXUoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 16:44:16 -0400
 From: Michal Sojka <sojka@merica.cz>
 To: linux-usb@vger.kernel.org
@@ -14,345 +14,200 @@ Cc: Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
         linux-kernel@vger.kernel.org, michal.vokac@comap.cz,
         Michal Sojka <sojka@merica.cz>
-Subject: [PATCH v6 3/4] usb: Rename usb-common.c
-Date: Wed, 24 Sep 2014 22:43:20 +0200
-Message-Id: <1411591401-5874-4-git-send-email-sojka@merica.cz>
+Subject: [PATCH v6 4/4] usb: Add LED triggers for USB activity
+Date: Wed, 24 Sep 2014 22:43:21 +0200
+Message-Id: <1411591401-5874-5-git-send-email-sojka@merica.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411591401-5874-1-git-send-email-sojka@merica.cz>
 References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
  <1411591401-5874-1-git-send-email-sojka@merica.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the next commit, we will want the usb-common module to be composed of
-two object files. Since Kbuild cannot "append" another object to an
-existing one, we need to rename usb-common.c to something
-else (common.c) and create usb-common.o by linking the wanted objects
-together. Currently, usb-common.o comprises only common.o.
+With this patch, USB activity can be signaled by blinking a LED. There
+are two triggers, one for activity on USB host and one for USB gadget.
+
+Both triggers should work with all host/device controllers. Tested only
+with musb.
+
+Performace: I measured performance overheads on ARM Cortex-A8 (TI
+AM335x) running on 600 MHz.
+
+Duration of usb_led_activity():
+- with no LED attached to the trigger:        2 ± 1 µs
+- with one GPIO LED attached to the trigger:  2 ± 1 µs or 8 ± 2 µs (two peaks in histogram)
+
+Duration of functions calling usb_led_activity() (with this patch
+applied and no LED attached to the trigger):
+- __usb_hcd_giveback_urb():    10 - 25 µs
+- usb_gadget_giveback_request(): 2 - 6 µs
 
 Signed-off-by: Michal Sojka <sojka@merica.cz>
 ---
- drivers/usb/common/Makefile     |   4 +-
- drivers/usb/common/common.c     | 144 ++++++++++++++++++++++++++++++++++++++++
- drivers/usb/common/usb-common.c | 144 ----------------------------------------
- 3 files changed, 147 insertions(+), 145 deletions(-)
- create mode 100644 drivers/usb/common/common.c
- delete mode 100644 drivers/usb/common/usb-common.c
+ drivers/usb/Kconfig               | 10 +++++++
+ drivers/usb/common/Makefile       |  1 +
+ drivers/usb/common/led.c          | 57 +++++++++++++++++++++++++++++++++++++++
+ drivers/usb/core/hcd.c            |  2 ++
+ drivers/usb/gadget/udc/udc-core.c |  4 +++
+ include/linux/usb.h               | 12 +++++++++
+ 6 files changed, 86 insertions(+)
+ create mode 100644 drivers/usb/common/led.c
 
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index cf1b19b..ae481c3 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -149,4 +149,14 @@ source "drivers/usb/phy/Kconfig"
+ 
+ source "drivers/usb/gadget/Kconfig"
+ 
++config USB_LED_TRIG
++	bool "USB LED Triggers"
++	depends on LEDS_CLASS && USB_COMMON && LEDS_TRIGGERS
++	help
++	  This option adds LED triggers for USB host and/or gadget activity.
++
++	  Say Y here if you are working on a system with led-class supported
++	  LEDs and you want to use them as activity indicators for USB host or
++	  gadget.
++
+ endif # USB_SUPPORT
 diff --git a/drivers/usb/common/Makefile b/drivers/usb/common/Makefile
-index 7526461..052c120 100644
+index 052c120..ca2f8bd 100644
 --- a/drivers/usb/common/Makefile
 +++ b/drivers/usb/common/Makefile
-@@ -2,5 +2,7 @@
- # Makefile for the usb common parts.
- #
+@@ -4,5 +4,6 @@
  
--obj-$(CONFIG_USB_COMMON) += usb-common.o
-+obj-$(CONFIG_USB_COMMON)	  += usb-common.o
-+usb-common-y			  += common.o
-+
+ obj-$(CONFIG_USB_COMMON)	  += usb-common.o
+ usb-common-y			  += common.o
++usb-common-$(CONFIG_USB_LED_TRIG) += led.o
+ 
  obj-$(CONFIG_USB_OTG_FSM) += usb-otg-fsm.o
-diff --git a/drivers/usb/common/common.c b/drivers/usb/common/common.c
+diff --git a/drivers/usb/common/led.c b/drivers/usb/common/led.c
 new file mode 100644
-index 0000000..6dfd30a
+index 0000000..df23da0
 --- /dev/null
-+++ b/drivers/usb/common/common.c
-@@ -0,0 +1,144 @@
++++ b/drivers/usb/common/led.c
+@@ -0,0 +1,57 @@
 +/*
-+ * Provides code common for host and device side USB.
++ * LED Triggers for USB Activity
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2.
++ * Copyright 2014 Michal Sojka <sojka@merica.cz>
 + *
-+ * If either host side (ie. CONFIG_USB=y) or device side USB stack
-+ * (ie. CONFIG_USB_GADGET=y) is compiled in the kernel, this module is
-+ * compiled-in as well.  Otherwise, if either of the two stacks is
-+ * compiled as module, this file is compiled as module as well.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
 + */
 +
-+#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/usb/ch9.h>
-+#include <linux/usb/of.h>
-+#include <linux/usb/otg.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/leds.h>
++#include <linux/usb.h>
 +
-+const char *usb_otg_state_string(enum usb_otg_state state)
++#define BLINK_DELAY 30
++
++static unsigned long usb_blink_delay = BLINK_DELAY;
++
++DEFINE_LED_TRIGGER(ledtrig_usb_gadget);
++DEFINE_LED_TRIGGER(ledtrig_usb_host);
++
++void usb_led_activity(enum usb_led_event ev)
 +{
-+	static const char *const names[] = {
-+		[OTG_STATE_A_IDLE] = "a_idle",
-+		[OTG_STATE_A_WAIT_VRISE] = "a_wait_vrise",
-+		[OTG_STATE_A_WAIT_BCON] = "a_wait_bcon",
-+		[OTG_STATE_A_HOST] = "a_host",
-+		[OTG_STATE_A_SUSPEND] = "a_suspend",
-+		[OTG_STATE_A_PERIPHERAL] = "a_peripheral",
-+		[OTG_STATE_A_WAIT_VFALL] = "a_wait_vfall",
-+		[OTG_STATE_A_VBUS_ERR] = "a_vbus_err",
-+		[OTG_STATE_B_IDLE] = "b_idle",
-+		[OTG_STATE_B_SRP_INIT] = "b_srp_init",
-+		[OTG_STATE_B_PERIPHERAL] = "b_peripheral",
-+		[OTG_STATE_B_WAIT_ACON] = "b_wait_acon",
-+		[OTG_STATE_B_HOST] = "b_host",
-+	};
++	struct led_trigger *trig = NULL;
 +
-+	if (state < 0 || state >= ARRAY_SIZE(names))
-+		return "UNDEFINED";
-+
-+	return names[state];
++	switch (ev) {
++	case USB_LED_EVENT_GADGET:
++		trig = ledtrig_usb_gadget;
++		break;
++	case USB_LED_EVENT_HOST:
++		trig = ledtrig_usb_host;
++		break;
++	}
++	/* led_trigger_blink_oneshot() handles trig == NULL gracefully */
++	led_trigger_blink_oneshot(trig, &usb_blink_delay, &usb_blink_delay, 0);
 +}
-+EXPORT_SYMBOL_GPL(usb_otg_state_string);
++EXPORT_SYMBOL_GPL(usb_led_activity);
 +
-+static const char *const speed_names[] = {
-+	[USB_SPEED_UNKNOWN] = "UNKNOWN",
-+	[USB_SPEED_LOW] = "low-speed",
-+	[USB_SPEED_FULL] = "full-speed",
-+	[USB_SPEED_HIGH] = "high-speed",
-+	[USB_SPEED_WIRELESS] = "wireless",
-+	[USB_SPEED_SUPER] = "super-speed",
++
++static int __init ledtrig_usb_init(void)
++{
++	led_trigger_register_simple("usb-gadget", &ledtrig_usb_gadget);
++	led_trigger_register_simple("usb-host", &ledtrig_usb_host);
++	return 0;
++}
++
++static void __exit ledtrig_usb_exit(void)
++{
++	led_trigger_unregister_simple(ledtrig_usb_gadget);
++	led_trigger_unregister_simple(ledtrig_usb_host);
++}
++
++module_init(ledtrig_usb_init);
++module_exit(ledtrig_usb_exit);
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 487abcf..409cb95 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1664,6 +1664,8 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
+ 	usbmon_urb_complete(&hcd->self, urb, status);
+ 	usb_anchor_suspend_wakeups(anchor);
+ 	usb_unanchor_urb(urb);
++	if (likely(status == 0))
++		usb_led_activity(USB_LED_EVENT_HOST);
+ 
+ 	/* pass ownership to the completion handler */
+ 	urb->status = status;
+diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/udc-core.c
+index f7b3151..931b9f1 100644
+--- a/drivers/usb/gadget/udc/udc-core.c
++++ b/drivers/usb/gadget/udc/udc-core.c
+@@ -27,6 +27,7 @@
+ 
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
++#include <linux/usb.h>
+ 
+ /**
+  * struct usb_udc - describes one usb device controller
+@@ -116,6 +117,9 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
+ void usb_gadget_giveback_request(struct usb_ep *ep,
+ 		struct usb_request *req)
+ {
++	if (likely(req->status == 0))
++		usb_led_activity(USB_LED_EVENT_GADGET);
++
+ 	req->complete(ep, req);
+ }
+ EXPORT_SYMBOL_GPL(usb_gadget_giveback_request);
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index d2465bc..447a7e2 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -1862,6 +1862,18 @@ extern void usb_unregister_notify(struct notifier_block *nb);
+ /* debugfs stuff */
+ extern struct dentry *usb_debug_root;
+ 
++/* LED triggers */
++enum usb_led_event {
++	USB_LED_EVENT_HOST = 0,
++	USB_LED_EVENT_GADGET = 1,
 +};
 +
-+const char *usb_speed_string(enum usb_device_speed speed)
-+{
-+	if (speed < 0 || speed >= ARRAY_SIZE(speed_names))
-+		speed = USB_SPEED_UNKNOWN;
-+	return speed_names[speed];
-+}
-+EXPORT_SYMBOL_GPL(usb_speed_string);
-+
-+const char *usb_state_string(enum usb_device_state state)
-+{
-+	static const char *const names[] = {
-+		[USB_STATE_NOTATTACHED] = "not attached",
-+		[USB_STATE_ATTACHED] = "attached",
-+		[USB_STATE_POWERED] = "powered",
-+		[USB_STATE_RECONNECTING] = "reconnecting",
-+		[USB_STATE_UNAUTHENTICATED] = "unauthenticated",
-+		[USB_STATE_DEFAULT] = "default",
-+		[USB_STATE_ADDRESS] = "addressed",
-+		[USB_STATE_CONFIGURED] = "configured",
-+		[USB_STATE_SUSPENDED] = "suspended",
-+	};
-+
-+	if (state < 0 || state >= ARRAY_SIZE(names))
-+		return "UNKNOWN";
-+
-+	return names[state];
-+}
-+EXPORT_SYMBOL_GPL(usb_state_string);
-+
-+#ifdef CONFIG_OF
-+static const char *const usb_dr_modes[] = {
-+	[USB_DR_MODE_UNKNOWN]		= "",
-+	[USB_DR_MODE_HOST]		= "host",
-+	[USB_DR_MODE_PERIPHERAL]	= "peripheral",
-+	[USB_DR_MODE_OTG]		= "otg",
-+};
-+
-+/**
-+ * of_usb_get_dr_mode - Get dual role mode for given device_node
-+ * @np:	Pointer to the given device_node
-+ *
-+ * The function gets phy interface string from property 'dr_mode',
-+ * and returns the correspondig enum usb_dr_mode
-+ */
-+enum usb_dr_mode of_usb_get_dr_mode(struct device_node *np)
-+{
-+	const char *dr_mode;
-+	int err, i;
-+
-+	err = of_property_read_string(np, "dr_mode", &dr_mode);
-+	if (err < 0)
-+		return USB_DR_MODE_UNKNOWN;
-+
-+	for (i = 0; i < ARRAY_SIZE(usb_dr_modes); i++)
-+		if (!strcmp(dr_mode, usb_dr_modes[i]))
-+			return i;
-+
-+	return USB_DR_MODE_UNKNOWN;
-+}
-+EXPORT_SYMBOL_GPL(of_usb_get_dr_mode);
-+
-+/**
-+ * of_usb_get_maximum_speed - Get maximum requested speed for a given USB
-+ * controller.
-+ * @np: Pointer to the given device_node
-+ *
-+ * The function gets the maximum speed string from property "maximum-speed",
-+ * and returns the corresponding enum usb_device_speed.
-+ */
-+enum usb_device_speed of_usb_get_maximum_speed(struct device_node *np)
-+{
-+	const char *maximum_speed;
-+	int err;
-+	int i;
-+
-+	err = of_property_read_string(np, "maximum-speed", &maximum_speed);
-+	if (err < 0)
-+		return USB_SPEED_UNKNOWN;
-+
-+	for (i = 0; i < ARRAY_SIZE(speed_names); i++)
-+		if (strcmp(maximum_speed, speed_names[i]) == 0)
-+			return i;
-+
-+	return USB_SPEED_UNKNOWN;
-+}
-+EXPORT_SYMBOL_GPL(of_usb_get_maximum_speed);
-+
++#ifdef CONFIG_USB_LED_TRIG
++extern void usb_led_activity(enum usb_led_event ev);
++#else
++static inline void usb_led_activity(enum usb_led_event ev) {}
 +#endif
 +
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/usb/common/usb-common.c b/drivers/usb/common/usb-common.c
-deleted file mode 100644
-index 6dfd30a..0000000
---- a/drivers/usb/common/usb-common.c
-+++ /dev/null
-@@ -1,144 +0,0 @@
--/*
-- * Provides code common for host and device side USB.
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public License as
-- * published by the Free Software Foundation, version 2.
-- *
-- * If either host side (ie. CONFIG_USB=y) or device side USB stack
-- * (ie. CONFIG_USB_GADGET=y) is compiled in the kernel, this module is
-- * compiled-in as well.  Otherwise, if either of the two stacks is
-- * compiled as module, this file is compiled as module as well.
-- */
--
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/of.h>
--#include <linux/usb/ch9.h>
--#include <linux/usb/of.h>
--#include <linux/usb/otg.h>
--
--const char *usb_otg_state_string(enum usb_otg_state state)
--{
--	static const char *const names[] = {
--		[OTG_STATE_A_IDLE] = "a_idle",
--		[OTG_STATE_A_WAIT_VRISE] = "a_wait_vrise",
--		[OTG_STATE_A_WAIT_BCON] = "a_wait_bcon",
--		[OTG_STATE_A_HOST] = "a_host",
--		[OTG_STATE_A_SUSPEND] = "a_suspend",
--		[OTG_STATE_A_PERIPHERAL] = "a_peripheral",
--		[OTG_STATE_A_WAIT_VFALL] = "a_wait_vfall",
--		[OTG_STATE_A_VBUS_ERR] = "a_vbus_err",
--		[OTG_STATE_B_IDLE] = "b_idle",
--		[OTG_STATE_B_SRP_INIT] = "b_srp_init",
--		[OTG_STATE_B_PERIPHERAL] = "b_peripheral",
--		[OTG_STATE_B_WAIT_ACON] = "b_wait_acon",
--		[OTG_STATE_B_HOST] = "b_host",
--	};
--
--	if (state < 0 || state >= ARRAY_SIZE(names))
--		return "UNDEFINED";
--
--	return names[state];
--}
--EXPORT_SYMBOL_GPL(usb_otg_state_string);
--
--static const char *const speed_names[] = {
--	[USB_SPEED_UNKNOWN] = "UNKNOWN",
--	[USB_SPEED_LOW] = "low-speed",
--	[USB_SPEED_FULL] = "full-speed",
--	[USB_SPEED_HIGH] = "high-speed",
--	[USB_SPEED_WIRELESS] = "wireless",
--	[USB_SPEED_SUPER] = "super-speed",
--};
--
--const char *usb_speed_string(enum usb_device_speed speed)
--{
--	if (speed < 0 || speed >= ARRAY_SIZE(speed_names))
--		speed = USB_SPEED_UNKNOWN;
--	return speed_names[speed];
--}
--EXPORT_SYMBOL_GPL(usb_speed_string);
--
--const char *usb_state_string(enum usb_device_state state)
--{
--	static const char *const names[] = {
--		[USB_STATE_NOTATTACHED] = "not attached",
--		[USB_STATE_ATTACHED] = "attached",
--		[USB_STATE_POWERED] = "powered",
--		[USB_STATE_RECONNECTING] = "reconnecting",
--		[USB_STATE_UNAUTHENTICATED] = "unauthenticated",
--		[USB_STATE_DEFAULT] = "default",
--		[USB_STATE_ADDRESS] = "addressed",
--		[USB_STATE_CONFIGURED] = "configured",
--		[USB_STATE_SUSPENDED] = "suspended",
--	};
--
--	if (state < 0 || state >= ARRAY_SIZE(names))
--		return "UNKNOWN";
--
--	return names[state];
--}
--EXPORT_SYMBOL_GPL(usb_state_string);
--
--#ifdef CONFIG_OF
--static const char *const usb_dr_modes[] = {
--	[USB_DR_MODE_UNKNOWN]		= "",
--	[USB_DR_MODE_HOST]		= "host",
--	[USB_DR_MODE_PERIPHERAL]	= "peripheral",
--	[USB_DR_MODE_OTG]		= "otg",
--};
--
--/**
-- * of_usb_get_dr_mode - Get dual role mode for given device_node
-- * @np:	Pointer to the given device_node
-- *
-- * The function gets phy interface string from property 'dr_mode',
-- * and returns the correspondig enum usb_dr_mode
-- */
--enum usb_dr_mode of_usb_get_dr_mode(struct device_node *np)
--{
--	const char *dr_mode;
--	int err, i;
--
--	err = of_property_read_string(np, "dr_mode", &dr_mode);
--	if (err < 0)
--		return USB_DR_MODE_UNKNOWN;
--
--	for (i = 0; i < ARRAY_SIZE(usb_dr_modes); i++)
--		if (!strcmp(dr_mode, usb_dr_modes[i]))
--			return i;
--
--	return USB_DR_MODE_UNKNOWN;
--}
--EXPORT_SYMBOL_GPL(of_usb_get_dr_mode);
--
--/**
-- * of_usb_get_maximum_speed - Get maximum requested speed for a given USB
-- * controller.
-- * @np: Pointer to the given device_node
-- *
-- * The function gets the maximum speed string from property "maximum-speed",
-- * and returns the corresponding enum usb_device_speed.
-- */
--enum usb_device_speed of_usb_get_maximum_speed(struct device_node *np)
--{
--	const char *maximum_speed;
--	int err;
--	int i;
--
--	err = of_property_read_string(np, "maximum-speed", &maximum_speed);
--	if (err < 0)
--		return USB_SPEED_UNKNOWN;
--
--	for (i = 0; i < ARRAY_SIZE(speed_names); i++)
--		if (strcmp(maximum_speed, speed_names[i]) == 0)
--			return i;
--
--	return USB_SPEED_UNKNOWN;
--}
--EXPORT_SYMBOL_GPL(of_usb_get_maximum_speed);
--
--#endif
--
--MODULE_LICENSE("GPL");
+ #endif  /* __KERNEL__ */
+ 
+ #endif
 -- 
 2.1.0
 
