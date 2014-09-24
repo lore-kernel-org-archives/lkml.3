@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaIXNuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:50:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38842 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750828AbaIXNuQ (ORCPT
+	id S1754134AbaIXNus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:50:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41147 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065AbaIXNum convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:50:16 -0400
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>, Pranith Kumar <bobby.prani@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH] Docs: this_cpu_ops: remove redundant add forms
-Date: Wed, 24 Sep 2014 14:49:43 +0100
-Message-Id: <1411566583-22220-1-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 24 Sep 2014 09:50:42 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v7 3/3] regulator: qcom-rpm: Regulator driver for the Qualcomm RPM
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <20140924083518.GB4015@sirena.org.uk>
+Date: Wed, 24 Sep 2014 08:50:38 -0500
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4437DA50-D8BC-4E78-821C-41440A08B9A9@codeaurora.org>
+References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com> <1411428329-23172-4-git-send-email-bjorn.andersson@sonymobile.com> <20140924083518.GB4015@sirena.org.uk>
+To: Mark Brown <broonie@kernel.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I spotted the below while trying to figure out how to use this_cpu ops,
-and it left me confused for a short while.
+On Sep 24, 2014, at 3:35 AM, Mark Brown <broonie@kernel.org> wrote:
 
-I guess that this is a refactoring fallout rather than there being a
-special this_cpu_add variant?
+> On Mon, Sep 22, 2014 at 04:25:29PM -0700, Bjorn Andersson wrote:
+>> Driver for regulators exposed by the Resource Power Manager (RPM) found
+>> in Qualcomm 8660, 8960 and 8064 based devices.
+> 
+> Applied, thanks.
 
-Mark.
+Mark, can you drop this until we see at least an RFC patch for the RPM support for b-family SoCs (8074, 8084, etc) chips.  The regulator could should either be the same or highly similar for b-family, but until we see the core RPM driver on the b-family SoCs we will not know that.
 
----->8----
-Commit ac490f4dca94 (Documentation: this_cpu_ops.txt: Update description
-of this_cpu_ops) added lists of {__,}this_cpu operations, but these have
-duplicate, parameter-less entries for {__,}this_cpu_add which don't
-correspond to any implementation. No other operations have such
-duplicate entries.
+- k
 
-Given both are also listed with their full complement of arguments, the
-empty forms are redundant and can be removed. This patch performs said
-removal.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
----
- Documentation/this_cpu_ops.txt | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/Documentation/this_cpu_ops.txt b/Documentation/this_cpu_ops.txt
-index 0ec9957..2cbf719 100644
---- a/Documentation/this_cpu_ops.txt
-+++ b/Documentation/this_cpu_ops.txt
-@@ -41,7 +41,6 @@ The following this_cpu() operations with implied preemption protection
- are defined. These operations can be used without worrying about
- preemption and interrupts.
- 
--	this_cpu_add()
- 	this_cpu_read(pcp)
- 	this_cpu_write(pcp, val)
- 	this_cpu_add(pcp, val)
-@@ -225,7 +224,6 @@ still occur while an operation is in progress and if the interrupt too
- modifies the variable, then RMW actions can not be guaranteed to be
- safe.
- 
--	__this_cpu_add()
- 	__this_cpu_read(pcp)
- 	__this_cpu_write(pcp, val)
- 	__this_cpu_add(pcp, val)
 -- 
-1.9.1
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
