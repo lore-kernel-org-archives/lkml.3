@@ -1,127 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaIXPK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:10:26 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:65032 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaIXPKX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:10:23 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 24 Sep 2014 17:07:49 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20140924150749.GG16198@localhost>
-References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
- <1411158165-25794-2-git-send-email-octavian.purdila@intel.com>
- <20140924104809.GA16198@localhost>
- <CAE1zotLu7pN9pC_C+iRwSpMh2iPW5E1CL4RiycLK-jV_FZEfOQ@mail.gmail.com>
- <20140924135444.GD16198@localhost>
- <CAE1zot+BqL4=kTJaQYwPxL-19W-+2nomXXrKaogJZRXuvrVE0A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE1zot+BqL4=kTJaQYwPxL-19W-+2nomXXrKaogJZRXuvrVE0A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1754607AbaIXPJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:09:18 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:48546 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752089AbaIXPJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 11:09:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 1/3] mm: memcontrol: do not kill uncharge batching in free_pages_and_swap_cache
+Date: Wed, 24 Sep 2014 11:08:56 -0400
+Message-Id: <1411571338-8178-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 05:54:15PM +0300, Octavian Purdila wrote:
-> On Wed, Sep 24, 2014 at 4:54 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Wed, Sep 24, 2014 at 04:36:22PM +0300, Octavian Purdila wrote:
-> >> On Wed, Sep 24, 2014 at 1:48 PM, Johan Hovold <johan@kernel.org> wrote:
-> >> > On Fri, Sep 19, 2014 at 11:22:42PM +0300, Octavian Purdila wrote:
-> >>
-> >> <snip>
-> >>
-> >> >> + * dln2_dev.mod_rx_slots and then the echo header field to index the
-> >> >> + * slots field and find the receive context for a particular
-> >> >> + * request.
-> >> >> + */
-> >> >> +struct dln2_mod_rx_slots {
-> >> >> +     /* RX slots bitmap */
-> >> >> +     unsigned long bmap;
-> >> >> +
-> >> >> +     /* used to wait for a free RX slot */
-> >> >> +     wait_queue_head_t wq;
-> >> >> +
-> >> >> +     /* used to wait for an RX operation to complete */
-> >> >> +     struct dln2_rx_context slots[DLN2_MAX_RX_SLOTS];
-> >> >> +
-> >> >> +     /* device has been disconnected */
-> >> >> +     bool disconnected;
-> >> >
-> >> > This belongs in the dln2_dev struct.
-> >> >
-> >> > I think you're overcomplicating the disconnect handling by intertwining
-> >> > it with your slots.
-> >> >
-> >> > Add a lock, an active-transfer counter, a disconnected flag, and a wait
-> >> > queue to struct dln2_dev.
-> >> >
-> >>
-> >> I agree that disconnected is better suited in dln2_dev.
-> >>
-> >> However, I don't think that we need the active-transfer counter and a
-> >> new wait queue. We can simply use the existing waiting queues and the
-> >> implicit alloc_rx_slot()/free_rx_slot() calls to see if we are still
-> >> waiting for I/O.
-> >
-> > Just because you can reuse them doesn't mean it's a good idea. By
-> > separating a generic disconnect solution from your custom slot
-> > implementation we get something that is way easier to verify for
-> > correctness and that could also be reused in other drivers.
-> 
-> Maybe I miss-understood what you are proposing, let me try to
-> summarize it to see if I got it right.
-> 
-> You are suggesting to add a counter, increment it in alloc_rx_slot(),
-> decrement it in free_rx_slot().
+From: Michal Hocko <mhocko@suse.cz>
 
-No increment it at the start of _dln2_transfer, and decrement it before
-returning from that function.
+free_pages_and_swap_cache limits release_pages to PAGEVEC_SIZE chunks.
+This is not a big deal for the normal release path but it completely
+kills memcg uncharge batching which reduces res_counter spin_lock
+contention. Dave has noticed this with his page fault scalability test
+case on a large machine when the lock was basically dominating on all
+CPUs:
+    80.18%    80.18%  [kernel]               [k] _raw_spin_lock
+                  |
+                  --- _raw_spin_lock
+                     |
+                     |--66.59%-- res_counter_uncharge_until
+                     |          res_counter_uncharge
+                     |          uncharge_batch
+                     |          uncharge_list
+                     |          mem_cgroup_uncharge_list
+                     |          release_pages
+                     |          free_pages_and_swap_cache
+                     |          tlb_flush_mmu_free
+                     |          |
+                     |          |--90.12%-- unmap_single_vma
+                     |          |          unmap_vmas
+                     |          |          unmap_region
+                     |          |          do_munmap
+                     |          |          vm_munmap
+                     |          |          sys_munmap
+                     |          |          system_call_fastpath
+                     |          |          __GI___munmap
+                     |          |
+                     |           --9.88%-- tlb_flush_mmu
+                     |                     tlb_finish_mmu
+                     |                     unmap_region
+                     |                     do_munmap
+                     |                     vm_munmap
+                     |                     sys_munmap
+                     |                     system_call_fastpath
+                     |                     __GI___munmap
 
-> Then add a new waitqueue in dln2_dev
-> and in free_rx_slot() wake it up while in disconnect do a wait_event()
-> on it and check for the counter.
+In his case the load was running in the root memcg and that part
+has been handled by reverting 05b843012335 ("mm: memcontrol: use
+root_mem_cgroup res_counter") because this is a clear regression,
+but the problem remains inside dedicated memcgs.
 
-Where you also wake the disconnect (or wait-until-sent) wait queue.
+There is no reason to limit release_pages to PAGEVEC_SIZE batches other
+than lru_lock held times. This logic, however, can be moved inside the
+function. mem_cgroup_uncharge_list and free_hot_cold_page_list do not
+hold any lock for the whole pages_to_free list so it is safe to call
+them in a single run.
 
-> Also, alloc_rx_slot() should fail if
-> the disconnect flag is set.
+Page reference count and LRU handling is moved to release_lru_pages and
+that is run in PAGEVEC_SIZE batches.
 
-That is not required, but you can bail out early after alloc_rx_slot if
-the disconnect flag is set (no locking).
+Reported-by: Dave Hansen <dave@sr71.net>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/swap.c       | 27 +++++++++++++++++++++------
+ mm/swap_state.c | 14 ++++----------
+ 2 files changed, 25 insertions(+), 16 deletions(-)
 
-> In this case we are still coupled to the slots implementation, in the
-> sense that you would need to understand the slots implementation to
-> understand how the disconnect works. We are also doing two wake-up
-> operations which I find redundant and which does not add much value in
-> clarity (since we still need to wake-up all completions for each
-> handle).
->
-> I do agree that using a counter instead of checking the bitmaps is
-> cleaner though.
+diff --git a/mm/swap.c b/mm/swap.c
+index 6b2dc3897cd5..8af99dd68dd2 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -888,9 +888,9 @@ void lru_add_drain_all(void)
+ }
+ 
+ /*
+- * Batched page_cache_release().  Decrement the reference count on all the
+- * passed pages.  If it fell to zero then remove the page from the LRU and
+- * free it.
++ * Batched lru release. Decrement the reference count on all the passed pages.
++ * If it fell to zero then remove the page from the LRU and add it to the given
++ * list to be freed by the caller.
+  *
+  * Avoid taking zone->lru_lock if possible, but if it is taken, retain it
+  * for the remainder of the operation.
+@@ -900,10 +900,10 @@ void lru_add_drain_all(void)
+  * grabbed the page via the LRU.  If it did, give up: shrink_inactive_list()
+  * will free it.
+  */
+-void release_pages(struct page **pages, int nr, bool cold)
++static void release_lru_pages(struct page **pages, int nr,
++			      struct list_head *pages_to_free)
+ {
+ 	int i;
+-	LIST_HEAD(pages_to_free);
+ 	struct zone *zone = NULL;
+ 	struct lruvec *lruvec;
+ 	unsigned long uninitialized_var(flags);
+@@ -943,11 +943,26 @@ void release_pages(struct page **pages, int nr, bool cold)
+ 		/* Clear Active bit in case of parallel mark_page_accessed */
+ 		__ClearPageActive(page);
+ 
+-		list_add(&page->lru, &pages_to_free);
++		list_add(&page->lru, pages_to_free);
+ 	}
+ 	if (zone)
+ 		spin_unlock_irqrestore(&zone->lru_lock, flags);
++}
++/*
++ * Batched page_cache_release(). Frees and uncharges all given pages
++ * for which the reference count drops to 0.
++ */
++void release_pages(struct page **pages, int nr, bool cold)
++{
++	LIST_HEAD(pages_to_free);
+ 
++	while (nr) {
++		int batch = min(nr, PAGEVEC_SIZE);
++
++		release_lru_pages(pages, batch, &pages_to_free);
++		pages += batch;
++		nr -= batch;
++	}
+ 	mem_cgroup_uncharge_list(&pages_to_free);
+ 	free_hot_cold_page_list(&pages_to_free, cold);
+ }
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index ef1f39139b71..154444918685 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -265,18 +265,12 @@ void free_page_and_swap_cache(struct page *page)
+ void free_pages_and_swap_cache(struct page **pages, int nr)
+ {
+ 	struct page **pagep = pages;
++	int i;
+ 
+ 	lru_add_drain();
+-	while (nr) {
+-		int todo = min(nr, PAGEVEC_SIZE);
+-		int i;
+-
+-		for (i = 0; i < todo; i++)
+-			free_swap_cache(pagep[i]);
+-		release_pages(pagep, todo, false);
+-		pagep += todo;
+-		nr -= todo;
+-	}
++	for (i = 0; i < nr; i++)
++		free_swap_cache(pagep[i]);
++	release_pages(pagep, nr, false);
+ }
+ 
+ /*
+-- 
+2.1.0
 
-You only need to the wake up if disconnected is set when returning from
-_dln2_transfer.
-
-Sure, the optimisation bit -- to abort any ongoing transfer -- still
-requires some insight into the slot implementation.
-
-But this way everything disconnect related (correctness-wise) is
-isolated to _dln2_transfer and dln2_disconnect.
-
-Johan
