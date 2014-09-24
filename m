@@ -1,365 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228AbaIXI7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:59:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:55118 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775AbaIXI6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:58:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="390840868"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch v6 15/15] x86, irq, ACPI: Implement ACPI driver to support IOAPIC hotplug
-Date: Wed, 24 Sep 2014 16:59:36 +0800
-Message-Id: <1411549176-30780-16-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753981AbaIXI7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:59:51 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:61904 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742AbaIXI7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:59:45 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude E6440
+Date: Wed, 24 Sep 2014 10:59:41 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.13.2; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+References: <201409232206.02819@pali> <201409232244.19104@pali> <54227E9A.7080107@redhat.com>
+In-Reply-To: <54227E9A.7080107@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2570253.uGXUlv0qVq";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409241059.41465@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable support of IOAPIC hotplug by:
-1) reintroducing ACPI based IOAPIC driver
-2) enhance pci_root driver to hook hotplug events
+--nextPart2570253.uGXUlv0qVq
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-The ACPI IOAPIC driver is always enabled if all of ACPI, PCI and IOAPIC
-are enabled.
+On Wednesday 24 September 2014 10:19:38 Hans de Goede wrote:
+> Hi,
+>=20
+> On 09/23/2014 10:44 PM, Pali Roh=C3=A1r wrote:
+> > On Tuesday 23 September 2014 22:31:31 you wrote:
+> >> Hi,
+> >>=20
+> >> On 09/23/2014 10:06 PM, Pali Roh=C3=A1r wrote:
+> >>> Hello,
+> >>>=20
+> >>> after big changes in acpi video/i915 code I cannot change
+> >>> display brightness on my Dell Latitude E6440 with kernel
+> >>> 3.17-rc6. With kernel 3.13 everything worked fine.
+> >>>=20
+> >>> More information about this problem:
+> >>>=20
+> >>> For configuring brightness on Dell laptops there are 4
+> >>> ways: 1) via acpi video driver
+> >>> 2) via dell-laptop driver
+> >>> 3) via i915 drm driver
+> >>> 4) from userspace with special dell SMI call
+> >>>=20
+> >>>     (e.g with program dellLcdBrightness from libsmbios
+> >>>     package)
+> >>>=20
+> >>> Methods 2) and 4) are same, both making special SMI call
+> >>> and Bios handing this request (just 2 is from kernel and
+> >>> 4 from userspace)
+> >>>=20
+> >>> Method 1) via acpi video driver working, but is not
+> >>> perfect. Driver can be used to change brightness (but
+> >>> only some levels, probably this depends on acpi/DSDT
+> >>> tables), but cannot be used to retrieve current
+> >>> brightness (when BIOS/SMI change brightness acpi driver
+> >>> report old incorrect value). So I prefer dell-laptop
+> >>> driver instead acpi video.
+> >>>=20
+> >>> Method 3) working even with 3.17-rc6 kernel but because
+> >>> that backlight device exported by i915 is marked as raw,
+> >>> desktop programs prefer to use other devices.
+> >>>=20
+> >>> Moreover it looks like that methods 1) 2) and 4) just
+> >>> forward request to method 3). So in any cased brightness
+> >>> is changed by i915 drm driver.
+> >>>=20
+> >>> I'm not sure (correct me if I'm wrong!) but I think that
+> >>> intel i915 drm driver accept changes (file
+> >>> intel_opregion.c) only if acpi function
+> >>> acpi_video_verify_backlight_support() returns true.
+> >>>=20
+> >>> Function acpi_video_verify_backlight_support() returns
+> >>> true iff: function acpi_video_backlight_support() returns
+> >>> true AND at least one of these functions returns false:
+> >>> acpi_osi_is_win8()
+> >>> acpi_video_use_native_backlight()
+> >>> backlight_device_registered(BACKLIGHT_RAW)
+> >>>=20
+> >>> On my notebook acpi_osi_is_win8() returns true (as is win8
+> >>> compliant), backlight_device_registered(BACKLIGHT_RAW)
+> >>> returns true as I'm using intel i915 drm driver with raw
+> >>> backlight device and acpi_video_use_native_backlight()
+> >>> returns true/false depending on
+> >>> "video.use_native_backlight" kernel param. Default is
+> >>> true.
+> >>>=20
+> >>> So if I want to have working acpi video driver with
+> >>> display brightness support I need to boot kernel with
+> >>> param: "video.use_native_backlight=3D0". I tested it with
+> >>> kernel 3.17-rc6 and this param really enabled display
+> >>> brightness support via acpi video driver -- which is
+> >>> good.
+> >>>=20
+> >>> Driver dell-laptop creating backligh device for brightness
+> >>> control only if acpi_video_backlight_support() returns
+> >>> false. There is complicated condition for it and when
+> >>> kernel is booted with "video.use_native_backlight=3D0" that
+> >>> function returns true.
+> >>>=20
+> >>> So conclusion is: With current code in kernel 3.17-rc6 it
+> >>> is not possible to control brightness of display with
+> >>> native driver dell-laptop on Dell Latitude E6440 (and
+> >>> probably on others too)!!!
+> >>>=20
+> >>> And Because laptop is win8 compliant and you create
+> >>> decision to use native driver (instead acpi one) it is
+> >>> not possible to control display brightness without tweeks
+> >>> in kernel cmdline.
+> >>>=20
+> >>> As I wrote I would rather to use native dell-laptop driver
+> >>> for controlling brightness, but it is not possible.
+> >>>=20
+> >>> So how to solve this problem?
+> >>>=20
+> >>> Quick solution would be to set use_native_backlight false
+> >>> for some Dell laptops which means, that acpi video will be
+> >>> used and in this case intel i915 driver will *not* drop
+> >>> backlight change request.
+> >>>=20
+> >>> Another solution could be to disable check in dell_laptop
+> >>> driver and add use_native_backlight=3D0 to hooks. But this
+> >>> create two backlight interfaces (which is not good), but
+> >>> only way (for now) how to make dell_laptop working again.
+> >>>=20
+> >>> Better and maybe only one proper solution would be to
+> >>> teach intel drm i915 driver to not drop backlight change
+> >>> request for Dell laptops (or all??). (This allows to work
+> >>> both acpi video and dell_laptop drivers without any
+> >>> change and with *any* value in param
+> >>> use_native_backlight). I think that problematic code is
+> >>> in function asle_set_backlight() in file intel_opregion.c
+> >>> (but I'm not sure). My idea is that "drop" event function
+> >>> it is caused by this commit
+> >>> 0b9f7d93ca6109048a4eb06332b666b6e29df4fe (but I'm not
+> >>> sure).
+> >>>=20
+> >>> At least something must be done as I think that I'm not
+> >>> only one who has Dell laptop and brightness configuration
+> >>> is really important...
+> >>=20
+> >> I don't understand your problem, the kernel is selecting
+> >> the i915 backlight driver, making that the only one
+> >> available to userspace, so the one problem you state with
+> >> the i915 driver, that it is "raw" is not an issue, as
+> >> userspace will pick it when it is the only one.
+> >=20
+> > It is not only one.
+>=20
+> Are you sure, if you do not specify any commandline
+> parameters, then neither dell-laptop nor acpi-video should
+> register a backlight interface.
+>=20
+> dell-laptop.c has:
+>=20
+> #ifdef CONFIG_ACPI
+>         /* In the event of an ACPI backlight being available,
+> don't * register the platform controller.
+>          */
+>         if (acpi_video_backlight_support())
+>                 return 0;
+> #endif
+>=20
+> And acpi_video_backlight_support() will (normally) return true
+> on acpi-backlight capable systems independent of
+> use_native_backlight.
+>=20
+> And drivers/acpi/video.c has this:
+>=20
+>         /* no warning message if acpi_backlight=3Dvendor or a
+> quirk is used */ if (!acpi_video_verify_backlight_support())
+>                 return;
+>=20
+> ...
+>=20
+> bool acpi_video_verify_backlight_support(void)
+> {
+>         if (acpi_osi_is_win8() &&
+> acpi_video_use_native_backlight() &&
+> backlight_device_registered(BACKLIGHT_RAW)) return false;
+>         return acpi_video_backlight_support();
+> }
+>=20
+> So unlike the check in dell-laptop this one does depend on the
+> use_native_backlight setting.
+>=20
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/acpi/Kconfig    |    6 ++
- drivers/acpi/Makefile   |    1 +
- drivers/acpi/internal.h |    7 ++
- drivers/acpi/ioapic.c   |  235 +++++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/pci_root.c |    3 +
- 5 files changed, 252 insertions(+)
- create mode 100644 drivers/acpi/ioapic.c
+It depends (see my previous mail). Here is code:
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index d0f3265fb85d..b7b87a1a2252 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -315,6 +315,12 @@ config ACPI_HOTPLUG_MEMORY
- 	  To compile this driver as a module, choose M here:
- 	  the module will be called acpi_memhotplug.
- 
-+config ACPI_HOTPLUG_IOAPIC
-+	bool
-+	depends on PCI
-+	depends on X86_IO_APIC
-+	default y
-+
- config ACPI_SBS
- 	tristate "Smart Battery System"
- 	depends on X86
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 505d4d79fe3e..ee996253a2bb 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -68,6 +68,7 @@ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
- obj-y				+= container.o
- obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
- obj-y				+= acpi_memhotplug.o
-+obj-$(CONFIG_ACPI_HOTPLUG_IOAPIC) += ioapic.o
- obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
- obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
- obj-$(CONFIG_ACPI_SBS)		+= sbs.o
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 4c5cf77e7576..817ab2d5975c 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -34,6 +34,13 @@ void acpi_pnp_init(void);
- int acpi_sysfs_init(void);
- void acpi_container_init(void);
- void acpi_memory_hotplug_init(void);
-+#ifdef	CONFIG_ACPI_HOTPLUG_IOAPIC
-+int acpi_ioapic_add(struct acpi_pci_root *root);
-+int acpi_ioapic_remove(struct acpi_pci_root *root);
-+#else
-+static inline int acpi_ioapic_add(struct acpi_pci_root *root) { return 0; }
-+static inline int acpi_ioapic_remove(struct acpi_pci_root *root) { return 0; }
-+#endif
- #ifdef CONFIG_ACPI_DOCK
- void register_dock_dependent_device(struct acpi_device *adev,
- 				    acpi_handle dshandle);
-diff --git a/drivers/acpi/ioapic.c b/drivers/acpi/ioapic.c
-new file mode 100644
-index 000000000000..9a631a61e270
---- /dev/null
-+++ b/drivers/acpi/ioapic.c
-@@ -0,0 +1,235 @@
-+/*
-+ * IOAPIC/IOxAPIC/IOSAPIC driver
-+ *
-+ * Copyright (C) 2009 Fujitsu Limited.
-+ * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Copyright (C) 2014 Intel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Based on original drivers/pci/ioapic.c
-+ *	Yinghai Lu <yinghai@kernel.org>
-+ *	Jiang Liu <jiang.liu@intel.com>
-+ */
-+
-+/*
-+ * This driver manages I/O APICs added by hotplug after boot.
-+ * We try to claim all I/O APIC devices, but those present at boot were
-+ * registered when we parsed the ACPI MADT.
-+ */
-+
-+#define pr_fmt(fmt) "ACPI : IOAPIC: " fmt
-+
-+#include <linux/slab.h>
-+#include <linux/acpi.h>
-+#include <linux/pci.h>
-+#include <acpi/acpi.h>
-+
-+struct acpi_pci_ioapic {
-+	acpi_handle	root_handle;
-+	acpi_handle	handle;
-+	u32		gsi_base;
-+	struct resource	res;
-+	struct pci_dev	*pdev;
-+	struct list_head list;
-+};
-+
-+static LIST_HEAD(ioapic_list);
-+static DEFINE_MUTEX(ioapic_list_lock);
-+
-+static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
-+{
-+	struct resource *res = data;
-+
-+	memset(res, 0, sizeof(*res));
-+	if (acpi_dev_resource_memory(acpi_res, res)) {
-+		res->flags &= IORESOURCE_MEM;
-+		if (res->flags)
-+			return AE_OK;
-+	} else if (acpi_dev_resource_address_space(acpi_res, res)) {
-+		struct acpi_resource_address64 addr;
-+
-+		res->flags &= IORESOURCE_MEM;
-+		if (res->flags &&
-+		    ACPI_SUCCESS(acpi_resource_to_address64(acpi_res, &addr)) &&
-+		    addr.info.mem.caching != ACPI_PREFETCHABLE_MEMORY) {
-+			res->start += addr.translation_offset;
-+			res->end += addr.translation_offset;
-+			return AE_OK;
-+		}
-+	}
-+	res->flags = 0;
-+
-+	return AE_OK;
-+}
-+
-+static bool acpi_is_ioapic(acpi_handle handle, char **type)
-+{
-+	acpi_status status;
-+	struct acpi_device_info *info;
-+	char *hid = NULL;
-+	bool match = false;
-+
-+	if (!acpi_has_method(handle, "_GSB"))
-+		return false;
-+
-+	status = acpi_get_object_info(handle, &info);
-+	if (ACPI_SUCCESS(status)) {
-+		if (info->valid & ACPI_VALID_HID)
-+			hid = info->hardware_id.string;
-+		if (hid) {
-+			if (strcmp(hid, "ACPI0009") == 0) {
-+				*type = "IOxAPIC";
-+				match = true;
-+			} else if (strcmp(hid, "ACPI000A") == 0) {
-+				*type = "IOAPIC";
-+				match = true;
-+			}
-+		}
-+		kfree(info);
-+	}
-+
-+	return match;
-+}
-+
-+static acpi_status handle_ioapic_add(acpi_handle handle, u32 lvl,
-+				     void *context, void **rv)
-+{
-+	acpi_status status;
-+	unsigned long long gsi_base;
-+	struct acpi_pci_ioapic *ioapic;
-+	struct pci_dev *dev = NULL;
-+	struct resource *res = NULL;
-+	char *type = NULL;
-+
-+	if (!acpi_is_ioapic(handle, &type))
-+		return AE_OK;
-+
-+	mutex_lock(&ioapic_list_lock);
-+	list_for_each_entry(ioapic, &ioapic_list, list)
-+		if (ioapic->handle == handle) {
-+			mutex_unlock(&ioapic_list_lock);
-+			return AE_OK;
-+		}
-+
-+	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsi_base);
-+	if (ACPI_FAILURE(status)) {
-+		acpi_handle_warn(handle, "failed to evaluate _GSB method\n");
-+		goto exit;
-+	}
-+
-+	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
-+	if (!ioapic) {
-+		pr_err("cannot allocate memory for new IOAPIC\n");
-+		goto exit;
-+	} else {
-+		ioapic->root_handle = (acpi_handle)context;
-+		ioapic->handle = handle;
-+		ioapic->gsi_base = (u32)gsi_base;
-+		ioapic->res.flags = IORESOURCE_UNSET;
-+	}
-+
-+	if (acpi_ioapic_registered(handle, (u32)gsi_base))
-+		goto done;
-+
-+	dev = acpi_get_pci_dev(handle);
-+	if (dev && pci_resource_len(dev, 0)) {
-+		if (pci_enable_device(dev) < 0)
-+			goto exit_put;
-+		pci_set_master(dev);
-+		if (pci_request_region(dev, 0, type))
-+			goto exit_disable;
-+		res = &dev->resource[0];
-+		ioapic->pdev = dev;
-+	} else {
-+		pci_dev_put(dev);
-+		dev = NULL;
-+
-+		res = &ioapic->res;
-+		acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
-+		if (res->flags == IORESOURCE_UNSET) {
-+			acpi_handle_warn(handle, "failed to get resource\n");
-+			goto exit_free;
-+		} else if (request_resource(&iomem_resource, res)) {
-+			acpi_handle_warn(handle, "failed to insert resource\n");
-+			goto exit_free;
-+		}
-+	}
-+
-+	if (acpi_register_ioapic(handle, res->start, (u32)gsi_base)) {
-+		acpi_handle_warn(handle, "failed to register IOAPIC\n");
-+		goto exit_release;
-+	}
-+done:
-+	list_add(&ioapic->list, &ioapic_list);
-+	mutex_unlock(&ioapic_list_lock);
-+
-+	if (dev)
-+		dev_info(&dev->dev, "%s at %pR, GSI %u\n",
-+			 type, res, (u32)gsi_base);
-+	else
-+		acpi_handle_info(handle, "%s at %pR, GSI %u\n",
-+				 type, res, (u32)gsi_base);
-+
-+	return AE_OK;
-+
-+exit_release:
-+	if (dev)
-+		pci_release_region(dev, 0);
-+	else
-+		release_resource(res);
-+exit_disable:
-+	if (dev)
-+		pci_disable_device(dev);
-+exit_put:
-+	if (dev)
-+		pci_dev_put(dev);
-+exit_free:
-+	kfree(ioapic);
-+exit:
-+	mutex_unlock(&ioapic_list_lock);
-+	*(acpi_status *)rv = AE_ERROR;
-+	return AE_OK;
-+}
-+
-+int acpi_ioapic_add(struct acpi_pci_root *root)
-+{
-+	acpi_status status, retval = AE_OK;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle,
-+				     UINT_MAX, handle_ioapic_add, NULL,
-+				     root->device->handle, (void **)&retval);
-+
-+	return ACPI_SUCCESS(status) && ACPI_SUCCESS(retval) ? 0 : -ENODEV;
-+}
-+
-+int acpi_ioapic_remove(struct acpi_pci_root *root)
-+{
-+	int retval = 0;
-+	struct acpi_pci_ioapic *ioapic, *tmp;
-+
-+	mutex_lock(&ioapic_list_lock);
-+	list_for_each_entry_safe(ioapic, tmp, &ioapic_list, list) {
-+		if (root->device->handle != ioapic->root_handle)
-+			continue;
-+
-+		if (acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base))
-+			retval = -EBUSY;
-+
-+		if (ioapic->pdev) {
-+			pci_release_region(ioapic->pdev, 0);
-+			pci_disable_device(ioapic->pdev);
-+			pci_dev_put(ioapic->pdev);
-+		} else if (ioapic->res.flags != IORESOURCE_UNSET) {
-+			release_resource(&ioapic->res);
-+		}
-+		list_del(&ioapic->list);
-+		kfree(ioapic);
-+	}
-+	mutex_unlock(&ioapic_list_lock);
-+
-+	return retval;
-+}
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index e6ae603ed1a1..d83980b18f49 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -600,6 +600,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	if (system_state != SYSTEM_BOOTING) {
- 		pcibios_resource_survey_bus(root->bus);
- 		pci_assign_unassigned_root_bus_resources(root->bus);
-+		acpi_ioapic_add(root);
- 	}
- 
- 	pci_lock_rescan_remove();
-@@ -620,6 +621,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
- 
- 	pci_stop_root_bus(root->bus);
- 
-+	WARN_ON(acpi_ioapic_remove(root));
-+
- 	device_set_run_wake(root->bus->bridge, false);
- 	pci_acpi_remove_bus_pm_notifier(device);
- 
--- 
-1.7.10.4
+static bool acpi_video_use_native_backlight(void)
+{
+	if (use_native_backlight_param !=3D -1)
+		return use_native_backlight_param;
+	else
+		return use_native_backlight_dmi;
+}
 
+> I've just checked 3.17 on my E6430 and there this works as it
+> should, I only get the intel_backlight in
+> /sys/class/backlight
+>=20
+> > Also dell-laptop (or acpi video) backlight
+> > interface is created (depends on use_native_backlight
+> > param). And userspace will pick dell-laptop (or acpi video)
+> > to use (which cannot change brightness).
+> >=20
+> >> Why would you want to use dell-laptop despite the i915
+> >> driver working fine ?
+> >=20
+> > i915 working only if I compile kernel without acpi video
+> > dell- laptop support (distributions compile kernel with
+> > these drivers) and i915 is not good for usage. First it
+> > provides more then thousand brightness levels and lot of
+> > (with low numbers) completely turn display off. And if
+> > userspace map these thousand levels into 5-10 levels (as
+> > nobody want to press brightness key up/down 1000x) two
+> > lowest levels cause display off.
+>=20
+> More and more laptops will only have working backlight control
+> at all when using i915, so userspace will need to learn to
+> better deal with backlight controls with these ranges. And
+> low pwm levels turning the backlight of is normal for raw
+> interfaces, if userspace does not want this, then they should
+> not go so low.
+>=20
+
+So then kernel should report which low levels turn backlight off=20
+so userspace will know which levels should avoid. But this is not=20
+implemented yet.
+
+> I suggest that you file a bug against your desktop environment
+> that it is not using the backlight controls in an optimal
+> manner, from the kernel pov everything is working fine.
+>=20
+
+Once I will know which levels should not DE use I can report bug.
+
+> > With acpi
+> > video and dell-laptop driver levels are mapped into small
+> > level space in perfect way. So this is reason I want to use
+> > dell-laptop for controlling brightness.
+>=20
+> If you want to use dell-laptop, specify acpi_backlight=3Dvendor
+> on the kernel commandline, that will give you dell_laptop +
+> intel_backlight as backlight interfaces, and userspace should
+> prefer dell_laptop.
+
+With acpi_backlight=3Dvendor dell-laptop is not working, see my=20
+previous mail. In this case intel i915 drm driver ignore bios=20
+events for changing brightness. And userspace prefer to use=20
+dell_laptop which do nothing!
+
+> But IMHO it would be better to file a bug
+> with your desktop environment, and get that fixed to work
+> properly with intel_backlight (or with raw backlight
+> interfaces in general).
+>=20
+> Regards,
+>=20
+> Hans
+>=20
+> >> Regards,
+> >>=20
+> >> Hans
+
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2570253.uGXUlv0qVq
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlQih/0ACgkQi/DJPQPkQ1J8igCeNvomhQna0ci3UPe1Oc81saDQ
+4IsAnjEkCorMoS7yFmA6FgdQ07rRTjVl
+=GpWp
+-----END PGP SIGNATURE-----
+
+--nextPart2570253.uGXUlv0qVq--
