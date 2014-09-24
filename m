@@ -1,76 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaIXIMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:12:15 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:35823 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352AbaIXIMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 04:12:02 -0400
-Date: Wed, 24 Sep 2014 09:11:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v7 0/3] Qualcomm Resource Power Manager driver
-Message-ID: <20140924081155.GE17801@lee--X1>
-References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
- <54212CA0.4030700@linaro.org>
- <20140924042737.GQ10179@sonymobile.com>
- <20140924075535.GD17801@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140924075535.GD17801@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754399AbaIXIN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:13:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34187 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753178AbaIXINR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 04:13:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
+   d="scan'208";a="607688126"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v6] sched: fix llc shared map unreleased during cpu hotplug
+Date: Wed, 24 Sep 2014 16:13:08 +0800
+Message-Id: <1411546388-48111-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Lee Jones wrote:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+IP: [..] find_busiest_group
+PGD 5a9d5067 PUD 13067 PMD 0
+Oops: 0000 [#3] SMP
+[...]
+Call Trace:
+load_balance
+? _raw_spin_unlock_irqrestore
+idle_balance
+__schedule
+schedule
+schedule_timeout
+? lock_timer_base
+schedule_timeout_uninterruptible
+msleep
+lock_device_hotplug_sysfs
+online_store
+dev_attr_store
+sysfs_write_file
+vfs_write
+SyS_write
+system_call_fastpath
 
-> On Tue, 23 Sep 2014, Bjorn Andersson wrote:
-> 
-> > On Tue 23 Sep 01:17 PDT 2014, Srinivas Kandagatla wrote:
-> > 
-> > > Hi Bjorn,
-> > > 
-> > > Thankyou for the new patchset.
-> > > 
-> > > I got few device-tree patches for apq8064 usb, sata, phy and hdmi which 
-> > > depend on rpm header file. It will be nice to get this functionality 
-> > > into 3.18.
-> > > 
-> > 
-> > We should be able to send out the dts patches separate of these.
-> > 
-> > > Do you think we should take these patches via arm-soc tree?
-> > > 
-> > 
-> > Both Lee and Mark indicated that they will pull the parts individually. However
-> > both of the patches depend on the header file created in patch 1, someone needs
-> > to take both for it to work out?
-> 
-> Once reviewed I can take the whole set with Mark's Ack.
+This bug can be triggered by hot add and remove large number of xen
+domain0's vcpus repeatly.
 
-Okay, I should have looked at discussion we had on the previous
-version prior to responding.  If your Kconfig configuration is as
-tight as you say it is, we can take the patches through our respective
-trees.
+Last level cache shared map is built during cpu up and build sched domain 
+routine takes advantage of it to setup sched domain cpu topology, however, 
+llc shared map is unreleased during cpu disable which lead to invalid sched 
+domain cpu topology. This patch fix it by release llc shared map correctly
+during cpu disable.
 
+Yasuaki also reported this can happen on their real hardware. 
+https://lkml.org/lkml/2014/7/22/1018
+
+His case is here.
+==
+Here is a example on my system.
+My system has 4 sockets and each socket has 15 cores and HT is enabled.
+In this case, each core of sockes is numbered as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-44, 90-104
+Socket#3 | 45-59, 105-119
+Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+It means that last level cache of Socket#2 is shared with
+CPU#30-44 and 90-104.
+When hot-removing socket#2 and #3, each core of sockets is numbered
+as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+having 0x3fff80000001fffc0000000.
+After that, when hot-adding socket#2 and #3, each core of sockets is
+numbered as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-59
+Socket#3 | 90-119
+Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+It means that last level cache of Socket#2 is shared with CPU#30-59
+and 90-104. So the mask has wrong value.
+At first, I cleared hot-removed CPU number's bit from llc_shared_map
+when hot removing CPU. But Borislav suggested that the problem will
+disappear if readded CPU is assigned same CPU number. And llc_shared_map
+must not be changed.
+
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v5 -> v6:
+ * add the real-hardware reports to the changelog
+v4 -> v5:
+ * add the description when the bug can occur
+v3 -> v4:
+ * simplify backtrace
+v2 -> v3:
+ * simplify backtrace 
+v1 -> v2:
+ * fix subject line
+
+ arch/x86/kernel/smpboot.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 5492798..0134ec7 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+ 
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
