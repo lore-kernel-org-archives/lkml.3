@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaIXHUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:20:24 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:61381 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaIXHUW (ORCPT
+	id S1752969AbaIXHUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:20:47 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:41985 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894AbaIXHUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:20:22 -0400
-Date: Wed, 24 Sep 2014 09:20:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] perf: Userspace event
-Message-ID: <20140924072017.GC990@gmail.com>
-References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
- <1411491787-25938-3-git-send-email-pawel.moll@arm.com>
- <87oau5k0u9.fsf@sejong.aot.lge.com>
+	Wed, 24 Sep 2014 03:20:45 -0400
+Message-ID: <542270BA.4090708@gmail.com>
+Date: Wed, 24 Sep 2014 15:20:26 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87oau5k0u9.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Andres Lagar-Cavilla <andreslc@google.com>
+CC: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v4] kvm: Fix page ageing bugs
+References: <1411410865-3603-1-git-send-email-andreslc@google.com> <1411422882-16245-1-git-send-email-andreslc@google.com> <20140924022729.GA2889@kernel> <54226CEB.9080504@redhat.com>
+In-Reply-To: <54226CEB.9080504@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Paolo,
+于 9/24/14, 3:04 PM, Paolo Bonzini 写道:
+> Il 24/09/2014 04:27, Wanpeng Li ha scritto:
+>> Hi Andres,
+>> On Mon, Sep 22, 2014 at 02:54:42PM -0700, Andres Lagar-Cavilla wrote:
+>>> 1. We were calling clear_flush_young_notify in unmap_one, but we are
+>>> within an mmu notifier invalidate range scope. The spte exists no more
+>>> (due to range_start) and the accessed bit info has already been
+>>> propagated (due to kvm_pfn_set_accessed). Simply call
+>>> clear_flush_young.
+>>>
+>>> 2. We clear_flush_young on a primary MMU PMD, but this may be mapped
+>>> as a collection of PTEs by the secondary MMU (e.g. during log-dirty).
+>>> This required expanding the interface of the clear_flush_young mmu
+>>> notifier, so a lot of code has been trivially touched.
+>>>
+>>> 3. In the absence of shadow_accessed_mask (e.g. EPT A bit), we emulate
+>>> the access bit by blowing the spte. This requires proper synchronizing
+>>> with MMU notifier consumers, like every other removal of spte's does.
+>>>
+>> [...]
+>>> ---
+>>> +	BUG_ON(!shadow_accessed_mask);
+>>>
+>>> 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+>>> 	     sptep = rmap_get_next(&iter)) {
+>>> +		struct kvm_mmu_page *sp;
+>>> +		gfn_t gfn;
+>>> 		BUG_ON(!is_shadow_present_pte(*sptep));
+>>> +		/* From spte to gfn. */
+>>> +		sp = page_header(__pa(sptep));
+>>> +		gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
+>>>
+>>> 		if (*sptep & shadow_accessed_mask) {
+>>> 			young = 1;
+>>> 			clear_bit((ffs(shadow_accessed_mask) - 1),
+>>> 				 (unsigned long *)sptep);
+>>> 		}
+>>> +		trace_kvm_age_page(gfn, slot, young);
+>> IIUC, all the rmapps in this for loop are against the same gfn which
+>> results in the above trace point dump the message duplicated.
+> You're right; Andres's patch "[PATCH] kvm/x86/mmu: Pass gfn and level to
+> rmapp callback" helps avoiding that.
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
+ From Andres's patch "[PATCH] kvm/x86/mmu: Pass gfn and level to rmapp 
+callback"
 
-> On Tue, 23 Sep 2014 18:03:07 +0100, Pawel Moll wrote:
-> > This patch adds a new PERF_COUNT_SW_UEVENT software event
-> > and a related PERF_SAMPLE_UEVENT sample. User can now
-> > write to the the perf file descriptor, injecting such
-> > event in the perf buffer.
-> 
-> It seems the PERF_SAMPLE_UEVENT sample can be injected to any event.  So
-> why the PERF_COUNT_SW_UEVENT is needed?  At least one can use the
-> SW_DUMMY event for that purpose.
-> 
-> Also I think it'd be better to be a record type (PERF_RECORD_XXX)
-> instead of a sample flag (PERF_SAMPLE_XXX).  In perf tools, we already
-> use perf_user_event_type for synthesized userspace events.  This way it
-> can avoid unnecessary sample processing for userspace events.
-> 
-> For contents, I prefer to give complete control to users - kernel
-> doesn't need to care about it other than its size.  If one just wants to
-> use strings only, she can write them directly.  If others want to mix
-> different types of data, they might need to define a data format for
-> their use.
+@@ -1410,25 +1421,20 @@ static int kvm_age_rmapp(struct kvm *kvm, 
+unsigned long *rmapp,
 
-It would also be nice to add support for this to tools/perf/ (so 
-that 'trace' displays such entries in a perf.data), with a 
-minimum testcase for 'perf test' as well.
+for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+sptep = rmap_get_next(&iter)) {
+- struct kvm_mmu_page *sp;
+- gfn_t gfn;
+BUG_ON(!is_shadow_present_pte(*sptep));
+- /* From spte to gfn. */
+- sp = page_header(__pa(sptep));
+- gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
+-
+if (*sptep & shadow_accessed_mask) {
+young = 1;
+clear_bit((ffs(shadow_accessed_mask) - 1),
+(unsigned long *)sptep);
+}
+- trace_kvm_age_page(gfn, slot, young);
++ trace_kvm_age_page(gfn, level, slot, young);
+}
+return young;
+}
 
-Perhaps also add a small sub-utility to inject such events from 
-the command line, such as:
 
-  trace user-event "this is a test message"
+This trace point still dup duplicated message for the same gfn in the 
+for loop.
 
-('trace' is a shortcut command for 'perf trace'.)
+Regards,
+Wanpeng Li
 
-It would have a usecase straight away: perf could be used to 
-easily trace script execution for example.
+>
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-For that probably another mode of user event generation would be 
-needed as well: a process that has no access to any perf fds 
-should still be able to generate user events, if the 
-profiling/tracing context has permitted that. In this case we'd 
-inject the event either into the first, or all currently active 
-events (but only once per output buffer, or so).
-
-Thanks,
-
-	Ingo
