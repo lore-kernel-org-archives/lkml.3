@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227AbaIXFLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 01:11:37 -0400
-Received: from max.feld.cvut.cz ([147.32.192.36]:41838 "EHLO max.feld.cvut.cz"
+	id S1751259AbaIXFUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 01:20:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45801 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744AbaIXFLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 01:11:35 -0400
-From: Michal Sojka <sojka@merica.cz>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Bryan Wu <cooloney@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
-Subject: Re: [PATCH v5 1/3] usb: gadget: Refactor request completion
-In-Reply-To: <20140917152801.GD6903@saruman.home>
-References: <1410938473-29385-1-git-send-email-sojka@merica.cz> <1410938473-29385-2-git-send-email-sojka@merica.cz> <20140917152801.GD6903@saruman.home>
-User-Agent: Notmuch/0.18.1+101~g56b0ff0 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 23 Sep 2014 10:09:22 +0200
-Message-ID: <874mvyahcd.fsf@steelpick.2x.cz>
+	id S1750744AbaIXFUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 01:20:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,586,1406617200"; 
+   d="scan'208";a="578014277"
+From: ashutosh dixit <ashutosh.dixit@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Foley <pefoley2@pefoley.com>, Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Dutt\, Sudeep" <sudeep.dutt@intel.com>,
+        "Rao\, Nikhil" <nikhil.rao@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH linux-next] Documentation: mic: mpssd: Disable mpssd builds for kernels < 3.13
+References: <c6aff784285e77771ad4edd3d451d95529bfb17d.1411496575.git.ashutosh.dixit@intel.com>
+	<5421EA22.6000206@infradead.org>
+	<ndhwbqvboe9c48.fsf@rasscmlmus001.pdx.intel.com>
+	<CAOFdcFMLYJ9qqRB-uwyLwyBpa=KTsHMbzdANJrmRu_wrqNArOA@mail.gmail.com>
+	<20140923163816.2f3cf938c7815424e55e444f@linux-foundation.org>
+	<CAOFdcFMiqS6-QFUo-QbwroOMmXnUL5mJd=Pjei_RjT3mhO8P5g@mail.gmail.com>
+	<20140923175137.aa87c1ea.akpm@linux-foundation.org>
+	<CAOFdcFOG0hfeUZz6QkjgfAYbsFN3uVHgSn25hWqwtd6bNU0d5A@mail.gmail.com>
+	<ndhwbqd2alaaf6.fsf@rasscmlmus001.pdx.intel.com>
+	<20140923215932.df693d76.akpm@linux-foundation.org>
+Date: Tue, 23 Sep 2014 22:20:45 -0700
+In-Reply-To: <20140923215932.df693d76.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Tue, 23 Sep 2014 22:59:32 -0600")
+Message-ID: <ndhwbqoau5k30y.fsf@rasscmlmus001.pdx.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Felipe,
-
-On Wed, Sep 17 2014, Felipe Balbi wrote:
-> On Wed, Sep 17, 2014 at 09:21:11AM +0200, Michal Sojka wrote:
->> All USB peripheral controller drivers called completion routines
->> directly. This patch moves the completion call from drivers to
->> usb_gadget_giveback_request(), in order to have a place where common
->> functionality can be added.
->> 
->> All places in drivers/usb/ matching "[-.]complete(" were replaced with a
->> call to usb_gadget_giveback_request(). This was compile-tested with all
->> ARM drivers enabled and runtime-tested for musb.
->> 
->> Signed-off-by: Michal Sojka <sojka@merica.cz>
->> ---
->>  drivers/usb/chipidea/udc.c              |  6 +++---
->>  drivers/usb/dwc2/gadget.c               |  6 +++---
->>  drivers/usb/dwc3/gadget.c               |  2 +-
->>  drivers/usb/gadget/udc/amd5536udc.c     |  2 +-
->>  drivers/usb/gadget/udc/at91_udc.c       |  2 +-
->>  drivers/usb/gadget/udc/atmel_usba_udc.c |  4 ++--
->>  drivers/usb/gadget/udc/bcm63xx_udc.c    |  2 +-
->>  drivers/usb/gadget/udc/dummy_hcd.c      | 10 +++++-----
->>  drivers/usb/gadget/udc/fotg210-udc.c    |  2 +-
->>  drivers/usb/gadget/udc/fsl_qe_udc.c     |  6 +-----
->>  drivers/usb/gadget/udc/fsl_udc_core.c   |  6 ++----
->>  drivers/usb/gadget/udc/fusb300_udc.c    |  2 +-
->>  drivers/usb/gadget/udc/goku_udc.c       |  2 +-
->>  drivers/usb/gadget/udc/gr_udc.c         |  2 +-
->>  drivers/usb/gadget/udc/lpc32xx_udc.c    |  2 +-
->>  drivers/usb/gadget/udc/m66592-udc.c     |  2 +-
->>  drivers/usb/gadget/udc/mv_u3d_core.c    |  8 ++------
->>  drivers/usb/gadget/udc/mv_udc_core.c    |  8 ++------
->>  drivers/usb/gadget/udc/net2272.c        |  2 +-
->>  drivers/usb/gadget/udc/net2280.c        |  2 +-
->>  drivers/usb/gadget/udc/omap_udc.c       |  2 +-
->>  drivers/usb/gadget/udc/pch_udc.c        |  2 +-
->>  drivers/usb/gadget/udc/pxa25x_udc.c     |  2 +-
->>  drivers/usb/gadget/udc/pxa27x_udc.c     |  2 +-
->>  drivers/usb/gadget/udc/r8a66597-udc.c   |  2 +-
->>  drivers/usb/gadget/udc/s3c-hsudc.c      |  3 +--
->>  drivers/usb/gadget/udc/s3c2410_udc.c    |  2 +-
->>  drivers/usb/gadget/udc/udc-core.c       | 19 +++++++++++++++++++
->>  drivers/usb/musb/musb_gadget.c          |  2 +-
->>  drivers/usb/renesas_usbhs/mod_gadget.c  |  2 +-
->>  include/linux/usb/gadget.h              |  8 ++++++++
+On Tue, Sep 23 2014 at 09:59:32 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Tue, 23 Sep 2014 21:51:09 -0700 ashutosh dixit <ashutosh.dixit@intel.com> wrote:
 >
-> I would rather split this into several patches, btw. With the
-> introduction of usb_gadget_giveback_request() being the first one in the
-> series. It's easier to review that way.
-
-This would be no problem.
-
->> diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/udc-core.c
->> index b0d9817..29789f1 100644
->> --- a/drivers/usb/gadget/udc/udc-core.c
->> +++ b/drivers/usb/gadget/udc/udc-core.c
->> @@ -106,6 +106,25 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
->>  
->>  /* ------------------------------------------------------------------------- */
->>  
->> +/**
->> + * usb_gadget_giveback_request - give the request back to the gadget layer
->> + * Context: in_interrupt()
->> + *
->> + * This is called by device controller drivers in order to return the
->> + * completed request back to the gadget layer.
->> + */
->> +void usb_gadget_giveback_request(struct usb_ep *ep,
->> +		struct usb_request *req)
->> +{
->> +	if (likely(req->complete))
->> +		req->complete(ep, req);
->> +	else
->> +		pr_err("%s : req->complete must not be NULL\n", __func__);
+>> On Tue, Sep 23 2014 at 05:58:19 PM, Peter Foley <pefoley2@pefoley.com> wrote:
+>> > On Tue, Sep 23, 2014 at 8:51 PM, Andrew Morton
+>> > <akpm@linux-foundation.org> wrote:
+>> >> Can't we just fix the Makefiles?  Cook up a rule which makes
+>> >> headers_install (if needed) before building Documentation/?
+>> >
+>> > Currently, the ordering is enforced by
+>> > http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/Makefile#n946
+>> > I'll take a look at making Documentation/ depend on headers_install.
+>> >
+>> I would think it is preferable to keep the 'make headers_install' and
+>> 'make Documentation/' steps separate, as they currently are, so that
+>> only the people who need to upgrade system headers do that, rather than
+>> forcing people to upgrade system headers each time something in
+>> Documentation/ is recompiled and moreover doing that compile/install as
+>> root.
 >
-> let it Oops. We require ->complete to be valid, if there's any gadget
-> driver not setting ->complete, it deserves to oops so we can the
-> error.
+> headers_install installs into ./usr/include and ./include.  It's local
+> to the kernel build tree.
 
-The Oops was there before, but I removed it because greg k-h didn't want
-it. See http://marc.info/?l=linux-usb&m=140917381611947&w=2. Do you
-still want the oops here?
-
--Michal
+Sorry about that. Yes, the build indeed succeeds if run after
+headers_install, so making Documentation/ depend on headers_install is
+indeed a possibility.
