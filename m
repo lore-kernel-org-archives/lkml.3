@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaIXSlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:41:00 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:53403 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693AbaIXSk5 (ORCPT
+	id S1753695AbaIXSlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:41:21 -0400
+Received: from smtprelay0127.hostedemail.com ([216.40.44.127]:39104 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753219AbaIXSlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:40:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Robert Richter <robert.richter@caviumnetworks.com>,
-        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Sunil Goutham <sgoutham@cavium.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] arm64, defconfig: Enable PCI
-Date: Wed, 24 Sep 2014 20:40:18 +0200
-Message-ID: <3120493.DIoQFCi5Am@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140924171047.GO15842@e104818-lin.cambridge.arm.com>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org> <20140924162631.GI31556@rric.localhost> <20140924171047.GO15842@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LaG0AJOHT5G7TodyJbAFURKUz51wtc+X9nnziy2UN/0
- UIGr1UJRRnATjTk60bcOyK+pewHbCokF7zu+psT456gZBxYGDy
- VS/MpnkM8j2DnNmTyrAICNsygeSMI7XmkGZ1o+UBD3tTc/21/z
- syBa/MYvM2LVJcK5oqPbOP83enobStkq8UliGQXdOlAzQSxASd
- 66KHgbnXED3K/X3ry7uB5I7+hXWDgMn17FEPzdirPcsdw6r25s
- AnANJwaRnyDcFylDYXYclnbNn+rBI7tNB/9z4bTg6FZqQRYWq0
- AbYEYq9TydgNrNP1ZZLKir29R5OkJUmUBOQAJg2Mk0mHyqXy8f
- B7/xC59yCvJQ7ycKYQDQ=
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 24 Sep 2014 14:41:18 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:965:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2903:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3872:3874:4041:4321:4390:4823:5007:6119:7652:7903:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mine23_b0f1fc592d44
+X-Filterd-Recvd-Size: 1909
+Message-ID: <1411584074.3594.17.camel@joe-AO725>
+Subject: checkpatch: Does anyone care that comments are freeform aligned?
+From: Joe Perches <joe@perches.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, tapaswenipathak@gmail.com,
+        opw-kernel@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>
+Date: Wed, 24 Sep 2014 11:41:14 -0700
+In-Reply-To: <alpine.DEB.2.02.1409240745160.2051@localhost6.localdomain6>
+References: <alpine.DEB.2.02.1409240745160.2051@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 September 2014 18:10:48 Catalin Marinas wrote:
-> On Wed, Sep 24, 2014 at 05:26:31PM +0100, Robert Richter wrote:
-> > On 24.09.14 18:14:11, Arnd Bergmann wrote:
-> > > On Wednesday 24 September 2014 17:37:47 Robert Richter wrote:
-> > > >  config PCI
-> > > >         bool "PCI support"
-> > > > +       default y
-> > > >         help
-> > > >           This feature enables support for PCIe bus system. If you say Y
-> > > >           here, the kernel will include drivers and infrastructure code
-> > > >           to support PCIe bus devices.
-> > > >  
-> > > > +config PCI_MSI
-> > > > +       def_bool PCI
-> > > > +
-> > > >  config PCI_DOMAINS
-> > > >         def_bool PCI
-> > > 
-> > > There is already a PCI_MSI symbol in drivers/pci/Kconfig. Just select that
-> > > from the PCI symbol above rather than defining a second one.
-> > 
-> > The intention is not to have a second definition, instead this should
-> > enable the default value just for arm64. Thus I put it to
-> > arch/arm64/Kconfig. Otherwise it would be enabled per default on all
-> > archs.
+On Wed, 2014-09-24 at 07:47 +0200, Julia Lawall wrote:
+> In the following patch extract, one line is indented with spaces rather 
+> than tabs.  Is it intentional that checkpatch doesn't complain about this, 
+> I guess due to the line being a comment?
+[]
+>  struct bcm_hdr_suppression_contextinfo {
+> -	UCHAR ucaHdrSuppressionInBuf[MAX_PHS_LENGTHS]; /* Intermediate buffer to accumulate pkt Header for PHS */
+> -	UCHAR ucaHdrSuppressionOutBuf[MAX_PHS_LENGTHS + PHSI_LEN]; /* Intermediate buffer containing pkt Header after PHS */
+> +    /* Intermediate buffer to accumulate pkt Header for PHS */
+> +	UCHAR ucaHdrSuppressionInBuf[MAX_PHS_LENGTHS];
+> +	/* Intermediate buffer containing pkt Header after PHS */
+> +	UCHAR ucaHdrSuppressionOutBuf[MAX_PHS_LENGTHS + PHSI_LEN];
+>  };
 
-I don't think other architectures actually see the PCI symbol that is
-defined in the arm64 Kconfig file, but I might be wrong.
+checkpatch does not care when comments start in any
+particular position or ensure comments have tabs
+preceding them.
 
-> > We could have used select in config ARM64, but I tried to avoid using
-> > select due to the dependency issue and instead implement this with
-> > default-y/depends-on. Doing so it can be manually disabled too.
+Does anyone care?
 
-How about adding a new symbol like
-
-config ARM64_PCI
-	def_bool PCI
-	select PCI_MSI
-
-
-> It may be better to simply set PCI and PCI_MSI as defaults in defconfig
-> rather than "default y" and an additional config PCI_MSI entry.
-
-Selecting PCI_MSI unconditionally seems fine to me. We won't have any
-ARM64 systems that only do classic PCI, and MSI is mandatory for PCIe.
-
-	Arnd
