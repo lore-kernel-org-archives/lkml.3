@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaIXCLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 22:11:44 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:33961 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbaIXCLl (ORCPT
+	id S1755498AbaIXCNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 22:13:13 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:50363 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243AbaIXCNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 22:11:41 -0400
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <0bd1e2c942a62a60f52c7837a87b2dd2>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
+	Tue, 23 Sep 2014 22:13:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <542222BC.4060203@rock-chips.com>
+References: <1411487622-10881-1-git-send-email-zyw@rock-chips.com>
+	<1411487622-10881-2-git-send-email-zyw@rock-chips.com>
+	<CAD=FV=Vhejf4JoEPUGwmBJdO+zfHgE5hgoT6V1DGtva7r_1Etg@mail.gmail.com>
+	<542222BC.4060203@rock-chips.com>
+Date: Tue, 23 Sep 2014 19:13:06 -0700
+X-Google-Sender-Auth: ITsrQAbLEyTxvj7xlBMrbcdH8b4
+Message-ID: <CAD=FV=Umjmrp5grqvYnMe0=EjpH8++i4JL-5fOquyU+SGt95Fw@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] regulator: st-pwm: get voltage and duty table from dts
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        linux-rockchip@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
         Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH v5 0/3] Add drm driver for Rockchip Socs
-Date: Wed, 24 Sep 2014 10:11:12 +0800
-Message-Id: <1411524672-14524-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This a series of patches is a DRM Driver for Rockchip Socs, add support
-for vop devices. Future patches will add additional encoders/connectors,
-such as eDP, HDMI.
+Chris,
 
-The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
-the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
-Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
-ARM_DMA_USE_IOMMU.
+On Tue, Sep 23, 2014 at 6:47 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+>
+> On 09/24/2014 07:43 AM, Doug Anderson wrote:
+>>
+>> Chris,
+>>
+>> On Tue, Sep 23, 2014 at 8:53 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+>>>
+>>> Get voltage & duty table from device tree might be better, other
+>>> platforms can also use this
+>>> driver without any modify.
+>>>
+>>> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>>
+>> I finally managed to get everything setup and I've now tested this
+>> myself on an rk3288-based board.
+>>
+>> Tested-by: Doug Anderson <dianders@chromium.org>
+>>
+>> I'd imagine the next step is for Lee to comment on the patch and when
+>> he's happy with it Mark Brown will land it?
+>>
+>>
+>> One thing that's still a bit odd (though no different than the
+>> behavior of the driver from before you touched it, so it shouldn't
+>> block landing IMHO) is that at boot time this regulator will report
+>> that it's at the highest voltage but the voltage won't actually change
+>> until the first client sets the voltage.
+>
+> Yes, I knew this problem, since the default of duty cycle is 0, not a true
+> value.
+> If we can get duty from pwm, this regulator will report a correct voltage.
 
-Changes in v2:
-- add DRM master device node to list all display nodes that comprise
-  the graphics subsystem.
-- use the component framework to defer main drm driver probe
-  until all VOP devices have been probed.
-- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
-  master device and each vop device can shared the drm dma mapping.
-- use drm_crtc_init_with_planes and drm_universal_plane_init.
-- remove unnecessary middle layers.
-- add cursor set, move funcs to rockchip drm crtc.
-- add vop reset.
+I don't think it's possible in all cases to figure out what the
+voltage was before this regulator was probed.
 
-Changes in v3:
-- change "crtc->fb" to "crtc->primary-fb"
-Adviced by Daniel Vetter
-- init cursor plane with universal api, remove unnecessary cursor set,move 
+* pin might have been input w/ pullup, pulldown, or no pull
+* pin might have been driven high or driven low
 
-Changes in v4:
-Adviced by David Herrmann
-- remove drm_platform_*() usage, use register drm device directly.
-Adviced by Rob Clark
-- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+In that case trying to read the duty from the pwm wouldn't make sense.
+...but I guess you could add a property to the PWM driver to say that
+it stays enabled at boot if the FW left it enabled (and keep the same
+duty cycle / clocks?).  That would at least solve the problem where
+the firmware configured the PWM and left it in a specific state even
+if it doesn't solve the above problem...
 
-Changes in v5:
-Adviced by Arnd Bergmann
-- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
-- fix some incorrect dependencies.
-Adviced by Boris BREZILLON
-- fix some mistake and bugs. 
-Adviced by Daniel Vetter
-- drop all special ioctl and use generic kms ioctl instead.
-Adviced by Rob Clark
-- use unlocked api for drm_fb_helper_restore_fbdev_mode.
-- remove unused rockchip_gem_prime_import_sg_table.
 
-Mark yao (3):
-  drm/rockchip: Add basic drm driver
-  dt-bindings: video: Add for rockchip display subsytem
-  dt-bindings: video: Add documentation for rockchip vop
-
- .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
- drivers/gpu/drm/Kconfig                            |    2 +
- drivers/gpu/drm/Makefile                           |    1 +
- drivers/gpu/drm/rockchip/Kconfig                   |   17 +
- drivers/gpu/drm/rockchip/Makefile                  |    8 +
- drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  509 ++++++++
- drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |  120 ++
- drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
- drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
- drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  230 ++++
- drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
- drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  341 +++++
- drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   55 +
- drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1373 ++++++++++++++++++++
- drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  187 +++
- 16 files changed, 3169 insertions(+)
-
--- 
-1.7.9.5
-
+-Doug
