@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaIXNzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 09:55:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41145 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328AbaIXNzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 09:55:17 -0400
-Date: Wed, 24 Sep 2014 15:55:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: kan.liang@intel.com
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        paulus@samba.org, acme@kernel.org, ak@linux.intel.com,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH V5 10/16] perf, core: simplify need branch stack check
-Message-ID: <20140924135514.GE2805@worktop.programming.kicks-ass.net>
-References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
- <1410358153-421-11-git-send-email-kan.liang@intel.com>
+	id S1753887AbaIXN4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 09:56:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55795 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753426AbaIXNr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 09:47:29 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/22] phy: phy-omap-usb2: Remove unncessary site specific OOM messages
+Date: Wed, 24 Sep 2014 19:17:02 +0530
+Message-ID: <1411566440-19169-5-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411566440-19169-1-git-send-email-kishon@ti.com>
+References: <1411566440-19169-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410358153-421-11-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 10:09:07AM -0400, kan.liang@intel.com wrote:
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> event->attr.branch_sample_type is non-zero no matter branch stack
-> is enabled explicitly or is enabled implicitly. we can use it to
-> replace intel_pmu_needs_lbr_smpl(). This avoids duplicating code
-> that implicitly enables the LBR.
-> 
+From: Peter Griffin <peter.griffin@linaro.org>
 
-Please extend the changelog such that it's obvious this is correct. This
-is the second time I've had to look how this works out for PEBS.
+The site specific OOM messages are unncessary, because they duplicate
+messages from the memory subsystem which include dump_stack().
+
+Removing these superflous messages makes the kernel smaller. A discussion
+here http://patchwork.ozlabs.org/patch/324158/ found that all error paths
+from kzalloc will print a error message, and that any error path which maybe
+found which doesn't would be considered a bug in kzalloc.
+
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-omap-usb2.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index 93d7835..51c6f92 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -212,16 +212,12 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	phy_data = (struct usb_phy_data *)of_id->data;
+ 
+ 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+-	if (!phy) {
+-		dev_err(&pdev->dev, "unable to allocate memory for USB2 PHY\n");
++	if (!phy)
+ 		return -ENOMEM;
+-	}
+ 
+ 	otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
+-	if (!otg) {
+-		dev_err(&pdev->dev, "unable to allocate memory for USB OTG\n");
++	if (!otg)
+ 		return -ENOMEM;
+-	}
+ 
+ 	phy->dev		= &pdev->dev;
+ 
+-- 
+1.7.9.5
+
