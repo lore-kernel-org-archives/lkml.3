@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaIXMgV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:36:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49938 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751543AbaIXMgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:36:20 -0400
-Message-ID: <5422BABC.7020906@free-electrons.com>
-Date: Wed, 24 Sep 2014 14:36:12 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        yhf <yhf@merrii.com>, ctl <ctl@merrii.com>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Subject: Re: [linux-sunxi] Re: [PATCH 3/6] ARM: dts: sunxi: Add Allwinner
- A80 dtsi
-References: <1411311493-24344-1-git-send-email-wens@csie.org> <1411311493-24344-4-git-send-email-wens@csie.org> <20140924063738.GQ15315@lukather> <CAGb2v64voZpK_82wtkErRowR0vjEUALNUwvCx_sd8Q5wb4Hq-g@mail.gmail.com> <54227038.2020805@free-electrons.com> <CAGb2v64yGmdLeWmA=+nxD85DbQf_xxUNx3n3oedFZi51uc50+w@mail.gmail.com>
-In-Reply-To: <CAGb2v64yGmdLeWmA=+nxD85DbQf_xxUNx3n3oedFZi51uc50+w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1753264AbaIXMgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:36:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45443 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaIXMgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 08:36:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="390921743"
+Message-ID: <1411562205.23429.40.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] UBI: Fix livelock in produce_free_peb()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 24 Sep 2014 15:36:45 +0300
+In-Reply-To: <1411141076-21489-1-git-send-email-richard@nod.at>
+References: <1411141076-21489-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen-Yu,
-
-
+On Fri, 2014-09-19 at 17:37 +0200, Richard Weinberger wrote:
+> The while loop in produce_free_peb() assumes that each work will produce a
+> free PEB. This is not true.
+> If ubi->works_count is 1 and the only scheduled work is the
+> wear_leveling_worker() produce_free_peb() can loop forever in case
+> nobody schedules an erase work.
+> Fix this issue by checking in the while loop whether work is scheduled.
 > 
-> Thanks for the tip. Before I send v2, I do have a question. I'm using
-> 
->     ranges = <0 0 0 0x20000000>;
-> 
-> in the clocks and soc node to avoid having to use 64bit values for all
-> addresses and sizes. Would this be undesirable, even bad practice maybe?
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-We did something like that for all the internal registers too as they are all
-under 4GB. In our case the use of a range really makes sens because the hardware
-addresses were configurable. You don't have such requirement so I can't say if
-it is a bad practice. From my point of view it seems sensible but I am not an
-DT expert.
-
-
-Grégory
-
+Pushed, thanks!
 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Best Regards,
+Artem Bityutskiy
+
