@@ -1,147 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048AbaIXCIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Sep 2014 22:08:17 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:48959 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754804AbaIXCIP (ORCPT
+	id S1755187AbaIXCLo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Sep 2014 22:11:44 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:33961 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103AbaIXCLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Sep 2014 22:08:15 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <54222785.5030605@smartplayin.com>
-Date: Wed, 24 Sep 2014 07:38:05 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v3] power: reset: use restart_notifier mechanism for msm-poweroff
-References: <1411452520-29589-1-git-send-email-pramod.gurav@smartplayin.com> <542112FD.7080302@smartplayin.com> <2C40727B-BF1E-46AC-9189-6B35E358220E@codeaurora.org>
-In-Reply-To: <2C40727B-BF1E-46AC-9189-6B35E358220E@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Tue, 23 Sep 2014 22:11:41 -0400
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <0bd1e2c942a62a60f52c7837a87b2dd2>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v5 0/3] Add drm driver for Rockchip Socs
+Date: Wed, 24 Sep 2014 10:11:12 +0800
+Message-Id: <1411524672-14524-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kumar,
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-On 23-09-2014 11:18 PM, Kumar Gala wrote:
-> 
-> On Sep 23, 2014, at 1:28 AM, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
-> 
->> +linux-arm-msm
->> On Tuesday 23 September 2014 11:38 AM, Pramod Gurav wrote:
->>> This change replaces use of arm_pm_restart with recently introduced
->>> reset mechanism in Linux kernel called restart_notifier.
-> 
-> Can you update the commit message to include details about the priority level we are setting it to.
-> 
-> Probably something like Josh had:
-> 
-> Choose priority 128, as according to documentation, this mechanism "is
-> sufficient to restart the entire system”.
-Will update the commit message.
-> 
-> Hmm, what happens if we have ps_hold restart and msm-poweroff enabled.  Which one should have priority?
-In case of A-family/apq8064, the ps_hold register region is owned by
-pinctrl hence the reset is implemented in pinctrl driver as the region
-is already mapped there.
-I have had a discussion with Stephen Boyd and was informed that ps_hold
-register region in apq8074/B-family are moved to its own region and we
-need to reset it through pinctrl.
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-So, for b family there is no need for ps_hold to be configured/muxed in
-pinctrl and Josh's changes wont execute. Hence msm-poweroff wil be the
-default reset as 128 in the default priority.
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
 
-Hope I was able to put it well to answer your comment.
-> 
->>>
->>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->>> Cc: Guenter Roeck <linux@roeck-us.net>
->>> Cc: Josh Cartwright <joshc@codeaurora.org>
->>> Cc: Sebastian Reichel <sre@kernel.org>
->>> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
->>> Cc: David Woodhouse <dwmw2@infradead.org>
->>> Cc: Stephen Boyd <sboyd@codeaurora.org>
->>> Cc: linux-pm@vger.kernel.org
->>>
->>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->>> ---
->>> Tested on Dragonboard APQ8074
->>>
->>> Changes since v2:
->>> - Removed unwanted header file and added linux/pm.h
->>>
->>> Changes since v1:
->>> - Initialized restart_nb with its declaration
->>> - Removed return check for register_restart_handler as it always
->>>  returns 0 as per Guenter's suggestion to Josh's similar patch.
->>>  This takes care of Guenter's comments on error logs and NULL
->>>  initialization of restart_nb.notifier_call.
->>> ---
->>> drivers/power/reset/msm-poweroff.c |   20 ++++++++++++++------
->>> 1 file changed, 14 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
->>> index 774f9a3..4702efd 100644
->>> --- a/drivers/power/reset/msm-poweroff.c
->>> +++ b/drivers/power/reset/msm-poweroff.c
->>> @@ -20,21 +20,27 @@
->>> #include <linux/platform_device.h>
->>> #include <linux/module.h>
->>> #include <linux/reboot.h>
->>> -
->>> -#include <asm/system_misc.h>
->>> +#include <linux/pm.h>
->>>
->>> static void __iomem *msm_ps_hold;
->>> -
->>> -static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
->>> +static int do_msm_restart(struct notifier_block *nb, unsigned long action,
->>> +			   void *data)
->>> {
->>> 	writel(0, msm_ps_hold);
->>> 	mdelay(10000);
->>> +
->>> +	return NOTIFY_DONE;
->>> }
->>>
->>> +static struct notifier_block restart_nb = {
->>> +	.notifier_call = do_msm_restart,
->>> +	.priority = 128,
->>> +};
->>> +
->>> static void do_msm_poweroff(void)
->>> {
->>> 	/* TODO: Add poweroff capability */
->>> -	do_msm_restart(REBOOT_HARD, NULL);
->>> +	do_msm_restart(&restart_nb, 0, NULL);
->>> }
->>>
->>> static int msm_restart_probe(struct platform_device *pdev)
->>> @@ -47,8 +53,10 @@ static int msm_restart_probe(struct platform_device *pdev)
->>> 	if (IS_ERR(msm_ps_hold))
->>> 		return PTR_ERR(msm_ps_hold);
->>>
->>> +	register_restart_handler(&restart_nb);
->>> +
->>> 	pm_power_off = do_msm_poweroff;
->>> -	arm_pm_restart = do_msm_restart;
->>> +
->>> 	return 0;
->>> }
->>>
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
+
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
+
+Mark yao (3):
+  drm/rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  509 ++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |  120 ++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  230 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  341 +++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   55 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1373 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  187 +++
+ 16 files changed, 3169 insertions(+)
+
+-- 
+1.7.9.5
+
