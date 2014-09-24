@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaIXQhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:37:00 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:37500 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750806AbaIXQg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:36:59 -0400
-Message-ID: <5422F328.2040707@osg.samsung.com>
-Date: Wed, 24 Sep 2014 10:36:56 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752774AbaIXQiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:38:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49880 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969AbaIXQiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:38:00 -0400
+Date: Wed, 24 Sep 2014 16:37:40 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: riya khanna <riyakhanna1983@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [lxc-devel] device namespaces
+Message-ID: <20140924163740.GD3865@ubuntumail>
+References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com>
+ <87bnq5vcbl.fsf@x220.int.ebiederm.org>
+ <CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-References: <20140923173846.603cb49c@gandalf.local.home> <5422336A.6030304@hitachi.com> <20140924114235.4287f4a1@gandalf.local.home> <20140924115811.6eeeab8c@gandalf.local.home> <5422EAE2.6080005@osg.samsung.com> <20140924120853.0a717b7e@gandalf.local.home> <5422EFB4.2050104@osg.samsung.com> <20140924123007.7fcb0099@gandalf.local.home>
-In-Reply-To: <20140924123007.7fcb0099@gandalf.local.home>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 10:30 AM, Steven Rostedt wrote:
-> On Wed, 24 Sep 2014 10:22:12 -0600
-> Shuah Khan <shuahkh@osg.samsung.com> wrote:
-> 
-> 
->> One simple approach is to have the user install the required tools
->> for the test. Indicate what is needed and fail the test with
->> appropriate message with xskip. This is what I have in mind for
->> tests that can't be run because of a missing config. The same can
->> be extended to external tools that the test depends on.
-> 
-> Should I hold off adding my tests until we have all this in place. Or
-> should I just push my tests with simply passing if the config isn't
-> supported for now and add it later?
-> 
-> I wont add any of the tests that require other tools besides echo, grep
-> and cat.
-> 
+Isolation is provided by the devices cgroup.  You want something more
+than isolation.
 
-Please go ahead and get them in. The framework might have to wait
-until 3.19, so there is no need to have it gate test development.
-We can evolve them as we go. If tests require special, it means that
-they aren't suitable for certain envs such as qemu boot with busybox.
-There is a plan to add test targets to cover such cases.
-
-I would recommend at least printing a message saying what you are
-missing if you find something missing.
-
-thanks,
--- Shuah
-
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Quoting riya khanna (riyakhanna1983@gmail.com):
+> My use case for having device namespaces is device isolation. Isn't what
+> namespaces are there for (as I understand)? Not everything should be
+> accessible (or even visible) from a container all the time (we have seen
+> people come up with different use cases for this). However, bind-mounting
+> takes away this flexibility. I agree that assigning fixed device numbers is
+> clearly not a long-term solution. Emulation for safe and flexible
+> multiplexing, like you suggested either using CUSE/FUSE or something like
+> devpts, is what I'm exploring.
+> 
+> On Wed, Sep 24, 2014 at 12:04 AM, Eric W. Biederman <ebiederm@xmission.com>
+> wrote:
+> 
+> > riya khanna <riyakhanna1983@gmail.com> writes:
+> >
+> > > (Please pardon multiple emails, artifact of merging all separate
+> > conversations)
+> > >
+> > > Thanks for your feedback!
+> > >
+> > > Letting the kernel know about what devices a container could access
+> > (based on
+> > > device cgroups) and having devtmpfs in the kernel create device nodes
+> > for a
+> > > container that map to corresponding CUSE nodes is what I thought of. For
+> > > example, "echo 29:0 > /proc/<pid>/devices" would prepare a virtual
+> > framebuffer
+> > > (based on real fb0 SCREENINFO properties) for this process provided
+> > permissions
+> > > allow this operation. To view the framebuffer, the CUSE based virtual
+> > device
+> > > would talk to the actual hardware. Since namespaces would have different
+> > view of
+> > > the underlying devices, "sysfs" has to made aware of this as well.
+> > >
+> > > Please let me know your inputs. Thanks again!
+> >
+> > The solution hugely depends on what you are trying to do with it.
+> >
+> > The situation today is that device nodes are slowly fading out.  In
+> > another 20 years linux may not have any device nodes at all.
+> >
+> > Therefore the question becomes what are you trying to support.
+> >
+> > If it is just filtering of existing device nodes.  We can do a pretty
+> > good approximation with bind mounts.
+> >
+> > If you want to emulate a device you can use normal fuse (not cuse).
+> > As normal fuse file will support arbitrary ioctls.
+> >
+> > There are a few cases where it is desirable to emulate what devpts
+> > does for allowing arbitrary users to creating virtual devices in the
+> > kernel.  Loop devices in particular.
+> >
+> > Ultimately given the existence of device hotplug I don't see any call
+> > for being able to create device nodes with well known device numbers
+> > (fundamentally what a device namespace would be about).
+> >
+> > The conversation last year was about people wanting to multiplex devices
+> > that don't have multiplexer support in the kernel.  If that is your
+> > desire I think it is entirely reasonable to device type by device type
+> > add support for multiplexing that device type to the kernel, or
+> > potentially just use fuse or cuse to implement your multiplexer in
+> > userspace but that has the potential to be unusably slow.
+> >
+> > Eric
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
