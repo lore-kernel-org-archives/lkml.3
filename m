@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaIXKDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:03:38 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:40859 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaIXKDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:03:33 -0400
-Date: Wed, 24 Sep 2014 11:03:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v7 0/8] charger/mfd: max14577: Add support for MAX77836
-Message-ID: <20140924100325.GB19999@lee--X1>
-References: <1411472603-11821-1-git-send-email-k.kozlowski@samsung.com>
+	id S1753371AbaIXKFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:05:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620AbaIXKFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 06:05:36 -0400
+Message-ID: <54229758.5060109@redhat.com>
+Date: Wed, 24 Sep 2014 12:05:12 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411472603-11821-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoffer Dall <cdall@cs.columbia.edu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Marc Zyngier <marc.zyngier@arm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric Auger <eric.auger@linaro.org>
+Subject: Re: linux-next: build failure after merge of the kvm-arm tree
+References: <20140922140645.7c2ad9c8@canb.auug.org.au> <20140924165030.41c90baf@canb.auug.org.au> <20140924070612.GA15794@cbox>
+In-Reply-To: <20140924070612.GA15794@cbox>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark, Sebastian,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+Il 24/09/2014 09:06, Christoffer Dall ha scritto:
+>>> Still getting this failure.
+>>> 
+> Commit e9142e3b69c2ae8a699463e219e5b029ff0d652b in kvm/queue fixes
+> this, but it hasn't gone to next yet.
+> 
+> Paolo, I know there's a scary commit in queue but there's a bunch
+> of scary stuff in the kvmarm/next too that I'd like to see in next,
+> any chance you can put a subset of queue into next?
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+Yes, I will put the commit in next and rebase queue on top of it.
 
-are available in the git repository at:
+Paolo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-regulator-power-v3.17
-
-for you to fetch changes up to f453d80f908254293bf453a2d7e68974e2abc2af:
-
-  Documentation: charger: max14577: Document exported sysfs entry (2014-09-24 10:58:07 +0100)
-
-----------------------------------------------------------------
-Immutable branch between MFD, Regulator and Power due for v3.17
-
-----------------------------------------------------------------
-Krzysztof Kozlowski (8):
-      mfd: max14577: Add defines for MAX77836 charger
-      mfd: max14577: Map charger device to its own of_node
-      charger: max14577: Add support for MAX77836 charger
-      regulator/mfd: max14577: Export symbols for calculating charger current
-      charger: max14577: Configure battery-dependent settings from DTS and sysfs
-      power: max17040: Add ID for MAX77836 Fuel Gauge block
-      devicetree: mfd: max14577: Add device tree bindings document
-      Documentation: charger: max14577: Document exported sysfs entry
-
- Documentation/ABI/testing/sysfs-class-power        |  14 +
- Documentation/devicetree/bindings/mfd/max14577.txt | 146 ++++++++
- drivers/mfd/max14577.c                             | 100 +++++-
- drivers/power/Kconfig                              |   5 +-
- drivers/power/max14577_charger.c                   | 370 +++++++++++++++++++--
- drivers/power/max17040_battery.c                   |   3 +-
- drivers/regulator/max14577.c                       |  80 +----
- include/linux/mfd/max14577-private.h               |  95 ++++--
- include/linux/mfd/max14577.h                       |  30 ++
- 9 files changed, 704 insertions(+), 139 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+iQIcBAEBAgAGBQJUIpdYAAoJEBvWZb6bTYbyAkwP/jwno7pOt/sHUaa+p45Uouse
+oFS2aej8ZVLz3LMy6KjFuIME1bJjQytIZrFaGn+UksGd6cfhECydVO8hlJxWUDbc
+PrWpnwzX/u4sorewmX+hq9EoFBfIEzC86NyrUaujiL6ojLjoJ4mkoRc9LRCm/K7j
+dPJFGEQqifs0HelWSQPxH4ei/YyHk/TcaKgepQGlG4Aw/crLHmEajbrnGLge7isW
+H/EtBW5iJToG8mxB+ipSwFCADUkXC+FUrEblX5Nxma/949roXg8LPuZUBxCxWwyr
+Voi5/lU1sZMRYixoCHhhKaWPDfoSspjPU4JNEUMj4qtrZrBD9W27+bjyQBTdLjU7
+erI1pQCmZsU52RdAtZiUBuSbRxb8is+WlRHJy7dhlb+SBcgXNWw/k9sxV2U6PZ+T
+Z4A0ngZM12ZTd6XWgiE+3mMR0XGBsjh7TYq+ybQReCgKeNy/Q3FL6fS4E9me7MWF
+CWIfqV327GYfH/eU8Bd1/VHGEZfDefDXZrdANa+A5FhaGTLIZbPHfEo2BCc85LhS
+RRlKjIg1LeByCHDRaQ8parl0xgZRLuENfHn5gso4ZsAKgLyUp8IIGanxH8GD2sRO
+F2AtAFfLSlXUo/FsxaW0bQOxnBB9L/UX5QmMT/YwG7QoP97Wa4fDBV1ruHTiJ9SO
+s/nkZE3pcbAFSv/0rXlG
+=ln4T
+-----END PGP SIGNATURE-----
