@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659AbaIXOEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:04:30 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:51419 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815AbaIXOE0 (ORCPT
+	id S1753870AbaIXOEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:04:39 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:55463 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198AbaIXOEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:04:26 -0400
+	Wed, 24 Sep 2014 10:04:35 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/11] perf tools: Parse event per-package info files
-Date: Wed, 24 Sep 2014 15:04:07 +0100
-Message-Id: <1411567455-31264-4-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 08/11] perf/x86/intel: Add Intel Cache QoS Monitoring support
+Date: Wed, 24 Sep 2014 15:04:12 +0100
+Message-Id: <1411567455-31264-9-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
 References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
@@ -27,306 +27,567 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-In preparation for upcoming PMU drivers that support system-wide,
-per-package counters and hence report duplicate values, add support for
-parsing the .per-pkg file.
+Future Intel Xeon processors support a Cache QoS Monitoring feature that
+allows tracking of the LLC occupancy for a task or task group, i.e. the
+amount of data in pulled into the LLC for the task (group).
 
-An event can export this info file to indicate that all but one value
-per socket should be discarded.
+Currently the PMU only supports per-cpu events. We create an event for
+each cpu and read out all the LLC occupancy values.
 
-The discarding is much easier to do in userspace than inside the kernel
-because the kernel cannot infer what userspace is going to do with the
-reported values, what order it will read them in, etc.
+Because this results in duplicate values being written out to userspace,
+we also export a .per-pkg event file so that the perf tools only
+accumulate values for one cpu per package.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- tools/perf/builtin-stat.c      | 79 +++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/evsel.c        |  6 +++-
- tools/perf/util/evsel.h        |  8 +++--
- tools/perf/util/parse-events.c |  1 +
- tools/perf/util/pmu.c          | 28 +++++++++++++++
- tools/perf/util/pmu.h          |  1 +
- 6 files changed, 118 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/Makefile               |   2 +-
+ arch/x86/kernel/cpu/perf_event_intel_cqm.c | 502 +++++++++++++++++++++++++++++
+ include/linux/perf_event.h                 |   7 +
+ 3 files changed, 510 insertions(+), 1 deletion(-)
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_cqm.c
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 7c30fbd2d9b7..c5dd11fbbd7c 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -388,17 +388,89 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- }
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 7e1fd4e08552..8abb18fbcd13 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -38,7 +38,7 @@ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_uncore_snb.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore_snbep.o perf_event_intel_uncore_nhmex.o
+-obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
++obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o perf_event_intel_cqm.o
+ endif
  
- /*
-+ * If 'evsel' is a per-socket event we may get duplicate values
-+ * reported. We need to discard all but one per-socket value.
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_cqm.c b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
+new file mode 100644
+index 000000000000..acf687fd7e2e
+--- /dev/null
++++ b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
+@@ -0,0 +1,502 @@
++/*
++ * Intel Cache Quality-of-Service Monitoring (CQM) support.
++ *
++ * Based very, very heavily on work by Peter Zijlstra.
 + */
-+static bool counter_per_socket_skip(struct perf_evsel *evsel, int cpu, u64 val)
-+{
-+	struct cpu_map *map;
-+	int i, ncpus;
-+	int s1, s2;
 +
-+	map = perf_evsel__cpus(evsel);
-+	ncpus = map->nr;
++#include <linux/perf_event.h>
++#include <linux/slab.h>
++#include "perf_event.h"
 +
-+	s1 = cpu_map__get_socket(evsel_list->cpus, map->map[cpu]);
++#define MSR_IA32_PQR_ASSOC	0x0c8f
++#define MSR_IA32_QM_CTR		0x0c8e
++#define MSR_IA32_QM_EVTSEL	0x0c8d
 +
-+	/*
-+	 * Read all CPUs for this socket and see if any already have
-+	 * value assigned.
-+	 */
-+	for (i = 0; i < ncpus; i++) {
-+		s2 = cpu_map__get_socket(evsel_list->cpus, map->map[i]);
-+		if (s1 != s2)
-+			continue;
++static unsigned int cqm_max_rmid = -1;
++static unsigned int cqm_l3_scale; /* supposedly cacheline size */
 +
-+		if (evsel->counts->cpu[i].val)
-+			return true;
-+	}
++struct intel_cqm_state {
++	raw_spinlock_t		lock;
++	int			rmid;
++	int 			cnt;
++};
 +
-+	/* Stash the counter value in unused ->counts */
-+	evsel->counts->cpu[cpu].val = val;
-+	return false;
-+}
-+
-+static bool aggr_per_socket_skip(struct perf_evsel *evsel, int cpu)
-+{
-+	struct cpu_map *map;
-+	int leader_cpu = -1;
-+	int i, ncpus;
-+	int s1, s2;
-+
-+	map = perf_evsel__cpus(evsel);
-+	ncpus = map->nr;
-+
-+	s1 = cpu_map__get_socket(evsel_list->cpus, map->map[cpu]);
-+
-+	/*
-+	 * Find the first enabled counter for this socket and skip
-+	 * everything else.
-+	 */
-+	for (i = 0; i < ncpus; i++) {
-+		s2 = cpu_map__get_socket(evsel_list->cpus, map->map[i]);
-+		if (s1 != s2)
-+			continue;
-+
-+		if (!evsel->counts->cpu[i].ena)
-+			continue;
-+
-+		leader_cpu = i;
-+		break;
-+	}
-+
-+	if (cpu == leader_cpu)
-+		return false;
-+
-+	return true;
-+}
++static DEFINE_PER_CPU(struct intel_cqm_state, cqm_state);
 +
 +/*
-  * Read out the results of a single counter:
-  * aggregate counts across CPUs in system-wide mode
-  */
- static int read_counter_aggr(struct perf_evsel *counter)
- {
- 	struct perf_stat *ps = counter->priv;
-+	bool (*f_skip)(struct perf_evsel *evsel, int cpu, u64 val) = NULL;
- 	u64 *count = counter->counts->aggr.values;
- 	int i;
- 
-+	if (counter->per_pkg)
-+		f_skip = counter_per_socket_skip;
++ * Protects cache_cgroups.
++ */
++static DEFINE_MUTEX(cache_mutex);
 +
- 	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
--			       thread_map__nr(evsel_list->threads), scale) < 0)
-+			       thread_map__nr(evsel_list->threads),
-+			       scale, f_skip) < 0)
- 		return -1;
- 
- 	for (i = 0; i < 3; i++)
-@@ -1128,6 +1200,11 @@ static void print_aggr(char *prefix)
- 			val = ena = run = 0;
- 			nr = 0;
- 			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
-+				if (counter->per_pkg) {
-+					if (aggr_per_socket_skip(counter, cpu))
-+						continue;
-+				}
++/*
++ * Groups of events that have the same target(s), one RMID per group.
++ */
++static LIST_HEAD(cache_groups);
 +
- 				cpu2 = perf_evsel__cpus(counter)->map[cpu];
- 				s2 = aggr_get_id(evsel_list->cpus, cpu2);
- 				if (s2 != id)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index b38de5819323..e7693b59e081 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -883,7 +883,8 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- }
- 
- int __perf_evsel__read(struct perf_evsel *evsel,
--		       int ncpus, int nthreads, bool scale)
-+		       int ncpus, int nthreads, bool scale,
-+		       bool (*f_skip)(struct perf_evsel *evsel, int cpu, u64 val))
- {
- 	size_t nv = scale ? 3 : 1;
- 	int cpu, thread;
-@@ -903,6 +904,9 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 				  &count, nv * sizeof(u64)) < 0)
- 				return -errno;
- 
-+			if (f_skip && f_skip(evsel, cpu, count.val))
-+				continue;
++/*
++ * Mask of CPUs for reading CQM values. We only need one per-socket.
++ */
++static cpumask_t cqm_cpumask;
 +
- 			aggr->val += count.val;
- 			if (scale) {
- 				aggr->ena += count.ena;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 7bc314be6a7b..c5441e547b28 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -87,6 +87,7 @@ struct perf_evsel {
- 	bool			immediate;
- 	bool			system_wide;
- 	bool			tracking;
-+	bool			per_pkg;
- 	/* parse modifier helper */
- 	int			exclude_GH;
- 	int			nr_members;
-@@ -253,7 +254,8 @@ static inline int perf_evsel__read_on_cpu_scaled(struct perf_evsel *evsel,
- }
- 
- int __perf_evsel__read(struct perf_evsel *evsel, int ncpus, int nthreads,
--		       bool scale);
-+		       bool scale,
-+		       bool (*f_skip)(struct perf_evsel *evsel, int cpu, u64 val));
- 
- /**
-  * perf_evsel__read - Read the aggregate results on all CPUs
-@@ -265,7 +267,7 @@ int __perf_evsel__read(struct perf_evsel *evsel, int ncpus, int nthreads,
- static inline int perf_evsel__read(struct perf_evsel *evsel,
- 				    int ncpus, int nthreads)
- {
--	return __perf_evsel__read(evsel, ncpus, nthreads, false);
-+	return __perf_evsel__read(evsel, ncpus, nthreads, false, NULL);
- }
- 
- /**
-@@ -278,7 +280,7 @@ static inline int perf_evsel__read(struct perf_evsel *evsel,
- static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
- 					  int ncpus, int nthreads)
- {
--	return __perf_evsel__read(evsel, ncpus, nthreads, true);
-+	return __perf_evsel__read(evsel, ncpus, nthreads, true, NULL);
- }
- 
- void hists__init(struct hists *hists);
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 9522cf22ad81..e1d8025c46bc 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -672,6 +672,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	if (evsel) {
- 		evsel->unit = info.unit;
- 		evsel->scale = info.scale;
-+		evsel->per_pkg = info.per_pkg;
- 	}
- 
- 	return evsel ? 0 : -ENOMEM;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 93a41ca96b8e..a08e8893b2e1 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -20,6 +20,7 @@ struct perf_pmu_alias {
- 	struct list_head list;  /* ELEM */
- 	char unit[UNIT_MAX_LEN+1];
- 	double scale;
-+	bool per_pkg;
- };
- 
- struct perf_pmu_format {
-@@ -173,6 +174,24 @@ error:
- 	return -1;
- }
- 
-+static int
-+perf_pmu__parse_per_pkg(struct perf_pmu_alias *alias, char *dir, char *name)
++#define RMID_VAL_ERROR		(1ULL << 63)
++#define RMID_VAL_UNAVAIL	(1ULL << 62)
++
++#define QOS_L3_OCCUP_EVENT_ID	(1 << 0)
++
++#define QOS_EVENT_MASK	QOS_L3_OCCUP_EVENT_ID
++
++static u64 __rmid_read(unsigned long rmid)
 +{
-+	char path[PATH_MAX];
-+	int fd;
++	u64 val;
 +
-+	snprintf(path, PATH_MAX, "%s/%s.per-pkg", dir, name);
++	/*
++	 * Ignore the SDM, this thing is _NOTHING_ like a regular perfcnt,
++	 * it just says that to increase confusion.
++	 */
++	wrmsr(MSR_IA32_QM_EVTSEL, QOS_L3_OCCUP_EVENT_ID, rmid);
++	rdmsrl(MSR_IA32_QM_CTR, val);
 +
-+	fd = open(path, O_RDONLY);
-+	if (fd == -1)
-+		return -1;
++	/*
++	 * Aside from the ERROR and UNAVAIL bits, assume this thing returns
++	 * the number of cachelines tagged with @rmid.
++	 */
++	return val;
++}
 +
-+	close(fd);
++static unsigned long *cqm_rmid_bitmap;
 +
-+	alias->per_pkg = true;
++/*
++ * Returns < 0 on fail.
++ */
++static int __get_rmid(void)
++{
++	return bitmap_find_free_region(cqm_rmid_bitmap, cqm_max_rmid, 0);
++}
++
++static void __put_rmid(int rmid)
++{
++	bitmap_release_region(cqm_rmid_bitmap, rmid, 0);
++}
++
++static int intel_cqm_setup_rmid_cache(void)
++{
++	cqm_rmid_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(cqm_max_rmid), GFP_KERNEL);
++	if (!cqm_rmid_bitmap)
++		return -ENOMEM;
++
++	bitmap_zero(cqm_rmid_bitmap, cqm_max_rmid);
++
++	/*
++	 * RMID 0 is special and is always allocated. It's used for all
++	 * tasks that are not monitored.
++	 */
++	bitmap_allocate_region(cqm_rmid_bitmap, 0, 0);
++
 +	return 0;
 +}
 +
- static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
- {
- 	struct perf_pmu_alias *alias;
-@@ -191,6 +210,7 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	INIT_LIST_HEAD(&alias->terms);
- 	alias->scale = 1.0;
- 	alias->unit[0] = '\0';
-+	alias->per_pkg = false;
- 
- 	ret = parse_events_terms(&alias->terms, buf);
- 	if (ret) {
-@@ -204,6 +224,7 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	 */
- 	perf_pmu__parse_unit(alias, dir, name);
- 	perf_pmu__parse_scale(alias, dir, name);
-+	perf_pmu__parse_per_pkg(alias, dir, name);
- 
- 	list_add_tail(&alias->list, list);
- 
-@@ -219,6 +240,8 @@ static inline bool pmu_alias_info_file(char *name)
- 		return true;
- 	if (len > 6 && !strcmp(name + len - 6, ".scale"))
- 		return true;
-+	if (len > 8 && !strcmp(name + len - 8, ".per-pkg"))
++/*
++ * Determine if @a and @b measure the same set of tasks.
++ */
++static bool __match_event(struct perf_event *a, struct perf_event *b)
++{
++	if ((a->attach_state & PERF_ATTACH_TASK) !=
++	    (b->attach_state & PERF_ATTACH_TASK))
++		return false;
++
++	/* not task */
++
++	return true; /* if not task, we're machine wide */
++}
++
++/*
++ * Determine if @a's tasks intersect with @b's tasks
++ */
++static bool __conflict_event(struct perf_event *a, struct perf_event *b)
++{
++	/*
++	 * If one of them is not a task, same story as above with cgroups.
++	 */
++	if (!(a->attach_state & PERF_ATTACH_TASK) ||
++	    !(b->attach_state & PERF_ATTACH_TASK))
 +		return true;
- 
- 	return false;
- }
-@@ -659,6 +682,8 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 	struct perf_pmu_alias *alias;
- 	int ret;
- 
-+	info->per_pkg = false;
 +
- 	/*
- 	 * Mark unit and scale as not set
- 	 * (different from default values, see below)
-@@ -678,6 +703,9 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 		if (ret)
- 			return ret;
- 
-+		if (alias->per_pkg)
-+			info->per_pkg = true;
++	/*
++	 * Must be non-overlapping.
++	 */
++	return false;
++}
 +
- 		list_del(&term->list);
- 		free(term);
- 	}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index fe90a012c003..82262eb90de8 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -28,6 +28,7 @@ struct perf_pmu {
- struct perf_pmu_info {
- 	const char *unit;
- 	double scale;
-+	bool per_pkg;
- };
- 
- struct perf_pmu *perf_pmu__find(const char *name);
++/*
++ * Find a group and setup RMID.
++ *
++ * If we're part of a group, we use the group's RMID.
++ */
++static int intel_cqm_setup_event(struct perf_event *event,
++				 struct perf_event **group)
++{
++	struct perf_event *iter;
++	int rmid;
++
++	list_for_each_entry(iter, &cache_groups, hw.cqm_groups_entry) {
++		if (__match_event(iter, event)) {
++			/* All tasks in a group share an RMID */
++			event->hw.cqm_rmid = iter->hw.cqm_rmid;
++			*group = iter;
++			return 0;
++		}
++
++		if (__conflict_event(iter, event))
++			return -EBUSY;
++	}
++
++	rmid = __get_rmid();
++	if (rmid < 0)
++		return rmid;
++
++	event->hw.cqm_rmid = rmid;
++	return 0;
++}
++
++static void intel_cqm_event_read(struct perf_event *event)
++{
++	unsigned long rmid = event->hw.cqm_rmid;
++	u64 val;
++
++	val = __rmid_read(rmid);
++
++	/*
++	 * Ignore this reading on error states and do not update the value.
++	 */
++	if (val & (RMID_VAL_ERROR | RMID_VAL_UNAVAIL))
++		return;
++
++	val *= cqm_l3_scale; /* cachelines -> bytes */
++
++	local64_set(&event->count, val);
++}
++
++static void intel_cqm_event_start(struct perf_event *event, int mode)
++{
++	struct intel_cqm_state *state = &__get_cpu_var(cqm_state);
++	unsigned long rmid = event->hw.cqm_rmid;
++	unsigned long flags;
++
++	if (!(event->hw.cqm_state & PERF_HES_STOPPED))
++		return;
++
++	event->hw.cqm_state &= ~PERF_HES_STOPPED;
++
++	raw_spin_lock_irqsave(&state->lock, flags);
++
++	if (state->cnt++)
++		WARN_ON_ONCE(state->rmid != rmid);
++	else
++		WARN_ON_ONCE(state->rmid);
++
++	state->rmid = rmid;
++	wrmsrl(MSR_IA32_PQR_ASSOC, state->rmid);
++
++	raw_spin_unlock_irqrestore(&state->lock, flags);
++}
++
++static void intel_cqm_event_stop(struct perf_event *event, int mode)
++{
++	struct intel_cqm_state *state = &__get_cpu_var(cqm_state);
++	unsigned long flags;
++
++	if (event->hw.cqm_state & PERF_HES_STOPPED)
++		return;
++
++	event->hw.cqm_state |= PERF_HES_STOPPED;
++
++	raw_spin_lock_irqsave(&state->lock, flags);
++	intel_cqm_event_read(event);
++
++	if (!--state->cnt) {
++		state->rmid = 0;
++		wrmsrl(MSR_IA32_PQR_ASSOC, 0);
++	} else {
++		WARN_ON_ONCE(!state->rmid);
++	}
++
++	raw_spin_unlock_irqrestore(&state->lock, flags);
++}
++
++static int intel_cqm_event_add(struct perf_event *event, int mode)
++{
++	int rmid;
++
++	event->hw.cqm_state = PERF_HES_STOPPED;
++	rmid = event->hw.cqm_rmid;
++	WARN_ON_ONCE(!rmid);
++
++	if (mode & PERF_EF_START)
++		intel_cqm_event_start(event, mode);
++
++	return 0;
++}
++
++static void intel_cqm_event_del(struct perf_event *event, int mode)
++{
++	intel_cqm_event_stop(event, mode);
++}
++
++static void intel_cqm_event_destroy(struct perf_event *event)
++{
++	struct perf_event *group_other = NULL;
++
++	mutex_lock(&cache_mutex);
++
++	/*
++	 * If there's another event in this group...
++	 */
++	if (!list_empty(&event->hw.cqm_group_entry)) {
++		group_other = list_first_entry(&event->hw.cqm_group_entry,
++					       struct perf_event,
++					       hw.cqm_group_entry);
++		list_del(&event->hw.cqm_group_entry);
++	}
++
++	/*
++	 * And we're the group leader..
++	 */
++	if (!list_empty(&event->hw.cqm_groups_entry)) {
++		/*
++		 * If there was a group_other, make that leader, otherwise
++		 * destroy the group and return the RMID.
++		 */
++		if (group_other) {
++			list_replace(&event->hw.cqm_groups_entry,
++				     &group_other->hw.cqm_groups_entry);
++		} else {
++			int rmid = event->hw.cqm_rmid;
++			__put_rmid(rmid);
++			list_del(&event->hw.cqm_groups_entry);
++		}
++	}
++
++	mutex_unlock(&cache_mutex);
++}
++
++static struct pmu intel_cqm_pmu;
++
++/*
++ * XXX there's a bit of a problem in that we cannot simply do the one
++ * event per node as one would want, since that one event would one get
++ * scheduled on the one cpu. But we want to 'schedule' the RMID on all
++ * CPUs.
++ *
++ * This means we want events for each CPU, however, that generates a lot
++ * of duplicate values out to userspace -- this is not to be helped
++ * unless we want to change the core code in some way. Fore more info,
++ * see intel_cqm_event_read().
++ */
++static int intel_cqm_event_init(struct perf_event *event)
++{
++	struct perf_event *group = NULL;
++	int err;
++
++	if (event->attr.type != intel_cqm_pmu.type)
++		return -ENOENT;
++
++	if (event->attr.config & ~QOS_EVENT_MASK)
++		return -EINVAL;
++
++	if (event->cpu == -1)
++		return -EINVAL;
++
++	/* unsupported modes and filters */
++	if (event->attr.exclude_user   ||
++	    event->attr.exclude_kernel ||
++	    event->attr.exclude_hv     ||
++	    event->attr.exclude_idle   ||
++	    event->attr.exclude_host   ||
++	    event->attr.exclude_guest  ||
++	    event->attr.sample_period) /* no sampling */
++		return -EINVAL;
++
++	INIT_LIST_HEAD(&event->hw.cqm_group_entry);
++	INIT_LIST_HEAD(&event->hw.cqm_groups_entry);
++
++	event->destroy = intel_cqm_event_destroy;
++
++	mutex_lock(&cache_mutex);
++
++	err = intel_cqm_setup_event(event, &group); /* will also set rmid */
++	if (err)
++		goto out;
++
++	if (group) {
++		list_add_tail(&event->hw.cqm_group_entry,
++			      &group->hw.cqm_group_entry);
++	} else {
++		list_add_tail(&event->hw.cqm_groups_entry,
++			      &cache_groups);
++	}
++
++out:
++	mutex_unlock(&cache_mutex);
++	return err;
++}
++
++EVENT_ATTR_STR(llc_occupancy, intel_cqm_llc, "event=0x01");
++EVENT_ATTR_STR(llc_occupancy.per-pkg, intel_cqm_llc_pkg, "1");
++
++static struct attribute *intel_cqm_events_attr[] = {
++	EVENT_PTR(intel_cqm_llc),
++	EVENT_PTR(intel_cqm_llc_pkg),
++	NULL,
++};
++
++static struct attribute_group intel_cqm_events_group = {
++	.name = "events",
++	.attrs = intel_cqm_events_attr,
++};
++
++PMU_FORMAT_ATTR(event, "config:0-7");
++static struct attribute *intel_cqm_formats_attr[] = {
++	&format_attr_event.attr,
++	NULL,
++};
++
++static struct attribute_group intel_cqm_format_group = {
++	.name = "format",
++	.attrs = intel_cqm_formats_attr,
++};
++
++static const struct attribute_group *intel_cqm_attr_groups[] = {
++	&intel_cqm_events_group,
++	&intel_cqm_format_group,
++	NULL,
++};
++
++static struct pmu intel_cqm_pmu = {
++	.attr_groups	= intel_cqm_attr_groups,
++	.task_ctx_nr	= perf_sw_context,
++	.event_init	= intel_cqm_event_init,
++	.add		= intel_cqm_event_add,
++	.del		= intel_cqm_event_del,
++	.start		= intel_cqm_event_start,
++	.stop		= intel_cqm_event_stop,
++	.read		= intel_cqm_event_read,
++};
++
++static inline void cqm_pick_event_reader(int cpu)
++{
++	int phys_id = topology_physical_package_id(cpu);
++	int i;
++
++	for_each_cpu(i, &cqm_cpumask) {
++		if (phys_id == topology_physical_package_id(i))
++			return;	/* already got reader for this socket */
++	}
++
++	cpumask_set_cpu(cpu, &cqm_cpumask);
++}
++
++static void intel_cqm_cpu_prepare(unsigned int cpu)
++{
++	struct intel_cqm_state *state = &per_cpu(cqm_state, cpu);
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++
++	raw_spin_lock_init(&state->lock);
++	state->rmid = 0;
++
++	WARN_ON(c->x86_cache_max_rmid != cqm_max_rmid);
++	WARN_ON(c->x86_cache_occ_scale != cqm_l3_scale);
++}
++
++static void intel_cqm_cpu_exit(unsigned int cpu)
++{
++	int phys_id = topology_physical_package_id(cpu);
++	int i;
++
++	/*
++	 * Is @cpu a designated cqm reader?
++	 */
++	if (!cpumask_test_and_clear_cpu(cpu, &cqm_cpumask))
++		return;
++
++	for_each_online_cpu(i) {
++		if (i == cpu)
++			continue;
++
++		if (phys_id == topology_physical_package_id(i)) {
++			cpumask_set_cpu(i, &cqm_cpumask);
++			break;
++		}
++	}
++}
++
++static int intel_cqm_cpu_notifier(struct notifier_block *nb,
++				  unsigned long action, void *hcpu)
++{
++	unsigned int cpu  = (unsigned long)hcpu;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++		intel_cqm_cpu_prepare(cpu);
++		break;
++	case CPU_DOWN_PREPARE:
++		intel_cqm_cpu_exit(cpu);
++		break;
++	case CPU_STARTING:
++		cqm_pick_event_reader(cpu);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static int __init intel_cqm_init(void)
++{
++	int i, cpu, ret;
++
++	if (!cpu_has(&boot_cpu_data, X86_FEATURE_CQM_OCCUP_LLC))
++		return -ENODEV;
++
++	cqm_l3_scale = boot_cpu_data.x86_cache_occ_scale;
++
++	/*
++	 * It's possible that not all resources support the same number
++	 * of RMIDs. Instead of making scheduling much more complicated
++	 * (where we have to match a task's RMID to a cpu that supports
++	 * that many RMIDs) just find the minimum RMIDs supported across
++	 * all cpus.
++	 *
++	 * Also, check that the scales match on all cpus.
++	 */
++	for_each_online_cpu(cpu) {
++		struct cpuinfo_x86 *c = &cpu_data(cpu);
++
++		if (c->x86_cache_max_rmid < cqm_max_rmid)
++			cqm_max_rmid = c->x86_cache_max_rmid;
++
++		if (c->x86_cache_occ_scale != cqm_l3_scale) {
++			pr_err("Multiple LLC scale values, disabling\n");
++			return -EINVAL;
++		}
++	}
++
++	ret = intel_cqm_setup_rmid_cache();
++	if (ret)
++		return ret;
++
++	for_each_online_cpu(i) {
++		intel_cqm_cpu_prepare(i);
++		cqm_pick_event_reader(i);
++	}
++
++	__perf_cpu_notifier(intel_cqm_cpu_notifier);
++
++	ret = perf_pmu_register(&intel_cqm_pmu, "intel_cqm", -1);
++
++	if (ret)
++		pr_err("Intel CQM perf registration failed: %d\n", ret);
++	else
++		pr_info("Intel CQM monitoring enabled\n");
++
++	return ret;
++}
++device_initcall(intel_cqm_init);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1bf06b6fd5dc..50ceb0665cda 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -128,6 +128,13 @@ struct hw_perf_event {
+ 			/* for tp_event->class */
+ 			struct list_head	tp_list;
+ 		};
++		struct { /* intel_cqm */
++			int			cqm_state;
++			int			cqm_rmid;
++			struct list_head	cqm_events_entry;
++			struct list_head	cqm_groups_entry;
++			struct list_head	cqm_group_entry;
++		};
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 		struct { /* breakpoint */
+ 			/*
 -- 
 1.9.3
 
