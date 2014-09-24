@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaIXMOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:14:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37295 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751012AbaIXMOg (ORCPT
+	id S1751902AbaIXMY3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:24:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:62795 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012AbaIXMY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:14:36 -0400
-Date: Wed, 24 Sep 2014 13:14:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>,
-        Alex Williamson <Alex.Williamson@redhat.com>
-Subject: Re: [PATCH v3] kvm-vfio: do not use module_init
-Message-ID: <20140924121433.GG28823@arm.com>
-References: <1411560568-15989-1-git-send-email-pbonzini@redhat.com>
+	Wed, 24 Sep 2014 08:24:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: balbi@ti.com, Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, sebastian.hesselbarth@gmail.com,
+        p.zabel@pengutronix.de, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Date: Wed, 24 Sep 2014 14:23:38 +0200
+Message-ID: <2786668.t3YLqX5enD@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140924112902.GA23331@peterchendt>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <2923729.dtX0WmHSV0@wuerfel> <20140924112902.GA23331@peterchendt>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411560568-15989-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dVmv6kiRx/95nKOrApauZjhlN9c07dFJRUwv4i42pst
+ iMWld1roUEWlpyrQkzusJX+16d4xdfrqZukrIbidzFPnLYAUYm
+ S99pwJ7P3N7OhafuKJVYM6yYpEW+f2mtLmdJkWgSY/r3yyN8UP
+ iG9OkMoydMENzsxhOJrEL7Fh3Co0Tjbd4rtXP59lMuyuvvXABr
+ mhSpgO8Er1zgNDI7x3m5BStd9hyDgS4uoOYtZMOltzyry0a5qR
+ SgdaE/V44BmFZnj793SijjhdqKy7AMuXpHQTCQ6NElPDRMc6s7
+ cMO/yoMR/mgta8AEuyKaZ05i89q+aJbcR+nF8yQQfRYe4kA6r7
+ WFT3+4gRDRJvRBZSvUt4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 01:09:28PM +0100, Paolo Bonzini wrote:
-> /me got confused between the kernel and QEMU.  In the kernel, you can
-> only have one module_init function, and it will prevent unloading the
-> module unless you also have the corresponding module_exit function.
+On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
 > 
-> So, commit 80ce1639727e (KVM: VFIO: register kvm_device_ops dynamically,
-> 2014-09-02) broke unloading of the kvm module, by adding a module_init
-> function and no module_exit.
-> 
-> Repair it by making kvm_vfio_ops_init weak, and checking it in
-> kvm_init.
-> 
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Alex Williamson <Alex.Williamson@redhat.com>
-> Fixes: 80ce1639727e9d38729c34f162378508c307ca25
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  virt/kvm/kvm_main.c |  4 ++++
->  virt/kvm/vfio.c     |  4 ++--
->  virt/kvm/vfio.h     | 13 +++++++++++++
->  3 files changed, 19 insertions(+), 2 deletions(-)
->  create mode 100644 virt/kvm/vfio.h
+> So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
+> (dwc3, musb, chipidea) you are talking about, right? Except for
+> creating another platform driver as well as related DT node (optional),
+> are there any advantages compared to current IP core driver structure?
 
-Looks good to me, thanks for fixing this:
+Having a library module usually requires less code, and is more consistent
+with other drivers, which helps new developers understand what the
+driver is doing.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+The most important aspect though is the DT binding: once the structure
+with separate kernel drivers leaks out into the DT format, you can't
+easily change the driver any more, e.g. to make a property that was
+introduced for one glue driver more general so it can get handled by
+the common part. Having a single node lets us convert to the library
+model later, so that would be a strong reason to keep the DT binding
+simple, without child nodes.
 
-Will
+Following that logic, it turns into another reason for using the library
+model to start with, because otherwise the child device does not have
+any DT properties itself and has to rely on the parent device properties,
+which somewhat complicates the driver structure.
 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index db57363cc287..499db0977f3c 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -57,6 +57,7 @@
->  
->  #include "coalesced_mmio.h"
->  #include "async_pf.h"
-> +#include "vfio.h"
->  
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/kvm.h>
-> @@ -3226,6 +3227,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
->  		goto out_undebugfs;
->  	}
->  
-> +	r = kvm_vfio_ops_init();
-> +	WARN_ON(r);
-> +
->  	return 0;
->  
->  out_undebugfs:
-> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-> index bb11b36ee8a2..281e7cf2b8e5 100644
-> --- a/virt/kvm/vfio.c
-> +++ b/virt/kvm/vfio.c
-> @@ -18,6 +18,7 @@
->  #include <linux/slab.h>
->  #include <linux/uaccess.h>
->  #include <linux/vfio.h>
-> +#include "vfio.h"
->  
->  struct kvm_vfio_group {
->  	struct list_head node;
-> @@ -278,8 +279,7 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
->  	return 0;
->  }
->  
-> -static int __init kvm_vfio_ops_init(void)
-> +int kvm_vfio_ops_init(void)
->  {
->  	return kvm_register_device_ops(&kvm_vfio_ops, KVM_DEV_TYPE_VFIO);
->  }
-> -module_init(kvm_vfio_ops_init);
-> diff --git a/virt/kvm/vfio.h b/virt/kvm/vfio.h
-> new file mode 100644
-> index 000000000000..92eac75d6b62
-> --- /dev/null
-> +++ b/virt/kvm/vfio.h
-> @@ -0,0 +1,13 @@
-> +#ifndef __KVM_VFIO_H
-> +#define __KVM_VFIO_H
-> +
-> +#ifdef CONFIG_KVM_VFIO
-> +int kvm_vfio_ops_init(void);
-> +#else
-> +static inline int kvm_vfio_ops_init(void)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
-> +#endif
-> -- 
-> 1.8.3.1
-> 
-> 
+> In this thread, we are talking about creating common platform driver for glue
+> layer, its design purpose (adapt it for as many as platforms) should be the
+> same, no matter the IP core part is a LIB or platform driver, am I missing
+> something?
+
+No, you are absolutely right with that, introducing the generic glue
+driver is orthogonal to the structure of the core driver in principle.
+
+I mainly brought it up because I noticed how this patch could be done
+in a simpler way by combining the new generic glue with the move to
+a library driver model.
+
+	Arnd
