@@ -1,73 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaIXHct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:32:49 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:52592 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813AbaIXHcq (ORCPT
+	id S1753090AbaIXHeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:34:05 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:52029 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaIXHeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:32:46 -0400
-Date: Wed, 24 Sep 2014 09:32:42 +0200
+	Wed, 24 Sep 2014 03:34:01 -0400
+Date: Wed, 24 Sep 2014 09:33:56 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <ktkhai@parallels.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: linux-next: manual merge of the tip tree with the nfs tree
-Message-ID: <20140924073242.GA1962@gmail.com>
-References: <20140922133156.454481f9@canb.auug.org.au>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v4] perf tools: Fix build-id matching on vmlinux
+Message-ID: <20140924073356.GB1962@gmail.com>
+References: <1411373053-24250-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140922133156.454481f9@canb.auug.org.au>
+In-Reply-To: <1411373053-24250-1-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-> Hi all,
+> There's a problem on finding correct kernel symbols when perf report
+> runs on a different kernel.  Although a part of the problem was solved
+> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+> version when finding vmlinux"), there's a remaining problem still.
 > 
-> Today's linux-next merge of the tip tree got conflicts in
-> fs/nfs/blocklayout/blocklayoutdev.c and
-> fs/nfs/blocklayout/blocklayoutdm.c between commit 871760ce97a9
-> ("pnfs/blocklayout: move all rpc_pipefs related code into a single
-> file") from the nfs tree and commit f139caf2e897 ("sched, cleanup,
-> treewide: Remove set_current_state(TASK_RUNNING) after schedule()")
-> from the tip tree.
+> When perf records samples, it synthesizes the kernel map using
+> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+> You can easily see it using 'perf report -D' command.
 > 
-> I fixed it up (the former move the code in these two files into
-> fs/nfs/blocklayout/rpc_pipefs.c, so I deleted the 2 files and applied
-> the following merge fix patch) and can carry the fix as necessary (no
-> action is required).
+> After finishing record, it goes through the recorded events to find
+> maps/dsos actually used.  And then record build-id info of them.
 > 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 22 Sep 2014 13:29:19 +1000
-> Subject: [PATCH] pnfs: merge fixup for sched cleanup of set_current_state(TASK_RUNNING)
+> During this process, it needs to load symbols in a dso and it'd call
+> dso__load_vmlinux() since the default value of the symbol_conf.try_
+> vmlinux_path is true.  However it changes dso->long_name to a real
+> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+> if one is running on a custom kernel.
 > 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> It resulted in that perf report reads the build-id of the vmlinux, but
+> cannot use it since it only knows about the [kernel.kallsyms] map.  It
+> then falls back to possible vmlinux paths by using the recorded kernel
+> version (in case of a recent version) or a running kernel silently.
+> 
+> Even with the recent tools, this still has a possibility of breaking
+> the result.  As the build directory is a symbolic link, if one built a
+> new kernel in the same directory with different source/config, the old
+> link to vmlinux will point the new file.  So it's absolutely needed to
+> use build-id when finding a kernel image.
+> 
+> In this patch, it's now changed to try to search a kernel dso in the
+> existing dso list which was constructed during build-id table parsing
+> so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
+> 
+> Before:
+> 
+>   $ perf report
+>   # Children      Self  Command  Shared Object      Symbol
+>   # ........  ........  .......  .................  ...............................
+>   #
+>       72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+>       72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+>       72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+>       71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+>    ...
+> 
+> After (for the same perf.data):
+> 
+>       72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
+>       72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
+>       72.15%     0.00%  swapper  vmlinux  [k] default_idle
+>       71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
+>    ...
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  fs/nfs/blocklayout/rpc_pipefs.c | 1 -
->  1 file changed, 1 deletion(-)
+>  tools/perf/util/machine.c | 23 +++++++++++++++++++++--
+>  1 file changed, 21 insertions(+), 2 deletions(-)
 > 
-> diff --git a/fs/nfs/blocklayout/rpc_pipefs.c b/fs/nfs/blocklayout/rpc_pipefs.c
-> index 8d04bda2bd2e..e966c023b1b7 100644
-> --- a/fs/nfs/blocklayout/rpc_pipefs.c
-> +++ b/fs/nfs/blocklayout/rpc_pipefs.c
-> @@ -92,7 +92,6 @@ bl_resolve_deviceid(struct nfs_server *server, struct pnfs_block_volume *b,
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index b2ec38bf211e..5661195a8cf6 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -12,6 +12,7 @@
+>  #include <stdbool.h>
+>  #include <symbol/kallsyms.h>
+>  #include "unwind.h"
+> +#include "asm/bug.h"
 >  
->  	set_current_state(TASK_UNINTERRUPTIBLE);
->  	schedule();
-> -	__set_current_state(TASK_RUNNING);
->  	remove_wait_queue(&nn->bl_wq, &wq);
->  
->  	if (reply->status != BL_DEVICE_REQUEST_PROC) {
+>  int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+>  {
+> @@ -1062,8 +1063,26 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+>  		 * Should be there already, from the build-id table in
+>  		 * the header.
+>  		 */
+> -		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+> -						     kmmap_prefix);
+> +		struct dso *kernel = NULL;
+> +		struct dso *dso;
+> +
+> +		list_for_each_entry(dso, &machine->kernel_dsos, node) {
+> +			const char *suffix;
+> +			size_t len = strlen(dso->long_name);
+> +
+> +			if (WARN_ONCE(len <= 3, "Too short dso name"))
+> +				continue;
+> +
+> +			suffix = dso->long_name + len - 3;
+> +			if (strcmp(suffix, ".ko")) {
+> +				kernel = dso;
+> +				break;
+> +			}
+> +		}
+> +
+> +		if (kernel == NULL)
+> +			kernel = __dsos__findnew(&machine->kernel_dsos,
+> +						 kmmap_prefix);
 
-Looks good, thanks Stephen!
+Please don't break the line just to pacify checkpatch.pl. Other 
+than that:
 
-	Ingo
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ing
