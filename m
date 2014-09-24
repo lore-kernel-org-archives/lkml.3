@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaIXMHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 08:07:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35010 "EHLO mx2.suse.de"
+	id S1753357AbaIXMHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 08:07:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57794 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595AbaIXMHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 08:07:15 -0400
-Message-ID: <5422B3EF.4000800@suse.cz>
-Date: Wed, 24 Sep 2014 14:07:11 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1750767AbaIXMHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 08:07:47 -0400
+Message-ID: <5422B409.5000808@redhat.com>
+Date: Wed, 24 Sep 2014 14:07:37 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: behanw@converseincode.com
-CC: ak@linux.intel.com, yamada.m@jp.panasonic.com, hpa@linux.intel.com,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support
- clang
-References: <1411500522-11480-1-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1411500522-11480-1-git-send-email-behanw@converseincode.com>
-Content-Type: text/plain; charset=utf-8
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Gleb Natapov <gleb@kernel.org>,
+        Alex Williamson <Alex.Williamson@redhat.com>
+Subject: Re: [PATCH v2] kvm-vfio: do not use module_init
+References: <1411559780-12676-1-git-send-email-pbonzini@redhat.com> <20140924120505.GF28823@arm.com>
+In-Reply-To: <20140924120505.GF28823@arm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-23 21:28, behanw@converseincode.com wrote:
-> From: Mark Charlebois <charlebm@gmail.com>
-> 
-> Clang will warn about unknown warnings but will not return false
+Il 24/09/2014 14:05, Will Deacon ha scritto:
+>> > +#ifdef CONFIG_KVM_VFIO
+>> > +#include "vfio.h"
+>> > +#endif
+> Can't you include this unconditionally, then have the #ifdef in the header
+> and a static inline kvm_vfio_ops_init that returns 0?
 
-You mean unknown options, right?
+Yup.  What was I thinking...
 
-
-> unless -Werror is set. GCC will return false if an unknown
-> warning is passed.
-> 
-> Adding -Werror make both compiler behave the same.
-
-Can you please limit it to the clang case? Add an internal variable that
-either contains -Werror or nothing, depending on the compiler. What I
-fear is that if we use -Werror unconditionally and the user (or some
-automated build system) decides to add some silly option to KCFLAGS, we
-will get silent failures in the cc-option tests. Of course, the same can
-happen with clang, but there seems to be no way around it.
-
-BTW, is there a chance that this would be fixed in some later clang
-version? Accepting unknown commandline options is a rather unusual
-behavior. How are all the ./configure scripts going to cope with it?
-
-Thanks,
-Michal
+Paolo
