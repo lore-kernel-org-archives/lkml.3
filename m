@@ -1,111 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaIXTHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:07:35 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:35817 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaIXTHd convert rfc822-to-8bit (ORCPT
+	id S1752344AbaIXTJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:09:49 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:42290 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaIXTJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:07:33 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [lxc-devel] device namespaces
-From: Riya Khanna <riyakhanna1983@gmail.com>
-In-Reply-To: <20140924163740.GD3865@ubuntumail>
-Date: Wed, 24 Sep 2014 14:07:31 -0500
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F55D2D4C-7421-4907-8035-5E6A48224A98@gmail.com>
-References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com> <87bnq5vcbl.fsf@x220.int.ebiederm.org> <CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com> <20140924163740.GD3865@ubuntumail>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Wed, 24 Sep 2014 15:09:48 -0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        antoine.tenart@free-electrons.com, yoshihiro.shimoda.uh@renesas.com
+Subject: [PATCH v6 2/2] usb: hcd: add generic PHY support
+Date: Wed, 24 Sep 2014 23:09:44 +0400
+Message-ID: <4738517.TNcWBCM3Rf@wasted.cogentembedded.com>
+Organization: Cogent Embedded Inc.
+User-Agent: KMail/4.13.3 (Linux/3.15.10-201.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <37148636.BU5lT4M4eC@wasted.cogentembedded.com>
+References: <37148636.BU5lT4M4eC@wasted.cogentembedded.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess policy-based multiplexing (or exclusive ownership) is the usage. What kind of devices (loop, fb, etc.) this is needed for depends on the usage. If there are multiple FBs, then each container could potentially own one. One may want to provide exclusive ownership of input devices to one container at a time to avoid information leakage. Like we saw at LPC last year, this applies to sensors (gps, accelerometer, etc.) on mobile devices as well.
- 
-On Sep 24, 2014, at 11:37 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+Add the generic PHY support, analogous to the USB PHY support. Intended it to be
+used with the PCI EHCI/OHCI drivers and the xHCI platform driver.
 
-> Isolation is provided by the devices cgroup.  You want something more
-> than isolation.
-> 
-> Quoting riya khanna (riyakhanna1983@gmail.com):
->> My use case for having device namespaces is device isolation. Isn't what
->> namespaces are there for (as I understand)? Not everything should be
->> accessible (or even visible) from a container all the time (we have seen
->> people come up with different use cases for this). However, bind-mounting
->> takes away this flexibility. I agree that assigning fixed device numbers is
->> clearly not a long-term solution. Emulation for safe and flexible
->> multiplexing, like you suggested either using CUSE/FUSE or something like
->> devpts, is what I'm exploring.
->> 
->> On Wed, Sep 24, 2014 at 12:04 AM, Eric W. Biederman <ebiederm@xmission.com>
->> wrote:
->> 
->>> riya khanna <riyakhanna1983@gmail.com> writes:
->>> 
->>>> (Please pardon multiple emails, artifact of merging all separate
->>> conversations)
->>>> 
->>>> Thanks for your feedback!
->>>> 
->>>> Letting the kernel know about what devices a container could access
->>> (based on
->>>> device cgroups) and having devtmpfs in the kernel create device nodes
->>> for a
->>>> container that map to corresponding CUSE nodes is what I thought of. For
->>>> example, "echo 29:0 > /proc/<pid>/devices" would prepare a virtual
->>> framebuffer
->>>> (based on real fb0 SCREENINFO properties) for this process provided
->>> permissions
->>>> allow this operation. To view the framebuffer, the CUSE based virtual
->>> device
->>>> would talk to the actual hardware. Since namespaces would have different
->>> view of
->>>> the underlying devices, "sysfs" has to made aware of this as well.
->>>> 
->>>> Please let me know your inputs. Thanks again!
->>> 
->>> The solution hugely depends on what you are trying to do with it.
->>> 
->>> The situation today is that device nodes are slowly fading out.  In
->>> another 20 years linux may not have any device nodes at all.
->>> 
->>> Therefore the question becomes what are you trying to support.
->>> 
->>> If it is just filtering of existing device nodes.  We can do a pretty
->>> good approximation with bind mounts.
->>> 
->>> If you want to emulate a device you can use normal fuse (not cuse).
->>> As normal fuse file will support arbitrary ioctls.
->>> 
->>> There are a few cases where it is desirable to emulate what devpts
->>> does for allowing arbitrary users to creating virtual devices in the
->>> kernel.  Loop devices in particular.
->>> 
->>> Ultimately given the existence of device hotplug I don't see any call
->>> for being able to create device nodes with well known device numbers
->>> (fundamentally what a device namespace would be about).
->>> 
->>> The conversation last year was about people wanting to multiplex devices
->>> that don't have multiplexer support in the kernel.  If that is your
->>> desire I think it is entirely reasonable to device type by device type
->>> add support for multiplexing that device type to the kernel, or
->>> potentially just use fuse or cuse to implement your multiplexer in
->>> userspace but that has the potential to be unusably slow.
->>> 
->>> Eric
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>> 
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+
+---
+Changes in version 5:
+- renamed the new 'gen_phy' field of 'struct usb_phy' back to 'phy';
+- resolved rejects occured due to a newly added patch.
+
+Changes in version 4:
+- refreshed the patch.
+
+Changes in version 3:
+- refreshed the patch.
+
+Changes in version 2:
+- renamed the new 'phy' field of 'struct usb_phy' to 'gen_phy';
+- resolved rejects due to removal of the first patch in the series.
+
+ drivers/usb/core/hcd.c  |   42 ++++++++++++++++++++++++++++++++++++++++--
+ include/linux/usb/hcd.h |    1 +
+ 2 files changed, 41 insertions(+), 2 deletions(-)
+
+Index: usb/drivers/usb/core/hcd.c
+===================================================================
+--- usb.orig/drivers/usb/core/hcd.c
++++ usb/drivers/usb/core/hcd.c
+@@ -42,6 +42,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/types.h>
+ 
++#include <linux/phy/phy.h>
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+ #include <linux/usb/phy.h>
+@@ -2645,6 +2646,29 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 		}
+ 	}
+ 
++	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
++		struct phy *phy = phy_get(hcd->self.controller, "usb");
++
++		if (IS_ERR(phy)) {
++			retval = PTR_ERR(phy);
++			if (retval == -EPROBE_DEFER)
++				goto err_phy;
++		} else {
++			retval = phy_init(phy);
++			if (retval) {
++				phy_put(phy);
++				goto err_phy;
++			}
++			retval = phy_power_on(phy);
++			if (retval) {
++				phy_exit(phy);
++				phy_put(phy);
++				goto err_phy;
++			}
++			hcd->phy = phy;
++		}
++	}
++
+ 	dev_info(hcd->self.controller, "%s\n", hcd->product_desc);
+ 
+ 	/* Keep old behaviour if authorized_default is not in [0, 1]. */
+@@ -2660,7 +2684,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	 */
+ 	if ((retval = hcd_buffer_create(hcd)) != 0) {
+ 		dev_dbg(hcd->self.controller, "pool alloc failed\n");
+-		goto err_remove_phy;
++		goto err_create_buf;
+ 	}
+ 
+ 	if ((retval = usb_register_bus(&hcd->self)) < 0)
+@@ -2787,7 +2811,14 @@ err_allocate_root_hub:
+ 	usb_deregister_bus(&hcd->self);
+ err_register_bus:
+ 	hcd_buffer_destroy(hcd);
+-err_remove_phy:
++err_create_buf:
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
++		phy_power_off(hcd->phy);
++		phy_exit(hcd->phy);
++		phy_put(hcd->phy);
++		hcd->phy = NULL;
++	}
++err_phy:
+ 	if (hcd->remove_phy && hcd->usb_phy) {
+ 		usb_phy_shutdown(hcd->usb_phy);
+ 		usb_put_phy(hcd->usb_phy);
+@@ -2864,6 +2895,13 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+ 
+ 	usb_deregister_bus(&hcd->self);
+ 	hcd_buffer_destroy(hcd);
++
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
++		phy_power_off(hcd->phy);
++		phy_exit(hcd->phy);
++		phy_put(hcd->phy);
++		hcd->phy = NULL;
++	}
+ 	if (hcd->remove_phy && hcd->usb_phy) {
+ 		usb_phy_shutdown(hcd->usb_phy);
+ 		usb_put_phy(hcd->usb_phy);
+Index: usb/include/linux/usb/hcd.h
+===================================================================
+--- usb.orig/include/linux/usb/hcd.h
++++ usb/include/linux/usb/hcd.h
+@@ -107,6 +107,7 @@ struct usb_hcd {
+ 	 * other external phys should be software-transparent
+ 	 */
+ 	struct usb_phy		*usb_phy;
++	struct phy		*phy;
+ 
+ 	/* Flags that need to be manipulated atomically because they can
+ 	 * change while the host controller is running.  Always use
 
