@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaIXVFV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:05:21 -0400
-Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:19452
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752587AbaIXVG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:06:59 -0400
+Received: from mail-bn1on0139.outbound.protection.outlook.com ([157.56.110.139]:19515
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753864AbaIXVFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:05:15 -0400
-X-WSS-ID: 0NCFB7H-07-TBH-02
+	id S1753379AbaIXVFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:05:07 -0400
+X-WSS-ID: 0NCFB78-08-8LZ-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -15,13 +15,11 @@ To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
 CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
         "John Bridgman" <John.Bridgman@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
         =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH v4 23/23] amdkfd: Implement the Get Process Aperture IOCTL
-Date: Wed, 24 Sep 2014 23:45:37 +0300
-Message-ID: <1411591537-31636-24-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH v4 21/23] amdkfd: Implement the Set Memory Policy IOCTL
+Date: Wed, 24 Sep 2014 23:45:35 +0300
+Message-ID: <1411591537-31636-22-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
 References: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
@@ -29,102 +27,94 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.20.0.84]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(74502003)(50226001)(77982003)(229853001)(102836001)(81342003)(104166001)(20776003)(79102003)(46102003)(4396001)(81542003)(74662003)(47776003)(64706001)(48376002)(83322001)(44976005)(19580395003)(19580405001)(68736004)(107046002)(50466002)(80022003)(101416001)(84676001)(87286001)(89996001)(85852003)(87936001)(85306004)(83072002)(62966002)(88136002)(21056001)(105586002)(33646002)(95666004)(106466001)(120916001)(77096002)(93916002)(76482002)(86362001)(76176999)(90102001)(31966008)(97736003)(92566001)(92726001)(99396003)(36756003)(10300001)(50986999)(77156001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(92566001)(92726001)(33646002)(90102001)(85852003)(83072002)(102836001)(88136002)(89996001)(36756003)(77156001)(101416001)(120916001)(20776003)(64706001)(31966008)(99396003)(47776003)(10300001)(62966002)(104166001)(97736003)(229853001)(93916002)(87286001)(107046002)(87936001)(85306004)(86362001)(77096002)(106466001)(76176999)(44976005)(83322001)(50466002)(50226001)(4396001)(48376002)(77982003)(19580395003)(50986999)(84676001)(19580405001)(68736004)(105586002)(21056001)(74662003)(80022003)(79102003)(81342003)(74502003)(81542003)(46102003)(76482002)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
 X-Forefront-PRVS: 03449D5DD1
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Skidanov <Alexey.Skidanov@amd.com>
+From: Andrew Lewycky <Andrew.Lewycky@amd.com>
 
-v3: Fixed debug messages
-
-Signed-off-by: Alexey Skidanov <Alexey.Skidanov@amd.com>
+Signed-off-by: Andrew Lewycky <Andrew.Lewycky@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c | 47 ++++++++++++++++++++++++++++-
- drivers/gpu/drm/radeon/amdkfd/kfd_priv.h    |  5 +++
- 2 files changed, 51 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c | 51 ++++++++++++++++++++++++++++-
+ 1 file changed, 50 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-index 1e4b731..bf9ea51 100644
+index ac3146d..d1cc6d8 100644
 --- a/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
 +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_chardev.c
-@@ -406,7 +406,52 @@ static long kfd_ioctl_get_clock_counters(struct file *filep, struct kfd_process
+@@ -35,6 +35,7 @@
+ #include <uapi/asm-generic/mman-common.h>
+ #include <asm/processor.h>
+ #include "kfd_priv.h"
++#include "kfd_device_queue_manager.h"
  
- static int kfd_ioctl_get_process_apertures(struct file *filp, struct kfd_process *p, void __user *arg)
+ static long kfd_ioctl(struct file *, unsigned int, unsigned long);
+ static int kfd_open(struct inode *, struct file *);
+@@ -319,7 +320,55 @@ static int kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p, void
+ 
+ static long kfd_ioctl_set_memory_policy(struct file *filep, struct kfd_process *p, void __user *arg)
  {
 -	return -ENODEV;
-+	struct kfd_ioctl_get_process_apertures_args args;
++	struct kfd_ioctl_set_memory_policy_args args;
++	struct kfd_dev *dev;
++	int err = 0;
 +	struct kfd_process_device *pdd;
-+
-+	dev_dbg(kfd_device, "get apertures for PASID %d", p->pasid);
++	enum cache_policy default_policy, alternate_policy;
 +
 +	if (copy_from_user(&args, arg, sizeof(args)))
 +		return -EFAULT;
 +
-+	args.num_of_nodes = 0;
++	if (args.default_policy != KFD_IOC_CACHE_POLICY_COHERENT
++	    && args.default_policy != KFD_IOC_CACHE_POLICY_NONCOHERENT) {
++		return -EINVAL;
++	}
++
++	if (args.alternate_policy != KFD_IOC_CACHE_POLICY_COHERENT
++	    && args.alternate_policy != KFD_IOC_CACHE_POLICY_NONCOHERENT) {
++		return -EINVAL;
++	}
++
++	dev = kfd_device_by_id(args.gpu_id);
++	if (dev == NULL)
++		return -EINVAL;
 +
 +	mutex_lock(&p->mutex);
 +
-+	/*if the process-device list isn't empty*/
-+	if (kfd_has_process_device_data(p)) {
-+		/* Run over all pdd of the process */
-+		pdd = kfd_get_first_process_device_data(p);
-+		do {
-+
-+			args.process_apertures[args.num_of_nodes].gpu_id = pdd->dev->id;
-+			args.process_apertures[args.num_of_nodes].lds_base = pdd->lds_base;
-+			args.process_apertures[args.num_of_nodes].lds_limit = pdd->lds_limit;
-+			args.process_apertures[args.num_of_nodes].gpuvm_base = pdd->gpuvm_base;
-+			args.process_apertures[args.num_of_nodes].gpuvm_limit = pdd->gpuvm_limit;
-+			args.process_apertures[args.num_of_nodes].scratch_base = pdd->scratch_base;
-+			args.process_apertures[args.num_of_nodes].scratch_limit = pdd->scratch_limit;
-+
-+			dev_dbg(kfd_device, "node id %u\n", args.num_of_nodes);
-+			dev_dbg(kfd_device, "gpu id %u\n", pdd->dev->id);
-+			dev_dbg(kfd_device, "lds_base %llX\n", pdd->lds_base);
-+			dev_dbg(kfd_device, "lds_limit %llX\n", pdd->lds_limit);
-+			dev_dbg(kfd_device, "gpuvm_base %llX\n", pdd->gpuvm_base);
-+			dev_dbg(kfd_device, "gpuvm_limit %llX\n", pdd->gpuvm_limit);
-+			dev_dbg(kfd_device, "scratch_base %llX\n", pdd->scratch_base);
-+			dev_dbg(kfd_device, "scratch_limit %llX\n", pdd->scratch_limit);
-+
-+			args.num_of_nodes++;
-+		} while ((pdd = kfd_get_next_process_device_data(p, pdd)) != NULL &&
-+				(args.num_of_nodes < NUM_OF_SUPPORTED_GPUS));
++	pdd = kfd_bind_process_to_device(dev, p);
++	if (IS_ERR(pdd) < 0) {
++		err = PTR_ERR(pdd);
++		goto out;
 +	}
 +
++	default_policy = (args.default_policy == KFD_IOC_CACHE_POLICY_COHERENT)
++			 ? cache_policy_coherent : cache_policy_noncoherent;
++
++	alternate_policy = (args.alternate_policy == KFD_IOC_CACHE_POLICY_COHERENT)
++			   ? cache_policy_coherent : cache_policy_noncoherent;
++
++	if (!dev->dqm->set_cache_memory_policy(dev->dqm,
++					 &pdd->qpd,
++					 default_policy,
++					 alternate_policy,
++					 (void __user *)args.alternate_aperture_base,
++					 args.alternate_aperture_size))
++		err = -EINVAL;
++
++out:
 +	mutex_unlock(&p->mutex);
 +
-+	if (copy_to_user(arg, &args, sizeof(args)))
-+		return -EFAULT;
-+
-+	return 0;
++	return err;
  }
  
- static long kfd_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
-diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-index 0e3e18f..9f49f11 100644
---- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-+++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-@@ -445,6 +445,11 @@ struct kfd_process_device *kfd_get_process_device_data(struct kfd_dev *dev,
- 							struct kfd_process *p,
- 							int create_pdd);
- 
-+/* Process device data iterator */
-+struct kfd_process_device *kfd_get_first_process_device_data(struct kfd_process *p);
-+struct kfd_process_device *kfd_get_next_process_device_data(struct kfd_process *p, struct kfd_process_device *pdd);
-+bool kfd_has_process_device_data(struct kfd_process *p);
-+
- /* PASIDs */
- int kfd_pasid_init(void);
- void kfd_pasid_exit(void);
+ static long kfd_ioctl_get_clock_counters(struct file *filep, struct kfd_process *p, void __user *arg)
 -- 
 1.9.1
 
