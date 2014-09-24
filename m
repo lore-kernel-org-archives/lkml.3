@@ -1,102 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221AbaIXS4u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:56:50 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47191 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaIXS4r (ORCPT
+	id S1753909AbaIXS6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:58:37 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41285 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751987AbaIXS6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:56:47 -0400
-Date: Wed, 24 Sep 2014 10:34:53 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
+	Wed, 24 Sep 2014 14:58:36 -0400
+Date: Wed, 24 Sep 2014 19:58:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nathan Lynch <Nathan_Lynch@mentor.com>
+Cc: Christopher Covington <cov@codeaurora.org>,
+        Will Deacon <will.deacon@arm.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: drivers for 3.18 #2 (bis)
-Message-ID: <20140924173453.GC18667@localhost>
-References: <1409934969-11584-1-git-send-email-nicolas.ferre@atmel.com>
- <1410797563-13378-1-git-send-email-nicolas.ferre@atmel.com>
- <20140924045906.GC24803@localhost>
- <5422A1DA.1040102@atmel.com>
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code
+	consolidation
+Message-ID: <20140924185812.GA5182@n2100.arm.linux.org.uk>
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <20140922153919.GQ25809@arm.com> <20140922223022.GO5182@n2100.arm.linux.org.uk> <5420BE92.7050504@mentor.com> <5422D138.8000002@codeaurora.org> <5422D616.7060807@mentor.com> <20140924145025.GX5182@n2100.arm.linux.org.uk> <5422F82B.40507@mentor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5422A1DA.1040102@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5422F82B.40507@mentor.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:50:02PM +0200, Nicolas Ferre wrote:
-> On 24/09/2014 06:59, Olof Johansson :
-> > On Mon, Sep 15, 2014 at 06:12:43PM +0200, Nicolas Ferre wrote:
-> >> Arnd, Olof, Kevin,
+On Wed, Sep 24, 2014 at 11:58:19AM -0500, Nathan Lynch wrote:
+> On 09/24/2014 09:50 AM, Russell King - ARM Linux wrote:
+> > On Wed, Sep 24, 2014 at 09:32:54AM -0500, Nathan Lynch wrote:
+> >> On 09/24/2014 09:12 AM, Christopher Covington wrote:
+> >>> Hi Nathan,
+> >>>
+> >>> On 09/22/2014 08:28 PM, Nathan Lynch wrote:
+> >>>> Hmm, this patch set is merely exposing the hardware counter when it is
+> >>>> present for the VDSO's use; I take it you have no objection to that?
+> >>>>
+> >>>> While the 32-bit ARM VDSO I've posted (in a different thread) exploits a
+> >>>> facility that is required by the virtualization option in the
+> >>>> architecture, its utility is not limited to guest operating systems.
+> >>>
+> >>> Just to clarify, were the performance improvements you measured from a
+> >>> virtualized guest or native?
 > >>
-> >> I re-send this pull-request with the work done by Maxime to take Arnd's
-> >> comments into annount: removal of the early_platform devices, and by keeping
-> >> the old mechanism with a function exported by the PIT timer and called by the
-> >> board files.
-> >>
-> >> Here is the old message that I sent you: just as a reference.
-> >> "
-> >> This pull-request is focused on the work that Maxime did for migrating our
-> >> timer (PIT) to the clocksource sub-system. A big cleanup happened which allows
-> >> us to be even closer to the point when we have only the bare minimum in our
-> >> formerly crowded mach-at91 directory.
-> >> "
-> >>
-> >> This pull-request goes on top of what is already in your at91/drivers branch.
-> >>
-> >> Thanks, best regards,
-> >>
-> >> The following changes since commit 405a72c5e78b5c560c8b2711d4000fa5eb063e1b:
-> >>
-> >>   power: reset: at91-poweroff: fix wakeup status register index (2014-09-01 18:40:44 +0200)
-> >>
-> >> are available in the git repository at:
-> >>
-> >>   git://github.com/at91linux/linux-at91.git tags/at91-drivers2
-> >>
-> >> for you to fetch changes up to b052ff30cd450c91a32e8e928979bca021462996:
-> >>
-> >>   ARM: at91: PIT: Move the driver to drivers/clocksource (2014-09-15 17:55:48 +0200)
-> >>
-> >> ----------------------------------------------------------------
-> >> Second drivers series for AT91/3.18:
-> >> - move of the PIT (basic timer) from mach-at91 to its proper location:
-> >>   drivers/clocksource
-> >> - big cleanup of this driver along the way
+> >> Yeah I should have been explicit about this.  My tests and measurements
+> >> (and all test results I've received from others, I believe) have been on
+> >> native/host kernels, not guests.
 > > 
-> > Thanks, merged.
+> > Have there been any measurements on systems without the architected
+> > timers?
 > 
-> Thanks Olof, but there is a merge issue in the merge commit
-> 58c19114886d5352c019979b84f5375970d81f05 (Merge branch 'next/drivers'
-> into for-next). In fact the sama5_dt_timer_init() and
-> ksz9021rn_phy_fixup() functions must be completely removed in this
-> arch/arm/mach-at91/board-dt-sama5.c file.
+> I do test on iMX6 regularly.  Afraid I don't have any pre-v7 hardware to
+> check though.
 
-Thanks, fixed up.
+Right, and iMX6 is Cortex-A9, which doesn't have the architected timer.
 
-> This is causing the errors seen in your and Kevin's buildbots:
-> http://images.armcloud.us/kernel-ci//arm-soc/v3.17-rc4-608-g58bf4da/arm-sama5_defconfig/build.log
-> and
-> http://arm-soc.lixom.net/buildlogs/arm-soc/v3.17-rc4-608-g58bf4da/buildall.arm.sama5_defconfig.log.failed
+> Here's a report from you from an earlier submission that shows little/no
+> impact:
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/267552.html
 
-Yeah, it's what I get for doing this when tired. :-) I didn't stay up to check build results.
+Yes, that's my email.
 
-> I pushed a branch for conflict resolutions here:
-> git://github.com/at91linux/linux-at91.git at91-3.18-resolved2
-> https://github.com/at91linux/linux-at91/commits/at91-3.18-resolved2
+> But admittedly vdsotest is just doing rudimentary microbenchmarking.
 
-All good, I've fixed it up with an incremental commit on our for-next,
-so we'll just keep an eye on it when we send it up.
+vdsotest is comparing its own implementation (a function directly calling
+the syscall) with a direct call into the vdso.
 
+This isn't what I'm interested in, because applications won't be calling
+the vdso directly.  They will be calling the vdso _via_ glibc.  What I'm
+really interested in is what the difference is to an application between
+the present case of not having any vdso (iow. not having the vdso support
+code in glibc) and:
 
--Olof
+- having the vdso support code in glibc, but without the vdso being
+  provided.
+
+- having the vdso support code in glibc, having the vdso provided, but
+  without the architected timer.
+
+Only then can we actually see what the /overall/ impact of VDSO support
+is on CPUs without the architected timer.
+
+> 
+> Running a lttng-ust workload that emits tracepoints as fast as possible
+> (lttng-ust calls clock_gettime and getcpu on every tracepoint), I see
+> about 1% degradation on iMX6.
+> 
+> 
+> >>> I count 18 dts* files that have "arm,armv7-timer", including platforms with
+> >>> Krait, Exynos, and Tegra processors.
+> >>
+> >> Yup.
+> > 
+> > That's not the full story.  Almost every ARM to date has not had an
+> > architected timer.  Architected timers are a recent addition - as
+> > pointed out, a Cortex A7/A12/A15 invention.  Most of the platforms I
+> > see are Cortex A9 which doesn't have any architected timers.
+> > 
+> > Yes, it may be fun to work on new hardware and make that perform
+> > much better than previous, but we should not loose sight that there
+> > is older hardware out there, and we shouldn't unnecessarily penalise
+> > it when adding new features.
+> 
+> Agreed, of course, and I'll include more detailed results from systems
+> without the architected timer in future submissions.
+> 
+> 
+> > What we /need/ to know is what the effect providing a VDSO in an
+> > environment without an architected timer (so using the VDSO fallback
+> > functions calling the syscalls) and having glibc use it is compared
+> > to the current situation where there is no VDSO for glibc to use.
+> > 
+> > If you can show that there's no difference, then I'm happy to go with
+> > always providing the VDSO.  If there's a detrimental effect (which I
+> > suspect there may be, since we now have to have glibc test to see if
+> > the VDSO is there, jump to the VDSO, the VDSO then tests whether we
+> > have an architected timer, and then we finally get to issue the
+> > syscall), then we must avoid providing the VDSO on systems which have
+> > no architected timer.
+> 
+> One point I would like to raise is that the VDSO provides (or could be
+> made to provide) acceleration for APIs that are unrelated to the
+> architected timer:
+> 
+> - clock_gettime with CLOCK_REALTIME_COARSE and CLOCK_MONOTONIC_COARSE.
+> This is currently included.
+> 
+> - getcpu, which I had planned on submitting later.
+> 
+> I don't know whether the coarse clock support is compelling; they don't
+> seem to be commonly used.  But there is a nice 4-5x speedup for those on
+> iMX6.
+> 
+> getcpu, on the other hand, is one of the two system calls lttng-ust uses
+> in every tracepoint emitted, and I would like to have it available in
+> the VDSO on all systems capable of supporting the implementation, which
+> may take the form of co-opting TPIDRURW or some other register.
+
+Right, so the decision is whether a vdso implementation of the uncomon
+coarse clocks and eventually getcpu benefit from this.  I don't think
+normal applications make many getcpu calls either - most applications
+don't care which CPU they run on.
+
+> None of which is to argue that unnecessarily degrading gettimeofday
+> performance on some systems for the benefit of others is acceptable.
+
+Right - the fine grained time functions are far more important as
+applications tend to call those quite a lot (some applications call
+them a truely excessive number of times).
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
