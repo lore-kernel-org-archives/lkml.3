@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426AbaIXPEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:04:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60019 "EHLO
+	id S1753768AbaIXO7Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:59:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59768 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaIXPDG (ORCPT
+	with ESMTP id S1751937AbaIXO7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:03:06 -0400
-Date: Wed, 24 Sep 2014 08:02:06 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        luto@amacapital.net, dvlasenk@redhat.com, tglx@linutronix.de,
-        oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        luto@amacapital.net, dvlasenk@redhat.com, oleg@redhat.com,
-        tglx@linutronix.de
-In-Reply-To: <20140921184153.GA23727@redhat.com>
-References: <20140921184153.GA23727@redhat.com>
+	Wed, 24 Sep 2014 10:59:22 -0400
+Date: Wed, 24 Sep 2014 07:58:29 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-1929def9e609d1a8cdb1626d85eda3da66921a7d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, acme@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de
+In-Reply-To: <1410520708-19275-2-git-send-email-jolsa@kernel.org>
+References: <1410520708-19275-2-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Speed up ___preempt_schedule*()
-  by using THUNK helpers
-Git-Commit-ID: 0ad6e3c5199be12c9745da8f8b9e3c9f8066c235
+Subject: [tip:perf/core] perf: Fix child event initial state setup
+Git-Commit-ID: 1929def9e609d1a8cdb1626d85eda3da66921a7d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,139 +35,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0ad6e3c5199be12c9745da8f8b9e3c9f8066c235
-Gitweb:     http://git.kernel.org/tip/0ad6e3c5199be12c9745da8f8b9e3c9f8066c235
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Sun, 21 Sep 2014 20:41:53 +0200
+Commit-ID:  1929def9e609d1a8cdb1626d85eda3da66921a7d
+Gitweb:     http://git.kernel.org/tip/1929def9e609d1a8cdb1626d85eda3da66921a7d
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 12 Sep 2014 13:18:27 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Sep 2014 15:15:38 +0200
+CommitDate: Wed, 24 Sep 2014 14:48:12 +0200
 
-x86: Speed up ___preempt_schedule*() by using THUNK helpers
+perf: Fix child event initial state setup
 
-___preempt_schedule() does SAVE_ALL/RESTORE_ALL but this is
-suboptimal, we do not need to save/restore the callee-saved
-register. And we already have arch/x86/lib/thunk_*.S which
-implements the similar asm wrappers, so it makes sense to
-redefine ___preempt_schedule() as "THUNK ..." and remove
-preempt.S altogether.
+Currently we initialize the child event based on the original
+parent state. This is wrong, because the original parent event
+(and its state) is not related to current fork and also could
+be already gone.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+We need to initialize the child state based on the immediate
+parent event state.
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140921184153.GA23727@redhat.com
+Link: http://lkml.kernel.org/r/1410520708-19275-2-git-send-email-jolsa@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/Makefile  |  2 --
- arch/x86/kernel/preempt.S | 25 -------------------------
- arch/x86/lib/thunk_32.S   | 20 ++++++++++++++++----
- arch/x86/lib/thunk_64.S   |  7 +++++++
- 4 files changed, 23 insertions(+), 31 deletions(-)
+ kernel/events/core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index ada2e2d..8f1e774 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -39,8 +39,6 @@ obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
- obj-y			+= pci-iommu_table.o
- obj-y			+= resource.o
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 15e58d4..132524c 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7818,6 +7818,7 @@ inherit_event(struct perf_event *parent_event,
+ 	      struct perf_event *group_leader,
+ 	      struct perf_event_context *child_ctx)
+ {
++	enum perf_event_active_state parent_state = parent_event->state;
+ 	struct perf_event *child_event;
+ 	unsigned long flags;
  
--obj-$(CONFIG_PREEMPT)	+= preempt.o
--
- obj-y				+= process.o
- obj-y				+= i387.o xsave.o
- obj-y				+= ptrace.o
-diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
-deleted file mode 100644
-index ca7f0d5..0000000
---- a/arch/x86/kernel/preempt.S
-+++ /dev/null
-@@ -1,25 +0,0 @@
--
--#include <linux/linkage.h>
--#include <asm/dwarf2.h>
--#include <asm/asm.h>
--#include <asm/calling.h>
--
--ENTRY(___preempt_schedule)
--	CFI_STARTPROC
--	SAVE_ALL
--	call preempt_schedule
--	RESTORE_ALL
--	ret
--	CFI_ENDPROC
--
--#ifdef CONFIG_CONTEXT_TRACKING
--
--ENTRY(___preempt_schedule_context)
--	CFI_STARTPROC
--	SAVE_ALL
--	call preempt_schedule_context
--	RESTORE_ALL
--	ret
--	CFI_ENDPROC
--
--#endif
-diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
-index 28f85c91..e9acf5f 100644
---- a/arch/x86/lib/thunk_32.S
-+++ b/arch/x86/lib/thunk_32.S
-@@ -7,16 +7,19 @@
- 	#include <linux/linkage.h>
- 	#include <asm/asm.h>
- 
--#ifdef CONFIG_TRACE_IRQFLAGS
- 	/* put return address in eax (arg1) */
--	.macro thunk_ra name,func
-+	.macro THUNK name, func, put_ret_addr_in_eax=0
- 	.globl \name
- \name:
- 	pushl %eax
- 	pushl %ecx
- 	pushl %edx
-+
-+	.if \put_ret_addr_in_eax
- 	/* Place EIP in the arg1 */
- 	movl 3*4(%esp), %eax
-+	.endif
-+
- 	call \func
- 	popl %edx
- 	popl %ecx
-@@ -25,6 +28,15 @@
- 	_ASM_NOKPROBE(\name)
- 	.endm
- 
--	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
--	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	THUNK trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
-+	THUNK trace_hardirqs_off_thunk,trace_hardirqs_off_caller,1
-+#endif
-+
-+#ifdef CONFIG_PREEMPT
-+	THUNK ___preempt_schedule, preempt_schedule
-+#ifdef CONFIG_CONTEXT_TRACKING
-+	THUNK ___preempt_schedule_context, preempt_schedule_context
- #endif
-+#endif
-+
-diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-index 92d9fea..b30b5eb 100644
---- a/arch/x86/lib/thunk_64.S
-+++ b/arch/x86/lib/thunk_64.S
-@@ -38,6 +38,13 @@
- 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
- #endif
- 
-+#ifdef CONFIG_PREEMPT
-+	THUNK ___preempt_schedule, preempt_schedule
-+#ifdef CONFIG_CONTEXT_TRACKING
-+	THUNK ___preempt_schedule_context, preempt_schedule_context
-+#endif
-+#endif
-+
- 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
- 	CFI_STARTPROC
- 	SAVE_ARGS
+@@ -7851,7 +7852,7 @@ inherit_event(struct perf_event *parent_event,
+ 	 * not its attr.disabled bit.  We hold the parent's mutex,
+ 	 * so we won't race with perf_event_{en, dis}able_family.
+ 	 */
+-	if (parent_event->state >= PERF_EVENT_STATE_INACTIVE)
++	if (parent_state >= PERF_EVENT_STATE_INACTIVE)
+ 		child_event->state = PERF_EVENT_STATE_INACTIVE;
+ 	else
+ 		child_event->state = PERF_EVENT_STATE_OFF;
