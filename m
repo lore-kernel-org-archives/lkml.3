@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbaIXT2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:28:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42312 "EHLO comal.ext.ti.com"
+	id S1754410AbaIXT2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:28:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33312 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039AbaIXT2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:28:17 -0400
-Date: Wed, 24 Sep 2014 14:28:06 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <Peter.Chen@freescale.com>, <stern@rowland.harvard.edu>,
-        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <balbi@ti.com>,
-        <linux-tegra@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <yoshihiro.shimoda.uh@renesas.com>,
-        <linux-kernel@vger.kernel.org>, <antoine.tenart@free-electrons.com>
-Subject: Re: [PATCH v6 1/2] usb: rename phy to usb_phy in HCD
-Message-ID: <20140924192806.GO17997@saruman>
-Reply-To: <balbi@ti.com>
-References: <37148636.BU5lT4M4eC@wasted.cogentembedded.com>
- <2300651.HNvMzB0aUB@wasted.cogentembedded.com>
+	id S1754369AbaIXT2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 15:28:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391110347"
+Date: Wed, 24 Sep 2014 22:28:38 +0300
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 11/12] tpm: Driver for TPM 2.0 CRB Interface
+Message-ID: <20140924192838.GC6801@intel.com>
+References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1411549562-24242-12-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20140924170551.GF8898@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H83aLI5Lttn3Hg7B"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2300651.HNvMzB0aUB@wasted.cogentembedded.com>
+In-Reply-To: <20140924170551.GF8898@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---H83aLI5Lttn3Hg7B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for reviewing this. I'll fix these issues, not much to add.
+Thank you.
 
-On Wed, Sep 24, 2014 at 11:05:50PM +0400, Sergei Shtylyov wrote:
-> From: Antoine Tenart <antoine.tenart@free-electrons.com>
->=20
-> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
-> modifications are done in all drivers accessing it.
-> This is in preparation to adding the generic PHY support.
->=20
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> [Sergei: added missing 'drivers/usb/misc/lvstest.c' file, resolved reject=
-s,
-> updated changelog.]
-> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+/Jarkko
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---H83aLI5Lttn3Hg7B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIxtGAAoJEIaOsuA1yqRE3k0QAJm0kzZBA3turOgqXHaVRLwm
-VgpTmkv1S4cVxdnJ3BW2PvJ2TwogYn+wjTn+68TFFrMzZbATUvHx6Mkkeih9nFWS
-98EkzNorTJsJq9zn7G0Quw4Tsr8jEZPlYinoIxFN2E/yvtn+Z5s9D0IV3AMzpnqA
-2AW/3KKOevVbnE1gGU5AIZCworl8FfuIczwVw7jwaeLkAnpc6Dohn4IWDk/j9ceK
-1vXEuijlw/cRh4nA2BgTggFxeWPyUW6PQWDe2ZQ1aBJxbDK3mLkqMkKtMQ9O7P+b
-mJXqxQKPK8x/8tSEmS1CMKjEbUScllxzsjtt8+M/XwAyzkW5dqwRBoCc6fg+J9bJ
-f/k1hEkT/ZdQ+IdEV6PuwchgknLKE5Ry77ajV1MnkH5RgVBpTkNR2JgrRMH/YZWg
-U8bEVoy/0+jO39zznCmqls0krr0TV1/zMiYhA+WdPO3JsT5nQpPf/B6w8nuOiH5p
-JC5PVEi44yizJIC+BCL3dn3g3TazNMigXlY8KSFDPhr76yVdg9Xbrv5rRZ70EL+u
-0UvGsVlzqt7mA7a3zqP/92y2BtIiACTJ+UeDBmeBWXqepl5XkmUshlU45P1v0Oom
-NpxQHpEV/cXe8w8yv51VvaaGi4jnLJQ40/c/TXTz5oMX6B6V2EQ/Clm8KwaCwRn2
-ONCHIuCusgjX1LUfmin3
-=YfsG
------END PGP SIGNATURE-----
-
---H83aLI5Lttn3Hg7B--
+On Wed, Sep 24, 2014 at 11:05:51AM -0600, Jason Gunthorpe wrote:
+> On Wed, Sep 24, 2014 at 12:06:01PM +0300, Jarkko Sakkinen wrote:
+> 
+> > +	offset = cca->rsp_pa - priv->cca_pa;
+> > +	resp = (u8 *) ((unsigned long) cca + offset);
+> > +	memcpy(buf, resp, 6);
+> > +	expected = be32_to_cpu(*(__be32 *) (buf + 2));
+> 
+> be32_to_cpup?
+> 
+> > +static void crb_release(void *data)
+> > +{
+> > +	struct tpm_chip *chip = (struct tpm_chip *) data;
+> > +	tpm_remove_hardware(chip->dev);
+> > +}
+> 
+> Please use a proper remove function on the device driver, not a devm
+> function like this. 'tpm_remove_hardware' is the wrong name for a new
+> API, it must be 'tpm_chip_unregister' (ie the undo of 'tpm_chip_register')
+> 
+> > +static int crb_acpi_add(struct acpi_device *device)
+> > +{
+> > +	struct tpm_chip *chip;
+> > +	struct acpi_tpm2 *buf;
+> > +	struct crb_priv *priv;
+> > +	struct device *dev = &device->dev;
+> > +	acpi_status status;
+> > +	u32 sm;
+> > +	int rc;
+> > +
+> > +	chip = tpm_chip_alloc(dev, &tpm_crb);
+> > +	if (!chip)
+> > +		return -ENODEV;
+> 
+> Lets use ERRPTR here
+> 
+> > +	chip->tpm2 = true;
+> > +
+> > +	rc = tpm_chip_register(chip);
+> 
+> This is in the wrong place, it needs to be the last call in the probe
+> function - the driver must be fully operational when register is
+> called, that is one of the bugs the new interface must be fixing.
+> 
+> > +	rc = tpm_do_selftest(chip);
+> > +	if (rc) {
+> > +		rc = -ENODEV;
+> > +		goto out_err;
+> > +	}
+> 
+> The common TPM command startup sequence should be in
+> tpm_chip_register(), so move this into there.
+> 
+> > +	rc = devm_add_action(dev, crb_release, chip);
+> > +	if (rc)
+> > +		goto out_err;
+> > +
+> > +	return 0;
+> > +out_err:
+> > +	tpm_remove_hardware(chip->dev);
+> > +	return rc;
+> > +}
+> > +
+> > +static struct acpi_device_id crb_device_ids[] = {
+> 
+> const? Not sure
+> 
+> Jason
