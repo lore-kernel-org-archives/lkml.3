@@ -1,83 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386AbaIXPEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 11:04:23 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36749 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaIXPEV (ORCPT
+	id S1754426AbaIXPEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 11:04:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60019 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255AbaIXPDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 11:04:21 -0400
-Date: Wed, 24 Sep 2014 16:04:09 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <Will.Deacon@arm.com>, Nathan Lynch <nathan_lynch@mentor.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] arm_arch_timer: VDSO preparation, code
- consolidation
-Message-ID: <20140924150408.GK15842@e104818-lin.cambridge.arm.com>
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com>
- <20140922153919.GQ25809@arm.com>
- <20140922223022.GO5182@n2100.arm.linux.org.uk>
- <20140924144541.GJ15842@e104818-lin.cambridge.arm.com>
- <20140924145257.GY5182@n2100.arm.linux.org.uk>
+	Wed, 24 Sep 2014 11:03:06 -0400
+Date: Wed, 24 Sep 2014 08:02:06 -0700
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        luto@amacapital.net, dvlasenk@redhat.com, tglx@linutronix.de,
+        oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        luto@amacapital.net, dvlasenk@redhat.com, oleg@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <20140921184153.GA23727@redhat.com>
+References: <20140921184153.GA23727@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Speed up ___preempt_schedule*()
+  by using THUNK helpers
+Git-Commit-ID: 0ad6e3c5199be12c9745da8f8b9e3c9f8066c235
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140924145257.GY5182@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:52:57PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Sep 24, 2014 at 03:45:41PM +0100, Catalin Marinas wrote:
-> > On Mon, Sep 22, 2014 at 11:30:23PM +0100, Russell King - ARM Linux wrote:
-> > > I raised a while back with Will whether there's much point to having
-> > > this on ARM.  While it's useful for virtualisation, the majority of
-> > > 32-bit ARM doesn't run virtualised.
-> > 
-> > This has nothing to do with virtualisation. The main reason we use
-> > CNTVCT is to not require kernel binary differences when running the OS
-> > as host or guest. But it does _not_ mean that it is only used when
-> > running as a guest.
-> > 
-> > > So there's little point in having the VDSO on the majority of
-> > > platforms - it will just add additional unnecessary cycles slowing
-> > > down the system calls that the VDSO is designed to try to speed up.
-> > 
-> > A good reason for VDSO is to avoid a system call for gettimeofday when
-> > you can read the clocks source from user space. That's a significant
-> > improvement on CPUs like A7, A15.
-> 
-> I'm *not* arguing against having a VDSO to speed up that crap.  What
-> I'm trying to get to the bottom of - something which has been totally
-> lost sight of - is what the friggin effect of this stuff is on CPUs
-> *without* the architected timer.
-> 
-> Until I get an answer to what the measured effect is, I'm saying no to
-> VDSO on ARM, because - as seems to be the norm - the evaluation job is
-> only half done.
+Commit-ID:  0ad6e3c5199be12c9745da8f8b9e3c9f8066c235
+Gitweb:     http://git.kernel.org/tip/0ad6e3c5199be12c9745da8f8b9e3c9f8066c235
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Sun, 21 Sep 2014 20:41:53 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 24 Sep 2014 15:15:38 +0200
 
-I agree.
+x86: Speed up ___preempt_schedule*() by using THUNK helpers
 
-If there is an overhead (possibly), I think it can be solved in software
-maybe by having two VDSO images, one with gettimeofday and one without.
-If it's only gettimeofday in VDSO (and signal return still via the
-vectors page), we could just avoid inserting it into the user address
-space when arch timers aren't present.
+___preempt_schedule() does SAVE_ALL/RESTORE_ALL but this is
+suboptimal, we do not need to save/restore the callee-saved
+register. And we already have arch/x86/lib/thunk_*.S which
+implements the similar asm wrappers, so it makes sense to
+redefine ___preempt_schedule() as "THUNK ..." and remove
+preempt.S altogether.
 
-On arm64 we expect the presence of the arch timer and didn't bother with
-such scenarios.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140921184153.GA23727@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/Makefile  |  2 --
+ arch/x86/kernel/preempt.S | 25 -------------------------
+ arch/x86/lib/thunk_32.S   | 20 ++++++++++++++++----
+ arch/x86/lib/thunk_64.S   |  7 +++++++
+ 4 files changed, 23 insertions(+), 31 deletions(-)
 
--- 
-Catalin
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index ada2e2d..8f1e774 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -39,8 +39,6 @@ obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
+ 
+-obj-$(CONFIG_PREEMPT)	+= preempt.o
+-
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
+ obj-y				+= ptrace.o
+diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
+deleted file mode 100644
+index ca7f0d5..0000000
+--- a/arch/x86/kernel/preempt.S
++++ /dev/null
+@@ -1,25 +0,0 @@
+-
+-#include <linux/linkage.h>
+-#include <asm/dwarf2.h>
+-#include <asm/asm.h>
+-#include <asm/calling.h>
+-
+-ENTRY(___preempt_schedule)
+-	CFI_STARTPROC
+-	SAVE_ALL
+-	call preempt_schedule
+-	RESTORE_ALL
+-	ret
+-	CFI_ENDPROC
+-
+-#ifdef CONFIG_CONTEXT_TRACKING
+-
+-ENTRY(___preempt_schedule_context)
+-	CFI_STARTPROC
+-	SAVE_ALL
+-	call preempt_schedule_context
+-	RESTORE_ALL
+-	ret
+-	CFI_ENDPROC
+-
+-#endif
+diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
+index 28f85c91..e9acf5f 100644
+--- a/arch/x86/lib/thunk_32.S
++++ b/arch/x86/lib/thunk_32.S
+@@ -7,16 +7,19 @@
+ 	#include <linux/linkage.h>
+ 	#include <asm/asm.h>
+ 
+-#ifdef CONFIG_TRACE_IRQFLAGS
+ 	/* put return address in eax (arg1) */
+-	.macro thunk_ra name,func
++	.macro THUNK name, func, put_ret_addr_in_eax=0
+ 	.globl \name
+ \name:
+ 	pushl %eax
+ 	pushl %ecx
+ 	pushl %edx
++
++	.if \put_ret_addr_in_eax
+ 	/* Place EIP in the arg1 */
+ 	movl 3*4(%esp), %eax
++	.endif
++
+ 	call \func
+ 	popl %edx
+ 	popl %ecx
+@@ -25,6 +28,15 @@
+ 	_ASM_NOKPROBE(\name)
+ 	.endm
+ 
+-	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
+-	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
++#ifdef CONFIG_TRACE_IRQFLAGS
++	THUNK trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
++	THUNK trace_hardirqs_off_thunk,trace_hardirqs_off_caller,1
++#endif
++
++#ifdef CONFIG_PREEMPT
++	THUNK ___preempt_schedule, preempt_schedule
++#ifdef CONFIG_CONTEXT_TRACKING
++	THUNK ___preempt_schedule_context, preempt_schedule_context
+ #endif
++#endif
++
+diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+index 92d9fea..b30b5eb 100644
+--- a/arch/x86/lib/thunk_64.S
++++ b/arch/x86/lib/thunk_64.S
+@@ -38,6 +38,13 @@
+ 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
+ #endif
+ 
++#ifdef CONFIG_PREEMPT
++	THUNK ___preempt_schedule, preempt_schedule
++#ifdef CONFIG_CONTEXT_TRACKING
++	THUNK ___preempt_schedule_context, preempt_schedule_context
++#endif
++#endif
++
+ 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
+ 	CFI_STARTPROC
+ 	SAVE_ARGS
