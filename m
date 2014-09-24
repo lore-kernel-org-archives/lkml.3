@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaIXLCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:02:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39010 "EHLO
+	id S1753181AbaIXLCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:02:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39018 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaIXLCh (ORCPT
+	with ESMTP id S1753075AbaIXLCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:02:37 -0400
+	Wed, 24 Sep 2014 07:02:44 -0400
 From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: [PATCH 0/5] ARCNET: add support for EAE multi interfac card
-Date: Wed, 24 Sep 2014 13:01:58 +0200
-Message-Id: <1411556523-28100-1-git-send-email-m.grzeschik@pengutronix.de>
+Subject: [PATCH 2/5] ARCNET: add com20020_set_hwddr to change address
+Date: Wed, 24 Sep 2014 13:02:00 +0200
+Message-Id: <1411556523-28100-3-git-send-email-m.grzeschik@pengutronix.de>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411556523-28100-1-git-send-email-m.grzeschik@pengutronix.de>
+References: <1411556523-28100-1-git-send-email-m.grzeschik@pengutronix.de>
 X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
 X-SA-Exim-Mail-From: mgr@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -22,26 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for the PLX bridge based multi interface
-pci cards and adds support to change device address on com200xx chips
-during runtime.
+This patch adds com20020_set_hwaddr to make
+it possible to change the hwaddr on runtime.
 
-Thanks,
-Michael
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+---
+ drivers/net/arcnet/com20020.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-Michael Grzeschik (5):
-  ARCNET: return IRQ_NONE if the interface isn't running
-  ARCNET: add com20020_set_hwddr to change address
-  ARCNET: add com20020 PCI IDs with metadata
-  ARCNET: add support for multi interfaces on com20020
-  ARCNET: enable eae arcnet card support
-
- drivers/net/arcnet/arcnet.c       |   2 +-
- drivers/net/arcnet/com20020-pci.c | 369 +++++++++++++++++++++++++++++---------
- drivers/net/arcnet/com20020.c     |  14 ++
- include/linux/com20020.h          |  29 +++
- 4 files changed, 330 insertions(+), 84 deletions(-)
-
+diff --git a/drivers/net/arcnet/com20020.c b/drivers/net/arcnet/com20020.c
+index 7b96c5f..1a84378 100644
+--- a/drivers/net/arcnet/com20020.c
++++ b/drivers/net/arcnet/com20020.c
+@@ -149,11 +149,25 @@ int com20020_check(struct net_device *dev)
+ 	return 0;
+ }
+ 
++static int com20020_set_hwaddr(struct net_device *dev, void *addr)
++{
++	int ioaddr = dev->base_addr;
++	struct arcnet_local *lp = netdev_priv(dev);
++	struct sockaddr *hwaddr = addr;
++
++	memcpy(dev->dev_addr, hwaddr->sa_data, 1);
++	SET_SUBADR(SUB_NODE);
++	outb(dev->dev_addr[0], _XREG);
++
++	return 0;
++}
++
+ const struct net_device_ops com20020_netdev_ops = {
+ 	.ndo_open	= arcnet_open,
+ 	.ndo_stop	= arcnet_close,
+ 	.ndo_start_xmit = arcnet_send_packet,
+ 	.ndo_tx_timeout = arcnet_timeout,
++	.ndo_set_mac_address = com20020_set_hwaddr,
+ 	.ndo_set_rx_mode = com20020_set_mc_list,
+ };
+ 
 -- 
 2.1.0
 
