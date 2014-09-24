@@ -1,128 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaIXVAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 17:00:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50835 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaIXVAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 17:00:09 -0400
-Date: Wed, 24 Sep 2014 16:00:01 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Sojka <sojka@merica.cz>
-CC: <linux-usb@vger.kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        Bryan Wu <cooloney@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <michal.vokac@comap.cz>
-Subject: Re: [PATCH v6 1/4] usb: gadget: Introduce
- usb_gadget_giveback_request()
-Message-ID: <20140924210001.GD17997@saruman>
-Reply-To: <balbi@ti.com>
-References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
- <1411591401-5874-1-git-send-email-sojka@merica.cz>
- <1411591401-5874-2-git-send-email-sojka@merica.cz>
+	id S1752914AbaIXVA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 17:00:56 -0400
+Received: from mail-by2on0146.outbound.protection.outlook.com ([207.46.100.146]:23776
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750725AbaIXVAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 17:00:54 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 17:00:54 EDT
+X-WSS-ID: 0NCFB18-08-8DK-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        "John Bridgman" <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Joerg Roedel <joro@8bytes.org>, Oded Gabbay <oded.gabbay@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Subject: [PATCH v4 01/23] drm/radeon: reduce number of free VMIDs and pipes in KV
+Date: Wed, 24 Sep 2014 23:45:15 +0300
+Message-ID: <1411591537-31636-2-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
+References: <1411591537-31636-1-git-send-email-oded.gabbay@amd.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rAc+36e7LRL7Dg7x"
-Content-Disposition: inline
-In-Reply-To: <1411591401-5874-2-git-send-email-sojka@merica.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.20.0.84]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(95666004)(47776003)(229853001)(77096002)(92566001)(105586002)(92726001)(76482002)(106466001)(97736003)(120916001)(99396003)(107046002)(31966008)(36756003)(83072002)(64706001)(20776003)(104166001)(4396001)(77156001)(101416001)(19580395003)(81542003)(68736004)(48376002)(83322001)(90102001)(74502003)(77982003)(93916002)(89996001)(44976005)(33646002)(80022003)(50226001)(46102003)(102836001)(62966002)(85306004)(87936001)(21056001)(50466002)(79102003)(84676001)(76176999)(19580405001)(575784001)(74662003)(88136002)(81342003)(85852003)(50986999)(86362001)(10300001)(87286001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
+X-Forefront-PRVS: 03449D5DD1
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB123;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---rAc+36e7LRL7Dg7x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+To support HSA on KV, we need to limit the number of vmids and pipes
+that are available for radeon's use with KV.
 
-On Wed, Sep 24, 2014 at 10:43:18PM +0200, Michal Sojka wrote:
-> All USB peripheral controller drivers call completion routines directly.
-> This patch adds usb_gadget_giveback_request() which will be used instead
-> of direct invocation in the next patch. The goal here is to have a place
-> where common functionality can be added.
->=20
-> Signed-off-by: Michal Sojka <sojka@merica.cz>
-> ---
->  drivers/usb/gadget/udc/udc-core.c | 16 ++++++++++++++++
->  include/linux/usb/gadget.h        |  8 ++++++++
->  2 files changed, 24 insertions(+)
->=20
-> diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/u=
-dc-core.c
-> index b0d9817..f7b3151 100644
-> --- a/drivers/usb/gadget/udc/udc-core.c
-> +++ b/drivers/usb/gadget/udc/udc-core.c
-> @@ -106,6 +106,22 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
-> =20
->  /* ---------------------------------------------------------------------=
----- */
-> =20
-> +/**
-> + * usb_gadget_giveback_request - give the request back to the gadget lay=
-er
-> + * Context: in_interrupt()
-> + *
-> + * This is called by device controller drivers in order to return the
-> + * completed request back to the gadget layer.
-> + */
-> +void usb_gadget_giveback_request(struct usb_ep *ep,
-> +		struct usb_request *req)
-> +{
-> +	req->complete(ep, req);
-> +}
-> +EXPORT_SYMBOL_GPL(usb_gadget_giveback_request);
-> +
-> +/* ---------------------------------------------------------------------=
----- */
-> +
->  static void usb_gadget_state_work(struct work_struct *work)
->  {
->  	struct usb_gadget	*gadget =3D work_to_gadget(work);
-> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> index c3a6185..f795e95 100644
-> --- a/include/linux/usb/gadget.h
-> +++ b/include/linux/usb/gadget.h
-> @@ -1013,6 +1013,14 @@ extern void usb_gadget_set_state(struct usb_gadget=
- *gadget,
-> =20
->  /*----------------------------------------------------------------------=
----*/
-> =20
-> +/* utility to give requests back to the gadget layer */
-> +
-> +extern void usb_gadget_giveback_request(struct usb_ep *ep,
-> +		struct usb_request *req);
-> +
-> +
+This patch reserves VMIDs 8-15 for amdkfd (so radeon can only use VMIDs
+0-7) and also makes radeon thinks that KV has only a single MEC with a single
+pipe in it
 
-minot nit: one blank line only, other than that
+v3: Use define for static vmid allocation in radeon
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/gpu/drm/radeon/cik.c  | 48 +++++++++++++++++++++----------------------
+ drivers/gpu/drm/radeon/cikd.h |  2 ++
+ 2 files changed, 26 insertions(+), 24 deletions(-)
 
---=20
-balbi
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 0d761f7..1530e37 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -4678,12 +4678,11 @@ static int cik_mec_init(struct radeon_device *rdev)
+ 	/*
+ 	 * KV:    2 MEC, 4 Pipes/MEC, 8 Queues/Pipe - 64 Queues total
+ 	 * CI/KB: 1 MEC, 4 Pipes/MEC, 8 Queues/Pipe - 32 Queues total
++	 * Nonetheless, we assign only 1 pipe because all other pipes will
++	 * be handled by KFD
+ 	 */
+-	if (rdev->family == CHIP_KAVERI)
+-		rdev->mec.num_mec = 2;
+-	else
+-		rdev->mec.num_mec = 1;
+-	rdev->mec.num_pipe = 4;
++	rdev->mec.num_mec = 1;
++	rdev->mec.num_pipe = 1;
+ 	rdev->mec.num_queue = rdev->mec.num_mec * rdev->mec.num_pipe * 8;
+ 
+ 	if (rdev->mec.hpd_eop_obj == NULL) {
+@@ -4825,28 +4824,24 @@ static int cik_cp_compute_resume(struct radeon_device *rdev)
+ 
+ 	/* init the pipes */
+ 	mutex_lock(&rdev->srbm_mutex);
+-	for (i = 0; i < (rdev->mec.num_pipe * rdev->mec.num_mec); i++) {
+-		int me = (i < 4) ? 1 : 2;
+-		int pipe = (i < 4) ? i : (i - 4);
+ 
+-		eop_gpu_addr = rdev->mec.hpd_eop_gpu_addr + (i * MEC_HPD_SIZE * 2);
++	eop_gpu_addr = rdev->mec.hpd_eop_gpu_addr;
+ 
+-		cik_srbm_select(rdev, me, pipe, 0, 0);
++	cik_srbm_select(rdev, 0, 0, 0, 0);
+ 
+-		/* write the EOP addr */
+-		WREG32(CP_HPD_EOP_BASE_ADDR, eop_gpu_addr >> 8);
+-		WREG32(CP_HPD_EOP_BASE_ADDR_HI, upper_32_bits(eop_gpu_addr) >> 8);
++	/* write the EOP addr */
++	WREG32(CP_HPD_EOP_BASE_ADDR, eop_gpu_addr >> 8);
++	WREG32(CP_HPD_EOP_BASE_ADDR_HI, upper_32_bits(eop_gpu_addr) >> 8);
+ 
+-		/* set the VMID assigned */
+-		WREG32(CP_HPD_EOP_VMID, 0);
++	/* set the VMID assigned */
++	WREG32(CP_HPD_EOP_VMID, 0);
++
++	/* set the EOP size, register value is 2^(EOP_SIZE+1) dwords */
++	tmp = RREG32(CP_HPD_EOP_CONTROL);
++	tmp &= ~EOP_SIZE_MASK;
++	tmp |= order_base_2(MEC_HPD_SIZE / 8);
++	WREG32(CP_HPD_EOP_CONTROL, tmp);
+ 
+-		/* set the EOP size, register value is 2^(EOP_SIZE+1) dwords */
+-		tmp = RREG32(CP_HPD_EOP_CONTROL);
+-		tmp &= ~EOP_SIZE_MASK;
+-		tmp |= order_base_2(MEC_HPD_SIZE / 8);
+-		WREG32(CP_HPD_EOP_CONTROL, tmp);
+-	}
+-	cik_srbm_select(rdev, 0, 0, 0, 0);
+ 	mutex_unlock(&rdev->srbm_mutex);
+ 
+ 	/* init the queues.  Just two for now. */
+@@ -5900,8 +5895,13 @@ int cik_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib)
+  */
+ int cik_vm_init(struct radeon_device *rdev)
+ {
+-	/* number of VMs */
+-	rdev->vm_manager.nvm = 16;
++	/*
++	 * number of VMs
++	 * VMID 0 is reserved for System
++	 * radeon graphics/compute will use VMIDs 1-7
++	 * amdkfd will use VMIDs 8-15
++	 */
++	rdev->vm_manager.nvm = RADEON_NUM_OF_VMIDS;
+ 	/* base offset of vram pages */
+ 	if (rdev->flags & RADEON_IS_IGP) {
+ 		u64 tmp = RREG32(MC_VM_FB_OFFSET);
+diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
+index 0c6e1b5..fae4d0c 100644
+--- a/drivers/gpu/drm/radeon/cikd.h
++++ b/drivers/gpu/drm/radeon/cikd.h
+@@ -30,6 +30,8 @@
+ #define CIK_RB_BITMAP_WIDTH_PER_SH     2
+ #define HAWAII_RB_BITMAP_WIDTH_PER_SH  4
+ 
++#define RADEON_NUM_OF_VMIDS	8
++
+ /* DIDT IND registers */
+ #define DIDT_SQ_CTRL0                                     0x0
+ #       define DIDT_CTRL_EN                               (1 << 0)
+-- 
+1.9.1
 
---rAc+36e7LRL7Dg7x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUIzDRAAoJEIaOsuA1yqRE1YwQAJNupc4kiYJZTDErnr2I5lzr
-3+4q+Ju36wdfynAilUle+ea3IbabG78vWZ3CoB9nCr2iWI8WnJnS4+FKwiCg9oT1
-7QmCWdWkV0pmhL44x3O9oWFgsA4ALDwJz1lbGcyp/+H4imY4SjVAlzXgTXBk7mwY
-1airpBwHDUTcr9eXhQ7T3b4a56PH2BVi23hyugh4hbEz4CbCcRZYkKdAVYD/Yd28
-PW/MI+ADmR7Mb/qnRtX8Lrap0gxJg88w5tT9pVv2l3rCtFqbb9WdvaV0F527MaGS
-3p3JoDcUtOk9LM857aaFEsRwOkUlWAGBam5HpKAfMuaeys3SqkTMr4VGswGswymi
-uedX9iaV6eZUr99efCd9SUYJc7txQV0tUG7hcKF6sjRiDd+UGe0Kq5AsUmONaiT0
-hXVt28zVXP5wkaZL+kK6lsMTZmmqlpEREoepOVyQoBdNshqs0r9wAvkwrNnnJH/r
-onoI759a1Ed3r3zZbDjooCVJ/idlMgGopOPCp9ELU1rHq0h9hX0xtadw4w6d4bZX
-khscKbE2h2Cymh7lLXBzd544MxEjvu3Dee5ht5p7cXpRyD540txrA0IIUiyc131D
-XxwPUlMU4VCgcpHiFJp6rGXGdbt/7V9bmtrLBPizm1QkeSJAzHfBmutfTC6R+VEq
-xhRfbZ1uSdX4kSje5Eqn
-=OqH4
------END PGP SIGNATURE-----
-
---rAc+36e7LRL7Dg7x--
