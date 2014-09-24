@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaIXOfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 10:35:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45549 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752540AbaIXOfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 10:35:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,589,1406617200"; 
-   d="scan'208";a="604682775"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/3] perf, x86: Add INTEL_FLAGS_UEVENT_CONSTRAINT
-Date: Wed, 24 Sep 2014 07:34:46 -0700
-Message-Id: <1411569288-5627-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S1753534AbaIXOf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 10:35:29 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:54197 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaIXOfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 10:35:25 -0400
+Date: Wed, 24 Sep 2014 15:35:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH on mfd-regulator-power-v3.17] charger: max14577: Fix
+ build breakage when compiled as module
+Message-ID: <20140924143519.GJ32069@lee--X1>
+References: <1411560006-16471-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411560006-16471-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Wed, 24 Sep 2014, Krzysztof Kozlowski wrote:
 
-Add a FLAGS_UEVENT_CONSTRAINT macro that allows us to
-match on event+umask, and in additional all flags.
+> The charger's module device table used the same name as regulator driver
+> causing a build break when charger was compiled as a module:
+> 
+> drivers/power/max14577_charger.c:598:1: error: ‘__mod_platform__max14577_regulator_id_device_table’ aliased to undefined symbol ‘max14577_regulator_id’
+> make[2]: *** [drivers/power/max14577_charger.o] Error 1
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> ---
+>  drivers/power/max14577_charger.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-This is needed to ensure the INV and CMASK fields
-are zero for specific events, as this can cause undefined
-behavior.
+I have fixed this up into the original set and re-sent the
+pull-request.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event.h | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index fc5eb39..4e6cdb0 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -253,6 +253,10 @@ struct cpu_hw_events {
- #define INTEL_UEVENT_CONSTRAINT(c, n)	\
- 	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
- 
-+/* Like UEVENT_CONSTRAINT, but match flags too */
-+#define INTEL_FLAGS_UEVENT_CONSTRAINT(c, n)	\
-+	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
-+
- #define INTEL_PLD_CONSTRAINT(c, n)	\
- 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
- 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
 -- 
-1.9.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
