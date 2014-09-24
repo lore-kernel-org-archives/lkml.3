@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaIXK3a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 06:29:30 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:39049 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806AbaIXK33 (ORCPT
+	id S1754141AbaIXKbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 06:31:33 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:57753 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603AbaIXKbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 06:29:29 -0400
+	Wed, 24 Sep 2014 06:31:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1409232335500.4604@nanos>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
-	<1410168160-3624-2-git-send-email-lftan@altera.com>
-	<CAFiDJ5-b_P7aWFXYP4GcgTUb3t_j6dZCsjeGZwVUs+7qo0v-GA@mail.gmail.com>
-	<alpine.DEB.2.10.1409232335500.4604@nanos>
-Date: Wed, 24 Sep 2014 18:29:27 +0800
-X-Google-Sender-Auth: mkC0uKw3qAoU-6-ifLhzg6cWkJI
-Message-ID: <CAFiDJ5-quwwfG9LuouwWqawB6LyG57R2v7murCLVa0oC+zg2aA@mail.gmail.com>
-Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
-From: Ley Foon Tan <lftan@altera.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Chung-Lin Tang <cltang@codesourcery.com>
+Date: Wed, 24 Sep 2014 14:31:06 +0400
+Message-ID: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+Subject: linux-next: cgroup_mount() falls asleep forever
+From: Andrey Wagin <avagin@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 5:47 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 23 Sep 2014, LF.Tan wrote:
->> On Mon, Sep 8, 2014 at 5:22 PM, Ley Foon Tan <lftan@altera.com> wrote:
->> > Follow m68k futex implementation for !CONFIG_SMP.
->
-> Great. Follow arch/random implementation blindly and copy all the bugs
-> in it.
->
->> > +static inline int
->> > +futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
->> > +                             u32 oldval, u32 newval)
->> > +{
->> > +       u32 val;
->> > +
->> > +       if (unlikely(get_user(val, uaddr) != 0))
->> > +               return -EFAULT;
->> > +
->> > +       if (val == oldval && unlikely(put_user(newval, uaddr) != 0))
->> > +               return -EFAULT;
->> > +
->> > +       *uval = val;
->> > +
->> > +       return 0;
->> > +}
->
-> Care to explain how this works reliably and resembles proper cmpxchg
-> semantics under all circumstances?
+Hi All,
 
-kernel/futex.c:cmpxchg_futex_value_locked() is already called to
-pagefault_disable() before call to futex_atomic_cmpxchg_inatomic().
-For UP kernel and pagefault_disable() also means there is no preemption.
+I execute CRIU tests on linux-next. Today I found that one of tests
+hangs up forever.
 
-Regards
-Ley Foon
+[root@linux-next-test linux-next]# git describe HEAD
+next-20140922
+[root@linux-next-test ~]# ps axf
+...
+  698 ?        Ss     0:05  \_ sshd: root@notty
+  700 ?        Ss     0:00  |   \_ bash -x
+jenkins-scripts/jenkins-ct.sh jenkins.sh
+  706 ?        S      0:00  |       \_ bash -c ( mount --make-rprivate
+/ && umount -l  /proc && mount -t proc proc /proc/ && bash -x
+jenkins.sh)
+  707 ?        S      0:00  |           \_ bash -c ( mount
+--make-rprivate / && umount -l  /proc && mount -t proc proc /proc/ &&
+bash -x jenkins.sh)
+  711 ?        S      0:00  |               \_ bash -x jenkins.sh
+ 2981 ?        S      0:05  |                   \_ bash -x
+test/zdtm.sh -C -x .*\(maps01\|maps04\)
+ 6717 ?        S      0:00  |                       \_ /bin/bash
+zdtm/live/static/cgroup00.hook --clean
+ 6719 ?        D     11:13  |                           \_ mount -t
+cgroup none cgclean.cWgK71 -o none,name=zdtmtst
+
+[root@linux-next-test ~]# cat /proc/6719/stack
+[<ffffffff8111fcb7>] msleep+0x37/0x50
+[<ffffffff8114bde2>] cgroup_mount+0x712/0xa50
+[<ffffffff8124d0e9>] mount_fs+0x39/0x1b0
+[<ffffffff8126d76b>] vfs_kern_mount+0x6b/0x150
+[<ffffffff8127075b>] do_mount+0x22b/0xc20
+[<ffffffff81271492>] SyS_mount+0xa2/0x110
+[<ffffffff817e3ba9>] system_call_fastpath+0x12/0x17
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+Let me know which info do you need for investigation.
+
+Steps to reproduce:
+
+git clone https://github.com/xemul/criu.git
+cd criu
+make
+bash test/zdtm.sh static/cgroup00
+
+Thanks,
+Andrew
