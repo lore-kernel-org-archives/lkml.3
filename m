@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaIXRWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 13:22:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41677 "EHLO
+	id S1754679AbaIXRXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 13:23:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41674 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753883AbaIXRUj (ORCPT
+	by vger.kernel.org with ESMTP id S1753870AbaIXRUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 13:20:39 -0400
 From: Will Deacon <will.deacon@arm.com>
@@ -18,9 +18,9 @@ Cc: arnd@arndb.de, benh@kernel.crashing.org, chris@zankel.net,
         starvik@axis.com, takata@linux-m32r.org, tglx@linutronix.de,
         tony.luck@intel.com, daniel.thompson@linaro.org, broonie@linaro.org,
         linux@arm.linux.org.uk, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v3 04/17] xtensa: io: remove dummy relaxed accessor macros for reads
-Date: Wed, 24 Sep 2014 18:17:23 +0100
-Message-Id: <1411579056-16966-5-git-send-email-will.deacon@arm.com>
+Subject: [PATCH v3 15/17] x86: io: implement dummy relaxed accessor macros for writes
+Date: Wed, 24 Sep 2014 18:17:34 +0100
+Message-Id: <1411579056-16966-16-git-send-email-will.deacon@arm.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
 References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
@@ -28,34 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are now defined by asm-generic/io.h, so we don't need the private
-definitions anymore.
+write{b,w,l,q}_relaxed are implemented by some architectures in order to
+permit memory-mapped I/O accesses with weaker barrier semantics than the
+non-relaxed variants.
 
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
+This patch adds dummy macros for the write accessors to x86, in the
+same vein as the dummy definitions for the relaxed read accessors.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
- arch/xtensa/include/asm/io.h | 7 -------
- 1 file changed, 7 deletions(-)
+ arch/x86/include/asm/io.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/xtensa/include/asm/io.h b/arch/xtensa/include/asm/io.h
-index 74944207167e..fe1600a09438 100644
---- a/arch/xtensa/include/asm/io.h
-+++ b/arch/xtensa/include/asm/io.h
-@@ -74,13 +74,6 @@ static inline void iounmap(volatile void __iomem *addr)
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index b8237d8a1e0c..2ea07f5ec7b7 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -74,6 +74,9 @@ build_mmio_write(__writel, "l", unsigned int, "r", )
+ #define __raw_readw __readw
+ #define __raw_readl __readl
  
- #endif /* CONFIG_MMU */
++#define writeb_relaxed(v, a) __writeb(v, a)
++#define writew_relaxed(v, a) __writew(v, a)
++#define writel_relaxed(v, a) __writel(v, a)
+ #define __raw_writeb __writeb
+ #define __raw_writew __writew
+ #define __raw_writel __writel
+@@ -86,6 +89,7 @@ build_mmio_read(readq, "q", unsigned long, "=r", :"memory")
+ build_mmio_write(writeq, "q", unsigned long, "r", :"memory")
  
--/*
-- * Generic I/O
-- */
--#define readb_relaxed readb
--#define readw_relaxed readw
--#define readl_relaxed readl
--
- #endif	/* __KERNEL__ */
+ #define readq_relaxed(a)	readq(a)
++#define writeq_relaxed(v, a)	writeq(v, a)
  
- #include <asm-generic/io.h>
+ #define __raw_readq(a)		readq(a)
+ #define __raw_writeq(val, addr)	writeq(val, addr)
 -- 
 2.1.0
 
