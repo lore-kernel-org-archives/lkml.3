@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaIXGaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 02:30:04 -0400
-Received: from mga03.intel.com ([134.134.136.65]:64682 "EHLO mga03.intel.com"
+	id S1751969AbaIXGbp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 02:31:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42497 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744AbaIXGaB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 02:30:01 -0400
-X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 02:30:00 EDT
+	id S1750871AbaIXGbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 02:31:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,587,1406617200"; 
-   d="scan'208";a="479624046"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mister.freeman@laposte.net" <mister.freeman@laposte.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: RE: [PATCH] ata: Disabling the async PM for JMicron chips
-Thread-Topic: [PATCH] ata: Disabling the async PM for JMicron chips
-Thread-Index: AQHP1zbZCQS1kz5NO0qkTqh4iB96jZwP0FsA
-Date: Wed, 24 Sep 2014 06:20:14 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E87CA6@SHSMSX101.ccr.corp.intel.com>
-References: <1411450671-2367-1-git-send-email-chuansheng.liu@intel.com>
- <20140923140053.GG14905@mtj.dyndns.org>
-In-Reply-To: <20140923140053.GG14905@mtj.dyndns.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="604477078"
+Date: Wed, 24 Sep 2014 09:30:16 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: balbi@ti.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/4] ACPI / platform: provide default DMA mask
+Message-ID: <20140924063016.GA30585@xps8300>
+References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <2422219.EN0C5cKd3e@vostro.rjw.lan>
+ <20140923152945.GE28592@saruman>
+ <1430862.A6ximsuo3m@vostro.rjw.lan>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1430862.A6ximsuo3m@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 23, 2014 at 06:05:36PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, September 23, 2014 10:29:45 AM Felipe Balbi wrote:
+> > On Tue, Sep 23, 2014 at 05:17:03PM +0200, Rafael J. Wysocki wrote:
+> > > On Tuesday, September 23, 2014 09:52:21 AM Felipe Balbi wrote:
+> > > > On Tue, Sep 23, 2014 at 04:52:01PM +0200, Rafael J. Wysocki wrote:
+> > > > > On Tuesday, September 23, 2014 03:17:12 PM Heikki Krogerus wrote:
+> > > > > > On Wed, Aug 20, 2014 at 02:55:26PM +0300, Heikki Krogerus wrote:
+> > > > > > > Most devices are configured for 32-bit DMA addresses.
+> > > > > > > Setting the mask to 32-bit here removes the need for the
+> > > > > > > drivers to do it separately.
+> > > > > > 
+> > > > > > Rafael, is this OK?
+> > > > > 
+> > > > > Fine by me, but it should go in via dwc3 I think.
+> > > > 
+> > > > huh ? Seems like there's no direct dependency.
+> > > 
+> > > Well, it's part of a series where all of the other patches touch dwc3.
+> > > Doesn't anything in that series depend on this patch?
+> > 
+> > dunno, I haven't received anything.
+> 
+> Hmm.
+> 
+> Heikki, can you please resend the series and CC all of it to Felipe?
+
+The series was send "To" Felipe...
+
+I'll resend.
 
 
-> -----Original Message-----
-> From: Tejun Heo [mailto:htejun@gmail.com] On Behalf Of Tejun Heo
-> Sent: Tuesday, September 23, 2014 10:01 PM
-> To: Liu, Chuansheng
-> Cc: rjw@rjwysocki.net; linux-ide@vger.kernel.org;
-> linux-kernel@vger.kernel.org; mister.freeman@laposte.net; Zhang, Rui
-> Subject: Re: [PATCH] ata: Disabling the async PM for JMicron chips
-> 
-> On Tue, Sep 23, 2014 at 01:37:51PM +0800, Chuansheng Liu wrote:
-> > Be similar with commit (ata: Disabling the async PM for JMicron chip
-> 363/361),
-> 
-> Please use 12_DIGIT_SHA1_PREFIX ("SUBJ") format when referring to
-> commits.
-> 
+Thanks,
 
-
-> > @@ -1345,10 +1345,10 @@ static int ahci_init_one(struct pci_dev *pdev,
-> const struct pci_device_id *ent)
-> >  	 * follow the sequence one by one, otherwise one of them can not be
-> >  	 * powered on successfully, so here we disable the async suspend
-> >  	 * method for these chips.
-> > +	 * Jmicron chip 368 has been found has the similar issue, here we can
-> > +	 * exclude the Jmicron family directly to avoid other similar issues.
-> 
-> Let's update the comment as a whole instead of appending to it.
-> 
-
-Thanks your comments, Tejun, will send one new patch to review.
+-- 
+heikki
