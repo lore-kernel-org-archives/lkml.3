@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaIXJph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:45:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36796 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753605AbaIXJpa (ORCPT
+	id S1753742AbaIXJpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:45:36 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:62803 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaIXJpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 05:45:30 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mfd: arizona: Correct mask to allow setting micbias external cap
-Date: Wed, 24 Sep 2014 10:37:11 +0100
-Message-Id: <1411551431-13045-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1411551431-13045-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1411551431-13045-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Message-ID: <1411551925.24415.0.camel@phoenix>
+Subject: [PATCH] regulator: qcom_rpm: Don't explicitly initialise the first
+ field of config
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Sep 2014 17:45:25 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the mask for the external capacitor bit is missing when
-writing the MICBIAS config meaning it will never be set this patch fixes
-this.
+Doing so generates a warning as the first field is a pointer but we use
+0 to initialize it.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/mfd/arizona-core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/regulator/qcom_rpm-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 72b3202..bce7c07 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -947,6 +947,7 @@ int arizona_dev_init(struct arizona *arizona)
- 		regmap_update_bits(arizona->regmap,
- 				   ARIZONA_MIC_BIAS_CTRL_1 + i,
- 				   ARIZONA_MICB1_LVL_MASK |
-+				   ARIZONA_MICB1_EXT_CAP |
- 				   ARIZONA_MICB1_DISCH |
- 				   ARIZONA_MICB1_BYPASS |
- 				   ARIZONA_MICB1_RATE, val);
+diff --git a/drivers/regulator/qcom_rpm-regulator.c b/drivers/regulator/qcom_rpm-regulator.c
+index 8f28309..8d5969a 100644
+--- a/drivers/regulator/qcom_rpm-regulator.c
++++ b/drivers/regulator/qcom_rpm-regulator.c
+@@ -631,7 +631,7 @@ static int rpm_reg_probe(struct platform_device *pdev)
+ 	struct regulator_init_data *initdata;
+ 	const struct qcom_rpm_reg *template;
+ 	const struct of_device_id *match;
+-	struct regulator_config config = { 0 };
++	struct regulator_config config = { };
+ 	struct regulator_dev *rdev;
+ 	struct qcom_rpm_reg *vreg;
+ 	const char *key;
 -- 
-1.7.2.5
+1.9.1
+
+
 
