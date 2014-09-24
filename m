@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaIXQuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 12:50:21 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41136 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751883AbaIXQuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 12:50:16 -0400
-Date: Wed, 24 Sep 2014 17:49:46 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Sunil Goutham <sgoutham@cavium.com>
-Subject: Re: [PATCH 1/6] pci, thunder: Add support for Thunder PCIe host
- controller
-Message-ID: <20140924164946.GI16244@arm.com>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org>
- <1411573068-12952-2-git-send-email-rric@kernel.org>
- <27476217.5ToIFGoMDz@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27476217.5ToIFGoMDz@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754865AbaIXQu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 12:50:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49692 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754500AbaIXQr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 12:47:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,590,1406617200"; 
+   d="scan'208";a="604749722"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: subhransu.s.prusty@intel.com, vinod.koul@intel.com,
+        Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org
+Subject: [PATCH 21/27] spi: omap2-mcspi: use pm_runtime_last_busy_and_autosuspend helper
+Date: Wed, 24 Sep 2014 21:45:11 +0530
+Message-Id: <1411575342-31048-22-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 05:12:26PM +0100, Arnd Bergmann wrote:
-> On Wednesday 24 September 2014 17:37:43 Robert Richter wrote:
-> > From: Sunil Goutham <sgoutham@cavium.com>
-> > 
-> > This patch adds support for PCI host controller of Cavium Thunder
-> > SoCs.
-> 
-> I had expected this hardware to be SBSA compliant. Why do you need
-> a hardware specific driver, is this a workaround for buggy hardware
-> or just noncompliant?
+Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+coding the same code
 
-Patches welcome to pci-host-generic.c :) Lorenzo already has code to port
-it to Liviu's new API, so do shout if it's not suitable for your needs.
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-> > +static int thunder_pcie_msi_enable(struct thunder_pcie *pcie,
-> > +					struct pci_bus *bus)
-> > +{
-> > +	struct device_node *msi_node;
-> > +
-> > +	msi_node = of_parse_phandle(pcie->node, "msi-parent", 0);
-> > +	if (!msi_node)
-> > +		return -ENODEV;
-> > +
-> > +	pcie->msi = of_pci_find_msi_chip_by_node(msi_node);
-> > +	if (!pcie->msi)
-> > +		return -ENODEV;
-> > +
-> > +	pcie->msi->dev = pcie->dev;
-> > +	bus->msi = pcie->msi;
-> > +
-> > +	return 0;
-> > +}
-> 
-> This is probably something we should add to the generic host driver as well,
-> so it can work with SBSA compliant implementations that come with an MSI
-> controller. Maybe move it into common code so it can be shared with that
-> driver.
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 68441fa..fa2aae8 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -1020,8 +1020,7 @@ static int omap2_mcspi_setup(struct spi_device *spi)
+ 		return ret;
+ 
+ 	ret = omap2_mcspi_setup_transfer(spi, NULL);
+-	pm_runtime_mark_last_busy(mcspi->dev);
+-	pm_runtime_put_autosuspend(mcspi->dev);
++	pm_runtime_last_busy_and_autosuspend(mcspi->dev);
+ 
+ 	return ret;
+ }
+@@ -1282,8 +1281,7 @@ static int omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
+ 	ctx->wakeupenable = OMAP2_MCSPI_WAKEUPENABLE_WKEN;
+ 
+ 	omap2_mcspi_set_master_mode(master);
+-	pm_runtime_mark_last_busy(mcspi->dev);
+-	pm_runtime_put_autosuspend(mcspi->dev);
++	pm_runtime_last_busy_and_autosuspend(mcspi->dev);
+ 	return 0;
+ }
+ 
+@@ -1504,8 +1502,7 @@ static int omap2_mcspi_resume(struct device *dev)
+ 			writel_relaxed(cs->chconf0, cs->base + OMAP2_MCSPI_CHCONF0);
+ 		}
+ 	}
+-	pm_runtime_mark_last_busy(mcspi->dev);
+-	pm_runtime_put_autosuspend(mcspi->dev);
++	pm_runtime_last_busy_and_autosuspend(mcspi->dev);
+ 	return 0;
+ }
+ #else
+-- 
+1.7.0.4
 
-Agreed. I've been carrying something similar [1] (based on a hacked-up version
-of bios32, so not bothered to post it) whilst I've been waiting for the
-arm64 core PCI code to get merged.
-
-Will
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/drivers/pci/host/pci-host-generic.c?h=iommu/pci&id=b719acf062ceccfbd79ee7b1ae0b7904ea4da27e
