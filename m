@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaIXHze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 03:55:34 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:63948 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaIXHzb (ORCPT
+	id S1753696AbaIXH4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 03:56:39 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:37493 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaIXH4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:55:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
-Date: Wed, 24 Sep 2014 09:55:12 +0200
-Message-ID: <4515093.TGIQh7cBOD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1579761.oeYleOAY1N@vostro.rjw.lan>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <2809308.3y5s7TV5Ip@wuerfel> <1579761.oeYleOAY1N@vostro.rjw.lan>
+	Wed, 24 Sep 2014 03:56:37 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 24 Sep 2014 16:57:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Subject: Re: [PATCH v1 4/5] zram: add swap full hint
+Message-ID: <20140924075712.GA3181@bbox>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+ <1411344191-2842-5-git-send-email-minchan@kernel.org>
+ <20140922141118.de46ae5e54099cf2b39c8c5b@linux-foundation.org>
+ <20140923045602.GC8325@bbox>
+ <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LeSJ7GpoVvSg6ctU3Oec9HHKLepvPYQfTHDWQRDapiW
- NHMcsTexhn4wTVEORf5uI4DertIHJ/pADXGELfQhbpDuB7b8bt
- 1f/4P/PaD4+IZyHOzomuY16BsFGDkbb0k9FNX0XFfCvaBw1P5g
- um6+gZpdvWa5kQrZZvj2GwzpO+d220yS7LinkmUaddpL8s54kt
- xtE4N9aAGHXeE2FjMV/K0jexuMIFIlvoXPLSYl13P0HaWddIQq
- z5KR+yOX7ac0rwQUaRMsJCi0K7E5RyM6/lCFGbNWxMc4ZkZ/Lg
- h+8QtY3UD15o0AopOm+4NnX0jzLsILLwVQCCHUXcr8ObuwY4qN
- /R0yfIN5rbJdzdl3zDmk=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140923141755.b7854bae484cfe434797be02@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 September 2014 22:47:36 Rafael J. Wysocki wrote:
-> Quite frankly, I'm not sure what you're asking for.
+On Tue, Sep 23, 2014 at 02:17:55PM -0700, Andrew Morton wrote:
+> On Tue, 23 Sep 2014 13:56:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
 > 
-> It seems to mean "I kind of don't like the current implementation", but
-> then the last part is quite unclear to me.  Are you suggesting to add more
-> "if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) etc" type of checks to
-> device drivers?  That I'd like to avoid to be honest.
-
-No, that is not what I want. Device drivers should ideally call interfaces
-that just take a 'struct device' or 'struct platform_device' pointer,
-and those should be implemented in an appropriate way.
-
-> Instead of the current proposal we can introduce something like
+> > > 
+> > > > +#define ZRAM_FULLNESS_PERCENT 80
+> > > 
+> > > We've had problems in the past where 1% is just too large an increment
+> > > for large systems.
+> > 
+> > So, do you want fullness_bytes like dirty_bytes?
 > 
-> int device_get_child_property(struct device *dev, void *child_node,
->                               const char *propname, void **valptr);
+> Firstly I'd like you to think about whether we're ever likely to have
+> similar granularity problems with this tunable.  If not then forget
+> about it.
+
+When I think the usecase for zram-swap, it is used for small memory
+but not sure because these days, mobile phone DRAM size tend to be
+big(ex, 3G) and they want to use zRAM for swap due to wear-leveling
+of nand. When I consier the trend, they might set zram-swap to about
+500M in future. In that case, 1% is 5M and given zram comp ratio(ie,
+max 5:1), it could be 25M which is never small for the application.
+So, IMO, we need more fine-grained knob.
+
 > 
-> (and analogously for device_read_property*) and use that in the drivers that
-> need to iterate over child nodes of a device.  Quite along the lines of what
-> Dmitry is suggesting.
+> If yes then we should do something.  I don't like the "bytes" thing
+> much because it requires that the operator know the pool size
+> beforehand, and any time that changes, the "bytes" needs hanging too. 
+> Ratios are nice but percent is too coarse.  Maybe kernel should start
+> using "ppm" for ratios, parts per million.  hrm.
+
+Okay, I will consider it more in next spin.
+
 > 
-> Then, fn() in acpi_for_each_child_node() (and the of_ counterpart of it)
-> would become
+> > > > @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> > > >  	down_write(&zram->init_lock);
+> > > >  
+> > > >  	zram->limit_pages = 0;
+> > > > +	atomic_set(&zram->alloc_fail, 0);
+> > > >  
+> > > >  	if (!init_done(zram)) {
+> > > >  		up_write(&zram->init_lock);
+> > > > @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
+> > > >  	return 0;
+> > > >  }
+> > > >  
+> > > > +static int zram_full(struct block_device *bdev, void *arg)
+> > > 
+> > > This could return a bool.  That implies that zram_swap_hint should
+> > > return bool too, but as we haven't been told what the zram_swap_hint
+> > > return value does, I'm a bit stumped.
+> > 
+> > Hmm, currently, SWAP_FREE doesn't use return and SWAP_FULL uses return
+> > as bool so in the end, we can change it as bool but I want to remain it
+> > as int for the future. At least, we might use it as propagating error
+> > in future. Instead, I will use *arg to return the result instead of
+> > return val. But I'm not strong so if you want to remove return val,
+> > I will do it. For clarifictaion, please tell me again if you want.
 > 
-> int (*fn)(struct device *dev, void *child_node, void *data)
-> 
-> and so on.
-> 
-> Would you prefer that?
+> I'm easy, as long as it makes sense, is understandable by people other
+> than he-who-wrote-it and doesn't use argument names such as "arg".
 
-I must still be missing part of what you are trying to achieve above.
-We definitely need an interface to get properties from the device itself,
-like
+Yeb.
 
-int device_get_property(struct device *dev, const char *propname, void **valptr);
-
-(whatever valptr ends up being, that would be a separate discussion).
-
-As soon as it comes to devices that have child nodes, I don't see a
-necessity to have a generic abstraction for them, as this is typically
-only done for some of the more obscure bindings, or for child nodes that
-are defined in a subsystem-wide binding rather than a device private
-binding.
-
-For the former case, I think they are indeed better left in drivers that
-actively know the difference between DT and ACPI, and that don't necessarily
-use the same binding for both. In the latter case, I'd leave the
-implementation up to subsystem code, which again would know what
-interface it is using.
-
-	Arnd
+-- 
+Kind regards,
+Minchan Kim
