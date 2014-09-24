@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaIXSaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 14:30:23 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:61419 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaIXSaW (ORCPT
+	id S1753291AbaIXSb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 14:31:26 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:53166 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087AbaIXSbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 14:30:22 -0400
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 14:30:22 EDT
-Message-ID: <54230C1A.30801@prisktech.co.nz>
-Date: Thu, 25 Sep 2014 06:23:22 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 14:31:24 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Behan Webster <behanw@converseincode.com>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm, vt8500, LLVMLlinux: Use mcr instead of mcr% for
- mach-vt8500
-References: <1411530284-28807-1-git-send-email-behanw@converseincode.com> <7810937.UX61PvX9nB@wuerfel>
-In-Reply-To: <7810937.UX61PvX9nB@wuerfel>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
+References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+	<CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
+Date: Wed, 24 Sep 2014 11:31:24 -0700
+Message-ID: <CAM_iQpU4rZLxdb=1TkG6HMR54SLk7tmRqxkg0+acRtV91o+UXA@mail.gmail.com>
+Subject: Re: linux-next: cgroup_mount() falls asleep forever
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Andrey Wagin <avagin@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 24/09/14 21:16, Arnd Bergmann wrote:
-> On Tuesday 23 September 2014 20:44:44 Behan Webster wrote:
->> The ASM below does not compile with clang and is not the way that the mcr
->> command is used in other parts of the kernel.
->>
->> arch/arm/mach-vt8500/vt8500.c:72:11: error: invalid % escape in inline assembly string
->>          asm("mcr%? p15, 0, %0, c7, c0, 4" : : "r" (0));
->>              ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
->> 1 error generated.
->>
->> There are other forms that are supported on different ARM instruction sets but
->> generally the kernel just uses mcr as it is supported in all ARM instruction
->> sets.
-> Just for confirm: both forms are actually correct and we don't need this
-> backported for stable, right?
+On Wed, Sep 24, 2014 at 7:29 AM, Andrey Wagin <avagin@gmail.com> wrote:
+> 2014-09-24 14:31 GMT+04:00 Andrey Wagin <avagin@gmail.com>:
+>> Hi All,
 >
->> Signed-off-by: Behan Webster <behanw@converseincode.com>
->> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
->> Acked-by: Will Deacon <will.deacon@arm.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> The problem is in a following commit:
 >
-> Tony, would you like to pick this one up and send it in a pull request
-> to arm-soc, or should we apply it to fixes-non-critical directly?
+> commit 0c7bf3e8cab7900e17ce7f97104c39927d835469
+> Author: Zefan Li <lizefan@huawei.com>
+> Date:   Sat Sep 20 14:49:10 2014 +0800
 >
-> 	Arnd
-Arnd,
+>     cgroup: remove redundant variable in cgroup_mount()
+>
+>     Both pinned_sb and new_sb indicate if a new superblock is needed,
+>     so we can just remove new_sb.
+>
+>     Note now we must check if kernfs_tryget_sb() returns NULL, because
+>     when it returns NULL, kernfs_mount() may still re-use an existing
+>     superblock, which is just allocated by another concurent mount.
+>
 
-You can apply it directly to fixes-non-critical if that's ok.
+I guess the check for NULL is incorrect, the comment on kernfs_pin_sb()
+says:
 
-Regards
-Tony Prisk
+Returns NULL if there's no superblock associated to this kernfs_root,
